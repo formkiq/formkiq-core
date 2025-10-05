@@ -47,15 +47,6 @@ public class IamService {
   }
 
   /**
-   * Build {@link IamClient}.
-   * 
-   * @return {@link IamClient}
-   */
-  public IamClient buildClient() {
-    return this.builder.build();
-  }
-
-  /**
    * Add IAM User To IAM Group.
    * 
    * @param iam {@link IamClient}
@@ -67,5 +58,14 @@ public class IamService {
       final String groupName) {
     return iam.addUserToGroup(
         AddUserToGroupRequest.builder().groupName(groupName).userName(userName).build());
+  }
+
+  /**
+   * Build {@link IamClient}.
+   * 
+   * @return {@link IamClient}
+   */
+  public IamClient buildClient() {
+    return this.builder.build();
   }
 }

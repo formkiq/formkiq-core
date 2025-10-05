@@ -29,12 +29,12 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler {
 
   @Override
-  protected boolean isSupportPrivate() {
-    return true;
+  public String getRequestUrl() {
+    return "/private/webhooks";
   }
 
   @Override
-  public String getRequestUrl() {
-    return "/private/webhooks";
+  protected boolean isSupportPrivate() {
+    return true;
   }
 }

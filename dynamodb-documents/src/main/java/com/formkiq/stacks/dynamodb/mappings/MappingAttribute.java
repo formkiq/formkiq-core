@@ -55,24 +55,12 @@ public class MappingAttribute {
   public MappingAttribute() {}
 
   /**
-   * Get {@link MappingAttributeMetadataField}.
+   * Get Attribute Key.
    * 
-   * @return {@link MappingAttributeMetadataField}
+   * @return {@link String}
    */
-  public MappingAttributeMetadataField getMetadataField() {
-    return this.metadataField;
-  }
-
-  /**
-   * Set Metadata Field.
-   * 
-   * @param attributeMetadataField {@link MappingAttributeMetadataField}
-   * @return MappingAttribute
-   */
-  public MappingAttribute setMetadataField(
-      final MappingAttributeMetadataField attributeMetadataField) {
-    this.metadataField = attributeMetadataField;
-    return this;
+  public String getAttributeKey() {
+    return this.attributeKey;
   }
 
   /**
@@ -82,6 +70,71 @@ public class MappingAttribute {
    */
   public String getDefaultValue() {
     return this.defaultValue;
+  }
+
+  /**
+   * Get Default Values.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getDefaultValues() {
+    return this.defaultValues;
+  }
+
+  /**
+   * Get {@link MappingAttributeLabelMatchingType}.
+   * 
+   * @return {@link MappingAttributeLabelMatchingType}
+   */
+  public MappingAttributeLabelMatchingType getLabelMatchingType() {
+    return this.labelMatchingType;
+  }
+
+  /**
+   * Get Label Text.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getLabelTexts() {
+    return this.labelTexts;
+  }
+
+  /**
+   * Get {@link MappingAttributeMetadataField}.
+   * 
+   * @return {@link MappingAttributeMetadataField}
+   */
+  public MappingAttributeMetadataField getMetadataField() {
+    return this.metadataField;
+  }
+
+  /**
+   * Get Source Type.
+   * 
+   * @return {@link MappingAttributeSourceType}
+   */
+  public MappingAttributeSourceType getSourceType() {
+    return this.sourceType;
+  }
+
+  /**
+   * Get Validation Regex.
+   * 
+   * @return {@link String}
+   */
+  public String getValidationRegex() {
+    return this.validationRegex;
+  }
+
+  /**
+   * Set Attribute Key.
+   * 
+   * @param attribute {@link String}
+   * @return {@link MappingAttribute}
+   */
+  public MappingAttribute setAttributeKey(final String attribute) {
+    this.attributeKey = attribute;
+    return this;
   }
 
   /**
@@ -96,15 +149,6 @@ public class MappingAttribute {
   }
 
   /**
-   * Get Default Values.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getDefaultValues() {
-    return this.defaultValues;
-  }
-
-  /**
    * Set Default Values.
    * 
    * @param attributeDefaultValues {@link List} {@link String}
@@ -113,15 +157,6 @@ public class MappingAttribute {
   public MappingAttribute setDefaultValues(final List<String> attributeDefaultValues) {
     this.defaultValues = attributeDefaultValues;
     return this;
-  }
-
-  /**
-   * Get {@link MappingAttributeLabelMatchingType}.
-   * 
-   * @return {@link MappingAttributeLabelMatchingType}
-   */
-  public MappingAttributeLabelMatchingType getLabelMatchingType() {
-    return this.labelMatchingType;
   }
 
   /**
@@ -137,32 +172,26 @@ public class MappingAttribute {
   }
 
   /**
-   * Get Attribute Key.
+   * Set Label Texts.
    * 
-   * @return {@link String}
+   * @param attributeLabelTexts {@link List} {@link String}
+   * @return MappingAttribute
    */
-  public String getAttributeKey() {
-    return this.attributeKey;
-  }
-
-  /**
-   * Set Attribute Key.
-   * 
-   * @param attribute {@link String}
-   * @return {@link MappingAttribute}
-   */
-  public MappingAttribute setAttributeKey(final String attribute) {
-    this.attributeKey = attribute;
+  public MappingAttribute setLabelTexts(final List<String> attributeLabelTexts) {
+    this.labelTexts = attributeLabelTexts;
     return this;
   }
 
   /**
-   * Get Source Type.
+   * Set Metadata Field.
    * 
-   * @return {@link MappingAttributeSourceType}
+   * @param attributeMetadataField {@link MappingAttributeMetadataField}
+   * @return MappingAttribute
    */
-  public MappingAttributeSourceType getSourceType() {
-    return this.sourceType;
+  public MappingAttribute setMetadataField(
+      final MappingAttributeMetadataField attributeMetadataField) {
+    this.metadataField = attributeMetadataField;
+    return this;
   }
 
   /**
@@ -177,15 +206,6 @@ public class MappingAttribute {
   }
 
   /**
-   * Get Validation Regex.
-   * 
-   * @return {@link String}
-   */
-  public String getValidationRegex() {
-    return this.validationRegex;
-  }
-
-  /**
    * Set Validation Regex.
    * 
    * @param attributeValidationRegex {@link String}
@@ -193,26 +213,6 @@ public class MappingAttribute {
    */
   public MappingAttribute setValidationRegex(final String attributeValidationRegex) {
     this.validationRegex = attributeValidationRegex;
-    return this;
-  }
-
-  /**
-   * Get Label Text.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getLabelTexts() {
-    return this.labelTexts;
-  }
-
-  /**
-   * Set Label Texts.
-   * 
-   * @param attributeLabelTexts {@link List} {@link String}
-   * @return MappingAttribute
-   */
-  public MappingAttribute setLabelTexts(final List<String> attributeLabelTexts) {
-    this.labelTexts = attributeLabelTexts;
     return this;
   }
 }

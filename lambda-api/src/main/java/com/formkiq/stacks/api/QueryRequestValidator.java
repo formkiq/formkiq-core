@@ -42,8 +42,16 @@ import software.amazon.awssdk.utils.StringUtils;
  */
 public class QueryRequestValidator {
 
+  private boolean isAttributesEmpty(final QueryRequest q) {
+    return q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty();
+  }
+
   private boolean isEmptyRequest(final QueryRequest q) {
     return q == null || q.query() == null;
+  }
+
+  private boolean isMetaDataEmpty(final QueryRequest q) {
+    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q);
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
@@ -51,16 +59,8 @@ public class QueryRequestValidator {
         && Objects.isEmpty(q.query().getDocumentIds());
   }
 
-  private boolean isMetaDataEmpty(final QueryRequest q) {
-    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q);
-  }
-
   private boolean isQueryMetaDataEmpty(final QueryRequest q) {
     return q.query().getMeta() == null;
-  }
-
-  private boolean isAttributesEmpty(final QueryRequest q) {
-    return q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty();
   }
 
   private boolean isTagsEmpty(final QueryRequest q) {
@@ -87,6 +87,14 @@ public class QueryRequestValidator {
         errors.add(new ValidationErrorImpl().key("range/end").error("range end is required"));
       }
     }
+  }
+
+  private void validateTag(final SearchTagCriteria tag, final Collection<ValidationError> errors) {
+    if (tag != null && isEmpty(tag.key())) {
+      errors.add(new ValidationErrorImpl().key("tag/key").error("tag 'key' is required"));
+    }
+
+    validateRange(tag, errors);
   }
 
   /**
@@ -135,13 +143,5 @@ public class QueryRequestValidator {
     }
 
     return errors;
-  }
-
-  private void validateTag(final SearchTagCriteria tag, final Collection<ValidationError> errors) {
-    if (tag != null && isEmpty(tag.key())) {
-      errors.add(new ValidationErrorImpl().key("tag/key").error("tag 'key' is required"));
-    }
-
-    validateRange(tag, errors);
   }
 }

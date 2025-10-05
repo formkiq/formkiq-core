@@ -70,37 +70,6 @@ public class AwsServiceCache {
   }
 
   /**
-   * Get {@link Logger}.
-   * 
-   * @return Logger
-   */
-  public Logger getLogger() {
-    return this.logger;
-  }
-
-  /**
-   * Set Log Level.
-   * 
-   * @param logLevel {@link String}
-   * @param logType {@link String}
-   * @return AwsServiceCache
-   */
-  public AwsServiceCache setLogger(final String logLevel, final String logType) {
-    return setLogger(new LoggerImpl(LogLevel.fromString(logLevel), LogType.fromString(logType)));
-  }
-
-  /**
-   * Set Log Level.
-   *
-   * @param log {@link Logger}
-   * @return AwsServiceCache
-   */
-  public AwsServiceCache setLogger(final Logger log) {
-    this.logger = log;
-    return this;
-  }
-
-  /**
    * De-register Extension.
    * 
    * @param <T> Type of Class
@@ -233,6 +202,15 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get {@link Logger}.
+   * 
+   * @return Logger
+   */
+  public Logger getLogger() {
+    return this.logger;
+  }
+
+  /**
    * Has Module.
    * 
    * @param module {@link String}
@@ -318,5 +296,27 @@ public class AwsServiceCache {
    */
   public <T> void registerAppend(final Class<T> clazz, final AwsServiceExtension<T> extension) {
     register(clazz, extension, false);
+  }
+
+  /**
+   * Set Log Level.
+   *
+   * @param log {@link Logger}
+   * @return AwsServiceCache
+   */
+  public AwsServiceCache setLogger(final Logger log) {
+    this.logger = log;
+    return this;
+  }
+
+  /**
+   * Set Log Level.
+   * 
+   * @param logLevel {@link String}
+   * @param logType {@link String}
+   * @return AwsServiceCache
+   */
+  public AwsServiceCache setLogger(final String logLevel, final String logType) {
+    return setLogger(new LoggerImpl(LogLevel.fromString(logLevel), LogType.fromString(logType)));
   }
 }

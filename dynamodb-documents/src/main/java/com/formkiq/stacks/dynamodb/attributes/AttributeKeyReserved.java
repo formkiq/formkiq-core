@@ -51,13 +51,6 @@ public enum AttributeKeyReserved {
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus");
 
-  /** Key Name. */
-  private final String key;
-
-  AttributeKeyReserved(final String reservedKey) {
-    this.key = reservedKey;
-  }
-
   /**
    * Find {@link AttributeKeyReserved}.
    * 
@@ -68,6 +61,13 @@ public enum AttributeKeyReserved {
     Optional<AttributeKeyReserved> a =
         Arrays.stream(values()).filter(v -> v.getKey().equalsIgnoreCase(key)).findFirst();
     return a.orElse(null);
+  }
+
+  /** Key Name. */
+  private final String key;
+
+  AttributeKeyReserved(final String reservedKey) {
+    this.key = reservedKey;
   }
 
   /**

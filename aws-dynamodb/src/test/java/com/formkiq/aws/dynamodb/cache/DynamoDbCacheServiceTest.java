@@ -41,10 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(DynamoDbExtension.class)
 public class DynamoDbCacheServiceTest {
 
-  /** Document Table. */
-  private CacheService service;
   /** Cache Table. */
   private static final String CACHE_TABLE = "Cache";
+  /** Document Table. */
+  private CacheService service;
 
   /**
    * Before Test.

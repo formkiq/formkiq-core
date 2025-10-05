@@ -47,6 +47,17 @@ public class UserChangePasswordRequestHandler
   public static final String URL = "/changePassword";
 
   @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(!isEmpty(authorization.getUsername()));
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -70,16 +81,5 @@ public class UserChangePasswordRequestHandler
       throw new ValidationException(
           List.of(new ValidationErrorImpl().error("'oldPassword' and 'newPassword' are required")));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(!isEmpty(authorization.getUsername()));
   }
 }

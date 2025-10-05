@@ -45,23 +45,12 @@ public class Mapping {
   public Mapping() {}
 
   /**
-   * Get Mapping Name.
+   * Get {@link List} {@link MappingAttribute}.
    * 
-   * @return {@link String}
+   * @return {@link List} {@link MappingAttribute}
    */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Name.
-   * 
-   * @param mappingName {@link String}
-   * @return {@link Mapping}
-   */
-  public Mapping setName(final String mappingName) {
-    this.name = mappingName;
-    return this;
+  public List<MappingAttribute> getAttributes() {
+    return this.attributes;
   }
 
   /**
@@ -71,6 +60,26 @@ public class Mapping {
    */
   public String getDescription() {
     return this.description;
+  }
+
+  /**
+   * Get Mapping Name.
+   * 
+   * @return {@link String}
+   */
+  public String getName() {
+    return this.name;
+  }
+
+  /**
+   * Set Mapping Attributes.
+   * 
+   * @param mappingAttributes {@link List} {@link MappingAttribute}
+   * @return {@link Mapping}
+   */
+  public Mapping setAttributes(final List<MappingAttribute> mappingAttributes) {
+    this.attributes = mappingAttributes;
+    return this;
   }
 
   /**
@@ -85,22 +94,13 @@ public class Mapping {
   }
 
   /**
-   * Get {@link List} {@link MappingAttribute}.
+   * Set Name.
    * 
-   * @return {@link List} {@link MappingAttribute}
-   */
-  public List<MappingAttribute> getAttributes() {
-    return this.attributes;
-  }
-
-  /**
-   * Set Mapping Attributes.
-   * 
-   * @param mappingAttributes {@link List} {@link MappingAttribute}
+   * @param mappingName {@link String}
    * @return {@link Mapping}
    */
-  public Mapping setAttributes(final List<MappingAttribute> mappingAttributes) {
-    this.attributes = mappingAttributes;
+  public Mapping setName(final String mappingName) {
+    this.name = mappingName;
     return this;
   }
 }

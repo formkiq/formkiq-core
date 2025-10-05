@@ -98,8 +98,28 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   private static String actionsEventBus;
   /** Actions Event Queue. */
   private static String actionsEventQueue;
-  /** {@link FileGenerator}. */
-  private final FileGenerator fileGenerator = new FileGenerator();
+
+  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
+
+    List<Message> receiveMessages;
+
+    do {
+      receiveMessages = getSqs().receiveMessages(queueUrl).messages();
+      if (receiveMessages.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+
+    } while (receiveMessages.isEmpty());
+
+    Gson gson = new GsonBuilder().create();
+    String body = receiveMessages.iterator().next().body();
+    Map<String, Object> map = gson.fromJson(body, Map.class);
+    assertTrue(map.containsKey("detail"));
+    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
+    assertTrue(detail.containsKey("document"));
+
+    getSqs().clearQueue(queueUrl);
+  }
 
   @BeforeAll
   public static void setup() {
@@ -110,6 +130,9 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
     getSqs().clearQueue(actionsEventQueue);
   }
+
+  /** {@link FileGenerator}. */
+  private final FileGenerator fileGenerator = new FileGenerator();
 
   /**
    * POST /documents/{documentId}.
@@ -171,28 +194,6 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     assertEquals(DocumentActionStatus.COMPLETE, docActions.get(1).getStatus());
 
     assertEventBridgeMessage(actionsEventQueue);
-  }
-
-  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
-
-    List<Message> receiveMessages;
-
-    do {
-      receiveMessages = getSqs().receiveMessages(queueUrl).messages();
-      if (receiveMessages.isEmpty()) {
-        TimeUnit.SECONDS.sleep(1);
-      }
-
-    } while (receiveMessages.isEmpty());
-
-    Gson gson = new GsonBuilder().create();
-    String body = receiveMessages.iterator().next().body();
-    Map<String, Object> map = gson.fromJson(body, Map.class);
-    assertTrue(map.containsKey("detail"));
-    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
-    assertTrue(detail.containsKey("document"));
-
-    getSqs().clearQueue(queueUrl);
   }
 
   /**

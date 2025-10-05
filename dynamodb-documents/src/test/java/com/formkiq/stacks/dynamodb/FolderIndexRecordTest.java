@@ -42,6 +42,35 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 class FolderIndexRecordTest {
 
   /**
+   * Test Legacy Folder Key.
+   */
+  @Test
+  void testGetFromAttributes01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = "b423dec1-b30c-45b7-86ea-19569b475072";
+
+      Map<String, AttributeValue> attrs = Map.of(DbKeys.PK,
+          fromS(createDatabaseKey(siteId, "global#folders#5cce7793-fbc5-446f-89a0-af2f2f48cadf")),
+          DbKeys.SK, fromS("ff#test-nested"), "documentId", fromS(documentId), "path",
+          fromS("test-nested"), "type", fromS("folder"));
+
+      // when
+      FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attrs);
+
+      // then
+      assertEquals(createDatabaseKey(siteId, "global#folders#5cce7793-fbc5-446f-89a0-af2f2f48cadf"),
+          record.pk(siteId));
+      assertEquals("ff#test-nested", record.sk());
+      assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
+      assertEquals("folder", record.skGsi1());
+      assertNull(record.pkGsi2(siteId));
+      assertNull(record.skGsi2());
+    }
+  }
+
+  /**
    * Test Folder Key Folder in root directory.
    */
   @Test
@@ -80,35 +109,6 @@ class FolderIndexRecordTest {
       // then
       assertEquals(createDatabaseKey(siteId, "global#folders#"), record.pk(siteId));
       assertEquals("fi#test.txt", record.sk());
-      assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
-      assertEquals("folder", record.skGsi1());
-      assertNull(record.pkGsi2(siteId));
-      assertNull(record.skGsi2());
-    }
-  }
-
-  /**
-   * Test Legacy Folder Key.
-   */
-  @Test
-  void testGetFromAttributes01() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId = "b423dec1-b30c-45b7-86ea-19569b475072";
-
-      Map<String, AttributeValue> attrs = Map.of(DbKeys.PK,
-          fromS(createDatabaseKey(siteId, "global#folders#5cce7793-fbc5-446f-89a0-af2f2f48cadf")),
-          DbKeys.SK, fromS("ff#test-nested"), "documentId", fromS(documentId), "path",
-          fromS("test-nested"), "type", fromS("folder"));
-
-      // when
-      FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attrs);
-
-      // then
-      assertEquals(createDatabaseKey(siteId, "global#folders#5cce7793-fbc5-446f-89a0-af2f2f48cadf"),
-          record.pk(siteId));
-      assertEquals("ff#test-nested", record.sk());
       assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
       assertEquals("folder", record.skGsi1());
       assertNull(record.pkGsi2(siteId));

@@ -102,68 +102,11 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     this.db.putItem(attrs);
   }
 
-  private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
-    WatermarkXanchor xanchor =
-        position != null && position.getxAnchor() != null ? position.getxAnchor() : null;
-    WatermarkYanchor yanchor =
-        position != null && position.getyAnchor() != null ? position.getyAnchor() : null;
-
-    a.setWatermarkxOffset(position != null ? position.getxOffset() : null)
-        .setWatermarkyOffset(position != null ? position.getyOffset() : null)
-        .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
-  }
-
   @Override
   public void addWatermarkAttribute(final String siteId, final String key,
       final Watermark watermark) {
     addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.WATERMARK,
         AttributeType.STANDARD, false, watermark);
-  }
-
-  private void validate(final AttributeValidationAccess validationAccess, final String siteId,
-      final boolean allowReservedAttributeKey, final AttributeRecord a) {
-
-    String key = a.getKey();
-    ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("key", key);
-    vb.check();
-
-    if (!allowReservedAttributeKey) {
-      AttributeKeyReserved r = AttributeKeyReserved.find(key);
-      vb.isRequired("key", r == null, "'" + key + "' is a reserved attribute name");
-    }
-
-    AttributeRecord attribute = getAttribute(siteId, key);
-    vb.isRequired("key", attribute == null, "attribute '" + key + "' already exists");
-
-    validateWatermark(siteId, a, vb);
-    validateAttributeType(validationAccess, a, vb);
-
-    vb.check();
-  }
-
-  private void validateWatermark(final String siteId, final AttributeRecord a,
-      final ValidationBuilder vb) {
-
-    boolean hasWatermark =
-        !isEmpty(a.getWatermarkText()) || !isEmpty(a.getWatermarkImageDocumentId());
-
-    if (AttributeDataType.WATERMARK.equals(a.getDataType())) {
-
-      String watermarkImageDocumentId = a.getWatermarkImageDocumentId();
-      if (isEmpty(a.getWatermarkText()) && isEmpty(watermarkImageDocumentId)) {
-        vb.addError("watermark", "'watermark.text' or 'watermark.imageDocumentId' is required");
-      } else if (!isEmpty(watermarkImageDocumentId)) {
-
-        Map<String, AttributeValue> keys = keysDocument(siteId, watermarkImageDocumentId);
-        if (!this.db.exists(keys.get(PK), keys.get(SK))) {
-          vb.addError("watermark.imageDocumentId", "watermark.imageDocumentId' does not exist");
-        }
-      }
-
-    } else if (hasWatermark) {
-      vb.addError("watermark.text", "'watermark' only allowed on dataType 'WATERMARK'");
-    }
   }
 
   @Override
@@ -192,58 +135,10 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     return vb.getErrors();
   }
 
-  private void validateAttributeType(final AttributeValidationAccess validationAccess,
-      final String siteId, final String key, final ValidationBuilder vb) {
-
-    if (!validationAccess.isAdminOrGovernRole()) {
-
-      AttributeRecord r = new AttributeRecord().documentId(key);
-      Map<String, AttributeValue> attrs = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
-      if (!attrs.isEmpty()) {
-        r = r.getFromAttributes(siteId, attrs);
-      }
-
-      validateAttributeType(validationAccess, r, vb);
-    }
-  }
-
-  private void validateAttributeType(final AttributeValidationAccess validationAccess,
-      final AttributeRecord r, final ValidationBuilder vb) {
-
-    if (!validationAccess.isAdminOrGovernRole()) {
-
-      final AttributeType attributeType = r != null && r.getType() != null ? r.getType() : null;
-
-      if (attributeType != null) {
-        Collection<AttributeType> types = List.of(AttributeType.GOVERNANCE, AttributeType.OPA);
-        types.forEach(type -> vb.isRequired(r.getKey(), !type.equals(attributeType),
-            "Access denied to attribute"));
-      }
-    }
-  }
-
-  private void validateDeleteAttribute(final String siteId, final String key,
-      final ValidationBuilder vb) {
-
-    QueryConfig config = new QueryConfig().indexName(GSI1);
-
-    // check for Schema / Classification Key
-    SchemaAttributeKeyRecord r = new SchemaAttributeKeyRecord().setKey(key);
-    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
-    QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
-    if (!response.items().isEmpty()) {
-      vb.addError(key,
-          "attribute '" + key + "' is used in a Schema / Classification, cannot be deleted");
-    }
-
-    // check for DocumentAttributeRecords
-    DocumentAttributeRecord dar = new DocumentAttributeRecord().setKey(key);
-    pk = dar.fromS(dar.pkGsi1(siteId));
-    response = this.db.queryBeginsWith(config, pk, null, null, 1);
-
-    if (!response.items().isEmpty()) {
-      vb.addError(key, "attribute '" + key + "' is in use, cannot be deleted");
-    }
+  @Override
+  public boolean existsAttribute(final String siteId, final String key) {
+    AttributeRecord r = new AttributeRecord().documentId(key);
+    return this.db.exists(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
   }
 
   @Override
@@ -279,12 +174,6 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     }
 
     return r;
-  }
-
-  @Override
-  public boolean existsAttribute(final String siteId, final String key) {
-    AttributeRecord r = new AttributeRecord().documentId(key);
-    return this.db.exists(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
   }
 
   @Override
@@ -361,5 +250,116 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     record.setWatermarkyAnchor(
         watermark.getPosition() != null ? watermark.getPosition().getyAnchor() : null);
     record.setWatermarkImageDocumentId(watermark.getImageDocumentId());
+  }
+
+  private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
+    WatermarkXanchor xanchor =
+        position != null && position.getxAnchor() != null ? position.getxAnchor() : null;
+    WatermarkYanchor yanchor =
+        position != null && position.getyAnchor() != null ? position.getyAnchor() : null;
+
+    a.setWatermarkxOffset(position != null ? position.getxOffset() : null)
+        .setWatermarkyOffset(position != null ? position.getyOffset() : null)
+        .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
+  }
+
+  private void validate(final AttributeValidationAccess validationAccess, final String siteId,
+      final boolean allowReservedAttributeKey, final AttributeRecord a) {
+
+    String key = a.getKey();
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("key", key);
+    vb.check();
+
+    if (!allowReservedAttributeKey) {
+      AttributeKeyReserved r = AttributeKeyReserved.find(key);
+      vb.isRequired("key", r == null, "'" + key + "' is a reserved attribute name");
+    }
+
+    AttributeRecord attribute = getAttribute(siteId, key);
+    vb.isRequired("key", attribute == null, "attribute '" + key + "' already exists");
+
+    validateWatermark(siteId, a, vb);
+    validateAttributeType(validationAccess, a, vb);
+
+    vb.check();
+  }
+
+  private void validateAttributeType(final AttributeValidationAccess validationAccess,
+      final AttributeRecord r, final ValidationBuilder vb) {
+
+    if (!validationAccess.isAdminOrGovernRole()) {
+
+      final AttributeType attributeType = r != null && r.getType() != null ? r.getType() : null;
+
+      if (attributeType != null) {
+        Collection<AttributeType> types = List.of(AttributeType.GOVERNANCE, AttributeType.OPA);
+        types.forEach(type -> vb.isRequired(r.getKey(), !type.equals(attributeType),
+            "Access denied to attribute"));
+      }
+    }
+  }
+
+  private void validateAttributeType(final AttributeValidationAccess validationAccess,
+      final String siteId, final String key, final ValidationBuilder vb) {
+
+    if (!validationAccess.isAdminOrGovernRole()) {
+
+      AttributeRecord r = new AttributeRecord().documentId(key);
+      Map<String, AttributeValue> attrs = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+      if (!attrs.isEmpty()) {
+        r = r.getFromAttributes(siteId, attrs);
+      }
+
+      validateAttributeType(validationAccess, r, vb);
+    }
+  }
+
+  private void validateDeleteAttribute(final String siteId, final String key,
+      final ValidationBuilder vb) {
+
+    QueryConfig config = new QueryConfig().indexName(GSI1);
+
+    // check for Schema / Classification Key
+    SchemaAttributeKeyRecord r = new SchemaAttributeKeyRecord().setKey(key);
+    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
+    QueryResponse response = this.db.queryBeginsWith(config, pk, null, null, 1);
+    if (!response.items().isEmpty()) {
+      vb.addError(key,
+          "attribute '" + key + "' is used in a Schema / Classification, cannot be deleted");
+    }
+
+    // check for DocumentAttributeRecords
+    DocumentAttributeRecord dar = new DocumentAttributeRecord().setKey(key);
+    pk = dar.fromS(dar.pkGsi1(siteId));
+    response = this.db.queryBeginsWith(config, pk, null, null, 1);
+
+    if (!response.items().isEmpty()) {
+      vb.addError(key, "attribute '" + key + "' is in use, cannot be deleted");
+    }
+  }
+
+  private void validateWatermark(final String siteId, final AttributeRecord a,
+      final ValidationBuilder vb) {
+
+    boolean hasWatermark =
+        !isEmpty(a.getWatermarkText()) || !isEmpty(a.getWatermarkImageDocumentId());
+
+    if (AttributeDataType.WATERMARK.equals(a.getDataType())) {
+
+      String watermarkImageDocumentId = a.getWatermarkImageDocumentId();
+      if (isEmpty(a.getWatermarkText()) && isEmpty(watermarkImageDocumentId)) {
+        vb.addError("watermark", "'watermark.text' or 'watermark.imageDocumentId' is required");
+      } else if (!isEmpty(watermarkImageDocumentId)) {
+
+        Map<String, AttributeValue> keys = keysDocument(siteId, watermarkImageDocumentId);
+        if (!this.db.exists(keys.get(PK), keys.get(SK))) {
+          vb.addError("watermark.imageDocumentId", "watermark.imageDocumentId' does not exist");
+        }
+      }
+
+    } else if (hasWatermark) {
+      vb.addError("watermark.text", "'watermark' only allowed on dataType 'WATERMARK'");
+    }
   }
 }

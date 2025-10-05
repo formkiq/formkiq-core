@@ -49,14 +49,13 @@ public class AddGroupRequest {
   }
 
   /**
-   * Set Group.
-   * 
-   * @param addGroup {@link AddGroup}
-   * @return AddGroupRequest
+   * Get Group Description.
+   *
+   * @return String
+   * @throws BadException BadException
    */
-  public AddGroupRequest setGroup(final AddGroup addGroup) {
-    this.group = addGroup;
-    return this;
+  public String getGroupDescription() throws BadException {
+    return getGroup().getDescription();
   }
 
   /**
@@ -75,12 +74,13 @@ public class AddGroupRequest {
   }
 
   /**
-   * Get Group Description.
-   *
-   * @return String
-   * @throws BadException BadException
+   * Set Group.
+   * 
+   * @param addGroup {@link AddGroup}
+   * @return AddGroupRequest
    */
-  public String getGroupDescription() throws BadException {
-    return getGroup().getDescription();
+  public AddGroupRequest setGroup(final AddGroup addGroup) {
+    this.group = addGroup;
+    return this;
   }
 }

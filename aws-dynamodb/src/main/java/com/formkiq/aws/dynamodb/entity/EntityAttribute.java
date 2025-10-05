@@ -30,72 +30,6 @@ import java.util.List;
  * Model representing an attribute of an entity.
  */
 public class EntityAttribute {
-  /** Attribute Key. */
-  private final String key;
-  /** Attribute String Values. */
-  private final List<String> stringValues;
-  /** Attribute Number Values. */
-  private final List<Double> numberValues;
-  /** Boolean Values. */
-  private final Boolean booleanValue;
-
-  /**
-   * constructor.
-   * 
-   * @param builder {@link Builder}
-   */
-  private EntityAttribute(final Builder builder) {
-    this.key = builder.key;
-    this.stringValues = builder.stringValues;
-    this.numberValues = builder.numberValues;
-    this.booleanValue = builder.booleanValue;
-  }
-
-  /**
-   * Get {@link String}.
-   * 
-   * @return {@link String}
-   */
-  public String getKey() {
-    return key;
-  }
-
-  /**
-   * Get {@link String} {@link List}.
-   * 
-   * @return {@link String} {@link List}
-   */
-  public List<String> getStringValues() {
-    return stringValues;
-  }
-
-  /**
-   * Get {@link Double} {@link List}.
-   * 
-   * @return {@link Double} {@link List}
-   */
-  public List<Double> getNumberValues() {
-    return numberValues;
-  }
-
-  /**
-   * Get {@link Boolean}.
-   * 
-   * @return {@link Boolean}
-   */
-  public Boolean getBooleanValue() {
-    return booleanValue;
-  }
-
-  /**
-   * Create {@link Builder}.
-   * 
-   * @return {@link Builder}
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
   /**
    * Builder for {@link EntityAttribute}.
    */
@@ -110,25 +44,14 @@ public class EntityAttribute {
     private Boolean booleanValue;
 
     /**
-     * Set the attribute attributeKey.
+     * Add one numeric value to the list.
      * 
-     * @param attributeKey {@link String}
+     * @param value {@link Double}
      * @return Builder
      */
-    public Builder key(final String attributeKey) {
-      this.key = attributeKey;
-      return this;
-    }
-
-    /**
-     * Set multiple string values.
-     * 
-     * @param attributeStringValues {@link List} {@link String}
-     * @return Builder
-     */
-    public Builder stringValues(final List<String> attributeStringValues) {
-      if (attributeStringValues != null) {
-        this.stringValues.addAll(attributeStringValues);
+    public Builder addNumberValue(final Double value) {
+      if (value != null) {
+        this.numberValues.add(value);
       }
       return this;
     }
@@ -142,32 +65,6 @@ public class EntityAttribute {
     public Builder addStringValue(final String value) {
       if (value != null) {
         this.stringValues.add(value);
-      }
-      return this;
-    }
-
-    /**
-     * Set multiple numeric values.
-     * 
-     * @param attributeNumberValues {@link List} {@link Double}
-     * @return Builder
-     */
-    public Builder numberValues(final List<Double> attributeNumberValues) {
-      if (attributeNumberValues != null) {
-        this.numberValues.addAll(attributeNumberValues);
-      }
-      return this;
-    }
-
-    /**
-     * Add one numeric value to the list.
-     * 
-     * @param value {@link Double}
-     * @return Builder
-     */
-    public Builder addNumberValue(final Double value) {
-      if (value != null) {
-        this.numberValues.add(value);
       }
       return this;
     }
@@ -191,5 +88,110 @@ public class EntityAttribute {
     public EntityAttribute build() {
       return new EntityAttribute(this);
     }
+
+    /**
+     * Set the attribute attributeKey.
+     * 
+     * @param attributeKey {@link String}
+     * @return Builder
+     */
+    public Builder key(final String attributeKey) {
+      this.key = attributeKey;
+      return this;
+    }
+
+    /**
+     * Set multiple numeric values.
+     * 
+     * @param attributeNumberValues {@link List} {@link Double}
+     * @return Builder
+     */
+    public Builder numberValues(final List<Double> attributeNumberValues) {
+      if (attributeNumberValues != null) {
+        this.numberValues.addAll(attributeNumberValues);
+      }
+      return this;
+    }
+
+    /**
+     * Set multiple string values.
+     * 
+     * @param attributeStringValues {@link List} {@link String}
+     * @return Builder
+     */
+    public Builder stringValues(final List<String> attributeStringValues) {
+      if (attributeStringValues != null) {
+        this.stringValues.addAll(attributeStringValues);
+      }
+      return this;
+    }
+  }
+
+  /**
+   * Create {@link Builder}.
+   * 
+   * @return {@link Builder}
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Attribute Key. */
+  private final String key;
+  /** Attribute String Values. */
+  private final List<String> stringValues;
+
+  /** Attribute Number Values. */
+  private final List<Double> numberValues;
+
+  /** Boolean Values. */
+  private final Boolean booleanValue;
+
+  /**
+   * constructor.
+   * 
+   * @param builder {@link Builder}
+   */
+  private EntityAttribute(final Builder builder) {
+    this.key = builder.key;
+    this.stringValues = builder.stringValues;
+    this.numberValues = builder.numberValues;
+    this.booleanValue = builder.booleanValue;
+  }
+
+  /**
+   * Get {@link Boolean}.
+   * 
+   * @return {@link Boolean}
+   */
+  public Boolean getBooleanValue() {
+    return booleanValue;
+  }
+
+  /**
+   * Get {@link String}.
+   * 
+   * @return {@link String}
+   */
+  public String getKey() {
+    return key;
+  }
+
+  /**
+   * Get {@link Double} {@link List}.
+   * 
+   * @return {@link Double} {@link List}
+   */
+  public List<Double> getNumberValues() {
+    return numberValues;
+  }
+
+  /**
+   * Get {@link String} {@link List}.
+   * 
+   * @return {@link String} {@link List}
+   */
+  public List<String> getStringValues() {
+    return stringValues;
   }
 }

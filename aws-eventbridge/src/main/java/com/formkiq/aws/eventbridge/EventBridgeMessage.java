@@ -49,21 +49,21 @@ public class EventBridgeMessage {
   }
 
   /**
-   * Get Detail Type.
-   * 
-   * @return String
-   */
-  public String getDetailType() {
-    return this.detailType;
-  }
-
-  /**
    * Get Detail.
    * 
    * @return String
    */
   public String getDetail() {
     return this.detail;
+  }
+
+  /**
+   * Get Detail Type.
+   * 
+   * @return String
+   */
+  public String getDetailType() {
+    return this.detailType;
   }
 
   /**

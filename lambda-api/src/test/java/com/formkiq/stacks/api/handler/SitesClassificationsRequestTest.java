@@ -83,57 +83,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(LocalStackExtension.class)
 public class SitesClassificationsRequestTest extends AbstractApiClientRequestTest {
 
-  /**
-   * GET /sites/{siteId}/classifications.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testGetClassifications01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      final int limit = 4;
-      final int count = 5;
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "invoice");
-
-      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
-
-      List<String> ids = new ArrayList<>();
-
-      for (int i = 0; i < count; i++) {
-        AddClassificationRequest req = new AddClassificationRequest()
-            .classification(new AddClassification().name("test_" + i).attributes(attr0));
-        String classificationId =
-            this.schemasApi.addClassification(siteId, req).getClassificationId();
-        ids.add(classificationId);
-      }
-
-      // when
-      GetClassificationsResponse response =
-          this.schemasApi.getSitesClassifications(siteId, "" + limit, null);
-      List<ClassificationSummary> attributes = notNull(response.getClassifications());
-
-      // then
-      int i = 0;
-      assertEquals(limit, attributes.size());
-      assertTrue(ids.contains(attributes.get(i).getClassificationId()));
-      assertEquals("joesmith", attributes.get(i).getUserId());
-      assertNotNull(attributes.get(i).getInsertedDate());
-      assertEquals("test_0", attributes.get(i++).getName());
-      assertEquals("test_1", attributes.get(i++).getName());
-      assertEquals("test_2", attributes.get(i++).getName());
-      assertEquals("test_3", attributes.get(i).getName());
-
-      attributes = notNull(this.schemasApi
-          .getSitesClassifications(siteId, "" + limit, response.getNext()).getClassifications());
-      assertEquals(1, attributes.size());
-      assertEquals("test_4", attributes.get(0).getName());
-    }
-  }
-
   private void addAttribute(final String siteId, final String key) throws ApiException {
     addAttribute(siteId, key, null);
   }
@@ -143,6 +92,74 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     AddAttributeRequest req =
         new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
     this.attributesApi.addAttribute(req, siteId);
+  }
+
+  private String addClassification(final String siteId, final SetSchemaAttributes attr0)
+      throws ApiException {
+    return addClassification(siteId, "doc", attr0);
+  }
+
+  private String addClassification(final String siteId, final String name,
+      final SetSchemaAttributes attr0) throws ApiException {
+    AddClassificationRequest req = new AddClassificationRequest()
+        .classification(new AddClassification().name(name).attributes(attr0));
+    return this.schemasApi.addClassification(siteId, req).getClassificationId();
+  }
+
+  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
+      throws ApiException {
+    AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
+    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+  }
+
+  private void addDocumentAttributes(final String siteId, final String documentId,
+      final List<AddDocumentAttribute> attributes) throws ApiException {
+    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
+  }
+
+  private void addDocumentClassification(final String siteId, final String documentId,
+      final AddDocumentAttributeClassification classification) throws ApiException {
+    this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
+  }
+
+  private void assertDocumentAttributes(final DocumentAttribute da,
+      final String expectedAttributeKey, final String expectedStringValue) {
+    assertEquals(expectedAttributeKey, da.getKey());
+    assertEquals(expectedStringValue, da.getStringValue());
+    assertNotNull(da.getInsertedDate());
+    assertNotNull(da.getUserId());
+  }
+
+  private AddDocumentAttribute createAttribute(final String attributeKey,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
+  }
+
+  private @NotNull List<SearchResultDocument> search(final String siteId,
+      final DocumentSearchAttribute... items) throws ApiException {
+    DocumentSearch ds = new DocumentSearch();
+    for (DocumentSearchAttribute item : items) {
+      ds.addAttributesItem(item);
+    }
+
+    DocumentSearchRequest req = new DocumentSearchRequest().query(ds);
+    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+  }
+
+  private void setClassification(final String siteId, final String classificationId,
+      final SetSchemaAttributes attr0) throws ApiException {
+    SetClassificationRequest req = new SetClassificationRequest()
+        .classification(new AddClassification().name("setDoc").attributes(attr0));
+    this.schemasApi.setClassification(siteId, classificationId, req);
+  }
+
+  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
+      throws ApiException {
+    SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
+    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
   }
 
   /**
@@ -361,194 +378,6 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * DELETE /sites/{siteId}/classifications.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteClassifications01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "documentType");
-
-      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
-
-      String classificationId = addClassification(siteId, "doc", attr0);
-
-      assertNotNull(
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification());
-
-      // when
-      DeleteResponse deleteResponse =
-          this.schemasApi.deleteClassification(siteId, classificationId);
-
-      // then
-      assertEquals("Classification '" + classificationId + "' deleted",
-          deleteResponse.getMessage());
-
-      try {
-        this.schemasApi.getClassification(siteId, classificationId, null);
-        fail();
-      } catch (ApiException e) {
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Classification '" + classificationId + "' not found\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * DELETE /sites/{siteId}/classifications. In Use.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteClassifications02() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "invoiceNumber");
-
-      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
-
-      String classificationId = addClassification(siteId, "doc", attr0);
-
-      AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
-      AddDocumentAttributeClassification classification =
-          new AddDocumentAttributeClassification().classificationId(classificationId);
-
-      addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
-
-      // when
-      try {
-        this.schemasApi.deleteClassification(siteId, classificationId);
-        fail();
-      } catch (ApiException e) {
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Classification '" + classificationId + "' in use\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * PUT /sites/{siteId}/classifications/{classificationId}.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testPutClassifications01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "documentType");
-
-      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
-
-      String classificationId = addClassification(siteId, "doc", attr0);
-
-      // when
-      Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      // then
-      assertNotNull(classification);
-      assertNotNull(classification.getAttributes());
-
-      assertEquals("doc", classification.getName());
-      List<AttributeSchemaRequired> required =
-          notNull(classification.getAttributes().getRequired());
-      assertEquals(1, required.size());
-
-      List<AttributeSchemaOptional> optional =
-          notNull(classification.getAttributes().getOptional());
-      assertEquals(0, optional.size());
-
-      // given
-      attr0 = createSchemaAttributes(null, List.of("documentType"));
-      SetClassificationRequest setReq = new SetClassificationRequest()
-          .classification(new AddClassification().name("doc").attributes(attr0));
-
-      // when
-      this.schemasApi.setClassification(siteId, classificationId, setReq);
-
-      // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      assertNotNull(classification);
-      assertNotNull(classification.getAttributes());
-
-      assertEquals("doc", classification.getName());
-      required = notNull(classification.getAttributes().getRequired());
-      assertEquals(0, required.size());
-
-      optional = notNull(classification.getAttributes().getOptional());
-      assertEquals(1, optional.size());
-    }
-  }
-
-  /**
-   * PUT /sites/{siteId}/classifications/{classificationId} for similar names.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testPutClassifications02() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "documentType");
-
-      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
-
-      String classificationId = addClassification(siteId, "doc", attr0);
-
-      // when
-      Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      // then
-      assertNotNull(classification);
-      assertEquals("doc", classification.getName());
-
-      // given
-      SetClassificationRequest setReq = new SetClassificationRequest()
-          .classification(new AddClassification().name("doc123").attributes(attr0));
-
-      // when
-      this.schemasApi.setClassification(siteId, classificationId, setReq);
-
-      // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      assertNotNull(classification);
-      assertEquals("doc123", classification.getName());
-
-      // given
-      // when
-      classificationId = addClassification(siteId, "d", attr0);
-
-      // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      assertNotNull(classification);
-      assertEquals("d", classification.getName());
-    }
-  }
-
-  /**
    * Add document with classification.
    */
   @Test
@@ -590,17 +419,6 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0).getDocumentId());
     }
-  }
-
-  private @NotNull List<SearchResultDocument> search(final String siteId,
-      final DocumentSearchAttribute... items) throws ApiException {
-    DocumentSearch ds = new DocumentSearch();
-    for (DocumentSearchAttribute item : items) {
-      ds.addAttributesItem(item);
-    }
-
-    DocumentSearchRequest req = new DocumentSearchRequest().query(ds);
-    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
   }
 
   /**
@@ -741,12 +559,6 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
-  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
-      throws ApiException {
-    SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
-    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
-  }
-
   /**
    * Test with classification with composite keys.
    */
@@ -795,14 +607,6 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<SearchResultDocument> docs = search(siteId, item0, item1);
       assertEquals(1, docs.size());
     }
-  }
-
-  private void assertDocumentAttributes(final DocumentAttribute da,
-      final String expectedAttributeKey, final String expectedStringValue) {
-    assertEquals(expectedAttributeKey, da.getKey());
-    assertEquals(expectedStringValue, da.getStringValue());
-    assertNotNull(da.getInsertedDate());
-    assertNotNull(da.getUserId());
   }
 
   /**
@@ -1052,111 +856,6 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * Set Document Classification, missing required attributes.
-   */
-  @Test
-  void testSetDocumentClassification01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      // given
-      setBearerToken(siteId);
-
-      String documentId = addDocument(siteId, null);
-      addAttribute(siteId, "TestBoolean", AttributeDataType.BOOLEAN);
-      addAttribute(siteId, "TestBoolean2", AttributeDataType.BOOLEAN);
-
-      SetSchemaAttributes sattr0 = createSchemaAttributes(List.of("TestBoolean"), null);
-      String classificationId0 = addClassification(siteId, sattr0);
-
-      AddDocumentAttributeClassification attr0 =
-          new AddDocumentAttributeClassification().classificationId(classificationId0);
-      SetDocumentAttributesRequest setReq0 =
-          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr0));
-
-      AddDocumentAttributeStandard attr1 = new AddDocumentAttributeStandard()
-          .key(AttributeKeyReserved.CLASSIFICATION.getKey()).stringValue(classificationId0);
-      SetDocumentAttributesRequest setReq1 =
-          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr1));
-
-      for (SetDocumentAttributesRequest setReq : List.of(setReq0, setReq1)) {
-        // when
-        try {
-          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId);
-          fail();
-        } catch (ApiException e) {
-          // then
-          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-          assertEquals(
-              "{\"errors\":[{\"key\":\"TestBoolean\","
-                  + "\"error\":\"missing required attribute 'TestBoolean'\"}]}",
-              e.getResponseBody());
-        }
-      }
-
-      // given
-      SetSchemaAttributes sattr1 = createSchemaAttributes(List.of("TestBoolean2"), null);
-      String classificationId1 = addClassification(siteId, "doc1", sattr1);
-      SetDocumentAttributeRequest setReqValue =
-          new SetDocumentAttributeRequest().attribute(new AddDocumentAttributeValue()
-              .stringValues(List.of(classificationId0, classificationId1)));
-
-      // when
-      try {
-        this.documentAttributesApi.setDocumentAttributeValue(documentId,
-            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"TestBoolean\","
-                + "\"error\":\"missing required attribute 'TestBoolean'\"},"
-                + "{\"key\":\"TestBoolean2\","
-                + "\"error\":\"missing required attribute 'TestBoolean2'\"}]}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  private void addDocumentAttributes(final String siteId, final String documentId,
-      final List<AddDocumentAttribute> attributes) throws ApiException {
-    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
-  }
-
-  private void addDocumentClassification(final String siteId, final String documentId,
-      final AddDocumentAttributeClassification classification) throws ApiException {
-    this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
-  }
-
-  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
-      throws ApiException {
-    AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
-  }
-
-  private String addClassification(final String siteId, final SetSchemaAttributes attr0)
-      throws ApiException {
-    return addClassification(siteId, "doc", attr0);
-  }
-
-  private String addClassification(final String siteId, final String name,
-      final SetSchemaAttributes attr0) throws ApiException {
-    AddClassificationRequest req = new AddClassificationRequest()
-        .classification(new AddClassification().name(name).attributes(attr0));
-    return this.schemasApi.addClassification(siteId, req).getClassificationId();
-  }
-
-  private void setClassification(final String siteId, final String classificationId,
-      final SetSchemaAttributes attr0) throws ApiException {
-    SetClassificationRequest req = new SetClassificationRequest()
-        .classification(new AddClassification().name("setDoc").attributes(attr0));
-    this.schemasApi.setClassification(siteId, classificationId, req);
-  }
-
-  /**
    * Add Site Schema with allowed values.
    * 
    * @throws ApiException ApiException
@@ -1266,6 +965,82 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
+   * DELETE /sites/{siteId}/classifications.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteClassifications01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "documentType");
+
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+
+      String classificationId = addClassification(siteId, "doc", attr0);
+
+      assertNotNull(
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification());
+
+      // when
+      DeleteResponse deleteResponse =
+          this.schemasApi.deleteClassification(siteId, classificationId);
+
+      // then
+      assertEquals("Classification '" + classificationId + "' deleted",
+          deleteResponse.getMessage());
+
+      try {
+        this.schemasApi.getClassification(siteId, classificationId, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Classification '" + classificationId + "' not found\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /sites/{siteId}/classifications. In Use.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteClassifications02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "invoiceNumber");
+
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
+
+      String classificationId = addClassification(siteId, "doc", attr0);
+
+      AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
+      AddDocumentAttributeClassification classification =
+          new AddDocumentAttributeClassification().classificationId(classificationId);
+
+      addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
+
+      // when
+      try {
+        this.schemasApi.deleteClassification(siteId, classificationId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Classification '" + classificationId + "' in use\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Delete Document attributes with composite keys.
    */
   @Test
@@ -1317,9 +1092,234 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
   }
 
-  private AddDocumentAttribute createAttribute(final String attributeKey,
-      final String stringValue) {
-    return new AddDocumentAttribute(
-        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
+  /**
+   * GET /sites/{siteId}/classifications.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testGetClassifications01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      final int limit = 4;
+      final int count = 5;
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "invoice");
+
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoice"), null);
+
+      List<String> ids = new ArrayList<>();
+
+      for (int i = 0; i < count; i++) {
+        AddClassificationRequest req = new AddClassificationRequest()
+            .classification(new AddClassification().name("test_" + i).attributes(attr0));
+        String classificationId =
+            this.schemasApi.addClassification(siteId, req).getClassificationId();
+        ids.add(classificationId);
+      }
+
+      // when
+      GetClassificationsResponse response =
+          this.schemasApi.getSitesClassifications(siteId, "" + limit, null);
+      List<ClassificationSummary> attributes = notNull(response.getClassifications());
+
+      // then
+      int i = 0;
+      assertEquals(limit, attributes.size());
+      assertTrue(ids.contains(attributes.get(i).getClassificationId()));
+      assertEquals("joesmith", attributes.get(i).getUserId());
+      assertNotNull(attributes.get(i).getInsertedDate());
+      assertEquals("test_0", attributes.get(i++).getName());
+      assertEquals("test_1", attributes.get(i++).getName());
+      assertEquals("test_2", attributes.get(i++).getName());
+      assertEquals("test_3", attributes.get(i).getName());
+
+      attributes = notNull(this.schemasApi
+          .getSitesClassifications(siteId, "" + limit, response.getNext()).getClassifications());
+      assertEquals(1, attributes.size());
+      assertEquals("test_4", attributes.get(0).getName());
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/classifications/{classificationId}.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutClassifications01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "documentType");
+
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+
+      String classificationId = addClassification(siteId, "doc", attr0);
+
+      // when
+      Classification classification =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      // then
+      assertNotNull(classification);
+      assertNotNull(classification.getAttributes());
+
+      assertEquals("doc", classification.getName());
+      List<AttributeSchemaRequired> required =
+          notNull(classification.getAttributes().getRequired());
+      assertEquals(1, required.size());
+
+      List<AttributeSchemaOptional> optional =
+          notNull(classification.getAttributes().getOptional());
+      assertEquals(0, optional.size());
+
+      // given
+      attr0 = createSchemaAttributes(null, List.of("documentType"));
+      SetClassificationRequest setReq = new SetClassificationRequest()
+          .classification(new AddClassification().name("doc").attributes(attr0));
+
+      // when
+      this.schemasApi.setClassification(siteId, classificationId, setReq);
+
+      // then
+      classification =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      assertNotNull(classification);
+      assertNotNull(classification.getAttributes());
+
+      assertEquals("doc", classification.getName());
+      required = notNull(classification.getAttributes().getRequired());
+      assertEquals(0, required.size());
+
+      optional = notNull(classification.getAttributes().getOptional());
+      assertEquals(1, optional.size());
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/classifications/{classificationId} for similar names.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutClassifications02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "documentType");
+
+      SetSchemaAttributes attr0 = createSchemaAttributes(List.of("documentType"), null);
+
+      String classificationId = addClassification(siteId, "doc", attr0);
+
+      // when
+      Classification classification =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      // then
+      assertNotNull(classification);
+      assertEquals("doc", classification.getName());
+
+      // given
+      SetClassificationRequest setReq = new SetClassificationRequest()
+          .classification(new AddClassification().name("doc123").attributes(attr0));
+
+      // when
+      this.schemasApi.setClassification(siteId, classificationId, setReq);
+
+      // then
+      classification =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      assertNotNull(classification);
+      assertEquals("doc123", classification.getName());
+
+      // given
+      // when
+      classificationId = addClassification(siteId, "d", attr0);
+
+      // then
+      classification =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      assertNotNull(classification);
+      assertEquals("d", classification.getName());
+    }
+  }
+
+  /**
+   * Set Document Classification, missing required attributes.
+   */
+  @Test
+  void testSetDocumentClassification01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // given
+      setBearerToken(siteId);
+
+      String documentId = addDocument(siteId, null);
+      addAttribute(siteId, "TestBoolean", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "TestBoolean2", AttributeDataType.BOOLEAN);
+
+      SetSchemaAttributes sattr0 = createSchemaAttributes(List.of("TestBoolean"), null);
+      String classificationId0 = addClassification(siteId, sattr0);
+
+      AddDocumentAttributeClassification attr0 =
+          new AddDocumentAttributeClassification().classificationId(classificationId0);
+      SetDocumentAttributesRequest setReq0 =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr0));
+
+      AddDocumentAttributeStandard attr1 = new AddDocumentAttributeStandard()
+          .key(AttributeKeyReserved.CLASSIFICATION.getKey()).stringValue(classificationId0);
+      SetDocumentAttributesRequest setReq1 =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(attr1));
+
+      for (SetDocumentAttributesRequest setReq : List.of(setReq0, setReq1)) {
+        // when
+        try {
+          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals(
+              "{\"errors\":[{\"key\":\"TestBoolean\","
+                  + "\"error\":\"missing required attribute 'TestBoolean'\"}]}",
+              e.getResponseBody());
+        }
+      }
+
+      // given
+      SetSchemaAttributes sattr1 = createSchemaAttributes(List.of("TestBoolean2"), null);
+      String classificationId1 = addClassification(siteId, "doc1", sattr1);
+      SetDocumentAttributeRequest setReqValue =
+          new SetDocumentAttributeRequest().attribute(new AddDocumentAttributeValue()
+              .stringValues(List.of(classificationId0, classificationId1)));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributeValue(documentId,
+            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"TestBoolean\","
+                + "\"error\":\"missing required attribute 'TestBoolean'\"},"
+                + "{\"key\":\"TestBoolean2\","
+                + "\"error\":\"missing required attribute 'TestBoolean2'\"}]}",
+            e.getResponseBody());
+      }
+    }
   }
 }

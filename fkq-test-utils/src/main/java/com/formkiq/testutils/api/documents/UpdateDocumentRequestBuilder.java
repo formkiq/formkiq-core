@@ -58,94 +58,14 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   }
 
   /**
-   * Set Document Id.
-   *
-   * @param documentId {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
-    return this;
-  }
-
-  /**
-   * Add Metadata.
-   *
-   * @param key {@link String}
-   * @param value {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder addMetadata(final String key, final String value) {
-    this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
-    return this;
-  }
-
-  /**
-   * Add Metadata.
-   *
-   * @param key {@link String}
-   * @param values {@link List} {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder addMetadata(final String key, final List<String> values) {
-    this.request.addMetadataItem(new AddDocumentMetadata().key(key).values(values));
-    return this;
-  }
-
-  /**
-   * Set Random Content.
-   *
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder content() {
-    this.request.setContent(ID.uuid());
-    return this;
-  }
-
-  /**
-   * Set Content.
+   * Add Document Action.
    * 
-   * @param content {@link String}
+   * @param type {@link DocumentActionType}
    * @return UpdateDocumentRequestBuilder
    */
-  public UpdateDocumentRequestBuilder content(final String content) {
-    this.request.setContent(content);
-    return this;
-  }
-
-  /**
-   * Set Path.
-   * 
-   * @param path {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder path(final String path) {
-    this.request.setPath(path);
-    return this;
-  }
-
-  /**
-   * Set Content Type.
-   * 
-   * @param contentType {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder contentType(final String contentType) {
-    this.request.setContentType(contentType);
-    return this;
-  }
-
-  /**
-   * Add Document Attribute.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder addAttribute(final String key, final String value) {
-    AddDocumentAttribute attr =
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValue(value));
-    this.request.addAttributesItem(attr);
+  public UpdateDocumentRequestBuilder addAction(final DocumentActionType type) {
+    AddAction action = new AddAction().type(type);
+    this.request.addActionsItem(action);
     return this;
   }
 
@@ -178,14 +98,94 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   }
 
   /**
-   * Add Document Action.
+   * Add Document Attribute.
    * 
-   * @param type {@link DocumentActionType}
+   * @param key {@link String}
+   * @param value {@link String}
    * @return UpdateDocumentRequestBuilder
    */
-  public UpdateDocumentRequestBuilder addAction(final DocumentActionType type) {
-    AddAction action = new AddAction().type(type);
-    this.request.addActionsItem(action);
+  public UpdateDocumentRequestBuilder addAttribute(final String key, final String value) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValue(value));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Metadata.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder addMetadata(final String key, final List<String> values) {
+    this.request.addMetadataItem(new AddDocumentMetadata().key(key).values(values));
+    return this;
+  }
+
+  /**
+   * Add Metadata.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder addMetadata(final String key, final String value) {
+    this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
+    return this;
+  }
+
+  /**
+   * Set Random Content.
+   *
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder content() {
+    this.request.setContent(ID.uuid());
+    return this;
+  }
+
+  /**
+   * Set Content.
+   * 
+   * @param content {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder content(final String content) {
+    this.request.setContent(content);
+    return this;
+  }
+
+  /**
+   * Set Content Type.
+   * 
+   * @param contentType {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder contentType(final String contentType) {
+    this.request.setContentType(contentType);
+    return this;
+  }
+
+  /**
+   * Set Path.
+   * 
+   * @param path {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder path(final String path) {
+    this.request.setPath(path);
+    return this;
+  }
+
+  /**
+   * Set Document Id.
+   *
+   * @param documentId {@link String}
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder setDocumentId(final String documentId) {
+    this.id = documentId;
     return this;
   }
 

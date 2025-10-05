@@ -47,17 +47,6 @@ public class Strings {
   /** Scheme Authority. */
   private static final String SCHEME_AUTHORITY = "://";
 
-  /**
-   * Return text or elseText if the text is empty.
-   * 
-   * @param text {@link String}
-   * @param elseText {@link String}
-   * @return {@link String}
-   */
-  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
-    return !isEmpty(text) ? text : elseText;
-  }
-
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
 
@@ -164,13 +153,6 @@ public class Strings {
     return name;
   }
 
-  public static boolean isUrl(final String s) {
-    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
-    Pattern pattern = Pattern.compile(regex);
-    Matcher matcher = pattern.matcher(s);
-    return matcher.matches();
-  }
-
   private static String getUri(final String path) {
 
     String name;
@@ -206,6 +188,24 @@ public class Strings {
     int len = strs.length;
     long countEmpty = Arrays.stream(strs).filter(Strings::isEmpty).count();
     return len == countEmpty || countEmpty == 0;
+  }
+
+  /**
+   * Return text or elseText if the text is empty.
+   * 
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
+  }
+
+  public static boolean isUrl(final String s) {
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(s);
+    return matcher.matches();
   }
 
   /**

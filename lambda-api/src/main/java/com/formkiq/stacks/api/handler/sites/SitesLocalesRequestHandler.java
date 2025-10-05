@@ -49,25 +49,6 @@ public class SitesLocalesRequestHandler
   public SitesLocalesRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    Map<String, Object> record = fromBodyToMap(event);
-
-    String siteId = authorization.getSiteId();
-    LocaleService service = awsservice.getExtension(LocaleService.class);
-    String locale = (String) record.get("locale");
-    List<ValidationError> errors = service.saveLocale(siteId, locale);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    return ApiRequestHandlerResponse.builder().created()
-        .body("message", "Locale '" + locale + "' saved").build();
-  }
-
-  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -87,5 +68,24 @@ public class SitesLocalesRequestHandler
   @Override
   public String getRequestUrl() {
     return "/sites/{siteId}/locales";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    Map<String, Object> record = fromBodyToMap(event);
+
+    String siteId = authorization.getSiteId();
+    LocaleService service = awsservice.getExtension(LocaleService.class);
+    String locale = (String) record.get("locale");
+    List<ValidationError> errors = service.saveLocale(siteId, locale);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "Locale '" + locale + "' saved").build();
   }
 }

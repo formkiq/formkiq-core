@@ -114,6 +114,21 @@ public class DocumentOcrServiceTesseractTest {
     configService = serviceCache.getExtension(ConfigService.class);
   }
 
+  private OcrRequest convert(final String siteId, final String numberOfPages,
+      final long maxPagesPerTransaction) {
+
+    final String userId = "joe";
+    configService.save(siteId, new SiteConfiguration().setOcr(new SiteConfigurationOcr()
+        .setMaxTransactions(1).setMaxPagesPerTransaction(maxPagesPerTransaction)));
+
+    String documentId = ID.uuid();
+    OcrRequest request = new OcrRequest().setOcrNumberOfPages(numberOfPages);
+
+    // when
+    service.convert(serviceCache, request, siteId, documentId, userId);
+    return request;
+  }
+
   /**
    * Test config max transactions.
    */
@@ -170,20 +185,5 @@ public class DocumentOcrServiceTesseractTest {
       // then
       assertEquals("3", request.getOcrNumberOfPages());
     }
-  }
-
-  private OcrRequest convert(final String siteId, final String numberOfPages,
-      final long maxPagesPerTransaction) {
-
-    final String userId = "joe";
-    configService.save(siteId, new SiteConfiguration().setOcr(new SiteConfigurationOcr()
-        .setMaxTransactions(1).setMaxPagesPerTransaction(maxPagesPerTransaction)));
-
-    String documentId = ID.uuid();
-    OcrRequest request = new OcrRequest().setOcrNumberOfPages(numberOfPages);
-
-    // when
-    service.convert(serviceCache, request, siteId, documentId, userId);
-    return request;
   }
 }

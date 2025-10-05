@@ -68,12 +68,24 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
    */
   private static final int TEST_TIMEOUT = 90;
 
+  private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
+    return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
+  }
+
   private List<DocumentSync> find(final List<DocumentSync> list, final DocumentSyncService type) {
     return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());
   }
 
-  private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
-    return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
+  private GetDocumentSyncResponse getDocumentSyncs(final DocumentsApi api, final String siteId,
+      final String documentId, final int expectedCount) throws ApiException, InterruptedException {
+    GetDocumentSyncResponse syncs = api.getDocumentSyncs(documentId, siteId, null, null);
+
+    while (!isComplete(syncs, expectedCount)) {
+      TimeUnit.SECONDS.sleep(1);
+      syncs = api.getDocumentSyncs(documentId, siteId, null, null);
+    }
+
+    return syncs;
   }
 
   private boolean isComplete(final GetDocumentSyncResponse syncs, final int expectedCount) {
@@ -180,17 +192,5 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         }
       }
     }
-  }
-
-  private GetDocumentSyncResponse getDocumentSyncs(final DocumentsApi api, final String siteId,
-      final String documentId, final int expectedCount) throws ApiException, InterruptedException {
-    GetDocumentSyncResponse syncs = api.getDocumentSyncs(documentId, siteId, null, null);
-
-    while (!isComplete(syncs, expectedCount)) {
-      TimeUnit.SECONDS.sleep(1);
-      syncs = api.getDocumentSyncs(documentId, siteId, null, null);
-    }
-
-    return syncs;
   }
 }

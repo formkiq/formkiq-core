@@ -47,23 +47,30 @@ public class Token {
   }
 
   /**
-   * Get {@link TokenType}.
+   * Get End Position.
    * 
-   * @return {@link TokenType}
+   * @return int
    */
-  public TokenType getType() {
-    return this.type;
+  public int getEnd() {
+    return this.end;
   }
 
   /**
-   * Set {@link TokenType}.
+   * Get Formatted Text.
    * 
-   * @param tokenType {@link TokenType}
-   * @return {@link Token}
+   * @return {@link String}
    */
-  public Token setType(final TokenType tokenType) {
-    this.type = tokenType;
-    return this;
+  public String getFormatted() {
+    return this.formatted;
+  }
+
+  /**
+   * Get Original Text.
+   * 
+   * @return String
+   */
+  public String getOriginal() {
+    return this.original;
   }
 
   /**
@@ -75,18 +82,13 @@ public class Token {
     return this.start;
   }
 
-  public Token setStart(final int startPosition) {
-    this.start = startPosition;
-    return this;
-  }
-
   /**
-   * Get End Position.
+   * Get {@link TokenType}.
    * 
-   * @return int
+   * @return {@link TokenType}
    */
-  public int getEnd() {
-    return this.end;
+  public TokenType getType() {
+    return this.type;
   }
 
   /**
@@ -101,15 +103,6 @@ public class Token {
   }
 
   /**
-   * Get Formatted Text.
-   * 
-   * @return {@link String}
-   */
-  public String getFormatted() {
-    return this.formatted;
-  }
-
-  /**
    * Set Formatted Text.
    * 
    * @param text {@link String}
@@ -121,15 +114,6 @@ public class Token {
   }
 
   /**
-   * Get Original Text.
-   * 
-   * @return String
-   */
-  public String getOriginal() {
-    return this.original;
-  }
-
-  /**
    * Set Original Text.
    * 
    * @param text {@link String}
@@ -137,6 +121,22 @@ public class Token {
    */
   public Token setOriginal(final String text) {
     this.original = text;
+    return this;
+  }
+
+  public Token setStart(final int startPosition) {
+    this.start = startPosition;
+    return this;
+  }
+
+  /**
+   * Set {@link TokenType}.
+   * 
+   * @param tokenType {@link TokenType}
+   * @return {@link Token}
+   */
+  public Token setType(final TokenType tokenType) {
+    this.type = tokenType;
     return this;
   }
 }

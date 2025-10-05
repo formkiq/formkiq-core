@@ -33,6 +33,16 @@ import java.util.stream.Collectors;
  */
 public class DynamodbRecordKeyPredicate implements Predicate<DynamodbRecord<?>> {
 
+  /**
+   * Generate Key.
+   * 
+   * @param r {@link DynamodbRecord}
+   * @return String
+   */
+  public static String key(final DynamodbRecord<?> r) {
+    return r.pk(null) + "#" + r.sk();
+  }
+
   /** {@link Set} Keys. */
   private final Set<String> keys;
 
@@ -48,15 +58,5 @@ public class DynamodbRecordKeyPredicate implements Predicate<DynamodbRecord<?>> 
   @Override
   public boolean test(final DynamodbRecord r) {
     return keys.contains(key(r));
-  }
-
-  /**
-   * Generate Key.
-   * 
-   * @param r {@link DynamodbRecord}
-   * @return String
-   */
-  public static String key(final DynamodbRecord<?> r) {
-    return r.pk(null) + "#" + r.sk();
   }
 }

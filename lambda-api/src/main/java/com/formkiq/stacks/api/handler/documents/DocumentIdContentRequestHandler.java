@@ -54,11 +54,33 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 public class DocumentIdContentRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  private static ApiRequestHandlerResponse.Builder getPlainTextResponse(
+      final AwsServiceCache awsservice, final String s3key, final String versionId,
+      final DocumentItem item, final String documentId) throws DocumentNotFoundException {
+
+    S3Service s3Service = awsservice.getExtension(S3Service.class);
+
+    try {
+      String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
+          s3key, versionId);
+
+      return ApiRequestHandlerResponse.builder().body(Map.of("content", content, "contentType",
+          item.getContentType(), "isBase64", Boolean.FALSE));
+    } catch (NoSuchKeyException e) {
+      throw new DocumentNotFoundException(documentId);
+    }
+  }
+
   /**
    * constructor.
    *
    */
   public DocumentIdContentRequestHandler() {}
+
+  private boolean exists(final AwsServiceCache awsservice, final String s3key) {
+    S3Service s3 = awsservice.getExtension(S3Service.class);
+    return s3.exists(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key);
+  }
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -105,11 +127,6 @@ public class DocumentIdContentRequestHandler
     return response.ok().build();
   }
 
-  private boolean exists(final AwsServiceCache awsservice, final String s3key) {
-    S3Service s3 = awsservice.getExtension(S3Service.class);
-    return s3.exists(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key);
-  }
-
   private ApiRequestHandlerResponse.Builder getApiResponse(final AwsServiceCache awsservice,
       final DocumentItem item, final String s3key, final String versionId) {
 
@@ -129,29 +146,6 @@ public class DocumentIdContentRequestHandler
         .body(Map.of("contentUrl", url.toString(), "contentType", contentType));
   }
 
-  private static ApiRequestHandlerResponse.Builder getPlainTextResponse(
-      final AwsServiceCache awsservice, final String s3key, final String versionId,
-      final DocumentItem item, final String documentId) throws DocumentNotFoundException {
-
-    S3Service s3Service = awsservice.getExtension(S3Service.class);
-
-    try {
-      String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
-          s3key, versionId);
-
-      return ApiRequestHandlerResponse.builder().body(Map.of("content", content, "contentType",
-          item.getContentType(), "isBase64", Boolean.FALSE));
-    } catch (NoSuchKeyException e) {
-      throw new DocumentNotFoundException(documentId);
-    }
-  }
-
-  private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
-      final String siteId, final String documentId, final String versionKey) {
-    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    return versionService.get(siteId, documentId, versionKey);
-  }
-
   private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
       final String documentId, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) throws Exception {
@@ -163,6 +157,17 @@ public class DocumentIdContentRequestHandler
         versionKey, versionAttributes);
     throwIfNull(item, new DocumentNotFoundException(documentId));
     return item;
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/content";
+  }
+
+  private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
+      final String siteId, final String documentId, final String versionKey) {
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    return versionService.get(siteId, documentId, versionKey);
   }
 
   private String getVersionId(final AwsServiceCache awsservice,
@@ -180,10 +185,5 @@ public class DocumentIdContentRequestHandler
     }
 
     return versionId;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/documents/{documentId}/content";
   }
 }

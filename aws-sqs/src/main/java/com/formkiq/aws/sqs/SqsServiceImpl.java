@@ -68,6 +68,28 @@ public class SqsServiceImpl implements SqsService {
   }
 
   @Override
+  public void clearQueue(final String queueUrl) {
+    final int maxNumberOfMessages = 10;
+    while (true) {
+      ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder().queueUrl(queueUrl)
+          .maxNumberOfMessages(maxNumberOfMessages).waitTimeSeconds(0).build();
+
+      List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
+
+      if (messages.isEmpty()) {
+        break;
+      }
+
+      // Delete each message
+      for (Message message : messages) {
+        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder().queueUrl(queueUrl)
+            .receiptHandle(message.receiptHandle()).build();
+        sqsClient.deleteMessage(deleteRequest);
+      }
+    }
+  }
+
+  @Override
   public CreateQueueResponse createQueue(final CreateQueueRequest request) {
     return this.sqsClient.createQueue(request);
   }
@@ -124,27 +146,5 @@ public class SqsServiceImpl implements SqsService {
   @Override
   public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
     return this.sqsClient.setQueueAttributes(request);
-  }
-
-  @Override
-  public void clearQueue(final String queueUrl) {
-    final int maxNumberOfMessages = 10;
-    while (true) {
-      ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder().queueUrl(queueUrl)
-          .maxNumberOfMessages(maxNumberOfMessages).waitTimeSeconds(0).build();
-
-      List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
-
-      if (messages.isEmpty()) {
-        break;
-      }
-
-      // Delete each message
-      for (Message message : messages) {
-        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder().queueUrl(queueUrl)
-            .receiptHandle(message.receiptHandle()).build();
-        sqsClient.deleteMessage(deleteRequest);
-      }
-    }
   }
 }

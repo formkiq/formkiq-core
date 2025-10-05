@@ -68,6 +68,12 @@ public class SetDataClassificationAction implements DocumentAction {
     this.documentService = serviceCache.getExtension(DocumentService.class);
   }
 
+  private Map<String, Object> buildPayload(final Action action) {
+    Map<String, Object> parameters =
+        action.parameters() != null ? action.parameters() : new HashMap<>();
+    return Map.of("llmPromptEntityName", parameters.get("llmPromptEntityName"));
+  }
+
   @Override
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
@@ -100,11 +106,5 @@ public class SetDataClassificationAction implements DocumentAction {
     }
 
     return new ProcessActionStatus(status);
-  }
-
-  private Map<String, Object> buildPayload(final Action action) {
-    Map<String, Object> parameters =
-        action.parameters() != null ? action.parameters() : new HashMap<>();
-    return Map.of("llmPromptEntityName", parameters.get("llmPromptEntityName"));
   }
 }

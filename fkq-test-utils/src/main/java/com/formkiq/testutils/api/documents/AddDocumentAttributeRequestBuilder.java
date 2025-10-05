@@ -54,13 +54,16 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
   }
 
   /**
-   * Set Document Id.
+   * Add Document Attribute.
    *
-   * @param documentId {@link String}
-   * @return AddDocumentAttributeRequestBuilder
+   * @param key {@link String}
+   * @param numberValue {@link BigDecimal}
+   * @return AddDocumentAttributesRequestBuilder
    */
-  public AddDocumentAttributeRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
+  public AddDocumentAttributeRequestBuilder addAttribute(final String key,
+      final BigDecimal numberValue) {
+    this.request.addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).numberValue(numberValue)));
     return this;
   }
 
@@ -95,16 +98,13 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
   }
 
   /**
-   * Add Document Attribute.
+   * Set Document Id.
    *
-   * @param key {@link String}
-   * @param numberValue {@link BigDecimal}
-   * @return AddDocumentAttributesRequestBuilder
+   * @param documentId {@link String}
+   * @return AddDocumentAttributeRequestBuilder
    */
-  public AddDocumentAttributeRequestBuilder addAttribute(final String key,
-      final BigDecimal numberValue) {
-    this.request.addAttributesItem(new AddDocumentAttribute(
-        new AddDocumentAttributeStandard().key(key).numberValue(numberValue)));
+  public AddDocumentAttributeRequestBuilder setDocumentId(final String documentId) {
+    this.id = documentId;
     return this;
   }
 

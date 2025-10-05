@@ -60,201 +60,65 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   private final ApiGatewayRequestToUserActivityFunction function =
       new ApiGatewayRequestToUserActivityFunction();
 
+  private ApiAuthorization createAuthorization(final String siteId) {
+    return new ApiAuthorization().siteId(siteId);
+  }
+
+  private ApiGatewayRequestEvent loadFile(final String file) throws IOException {
+    String json = Files.readString(Paths.get(file), StandardCharsets.UTF_8);
+    return gson.fromJson(json, ApiGatewayRequestEvent.class);
+  }
+
   @BeforeEach
   public void setup() {
     UserActivityContext.clear();
   }
 
   /**
-   * GET /documents/{documentId}/url and /documents/{documentId}/content.
-   * 
+   * POST /entities/{entityType}.
+   *
    * @throws IOException IOException
    */
   @Test
-  public void testGetDocumentById() throws IOException {
+  public void testAddEntity() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, Map.of(),
         Map.of());
-    Collection<String> files = List.of("get-documentid-url.json", "get-documentid-content.json");
-    for (String file : files) {
-
-      ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/" + file);
-
-      for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
-
-        ApiAuthorization auth = createAuthorization(siteId);
-
-        // when
-        UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
-
-        // then
-        assertNotNull(activity);
-        assertEquals("documents", activity.resource());
-        assertEquals("HTTP", activity.source());
-        assertEquals(UserActivityType.VIEW, activity.type());
-        assertNull(activity.entityId());
-        assertNull(activity.entityNamespace());
-        assertNull(activity.entityTypeId());
-        assertNull(activity.body());
-        assertEquals("03c0737e-2bc8-40f8-8291-797b364d4310", activity.documentId());
-
-        assertEquals("1.73.5.111", activity.sourceIpAddress());
-        assertEquals(UserActivityStatus.COMPLETE, activity.status());
-        assertNull(activity.message());
-
-        final long expectedTime = 1750944882199L;
-        assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
-        assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
-      }
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}.
-   * 
-   * @throws IOException IOException
-   */
-  @Test
-  public void testDeleteDocumentById() throws IOException {
-    // given
-    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/delete-documentid.json");
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.DELETE, Map.of(),
-        Map.of());
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entity.json");
+    Map<String, Object> body = Map.of("entityId", ID.uuid());
+    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
+      UserActivity activity =
+          function.apply(auth, request, response).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
-      assertEquals("documents", activity.resource());
+      assertEquals("entities", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals(UserActivityType.DELETE, activity.type());
-      assertNull(activity.entityId());
-      assertNull(activity.entityNamespace());
-      assertNull(activity.entityTypeId());
-      assertEquals("test.pdf", activity.documentId());
-      assertNotNull(activity.body());
-
-      assertEquals("1.73.5.111", activity.sourceIpAddress());
-      assertEquals(UserActivityStatus.COMPLETE, activity.status());
-      assertNull(activity.message());
-
-      final long expectedTime = 1546105259536L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
-      assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
-    }
-  }
-
-  /**
-   * GET /documents.
-   * 
-   * @throws IOException IOException
-   */
-  @Test
-  public void testGetDocuments() throws IOException {
-    // given
-    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
-        Map.of());
-    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-documents.json");
-
-    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
-
-      ApiAuthorization auth = createAuthorization(siteId);
-
-      // when
-      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
-
-      // then
-      assertNotNull(activity);
-      assertEquals("documents", activity.resource());
-      assertEquals("HTTP", activity.source());
-      assertEquals(UserActivityType.VIEW, activity.type());
-      assertNull(activity.entityId());
-      assertNull(activity.entityNamespace());
-      assertNull(activity.entityTypeId());
+      assertEquals(UserActivityType.CREATE, activity.type());
+      assertEquals(body.get("entityId"), activity.entityId());
+      assertEquals("CUSTOM", activity.entityNamespace());
+      assertEquals("Customer", activity.entityTypeId());
       assertNull(activity.documentId());
-      // assertNull(activity.s3Key());
-      assertNull(activity.body());
+      assertEquals("""
+          {
+            "entity": {
+              "name": "AcmeInc"
+            }
+          }""", activity.body());
 
-      assertEquals("1.73.5.111", activity.sourceIpAddress());
+      assertEquals("2.7.1.3", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
       assertNull(activity.message());
 
-      final long expectedTime = 1750944882199L;
+      final long expectedTime = 1751636384960L;
       assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
-  }
-
-  /**
-   * Null {@link ApiGatewayRequestEvent}.
-   */
-  @Test
-  public void testNull() {
-    // given
-    // when
-    UserActivity activity = function.apply(null, null, null).iterator().next().build(null);
-
-    // then
-    assertNotNull(activity);
-    assertNull(activity.resource());
-    assertEquals("HTTP", activity.source());
-    assertNull(activity.type());
-    assertNull(activity.entityId());
-    assertNull(activity.entityNamespace());
-    assertNull(activity.entityTypeId());
-    assertNull(activity.documentId());
-    assertNull(activity.sourceIpAddress());
-    assertEquals(UserActivityStatus.COMPLETE, activity.status());
-    assertNull(activity.message());
-    assertNotNull(activity.insertedDate());
-  }
-
-  /**
-   * GET /entityTypes.
-   * 
-   * @throws IOException IOException
-   */
-  @Test
-  public void testGetEntityTypes() throws IOException {
-    // given
-    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entityTypes.json");
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.VIEW, Map.of(),
-        Map.of());
-
-    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
-
-      ApiAuthorization auth = createAuthorization(siteId);
-
-      // when
-      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
-
-      // then
-      assertNotNull(activity);
-      assertEquals("entityTypes", activity.resource());
-      assertEquals("HTTP", activity.source());
-      assertEquals(UserActivityType.VIEW, activity.type());
-      assertNull(activity.entityId());
-      assertNull(activity.entityNamespace());
-      assertNull(activity.entityTypeId());
-      assertNull(activity.documentId());
-      // assertNull(activity.s3Key());
-      assertNull(activity.body());
-
-      assertEquals("1.73.5.111", activity.sourceIpAddress());
-      assertEquals(UserActivityStatus.COMPLETE, activity.status());
-      assertNull(activity.message());
-
-      final long expectedTime = 1751589734043L;
-      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
-    }
-  }
-
-  private ApiAuthorization createAuthorization(final String siteId) {
-    return new ApiAuthorization().siteId(siteId);
   }
 
   /**
@@ -306,48 +170,125 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
   }
 
   /**
-   * POST /entities/{entityType}.
-   *
+   * DELETE /documents/{documentId}.
+   * 
    * @throws IOException IOException
    */
   @Test
-  public void testAddEntity() throws IOException {
+  public void testDeleteDocumentById() throws IOException {
     // given
-    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, Map.of(),
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/delete-documentid.json");
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.DELETE, Map.of(),
         Map.of());
-    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/add-entity.json");
-    Map<String, Object> body = Map.of("entityId", ID.uuid());
-    ApiRequestHandlerResponse response = new ApiRequestHandlerResponse(-1, null, body);
 
     for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
 
       ApiAuthorization auth = createAuthorization(siteId);
 
       // when
-      UserActivity activity =
-          function.apply(auth, request, response).iterator().next().build(siteId);
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
 
       // then
       assertNotNull(activity);
-      assertEquals("entities", activity.resource());
+      assertEquals("documents", activity.resource());
       assertEquals("HTTP", activity.source());
-      assertEquals(UserActivityType.CREATE, activity.type());
-      assertEquals(body.get("entityId"), activity.entityId());
-      assertEquals("CUSTOM", activity.entityNamespace());
-      assertEquals("Customer", activity.entityTypeId());
-      assertNull(activity.documentId());
-      assertEquals("""
-          {
-            "entity": {
-              "name": "AcmeInc"
-            }
-          }""", activity.body());
+      assertEquals(UserActivityType.DELETE, activity.type());
+      assertNull(activity.entityId());
+      assertNull(activity.entityNamespace());
+      assertNull(activity.entityTypeId());
+      assertEquals("test.pdf", activity.documentId());
+      assertNotNull(activity.body());
 
-      assertEquals("2.7.1.3", activity.sourceIpAddress());
+      assertEquals("1.73.5.111", activity.sourceIpAddress());
       assertEquals(UserActivityStatus.COMPLETE, activity.status());
       assertNull(activity.message());
 
-      final long expectedTime = 1751636384960L;
+      final long expectedTime = 1546105259536L;
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
+      assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/url and /documents/{documentId}/content.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetDocumentById() throws IOException {
+    // given
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
+    Collection<String> files = List.of("get-documentid-url.json", "get-documentid-content.json");
+    for (String file : files) {
+
+      ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/" + file);
+
+      for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
+
+        ApiAuthorization auth = createAuthorization(siteId);
+
+        // when
+        UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
+
+        // then
+        assertNotNull(activity);
+        assertEquals("documents", activity.resource());
+        assertEquals("HTTP", activity.source());
+        assertEquals(UserActivityType.VIEW, activity.type());
+        assertNull(activity.entityId());
+        assertNull(activity.entityNamespace());
+        assertNull(activity.entityTypeId());
+        assertNull(activity.body());
+        assertEquals("03c0737e-2bc8-40f8-8291-797b364d4310", activity.documentId());
+
+        assertEquals("1.73.5.111", activity.sourceIpAddress());
+        assertEquals(UserActivityStatus.COMPLETE, activity.status());
+        assertNull(activity.message());
+
+        final long expectedTime = 1750944882199L;
+        assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
+        assertEquals(request.getPathParameters().get("documentId"), activity.documentId());
+      }
+    }
+  }
+
+  /**
+   * GET /documents.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetDocuments() throws IOException {
+    // given
+    UserActivityContext.set(ActivityResourceType.DOCUMENT, UserActivityType.VIEW, Map.of(),
+        Map.of());
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-documents.json");
+
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
+
+      ApiAuthorization auth = createAuthorization(siteId);
+
+      // when
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
+
+      // then
+      assertNotNull(activity);
+      assertEquals("documents", activity.resource());
+      assertEquals("HTTP", activity.source());
+      assertEquals(UserActivityType.VIEW, activity.type());
+      assertNull(activity.entityId());
+      assertNull(activity.entityNamespace());
+      assertNull(activity.entityTypeId());
+      assertNull(activity.documentId());
+      // assertNull(activity.s3Key());
+      assertNull(activity.body());
+
+      assertEquals("1.73.5.111", activity.sourceIpAddress());
+      assertEquals(UserActivityStatus.COMPLETE, activity.status());
+      assertNull(activity.message());
+
+      final long expectedTime = 1750944882199L;
       assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
     }
   }
@@ -395,8 +336,67 @@ public class ApiGatewayRequestToUserActivityFunctionTest {
     }
   }
 
-  private ApiGatewayRequestEvent loadFile(final String file) throws IOException {
-    String json = Files.readString(Paths.get(file), StandardCharsets.UTF_8);
-    return gson.fromJson(json, ApiGatewayRequestEvent.class);
+  /**
+   * GET /entityTypes.
+   * 
+   * @throws IOException IOException
+   */
+  @Test
+  public void testGetEntityTypes() throws IOException {
+    // given
+    ApiGatewayRequestEvent request = loadFile("src/test/resources/requests/get-entityTypes.json");
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.VIEW, Map.of(),
+        Map.of());
+
+    for (String siteId : Arrays.asList(null, DEFAULT_SITE_ID, ID.uuid())) {
+
+      ApiAuthorization auth = createAuthorization(siteId);
+
+      // when
+      UserActivity activity = function.apply(auth, request, null).iterator().next().build(siteId);
+
+      // then
+      assertNotNull(activity);
+      assertEquals("entityTypes", activity.resource());
+      assertEquals("HTTP", activity.source());
+      assertEquals(UserActivityType.VIEW, activity.type());
+      assertNull(activity.entityId());
+      assertNull(activity.entityNamespace());
+      assertNull(activity.entityTypeId());
+      assertNull(activity.documentId());
+      // assertNull(activity.s3Key());
+      assertNull(activity.body());
+
+      assertEquals("1.73.5.111", activity.sourceIpAddress());
+      assertEquals(UserActivityStatus.COMPLETE, activity.status());
+      assertNull(activity.message());
+
+      final long expectedTime = 1751589734043L;
+      assertEquals(Instant.ofEpochMilli(expectedTime), activity.insertedDate().toInstant());
+    }
+  }
+
+  /**
+   * Null {@link ApiGatewayRequestEvent}.
+   */
+  @Test
+  public void testNull() {
+    // given
+    // when
+    UserActivity activity = function.apply(null, null, null).iterator().next().build(null);
+
+    // then
+    assertNotNull(activity);
+    assertNull(activity.resource());
+    assertEquals("HTTP", activity.source());
+    assertNull(activity.type());
+    assertNull(activity.entityId());
+    assertNull(activity.entityNamespace());
+    assertNull(activity.entityTypeId());
+    assertNull(activity.documentId());
+    assertNull(activity.sourceIpAddress());
+    assertEquals(UserActivityStatus.COMPLETE, activity.status());
+    assertNull(activity.message());
+    assertNotNull(activity.insertedDate());
   }
 }

@@ -73,20 +73,6 @@ public interface DocumentItem {
   String getDeepLinkPath();
 
   /**
-   * Get Width.
-   *
-   * @return {@link String}
-   */
-  String getWidth();
-
-  /**
-   * Get Height.
-   *
-   * @return {@link String}
-   */
-  String getHeight();
-
-  /**
    * Get Document Id.
    *
    * @return {@link String}
@@ -99,6 +85,13 @@ public interface DocumentItem {
    * @return {@link List} {@link DocumentItem}
    */
   List<DocumentItem> getDocuments();
+
+  /**
+   * Get Height.
+   *
+   * @return {@link String}
+   */
+  String getHeight();
 
   /**
    * Get Inserteddate.
@@ -157,6 +150,13 @@ public interface DocumentItem {
   String getVersion();
 
   /**
+   * Get Width.
+   *
+   * @return {@link String}
+   */
+  String getWidth();
+
+  /**
    * Sets Belongs To DocumentId.
    * 
    * @param documentId {@link String}
@@ -199,20 +199,6 @@ public interface DocumentItem {
   void setDeepLinkPath(String deepLinkPath);
 
   /**
-   * Set Width.
-   *
-   * @param width {@link String}
-   */
-  void setWidth(String width);
-
-  /**
-   * Set Height.
-   *
-   * @param height {@link String}
-   */
-  void setHeight(String height);
-
-  /**
    * Set Document ID.
    *
    * @param id {@link String}
@@ -225,6 +211,13 @@ public interface DocumentItem {
    * @param ids {@link List} {@link DocumentItem}
    */
   void setDocuments(List<DocumentItem> ids);
+
+  /**
+   * Set Height.
+   *
+   * @param height {@link String}
+   */
+  void setHeight(String height);
 
   /**
    * Set Inserted Date.
@@ -281,4 +274,11 @@ public interface DocumentItem {
    * @param version {@link String}
    */
   void setVersion(String version);
+
+  /**
+   * Set Width.
+   *
+   * @param width {@link String}
+   */
+  void setWidth(String width);
 }

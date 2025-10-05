@@ -57,66 +57,6 @@ public class SchemaAttributesRequired {
   }
 
   /**
-   * Get Max Number of values.
-   * 
-   * @return Double
-   */
-  public Double maxNumberOfValues() {
-    return this.maxNumberOfValues;
-  }
-
-  /**
-   * Set Max Number of Values.
-   *
-   * @param numberOfValues Double
-   * @return SchemaAttributesRequired
-   */
-  public SchemaAttributesRequired maxNumberOfValues(final Double numberOfValues) {
-    this.maxNumberOfValues = numberOfValues;
-    return this;
-  }
-
-  /**
-   * Get Min Number of values.
-   * 
-   * @return Double
-   */
-  public Double minNumberOfValues() {
-    return this.minNumberOfValues;
-  }
-
-  /**
-   * Set Min Number of values.
-   * 
-   * @param numberOfValues Double
-   * @return SchemaAttributesRequired
-   */
-  public SchemaAttributesRequired minNumberOfValues(final Double numberOfValues) {
-    this.minNumberOfValues = numberOfValues;
-    return this;
-  }
-
-  /**
-   * Get Localized Allowed Values.
-   * 
-   * @return Map
-   */
-  public Map<String, String> localizedAllowedValues() {
-    return this.localizedAllowedValues;
-  }
-
-  /**
-   * Set Localized Allowed Values.
-   * 
-   * @param values {@link Map}
-   * @return SchemaAttributesRequired
-   */
-  public SchemaAttributesRequired localizedAllowedValues(final Map<String, String> values) {
-    this.localizedAllowedValues = values;
-    return this;
-  }
-
-  /**
    * Set Allowed Values.
    * 
    * @param requiredAllowedValues {@link List} {@link String}
@@ -194,5 +134,65 @@ public class SchemaAttributesRequired {
    */
   public List<String> getDefaultValues() {
     return this.defaultValues;
+  }
+
+  /**
+   * Get Localized Allowed Values.
+   * 
+   * @return Map
+   */
+  public Map<String, String> localizedAllowedValues() {
+    return this.localizedAllowedValues;
+  }
+
+  /**
+   * Set Localized Allowed Values.
+   * 
+   * @param values {@link Map}
+   * @return SchemaAttributesRequired
+   */
+  public SchemaAttributesRequired localizedAllowedValues(final Map<String, String> values) {
+    this.localizedAllowedValues = values;
+    return this;
+  }
+
+  /**
+   * Get Max Number of values.
+   * 
+   * @return Double
+   */
+  public Double maxNumberOfValues() {
+    return this.maxNumberOfValues;
+  }
+
+  /**
+   * Set Max Number of Values.
+   *
+   * @param numberOfValues Double
+   * @return SchemaAttributesRequired
+   */
+  public SchemaAttributesRequired maxNumberOfValues(final Double numberOfValues) {
+    this.maxNumberOfValues = numberOfValues;
+    return this;
+  }
+
+  /**
+   * Get Min Number of values.
+   * 
+   * @return Double
+   */
+  public Double minNumberOfValues() {
+    return this.minNumberOfValues;
+  }
+
+  /**
+   * Set Min Number of values.
+   * 
+   * @param numberOfValues Double
+   * @return SchemaAttributesRequired
+   */
+  public SchemaAttributesRequired minNumberOfValues(final Double numberOfValues) {
+    this.minNumberOfValues = numberOfValues;
+    return this;
   }
 }

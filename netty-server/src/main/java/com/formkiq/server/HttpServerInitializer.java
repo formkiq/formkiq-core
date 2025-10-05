@@ -140,28 +140,6 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     setupStreamToHttpEndpoint(credentialsProvider, awsServiceEndpoints);
   }
 
-  private void setupStreamToHttpEndpoint(final AwsCredentialsProvider credentialsProvider,
-      final Map<String, URI> awsServiceEndpoints) {
-
-    AwsServiceCache aws = this.handler.getAwsServices();
-    DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
-
-    try (DynamoDbClient dbClient = db.build()) {
-      DescribeTableResponse response =
-          dbClient.describeTable(DescribeTableRequest.builder().tableName(DOCUMENTS_TABLE).build());
-      String streamArn = response.table().latestStreamArn();
-
-      TypesenseProcessor processor = new TypesenseProcessor(this.handler.getAwsServices());
-
-      this.streams = new DynamoDbStreamToTypesense(AWS_REGION, credentialsProvider, streamArn,
-          awsServiceEndpoints.get("dynamodb"), processor);
-
-      // Schedule a task to read the stream every 5 seconds
-      this.executorService.scheduleWithFixedDelay(() -> this.streams.run(),
-          INITIAL_TIME_DELAY_IN_SECONDS, SCHEDULED_TIME_DELAY_IN_SECONDS, TimeUnit.SECONDS);
-    }
-  }
-
   /**
    * Add S3 Notification.
    * 
@@ -377,6 +355,28 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
 
     this.s3Create = new StagingS3Create(serviceCache);
     this.s3Update = new DocumentsS3Update(serviceCache);
+  }
+
+  private void setupStreamToHttpEndpoint(final AwsCredentialsProvider credentialsProvider,
+      final Map<String, URI> awsServiceEndpoints) {
+
+    AwsServiceCache aws = this.handler.getAwsServices();
+    DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
+
+    try (DynamoDbClient dbClient = db.build()) {
+      DescribeTableResponse response =
+          dbClient.describeTable(DescribeTableRequest.builder().tableName(DOCUMENTS_TABLE).build());
+      String streamArn = response.table().latestStreamArn();
+
+      TypesenseProcessor processor = new TypesenseProcessor(this.handler.getAwsServices());
+
+      this.streams = new DynamoDbStreamToTypesense(AWS_REGION, credentialsProvider, streamArn,
+          awsServiceEndpoints.get("dynamodb"), processor);
+
+      // Schedule a task to read the stream every 5 seconds
+      this.executorService.scheduleWithFixedDelay(() -> this.streams.run(),
+          INITIAL_TIME_DELAY_IN_SECONDS, SCHEDULED_TIME_DELAY_IN_SECONDS, TimeUnit.SECONDS);
+    }
   }
 
   /**

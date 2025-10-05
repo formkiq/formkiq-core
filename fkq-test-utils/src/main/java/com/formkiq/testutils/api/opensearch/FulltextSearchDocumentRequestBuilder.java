@@ -61,13 +61,13 @@ public class FulltextSearchDocumentRequestBuilder
   }
 
   /**
-   * Set the maximum number of results to return.
+   * Set the expected number of results.
    *
-   * @param text {@link String}
+   * @param expectedCount {@link Integer}
    * @return this builder
    */
-  public FulltextSearchDocumentRequestBuilder text(final String text) {
-    this.request.query(new DocumentFulltextSearch().text(text));
+  public FulltextSearchDocumentRequestBuilder expectedCount(final Integer expectedCount) {
+    this.expected = expectedCount;
     return this;
   }
 
@@ -79,17 +79,6 @@ public class FulltextSearchDocumentRequestBuilder
    */
   public FulltextSearchDocumentRequestBuilder limit(final String docsLimit) {
     this.limit = docsLimit;
-    return this;
-  }
-
-  /**
-   * Set the expected number of results.
-   *
-   * @param expectedCount {@link Integer}
-   * @return this builder
-   */
-  public FulltextSearchDocumentRequestBuilder expectedCount(final Integer expectedCount) {
-    this.expected = expectedCount;
     return this;
   }
 
@@ -130,5 +119,16 @@ public class FulltextSearchDocumentRequestBuilder
     }
 
     return new ApiHttpResponse<>(obj, ex);
+  }
+
+  /**
+   * Set the maximum number of results to return.
+   *
+   * @param text {@link String}
+   * @return this builder
+   */
+  public FulltextSearchDocumentRequestBuilder text(final String text) {
+    this.request.query(new DocumentFulltextSearch().text(text));
+    return this;
   }
 }

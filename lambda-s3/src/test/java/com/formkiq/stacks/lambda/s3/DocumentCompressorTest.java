@@ -82,22 +82,8 @@ public class DocumentCompressorTest {
   private static S3Service s3;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
-  /** {@link DocumentCompressor}. */
-  private DocumentCompressor compressor;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
-
-  /**
-   * Before Each Test.
-   */
-  @BeforeEach
-  public void before() {
-    dbHelper.truncateTable(DOCUMENTS_TABLE);
-    s3.deleteAllFiles(STAGE_BUCKET_NAME);
-    s3.deleteAllFiles(BUCKET_NAME);
-
-    this.compressor = new DocumentCompressor(serviceCache);
-  }
 
   /**
    * Before All Tests.
@@ -127,6 +113,76 @@ public class DocumentCompressorTest {
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(S3Service.class, new S3ServiceExtension());
     serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+  }
+
+  /**
+   * Generate checksum based on content.
+   * 
+   * @param content byte[]
+   * @return {@link Long}
+   */
+  static Long getContentChecksum(final byte[] content) {
+    final CRC32 crc = new CRC32();
+    crc.update(content, 0, content.length);
+    long checksum = crc.getValue();
+    crc.reset();
+    return checksum;
+  }
+
+  /**
+   * Validate Zip file Contents checksums.
+   * 
+   * @param input {@link InputStream}
+   * @param expectedEntryChecksum {@link Map}
+   * @throws IOException IOException
+   */
+  static void validateZipContent(final InputStream input,
+      final Map<String, Long> expectedEntryChecksum) throws IOException {
+
+    ZipInputStream stream = new ZipInputStream(input);
+
+    int count = 0;
+    for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
+
+      final String name = entry.getName();
+      final byte[] content = stream.readAllBytes();
+
+      assertTrue(expectedEntryChecksum.containsKey(name));
+      assertEquals(expectedEntryChecksum.get(name), getContentChecksum(content));
+
+      stream.closeEntry();
+      count++;
+    }
+    stream.close();
+    assertEquals(count, expectedEntryChecksum.size());
+  }
+
+  /** {@link DocumentCompressor}. */
+  private DocumentCompressor compressor;
+
+  /**
+   * Before Each Test.
+   */
+  @BeforeEach
+  public void before() {
+    dbHelper.truncateTable(DOCUMENTS_TABLE);
+    s3.deleteAllFiles(STAGE_BUCKET_NAME);
+    s3.deleteAllFiles(BUCKET_NAME);
+
+    this.compressor = new DocumentCompressor(serviceCache);
+  }
+
+  private String createDocument(final String siteId, final String userId, final byte[] content)
+      throws ValidationException {
+    final DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
+    item.setDocumentId(ID.uuid());
+    item.setUserId(userId);
+    item.setInsertedDate(new Date());
+    final String documentId = item.getDocumentId();
+    documentService.saveDocument(siteId, item, null);
+    final String key = createS3Key(siteId, documentId);
+    s3.putObject(BUCKET_NAME, key, content, null, null);
+    return item.getDocumentId();
   }
 
   @Test
@@ -173,60 +229,5 @@ public class DocumentCompressorTest {
     try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
       validateZipContent(zipContent, fileChecksums);
     }
-  }
-
-  private String createDocument(final String siteId, final String userId, final byte[] content)
-      throws ValidationException {
-    final DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(ID.uuid());
-    item.setUserId(userId);
-    item.setInsertedDate(new Date());
-    final String documentId = item.getDocumentId();
-    documentService.saveDocument(siteId, item, null);
-    final String key = createS3Key(siteId, documentId);
-    s3.putObject(BUCKET_NAME, key, content, null, null);
-    return item.getDocumentId();
-  }
-
-  /**
-   * Validate Zip file Contents checksums.
-   * 
-   * @param input {@link InputStream}
-   * @param expectedEntryChecksum {@link Map}
-   * @throws IOException IOException
-   */
-  static void validateZipContent(final InputStream input,
-      final Map<String, Long> expectedEntryChecksum) throws IOException {
-
-    ZipInputStream stream = new ZipInputStream(input);
-
-    int count = 0;
-    for (ZipEntry entry = stream.getNextEntry(); entry != null; entry = stream.getNextEntry()) {
-
-      final String name = entry.getName();
-      final byte[] content = stream.readAllBytes();
-
-      assertTrue(expectedEntryChecksum.containsKey(name));
-      assertEquals(expectedEntryChecksum.get(name), getContentChecksum(content));
-
-      stream.closeEntry();
-      count++;
-    }
-    stream.close();
-    assertEquals(count, expectedEntryChecksum.size());
-  }
-
-  /**
-   * Generate checksum based on content.
-   * 
-   * @param content byte[]
-   * @return {@link Long}
-   */
-  static Long getContentChecksum(final byte[] content) {
-    final CRC32 crc = new CRC32();
-    crc.update(content, 0, content.length);
-    long checksum = crc.getValue();
-    crc.reset();
-    return checksum;
   }
 }

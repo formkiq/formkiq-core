@@ -42,24 +42,6 @@ import java.util.function.BiFunction;
  */
 public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class<T>, T> {
 
-  /** {@link Gson}. */
-  private final Gson gson;
-
-  public JsonToObject(final AwsServiceCache awsservice) {
-    this.gson = awsservice.getExtension(Gson.class);
-  }
-
-  @Override
-  public T apply(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
-    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
-        StandardCharsets.UTF_8)) {
-      return gson.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException | IOException e) {
-      throw new BadException("invalid JSON body");
-    }
-  }
-
-
   /**
    * Static helper for one-off calls.
    * 
@@ -72,5 +54,23 @@ public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class
   public static <T> T fromJson(final AwsServiceCache aws, final ApiGatewayRequestEvent event,
       final Class<T> type) {
     return new JsonToObject<T>(aws).apply(event, type);
+  }
+
+  /** {@link Gson}. */
+  private final Gson gson;
+
+  public JsonToObject(final AwsServiceCache awsservice) {
+    this.gson = awsservice.getExtension(Gson.class);
+  }
+
+
+  @Override
+  public T apply(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
+    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
+        StandardCharsets.UTF_8)) {
+      return gson.fromJson(reader, classOfT);
+    } catch (JsonSyntaxException | IOException e) {
+      throw new BadException("invalid JSON body");
+    }
   }
 }

@@ -53,6 +53,28 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** Unit Tests for request /entityTypes. */
 public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
+  private void assertEntityTypeEquals(final EntityType entityType, final String name) {
+    assertEntityTypeEquals(null, entityType, name, EntityTypeNamespace.CUSTOM, null);
+  }
+
+  private void assertEntityTypeEquals(final String siteId, final EntityType entityType,
+      final String name, final EntityTypeNamespace namespace, final PresetEntity presetEntity) {
+    assertEquals(name, entityType.getName());
+    assertEquals(namespace, entityType.getNamespace());
+    assertNotNull(entityType.getEntityTypeId());
+    assertNotNull(entityType.getInsertedDate());
+    assertNotNull(DynamoDbTypes.toDate(entityType.getInsertedDate()));
+
+    if (EntityTypeNamespace.PRESET.equals(namespace)) {
+      assertNotNull(presetEntity);
+      List<String> attributes = notNull(
+          new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes())
+          .stream().map(Attribute::getKey).toList();
+
+      presetEntity.getAttributeKeys().forEach(attr -> assertTrue(attributes.contains(attr)));
+    }
+  }
+
   /**
    * Post /entityTypes.
    *
@@ -192,6 +214,100 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"name\","
             + "\"error\":\"'name' unexpected value 'da entity'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /entityTypes with Preset Entity Type.
+   *
+   */
+  @Test
+  public void testAddPresetEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      for (PresetEntity value : PresetEntity.values()) {
+
+        AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
+            new AddEntityType().name(value.getName()).namespace(EntityTypeNamespace.PRESET));
+
+        // when
+        AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+
+        // then
+        assertNotNull(response.getEntityTypeId());
+        GetEntityTypesResponse results =
+            this.entityApi.getEntityTypes(siteId, "preset", null, null);
+        List<EntityType> entityTypes = notNull(results.getEntityTypes());
+        assertTrue(entityTypes.size() <= PresetEntity.values().length);
+        EntityType entityType = entityTypes.stream()
+            .filter(a -> value.getName().equals(a.getName())).findAny().orElse(null);
+        assertNotNull(entityType);
+        assertEntityTypeEquals(siteId, entityType, value.getName(), EntityTypeNamespace.PRESET,
+            value);
+
+        // when - add prompt again
+        try {
+          this.entityApi.addEntityType(req, siteId);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
+              e.getResponseBody());
+        }
+      }
+    }
+  }
+
+  /**
+   * DELETE /entityTypes/{entityTypeId}.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDeleteEntityTypes01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
+      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+      assertNotNull(response.getEntityTypeId());
+
+      // when
+      DeleteResponse deleteResponse =
+          this.entityApi.deleteEntityType(response.getEntityTypeId(), siteId);
+
+      // then
+      assertEquals("EntityType deleted", deleteResponse.getMessage());
+    }
+  }
+
+  /**
+   * DELETE /entityTypes/{entityTypeId} not found.
+   *
+   */
+  @Test
+  public void testDeleteEntityTypes02() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+      String id = ID.uuid();
+
+      // when
+      try {
+        this.entityApi.deleteEntityType(id, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"entityTypeId\"," + "\"error\":\"EntityType not found\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -355,100 +471,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /entityTypes/{entityTypeId}.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testDeleteEntityTypes01() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-
-      AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
-      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
-      assertNotNull(response.getEntityTypeId());
-
-      // when
-      DeleteResponse deleteResponse =
-          this.entityApi.deleteEntityType(response.getEntityTypeId(), siteId);
-
-      // then
-      assertEquals("EntityType deleted", deleteResponse.getMessage());
-    }
-  }
-
-  /**
-   * DELETE /entityTypes/{entityTypeId} not found.
-   *
-   */
-  @Test
-  public void testDeleteEntityTypes02() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-      String id = ID.uuid();
-
-      // when
-      try {
-        this.entityApi.deleteEntityType(id, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"entityTypeId\"," + "\"error\":\"EntityType not found\"}]}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Post /entityTypes with Preset Entity Type.
-   *
-   */
-  @Test
-  public void testAddPresetEntityType() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-
-      for (PresetEntity value : PresetEntity.values()) {
-
-        AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
-            new AddEntityType().name(value.getName()).namespace(EntityTypeNamespace.PRESET));
-
-        // when
-        AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
-
-        // then
-        assertNotNull(response.getEntityTypeId());
-        GetEntityTypesResponse results =
-            this.entityApi.getEntityTypes(siteId, "preset", null, null);
-        List<EntityType> entityTypes = notNull(results.getEntityTypes());
-        assertTrue(entityTypes.size() <= PresetEntity.values().length);
-        EntityType entityType = entityTypes.stream()
-            .filter(a -> value.getName().equals(a.getName())).findAny().orElse(null);
-        assertNotNull(entityType);
-        assertEntityTypeEquals(siteId, entityType, value.getName(), EntityTypeNamespace.PRESET,
-            value);
-
-        // when - add prompt again
-        try {
-          this.entityApi.addEntityType(req, siteId);
-          fail();
-        } catch (ApiException e) {
-          // then
-          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-          assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
-              e.getResponseBody());
-        }
-      }
-    }
-  }
-
-  /**
    * Post /entityTypes with invalid Preset Entity Type.
    *
    */
@@ -472,28 +494,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
             + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
             + "CheckoutForLegalHold'\"}]}", e.getResponseBody());
       }
-    }
-  }
-
-  private void assertEntityTypeEquals(final EntityType entityType, final String name) {
-    assertEntityTypeEquals(null, entityType, name, EntityTypeNamespace.CUSTOM, null);
-  }
-
-  private void assertEntityTypeEquals(final String siteId, final EntityType entityType,
-      final String name, final EntityTypeNamespace namespace, final PresetEntity presetEntity) {
-    assertEquals(name, entityType.getName());
-    assertEquals(namespace, entityType.getNamespace());
-    assertNotNull(entityType.getEntityTypeId());
-    assertNotNull(entityType.getInsertedDate());
-    assertNotNull(DynamoDbTypes.toDate(entityType.getInsertedDate()));
-
-    if (EntityTypeNamespace.PRESET.equals(namespace)) {
-      assertNotNull(presetEntity);
-      List<String> attributes = notNull(
-          new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes())
-          .stream().map(Attribute::getKey).toList();
-
-      presetEntity.getAttributeKeys().forEach(attr -> assertTrue(attributes.contains(attr)));
     }
   }
 }

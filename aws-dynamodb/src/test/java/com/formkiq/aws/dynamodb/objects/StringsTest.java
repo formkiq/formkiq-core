@@ -112,16 +112,16 @@ class StringsTest {
   }
 
   @Test
-  void testTruncate01() {
-    assertEquals("a", Strings.truncate("a", 2));
-    assertEquals("ab", Strings.truncate("ab", 2));
-    assertEquals("ab", Strings.truncate("abc", 2));
-  }
-
-  @Test
   void testIsNotNullOrEmptyElse() {
     assertEquals("A", Strings.isNotNullOrEmptyElse("", "A"));
     assertEquals("A", Strings.isNotNullOrEmptyElse(null, "A"));
     assertEquals("B", Strings.isNotNullOrEmptyElse("B", "A"));
+  }
+
+  @Test
+  void testTruncate01() {
+    assertEquals("a", Strings.truncate("a", 2));
+    assertEquals("ab", Strings.truncate("ab", 2));
+    assertEquals("ab", Strings.truncate("abc", 2));
   }
 }

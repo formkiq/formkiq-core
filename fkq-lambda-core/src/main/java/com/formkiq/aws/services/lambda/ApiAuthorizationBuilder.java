@@ -54,8 +54,32 @@ public class ApiAuthorizationBuilder {
   public static final String COGNITO_READ_SUFFIX = "_read";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
+
+  private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
+    Map<String, Object> claims = Collections.emptyMap();
+
+    if (authorizer != null && authorizer.containsKey("claims")) {
+      claims = (Map<String, Object>) authorizer.get("claims");
+    }
+
+    if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+
+    return claims;
+  }
+
+  private static ApiPermission toApiPermission(final String val) {
+    try {
+      return ApiPermission.valueOf(val.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private List<ApiAuthorizationInterceptor> interceptors = null;
+
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
@@ -123,14 +147,6 @@ public class ApiAuthorizationBuilder {
     }
   }
 
-  private static ApiPermission toApiPermission(final String val) {
-    try {
-      return ApiPermission.valueOf(val.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
-  }
-
   /**
    * Build {@link ApiAuthorization}.
    * 
@@ -171,11 +187,6 @@ public class ApiAuthorizationBuilder {
     return authorization;
   }
 
-  private boolean isReservedSite(final boolean admin, final String siteId) {
-    Optional<ReservedSiteId> o = ReservedSiteId.fromString(siteId);
-    return o.isPresent() && (!ReservedSiteId.GLOBAL.equals(o.get()) || admin);
-  }
-
   /**
    * Get AuthorizerClaims from {@link ApiGatewayRequestEvent}.
    * 
@@ -206,20 +217,6 @@ public class ApiAuthorizationBuilder {
       claims = (Map<String, Object>) this.gson.fromJson(sitesClaims, Map.class);
     } else if (notNull(claims).isEmpty() && authorizer != null
         && authorizer.containsKey("apiKeyClaims")) {
-      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
-    }
-
-    return claims;
-  }
-
-  private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
-    Map<String, Object> claims = Collections.emptyMap();
-
-    if (authorizer != null && authorizer.containsKey("claims")) {
-      claims = (Map<String, Object>) authorizer.get("claims");
-    }
-
-    if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
       claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
     }
 
@@ -268,6 +265,29 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
+   * Get {@link ApiGatewayRequestEvent} roles.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Collection} {@link String}
+   */
+  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
+    Collection<String> groups = new HashSet<>();
+
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    if (claims.containsKey("cognito:groups")) {
+      Object obj = claims.get("cognito:groups");
+      if (obj != null) {
+        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+        groups = new HashSet<>(Arrays.asList(s.split(" ")));
+        groups.removeIf(String::isEmpty);
+      }
+    }
+
+    return groups;
+  }
+
+  /**
    * Get Query Parameter from {@link ApiGatewayRequestEvent}.
    * 
    * @param event {@link ApiGatewayRequestEvent}
@@ -291,26 +311,28 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
-   * Get {@link ApiGatewayRequestEvent} roles.
-   * 
+   * Get the Cognito Groups of the calling Cognito Username.
+   *
    * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link Collection} {@link String}
+   * @return {@link String}
    */
-  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
-    Collection<String> groups = new HashSet<>();
+  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
 
-    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+    String arn = null;
 
-    if (claims.containsKey("cognito:groups")) {
-      Object obj = claims.get("cognito:groups");
-      if (obj != null) {
-        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-        groups = new HashSet<>(Arrays.asList(s.split(" ")));
-        groups.removeIf(String::isEmpty);
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+
+    if (requestContext != null) {
+
+      Map<String, Object> identity = requestContext.getIdentity();
+
+      if (identity != null) {
+        Object obj = identity.getOrDefault("userArn", null);
+        arn = obj != null ? obj.toString() : null;
       }
     }
 
-    return groups;
+    return arn;
   }
 
   /**
@@ -357,31 +379,6 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
-   * Get the Cognito Groups of the calling Cognito Username.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
-
-    String arn = null;
-
-    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
-
-    if (requestContext != null) {
-
-      Map<String, Object> identity = requestContext.getIdentity();
-
-      if (identity != null) {
-        Object obj = identity.getOrDefault("userArn", null);
-        arn = obj != null ? obj.toString() : null;
-      }
-    }
-
-    return arn;
-  }
-
-  /**
    * Set {@link ApiAuthorizationInterceptor}.
    * 
    * @param apiAuthorizationInterceptors {@link ApiAuthorizationInterceptor}
@@ -411,6 +408,11 @@ public class ApiAuthorizationBuilder {
    */
   private boolean isIamCaller(final String roleArn) {
     return roleArn != null && (roleArn.contains(":assumed-role/") || roleArn.contains(":user/"));
+  }
+
+  private boolean isReservedSite(final boolean admin, final String siteId) {
+    Optional<ReservedSiteId> o = ReservedSiteId.fromString(siteId);
+    return o.isPresent() && (!ReservedSiteId.GLOBAL.equals(o.get()) || admin);
   }
 
   private Collection<String> loadJwtGroups(final ApiGatewayRequestEvent event) {

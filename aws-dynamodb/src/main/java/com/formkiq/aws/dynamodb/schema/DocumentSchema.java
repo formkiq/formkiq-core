@@ -89,6 +89,53 @@ public class DocumentSchema {
   }
 
   /**
+   * Create Documents Syncs Table.
+   * 
+   * @param tableName {@link String}
+   */
+  public void createDocumentSyncsTable(final String tableName) {
+
+    if (!isTableExists(tableName)) {
+      KeySchemaElement pk =
+          KeySchemaElement.builder().attributeName("PK").keyType(KeyType.HASH).build();
+      KeySchemaElement sk =
+          KeySchemaElement.builder().attributeName("SK").keyType(KeyType.RANGE).build();
+
+      AttributeDefinition a1 = AttributeDefinition.builder().attributeName("PK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      AttributeDefinition a3 = AttributeDefinition.builder().attributeName("GSI1PK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      AttributeDefinition a4 = AttributeDefinition.builder().attributeName("GSI1SK")
+          .attributeType(ScalarAttributeType.S).build();
+
+      GlobalSecondaryIndex si1 = GlobalSecondaryIndex.builder().indexName("GSI1")
+          .keySchema(
+              KeySchemaElement.builder().attributeName("GSI1PK").keyType(KeyType.HASH).build(),
+              KeySchemaElement.builder().attributeName("GSI1SK").keyType(KeyType.RANGE).build())
+          .projection(Projection.builder().projectionType(ProjectionType.INCLUDE)
+              .nonKeyAttributes("inserteddate", "documentId").build())
+          .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(this.capacity)
+              .readCapacityUnits(this.capacity).build())
+          .build();
+
+      CreateTableRequest table =
+          CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
+              .attributeDefinitions(a1, a2).attributeDefinitions(a1, a2, a3, a4)
+              .globalSecondaryIndexes(si1)
+              .provisionedThroughput(ProvisionedThroughput.builder()
+                  .writeCapacityUnits(this.capacity).readCapacityUnits(this.capacity).build())
+              .build();
+
+      this.db.createTable(table);
+    }
+  }
+
+  /**
    * Create Documents Table.
    * 
    * @param tableName {@link String}
@@ -154,53 +201,6 @@ public class DocumentSchema {
     }
 
     return response;
-  }
-
-  /**
-   * Create Documents Syncs Table.
-   * 
-   * @param tableName {@link String}
-   */
-  public void createDocumentSyncsTable(final String tableName) {
-
-    if (!isTableExists(tableName)) {
-      KeySchemaElement pk =
-          KeySchemaElement.builder().attributeName("PK").keyType(KeyType.HASH).build();
-      KeySchemaElement sk =
-          KeySchemaElement.builder().attributeName("SK").keyType(KeyType.RANGE).build();
-
-      AttributeDefinition a1 = AttributeDefinition.builder().attributeName("PK")
-          .attributeType(ScalarAttributeType.S).build();
-
-      AttributeDefinition a2 = AttributeDefinition.builder().attributeName("SK")
-          .attributeType(ScalarAttributeType.S).build();
-
-      AttributeDefinition a3 = AttributeDefinition.builder().attributeName("GSI1PK")
-          .attributeType(ScalarAttributeType.S).build();
-
-      AttributeDefinition a4 = AttributeDefinition.builder().attributeName("GSI1SK")
-          .attributeType(ScalarAttributeType.S).build();
-
-      GlobalSecondaryIndex si1 = GlobalSecondaryIndex.builder().indexName("GSI1")
-          .keySchema(
-              KeySchemaElement.builder().attributeName("GSI1PK").keyType(KeyType.HASH).build(),
-              KeySchemaElement.builder().attributeName("GSI1SK").keyType(KeyType.RANGE).build())
-          .projection(Projection.builder().projectionType(ProjectionType.INCLUDE)
-              .nonKeyAttributes("inserteddate", "documentId").build())
-          .provisionedThroughput(ProvisionedThroughput.builder().writeCapacityUnits(this.capacity)
-              .readCapacityUnits(this.capacity).build())
-          .build();
-
-      CreateTableRequest table =
-          CreateTableRequest.builder().tableName(tableName).keySchema(pk, sk)
-              .attributeDefinitions(a1, a2).attributeDefinitions(a1, a2, a3, a4)
-              .globalSecondaryIndexes(si1)
-              .provisionedThroughput(ProvisionedThroughput.builder()
-                  .writeCapacityUnits(this.capacity).readCapacityUnits(this.capacity).build())
-              .build();
-
-      this.db.createTable(table);
-    }
   }
 
   /**

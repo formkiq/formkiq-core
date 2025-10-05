@@ -72,15 +72,15 @@ public class DocumentsRequestHandlerInterceptor implements ApiRequestHandlerInte
     return response;
   }
 
-  private boolean isDocumentUrl(final ApiGatewayRequestEvent event) {
-    String resource = event.getResource();
-    return "/documents/{documentId}/url".equals(resource)
-        || "/documents/{documentId}/content".equals(resource);
-  }
-
   @Override
   public void beforeProcessRequest(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) {
     // empty
+  }
+
+  private boolean isDocumentUrl(final ApiGatewayRequestEvent event) {
+    String resource = event.getResource();
+    return "/documents/{documentId}/url".equals(resource)
+        || "/documents/{documentId}/content".equals(resource);
   }
 }

@@ -57,6 +57,14 @@ public interface MappingService {
   PaginationResults<MappingRecord> findMappings(String siteId, PaginationMapToken token, int limit);
 
   /**
+   * Get {@link MappingAttribute}.
+   * 
+   * @param mapping {@link MappingRecord}
+   * @return {@link List} {@link MappingAttribute}
+   */
+  List<MappingAttribute> getAttributes(MappingRecord mapping);
+
+  /**
    * Get {@link MappingRecord}.
    * 
    * @param siteId {@link String}
@@ -76,12 +84,4 @@ public interface MappingService {
    */
   MappingRecord saveMapping(String siteId, String mappingId, Mapping mapping)
       throws ValidationException;
-
-  /**
-   * Get {@link MappingAttribute}.
-   * 
-   * @param mapping {@link MappingRecord}
-   * @return {@link List} {@link MappingAttribute}
-   */
-  List<MappingAttribute> getAttributes(MappingRecord mapping);
 }

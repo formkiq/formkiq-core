@@ -98,6 +98,12 @@ public class DocumentAttributesRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body(m).build();
   }
 
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId,
+      final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
+    return authorization.isAdminOrGovern(siteId) ? admin : regular;
+  }
+
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
       final String documentId) throws BadException, ValidationException {
@@ -145,12 +151,6 @@ public class DocumentAttributesRequestHandler
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "added attributes to documentId '" + documentId + "'").build();
-  }
-
-  private AttributeValidationAccess getAttributeValidationAccess(
-      final ApiAuthorization authorization, final String siteId,
-      final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
-    return authorization.isAdminOrGovern(siteId) ? admin : regular;
   }
 
   @Override

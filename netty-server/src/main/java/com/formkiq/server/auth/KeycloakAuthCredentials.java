@@ -33,6 +33,25 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public final class KeycloakAuthCredentials implements IAuthCredentials {
+  private static JsonObject post(final String url, final String requestBody) {
+    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
+
+    HttpResponse<String> response;
+
+    try {
+      response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+      return null;
+    }
+
+    return (response.statusCode() == HttpURLConnection.HTTP_OK)
+        ? JsonParser.parseString(response.body()).getAsJsonObject()
+        : null;
+  }
+
   /** Request body. */
   private final String requestBody;
 
@@ -71,24 +90,5 @@ public final class KeycloakAuthCredentials implements IAuthCredentials {
 
     return responseJson != null && responseJson.has("active")
         && responseJson.get("active").getAsBoolean();
-  }
-
-  private static JsonObject post(final String url, final String requestBody) {
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
-
-    HttpResponse<String> response;
-
-    try {
-      response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (Exception e) {
-      e.printStackTrace(System.err);
-      return null;
-    }
-
-    return (response.statusCode() == HttpURLConnection.HTTP_OK)
-        ? JsonParser.parseString(response.body()).getAsJsonObject()
-        : null;
   }
 }

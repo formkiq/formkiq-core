@@ -59,15 +59,6 @@ public class SearchAttributeCriteria {
   }
 
   /**
-   * Get Begins With.
-   *
-   * @return {@link String}
-   */
-  public String getBeginsWith() {
-    return this.beginsWith;
-  }
-
-  /**
    * Set Begins With.
    *
    * @param s {@link String}
@@ -76,15 +67,6 @@ public class SearchAttributeCriteria {
   public SearchAttributeCriteria beginsWith(final String s) {
     this.beginsWith = s;
     return this;
-  }
-
-  /**
-   * Get EQ {@link String}.
-   *
-   * @return {@link String}
-   */
-  public String getEq() {
-    return this.eq;
   }
 
   /**
@@ -99,15 +81,6 @@ public class SearchAttributeCriteria {
   }
 
   /**
-   * Get EQ OR {@link Collection} {@link String}.
-   *
-   * @return {@link String}
-   */
-  public Collection<String> getEqOr() {
-    return this.eqOr;
-  }
-
-  /**
    * Set EQ Or String.
    *
    * @param s {@link Collection} {@link String}
@@ -116,6 +89,33 @@ public class SearchAttributeCriteria {
   public SearchAttributeCriteria eqOr(final Collection<String> s) {
     this.eqOr = s;
     return this;
+  }
+
+  /**
+   * Get Begins With.
+   *
+   * @return {@link String}
+   */
+  public String getBeginsWith() {
+    return this.beginsWith;
+  }
+
+  /**
+   * Get EQ {@link String}.
+   *
+   * @return {@link String}
+   */
+  public String getEq() {
+    return this.eq;
+  }
+
+  /**
+   * Get EQ OR {@link Collection} {@link String}.
+   *
+   * @return {@link String}
+   */
+  public Collection<String> getEqOr() {
+    return this.eqOr;
   }
 
   /**
@@ -128,6 +128,15 @@ public class SearchAttributeCriteria {
   }
 
   /**
+   * Get Between values.
+   * 
+   * @return {@link SearchTagCriteriaRange}
+   */
+  public SearchTagCriteriaRange getRange() {
+    return this.range;
+  }
+
+  /**
    * Set Tag Name.
    *
    * @param s {@link String}
@@ -136,15 +145,6 @@ public class SearchAttributeCriteria {
   public SearchAttributeCriteria key(final String s) {
     this.key = s;
     return this;
-  }
-
-  /**
-   * Get Between values.
-   * 
-   * @return {@link SearchTagCriteriaRange}
-   */
-  public SearchTagCriteriaRange getRange() {
-    return this.range;
   }
 
   /**

@@ -49,6 +49,11 @@ public class ReindexDocumentsRequestHandler
   public ReindexDocumentsRequestHandler() {}
 
   @Override
+  public String getRequestUrl() {
+    return "/reindex/documents/{documentId}";
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -70,10 +75,5 @@ public class ReindexDocumentsRequestHandler
         .body("message",
             "Reindex started for documentId '" + documentId + "' on target '" + target + "'")
         .build();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/reindex/documents/{documentId}";
   }
 }

@@ -70,16 +70,16 @@ public class AddEntityAttributeToRecordTransformer
     return DocumentAttributeRecord.builder().key(attr.key()).userId(username);
   }
 
-  private DocumentAttributeRecord convert(final AddEntityAttribute attr, final String stringValue) {
-    return convert(attr).stringValue(stringValue).build().updateValueType();
+  private DocumentAttributeRecord convert(final AddEntityAttribute attr,
+      final Boolean booleanValue) {
+    return convert(attr).booleanValue(booleanValue).build().updateValueType();
   }
 
   private DocumentAttributeRecord convert(final AddEntityAttribute attr, final Double doubleValue) {
     return convert(attr).numberValue(doubleValue).build().updateValueType();
   }
 
-  private DocumentAttributeRecord convert(final AddEntityAttribute attr,
-      final Boolean booleanValue) {
-    return convert(attr).booleanValue(booleanValue).build().updateValueType();
+  private DocumentAttributeRecord convert(final AddEntityAttribute attr, final String stringValue) {
+    return convert(attr).stringValue(stringValue).build().updateValueType();
   }
 }

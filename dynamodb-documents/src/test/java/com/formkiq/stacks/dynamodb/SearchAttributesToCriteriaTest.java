@@ -35,6 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /** Unit Test for {@link SearchAttributesToCriteria}. */
 public class SearchAttributesToCriteriaTest {
 
+  private SearchAttributeCriteria apply(final List<SearchAttributeCriteria> attributes) {
+    SearchAttributesToCriteria c = new SearchAttributesToCriteria(null);
+    return c.apply(attributes);
+  }
+
   /**
    * Single attribute EQ.
    */
@@ -278,10 +283,5 @@ public class SearchAttributesToCriteriaTest {
         "A::111::55,A::111::66,A::222::55,A::222::66,B::111::55,B::111::66,"
             + "B::222::55,B::222::66,C::111::55,C::111::66,C::222::55,C::222::66",
         String.join(",", sac.getEqOr()));
-  }
-
-  private SearchAttributeCriteria apply(final List<SearchAttributeCriteria> attributes) {
-    SearchAttributesToCriteria c = new SearchAttributesToCriteria(null);
-    return c.apply(attributes);
   }
 }

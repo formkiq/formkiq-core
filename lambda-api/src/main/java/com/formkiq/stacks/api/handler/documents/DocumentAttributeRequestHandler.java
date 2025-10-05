@@ -50,6 +50,13 @@ import com.formkiq.validation.ValidationException;
 public class DocumentAttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  private static AttributeValidationType getValidationType(
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+    Optional<DocumentAttributeRecord> o = documentAttributes.stream()
+        .filter(a -> DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType())).findAny();
+    return o.isPresent() ? AttributeValidationType.FULL : AttributeValidationType.PARTIAL;
+  }
+
   /**
    * constructor.
    *
@@ -161,13 +168,6 @@ public class DocumentAttributeRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok().body("message",
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'").build();
-  }
-
-  private static AttributeValidationType getValidationType(
-      final Collection<DocumentAttributeRecord> documentAttributes) {
-    Optional<DocumentAttributeRecord> o = documentAttributes.stream()
-        .filter(a -> DocumentAttributeValueType.CLASSIFICATION.equals(a.getValueType())).findAny();
-    return o.isPresent() ? AttributeValidationType.FULL : AttributeValidationType.PARTIAL;
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

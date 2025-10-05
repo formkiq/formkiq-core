@@ -84,6 +84,11 @@ public class WebhooksIdRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
+  @Override
+  public String getRequestUrl() {
+    return "/webhooks/{webhookId}";
+  }
+
   private String getUrl(final AwsServiceCache awsServices, final String siteId,
       final DynamicObject m) {
     SsmService ssmService = awsServices.getExtension(SsmService.class);
@@ -98,11 +103,6 @@ public class WebhooksIdRequestHandler
       u += "?siteId=" + siteId;
     }
     return u;
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/webhooks/{webhookId}";
   }
 
   @Override

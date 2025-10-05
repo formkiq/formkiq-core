@@ -122,28 +122,36 @@ public record UserActivity(
     /** Change Set. */
     private Map<String, ChangeRecord> changes;
 
-    public Builder documentId(final String userActivityDocumentId) {
-      this.documentId = userActivityDocumentId;
-      return this;
-    }
-
     public Builder attributeKey(final String userActivityAttributeKey) {
       this.attributeKey = userActivityAttributeKey;
       return this;
     }
 
-    public Builder type(final UserActivityType userActivityType) {
-      this.type = userActivityType;
+    public Builder body(final String userActivityBody) {
+      this.body = userActivityBody;
       return this;
     }
 
-    public Builder userId(final String userActivityUserId) {
-      this.userId = userActivityUserId;
+    /**
+     * Builds the {@link UserActivity} instance.
+     * 
+     * @param siteId {@link String}
+     *
+     * @return a new {@link UserActivity} object
+     */
+    public UserActivity build(final String siteId) {
+      return new UserActivity(siteId, resource, documentId, attributeKey, type, userId,
+          Date.from(insertedDate), message, status, sourceIpAddress, source, entityTypeId, entityId,
+          entityNamespace, body, changes);
+    }
+
+    public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
+      this.changes = userActivityChanges;
       return this;
     }
 
-    public Builder insertedDate(final Instant userActivityInsertedDate) {
-      this.insertedDate = userActivityInsertedDate;
+    public Builder documentId(final String userActivityDocumentId) {
+      this.documentId = userActivityDocumentId;
       return this;
     }
 
@@ -168,71 +176,6 @@ public record UserActivity(
     // return this;
     // }
 
-    public Builder message(final String userActivityMessage) {
-      this.message = userActivityMessage;
-      return this;
-    }
-
-    public Builder status(final UserActivityStatus userActivityStatus) {
-      this.status = userActivityStatus;
-      return this;
-    }
-
-    public Builder status(final int userActivityStatusCode) {
-      final int error = 500;
-      status(userActivityStatusCode != error ? UserActivityStatus.COMPLETE
-          : UserActivityStatus.FAILED);
-      return this;
-    }
-
-    public Builder body(final String userActivityBody) {
-      this.body = userActivityBody;
-      return this;
-    }
-
-    public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
-      this.changes = userActivityChanges;
-      return this;
-    }
-
-    public Builder sourceIpAddress(final String userActivitySourceIpAddress) {
-      this.sourceIpAddress = userActivitySourceIpAddress;
-      return this;
-    }
-
-    /**
-     * Sets the activitySource system of the activity.
-     *
-     * @param activitySource the activitySource system (e.g., HTTP, SQS)
-     * @return the builder instance
-     */
-    public Builder source(final String activitySource) {
-      this.source = activitySource;
-      return this;
-    }
-
-    /**
-     * Sets the resourceof the activity.
-     *
-     * @param activityResource the object activityResource
-     * @return the builder instance
-     */
-    public Builder resource(final String activityResource) {
-      this.resource = activityResource;
-      return this;
-    }
-
-    /**
-     * Sets the entity type identifier.
-     *
-     * @param activityEntityTypeId the entity type identifier
-     * @return the builder instance
-     */
-    public Builder entityTypeId(final String activityEntityTypeId) {
-      this.entityTypeId = activityEntityTypeId;
-      return this;
-    }
-
     /**
      * Sets the entity identifier.
      *
@@ -256,16 +199,73 @@ public record UserActivity(
     }
 
     /**
-     * Builds the {@link UserActivity} instance.
-     * 
-     * @param siteId {@link String}
+     * Sets the entity type identifier.
      *
-     * @return a new {@link UserActivity} object
+     * @param activityEntityTypeId the entity type identifier
+     * @return the builder instance
      */
-    public UserActivity build(final String siteId) {
-      return new UserActivity(siteId, resource, documentId, attributeKey, type, userId,
-          Date.from(insertedDate), message, status, sourceIpAddress, source, entityTypeId, entityId,
-          entityNamespace, body, changes);
+    public Builder entityTypeId(final String activityEntityTypeId) {
+      this.entityTypeId = activityEntityTypeId;
+      return this;
+    }
+
+    public Builder insertedDate(final Instant userActivityInsertedDate) {
+      this.insertedDate = userActivityInsertedDate;
+      return this;
+    }
+
+    public Builder message(final String userActivityMessage) {
+      this.message = userActivityMessage;
+      return this;
+    }
+
+    /**
+     * Sets the resourceof the activity.
+     *
+     * @param activityResource the object activityResource
+     * @return the builder instance
+     */
+    public Builder resource(final String activityResource) {
+      this.resource = activityResource;
+      return this;
+    }
+
+    /**
+     * Sets the activitySource system of the activity.
+     *
+     * @param activitySource the activitySource system (e.g., HTTP, SQS)
+     * @return the builder instance
+     */
+    public Builder source(final String activitySource) {
+      this.source = activitySource;
+      return this;
+    }
+
+    public Builder sourceIpAddress(final String userActivitySourceIpAddress) {
+      this.sourceIpAddress = userActivitySourceIpAddress;
+      return this;
+    }
+
+    public Builder status(final UserActivityStatus userActivityStatus) {
+      this.status = userActivityStatus;
+      return this;
+    }
+
+    public Builder status(final int userActivityStatusCode) {
+      final int error = 500;
+      status(userActivityStatusCode != error ? UserActivityStatus.COMPLETE
+          : UserActivityStatus.FAILED);
+      return this;
+    }
+
+    public Builder type(final UserActivityType userActivityType) {
+      this.type = userActivityType;
+      return this;
+    }
+
+    public Builder userId(final String userActivityUserId) {
+      this.userId = userActivityUserId;
+      return this;
     }
   }
 }

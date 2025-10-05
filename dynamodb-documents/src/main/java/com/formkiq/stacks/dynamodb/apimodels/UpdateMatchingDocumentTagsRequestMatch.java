@@ -41,26 +41,6 @@ public class UpdateMatchingDocumentTagsRequestMatch {
    */
   public UpdateMatchingDocumentTagsRequestMatch() {}
 
-  /**
-   * Set {@link MatchDocumentTag}.
-   * 
-   * @param documentTag {@link MatchDocumentTag}
-   * @return {@link UpdateMatchingDocumentTagsRequestMatch}
-   */
-  public UpdateMatchingDocumentTagsRequestMatch tag(final MatchDocumentTag documentTag) {
-    this.tag = documentTag;
-    return this;
-  }
-
-  /**
-   * Get tag.
-   * 
-   * @return tag
-   **/
-  public MatchDocumentTag getTag() {
-    return this.tag;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -74,18 +54,29 @@ public class UpdateMatchingDocumentTagsRequestMatch {
     return Objects.equals(this.tag, updateMatchingDocumentTagsRequestMatch.tag);
   }
 
+  /**
+   * Get tag.
+   * 
+   * @return tag
+   **/
+  public MatchDocumentTag getTag() {
+    return this.tag;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(this.tag);
   }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class UpdateMatchingDocumentTagsRequestMatch {\n");
-    sb.append("    tag: ").append(toIndentedString(this.tag)).append("\n");
-    sb.append("}");
-    return sb.toString();
+  /**
+   * Set {@link MatchDocumentTag}.
+   * 
+   * @param documentTag {@link MatchDocumentTag}
+   * @return {@link UpdateMatchingDocumentTagsRequestMatch}
+   */
+  public UpdateMatchingDocumentTagsRequestMatch tag(final MatchDocumentTag documentTag) {
+    this.tag = documentTag;
+    return this;
   }
 
   /**
@@ -99,6 +90,15 @@ public class UpdateMatchingDocumentTagsRequestMatch {
       return "null";
     }
     return o.toString().replace("\n", "\n    ");
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class UpdateMatchingDocumentTagsRequestMatch {\n");
+    sb.append("    tag: ").append(toIndentedString(this.tag)).append("\n");
+    sb.append("}");
+    return sb.toString();
   }
 }
 

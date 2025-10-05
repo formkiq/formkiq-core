@@ -50,19 +50,6 @@ public interface AttributeValidator {
   /**
    * Validates Deleting Attribute.
    *
-   * @param schemaAttributes {@link List} {@link SchemaAttributes}
-   * @param attributeKeys {@link Collection} {@link String}
-   * @param attributeRecordMap {@link Map}
-   * @param validationAccess {@link AttributeValidationAccess}
-   * @return {@link Collection} {@link ValidationError}
-   */
-  Collection<ValidationError> validateDeleteAttributes(List<SchemaAttributes> schemaAttributes,
-      Collection<String> attributeKeys, Map<String, AttributeRecord> attributeRecordMap,
-      AttributeValidationAccess validationAccess);
-
-  /**
-   * Validates Deleting Attribute.
-   *
    * @param schema {@link Schema}
    * @param siteId {@link String}
    * @param attributeKey {@link String}
@@ -84,6 +71,19 @@ public interface AttributeValidator {
    */
   Collection<ValidationError> validateDeleteAttributeValue(Schema schema, String siteId,
       String attributeKey, String attributeValue, AttributeValidationAccess validationAccess);
+
+  /**
+   * Validates Deleting Attribute.
+   *
+   * @param schemaAttributes {@link List} {@link SchemaAttributes}
+   * @param attributeKeys {@link Collection} {@link String}
+   * @param attributeRecordMap {@link Map}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> validateDeleteAttributes(List<SchemaAttributes> schemaAttributes,
+      Collection<String> attributeKeys, Map<String, AttributeRecord> attributeRecordMap,
+      AttributeValidationAccess validationAccess);
 
   /**
    * Validate {@link DocumentAttributeRecord}.

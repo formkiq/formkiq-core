@@ -34,15 +34,6 @@ import java.util.Map;
 public interface UserActivityPlugin {
 
   /**
-   * Add User Activity View.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param versionKey {@link String}
-   */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
-
-  /**
    * Add Document Activity.
    *
    * @param resourceType {@link ActivityResourceType}
@@ -54,16 +45,28 @@ public interface UserActivityPlugin {
       Map<String, Object> record);
 
   /**
-   * Add update Document Activity.
-   *
-   * @param resourceType {@link ActivityResourceType}
+   * Add User Activity View.
+   * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param current {@link Map}
-   * @param previous {@link Map}
+   * @param versionKey {@link String}
    */
-  void updateDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
-      Map<String, Object> current, Map<String, Object> previous);
+  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+
+  /**
+   * Add User Activity.
+   *
+   * @param userActivity {@link Collection} {@link UserActivity}
+   */
+  void addUserActivity(Collection<UserActivity> userActivity);
+
+  /**
+   * Add User Activity.
+   *
+   * @param userActivity {@link UserActivity}
+   */
+  void addUserActivity(UserActivity userActivity);
+
 
   /**
    * Add delete Document Activity.
@@ -75,7 +78,6 @@ public interface UserActivityPlugin {
    */
   void deleteDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
       Map<String, Object> record);
-
 
   /**
    * Add soft delete Document Activity.
@@ -100,16 +102,14 @@ public interface UserActivityPlugin {
       String documentId, Map<String, Object> record);
 
   /**
-   * Add User Activity.
+   * Add update Document Activity.
    *
-   * @param userActivity {@link UserActivity}
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param current {@link Map}
+   * @param previous {@link Map}
    */
-  void addUserActivity(UserActivity userActivity);
-
-  /**
-   * Add User Activity.
-   *
-   * @param userActivity {@link Collection} {@link UserActivity}
-   */
-  void addUserActivity(Collection<UserActivity> userActivity);
+  void updateDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
+      Map<String, Object> current, Map<String, Object> previous);
 }

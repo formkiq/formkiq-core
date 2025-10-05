@@ -47,23 +47,12 @@ public class SiteConfigurationDocusign {
   }
 
   /**
-   * Get User Id.
+   * Get HMAC Signature.
    * 
    * @return String
    */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set User Id.
-   *
-   * @param user {@link String}
-   * @return SiteConfigurationDocusign
-   */
-  public SiteConfigurationDocusign setUserId(final String user) {
-    this.userId = user;
-    return this;
+  public String getHmacSignature() {
+    return hmacSignature;
   }
 
   /**
@@ -73,6 +62,33 @@ public class SiteConfigurationDocusign {
    */
   public String getIntegrationKey() {
     return this.integrationKey;
+  }
+
+  /**
+   * Get Rsa Private Key.
+   * 
+   * @return String
+   */
+  public String getRsaPrivateKey() {
+    return this.rsaPrivateKey;
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @return String
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
+  /**
+   * Set HMAC Signature.
+   * 
+   * @param signature {@link String}
+   */
+  public void setHmacSignature(final String signature) {
+    this.hmacSignature = signature;
   }
 
   /**
@@ -87,15 +103,6 @@ public class SiteConfigurationDocusign {
   }
 
   /**
-   * Get Rsa Private Key.
-   * 
-   * @return String
-   */
-  public String getRsaPrivateKey() {
-    return this.rsaPrivateKey;
-  }
-
-  /**
    * Set Rsa Private Key.
    * 
    * @param privateKey {@link String}
@@ -105,20 +112,13 @@ public class SiteConfigurationDocusign {
   }
 
   /**
-   * Get HMAC Signature.
-   * 
-   * @return String
+   * Set User Id.
+   *
+   * @param user {@link String}
+   * @return SiteConfigurationDocusign
    */
-  public String getHmacSignature() {
-    return hmacSignature;
-  }
-
-  /**
-   * Set HMAC Signature.
-   * 
-   * @param signature {@link String}
-   */
-  public void setHmacSignature(final String signature) {
-    this.hmacSignature = signature;
+  public SiteConfigurationDocusign setUserId(final String user) {
+    this.userId = user;
+    return this;
   }
 }

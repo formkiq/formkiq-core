@@ -60,17 +60,6 @@ public class GetFoldersRequestBuilder implements HttpRequestBuilder<GetFoldersRe
   }
 
   /**
-   * Set the folder folderPath to retrieve documents from.
-   * 
-   * @param folderPath {@link String}
-   * @return this builder
-   */
-  public GetFoldersRequestBuilder path(final String folderPath) {
-    this.path = folderPath;
-    return this;
-  }
-
-  /**
    * Set the maximum number of results to return.
    * 
    * @param folderLimit {@link String}
@@ -89,6 +78,17 @@ public class GetFoldersRequestBuilder implements HttpRequestBuilder<GetFoldersRe
    */
   public GetFoldersRequestBuilder next(final String folderNext) {
     this.next = folderNext;
+    return this;
+  }
+
+  /**
+   * Set the folder folderPath to retrieve documents from.
+   * 
+   * @param folderPath {@link String}
+   * @return this builder
+   */
+  public GetFoldersRequestBuilder path(final String folderPath) {
+    this.path = folderPath;
     return this;
   }
 

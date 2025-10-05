@@ -42,11 +42,6 @@ import com.formkiq.module.ocr.OcrSqsMessage;
 public class DocxFormatConverter implements FormatConverter {
 
   @Override
-  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
-    return MimeType.MIME_DOCX.equals(mineType);
-  }
-
-  @Override
   public FormatConverterResult convert(final AwsServiceCache awsServices,
       final OcrSqsMessage sqsMessage, final MimeType mineType, final File file) throws IOException {
 
@@ -61,6 +56,11 @@ public class DocxFormatConverter implements FormatConverter {
     } catch (InvalidFormatException e) {
       throw new IOException(e);
     }
+  }
+
+  @Override
+  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
+    return MimeType.MIME_DOCX.equals(mineType);
   }
 
 }

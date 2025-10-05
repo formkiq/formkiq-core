@@ -38,38 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TimeToLiveBuilderTest {
 
   @Test
-  void testWithExpirationTime() {
-    Instant expirationTime = Instant.parse("2025-01-31T23:59:59Z");
-    long expectedTtl = expirationTime.getEpochSecond();
-
-    long ttl = new TimeToLiveBuilder().withExpirationTime(expirationTime).build();
-
-    assertEquals(expectedTtl, ttl, "TTL should match the specified expiration time.");
-  }
-
-  @Test
-  void testWithDurationFromNow() {
-    final long durationInSeconds = 3600;
-    long now = Instant.now().getEpochSecond();
-
-    long ttl = new TimeToLiveBuilder().withDurationFromNow(durationInSeconds).build();
-
-    assertTrue(ttl >= now + durationInSeconds, "TTL should be at least the duration from now.");
-  }
-
-  @Test
-  void testWithDaysFromNow() {
-    final long days = 7;
-    long now = Instant.now().getEpochSecond();
-    final long expectedDurationInSeconds = days * 24 * 60 * 60;
-
-    long ttl = new TimeToLiveBuilder().withDaysFromNow(days).build();
-
-    assertTrue(ttl >= now + expectedDurationInSeconds,
-        "TTL should be at least the number of days from now.");
-  }
-
-  @Test
   void testBuildAttributeValue() {
     final long days = 3;
     long now = Instant.now().getEpochSecond();
@@ -93,6 +61,16 @@ class TimeToLiveBuilderTest {
   }
 
   @Test
+  void testNegativeDaysThrowsException() {
+    final int durationInSeconds = -5;
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        () -> new TimeToLiveBuilder().withDaysFromNow(durationInSeconds));
+
+    assertEquals("Days must be greater than 0", exception.getMessage(),
+        "Expected an exception when days is negative.");
+  }
+
+  @Test
   void testNegativeDurationThrowsException() {
     final int durationInSeconds = -10;
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -103,12 +81,34 @@ class TimeToLiveBuilderTest {
   }
 
   @Test
-  void testNegativeDaysThrowsException() {
-    final int durationInSeconds = -5;
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> new TimeToLiveBuilder().withDaysFromNow(durationInSeconds));
+  void testWithDaysFromNow() {
+    final long days = 7;
+    long now = Instant.now().getEpochSecond();
+    final long expectedDurationInSeconds = days * 24 * 60 * 60;
 
-    assertEquals("Days must be greater than 0", exception.getMessage(),
-        "Expected an exception when days is negative.");
+    long ttl = new TimeToLiveBuilder().withDaysFromNow(days).build();
+
+    assertTrue(ttl >= now + expectedDurationInSeconds,
+        "TTL should be at least the number of days from now.");
+  }
+
+  @Test
+  void testWithDurationFromNow() {
+    final long durationInSeconds = 3600;
+    long now = Instant.now().getEpochSecond();
+
+    long ttl = new TimeToLiveBuilder().withDurationFromNow(durationInSeconds).build();
+
+    assertTrue(ttl >= now + durationInSeconds, "TTL should be at least the duration from now.");
+  }
+
+  @Test
+  void testWithExpirationTime() {
+    Instant expirationTime = Instant.parse("2025-01-31T23:59:59Z");
+    long expectedTtl = expirationTime.getEpochSecond();
+
+    long ttl = new TimeToLiveBuilder().withExpirationTime(expirationTime).build();
+
+    assertEquals(expectedTtl, ttl, "TTL should match the specified expiration time.");
   }
 }

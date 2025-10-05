@@ -67,21 +67,21 @@ public final class JwtTokenDecoder {
   }
 
   /**
-   * Get Permissions {@link Map}.
-   * 
-   * @return Map
-   */
-  public Map<String, List<String>> getPermissions() {
-    return this.permissions;
-  }
-
-  /**
    * Get Groups.
    * 
    * @return {@link List} {@link String}
    */
   public List<String> getGroups() {
     return this.groups;
+  }
+
+  /**
+   * Get Permissions {@link Map}.
+   * 
+   * @return Map
+   */
+  public Map<String, List<String>> getPermissions() {
+    return this.permissions;
   }
 
   /**

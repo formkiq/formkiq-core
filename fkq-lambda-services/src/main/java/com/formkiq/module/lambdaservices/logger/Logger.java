@@ -29,30 +29,12 @@ package com.formkiq.module.lambdaservices.logger;
 public interface Logger {
 
   /**
-   * Trace Log.
-   * 
-   * @param message {@link String}
-   */
-  default void trace(final String message) {
-    log(LogLevel.TRACE, message);
-  }
-
-  /**
    * Debug Log.
    * 
    * @param message {@link String}
    */
   default void debug(final String message) {
     log(LogLevel.DEBUG, message);
-  }
-
-  /**
-   * Info Log.
-   * 
-   * @param message {@link String}
-   */
-  default void info(final String message) {
-    log(LogLevel.INFO, message);
   }
 
   /**
@@ -74,6 +56,32 @@ public interface Logger {
   }
 
   /**
+   * Get Current {@link LogLevel}.
+   * 
+   * @return {@link LogLevel}
+   */
+  LogLevel getCurrentLogLevel();
+
+  /**
+   * Info Log.
+   * 
+   * @param message {@link String}
+   */
+  default void info(final String message) {
+    log(LogLevel.INFO, message);
+  }
+
+  /**
+   * Is Current {@link LogLevel} going to be logged.
+   * 
+   * @param level {@link LogLevel}
+   * @return boolean
+   */
+  default boolean isLogged(final LogLevel level) {
+    return level.getLevel() >= getCurrentLogLevel().getLevel();
+  }
+
+  /**
    * Log Message.
    * 
    * @param level {@link LogLevel}
@@ -90,19 +98,11 @@ public interface Logger {
   void log(LogLevel level, Throwable ex);
 
   /**
-   * Is Current {@link LogLevel} going to be logged.
+   * Trace Log.
    * 
-   * @param level {@link LogLevel}
-   * @return boolean
+   * @param message {@link String}
    */
-  default boolean isLogged(final LogLevel level) {
-    return level.getLevel() >= getCurrentLogLevel().getLevel();
+  default void trace(final String message) {
+    log(LogLevel.TRACE, message);
   }
-
-  /**
-   * Get Current {@link LogLevel}.
-   * 
-   * @return {@link LogLevel}
-   */
-  LogLevel getCurrentLogLevel();
 }

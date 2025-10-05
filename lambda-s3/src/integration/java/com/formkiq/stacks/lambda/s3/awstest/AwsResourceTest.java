@@ -87,23 +87,6 @@ public class AwsResourceTest extends AbstractAwsTest {
   /** Document Event Queue 1. */
   private static String documentSnsQueue;
 
-  @BeforeAll
-  public static void setup() {
-    documentSnsQueue =
-        getSsmService().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
-    getSqsService().clearQueue(documentSnsQueue);
-  }
-
-  @BeforeEach
-  public void setupTest() {
-    getSqsService().clearQueue(documentSnsQueue);
-  }
-
-  @AfterAll
-  public static void teardown() {
-    getSqsService().clearQueue(documentSnsQueue);
-  }
-
   /**
    * Assert {@link LambdaFunctionConfiguration}.
    *
@@ -161,6 +144,18 @@ public class AwsResourceTest extends AbstractAwsTest {
     getSqsService().clearQueue(queueUrl);
   }
 
+  @BeforeAll
+  public static void setup() {
+    documentSnsQueue =
+        getSsmService().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
+    getSqsService().clearQueue(documentSnsQueue);
+  }
+
+  @AfterAll
+  public static void teardown() {
+    getSqsService().clearQueue(documentSnsQueue);
+  }
+
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
@@ -169,6 +164,11 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, q.events().size());
     Event e = q.events().get(0);
     assertEquals("s3:ObjectCreated:*", e.toString());
+  }
+
+  @BeforeEach
+  public void setupTest() {
+    getSqsService().clearQueue(documentSnsQueue);
   }
 
   /**

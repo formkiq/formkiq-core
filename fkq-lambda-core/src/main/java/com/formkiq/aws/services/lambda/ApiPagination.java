@@ -58,6 +58,15 @@ public class ApiPagination {
   }
 
   /**
+   * Get Query Limit.
+   * 
+   * @return int
+   */
+  public int getLimit() {
+    return this.limit;
+  }
+
+  /**
    * Get Next Token.
    * 
    * @return {@link String}
@@ -76,57 +85,12 @@ public class ApiPagination {
   }
 
   /**
-   * Set Previous Token.
-   * 
-   * @param token {@link String}
-   */
-  public void setPrevious(final String token) {
-    this.previous = token;
-  }
-
-  /**
    * Get {@link PaginationMapToken}.
    * 
    * @return {@link PaginationMapToken}
    */
   public PaginationMapToken getStartkey() {
     return this.startkey;
-  }
-
-  /**
-   * Set {@link PaginationMapToken}.
-   * 
-   * @param token {@link PaginationMapToken}
-   */
-  public void setStartkey(final PaginationMapToken token) {
-    this.startkey = token;
-  }
-
-  /**
-   * Get Query Limit.
-   * 
-   * @return int
-   */
-  public int getLimit() {
-    return this.limit;
-  }
-
-  /**
-   * Set Query Limit.
-   * 
-   * @param querylimit int
-   */
-  public void setLimit(final int querylimit) {
-    this.limit = querylimit;
-  }
-
-  /**
-   * Has Previous Token.
-   * 
-   * @return boolean
-   */
-  public boolean hasPrevious() {
-    return this.previous != null;
   }
 
   /**
@@ -139,11 +103,47 @@ public class ApiPagination {
   }
 
   /**
+   * Has Previous Token.
+   * 
+   * @return boolean
+   */
+  public boolean hasPrevious() {
+    return this.previous != null;
+  }
+
+  /**
    * Set whether Has Next.
    * 
    * @param nextpage boolean
    */
   public void setHasNext(final boolean nextpage) {
     this.hasNext = nextpage;
+  }
+
+  /**
+   * Set Query Limit.
+   * 
+   * @param querylimit int
+   */
+  public void setLimit(final int querylimit) {
+    this.limit = querylimit;
+  }
+
+  /**
+   * Set Previous Token.
+   * 
+   * @param token {@link String}
+   */
+  public void setPrevious(final String token) {
+    this.previous = token;
+  }
+
+  /**
+   * Set {@link PaginationMapToken}.
+   * 
+   * @param token {@link PaginationMapToken}
+   */
+  public void setStartkey(final PaginationMapToken token) {
+    this.startkey = token;
   }
 }

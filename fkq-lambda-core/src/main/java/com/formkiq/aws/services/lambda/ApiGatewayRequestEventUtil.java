@@ -57,23 +57,6 @@ public interface ApiGatewayRequestEventUtil {
   Gson GSON = GsonUtil.getInstance();
 
   /**
-   * Get SiteId as a Path Parameter.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return String
-   * @throws UnauthorizedException UnauthorizedException
-   */
-  default String getPathParameterSiteId(final ApiGatewayRequestEvent event)
-      throws UnauthorizedException {
-    String siteId = event.getPathParameters().get("siteId");
-    Optional<ReservedSiteId> reserved = ReservedSiteId.fromString(siteId);
-    if (reserved.isPresent()) {
-      throw new UnauthorizedException("'" + siteId + "' siteId is reserved");
-    }
-    return siteId;
-  }
-
-  /**
    * Create Pagination.
    *
    * @param cacheService {@link CacheService}
@@ -246,7 +229,6 @@ public interface ApiGatewayRequestEventUtil {
     return pagination;
   }
 
-
   /**
    * Get Query Parameter.
    *
@@ -260,6 +242,7 @@ public interface ApiGatewayRequestEventUtil {
     return value != null ? value.trim() : null;
   }
 
+
   /**
    * Get Path Parameter.
    *
@@ -271,6 +254,23 @@ public interface ApiGatewayRequestEventUtil {
     Map<String, String> q = event.getPathParameters();
     String value = q != null ? q.getOrDefault(key, null) : null;
     return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get SiteId as a Path Parameter.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return String
+   * @throws UnauthorizedException UnauthorizedException
+   */
+  default String getPathParameterSiteId(final ApiGatewayRequestEvent event)
+      throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    Optional<ReservedSiteId> reserved = ReservedSiteId.fromString(siteId);
+    if (reserved.isPresent()) {
+      throw new UnauthorizedException("'" + siteId + "' siteId is reserved");
+    }
+    return siteId;
   }
 
   /**

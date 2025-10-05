@@ -5,76 +5,76 @@ description = "FormKiQ Core - WebSocket"
 apply plugin: 'distribution'
 
 sourceSets {
-    integration {
-        java.srcDir "$projectDir/src/integration/java"
-        resources.srcDir "$projectDir/src/integration/resources"
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+    compileClasspath += main.output + test.output
+    runtimeClasspath += main.output + test.output
+  }
 }
 
 configurations {
-    integrationImplementation.extendsFrom testImplementation
-    integrationRuntime.extendsFrom testRuntime
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntime.extendsFrom testRuntime
 }
 
 def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
 }
 
 def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
 }
 
 jar.enabled = false
 
 dependencies {
-	testImplementation project(':aws-sqs')
-	testImplementation project(':aws-ssm')
-    testImplementation project(':aws-cognito-identity')
-    testImplementation project(':aws-cognito-identityprovider')
-	testImplementation project(':aws-dynamodb')
-	testImplementation project(':dynamodb-documents')
-	testImplementation project(':fkq-test-utils')
-	
-	testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.59'
-	
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
-	testImplementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.6.0'
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+  testImplementation project(':aws-sqs')
+  testImplementation project(':aws-ssm')
+  testImplementation project(':aws-cognito-identity')
+  testImplementation project(':aws-cognito-identityprovider')
+  testImplementation project(':aws-dynamodb')
+  testImplementation project(':dynamodb-documents')
+  testImplementation project(':fkq-test-utils')
+
+  testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.59'
+
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
+  testImplementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.6.0'
+  testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 }
 
 test {
-  failFast = true 
+  failFast = true
   useJUnitPlatform()
 }
 
 task integrationTest(type: Test) {
-    testClassesDirs = sourceSets.integration.output.classesDirs
-    classpath = sourceSets.integration.runtimeClasspath
-    useJUnitPlatform()
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+  useJUnitPlatform()
 }
 
 task npmInstall {
 
   dependsOn processResources
-  
+
   doLast {
-	  
-	  delete("${buildDir}/resources/main/js/websocket-api.zip")
-	  
-	  exec {
-	    workingDir "${buildDir}/resources/main/js"
-		commandLine getCmd(), getCmdParam(), "npm install"
-	  }
-	  
-	  exec {
-	    workingDir "${buildDir}/resources/main/js"
-		commandLine getCmd(), getCmdParam(), "npm run pack"
-	  }
+
+    delete("${buildDir}/resources/main/js/websocket-api.zip")
+
+    exec {
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm install"
+    }
+
+    exec {
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm run pack"
+    }
   }
 }
 
@@ -86,26 +86,26 @@ task npmtest {
   outputs.dir("${buildDir}/resources/main/js/coverage")
   doLast {
     exec {
-	  workingDir "${buildDir}/resources/main/js"
-	  commandLine getCmd(), getCmdParam(), "npm test"
-	}
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm test"
+    }
   }
 }
 
 npmtest.dependsOn compileIntegrationJava,checkstyleIntegration,spotbugsIntegration
 
-task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template.yaml")
-	outputs.files("${buildDir}/distributions/websocket-api/template.yaml")
-	
-	doLast {
-		copy {
-		  from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-		  include "template*"
-	      into "${buildDir}/distributions/websocket-api"
-	    }
-	}
-}
+//task buildTemplate {
+//  inputs.files("src/main/resources/cloudformation/template.yaml")
+//  outputs.files("${buildDir}/distributions/websocket-api/template.yaml")
+//
+//  doLast {
+//    copy {
+//      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+//      include "template*"
+//      into "${buildDir}/distributions/websocket-api"
+//    }
+//  }
+//}
 
 task unzipPack(type: Copy) {
   dependsOn npmInstall
@@ -119,21 +119,21 @@ task unzipPack(type: Copy) {
 npmtest.dependsOn npmInstall
 test.dependsOn npmtest
 
-distZip.dependsOn buildTemplate, npmInstall, unzipPack
+distZip.dependsOn npmInstall, unzipPack
 
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "websocket-api/websocket-api.zip"
+  archiveFileName = "websocket-api/websocket-api.zip"
 }
 
 distributions {
-    main {
-        contents {
-            from("${buildDir}/pack") {
-            	include "**/**"
-            }
-            into '/'
-        }
+  main {
+    contents {
+      from("${buildDir}/pack") {
+        include "**/**"
+      }
+      into '/'
     }
+  }
 }

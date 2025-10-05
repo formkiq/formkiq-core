@@ -55,6 +55,31 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** Unit Tests for request /documents/{documentId}/purge. */
 public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
 
+  private GetDocumentUrlResponse addDocument(final String siteId) throws ApiException {
+    AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+    return this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+  }
+
+  private List<Document> getDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
+  }
+
+  private List<S3Object> getS3Files(final String siteId, final String documentId) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    S3Service s3Service = getAwsServices().getExtension(S3Service.class);
+    return notNull(s3Service.listObjects(BUCKET_NAME, s3Key).contents());
+  }
+
+  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response)
+      throws IOException {
+    HttpService http = new HttpServiceJdk11();
+
+    HttpHeaders hds = new HttpHeaders();
+    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
+    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), "test content");
+  }
+
   /**
    * DELETE /documents/{documentId} request.
    *
@@ -92,12 +117,6 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(0, s3Files.size());
       }
     }
-  }
-
-  private List<S3Object> getS3Files(final String siteId, final String documentId) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    S3Service s3Service = getAwsServices().getExtension(S3Service.class);
-    return notNull(s3Service.listObjects(BUCKET_NAME, s3Key).contents());
   }
 
   /**
@@ -159,24 +178,5 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(0, s3Files.size());
       }
     }
-  }
-
-  private GetDocumentUrlResponse addDocument(final String siteId) throws ApiException {
-    AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-    return this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-  }
-
-  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response)
-      throws IOException {
-    HttpService http = new HttpServiceJdk11();
-
-    HttpHeaders hds = new HttpHeaders();
-    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
-    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), "test content");
-  }
-
-  private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
   }
 }

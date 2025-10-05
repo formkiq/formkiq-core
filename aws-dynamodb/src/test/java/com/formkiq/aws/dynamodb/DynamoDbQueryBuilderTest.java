@@ -39,27 +39,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DynamoDbQueryBuilderTest {
 
   @Test
-  void testPkOnly() {
-    QueryRequest req = DynamoDbQueryBuilder.builder().pk("val").build("MyTable");
+  void testBeginsWith() {
+    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").beginsWith("prefix").build("T");
 
-    assertEquals("MyTable", req.tableName());
-    assertNull(req.indexName());
-    assertEquals("#PK = :PK", req.keyConditionExpression());
-    assertEquals(Map.of("#PK", "PK"), req.expressionAttributeNames());
-    assertEquals(Map.of(":PK", AttributeValue.builder().s("val").build()),
-        req.expressionAttributeValues());
-    assertTrue(req.exclusiveStartKey().isEmpty());
-    assertEquals("10", req.limit().toString());
-  }
-
-  @Test
-  void testPkAndEqSk() {
-    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").eq("s").build("T");
-
-    assertEquals("#PK = :PK AND #SK = :SK", req.keyConditionExpression());
-    assertEquals(Map.of("#PK", "PK", "#SK", "SK"), req.expressionAttributeNames());
-    assertEquals(Map.of(":PK", AttributeValue.builder().s("p").build(), ":SK",
-        AttributeValue.builder().s("s").build()), req.expressionAttributeValues());
+    assertEquals("#PK = :PK AND begins_with(#SK,:SK)", req.keyConditionExpression());
+    assertTrue(req.expressionAttributeNames().containsKey("#SK"));
+    assertTrue(req.expressionAttributeValues().containsKey(":SK"));
   }
 
   @Test
@@ -77,12 +62,12 @@ public class DynamoDbQueryBuilderTest {
   }
 
   @Test
-  void testBeginsWith() {
-    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").beginsWith("prefix").build("T");
+  void testIndexNameMapping() {
+    QueryRequest req = DynamoDbQueryBuilder.builder().indexName("GSI1").pk("p").eq("s").build("T");
 
-    assertEquals("#PK = :PK AND begins_with(#SK,:SK)", req.keyConditionExpression());
-    assertTrue(req.expressionAttributeNames().containsKey("#SK"));
-    assertTrue(req.expressionAttributeValues().containsKey(":SK"));
+    assertEquals("GSI1", req.indexName());
+    assertEquals("GSI1PK", req.expressionAttributeNames().get("#PK"));
+    assertEquals("GSI1SK", req.expressionAttributeNames().get("#SK"));
   }
 
   @Test
@@ -98,11 +83,26 @@ public class DynamoDbQueryBuilderTest {
   }
 
   @Test
-  void testIndexNameMapping() {
-    QueryRequest req = DynamoDbQueryBuilder.builder().indexName("GSI1").pk("p").eq("s").build("T");
+  void testPkAndEqSk() {
+    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").eq("s").build("T");
 
-    assertEquals("GSI1", req.indexName());
-    assertEquals("GSI1PK", req.expressionAttributeNames().get("#PK"));
-    assertEquals("GSI1SK", req.expressionAttributeNames().get("#SK"));
+    assertEquals("#PK = :PK AND #SK = :SK", req.keyConditionExpression());
+    assertEquals(Map.of("#PK", "PK", "#SK", "SK"), req.expressionAttributeNames());
+    assertEquals(Map.of(":PK", AttributeValue.builder().s("p").build(), ":SK",
+        AttributeValue.builder().s("s").build()), req.expressionAttributeValues());
+  }
+
+  @Test
+  void testPkOnly() {
+    QueryRequest req = DynamoDbQueryBuilder.builder().pk("val").build("MyTable");
+
+    assertEquals("MyTable", req.tableName());
+    assertNull(req.indexName());
+    assertEquals("#PK = :PK", req.keyConditionExpression());
+    assertEquals(Map.of("#PK", "PK"), req.expressionAttributeNames());
+    assertEquals(Map.of(":PK", AttributeValue.builder().s("val").build()),
+        req.expressionAttributeValues());
+    assertTrue(req.exclusiveStartKey().isEmpty());
+    assertEquals("10", req.limit().toString());
   }
 }

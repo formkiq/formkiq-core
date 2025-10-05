@@ -44,16 +44,6 @@ public interface FolderIndexProcessor {
   String DELIMINATOR = "/";
 
   /**
-   * Create Folder Paths.
-   *
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param userId {@link String}
-   * @return {@link List} {@link Map}
-   */
-  List<FolderIndexRecord> createFolders(String siteId, String path, String userId);
-
-  /**
    * Add Document To Folder.
    *
    * @param siteId {@link String}
@@ -64,6 +54,16 @@ public interface FolderIndexProcessor {
    */
   FolderIndexRecord addFileToFolder(String siteId, String documentId, FolderIndexRecord parent,
       String path);
+
+  /**
+   * Create Folder Paths.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param userId {@link String}
+   * @return {@link List} {@link Map}
+   */
+  List<FolderIndexRecord> createFolders(String siteId, String path, String userId);
 
   /**
    * Delete Empty Directory.
@@ -127,6 +127,33 @@ public interface FolderIndexProcessor {
   Map<String, FolderIndexRecord> getFolderByDocumentIds(String siteId, List<String> documentIds);
 
   /**
+   * Get Folder Index Records.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return Map
+   */
+  List<FolderIndexRecord> getFolderIndexRecords(String siteId, String path) throws IOException;
+
+  /**
+   * Get Folder Permissions Record.
+   * 
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link FolderPermissionRecord}
+   */
+  FolderPermissionRecord getFolderPermissions(String siteId, String path);
+
+  /**
+   * Get Folder Permissions Record.
+   * 
+   * @param siteId {@link String}
+   * @param indexKey {@link String}
+   * @return {@link FolderPermissionRecord}
+   */
+  FolderPermissionRecord getFolderPermissionsByIndexKey(String siteId, String indexKey);
+
+  /**
    * Get Folders Index by documentId.
    *
    * @param siteId {@link String}
@@ -134,16 +161,6 @@ public interface FolderIndexProcessor {
    * @return {@link List} {@link FolderIndexRecord}
    */
   List<FolderIndexRecord> getFoldersByDocumentId(String siteId, String documentId);
-
-  /**
-   * Get {@link FolderIndexRecord}.
-   * 
-   * @param siteId {@link String}
-   * @param indexKey {@link String}
-   * @param isFile boolean
-   * @return FolderIndexRecord
-   */
-  FolderIndexRecord getIndexAsRecord(String siteId, String indexKey, boolean isFile);
 
   /**
    * Generates DynamoDB {@link WriteRequest} for Index.
@@ -166,13 +183,14 @@ public interface FolderIndexProcessor {
   DynamicObject getIndex(String siteId, String indexKey, boolean isFile);
 
   /**
-   * Get Folder Index Records.
-   *
+   * Get {@link FolderIndexRecord}.
+   * 
    * @param siteId {@link String}
-   * @param path {@link String}
-   * @return Map
+   * @param indexKey {@link String}
+   * @param isFile boolean
+   * @return FolderIndexRecord
    */
-  List<FolderIndexRecord> getFolderIndexRecords(String siteId, String path) throws IOException;
+  FolderIndexRecord getIndexAsRecord(String siteId, String indexKey, boolean isFile);
 
   /**
    * Is Folder in Path.
@@ -208,22 +226,13 @@ public interface FolderIndexProcessor {
       throws IOException;
 
   /**
-   * Get Folder Permissions Record.
+   * Converts IndexKey to Path.
    * 
    * @param siteId {@link String}
    * @param indexKey {@link String}
-   * @return {@link FolderPermissionRecord}
+   * @return {@link String}
    */
-  FolderPermissionRecord getFolderPermissionsByIndexKey(String siteId, String indexKey);
-
-  /**
-   * Get Folder Permissions Record.
-   * 
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @return {@link FolderPermissionRecord}
-   */
-  FolderPermissionRecord getFolderPermissions(String siteId, String path);
+  String toPath(String siteId, String indexKey);
 
   /**
    * Validate Folder Permissions.
@@ -233,13 +242,4 @@ public interface FolderIndexProcessor {
    * @param permission {@link ApiPermission}
    */
   void validateFolderPermissions(String siteId, String path, ApiPermission permission);
-
-  /**
-   * Converts IndexKey to Path.
-   * 
-   * @param siteId {@link String}
-   * @param indexKey {@link String}
-   * @return {@link String}
-   */
-  String toPath(String siteId, String indexKey);
 }

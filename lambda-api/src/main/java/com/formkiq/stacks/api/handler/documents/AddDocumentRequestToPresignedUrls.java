@@ -83,6 +83,27 @@ public class AddDocumentRequestToPresignedUrls
     this.username = authorization.getUsername();
   }
 
+  private void addHeaders(final Map<String, Object> map, final AddDocumentRequest item) {
+
+    Map<String, String> headers = new HashMap<>();
+
+    if (item.getChecksumType() != null) {
+
+      String checksumType = item.getChecksumType().toUpperCase();
+      headers.put("x-amz-sdk-checksum-algorithm", item.getChecksumType().toUpperCase());
+
+      if ("SHA256".equals(checksumType)) {
+        headers.put("x-amz-checksum-sha256", this.s3PresignerService.toBase64(item.getChecksum()));
+      } else if ("SHA1".equals(checksumType)) {
+        headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
+      }
+    }
+
+    if (!headers.isEmpty()) {
+      map.put("headers", headers);
+    }
+  }
+
   @Override
   public Map<String, Object> apply(final AddDocumentRequest item) {
 
@@ -119,27 +140,6 @@ public class AddDocumentRequestToPresignedUrls
     }
 
     return map;
-  }
-
-  private void addHeaders(final Map<String, Object> map, final AddDocumentRequest item) {
-
-    Map<String, String> headers = new HashMap<>();
-
-    if (item.getChecksumType() != null) {
-
-      String checksumType = item.getChecksumType().toUpperCase();
-      headers.put("x-amz-sdk-checksum-algorithm", item.getChecksumType().toUpperCase());
-
-      if ("SHA256".equals(checksumType)) {
-        headers.put("x-amz-checksum-sha256", this.s3PresignerService.toBase64(item.getChecksum()));
-      } else if ("SHA1".equals(checksumType)) {
-        headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
-      }
-    }
-
-    if (!headers.isEmpty()) {
-      map.put("headers", headers);
-    }
   }
 
   private String generatePresignedUrl(final AddDocumentRequest o) {

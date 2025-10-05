@@ -435,61 +435,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     private Date insertedDate;
 
     /**
-     * Set UserId.
-     * 
-     * @param attributeUserId {@link String}
-     * @return Builder
-     */
-    public Builder userId(final String attributeUserId) {
-      this.userId = attributeUserId;
-      return this;
-    }
-
-    /**
-     * Set {@link DocumentAttributeValueType}.
-     * 
-     * @param attributeValueType {@link DocumentAttributeValueType}
-     * @return Builder
-     */
-    public Builder valueType(final DocumentAttributeValueType attributeValueType) {
-      this.valueType = attributeValueType;
-      return this;
-    }
-
-    /**
-     * Set Key.
-     * 
-     * @param attributeKey {@link String}
-     * @return Builder
-     */
-    public Builder key(final String attributeKey) {
-      this.key = attributeKey;
-      return this;
-    }
-
-    /**
-     * Set Document Id.
-     * 
-     * @param attributeDocumentId {@link String}
-     * @return Builder
-     */
-    public Builder documentId(final String attributeDocumentId) {
-      this.documentId = attributeDocumentId;
-      return this;
-    }
-
-    /**
-     * Set String Value.
-     * 
-     * @param attributeStringValue {@link String}
-     * @return Builder
-     */
-    public Builder stringValue(final String attributeStringValue) {
-      this.stringValue = attributeStringValue;
-      return this;
-    }
-
-    /**
      * Set Boolean Value.
      * 
      * @param attributeBooleanValue {@link Boolean}
@@ -497,28 +442,6 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
      */
     public Builder booleanValue(final Boolean attributeBooleanValue) {
       this.booleanValue = attributeBooleanValue;
-      return this;
-    }
-
-    /**
-     * Set Number Value.
-     * 
-     * @param attributeNumberValue {@link Double}
-     * @return Builder
-     */
-    public Builder numberValue(final Double attributeNumberValue) {
-      this.numberValue = attributeNumberValue;
-      return this;
-    }
-
-    /**
-     * Set Inserted Date.
-     * 
-     * @param attributeInsertedDate {@link Date}
-     * @return Date
-     */
-    public Builder insertedDate(final Date attributeInsertedDate) {
-      this.insertedDate = attributeInsertedDate;
       return this;
     }
 
@@ -538,6 +461,83 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
       r.setNumberValue(numberValue);
       r.setInsertedDate(insertedDate);
       return r;
+    }
+
+    /**
+     * Set Document Id.
+     * 
+     * @param attributeDocumentId {@link String}
+     * @return Builder
+     */
+    public Builder documentId(final String attributeDocumentId) {
+      this.documentId = attributeDocumentId;
+      return this;
+    }
+
+    /**
+     * Set Inserted Date.
+     * 
+     * @param attributeInsertedDate {@link Date}
+     * @return Date
+     */
+    public Builder insertedDate(final Date attributeInsertedDate) {
+      this.insertedDate = attributeInsertedDate;
+      return this;
+    }
+
+    /**
+     * Set Key.
+     * 
+     * @param attributeKey {@link String}
+     * @return Builder
+     */
+    public Builder key(final String attributeKey) {
+      this.key = attributeKey;
+      return this;
+    }
+
+    /**
+     * Set Number Value.
+     * 
+     * @param attributeNumberValue {@link Double}
+     * @return Builder
+     */
+    public Builder numberValue(final Double attributeNumberValue) {
+      this.numberValue = attributeNumberValue;
+      return this;
+    }
+
+    /**
+     * Set String Value.
+     * 
+     * @param attributeStringValue {@link String}
+     * @return Builder
+     */
+    public Builder stringValue(final String attributeStringValue) {
+      this.stringValue = attributeStringValue;
+      return this;
+    }
+
+    /**
+     * Set UserId.
+     * 
+     * @param attributeUserId {@link String}
+     * @return Builder
+     */
+    public Builder userId(final String attributeUserId) {
+      this.userId = attributeUserId;
+      return this;
+    }
+
+    /**
+     * Set {@link DocumentAttributeValueType}.
+     * 
+     * @param attributeValueType {@link DocumentAttributeValueType}
+     * @return Builder
+     */
+    public Builder valueType(final DocumentAttributeValueType attributeValueType) {
+      this.valueType = attributeValueType;
+      return this;
     }
   }
 }

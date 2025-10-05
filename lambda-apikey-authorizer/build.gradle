@@ -77,7 +77,7 @@ test {
 //	dependsOn assembleTemplate
 //}
 
-distZip.dependsOn graalvmNativeImage
+//distZip.dependsOn graalvmNativeImage
 
 tasks.distTar.enabled = false
 

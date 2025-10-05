@@ -45,22 +45,21 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 public class FkqSchemaService {
 
   /**
-   * Add Composite Key.
+   * Add Classification.
    *
    * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param name {@link String}
-   * @param compositeKeys {@link List} {@link String}
+   * @param attr {@link SetSchemaAttributes}
+   * @return String
    * @throws ApiException ApiException
    */
-  public static void setSitesSchema(final ApiClient client, final String siteId, final String name,
-      final List<String> compositeKeys) throws ApiException {
-
+  public static String addClassification(final ApiClient client, final String siteId,
+      final String name, final SetSchemaAttributes attr) throws ApiException {
     SchemasApi api = new SchemasApi(client);
-
-    SetSchemaAttributes attributes = new SetSchemaAttributes().compositeKeys(
-        Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
-    api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
+    AddClassificationRequest req = new AddClassificationRequest()
+        .classification(new AddClassification().name(name).attributes(attr));
+    return api.addClassification(siteId, req).getClassificationId();
   }
 
   /**
@@ -80,20 +79,21 @@ public class FkqSchemaService {
   }
 
   /**
-   * Add Classification.
+   * Add Composite Key.
    *
    * @param client {@link ApiClient}
    * @param siteId {@link String}
    * @param name {@link String}
-   * @param attr {@link SetSchemaAttributes}
-   * @return String
+   * @param compositeKeys {@link List} {@link String}
    * @throws ApiException ApiException
    */
-  public static String addClassification(final ApiClient client, final String siteId,
-      final String name, final SetSchemaAttributes attr) throws ApiException {
+  public static void setSitesSchema(final ApiClient client, final String siteId, final String name,
+      final List<String> compositeKeys) throws ApiException {
+
     SchemasApi api = new SchemasApi(client);
-    AddClassificationRequest req = new AddClassificationRequest()
-        .classification(new AddClassification().name(name).attributes(attr));
-    return api.addClassification(siteId, req).getClassificationId();
+
+    SetSchemaAttributes attributes = new SetSchemaAttributes().compositeKeys(
+        Collections.singletonList(new AttributeSchemaCompositeKey().attributeKeys(compositeKeys)));
+    api.setSitesSchema(siteId, new SetSitesSchemaRequest().name(name).attributes(attributes));
   }
 }

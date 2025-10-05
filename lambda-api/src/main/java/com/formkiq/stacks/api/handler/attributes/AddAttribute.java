@@ -51,32 +51,39 @@ public class AddAttribute {
   }
 
   /**
-   * Get {@link Watermark}.
-   * 
-   * @return {@link Watermark}
-   */
-  public Watermark getWatermark() {
-    return this.watermark;
-  }
-
-  /**
-   * Set {@link Watermark}.
-   * 
-   * @param attributeWatermark {@link Watermark}
-   * @return AddAttribute
-   */
-  public AddAttribute setWatermark(final Watermark attributeWatermark) {
-    this.watermark = attributeWatermark;
-    return this;
-  }
-
-  /**
    * Get {@link AttributeDataType}.
    * 
    * @return {@link AttributeDataType}
    */
   public AttributeDataType getDataType() {
     return this.dataType;
+  }
+
+  /**
+   * Get Key {@link String}.
+   * 
+   * @return {@link String}
+   */
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Get {@link AttributeType}.
+   * 
+   * @return {@link AttributeType}
+   */
+  public AttributeType getType() {
+    return this.type;
+  }
+
+  /**
+   * Get {@link Watermark}.
+   * 
+   * @return {@link Watermark}
+   */
+  public Watermark getWatermark() {
+    return this.watermark;
   }
 
   /**
@@ -91,15 +98,6 @@ public class AddAttribute {
   }
 
   /**
-   * Get Key {@link String}.
-   * 
-   * @return {@link String}
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
    * Set Key.
    * 
    * @param attributeKey {@link String}
@@ -111,15 +109,6 @@ public class AddAttribute {
   }
 
   /**
-   * Get {@link AttributeType}.
-   * 
-   * @return {@link AttributeType}
-   */
-  public AttributeType getType() {
-    return this.type;
-  }
-
-  /**
    * Set Attribute Type.
    * 
    * @param attributeType {@link AttributeType}
@@ -127,6 +116,17 @@ public class AddAttribute {
    */
   public AddAttribute setType(final AttributeType attributeType) {
     this.type = attributeType;
+    return this;
+  }
+
+  /**
+   * Set {@link Watermark}.
+   * 
+   * @param attributeWatermark {@link Watermark}
+   * @return AddAttribute
+   */
+  public AddAttribute setWatermark(final Watermark attributeWatermark) {
+    this.watermark = attributeWatermark;
     return this;
   }
 }

@@ -150,25 +150,6 @@ public final class ApiGatewayRequestEventUtil {
   }
 
   /**
-   * Get Site Id.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  public static String getSiteId(final ApiGatewayRequestEvent event) {
-
-    String siteId = null;
-    Map<String, String> map = event.getQueryStringParameters();
-
-    if (map != null && map.containsKey("siteId")) {
-      siteId = map.get("siteId");
-    }
-
-    return siteId;
-  }
-
-
-  /**
    * Get Limit Parameter.
    *
    * @param logger {@link LambdaLogger}
@@ -194,6 +175,104 @@ public final class ApiGatewayRequestEventUtil {
     }
 
     return limit;
+  }
+
+
+  /**
+   * Find Query Parameter 'next' or 'prev' and convert to {@link ApiPagination}.
+   *
+   * @param cacheService {@link CacheService}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link ApiPagination}
+   */
+  public static ApiPagination getPagination(final CacheService cacheService,
+      final ApiGatewayRequestEvent event) {
+
+    ApiPagination pagination = null;
+    Map<String, String> q = getQueryParameterMap(event);
+
+    if (isPaginationNext(q)) {
+
+      pagination = toPaginationToken(cacheService, q.get("next"));
+
+    } else if (isPaginationPrevious(q)) {
+
+      pagination = toPaginationToken(cacheService, q.get("previous"));
+
+      if (pagination.getPrevious() != null) {
+
+        pagination = toPaginationToken(cacheService, pagination.getPrevious());
+
+      } else {
+        // if @ start of list, preserve the limit
+        int limit = pagination.getLimit();
+        pagination = new ApiPagination();
+        pagination.setLimit(limit);
+      }
+    }
+
+    if (pagination != null && pagination.getLimit() < 1) {
+      pagination.setLimit(MAX_RESULTS);
+    }
+
+    return pagination;
+  }
+
+  /**
+   * Get Query Parameter.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  public static String getParameter(final ApiGatewayRequestEvent event, final String key) {
+    Map<String, String> q = getQueryParameterMap(event);
+    String value = q.getOrDefault(key, null);
+    return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get Path Parameter.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param key {@link String}
+   * @return {@link String}
+   */
+  public static String getPathParameter(final ApiGatewayRequestEvent event, final String key) {
+    Map<String, String> q = event.getPathParameters();
+    String value = q != null ? q.getOrDefault(key, null) : null;
+    return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get Query Parameter Map.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Map}
+   */
+  public static Map<String, String> getQueryParameterMap(final ApiGatewayRequestEvent event) {
+    Map<String, String> q =
+        event.getQueryStringParameters() != null ? event.getQueryStringParameters()
+            : Collections.emptyMap();
+    return q;
+  }
+
+  /**
+   * Get Site Id.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   */
+  public static String getSiteId(final ApiGatewayRequestEvent event) {
+
+    String siteId = null;
+    Map<String, String> map = event.getQueryStringParameters();
+
+    if (map != null && map.containsKey("siteId")) {
+      siteId = map.get("siteId");
+    }
+
+    return siteId;
   }
 
   /**
@@ -249,85 +328,6 @@ public final class ApiGatewayRequestEventUtil {
     }
 
     return pagination;
-  }
-
-  /**
-   * Find Query Parameter 'next' or 'prev' and convert to {@link ApiPagination}.
-   *
-   * @param cacheService {@link CacheService}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link ApiPagination}
-   */
-  public static ApiPagination getPagination(final CacheService cacheService,
-      final ApiGatewayRequestEvent event) {
-
-    ApiPagination pagination = null;
-    Map<String, String> q = getQueryParameterMap(event);
-
-    if (isPaginationNext(q)) {
-
-      pagination = toPaginationToken(cacheService, q.get("next"));
-
-    } else if (isPaginationPrevious(q)) {
-
-      pagination = toPaginationToken(cacheService, q.get("previous"));
-
-      if (pagination.getPrevious() != null) {
-
-        pagination = toPaginationToken(cacheService, pagination.getPrevious());
-
-      } else {
-        // if @ start of list, preserve the limit
-        int limit = pagination.getLimit();
-        pagination = new ApiPagination();
-        pagination.setLimit(limit);
-      }
-    }
-
-    if (pagination != null && pagination.getLimit() < 1) {
-      pagination.setLimit(MAX_RESULTS);
-    }
-
-    return pagination;
-  }
-
-  /**
-   * Get Path Parameter.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  public static String getPathParameter(final ApiGatewayRequestEvent event, final String key) {
-    Map<String, String> q = event.getPathParameters();
-    String value = q != null ? q.getOrDefault(key, null) : null;
-    return value != null ? value.trim() : null;
-  }
-
-  /**
-   * Get Query Parameter.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  public static String getParameter(final ApiGatewayRequestEvent event, final String key) {
-    Map<String, String> q = getQueryParameterMap(event);
-    String value = q.getOrDefault(key, null);
-    return value != null ? value.trim() : null;
-  }
-
-  /**
-   * Get Query Parameter Map.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link Map}
-   */
-  public static Map<String, String> getQueryParameterMap(final ApiGatewayRequestEvent event) {
-    Map<String, String> q =
-        event.getQueryStringParameters() != null ? event.getQueryStringParameters()
-            : Collections.emptyMap();
-    return q;
   }
 
   /** private constructor. */

@@ -50,6 +50,11 @@ import com.formkiq.stacks.dynamodb.WebhooksService;
 /** Unit Tests for request /webhooks/{webhookId}. */
 public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
 
+  private void putSsmParameter() {
+    SsmService ssm = getAwsServices().getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/test/api/DocumentsPublicHttpUrl", "http://localhost:8080");
+  }
+
   /**
    * Delete /webhooks/{webhookId}.
    *
@@ -159,11 +164,6 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void putSsmParameter() {
-    SsmService ssm = getAwsServices().getExtension(SsmService.class);
-    ssm.putParameter("/formkiq/test/api/DocumentsPublicHttpUrl", "http://localhost:8080");
-  }
-
   /**
    * GET /webhooks/{webhookId} with PRIVATE.
    *
@@ -201,20 +201,6 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joesmith", webhook.getUserId());
 
       verifyUrl(siteId, webhookId, webhook, false);
-    }
-  }
-
-  private void verifyUrl(final String siteId, final String id, final GetWebhookResponse result,
-      final boolean publicUrl) {
-    String path = publicUrl ? "/public" : "/private";
-    if (siteId == null) {
-      assertEquals("http://localhost:8080" + path + "/webhooks/" + id, result.getUrl());
-      assertEquals(DEFAULT_SITE_ID, result.getSiteId());
-    } else {
-      assertNotNull(result.getSiteId());
-      assertNotEquals(DEFAULT_SITE_ID, result.getSiteId());
-      assertEquals("http://localhost:8080" + path + "/webhooks/" + id + "?siteId=" + siteId,
-          result.getUrl());
     }
   }
 
@@ -258,6 +244,20 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("false", webhook.getEnabled());
 
       verifyUrl(siteId, id, webhook, true);
+    }
+  }
+
+  private void verifyUrl(final String siteId, final String id, final GetWebhookResponse result,
+      final boolean publicUrl) {
+    String path = publicUrl ? "/public" : "/private";
+    if (siteId == null) {
+      assertEquals("http://localhost:8080" + path + "/webhooks/" + id, result.getUrl());
+      assertEquals(DEFAULT_SITE_ID, result.getSiteId());
+    } else {
+      assertNotNull(result.getSiteId());
+      assertNotEquals(DEFAULT_SITE_ID, result.getSiteId());
+      assertEquals("http://localhost:8080" + path + "/webhooks/" + id + "?siteId=" + siteId,
+          result.getUrl());
     }
   }
 }

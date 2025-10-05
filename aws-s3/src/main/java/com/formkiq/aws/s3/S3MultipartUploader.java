@@ -72,6 +72,40 @@ public class S3MultipartUploader {
   }
 
   /**
+   * Abort Multipart Upload.
+   * 
+   * @param uploadId {@link String}
+   */
+  public void abortMultipartUpload(final String uploadId) {
+    final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
+    final String bucketName = metadata.bucket();
+    final String objectKey = metadata.key();
+
+    AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
+        .bucket(bucketName).key(objectKey).uploadId(uploadId).build();
+    this.s3.abortMultipartUpload(abortRequest);
+  }
+
+  /**
+   * Complete Upload.
+   * 
+   * @param uploadId {@link String}
+   */
+  public void completeUpload(final String uploadId) {
+    final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
+    final String bucketName = metadata.bucket();
+    final String objectKey = metadata.key();
+    final Collection<CompletedPart> completedParts = this.uploadIdCompletedParts.get(uploadId);
+
+    CompletedMultipartUpload completedMultipartUpload =
+        CompletedMultipartUpload.builder().parts(completedParts).build();
+    CompleteMultipartUploadRequest completeMultipartUploadRequest =
+        CompleteMultipartUploadRequest.builder().bucket(bucketName).key(objectKey)
+            .uploadId(uploadId).multipartUpload(completedMultipartUpload).build();
+    this.s3.completeMultipartUpload(completeMultipartUploadRequest);
+  }
+
+  /**
    * Initialize Multipart upload.
    * 
    * @param bucket {@link String}
@@ -117,39 +151,5 @@ public class S3MultipartUploader {
       this.abortMultipartUpload(uploadId);
       throw e;
     }
-  }
-
-  /**
-   * Complete Upload.
-   * 
-   * @param uploadId {@link String}
-   */
-  public void completeUpload(final String uploadId) {
-    final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
-    final String bucketName = metadata.bucket();
-    final String objectKey = metadata.key();
-    final Collection<CompletedPart> completedParts = this.uploadIdCompletedParts.get(uploadId);
-
-    CompletedMultipartUpload completedMultipartUpload =
-        CompletedMultipartUpload.builder().parts(completedParts).build();
-    CompleteMultipartUploadRequest completeMultipartUploadRequest =
-        CompleteMultipartUploadRequest.builder().bucket(bucketName).key(objectKey)
-            .uploadId(uploadId).multipartUpload(completedMultipartUpload).build();
-    this.s3.completeMultipartUpload(completeMultipartUploadRequest);
-  }
-
-  /**
-   * Abort Multipart Upload.
-   * 
-   * @param uploadId {@link String}
-   */
-  public void abortMultipartUpload(final String uploadId) {
-    final CreateMultipartUploadResponse metadata = this.uploadIdMetadata.get(uploadId);
-    final String bucketName = metadata.bucket();
-    final String objectKey = metadata.key();
-
-    AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
-        .bucket(bucketName).key(objectKey).uploadId(uploadId).build();
-    this.s3.abortMultipartUpload(abortRequest);
   }
 }

@@ -36,16 +36,104 @@ import java.util.UUID;
  * PK, and type.
  */
 public class DynamoDbStreamEventBuilder {
+  /**
+   * Builder.
+   */
+  public static class Builder {
+    /** Document Id. */
+    private String documentId;
+    /** Sk. */
+    private String sk;
+    /** Type. */
+    private String type;
+    /** Pk. */
+    private String pk;
+
+    /**
+     * Builds and returns the event payload as a Map.
+     * 
+     * @return {@link AwsEvent}
+     */
+    public AwsEvent build() {
+      validate();
+      Map<String, Object> map = new DynamoDbStreamEventBuilder(this).build();
+      String json = GSON.toJson(map);
+      return GSON.fromJson(json, AwsEvent.class);
+    }
+
+    /**
+     * Sets the docId (e.g. "7e4a43d6-b74a-4fb8-a751-e724cff5c3de").
+     * 
+     * @param docId {@link String}
+     * @return Builder
+     */
+    public Builder documentId(final String docId) {
+      this.documentId = docId;
+      return this;
+    }
+
+    /**
+     * Sets the PK (e.g. "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de").
+     * 
+     * @param eventPk {@link String}
+     * @return Builder
+     */
+    public Builder pk(final String eventPk) {
+      this.pk = eventPk;
+      return this;
+    }
+
+    /**
+     * Sets the SK (e.g. "syncs#2025-01-22T15:53:12.342Z").
+     * 
+     * @param eventSk {@link String}
+     * @return Builder
+     */
+    public Builder sk(final String eventSk) {
+      this.sk = eventSk;
+      return this;
+    }
+
+    /**
+     * Sets the eventType (e.g. "METADATA").
+     * 
+     * @param eventType {@link String}
+     * @return Builder
+     */
+    public Builder type(final String eventType) {
+      this.type = eventType;
+      return this;
+    }
+
+    private void validate() {
+      if (documentId == null || sk == null || type == null || pk == null) {
+        throw new IllegalStateException("documentId, sk, type, and pk must be set");
+      }
+    }
+  }
+
+  /** {@link Gson}. */
+  private static final Gson GSON = new Gson();
+
+  /**
+   * Entry point to the builder.
+   * 
+   * @return Builder
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
   /** Document Id. */
   private final String documentId;
   /** Sk. */
   private final String sk;
+
   /** Type. */
   private final String type;
+
   /** Pk. */
   private final String pk;
-  /** {@link Gson}. */
-  private static final Gson GSON = new Gson();
 
   /**
    * constructor.
@@ -113,90 +201,5 @@ public class DynamoDbStreamEventBuilder {
     Map<String, Object> root = new LinkedHashMap<>();
     root.put("Records", Collections.singletonList(record));
     return root;
-  }
-
-  /**
-   * Entry point to the builder.
-   * 
-   * @return Builder
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  /**
-   * Builder.
-   */
-  public static class Builder {
-    /** Document Id. */
-    private String documentId;
-    /** Sk. */
-    private String sk;
-    /** Type. */
-    private String type;
-    /** Pk. */
-    private String pk;
-
-    /**
-     * Sets the docId (e.g. "7e4a43d6-b74a-4fb8-a751-e724cff5c3de").
-     * 
-     * @param docId {@link String}
-     * @return Builder
-     */
-    public Builder documentId(final String docId) {
-      this.documentId = docId;
-      return this;
-    }
-
-    /**
-     * Sets the SK (e.g. "syncs#2025-01-22T15:53:12.342Z").
-     * 
-     * @param eventSk {@link String}
-     * @return Builder
-     */
-    public Builder sk(final String eventSk) {
-      this.sk = eventSk;
-      return this;
-    }
-
-    /**
-     * Sets the eventType (e.g. "METADATA").
-     * 
-     * @param eventType {@link String}
-     * @return Builder
-     */
-    public Builder type(final String eventType) {
-      this.type = eventType;
-      return this;
-    }
-
-    /**
-     * Sets the PK (e.g. "docs#7e4a43d6-b74a-4fb8-a751-e724cff5c3de").
-     * 
-     * @param eventPk {@link String}
-     * @return Builder
-     */
-    public Builder pk(final String eventPk) {
-      this.pk = eventPk;
-      return this;
-    }
-
-    private void validate() {
-      if (documentId == null || sk == null || type == null || pk == null) {
-        throw new IllegalStateException("documentId, sk, type, and pk must be set");
-      }
-    }
-
-    /**
-     * Builds and returns the event payload as a Map.
-     * 
-     * @return {@link AwsEvent}
-     */
-    public AwsEvent build() {
-      validate();
-      Map<String, Object> map = new DynamoDbStreamEventBuilder(this).build();
-      String json = GSON.toJson(map);
-      return GSON.fromJson(json, AwsEvent.class);
-    }
   }
 }

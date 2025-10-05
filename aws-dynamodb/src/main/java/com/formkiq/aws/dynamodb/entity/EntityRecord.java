@@ -131,48 +131,16 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
       return this;
     }
 
-    /**
-     * Sets the entity type identifier.
-     *
-     * @param entityTypeDocumentId the document ID
-     * @return this Builder
-     */
-    public Builder entityTypeId(final String entityTypeDocumentId) {
-      this.entityTypeId = entityTypeDocumentId;
-      return this;
-    }
+    @Override
+    public EntityRecord build(final String siteId) {
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
-    /**
-     * Sets the document identifier.
-     *
-     * @param entityTypeDocumentId the document ID
-     * @return this Builder
-     */
-    public Builder documentId(final String entityTypeDocumentId) {
-      this.documentId = entityTypeDocumentId;
-      return this;
-    }
+      DynamoDbKey key = buildKey(siteId);
 
-    /**
-     * Sets the entityName of the document.
-     *
-     * @param entityName the entityName
-     * @return this Builder
-     */
-    public Builder name(final String entityName) {
-      this.name = entityName;
-      return this;
-    }
+      Map<String, Object> map = new EntityAttributesToMapTransformer().apply(attributes);
 
-    /**
-     * Sets the insertion timestamp with millisecond precision.
-     *
-     * @param entityInsertedDate the insertion date
-     * @return this Builder
-     */
-    public Builder insertedDate(final Date entityInsertedDate) {
-      this.insertedDate = new Date(entityInsertedDate.getTime());
-      return this;
+      Map<String, AttributeValue> entityAttributes = new MapToAttributeValue().apply(map);
+      return new EntityRecord(key, entityTypeId, documentId, name, insertedDate, entityAttributes);
     }
 
     @Override
@@ -191,16 +159,48 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
           .build();
     }
 
-    @Override
-    public EntityRecord build(final String siteId) {
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+    /**
+     * Sets the document identifier.
+     *
+     * @param entityTypeDocumentId the document ID
+     * @return this Builder
+     */
+    public Builder documentId(final String entityTypeDocumentId) {
+      this.documentId = entityTypeDocumentId;
+      return this;
+    }
 
-      DynamoDbKey key = buildKey(siteId);
+    /**
+     * Sets the entity type identifier.
+     *
+     * @param entityTypeDocumentId the document ID
+     * @return this Builder
+     */
+    public Builder entityTypeId(final String entityTypeDocumentId) {
+      this.entityTypeId = entityTypeDocumentId;
+      return this;
+    }
 
-      Map<String, Object> map = new EntityAttributesToMapTransformer().apply(attributes);
+    /**
+     * Sets the insertion timestamp with millisecond precision.
+     *
+     * @param entityInsertedDate the insertion date
+     * @return this Builder
+     */
+    public Builder insertedDate(final Date entityInsertedDate) {
+      this.insertedDate = new Date(entityInsertedDate.getTime());
+      return this;
+    }
 
-      Map<String, AttributeValue> entityAttributes = new MapToAttributeValue().apply(map);
-      return new EntityRecord(key, entityTypeId, documentId, name, insertedDate, entityAttributes);
+    /**
+     * Sets the entityName of the document.
+     *
+     * @param entityName the entityName
+     * @return this Builder
+     */
+    public Builder name(final String entityName) {
+      this.name = entityName;
+      return this;
     }
   }
 }

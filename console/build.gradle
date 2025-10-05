@@ -50,20 +50,20 @@ task integrationTest(type: Test) {
   useJUnitPlatform()
 }
 
-task buildTemplate {
-  inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
-  outputs.files("${buildDir}/distributions/console/template.yaml", "${buildDir}/distributions/console/template-install.yaml", "${buildDir}/distributions/console/template-users.yaml")
+//task buildTemplate {
+//  inputs.files("src/main/resources/cloudformation/template.yaml", "src/main/resources/cloudformation/template-install.yaml", "src/main/resources/cloudformation/template-users.yaml")
+//  outputs.files("${buildDir}/distributions/console/template.yaml", "${buildDir}/distributions/console/template-install.yaml", "${buildDir}/distributions/console/template-users.yaml")
+//
+//  doLast {
+//    copy {
+//      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+//      include "template*"
+//      into "${buildDir}/distributions/console"
+//    }
+//  }
+//}
 
-  doLast {
-    copy {
-      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
-      include "template*"
-      into "${buildDir}/distributions/console"
-    }
-  }
-}
-
-distZip.dependsOn buildTemplate
+//distZip.dependsOn buildTemplate
 
 tasks.distTar.enabled = false
 

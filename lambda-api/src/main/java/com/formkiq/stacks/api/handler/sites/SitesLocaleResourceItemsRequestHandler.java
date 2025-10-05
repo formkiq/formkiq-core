@@ -51,6 +51,29 @@ public class SitesLocaleResourceItemsRequestHandler
   public SitesLocaleResourceItemsRequestHandler() {}
 
   @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String locale = event.getPathParameter("locale");
+    LocaleService service = awsservice.getExtension(LocaleService.class);
+    int limit = getLimit(awsservice.getLogger(), event);
+
+    String nextToken = event.getQueryStringParameter("next");
+    Pagination<LocaleTypeRecord> results = service.findAll(siteId, locale, null, nextToken, limit);
+    List<Map<String, Object>> list =
+        results.getResults().stream().map(new LocaleRecordToMap()).toList();
+
+    return ApiRequestHandlerResponse.builder().ok().body("resourceItems", list)
+        .next(results.getNextToken()).build();
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/sites/{siteId}/locales/{locale}/resourceItems";
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -75,28 +98,5 @@ public class SitesLocaleResourceItemsRequestHandler
     }
 
     return ApiRequestHandlerResponse.builder().created().body("itemKey", item.getItemKey()).build();
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String locale = event.getPathParameter("locale");
-    LocaleService service = awsservice.getExtension(LocaleService.class);
-    int limit = getLimit(awsservice.getLogger(), event);
-
-    String nextToken = event.getQueryStringParameter("next");
-    Pagination<LocaleTypeRecord> results = service.findAll(siteId, locale, null, nextToken, limit);
-    List<Map<String, Object>> list =
-        results.getResults().stream().map(new LocaleRecordToMap()).toList();
-
-    return ApiRequestHandlerResponse.builder().ok().body("resourceItems", list)
-        .next(results.getNextToken()).build();
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return "/sites/{siteId}/locales/{locale}/resourceItems";
   }
 }

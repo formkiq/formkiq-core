@@ -79,6 +79,19 @@ public class DocumentIdUrlRequestHandler
    */
   public DocumentIdUrlRequestHandler() {}
 
+  private String findContentType(final DocumentItem item) {
+    String contentType = item.getContentType();
+    if (isEmpty(contentType)) {
+
+      String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
+
+      MimeType mimeType = MimeType.findByPath(path);
+      contentType = mimeType.getContentType();
+    }
+
+    return contentType;
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -109,28 +122,17 @@ public class DocumentIdUrlRequestHandler
         .body("url", url != null ? url.toString() : null).body("documentId", documentId).build();
   }
 
-  private boolean isBypassWatermark(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final String siteId) throws ValidationException {
+  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final String versionKey,
+      final Map<String, AttributeValue> versionAttributes) throws Exception {
 
-    boolean isBypassWatermark = "true".equals(getParameter(event, "bypassWatermark"));
+    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    if (isBypassWatermark) {
-
-      if (!authorization.isAdminOrGovern(siteId)) {
-        throw new ValidationException(List
-            .of(new ValidationErrorImpl().error("user requires 'admin' or 'govern' permission")));
-      }
-    }
-
-    return isBypassWatermark;
-  }
-
-  private String getVersionKey(final ApiGatewayRequestEvent event) {
-    String versionKey = getParameter(event, "versionKey");
-    if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
-      versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
-    }
-    return versionKey;
+    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
+        versionKey, versionAttributes);
+    throwIfNull(item, new DocumentNotFoundException(documentId));
+    return item;
   }
 
   /**
@@ -152,6 +154,23 @@ public class DocumentIdUrlRequestHandler
     } catch (NumberFormatException e) {
       return defaultDurationHours;
     }
+  }
+
+  private String getFilename(final DocumentItem item) {
+
+    MimeType mt = MimeType.fromContentType(item.getContentType());
+
+    String ext = mt.getExtension();
+    String filename = item.getDocumentId();
+    if (!isEmpty(ext)) {
+      filename += "." + ext;
+    }
+
+    if (item.getPath() != null) {
+      filename = Strings.getFilename(item.getPath());
+    }
+
+    return filename;
   }
 
   @Override
@@ -256,57 +275,10 @@ public class DocumentIdUrlRequestHandler
     }
   }
 
-  private String findContentType(final DocumentItem item) {
-    String contentType = item.getContentType();
-    if (isEmpty(contentType)) {
-
-      String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
-
-      MimeType mimeType = MimeType.findByPath(path);
-      contentType = mimeType.getContentType();
-    }
-
-    return contentType;
-  }
-
-  private String getFilename(final DocumentItem item) {
-
-    MimeType mt = MimeType.fromContentType(item.getContentType());
-
-    String ext = mt.getExtension();
-    String filename = item.getDocumentId();
-    if (!isEmpty(ext)) {
-      filename += "." + ext;
-    }
-
-    if (item.getPath() != null) {
-      filename = Strings.getFilename(item.getPath());
-    }
-
-    return filename;
-  }
-
-  private boolean isS3Link(final DocumentItem item) {
-    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith(S3_PREFIX);
-  }
-
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
       final String siteId, final String documentId, final String versionKey) {
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     return versionService.get(siteId, documentId, versionKey);
-  }
-
-  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final String versionKey,
-      final Map<String, AttributeValue> versionAttributes) throws Exception {
-
-    DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
-        versionKey, versionAttributes);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
-    return item;
   }
 
   private String getVersionId(final AwsServiceCache awsservice,
@@ -323,5 +295,33 @@ public class DocumentIdUrlRequestHandler
     }
 
     return versionId;
+  }
+
+  private String getVersionKey(final ApiGatewayRequestEvent event) {
+    String versionKey = getParameter(event, "versionKey");
+    if (!isEmpty(versionKey) && !versionKey.startsWith("document#")) {
+      versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
+    }
+    return versionKey;
+  }
+
+  private boolean isBypassWatermark(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String siteId) throws ValidationException {
+
+    boolean isBypassWatermark = "true".equals(getParameter(event, "bypassWatermark"));
+
+    if (isBypassWatermark) {
+
+      if (!authorization.isAdminOrGovern(siteId)) {
+        throw new ValidationException(List
+            .of(new ValidationErrorImpl().error("user requires 'admin' or 'govern' permission")));
+      }
+    }
+
+    return isBypassWatermark;
+  }
+
+  private boolean isS3Link(final DocumentItem item) {
+    return !isEmpty(item.getDeepLinkPath()) && item.getDeepLinkPath().startsWith(S3_PREFIX);
   }
 }

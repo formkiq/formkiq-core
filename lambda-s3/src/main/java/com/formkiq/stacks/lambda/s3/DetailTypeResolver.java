@@ -43,27 +43,6 @@ public class DetailTypeResolver
   /** Default {@link String}. */
   static final String DEFAULT_DETAIL = "Unknown";
 
-  private String avToString(final Map<String, AttributeValue> map, final String key) {
-    AttributeValue av = map.get(key);
-    return av != null ? av.s() : null;
-  }
-
-  /**
-   * Builds a predicate for a given type/resource combination.
-   * 
-   * @param type {@link String}
-   * @param resource {@link String}
-   * @return {@link Predicate}
-   */
-  private Predicate<Map<String, AttributeValue>> hasTypeResource(final String type,
-      final String resource) {
-    return a -> {
-      String t = DynamoDbTypes.toString(a.get("type"));
-      String r = DynamoDbTypes.toString(a.get("resource"));
-      return type.equalsIgnoreCase(t) && resource.equalsIgnoreCase(r);
-    };
-  }
-
   /** Predicate → label mapping in order of priority. */
   private final List<Map.Entry<Predicate<Map<String, AttributeValue>>, String>> rules =
       List.of(Map.entry(hasTypeResource("CREATE", "documents"), "New Document Create Metadata"),
@@ -87,5 +66,26 @@ public class DetailTypeResolver
       }
     }
     return DEFAULT_DETAIL;
+  }
+
+  private String avToString(final Map<String, AttributeValue> map, final String key) {
+    AttributeValue av = map.get(key);
+    return av != null ? av.s() : null;
+  }
+
+  /**
+   * Builds a predicate for a given type/resource combination.
+   * 
+   * @param type {@link String}
+   * @param resource {@link String}
+   * @return {@link Predicate}
+   */
+  private Predicate<Map<String, AttributeValue>> hasTypeResource(final String type,
+      final String resource) {
+    return a -> {
+      String t = DynamoDbTypes.toString(a.get("type"));
+      String r = DynamoDbTypes.toString(a.get("resource"));
+      return type.equalsIgnoreCase(t) && resource.equalsIgnoreCase(r);
+    };
   }
 }

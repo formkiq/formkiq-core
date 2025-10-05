@@ -47,12 +47,12 @@ public class TesseractWrapperData implements TesseractWrapper {
   }
 
   @Override
-  public String doOcr(final File imageFile) throws TesseractException {
-    return this.data;
+  public String doOcr(final BufferedImage image) throws TesseractException {
+    return "BufferedImage: " + this.data;
   }
 
   @Override
-  public String doOcr(final BufferedImage image) throws TesseractException {
-    return "BufferedImage: " + this.data;
+  public String doOcr(final File imageFile) throws TesseractException {
+    return this.data;
   }
 }

@@ -42,6 +42,26 @@ import java.util.Optional;
 public class EntityRequestBuilder {
 
   /**
+   * Add Entity.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param entityTypeId Entity Type Id
+   * @param entityName Entity Name
+   * @param namespace Entity Namespace
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addEntity(final ApiClient client, final String siteId,
+      final String entityTypeId, final String entityName, final String namespace)
+      throws ApiException {
+    EntityApi api = new EntityApi(client);
+    return api.addEntity(entityTypeId,
+        new AddEntityRequest().entity(new AddEntity().name(entityName)), siteId, namespace)
+        .getEntityId();
+  }
+
+  /**
    * Add Entity Type, skip if already exists.
    *
    * @param client {@link ApiClient}
@@ -89,25 +109,5 @@ public class EntityRequestBuilder {
     EntityApi api = new EntityApi(client);
     GetEntityTypeResponse entityType = api.getEntityType(entityTypeId, siteId, namespace);
     return entityType.getEntityType();
-  }
-
-  /**
-   * Add Entity.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param entityTypeId Entity Type Id
-   * @param entityName Entity Name
-   * @param namespace Entity Namespace
-   * @return {@link String}
-   * @throws ApiException ApiException
-   */
-  public static String addEntity(final ApiClient client, final String siteId,
-      final String entityTypeId, final String entityName, final String namespace)
-      throws ApiException {
-    EntityApi api = new EntityApi(client);
-    return api.addEntity(entityTypeId,
-        new AddEntityRequest().entity(new AddEntity().name(entityName)), siteId, namespace)
-        .getEntityId();
   }
 }

@@ -112,6 +112,22 @@ public interface DocumentOcrService {
       String content, String contentType);
 
   /**
+   * Convert content to Key Value.
+   * 
+   * @param contents {@link List} {@link String}
+   * @return {@link List}
+   */
+  List<Map<String, Object>> toKeyValue(List<String> contents);
+
+  /**
+   * To Tables.
+   * 
+   * @param contents {@link List} {@link String}
+   * @return Object
+   */
+  Object toTables(List<String> contents);
+
+  /**
    * Converts OCR to Raw text.
    * 
    * @param contents {@link List} {@link String}
@@ -138,20 +154,4 @@ public interface DocumentOcrService {
    * @param status {@link OcrScanStatus}
    */
   void updateOcrScanStatus(String siteId, String documentId, OcrScanStatus status);
-
-  /**
-   * Convert content to Key Value.
-   * 
-   * @param contents {@link List} {@link String}
-   * @return {@link List}
-   */
-  List<Map<String, Object>> toKeyValue(List<String> contents);
-
-  /**
-   * To Tables.
-   * 
-   * @param contents {@link List} {@link String}
-   * @return Object
-   */
-  Object toTables(List<String> contents);
 }

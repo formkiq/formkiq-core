@@ -47,26 +47,6 @@ public class LocaleRecord implements DynamodbRecord<LocaleRecord> {
    */
   public LocaleRecord() {}
 
-  /**
-   * Get Locale.
-   * 
-   * @return String
-   */
-  public String getLocale() {
-    return this.locale;
-  }
-
-  /**
-   * Set Locale.
-   * 
-   * @param localeValue {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleRecord setLocale(final String localeValue) {
-    this.locale = localeValue;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -96,6 +76,15 @@ public class LocaleRecord implements DynamodbRecord<LocaleRecord> {
     return record;
   }
 
+  /**
+   * Get Locale.
+   * 
+   * @return String
+   */
+  public String getLocale() {
+    return this.locale;
+  }
+
   @Override
   public String pk(final String siteId) {
     return createDatabaseKey(siteId, "locale#");
@@ -109,6 +98,17 @@ public class LocaleRecord implements DynamodbRecord<LocaleRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return null;
+  }
+
+  /**
+   * Set Locale.
+   * 
+   * @param localeValue {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleRecord setLocale(final String localeValue) {
+    this.locale = localeValue;
+    return this;
   }
 
   @Override

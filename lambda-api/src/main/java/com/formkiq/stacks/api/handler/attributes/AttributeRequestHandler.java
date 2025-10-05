@@ -46,6 +46,27 @@ public class AttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
+
+    AttributeService service = awsServices.getExtension(AttributeService.class);
+
+    String siteId = authorizer.getSiteId();
+    String key = event.getPathParameters().get("key");
+
+    AttributeValidationAccess validationAccess =
+        authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_DELETE
+            : AttributeValidationAccess.DELETE;
+    Collection<ValidationError> errors = service.deleteAttribute(validationAccess, siteId, key);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Attribute '" + key + "' deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
@@ -88,26 +109,5 @@ public class AttributeRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok()
         .body(Map.of("message", "Attribute '" + key + "' updated")).build();
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
-
-    AttributeService service = awsServices.getExtension(AttributeService.class);
-
-    String siteId = authorizer.getSiteId();
-    String key = event.getPathParameters().get("key");
-
-    AttributeValidationAccess validationAccess =
-        authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_DELETE
-            : AttributeValidationAccess.DELETE;
-    Collection<ValidationError> errors = service.deleteAttribute(validationAccess, siteId, key);
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "Attribute '" + key + "' deleted").build();
   }
 }

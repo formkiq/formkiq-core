@@ -71,31 +71,6 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
-   * POST /sites/{siteId}/apiKeys default as User.
-   *
-   */
-  @Test
-  public void testHandlePostApiKeys01() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      AddApiKeyRequest req = new AddApiKeyRequest().name("test key");
-
-      // when
-      setBearerToken(siteId);
-
-      try {
-        this.systemApi.addApiKey(siteId, req);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
-      }
-    }
-  }
-
-  /**
    * Get/POST/DELETE /sites/{siteId}/apiKeys default as Admin without permissions.
    *
    * @throws Exception an error has occurred
@@ -250,5 +225,30 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     assertEquals(2, apiKeys.size());
     assertEquals("test_2", apiKeys.get(0).getName());
     assertEquals("test_3", apiKeys.get(1).getName());
+  }
+
+  /**
+   * POST /sites/{siteId}/apiKeys default as User.
+   *
+   */
+  @Test
+  public void testHandlePostApiKeys01() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      AddApiKeyRequest req = new AddApiKeyRequest().name("test key");
+
+      // when
+      setBearerToken(siteId);
+
+      try {
+        this.systemApi.addApiKey(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+      }
+    }
   }
 }

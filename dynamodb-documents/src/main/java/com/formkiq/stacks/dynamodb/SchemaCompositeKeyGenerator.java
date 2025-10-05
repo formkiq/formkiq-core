@@ -101,38 +101,6 @@ public class SchemaCompositeKeyGenerator {
   }
 
   /**
-   * Create Composite Keys from Keys and Values.
-   *
-   * @param documentId {@link String}
-   * @param compositeKeys {@link List} {@link String}
-   * @param compositeValues {@link List} {@link String}
-   * @return {@link List} {@link DocumentAttributeRecord}
-   */
-  private List<DocumentAttributeRecord> createCompositeKeys(final String documentId,
-      final List<List<String>> compositeKeys, final List<List<String>> compositeValues) {
-
-    String username = getUsername();
-    List<DocumentAttributeRecord> records = new ArrayList<>();
-
-    for (int i = 0; i < compositeKeys.size(); i++) {
-
-      String compositeKey = String.join(COMPOSITE_KEY_DELIM, compositeKeys.get(i));
-      String stringValue = String.join(COMPOSITE_KEY_DELIM, compositeValues.get(i));
-
-      DocumentAttributeRecord r = new DocumentAttributeRecord();
-      r.setKey(compositeKey);
-      r.setDocumentId(documentId);
-      r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
-      r.setStringValue(stringValue);
-      r.setInsertedDate(this.now);
-      r.setUserId(username);
-      records.add(r);
-    }
-
-    return records;
-  }
-
-  /**
    * Create Composite Keys from {@link SchemaAttributesCompositeKey}.
    *
    * @param schemaAttributes {@link SchemaAttributesCompositeKey}
@@ -197,6 +165,38 @@ public class SchemaCompositeKeyGenerator {
     }
 
     return compositeKeys;
+  }
+
+  /**
+   * Create Composite Keys from Keys and Values.
+   *
+   * @param documentId {@link String}
+   * @param compositeKeys {@link List} {@link String}
+   * @param compositeValues {@link List} {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  private List<DocumentAttributeRecord> createCompositeKeys(final String documentId,
+      final List<List<String>> compositeKeys, final List<List<String>> compositeValues) {
+
+    String username = getUsername();
+    List<DocumentAttributeRecord> records = new ArrayList<>();
+
+    for (int i = 0; i < compositeKeys.size(); i++) {
+
+      String compositeKey = String.join(COMPOSITE_KEY_DELIM, compositeKeys.get(i));
+      String stringValue = String.join(COMPOSITE_KEY_DELIM, compositeValues.get(i));
+
+      DocumentAttributeRecord r = new DocumentAttributeRecord();
+      r.setKey(compositeKey);
+      r.setDocumentId(documentId);
+      r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
+      r.setStringValue(stringValue);
+      r.setInsertedDate(this.now);
+      r.setUserId(username);
+      records.add(r);
+    }
+
+    return records;
   }
 
   private String getUsername() {

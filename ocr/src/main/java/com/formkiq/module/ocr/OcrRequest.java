@@ -74,24 +74,6 @@ public class OcrRequest {
   }
 
   /**
-   * Get Parse Types.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getParseTypes() {
-    return this.parseTypes != null ? Collections.unmodifiableList(this.parseTypes) : null;
-  }
-
-  /**
-   * Is AddPdfDetectedCharactersAsText.
-   * 
-   * @return boolean
-   */
-  public boolean isAddPdfDetectedCharactersAsText() {
-    return this.addPdfDetectedCharactersAsText;
-  }
-
-  /**
    * Get {@link OcrOutputType}.
    * 
    * @return OcrOutputType
@@ -101,12 +83,12 @@ public class OcrRequest {
   }
 
   /**
-   * Set AddPdfDetectedCharactersAsText.
+   * Get Parse Types.
    * 
-   * @param bool boolean
+   * @return {@link List} {@link String}
    */
-  public void setAddPdfDetectedCharactersAsText(final boolean bool) {
-    this.addPdfDetectedCharactersAsText = bool;
+  public List<String> getParseTypes() {
+    return this.parseTypes != null ? Collections.unmodifiableList(this.parseTypes) : null;
   }
 
   /**
@@ -119,12 +101,21 @@ public class OcrRequest {
   }
 
   /**
-   * Set {@link List} {@link AwsTextractQuery}.
+   * Is AddPdfDetectedCharactersAsText.
    * 
-   * @param list {@link List} {@link AwsTextractQuery}
+   * @return boolean
    */
-  public void setOcrTextractQueries(final List<AwsTextractQuery> list) {
-    this.textractQueries = list;
+  public boolean isAddPdfDetectedCharactersAsText() {
+    return this.addPdfDetectedCharactersAsText;
+  }
+
+  /**
+   * Set AddPdfDetectedCharactersAsText.
+   * 
+   * @param bool boolean
+   */
+  public void setAddPdfDetectedCharactersAsText(final boolean bool) {
+    this.addPdfDetectedCharactersAsText = bool;
   }
 
   /**
@@ -135,6 +126,17 @@ public class OcrRequest {
    */
   public OcrRequest setOcrEngine(final String engine) {
     this.ocrEngine = engine;
+    return this;
+  }
+
+  /**
+   * Set Number of OCR Pages.
+   * 
+   * @param numberOfPages {@link String}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
+    this.ocrNumberOfPages = numberOfPages;
     return this;
   }
 
@@ -150,14 +152,12 @@ public class OcrRequest {
   }
 
   /**
-   * Set Number of OCR Pages.
+   * Set {@link List} {@link AwsTextractQuery}.
    * 
-   * @param numberOfPages {@link String}
-   * @return {@link OcrRequest}
+   * @param list {@link List} {@link AwsTextractQuery}
    */
-  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
-    this.ocrNumberOfPages = numberOfPages;
-    return this;
+  public void setOcrTextractQueries(final List<AwsTextractQuery> list) {
+    this.textractQueries = list;
   }
 
   /**

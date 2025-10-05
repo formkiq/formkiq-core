@@ -52,6 +52,15 @@ public class AddUser {
   }
 
   /**
+   * Get Username.
+   * 
+   * @return String
+   */
+  public String getUsername() {
+    return this.username;
+  }
+
+  /**
    * Set Attribute.
    * 
    * @param userAttributes {@link Map}
@@ -60,15 +69,6 @@ public class AddUser {
   public AddUser setAttributes(final Map<String, String> userAttributes) {
     this.attributes = userAttributes;
     return this;
-  }
-
-  /**
-   * Get Username.
-   * 
-   * @return String
-   */
-  public String getUsername() {
-    return this.username;
   }
 
   /**

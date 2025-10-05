@@ -55,30 +55,6 @@ public class DateRange {
     this.endDate = (Date) end.clone();
   }
 
-  /**
-   * Get Start Date.
-   *
-   * @return {@link Date}
-   */
-  public Date getStartDate() {
-    return (Date) this.startDate.clone();
-  }
-
-  /**
-   * Get End Date.
-   *
-   * @return {@link Date}
-   */
-  public Date getEndDate() {
-    return (Date) this.endDate.clone();
-  }
-
-  @Override
-  public String toString() {
-    return this.endDate != null ? "startdate=" + this.startDate + ",enddate=" + this.endDate
-        : "startdate=" + this.startDate;
-  }
-
   @Override
   public boolean equals(final Object o) {
 
@@ -95,8 +71,32 @@ public class DateRange {
         && Objects.equals(this.endDate, dr.getEndDate());
   }
 
+  /**
+   * Get End Date.
+   *
+   * @return {@link Date}
+   */
+  public Date getEndDate() {
+    return (Date) this.endDate.clone();
+  }
+
+  /**
+   * Get Start Date.
+   *
+   * @return {@link Date}
+   */
+  public Date getStartDate() {
+    return (Date) this.startDate.clone();
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(this.startDate, this.endDate);
+  }
+
+  @Override
+  public String toString() {
+    return this.endDate != null ? "startdate=" + this.startDate + ",enddate=" + this.endDate
+        : "startdate=" + this.startDate;
   }
 }

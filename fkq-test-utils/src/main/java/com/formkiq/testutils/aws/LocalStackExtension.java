@@ -133,13 +133,6 @@ public class LocalStackExtension
     return sqs.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
   }
 
-  private void subscribeSnsTopics(final SnsService snsService, final SqsService sqsService) {
-
-    String queueSqsArn = sqsService.getQueueArn(this.sqsDocumentEventUrl);
-    this.snsDocumentEvent = snsService.createTopic(SNS_TOPIC).topicArn();
-    snsService.subscribe(this.snsDocumentEvent, "sqs", queueSqsArn);
-  }
-
   /**
    * Get SNS Document Event.
    * 
@@ -156,5 +149,12 @@ public class LocalStackExtension
    */
   public String getSqsDocumentEventUrl() {
     return this.sqsDocumentEventUrl;
+  }
+
+  private void subscribeSnsTopics(final SnsService snsService, final SqsService sqsService) {
+
+    String queueSqsArn = sqsService.getQueueArn(this.sqsDocumentEventUrl);
+    this.snsDocumentEvent = snsService.createTopic(SNS_TOPIC).topicArn();
+    snsService.subscribe(this.snsDocumentEvent, "sqs", queueSqsArn);
   }
 }

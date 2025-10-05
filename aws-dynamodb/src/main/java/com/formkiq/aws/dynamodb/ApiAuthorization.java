@@ -48,36 +48,6 @@ public class ApiAuthorization {
   private static final ThreadLocal<ApiAuthorization> CURRENT_AUTHORIZATION = new ThreadLocal<>();
 
   /**
-   * {@link Object} Cache.
-   */
-  private final Map<String, Object> cache = new HashMap<>();
-  /**
-   * Get Default SiteId.
-   */
-  private String defaultSiteId;
-  /**
-   * {@link ApiPermission} by SiteId.
-   */
-  private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
-  /**
-   * Authorization Roles.
-   */
-  private Collection<String> roles;
-  /**
-   * {@link String}.
-   */
-  private String username;
-
-  /**
-   * Login user.
-   *
-   * @param authorization {@link ApiAuthorization}
-   */
-  public static void login(final ApiAuthorization authorization) {
-    CURRENT_AUTHORIZATION.set(authorization);
-  }
-
-  /**
    * Get Current User.
    *
    * @return ApiAuthorization
@@ -91,11 +61,44 @@ public class ApiAuthorization {
   }
 
   /**
+   * Login user.
+   *
+   * @param authorization {@link ApiAuthorization}
+   */
+  public static void login(final ApiAuthorization authorization) {
+    CURRENT_AUTHORIZATION.set(authorization);
+  }
+
+  /**
    * Logout current User.
    */
   public static void logout() {
     CURRENT_AUTHORIZATION.remove();
   }
+
+  /**
+   * {@link Object} Cache.
+   */
+  private final Map<String, Object> cache = new HashMap<>();
+  /**
+   * Get Default SiteId.
+   */
+  private String defaultSiteId;
+
+  /**
+   * {@link ApiPermission} by SiteId.
+   */
+  private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
+
+  /**
+   * Authorization Roles.
+   */
+  private Collection<String> roles;
+
+  /**
+   * {@link String}.
+   */
+  private String username;
 
   /**
    * Add Object to Cache.
@@ -107,28 +110,6 @@ public class ApiAuthorization {
   public ApiAuthorization addCacheObject(final String key, final Object o) {
     this.cache.put(key, o);
     return this;
-  }
-
-  /**
-   * Returns whether the user has Admin or Govern permission.
-   * 
-   * @param siteId {@link String}
-   * @return boolean
-   */
-  public boolean isAdminOrGovern(final String siteId) {
-    Collection<ApiPermission> permissions = getPermissions(siteId);
-    return permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
-  }
-
-  /**
-   * Returns whether the user has Admin permission.
-   *
-   * @param siteId {@link String}
-   * @return boolean
-   */
-  public boolean isAdmin(final String siteId) {
-    Collection<ApiPermission> permissions = getPermissions(siteId);
-    return permissions.contains(ApiPermission.ADMIN);
   }
 
   /**
@@ -254,6 +235,28 @@ public class ApiAuthorization {
   private boolean hasAdminPermission() {
     return this.permissionsBySiteId.values().stream()
         .anyMatch(p -> p.contains(ApiPermission.ADMIN));
+  }
+
+  /**
+   * Returns whether the user has Admin permission.
+   *
+   * @param siteId {@link String}
+   * @return boolean
+   */
+  public boolean isAdmin(final String siteId) {
+    Collection<ApiPermission> permissions = getPermissions(siteId);
+    return permissions.contains(ApiPermission.ADMIN);
+  }
+
+  /**
+   * Returns whether the user has Admin or Govern permission.
+   * 
+   * @param siteId {@link String}
+   * @return boolean
+   */
+  public boolean isAdminOrGovern(final String siteId) {
+    Collection<ApiPermission> permissions = getPermissions(siteId);
+    return permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
   }
 
   /**

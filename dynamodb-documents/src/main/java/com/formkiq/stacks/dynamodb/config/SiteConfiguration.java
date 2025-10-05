@@ -58,17 +58,49 @@ public class SiteConfiguration {
 
   }
 
-  public String getWebhookTimeToLive() {
-    return this.webhookTimeToLive;
-  }
-
-  public SiteConfiguration setWebhookTimeToLive(final String ttl) {
-    this.webhookTimeToLive = ttl;
-    return this;
+  public String getChatGptApiKey() {
+    return chatGptApiKey;
   }
 
   public String getDocumentTimeToLive() {
     return this.documentTimeToLive;
+  }
+
+  public SiteConfigurationDocusign getDocusign() {
+    return this.docusign;
+  }
+
+  public SiteConfigurationGoogle getGoogle() {
+    return this.google;
+  }
+
+  public String getMaxContentLengthBytes() {
+    return maxContentLengthBytes;
+  }
+
+  public String getMaxDocuments() {
+    return maxDocuments;
+  }
+
+  public String getMaxWebhooks() {
+    return maxWebhooks;
+  }
+
+  public String getNotificationEmail() {
+    return notificationEmail;
+  }
+
+  public SiteConfigurationOcr getOcr() {
+    return ocr;
+  }
+
+  public String getWebhookTimeToLive() {
+    return this.webhookTimeToLive;
+  }
+
+  public SiteConfiguration setChatGptApiKey(final String apiKey) {
+    this.chatGptApiKey = apiKey;
+    return this;
   }
 
   public SiteConfiguration setDocumentTimeToLive(final String ttl) {
@@ -76,17 +108,9 @@ public class SiteConfiguration {
     return this;
   }
 
-  public SiteConfigurationDocusign getDocusign() {
-    return this.docusign;
-  }
-
   public SiteConfiguration setDocusign(final SiteConfigurationDocusign docusignConfig) {
     this.docusign = docusignConfig;
     return this;
-  }
-
-  public SiteConfigurationGoogle getGoogle() {
-    return this.google;
   }
 
   public SiteConfiguration setGoogle(final SiteConfigurationGoogle googleConfig) {
@@ -94,35 +118,9 @@ public class SiteConfiguration {
     return this;
   }
 
-  public SiteConfigurationOcr getOcr() {
-    return ocr;
-  }
-
-  public SiteConfiguration setOcr(final SiteConfigurationOcr ocrConfig) {
-    this.ocr = ocrConfig;
+  public SiteConfiguration setMaxContentLengthBytes(final String max) {
+    this.maxContentLengthBytes = max;
     return this;
-  }
-
-  public String getNotificationEmail() {
-    return notificationEmail;
-  }
-
-  public SiteConfiguration setNotificationEmail(final String email) {
-    this.notificationEmail = email;
-    return this;
-  }
-
-  public String getMaxWebhooks() {
-    return maxWebhooks;
-  }
-
-  public SiteConfiguration setMaxWebhooks(final String max) {
-    this.maxWebhooks = max;
-    return this;
-  }
-
-  public String getMaxDocuments() {
-    return maxDocuments;
   }
 
   public SiteConfiguration setMaxDocuments(final String max) {
@@ -130,21 +128,23 @@ public class SiteConfiguration {
     return this;
   }
 
-  public String getMaxContentLengthBytes() {
-    return maxContentLengthBytes;
-  }
-
-  public SiteConfiguration setMaxContentLengthBytes(final String max) {
-    this.maxContentLengthBytes = max;
+  public SiteConfiguration setMaxWebhooks(final String max) {
+    this.maxWebhooks = max;
     return this;
   }
 
-  public String getChatGptApiKey() {
-    return chatGptApiKey;
+  public SiteConfiguration setNotificationEmail(final String email) {
+    this.notificationEmail = email;
+    return this;
   }
 
-  public SiteConfiguration setChatGptApiKey(final String apiKey) {
-    this.chatGptApiKey = apiKey;
+  public SiteConfiguration setOcr(final SiteConfigurationOcr ocrConfig) {
+    this.ocr = ocrConfig;
+    return this;
+  }
+
+  public SiteConfiguration setWebhookTimeToLive(final String ttl) {
+    this.webhookTimeToLive = ttl;
     return this;
   }
 }

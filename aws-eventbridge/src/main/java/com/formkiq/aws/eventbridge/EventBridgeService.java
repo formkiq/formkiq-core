@@ -43,12 +43,45 @@ public interface EventBridgeService {
   CreateEventBusResponse createEventBridge(String eventBusName);
 
   /**
+   * Create Event Bridge Rule.
+   * 
+   * @param eventBusName {@link String}
+   * @param ruleName {@link String}
+   * @param ruleArn {@link String}
+   * @param eventPattern {@link String}
+   * @param targetId {@link String}
+   * @param targetArn {@link String}
+   */
+  void createRule(String eventBusName, String ruleName, String ruleArn, String eventPattern,
+      String targetId, String targetArn);
+
+  /**
    * Delete Event Bridge.
    * 
    * @param eventBusName {@link String}
    * @return DeleteEventBusResponse
    */
   DeleteEventBusResponse deleteEventBus(String eventBusName);
+
+  /**
+   * Delete Event Bridge Rule.
+   * 
+   * @param eventBusName {@link String}
+   * @param ruleName {@link String}
+   * @param targetId {@link String}
+   */
+  void deleteRule(String eventBusName, String ruleName, String targetId);
+
+  /**
+   * Put AWS Event Bridge Event.
+   *
+   * @param eventBusName The name or ARN of the event bus to receive the event. Only the rules that
+   *        are associated with this event bus are used to match the event. If you omit this, the
+   *        default event bus is used.
+   * @param eventBridgeMessage {@link EventBridgeMessage}
+   * @return PutEventsResponse
+   */
+  PutEventsResponse putEvents(String eventBusName, EventBridgeMessage eventBridgeMessage);
 
   /**
    * Put AWS Event Bridge Event.
@@ -63,37 +96,4 @@ public interface EventBridgeService {
    * @return PutEventsResponse
    */
   PutEventsResponse putEvents(String eventBusName, String detailType, String detail, String source);
-
-  /**
-   * Put AWS Event Bridge Event.
-   *
-   * @param eventBusName The name or ARN of the event bus to receive the event. Only the rules that
-   *        are associated with this event bus are used to match the event. If you omit this, the
-   *        default event bus is used.
-   * @param eventBridgeMessage {@link EventBridgeMessage}
-   * @return PutEventsResponse
-   */
-  PutEventsResponse putEvents(String eventBusName, EventBridgeMessage eventBridgeMessage);
-
-  /**
-   * Create Event Bridge Rule.
-   * 
-   * @param eventBusName {@link String}
-   * @param ruleName {@link String}
-   * @param ruleArn {@link String}
-   * @param eventPattern {@link String}
-   * @param targetId {@link String}
-   * @param targetArn {@link String}
-   */
-  void createRule(String eventBusName, String ruleName, String ruleArn, String eventPattern,
-      String targetId, String targetArn);
-
-  /**
-   * Delete Event Bridge Rule.
-   * 
-   * @param eventBusName {@link String}
-   * @param ruleName {@link String}
-   * @param targetId {@link String}
-   */
-  void deleteRule(String eventBusName, String ruleName, String targetId);
 }

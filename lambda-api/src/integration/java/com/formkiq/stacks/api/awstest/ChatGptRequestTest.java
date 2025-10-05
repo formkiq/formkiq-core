@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -68,8 +67,7 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
   private static final int TEST_TIMEOUT = 120;
 
   @BeforeAll
-  public static void beforeClass() throws IOException, InterruptedException, URISyntaxException {
-    AbstractAwsIntegrationTest.beforeClass();
+  public static void beforeClassSetup() throws IOException {
 
     if (System.getProperty("testchatgptapikey") == null) {
       throw new IOException("key not set");

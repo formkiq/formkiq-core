@@ -31,15 +31,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Unit Test for converting {@link String} to and from {@link String} using Base 64.
  */
 public class StringToBase64Test {
-  @Test
-  void testApply01() {
-    assertExpectedString("my text", "bXkgdGV4dA");
-    assertExpectedString("%234546%24_%23%7E%23test", "JTIzNDU0NiUyNF8lMjMlN0UlMjN0ZXN0");
-  }
-
   private void assertExpectedString(final String s, final String base64Encoded) {
     String base64 = new StringToBase64Encoder().apply(s);
     assertEquals(base64, base64Encoded);
     assertEquals(s, new StringToBase66Decoder().apply(base64));
+  }
+
+  @Test
+  void testApply01() {
+    assertExpectedString("my text", "bXkgdGV4dA");
+    assertExpectedString("%234546%24_%23%7E%23test", "JTIzNDU0NiUyNF8lMjMlN0UlMjN0ZXN0");
   }
 }

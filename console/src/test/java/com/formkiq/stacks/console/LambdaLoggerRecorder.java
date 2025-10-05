@@ -39,23 +39,14 @@ public class LambdaLoggerRecorder implements LambdaLogger {
   /** List of byte[] Messages recorded. */
   private List<byte[]> recordedByteMessages = new ArrayList<>();
 
-  @Override
-  public void log(final String message) {
-    this.recordedMessages.add(message);
-  }
-
-  @Override
-  public void log(final byte[] message) {
-    this.recordedByteMessages.add(message);
-  }
-
   /**
-   * Get Recorded {@link String} Messages.
+   * Returns whether a message has been recorded that contains the passed in {@link String}.
    * 
-   * @return {@link List} byte[]
+   * @param s {@link String}
+   * @return boolean
    */
-  public List<String> getRecordedMessages() {
-    return this.recordedMessages;
+  public boolean containsString(final String s) {
+    return this.recordedMessages.stream().filter(m -> m.contains(s)).findFirst().isPresent();
   }
 
   /**
@@ -68,12 +59,21 @@ public class LambdaLoggerRecorder implements LambdaLogger {
   }
 
   /**
-   * Returns whether a message has been recorded that contains the passed in {@link String}.
+   * Get Recorded {@link String} Messages.
    * 
-   * @param s {@link String}
-   * @return boolean
+   * @return {@link List} byte[]
    */
-  public boolean containsString(final String s) {
-    return this.recordedMessages.stream().filter(m -> m.contains(s)).findFirst().isPresent();
+  public List<String> getRecordedMessages() {
+    return this.recordedMessages;
+  }
+
+  @Override
+  public void log(final String message) {
+    this.recordedMessages.add(message);
+  }
+
+  @Override
+  public void log(final byte[] message) {
+    this.recordedByteMessages.add(message);
   }
 }

@@ -39,39 +39,13 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface SchemaService {
 
   /**
-   * Get Sites Schema.
+   * Delete Classification.
    * 
    * @param siteId {@link String}
-   * @return {@link SitesSchemaRecord}
+   * @param classificationId {@link String}
+   * @return boolean
    */
-  Schema getSitesSchema(String siteId);
-
-  /**
-   * Get Sites Schema.
-   * 
-   * @param siteId {@link String}
-   * @return {@link SitesSchemaRecord}
-   */
-  SitesSchemaRecord getSitesSchemaRecord(String siteId);
-
-  /**
-   * Get Composite Key.
-   * 
-   * @param siteId {@link String}
-   * @param attributeKeys {@link List} {@link String}
-   * @return {@link SchemaCompositeKeyRecord}
-   */
-  SchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
-
-  /**
-   * Set Sites Schema.
-   * 
-   * @param siteId {@link String}
-   * @param name {@link String}
-   * @param schema {@link Schema}
-   * @return {@link Collection} {@link ValidationError}
-   */
-  Collection<ValidationError> setSitesSchema(String siteId, String name, Schema schema);
+  boolean deleteClassification(String siteId, String classificationId);
 
   /**
    * Find {@link ClassificationRecord}.
@@ -83,6 +57,99 @@ public interface SchemaService {
    */
   PaginationResults<ClassificationRecord> findAllClassifications(String siteId,
       Map<String, AttributeValue> startkey, int limit);
+
+  /**
+   * Find Classification.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @return {@link ClassificationRecord}
+   */
+  ClassificationRecord findClassification(String siteId, String classificationId);
+
+  /**
+   * Get Attribute Allowed Values across SiteSchema and all classifications.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getAttributeAllowedValues(String siteId, String attributeKey);
+
+  /**
+   * Get Attribute Allowed Values Localization.
+   * 
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param attributeKey {@link String}
+   * @param allowedValues {@link Collection} {@link String}
+   * @param locale {@link String}
+   * @return Map
+   */
+  Map<String, String> getAttributeAllowedValuesLocalization(String siteId, String classificationId,
+      String attributeKey, Collection<String> allowedValues, String locale);
+
+  /**
+   * Get Attribute Allowed Values for Classification.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getClassificationAttributeAllowedValues(String siteId, String documentId,
+      String attributeKey);
+
+  /**
+   * Get Composite Key.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKeys {@link List} {@link String}
+   * @return {@link SchemaCompositeKeyRecord}
+   */
+  SchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
+
+  /**
+   * Get Schema.
+   * 
+   * @param classification {@link ClassificationRecord}
+   * @return Schema
+   */
+  Schema getSchema(ClassificationRecord classification);
+
+  /**
+   * Get Sites Schema.
+   * 
+   * @param siteId {@link String}
+   * @return {@link SitesSchemaRecord}
+   */
+  Schema getSitesSchema(String siteId);
+
+  /**
+   * Get Attribute Allowed Values for SiteSchema.
+   * 
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @return {@link List} {@link String}
+   */
+  List<String> getSitesSchemaAttributeAllowedValues(String siteId, String attributeKey);
+
+  /**
+   * Get Sites Schema.
+   * 
+   * @param siteId {@link String}
+   * @return {@link SitesSchemaRecord}
+   */
+  SitesSchemaRecord getSitesSchemaRecord(String siteId);
+
+  /**
+   * Merge {@link Schema} together.
+   * 
+   * @param from {@link Schema}
+   * @param to {@link Schema}
+   * @return {@link ClassificationRecord}
+   */
+  Schema mergeSchemaIntoClassification(Schema from, Schema to);
 
   /**
    * Add Classification.
@@ -99,68 +166,14 @@ public interface SchemaService {
       Schema schema, String userId) throws ValidationException;
 
   /**
-   * Find Classification.
+   * Set Sites Schema.
    * 
    * @param siteId {@link String}
-   * @param classificationId {@link String}
-   * @return {@link ClassificationRecord}
+   * @param name {@link String}
+   * @param schema {@link Schema}
+   * @return {@link Collection} {@link ValidationError}
    */
-  ClassificationRecord findClassification(String siteId, String classificationId);
-
-  /**
-   * Delete Classification.
-   * 
-   * @param siteId {@link String}
-   * @param classificationId {@link String}
-   * @return boolean
-   */
-  boolean deleteClassification(String siteId, String classificationId);
-
-  /**
-   * Get Schema.
-   * 
-   * @param classification {@link ClassificationRecord}
-   * @return Schema
-   */
-  Schema getSchema(ClassificationRecord classification);
-
-  /**
-   * Merge {@link Schema} together.
-   * 
-   * @param from {@link Schema}
-   * @param to {@link Schema}
-   * @return {@link ClassificationRecord}
-   */
-  Schema mergeSchemaIntoClassification(Schema from, Schema to);
-
-  /**
-   * Get Attribute Allowed Values for SiteSchema.
-   * 
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @return {@link List} {@link String}
-   */
-  List<String> getSitesSchemaAttributeAllowedValues(String siteId, String attributeKey);
-
-  /**
-   * Get Attribute Allowed Values for Classification.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param attributeKey {@link String}
-   * @return {@link List} {@link String}
-   */
-  List<String> getClassificationAttributeAllowedValues(String siteId, String documentId,
-      String attributeKey);
-
-  /**
-   * Get Attribute Allowed Values across SiteSchema and all classifications.
-   * 
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @return {@link List} {@link String}
-   */
-  List<String> getAttributeAllowedValues(String siteId, String attributeKey);
+  Collection<ValidationError> setSitesSchema(String siteId, String name, Schema schema);
 
   /**
    * Update {@link SchemaAttributes} with {@link Locale}.
@@ -172,17 +185,4 @@ public interface SchemaService {
    */
   void updateLocalization(String siteId, String classificationId, SchemaAttributes schemaAttributes,
       String locale);
-
-  /**
-   * Get Attribute Allowed Values Localization.
-   * 
-   * @param siteId {@link String}
-   * @param classificationId {@link String}
-   * @param attributeKey {@link String}
-   * @param allowedValues {@link Collection} {@link String}
-   * @param locale {@link String}
-   * @return Map
-   */
-  Map<String, String> getAttributeAllowedValuesLocalization(String siteId, String classificationId,
-      String attributeKey, Collection<String> allowedValues, String locale);
 }

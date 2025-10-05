@@ -116,149 +116,6 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     private String versionSk;
 
     /**
-     * Sets the activityResource associated with the activity.
-     *
-     * @param activityResource the activityResource name
-     * @return this Builder
-     */
-    public Builder resource(final String activityResource) {
-      this.resource = activityResource;
-      return this;
-    }
-
-    /**
-     * Sets the activityType associated with the activity.
-     *
-     * @param activityType the resource name
-     * @return this Builder
-     */
-    public Builder type(final UserActivityType activityType) {
-      this.type = activityType;
-      return this;
-    }
-
-    /**
-     * Sets the Version PK associated with the activity.
-     *
-     * @param activityVersionPk Version PK
-     * @return this Builder
-     */
-    public Builder versionPk(final String activityVersionPk) {
-      this.versionPk = activityVersionPk;
-      return this;
-    }
-
-    /**
-     * Sets the Version SK associated with the activity.
-     *
-     * @param activityVersionSk Version PK
-     * @return this Builder
-     */
-    public Builder versionSk(final String activityVersionSk) {
-      this.versionSk = activityVersionSk;
-      return this;
-    }
-
-    /**
-     * Sets the activityStatus of the user activity.
-     *
-     * @param activityStatus the {@link UserActivityStatus}
-     * @return this Builder
-     */
-    public Builder status(final UserActivityStatus activityStatus) {
-      this.status = activityStatus;
-      return this;
-    }
-
-    /**
-     * Sets the source IP address.
-     *
-     * @param activitySourceIpAddress the IP address
-     * @return this Builder
-     */
-    public Builder sourceIpAddress(final String activitySourceIpAddress) {
-      this.sourceIpAddress = activitySourceIpAddress;
-      return this;
-    }
-
-    /**
-     * Sets the Activity Change Set.
-     *
-     * @param activityChanges {@link Map}
-     * @return this Builder
-     */
-    public Builder changes(final Map<String, Object> activityChanges) {
-      this.changes = activityChanges;
-      return this;
-    }
-
-    /**
-     * Sets the Activity activityMessage.
-     *
-     * @param activityMessage S3 Key
-     * @return this Builder
-     */
-    public Builder message(final String activityMessage) {
-      this.message = activityMessage;
-      return this;
-    }
-
-    /**
-     * Sets the activitySource system or application.
-     *
-     * @param activitySource the activitySource identifier
-     * @return this Builder
-     */
-    public Builder source(final String activitySource) {
-      this.source = activitySource;
-      return this;
-    }
-
-    /**
-     * Sets the user ID.
-     *
-     * @param activityUserId the user identifier
-     * @return this Builder
-     */
-    public Builder userId(final String activityUserId) {
-      this.userId = activityUserId;
-      return this;
-    }
-
-    /**
-     * Sets the entity type ID.
-     *
-     * @param activityEntityTypeId the entity type identifier
-     * @return this Builder
-     */
-    public Builder entityTypeId(final String activityEntityTypeId) {
-      this.entityTypeId = activityEntityTypeId;
-      return this;
-    }
-
-    /**
-     * Sets the entity ID.
-     *
-     * @param activityEntityId the unique identifier of the entity
-     * @return this Builder
-     */
-    public Builder entityId(final String activityEntityId) {
-      this.entityId = activityEntityId;
-      return this;
-    }
-
-    /**
-     * Sets the document ID.
-     *
-     * @param activityDocumentId the document identifier
-     * @return this Builder
-     */
-    public Builder documentId(final String activityDocumentId) {
-      this.documentId = activityDocumentId;
-      return this;
-    }
-
-    /**
      * Sets the Attribute Key.
      *
      * @param activityAttributeKey the attribute key
@@ -270,28 +127,23 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     }
 
     /**
-     * Sets the insertion date of the activity.
+     * Builds the {@link ActivityRecord}.
      *
-     * @param activityInsertedDate the insertion date
-     * @return this Builder
+     * @param siteId {@link String}
+     * @return a fully-initialized {@code ActivityRecord}
+     * @throws NullPointerException if any required field is missing
      */
-    public Builder insertedDate(final Date activityInsertedDate) {
-      this.insertedDate = new Date(activityInsertedDate.getTime());
-      return this;
-    }
+    public ActivityRecord build(final String siteId) {
 
-    @Override
-    public DynamoDbKey buildKey(final String siteId) {
-      return switch (resource) {
-        case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
-        case "entities" -> buildEntitiesKey(siteId);
-        case "entityTypes" -> buildEntityTypesKey(siteId);
-        default -> throw new IllegalArgumentException("Invalid resource " + resource);
-      };
-    }
+      Objects.requireNonNull(resource, "resource must not be null");
+      Objects.requireNonNull(status, "status must not be null");
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
-    private String getGsi2Pk() {
-      return "activity#" + DateUtil.getYyyyMmDdFormatter().format(new Date());
+      DynamoDbKey key = buildKey(siteId);
+
+      return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
+          entityTypeId, entityId, documentId, attributeKey, message, insertedDate, versionPk,
+          versionSk, changes);
     }
 
     private DynamoDbKey buildDocumentsKey(final String siteId) {
@@ -341,24 +193,172 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
           .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
     }
 
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+      return switch (resource) {
+        case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
+        case "entities" -> buildEntitiesKey(siteId);
+        case "entityTypes" -> buildEntityTypesKey(siteId);
+        default -> throw new IllegalArgumentException("Invalid resource " + resource);
+      };
+    }
+
     /**
-     * Builds the {@link ActivityRecord}.
+     * Sets the Activity Change Set.
      *
-     * @param siteId {@link String}
-     * @return a fully-initialized {@code ActivityRecord}
-     * @throws NullPointerException if any required field is missing
+     * @param activityChanges {@link Map}
+     * @return this Builder
      */
-    public ActivityRecord build(final String siteId) {
+    public Builder changes(final Map<String, Object> activityChanges) {
+      this.changes = activityChanges;
+      return this;
+    }
 
-      Objects.requireNonNull(resource, "resource must not be null");
-      Objects.requireNonNull(status, "status must not be null");
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+    /**
+     * Sets the document ID.
+     *
+     * @param activityDocumentId the document identifier
+     * @return this Builder
+     */
+    public Builder documentId(final String activityDocumentId) {
+      this.documentId = activityDocumentId;
+      return this;
+    }
 
-      DynamoDbKey key = buildKey(siteId);
+    /**
+     * Sets the entity ID.
+     *
+     * @param activityEntityId the unique identifier of the entity
+     * @return this Builder
+     */
+    public Builder entityId(final String activityEntityId) {
+      this.entityId = activityEntityId;
+      return this;
+    }
 
-      return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
-          entityTypeId, entityId, documentId, attributeKey, message, insertedDate, versionPk,
-          versionSk, changes);
+    /**
+     * Sets the entity type ID.
+     *
+     * @param activityEntityTypeId the entity type identifier
+     * @return this Builder
+     */
+    public Builder entityTypeId(final String activityEntityTypeId) {
+      this.entityTypeId = activityEntityTypeId;
+      return this;
+    }
+
+    private String getGsi2Pk() {
+      return "activity#" + DateUtil.getYyyyMmDdFormatter().format(new Date());
+    }
+
+    /**
+     * Sets the insertion date of the activity.
+     *
+     * @param activityInsertedDate the insertion date
+     * @return this Builder
+     */
+    public Builder insertedDate(final Date activityInsertedDate) {
+      this.insertedDate = new Date(activityInsertedDate.getTime());
+      return this;
+    }
+
+    /**
+     * Sets the Activity activityMessage.
+     *
+     * @param activityMessage S3 Key
+     * @return this Builder
+     */
+    public Builder message(final String activityMessage) {
+      this.message = activityMessage;
+      return this;
+    }
+
+    /**
+     * Sets the activityResource associated with the activity.
+     *
+     * @param activityResource the activityResource name
+     * @return this Builder
+     */
+    public Builder resource(final String activityResource) {
+      this.resource = activityResource;
+      return this;
+    }
+
+    /**
+     * Sets the activitySource system or application.
+     *
+     * @param activitySource the activitySource identifier
+     * @return this Builder
+     */
+    public Builder source(final String activitySource) {
+      this.source = activitySource;
+      return this;
+    }
+
+    /**
+     * Sets the source IP address.
+     *
+     * @param activitySourceIpAddress the IP address
+     * @return this Builder
+     */
+    public Builder sourceIpAddress(final String activitySourceIpAddress) {
+      this.sourceIpAddress = activitySourceIpAddress;
+      return this;
+    }
+
+    /**
+     * Sets the activityStatus of the user activity.
+     *
+     * @param activityStatus the {@link UserActivityStatus}
+     * @return this Builder
+     */
+    public Builder status(final UserActivityStatus activityStatus) {
+      this.status = activityStatus;
+      return this;
+    }
+
+    /**
+     * Sets the activityType associated with the activity.
+     *
+     * @param activityType the resource name
+     * @return this Builder
+     */
+    public Builder type(final UserActivityType activityType) {
+      this.type = activityType;
+      return this;
+    }
+
+    /**
+     * Sets the user ID.
+     *
+     * @param activityUserId the user identifier
+     * @return this Builder
+     */
+    public Builder userId(final String activityUserId) {
+      this.userId = activityUserId;
+      return this;
+    }
+
+    /**
+     * Sets the Version PK associated with the activity.
+     *
+     * @param activityVersionPk Version PK
+     * @return this Builder
+     */
+    public Builder versionPk(final String activityVersionPk) {
+      this.versionPk = activityVersionPk;
+      return this;
+    }
+
+    /**
+     * Sets the Version SK associated with the activity.
+     *
+     * @param activityVersionSk Version PK
+     * @return this Builder
+     */
+    public Builder versionSk(final String activityVersionSk) {
+      this.versionSk = activityVersionSk;
+      return this;
     }
   }
 }
