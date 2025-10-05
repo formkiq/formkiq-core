@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -32,42 +33,74 @@ import java.util.Map;
  */
 public class ApiGatewayRequestEventBuilder {
 
-  /** {@link ApiGatewayRequestContext}. */
-  private ApiGatewayRequestContext context = new ApiGatewayRequestContext();
-  /** {@link ApiGatewayRequestEvent}. */
-  private ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+  /** Http Resource. */
+  private String resource;
+  /** Http Path. */
+  private String path;
+  /** Http Method. */
+  private String httpMethod;
+  /** Http Headers. */
+  private Map<String, String> headers = new HashMap<>();
+  /** Http Query Parameters. */
+  private Map<String, String> queryStringParameters = new HashMap<>();
+  /** Http Path Parameters. */
+  private Map<String, String> pathParameters = new HashMap<>();
+  /** Http Body. */
+  private String body;
+  /** Http Body Base 64. */
+  private Boolean isBase64Encoded = Boolean.FALSE;
+  /** Claims. */
+  private Map<String, String> claims;
+  /** Http User. */
+  private String user;
 
   /**
    * Set Body.
    * 
-   * @param body {@link String}
+   * @param eventBody {@link String}
    * @return {@link ApiGatewayRequestEventBuilder}
    */
-  public ApiGatewayRequestEventBuilder body(final String body) {
-    this.event.setBody(body);
+  public ApiGatewayRequestEventBuilder body(final String eventBody) {
+    this.body = eventBody;
     return this;
   }
 
   /**
    * Set Body.
    * 
-   * @param body {@link String}
+   * @param eventBody {@link String}
    * @param isBase64 boolean
    * @return {@link ApiGatewayRequestEventBuilder}
    */
-  public ApiGatewayRequestEventBuilder body(final String body, final boolean isBase64) {
-    this.event.setBody(body);
-    this.event.setIsBase64Encoded(Boolean.valueOf(isBase64));
+  public ApiGatewayRequestEventBuilder body(final String eventBody, final boolean isBase64) {
+    this.body = eventBody;
+    this.isBase64Encoded = isBase64;
     return this;
   }
 
   /**
-   * Builds {@link ApiGatewayRequestEvent}.
-   * 
+   * Builds a new immutable {@link ApiGatewayRequestEvent}.
+   *
    * @return {@link ApiGatewayRequestEvent}
    */
   public ApiGatewayRequestEvent build() {
-    return this.event;
+
+    ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
+    requestContext.setAuthorizer(Map.of("claims", this.claims));
+    requestContext.setIdentity(Map.of("user", user));
+
+    ApiGatewayRequestEvent e = new ApiGatewayRequestEvent();
+    e.setResource(resource);
+    e.setPath(path);
+    e.setHttpMethod(httpMethod);
+    e.setHeaders(headers != null ? Map.copyOf(headers) : Map.of());
+    e.setQueryStringParameters(
+        queryStringParameters != null ? Map.copyOf(queryStringParameters) : Map.of());
+    e.setPathParameters(pathParameters != null ? Map.copyOf(pathParameters) : Map.of());
+    e.setRequestContext(requestContext);
+    e.setBody(this.body);
+    e.setIsBase64Encoded(isBase64Encoded != null ? isBase64Encoded : Boolean.FALSE);
+    return e;
   }
 
   /**
@@ -79,8 +112,7 @@ public class ApiGatewayRequestEventBuilder {
   public ApiGatewayRequestEventBuilder group(final String group) {
 
     if (group != null) {
-      this.context.setAuthorizer(Map.of("claims", Map.of("cognito:groups", "[" + group + "]")));
-      this.event.setRequestContext(this.context);
+      this.claims = Map.of("cognito:groups", "[" + group + "]");
     }
 
     return this;
@@ -93,18 +125,18 @@ public class ApiGatewayRequestEventBuilder {
    * @return {@link ApiGatewayRequestEventBuilder}
    */
   public ApiGatewayRequestEventBuilder method(final String method) {
-    this.event.setHttpMethod(method);
+    this.httpMethod = method;
     return this;
   }
 
   /**
    * Set Path.
    * 
-   * @param path {@link String}
+   * @param httpPath {@link String}
    * @return {@link ApiGatewayRequestEventBuilder}
    */
-  public ApiGatewayRequestEventBuilder path(final String path) {
-    this.event.setPath(path);
+  public ApiGatewayRequestEventBuilder path(final String httpPath) {
+    this.path = httpPath;
     return this;
   }
 
@@ -115,7 +147,7 @@ public class ApiGatewayRequestEventBuilder {
    * @return {@link ApiGatewayRequestEventBuilder}
    */
   public ApiGatewayRequestEventBuilder pathParameters(final Map<String, String> map) {
-    this.event.setPathParameters(map);
+    this.pathParameters = map;
     return this;
   }
 
@@ -126,30 +158,31 @@ public class ApiGatewayRequestEventBuilder {
    * @return {@link ApiGatewayRequestEventBuilder}
    */
   public ApiGatewayRequestEventBuilder queryParameters(final Map<String, String> map) {
-    this.event.setQueryStringParameters(map);
+    this.queryStringParameters = map;
     return this;
   }
 
   /**
    * Set Resource.
    * 
-   * @param resource {@link String}
+   * @param httpResource {@link String}
    * @return {@link ApiGatewayRequestEventBuilder}
    */
-  public ApiGatewayRequestEventBuilder resource(final String resource) {
-    this.event.setResource(resource);
+  public ApiGatewayRequestEventBuilder resource(final String httpResource) {
+    this.resource = httpResource;
     return this;
   }
 
   /**
    * Set User.
    * 
-   * @param user {@link String}
+   * @param httpUser {@link String}
    * @return {@link ApiGatewayRequestEventBuilder}
    */
-  public ApiGatewayRequestEventBuilder user(final String user) {
-    this.context.setIdentity(Map.of("user", user));
-    this.event.setRequestContext(this.context);
+  public ApiGatewayRequestEventBuilder user(final String httpUser) {
+    this.user = httpUser;
+    // this.context.setIdentity(Map.of("user", user));
+    // this.event.setRequestContext(this.context);
     return this;
   }
 }
