@@ -42,6 +42,8 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.aws.services.lambda.http.HttpAccessLog;
+import com.formkiq.aws.services.lambda.http.HttpAccessLogBuilder;
 import com.formkiq.aws.sqs.events.SqsEvent;
 import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -77,7 +79,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     ApiAuthorization authorization =
         new ApiAuthorizationBuilder().interceptors(interceptors).build(event);
 
-    log(event, authorization);
     ApiAuthorization.login(authorization);
 
     return authorization;
@@ -392,32 +393,33 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
   }
 
-  private void log(final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+  private void log(final ApiAuthorization authorization, final ApiGatewayRequestEvent event,
+      final ApiRequestHandlerResponse response, final Exception e) {
 
     Logger logger = getAwsServices().getLogger();
 
     if (event != null) {
-      ApiGatewayRequestContext requestContext =
-          event.getRequestContext() != null ? event.getRequestContext()
-              : new ApiGatewayRequestContext();
+      ApiGatewayRequestContext rc = event.getRequestContext() != null ? event.getRequestContext()
+          : new ApiGatewayRequestContext();
 
-      Map<String, Object> identity =
-          requestContext.getIdentity() != null ? requestContext.getIdentity() : Map.of();
+      String userAgent = event.getHeaderValue("User-Agent");
+      Map<String, Object> identity = rc.getIdentity() != null ? rc.getIdentity() : Map.of();
 
-      String s = String.format(
-          "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
-              + "\"routeKey\": \"%s\",\"pathParameters\": %s,"
-              + "\"protocol\": \"%s\",\"user\":\"%s\",\"queryParameters\":%s}",
-          requestContext.getRequestId(), identity.get("sourceIp"), requestContext.getRequestTime(),
-          event.getHttpMethod(), event.getHttpMethod() + " " + event.getResource(),
-          "{" + toStringFromMap(event.getPathParameters()) + "}", requestContext.getProtocol(),
-          authorization.getUsername(),
-          "{" + toStringFromMap(event.getQueryStringParameters()) + "}");
+      HttpAccessLog accessLog = new HttpAccessLogBuilder().requestTime(rc.getRequestTime())
+          .requestId(rc.getRequestId()).clientIp((String) identity.get("sourceIp"))
+          .userId(authorization != null ? authorization.getUsername() : "Unknown")
+          .http(event.getHttpMethod(), rc.getProtocol(), event.getResource(),
+              event.getPathParameters(), event.getQueryStringParameters())
+          .resp(response.statusCode()).userAgent(userAgent).build();
 
-      logger.info(s);
+      logger.info(gson.toJson(accessLog));
 
     } else {
       logger.error("{\"requestId\": \"invalid\"}");
+    }
+
+    if (e != null && SC_ERROR.getStatusCode() == response.statusCode()) {
+      logger.error(e);
     }
   }
 
@@ -435,6 +437,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     Collection<UserActivity.Builder> ua = null;
     ApiAuthorization authorization = null;
+    ApiRequestHandlerResponse response = null;
+    Exception exception = null;
 
     try {
 
@@ -450,7 +454,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       executeRequestInterceptors(requestInterceptors, event, authorization);
 
-      ApiRequestHandlerResponse response = processRequest(getUrlMap(), event, authorization);
+      response = processRequest(getUrlMap(), event, authorization);
 
       response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
@@ -460,23 +464,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } catch (Exception e) {
 
-      ApiRequestHandlerResponse response =
-          ApiRequestHandlerResponse.builder().exception(logger, e).build();
+      exception = e;
+      response = ApiRequestHandlerResponse.builder().exception(logger, e).build();
 
       if (ua == null) {
         ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, null);
       }
 
-      ua.forEach(a -> a.status(response.statusCode()).message(e.getMessage()));
-
-      if (SC_ERROR.getStatusCode() == response.statusCode()) {
-        logger.error(e);
+      for (var a : ua) {
+        a.status(response.statusCode()).message(e.getMessage());
       }
 
       writeJson(awsServices, output, response.toMap());
       writeUserActivity(awsServices, authorization, ua);
 
     } finally {
+      log(authorization, event, response, exception);
       resetThreadLocal();
     }
   }
