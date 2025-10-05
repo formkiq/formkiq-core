@@ -101,7 +101,7 @@ public class IndicesFolderMoveRequestHandler
 
     String siteId = authorization.getSiteId();
     String userId = authorization.getUsername();
-    String type = event.getPathParameters().get("indexType");
+    String type = event.getPathParameter("indexType");
 
     if ("folder".equals(type)) {
       return moveFolderIndex(event, awsServices, siteId, userId);

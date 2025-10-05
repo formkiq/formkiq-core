@@ -68,8 +68,8 @@ public class DocumentAttributeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
-    String attributeKey = event.getPathParameters().get("attributeKey");
+    String documentId = event.getPathParameter("documentId");
+    String attributeKey = event.getPathParameter("attributeKey");
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccessDelete(authorization, siteId);
@@ -89,8 +89,8 @@ public class DocumentAttributeRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = event.getPathParameters().get("documentId");
-    String attributeKey = event.getPathParameters().get("attributeKey");
+    String documentId = event.getPathParameter("documentId");
+    String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
 
     verifyDocument(awsservice, siteId, documentId);
@@ -148,8 +148,8 @@ public class DocumentAttributeRequestHandler
   public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = event.getPathParameters().get("documentId");
-    String attributeKey = event.getPathParameters().get("attributeKey");
+    String documentId = event.getPathParameter("documentId");
+    String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
 
     verifyDocument(awsservice, siteId, documentId);

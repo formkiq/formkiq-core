@@ -56,7 +56,7 @@ public class DocumentIdPurgeRequestHandler
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     awsservice.getLogger().debug(
         "deleting ALL VERSIONS of object " + documentId + " from bucket '" + documentBucket + "'");

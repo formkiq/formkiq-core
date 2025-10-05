@@ -66,8 +66,8 @@ public class IndicesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String type = event.getPathParameters().get("indexType");
-    String indexKey = event.getPathParameters().get("indexKey");
+    String type = event.getPathParameter("indexType");
+    String indexKey = event.getPathParameter("indexKey");
     String message = "Folder deleted";
 
     boolean deleted = false;

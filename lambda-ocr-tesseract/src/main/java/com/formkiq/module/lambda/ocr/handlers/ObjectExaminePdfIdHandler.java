@@ -58,7 +58,7 @@ public class ObjectExaminePdfIdHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String id = event.getPathParameters().get("id");
+    String id = event.getPathParameter("id");
 
     Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
 

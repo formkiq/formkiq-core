@@ -47,7 +47,7 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String groupName = event.getPathParameters().get("groupName");
+    String groupName = event.getPathParameter("groupName");
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
     service.deleteGroup(groupName);
@@ -63,7 +63,7 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
-    String groupName = event.getPathParameters().get("groupName");
+    String groupName = event.getPathParameter("groupName");
     GetGroupResponse response = service.getGroup(groupName);
 
     Map<String, Object> group = new GroupsResponseToMap().apply(response.group());

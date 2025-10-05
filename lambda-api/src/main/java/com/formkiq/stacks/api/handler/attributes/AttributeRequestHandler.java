@@ -52,7 +52,7 @@ public class AttributeRequestHandler
     AttributeService service = awsServices.getExtension(AttributeService.class);
 
     String siteId = authorizer.getSiteId();
-    String key = event.getPathParameters().get("key");
+    String key = event.getPathParameter("key");
 
     AttributeValidationAccess validationAccess =
         authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_DELETE
@@ -71,7 +71,7 @@ public class AttributeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String key = event.getPathParameters().get("key");
+    String key = event.getPathParameter("key");
     AttributeService service = awsServices.getExtension(AttributeService.class);
     AttributeRecord attribute = service.getAttribute(siteId, key);
     if (attribute == null) {
@@ -94,7 +94,7 @@ public class AttributeRequestHandler
     AttributeService service = awsServices.getExtension(AttributeService.class);
 
     String siteId = authorizer.getSiteId();
-    String key = event.getPathParameters().get("key");
+    String key = event.getPathParameter("key");
 
     AddAttributeRequest addAttribute =
         JsonToObject.fromJson(awsServices, event, AddAttributeRequest.class);

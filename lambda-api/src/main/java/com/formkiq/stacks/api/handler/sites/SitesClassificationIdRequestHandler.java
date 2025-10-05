@@ -53,7 +53,7 @@ public class SitesClassificationIdRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String classificationId = event.getPathParameters().get("classificationId");
+    String classificationId = event.getPathParameter("classificationId");
 
     DocumentSearchService searchService = awsServices.getExtension(DocumentSearchService.class);
 
@@ -78,7 +78,7 @@ public class SitesClassificationIdRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String classificationId = event.getPathParameters().get("classificationId");
+    String classificationId = event.getPathParameter("classificationId");
 
     SchemaService service = awsServices.getExtension(SchemaService.class);
     ClassificationRecord result = service.findClassification(siteId, classificationId);
@@ -107,7 +107,7 @@ public class SitesClassificationIdRequestHandler
       final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorizer.getSiteId();
-    String classificationId = event.getPathParameters().get("classificationId");
+    String classificationId = event.getPathParameter("classificationId");
 
     AddClassificationRequest request =
         JsonToObject.fromJson(awsServices, event, AddClassificationRequest.class);

@@ -48,7 +48,7 @@ public class MappingsIdRequestHandler
     MappingService service = awsServices.getExtension(MappingService.class);
 
     String siteId = authorizer.getSiteId();
-    String mappingId = event.getPathParameters().get("mappingId");
+    String mappingId = event.getPathParameter("mappingId");
 
     if (!service.deleteMapping(siteId, mappingId)) {
       throw new NotFoundException("Mapping '" + mappingId + "' not found");
@@ -63,7 +63,7 @@ public class MappingsIdRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String mappingId = event.getPathParameters().get("mappingId");
+    String mappingId = event.getPathParameter("mappingId");
 
     MappingService service = awsServices.getExtension(MappingService.class);
     MappingRecord mapping = service.getMapping(siteId, mappingId);
@@ -88,7 +88,7 @@ public class MappingsIdRequestHandler
     MappingService service = awsServices.getExtension(MappingService.class);
 
     String siteId = authorizer.getSiteId();
-    String mappingId = event.getPathParameters().get("mappingId");
+    String mappingId = event.getPathParameter("mappingId");
 
     AddMappingRequest req = JsonToObject.fromJson(awsServices, event, AddMappingRequest.class);
     service.saveMapping(siteId, mappingId, req.getMapping());

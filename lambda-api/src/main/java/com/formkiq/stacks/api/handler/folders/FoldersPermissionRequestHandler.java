@@ -51,7 +51,7 @@ public class FoldersPermissionRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String indexKey = new IndexKeyToString().apply(event.getPathParameters().get("indexKey"));
+    String indexKey = new IndexKeyToString().apply(event.getPathParameter("indexKey"));
 
     FolderIndexProcessor processor = awsservice.getExtension(FolderIndexProcessor.class);
     FolderPermissionRecord permissions = processor.getFolderPermissionsByIndexKey(siteId, indexKey);

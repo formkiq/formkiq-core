@@ -34,7 +34,6 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
-import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 
@@ -53,10 +52,9 @@ public class DocumentTagValueRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    Map<String, String> map = event.getPathParameters();
-    String documentId = map.get("documentId");
-    String tagKey = map.get("tagKey");
-    String tagValue = map.get("tagValue");
+    String documentId = event.getPathParameter("documentId");
+    String tagKey = event.getPathParameter("tagKey");
+    String tagValue = event.getPathParameter("tagValue");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
