@@ -98,7 +98,7 @@ public class DocumentIdRequestHandler
     String documentBucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     awsservice.getLogger()
         .debug("deleting object " + documentId + " from bucket '" + documentBucket + "'");
@@ -156,7 +156,7 @@ public class DocumentIdRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     ApiPagination token = getPagination(cacheService, event);
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     ApiPagination pagination = getPagination(cacheService, event);
 
     PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
@@ -211,7 +211,7 @@ public class DocumentIdRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
     request.setDocumentId(documentId);

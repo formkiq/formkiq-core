@@ -39,6 +39,9 @@ jobs:
         cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
     - name: Build Project
       timeout-minutes: 35
+      env:
+        PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+          && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
       run: ./gradlew build --scan --no-daemon | tee gradle.log
     - name: Extract build scan link
       run: |

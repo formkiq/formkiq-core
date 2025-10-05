@@ -3,7 +3,7 @@ description = "AWS S3"
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.1'
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
 
   api group: 'software.amazon.awssdk', name: 's3', version: '2.31.59'

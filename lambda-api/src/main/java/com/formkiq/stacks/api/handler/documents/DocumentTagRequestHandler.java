@@ -64,9 +64,8 @@ public class DocumentTagRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    Map<String, String> map = event.getPathParameters();
-    String documentId = map.get("documentId");
-    String tagKey = map.get("tagKey");
+    String documentId = event.getPathParameter("documentId");
+    String tagKey = event.getPathParameter("tagKey");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
@@ -90,8 +89,8 @@ public class DocumentTagRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = event.getPathParameters().get("documentId");
-    String tagKey = event.getPathParameters().get("tagKey");
+    String documentId = event.getPathParameter("documentId");
+    String tagKey = event.getPathParameter("tagKey");
     String siteId = authorization.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -143,9 +142,8 @@ public class DocumentTagRequestHandler
   public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    Map<String, String> map = event.getPathParameters();
-    final String documentId = map.get("documentId");
-    final String tagKey = map.get("tagKey");
+    final String documentId = event.getPathParameter("documentId");
+    final String tagKey = event.getPathParameter("tagKey");
 
     Map<String, Object> body = fromBodyToMap(event);
     String value = body != null ? (String) body.getOrDefault("value", null) : null;

@@ -63,7 +63,7 @@ public class ConfigurationApiKeyRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = getPathParameterSiteId(event);
-    String apiKey = event.getPathParameters().get("apiKey");
+    String apiKey = event.getPathParameter("apiKey");
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     boolean deleteApiKey = apiKeysService.deleteApiKey(siteId, apiKey);

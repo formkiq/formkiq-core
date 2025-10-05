@@ -3,7 +3,7 @@ description = "AWS DynamoDB"
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.1'
 
   api group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.59'
   implementation project(':fkq-lambda-services')

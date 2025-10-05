@@ -95,7 +95,7 @@ public class DocumentsSyncsRequestHandler
     final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
     PaginationResults<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, token, limit);
@@ -141,7 +141,7 @@ public class DocumentsSyncsRequestHandler
     validate(sync);
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);

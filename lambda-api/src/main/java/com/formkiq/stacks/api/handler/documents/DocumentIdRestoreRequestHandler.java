@@ -52,7 +52,7 @@ public class DocumentIdRestoreRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 

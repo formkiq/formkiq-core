@@ -62,7 +62,7 @@ public class AttributeAllowedValuesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String key = event.getPathParameters().get("key");
+    String key = event.getPathParameter("key");
     String classificationId = event.getPathParameter("classificationId");
     String locale = event.getQueryStringParameter("locale");
 

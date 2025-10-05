@@ -76,7 +76,7 @@ public class DocumentAttributesRequestHandler
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
     PaginationResults<DocumentAttributeRecord> results =
@@ -136,7 +136,7 @@ public class DocumentAttributesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes =
@@ -158,7 +158,7 @@ public class DocumentAttributesRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
     List<DocumentAttributeRecord> attributes =

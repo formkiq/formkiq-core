@@ -96,7 +96,7 @@ public class DocumentIdUrlRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     String siteId = authorization.getSiteId();
     String versionKey = getVersionKey(event);
 

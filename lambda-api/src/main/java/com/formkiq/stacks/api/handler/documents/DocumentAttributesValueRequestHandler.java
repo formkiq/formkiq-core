@@ -52,9 +52,9 @@ public class DocumentAttributesValueRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
-    String attributeKey = event.getPathParameters().get("attributeKey");
-    String attributeValue = event.getPathParameters().get("attributeValue");
+    String documentId = event.getPathParameter("documentId");
+    String attributeKey = event.getPathParameter("attributeKey");
+    String attributeValue = event.getPathParameter("attributeValue");
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccessDelete(authorization, siteId);
