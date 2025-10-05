@@ -45,6 +45,15 @@ public class AddGroup {
   }
 
   /**
+   * Get Group Name.
+   * 
+   * @return String
+   */
+  public String getName() {
+    return this.name;
+  }
+
+  /**
    * Set Description.
    * 
    * @param groupDescription {@link String}
@@ -53,15 +62,6 @@ public class AddGroup {
   public AddGroup setDescription(final String groupDescription) {
     this.description = groupDescription;
     return this;
-  }
-
-  /**
-   * Get Group Name.
-   * 
-   * @return String
-   */
-  public String getName() {
-    return this.name;
   }
 
   /**

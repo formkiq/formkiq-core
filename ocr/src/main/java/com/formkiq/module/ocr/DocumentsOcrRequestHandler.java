@@ -162,10 +162,6 @@ public class DocumentsOcrRequestHandler
     return ApiRequestHandlerResponse.builder().status(status).body(map).build();
   }
 
-  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
-    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
-  }
-
   /**
    * Get S3 Content Urls.
    *
@@ -232,24 +228,6 @@ public class DocumentsOcrRequestHandler
     return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
   }
 
-  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
-      final List<String> contents, final boolean textOnly, final boolean keyValue,
-      final boolean tables) {
-
-    if (textOnly) {
-      map.put("data", ocrService.toText(contents));
-    } else if (keyValue) {
-      map.put("keyValues", ocrService.toKeyValue(contents));
-    } else {
-      map.put("data", String.join("", contents));
-    }
-
-    if (tables) {
-      map.remove("data");
-      map.put("tables", ocrService.toTables(contents));
-    }
-  }
-
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
     boolean contentUrl = event.getQueryStringParameters() != null
         && event.getQueryStringParameters().containsKey("contentUrl");
@@ -271,6 +249,10 @@ public class DocumentsOcrRequestHandler
     }
 
     return keyOnly;
+  }
+
+  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
+    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
   }
 
   private boolean isTables(final ApiGatewayRequestEvent event) {
@@ -319,20 +301,6 @@ public class DocumentsOcrRequestHandler
         .build();
   }
 
-  private void validate(final OcrRequest request) {
-    Optional<String> o =
-        notNull(request.getParseTypes()).stream().filter("queries"::equalsIgnoreCase).findFirst();
-    if (o.isPresent()) {
-
-      List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
-      ValidationBuilder vb = new ValidationBuilder();
-      vb.isRequired(null, queries, "'TextractQueries' is required");
-
-      queries.forEach(q -> vb.isRequired("TextractQuery.text", q.text()));
-      vb.check();
-    }
-  }
-
   @Override
   public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -357,6 +325,38 @@ public class DocumentsOcrRequestHandler
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Set OCR for documentId '" + documentId + "'").build();
+  }
+
+  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
+      final List<String> contents, final boolean textOnly, final boolean keyValue,
+      final boolean tables) {
+
+    if (textOnly) {
+      map.put("data", ocrService.toText(contents));
+    } else if (keyValue) {
+      map.put("keyValues", ocrService.toKeyValue(contents));
+    } else {
+      map.put("data", String.join("", contents));
+    }
+
+    if (tables) {
+      map.remove("data");
+      map.put("tables", ocrService.toTables(contents));
+    }
+  }
+
+  private void validate(final OcrRequest request) {
+    Optional<String> o =
+        notNull(request.getParseTypes()).stream().filter("queries"::equalsIgnoreCase).findFirst();
+    if (o.isPresent()) {
+
+      List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
+      ValidationBuilder vb = new ValidationBuilder();
+      vb.isRequired(null, queries, "'TextractQueries' is required");
+
+      queries.forEach(q -> vb.isRequired("TextractQuery.text", q.text()));
+      vb.check();
+    }
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

@@ -81,6 +81,15 @@ class MappingServiceDynamoDbTest implements DbKeys {
     attributeService = new AttributeServiceDynamodb(db);
   }
 
+  private Mapping createMapping() {
+    Mapping mapping = new Mapping().setName("test");
+    MappingAttribute a = new MappingAttribute().setAttributeKey("number")
+        .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT).setLabelTexts(List.of("PO"))
+        .setSourceType(MappingAttributeSourceType.CONTENT);
+    mapping.setAttributes(Collections.singletonList(a));
+    return mapping;
+  }
+
   /**
    * Delete mapping not exists.
    */
@@ -121,15 +130,6 @@ class MappingServiceDynamoDbTest implements DbKeys {
       assertTrue(deleted);
       assertNull(service.getMapping(siteId, documentId));
     }
-  }
-
-  private Mapping createMapping() {
-    Mapping mapping = new Mapping().setName("test");
-    MappingAttribute a = new MappingAttribute().setAttributeKey("number")
-        .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT).setLabelTexts(List.of("PO"))
-        .setSourceType(MappingAttributeSourceType.CONTENT);
-    mapping.setAttributes(Collections.singletonList(a));
-    return mapping;
   }
 
   /**

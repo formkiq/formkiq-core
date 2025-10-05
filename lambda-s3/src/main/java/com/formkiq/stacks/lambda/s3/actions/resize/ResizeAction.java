@@ -55,10 +55,59 @@ import java.util.Map;
  * {@link DocumentAction} for RESIZE {@link ActionType}.
  */
 public class ResizeAction implements DocumentAction {
+  private static DocumentItem createDocumentItem(final Image resImage, final String username) {
+    DocumentItem item = new DocumentItemDynamoDb(resImage.documentId(), new Date(), username);
+    item.setPath(resImage.path());
+    item.setWidth(Integer.toString(resImage.getWidth()));
+    item.setHeight(Integer.toString(resImage.getHeight()));
+
+    return item;
+  }
+
+  private static String getFormat(final Image srcImage, final Map<String, Object> parameters) {
+    String format = (String) parameters.get("outputType");
+
+    return format != null ? format : srcImage.format();
+  }
+
+  private static String getResPath(final Image srcImage, final Map<String, Object> parameters,
+      final BufferedImage resizedImage, final String format) {
+    String path = (String) parameters.get("path");
+
+    if (path == null) {
+      String imageFormatExtension =
+          FilenameUtils.imageFormatToExtension(srcImage.path(), srcImage.format());
+      path = FilenameUtils.getFileName(srcImage.path(), resizedImage.getWidth(),
+          resizedImage.getHeight(), imageFormatExtension, format);
+    }
+
+    return path;
+  }
+
+  private static String imageFormatToMimeType(final String format) {
+    return "tif".equals(format) ? "tiff" : format;
+  }
+
+  private static int parseDimension(final String dimensionStr) {
+    return "auto".equals(dimensionStr) ? Integer.MAX_VALUE : Integer.parseInt(dimensionStr);
+  }
+
+  private static BufferedImage resizeImage(final Image srcImage,
+      final Map<String, Object> parameters) throws IOException {
+    String widthStr = (String) parameters.get("width");
+    String heightStr = (String) parameters.get("height");
+    boolean isKeepAspectRatio = "auto".equals(widthStr) || "auto".equals(heightStr);
+
+    return ImageUtils.resize(srcImage.bufferedImage(), parseDimension(widthStr),
+        parseDimension(heightStr), isKeepAspectRatio);
+  }
+
   /** {@link DocumentService}. */
   private final DocumentService documentService;
+
   /** Documents S3 Bucket. */
   private final String documentsBucket;
+
   /** {@link S3Service}. */
   private final S3Service s3Service;
 
@@ -68,13 +117,21 @@ public class ResizeAction implements DocumentAction {
     this.s3Service = serviceCache.getExtension(S3Service.class);
   }
 
-  @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
-    Image srcImage = createSrcImage(siteId, documentId);
-    Image resImage = createResImage(srcImage, action.parameters());
-    saveResImage(resImage, srcImage.documentId());
-    return new ProcessActionStatus(ActionStatus.COMPLETE);
+  private Image createResImage(final Image srcImage, final Map<String, Object> parameters)
+      throws IOException {
+    BufferedImage resizedImage = resizeImage(srcImage, parameters);
+    String format = getFormat(srcImage, parameters);
+
+    byte[] imageData = ImageUtils.bufferedImageToByteArray(resizedImage, format);
+    // sometimes library fails to create image with desired format
+    if (imageData.length == 0) {
+      throw new IOException(
+          "While converting <" + srcImage.documentId() + "> we got empty resulting image.");
+    }
+
+    String path = getResPath(srcImage, parameters, resizedImage, format);
+
+    return new Image(srcImage.siteId(), ID.uuid(), imageData, resizedImage, format, path);
   }
 
   private Image createSrcImage(final String siteId, final String documentId) throws IOException {
@@ -102,87 +159,19 @@ public class ResizeAction implements DocumentAction {
     return item.getPath();
   }
 
-  private Image createResImage(final Image srcImage, final Map<String, Object> parameters)
-      throws IOException {
-    BufferedImage resizedImage = resizeImage(srcImage, parameters);
-    String format = getFormat(srcImage, parameters);
-
-    byte[] imageData = ImageUtils.bufferedImageToByteArray(resizedImage, format);
-    // sometimes library fails to create image with desired format
-    if (imageData.length == 0) {
-      throw new IOException(
-          "While converting <" + srcImage.documentId() + "> we got empty resulting image.");
-    }
-
-    String path = getResPath(srcImage, parameters, resizedImage, format);
-
-    return new Image(srcImage.siteId(), ID.uuid(), imageData, resizedImage, format, path);
-  }
-
-  private static BufferedImage resizeImage(final Image srcImage,
-      final Map<String, Object> parameters) throws IOException {
-    String widthStr = (String) parameters.get("width");
-    String heightStr = (String) parameters.get("height");
-    boolean isKeepAspectRatio = "auto".equals(widthStr) || "auto".equals(heightStr);
-
-    return ImageUtils.resize(srcImage.bufferedImage(), parseDimension(widthStr),
-        parseDimension(heightStr), isKeepAspectRatio);
-  }
-
-  private static int parseDimension(final String dimensionStr) {
-    return "auto".equals(dimensionStr) ? Integer.MAX_VALUE : Integer.parseInt(dimensionStr);
-  }
-
-  private static String getFormat(final Image srcImage, final Map<String, Object> parameters) {
-    String format = (String) parameters.get("outputType");
-
-    return format != null ? format : srcImage.format();
-  }
-
-  private static String getResPath(final Image srcImage, final Map<String, Object> parameters,
-      final BufferedImage resizedImage, final String format) {
-    String path = (String) parameters.get("path");
-
-    if (path == null) {
-      String imageFormatExtension =
-          FilenameUtils.imageFormatToExtension(srcImage.path(), srcImage.format());
-      path = FilenameUtils.getFileName(srcImage.path(), resizedImage.getWidth(),
-          resizedImage.getHeight(), imageFormatExtension, format);
-    }
-
-    return path;
-  }
-
-  private void saveResImage(final Image resImage, final String sourceDocumentId)
-      throws ValidationException {
-    saveData(resImage);
-    saveMetadata(resImage, sourceDocumentId);
+  @Override
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action) throws IOException, ValidationException {
+    Image srcImage = createSrcImage(siteId, documentId);
+    Image resImage = createResImage(srcImage, action.parameters());
+    saveResImage(resImage, srcImage.documentId());
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private void saveData(final Image resImage) {
     String s3key = SiteIdKeyGenerator.createS3Key(resImage.siteId(), resImage.documentId());
     s3Service.putObject(documentsBucket, s3key, resImage.data(),
         "image/" + imageFormatToMimeType(resImage.format()));
-  }
-
-  private static String imageFormatToMimeType(final String format) {
-    return "tif".equals(format) ? "tiff" : format;
-  }
-
-  private void saveMetadata(final Image resImage, final String sourceDocumentId)
-      throws ValidationException {
-    String username = ApiAuthorization.getAuthorization().getUsername();
-    DocumentItem item = createDocumentItem(resImage, username);
-    saveDocumentItem(resImage, sourceDocumentId, item);
-  }
-
-  private static DocumentItem createDocumentItem(final Image resImage, final String username) {
-    DocumentItem item = new DocumentItemDynamoDb(resImage.documentId(), new Date(), username);
-    item.setPath(resImage.path());
-    item.setWidth(Integer.toString(resImage.getWidth()));
-    item.setHeight(Integer.toString(resImage.getHeight()));
-
-    return item;
   }
 
   private void saveDocumentItem(final Image resImage, final String sourceDocumentId,
@@ -192,5 +181,18 @@ public class ResizeAction implements DocumentAction {
     SaveDocumentOptions options =
         new SaveDocumentOptions().validationAccess(AttributeValidationAccess.ADMIN_CREATE);
     documentService.saveDocument(resImage.siteId(), item, null, documentAttributes, options);
+  }
+
+  private void saveMetadata(final Image resImage, final String sourceDocumentId)
+      throws ValidationException {
+    String username = ApiAuthorization.getAuthorization().getUsername();
+    DocumentItem item = createDocumentItem(resImage, username);
+    saveDocumentItem(resImage, sourceDocumentId, item);
+  }
+
+  private void saveResImage(final Image resImage, final String sourceDocumentId)
+      throws ValidationException {
+    saveData(resImage);
+    saveMetadata(resImage, sourceDocumentId);
   }
 }

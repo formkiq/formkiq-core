@@ -52,6 +52,15 @@ public class ApiUrlResponse implements ApiResponse {
     this.documentId = id;
   }
 
+  /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
   @Override
   public String getNext() {
     return null;
@@ -72,29 +81,20 @@ public class ApiUrlResponse implements ApiResponse {
   }
 
   /**
-   * Set Url.
-   *
-   * @param u {@link String}
-   */
-  public void setUrl(final String u) {
-    this.url = u;
-  }
-
-  /**
-   * Get Document Id.
-   *
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
    * Set DocumentId.
    *
    * @param id {@link String}
    */
   public void setDocumentId(final String id) {
     this.documentId = id;
+  }
+
+  /**
+   * Set Url.
+   *
+   * @param u {@link String}
+   */
+  public void setUrl(final String u) {
+    this.url = u;
   }
 }

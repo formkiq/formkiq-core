@@ -40,24 +40,28 @@ public class TokenGeneratorKeywords implements TokenGenerator {
     this.keywords = new HashSet<>(tokenKeywords);
   }
 
-  private int processWhitespace(final List<Token> tokens, final char[] chars, final int start,
-      final int length) {
+  // Determines the token type based on its content.
+  private TokenType determineTokenType(final String tokenText) {
 
-    int pos = start;
-    int whitespacePos = -1;
-    while (pos < length && Character.isWhitespace(chars[pos])) {
-      if (whitespacePos == -1) {
-        whitespacePos = pos;
-      }
-      pos++;
+    TokenType type;
+    if (keywords.contains(tokenText)) {
+      type = TokenType.KEYWORD;
+    } else if (Character.isDigit(tokenText.charAt(0))) {
+      type = TokenType.NUMBER;
+    } else if (isIdentifierStart(tokenText.charAt(0))) {
+      type = TokenType.IDENTIFIER;
+    } else {
+
+      type = switch (tokenText.charAt(0)) {
+        case '[' -> TokenType.LEFT_BRACKET;
+        case ']' -> TokenType.RIGHT_BRACKET;
+        case '(' -> TokenType.LEFT_PAREN;
+        case ')' -> TokenType.RIGHT_PAREN;
+        default -> TokenType.SYMBOL;
+      };
     }
 
-    if (whitespacePos > -1) {
-      tokens
-          .add(new Token().setOriginal(" ").setType(TokenType.WHITESPACE).setStart(whitespacePos));
-    }
-
-    return pos;
+    return type;
   }
 
   @Override
@@ -103,36 +107,32 @@ public class TokenGeneratorKeywords implements TokenGenerator {
     return tokens;
   }
 
-  private boolean isIdentifierStart(final char ch) {
-    return Character.isLetter(ch) || ch == '_';
-  }
-
   // Returns true if the character is valid in the rest of an identifier.
   private boolean isIdentifierPart(final char ch) {
     return Character.isLetterOrDigit(ch) || ch == '_';
   }
 
-  // Determines the token type based on its content.
-  private TokenType determineTokenType(final String tokenText) {
+  private boolean isIdentifierStart(final char ch) {
+    return Character.isLetter(ch) || ch == '_';
+  }
 
-    TokenType type;
-    if (keywords.contains(tokenText)) {
-      type = TokenType.KEYWORD;
-    } else if (Character.isDigit(tokenText.charAt(0))) {
-      type = TokenType.NUMBER;
-    } else if (isIdentifierStart(tokenText.charAt(0))) {
-      type = TokenType.IDENTIFIER;
-    } else {
+  private int processWhitespace(final List<Token> tokens, final char[] chars, final int start,
+      final int length) {
 
-      type = switch (tokenText.charAt(0)) {
-        case '[' -> TokenType.LEFT_BRACKET;
-        case ']' -> TokenType.RIGHT_BRACKET;
-        case '(' -> TokenType.LEFT_PAREN;
-        case ')' -> TokenType.RIGHT_PAREN;
-        default -> TokenType.SYMBOL;
-      };
+    int pos = start;
+    int whitespacePos = -1;
+    while (pos < length && Character.isWhitespace(chars[pos])) {
+      if (whitespacePos == -1) {
+        whitespacePos = pos;
+      }
+      pos++;
     }
 
-    return type;
+    if (whitespacePos > -1) {
+      tokens
+          .add(new Token().setOriginal(" ").setType(TokenType.WHITESPACE).setStart(whitespacePos));
+    }
+
+    return pos;
   }
 }

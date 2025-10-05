@@ -63,12 +63,12 @@ public class SimpleAuthCredentialsTest {
   }
 
   @Test
-  public void testIsApiKeyValid() {
-    assertTrue(SIMPLE_AUTH_CREDENTIALS.isApiKeyValid(API_KEY));
+  public void testIsApiKeyInvalid() {
+    assertFalse(SIMPLE_AUTH_CREDENTIALS.isApiKeyValid("invalidApiKey"));
   }
 
   @Test
-  public void testIsApiKeyInvalid() {
-    assertFalse(SIMPLE_AUTH_CREDENTIALS.isApiKeyValid("invalidApiKey"));
+  public void testIsApiKeyValid() {
+    assertTrue(SIMPLE_AUTH_CREDENTIALS.isApiKeyValid(API_KEY));
   }
 }

@@ -131,22 +131,6 @@ public interface DbKeys {
 
   /**
    * Add {@link Map} to {@link Map} {@link AttributeValue}.
-   *
-   * @param map {@link Map} {@link AttributeValue}
-   * @param key {@link String}
-   * @param value {@link Map}
-   */
-  default void addMobject(final Map<String, AttributeValue> map, final String key,
-      final Map<String, Object> value) {
-
-    if (value != null) {
-      Map<String, AttributeValue> attr = new MapToAttributeValue().apply((value));
-      map.put(key, AttributeValue.builder().m(attr).build());
-    }
-  }
-
-  /**
-   * Add {@link Map} to {@link Map} {@link AttributeValue}.
    * 
    * @param map {@link Map} {@link AttributeValue}
    * @param key {@link String}
@@ -161,6 +145,22 @@ public interface DbKeys {
         attr.put(e.getKey(), AttributeValue.builder().s(e.getValue()).build());
       }
 
+      map.put(key, AttributeValue.builder().m(attr).build());
+    }
+  }
+
+  /**
+   * Add {@link Map} to {@link Map} {@link AttributeValue}.
+   *
+   * @param map {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @param value {@link Map}
+   */
+  default void addMobject(final Map<String, AttributeValue> map, final String key,
+      final Map<String, Object> value) {
+
+    if (value != null) {
+      Map<String, AttributeValue> attr = new MapToAttributeValue().apply((value));
       map.put(key, AttributeValue.builder().m(attr).build());
     }
   }

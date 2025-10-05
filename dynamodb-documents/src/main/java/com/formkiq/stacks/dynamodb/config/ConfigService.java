@@ -69,24 +69,6 @@ public interface ConfigService {
   SiteConfiguration get(String siteId);
 
   /**
-   * Save Config.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param config {@link SiteConfiguration}
-   * @return boolean
-   */
-  boolean save(String siteId, SiteConfiguration config);
-
-  /**
-   * Increment Key for SiteId.
-   *
-   * @param siteId {@link String}
-   * @param key {@link String}
-   * @return long
-   */
-  long increment(String siteId, String key);
-
-  /**
    * Get Increment Value.
    * 
    * @param siteId {@link String}
@@ -102,4 +84,22 @@ public interface ConfigService {
    * @return Map
    */
   Map<String, Long> getIncrements(String siteId);
+
+  /**
+   * Increment Key for SiteId.
+   *
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return long
+   */
+  long increment(String siteId, String key);
+
+  /**
+   * Save Config.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param config {@link SiteConfiguration}
+   * @return boolean
+   */
+  boolean save(String siteId, SiteConfiguration config);
 }

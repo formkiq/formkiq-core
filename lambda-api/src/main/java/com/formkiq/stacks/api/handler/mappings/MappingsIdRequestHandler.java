@@ -42,6 +42,23 @@ public class MappingsIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
+
+    MappingService service = awsServices.getExtension(MappingService.class);
+
+    String siteId = authorizer.getSiteId();
+    String mappingId = event.getPathParameters().get("mappingId");
+
+    if (!service.deleteMapping(siteId, mappingId)) {
+      throw new NotFoundException("Mapping '" + mappingId + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Mapping '" + mappingId + "' deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
@@ -62,23 +79,6 @@ public class MappingsIdRequestHandler
   @Override
   public String getRequestUrl() {
     return "/mappings/{mappingId}";
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorizer, final AwsServiceCache awsServices) throws Exception {
-
-    MappingService service = awsServices.getExtension(MappingService.class);
-
-    String siteId = authorizer.getSiteId();
-    String mappingId = event.getPathParameters().get("mappingId");
-
-    if (!service.deleteMapping(siteId, mappingId)) {
-      throw new NotFoundException("Mapping '" + mappingId + "' not found");
-    }
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "Mapping '" + mappingId + "' deleted").build();
   }
 
   @Override

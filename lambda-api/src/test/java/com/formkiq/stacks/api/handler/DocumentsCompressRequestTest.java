@@ -59,8 +59,6 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
   /** To test objects put to the staging S3. **/
   private static S3Service s3 = null;
-  /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
 
   /**
    * BeforeAll.
@@ -71,6 +69,9 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
   public static void beforeAll() throws URISyntaxException {
     s3 = new S3Service(TestServices.getS3Connection(null));
   }
+
+  /** {@link Gson}. */
+  private Gson gson = new GsonBuilder().create();
 
   /**
    * Create Dummy document.

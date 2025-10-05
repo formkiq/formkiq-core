@@ -36,8 +36,24 @@ import java.util.function.Predicate;
  */
 public interface HttpRequestBuilder<T> {
 
+  @FunctionalInterface
+  interface ApiCallable<R> {
+    R call() throws ApiException;
+  }
+
   /** Max number of reties. */
   int MAX_RETRIES = 5;
+
+  default ApiHttpResponse<T> executeApiCall(ApiCallable<T> callable) {
+    T response = null;
+    ApiException ex = null;
+    try {
+      response = callable.call();
+    } catch (ApiException e) {
+      ex = e;
+    }
+    return new ApiHttpResponse<>(response, ex);
+  }
 
   /**
    * Run the API request.
@@ -70,21 +86,5 @@ public interface HttpRequestBuilder<T> {
     }
 
     throw new RuntimeException("Reached maximum number of retries");
-  }
-
-  default ApiHttpResponse<T> executeApiCall(ApiCallable<T> callable) {
-    T response = null;
-    ApiException ex = null;
-    try {
-      response = callable.call();
-    } catch (ApiException e) {
-      ex = e;
-    }
-    return new ApiHttpResponse<>(response, ex);
-  }
-
-  @FunctionalInterface
-  interface ApiCallable<R> {
-    R call() throws ApiException;
   }
 }

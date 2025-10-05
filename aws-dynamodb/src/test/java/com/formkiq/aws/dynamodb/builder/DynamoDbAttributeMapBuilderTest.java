@@ -34,18 +34,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class DynamoDbAttributeMapBuilderTest {
 
+  private static void assertBetween(final DynamoDbAttributeMapBuilder builder, final Instant now,
+      final long offsetInSeconds) {
+    long value = Long.parseLong(builder.build().get("TimeToLive").n());
+    long minInclusive = now.getEpochSecond() + offsetInSeconds;
+    long maxInclusive = minInclusive + 1;
+    assertTrue(value >= minInclusive && value <= maxInclusive,
+        () -> "Expected " + value + " to be between [" + minInclusive + ", " + maxInclusive + "]");
+  }
+
   @Test
-  void timeToLiveInSeconds() {
+  void timeToLiveInDays() {
     // given
     Instant now = Instant.now();
-    final long ttlSeconds = 90L;
+    final long days = 3;
+    final int secondsPerDays = 259200;
 
     // when
     DynamoDbAttributeMapBuilder builder =
-        DynamoDbAttributeMapBuilder.builder().withTimeToLiveInSeconds(ttlSeconds);
+        DynamoDbAttributeMapBuilder.builder().withTimeToLiveInDays(days);
 
     // then
-    assertBetween(builder, now, ttlSeconds);
+    assertBetween(builder, now, secondsPerDays);
   }
 
   @Test
@@ -64,26 +74,16 @@ public class DynamoDbAttributeMapBuilderTest {
   }
 
   @Test
-  void timeToLiveInDays() {
+  void timeToLiveInSeconds() {
     // given
     Instant now = Instant.now();
-    final long days = 3;
-    final int secondsPerDays = 259200;
+    final long ttlSeconds = 90L;
 
     // when
     DynamoDbAttributeMapBuilder builder =
-        DynamoDbAttributeMapBuilder.builder().withTimeToLiveInDays(days);
+        DynamoDbAttributeMapBuilder.builder().withTimeToLiveInSeconds(ttlSeconds);
 
     // then
-    assertBetween(builder, now, secondsPerDays);
-  }
-
-  private static void assertBetween(final DynamoDbAttributeMapBuilder builder, final Instant now,
-      final long offsetInSeconds) {
-    long value = Long.parseLong(builder.build().get("TimeToLive").n());
-    long minInclusive = now.getEpochSecond() + offsetInSeconds;
-    long maxInclusive = minInclusive + 1;
-    assertTrue(value >= minInclusive && value <= maxInclusive,
-        () -> "Expected " + value + " to be between [" + minInclusive + ", " + maxInclusive + "]");
+    assertBetween(builder, now, ttlSeconds);
   }
 }

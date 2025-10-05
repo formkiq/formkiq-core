@@ -74,6 +74,24 @@ public class EntityTypesRequestHandler
    */
   public EntityTypesRequestHandler() {}
 
+  private List<Map<String, AttributeValue>> addPresetAttributes(final String siteId,
+      final AddEntityType addEntityType) {
+    final List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
+
+    if (EntityTypeNamespace.PRESET.equals(addEntityType.namespace())) {
+      PresetEntity presetEntity = PresetEntity.fromString(addEntityType.name());
+      if (presetEntity != null) {
+        presetEntity.getAttributeKeys().forEach(k -> {
+          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD)
+              .dataType(AttributeDataType.STRING).key(k).documentId(ID.uuid());
+          attributeList.add(a.getAttributes(siteId));
+        });
+      }
+    }
+
+    return attributeList;
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -144,22 +162,12 @@ public class EntityTypesRequestHandler
         .body("entityTypeId", entityType.documentId()).build();
   }
 
-  private List<Map<String, AttributeValue>> addPresetAttributes(final String siteId,
-      final AddEntityType addEntityType) {
-    final List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
+  private void validate(final AddEntityTypeRequest request)
+      throws BadException, ValidationException {
 
-    if (EntityTypeNamespace.PRESET.equals(addEntityType.namespace())) {
-      PresetEntity presetEntity = PresetEntity.fromString(addEntityType.name());
-      if (presetEntity != null) {
-        presetEntity.getAttributeKeys().forEach(k -> {
-          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD)
-              .dataType(AttributeDataType.STRING).key(k).documentId(ID.uuid());
-          attributeList.add(a.getAttributes(siteId));
-        });
-      }
+    if (request == null || request.entityType() == null) {
+      throw new BadException("Missing required parameter 'entityType'");
     }
-
-    return attributeList;
   }
 
   private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,
@@ -173,13 +181,5 @@ public class EntityTypesRequestHandler
     vb.isRequired("name", !db.exists(req), "'name' already exists");
 
     vb.check();
-  }
-
-  private void validate(final AddEntityTypeRequest request)
-      throws BadException, ValidationException {
-
-    if (request == null || request.entityType() == null) {
-      throw new BadException("Missing required parameter 'entityType'");
-    }
   }
 }

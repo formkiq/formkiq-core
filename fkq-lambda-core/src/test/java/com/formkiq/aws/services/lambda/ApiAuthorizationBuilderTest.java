@@ -54,27 +54,6 @@ class ApiAuthorizationBuilderTest {
   /**
    * Get {@link ApiGatewayRequestEvent}.
    *
-   * @param groups {@link List} {@link String}
-   * @param permissions {@link Map}
-   * @return {@link ApiGatewayRequestEvent}
-   */
-  private ApiGatewayRequestEvent getExplicitSitesJwtEvent(final List<String> groups,
-      final Map<String, List<String>> permissions) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
-    event.setPath("/mypath");
-    ApiGatewayRequestContext content = new ApiGatewayRequestContext();
-
-    Map<String, Object> claims = Map.of("username", "oktaidp_test@formkiq.com", "sitesClaims", gson
-        .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
-    content.setAuthorizer(Map.of("claims", claims));
-    event.setRequestContext(content);
-
-    return event;
-  }
-
-  /**
-   * Get {@link ApiGatewayRequestEvent}.
-   *
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent getApiKeyClaimsEvent() {
@@ -104,6 +83,27 @@ class ApiAuthorizationBuilderTest {
     content.setAuthorizer(
         Map.of("apiKeyClaims", Map.of("permissions", "read,write", "cognito:groups", group)));
     event.setRequestContext(content);
+    return event;
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent}.
+   *
+   * @param groups {@link List} {@link String}
+   * @param permissions {@link Map}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent getExplicitSitesJwtEvent(final List<String> groups,
+      final Map<String, List<String>> permissions) {
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/mypath");
+    ApiGatewayRequestContext content = new ApiGatewayRequestContext();
+
+    Map<String, Object> claims = Map.of("username", "oktaidp_test@formkiq.com", "sitesClaims", gson
+        .toJson(Map.of("cognito:groups", String.join(" ", groups), "permissionsMap", permissions)));
+    content.setAuthorizer(Map.of("claims", claims));
+    event.setRequestContext(content);
+
     return event;
   }
 
@@ -539,50 +539,6 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
-   * Basic 'Admins' only access.
-   */
-  @Test
-  void testApiAuthorizerAdminsWithRandomSiteId() throws Exception {
-    // given
-    String s0 = "[Admins]";
-    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-    event0.setPath("/random");
-    event0.setQueryStringParameters(Map.of("siteId", "global"));
-
-    // when
-    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
-
-    // then
-    assertEquals("global", api0.getSiteId());
-    assertEquals("", String.join(",", api0.getSiteIds()));
-    assertEquals("",
-        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("no groups", api0.getAccessSummary());
-    assertEquals("Admins", String.join(",", api0.getRoles()));
-  }
-
-  /**
-   * trying to access random site id.
-   */
-  @Test
-  void testApiAuthorizerWithRandomSiteId() throws Exception {
-    // given
-    String s0 = "[default]";
-    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-    event0.setPath("/random");
-    event0.setQueryStringParameters(Map.of("siteId", "anothersite"));
-
-    // when
-    try {
-      new ApiAuthorizationBuilder().build(event0);
-      fail();
-    } catch (Exception e) {
-      // then
-      assertEquals("fkq access denied to siteId (anothersite)", e.getMessage());
-    }
-  }
-
-  /**
    * Empty groups access.
    */
   @Test
@@ -871,26 +827,60 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
-   * Sites permissionsMap with 'global'.
+   * Basic 'Admins' only access.
    */
   @Test
-  void testApiAuthorizerGlobal() throws Exception {
+  void testApiAuthorizerAdminsWithRandomSiteId() throws Exception {
     // given
-    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("global"), Map.of());
+    String s0 = "[Admins]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setPath("/random");
+    event0.setQueryStringParameters(Map.of("siteId", "global"));
 
     // when
-    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
 
     // then
-    assertNull(api0.getSiteId());
+    assertEquals("global", api0.getSiteId());
     assertEquals("", String.join(",", api0.getSiteIds()));
     assertEquals("",
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("",
-        api0.getPermissions("global").stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("no groups", api0.getAccessSummary());
-    assertEquals("global", String.join(",", api0.getRoles()));
-    assertEquals("oktaidp_test@formkiq.com", api0.getUsername());
+    assertEquals("Admins", String.join(",", api0.getRoles()));
+  }
+
+  /**
+   * Basic 'default'/SiteId access with API_KEY.
+   */
+  @Test
+  void testApiAuthorizerApiKeyAutomatic() throws Exception {
+    // given
+    String s0 = "[default API_KEY]";
+    String s1 = "[finance API_KEY]";
+
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
+
+    // then
+    assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
+    assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
+    assertEquals("READ,WRITE,DELETE",
+        api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: default (DELETE,READ,WRITE)", api0.getAccessSummary());
+    assertEquals(DEFAULT_SITE_ID + ",API_KEY", String.join(",", api0.getRoles()));
+    assertEquals("myuser", api0.getUsername());
+
+    assertEquals("finance", api1.getSiteId());
+    assertEquals("finance", String.join(",", api1.getSiteIds()));
+    assertEquals("READ,WRITE,DELETE",
+        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("groups: finance (DELETE,READ,WRITE)", api1.getAccessSummary());
+    assertEquals("API_KEY,finance", String.join(",", api1.getRoles()));
+    assertEquals("myuser", api1.getUsername());
   }
 
   /**
@@ -941,37 +931,47 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
-   * Basic 'default'/SiteId access with API_KEY.
+   * Sites permissionsMap with 'global'.
    */
   @Test
-  void testApiAuthorizerApiKeyAutomatic() throws Exception {
+  void testApiAuthorizerGlobal() throws Exception {
     // given
-    String s0 = "[default API_KEY]";
-    String s1 = "[finance API_KEY]";
-
-    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
-    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+    ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("global"), Map.of());
 
     // when
     final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
-    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
 
     // then
-    assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
-    assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
-    assertEquals("READ,WRITE,DELETE",
+    assertNull(api0.getSiteId());
+    assertEquals("", String.join(",", api0.getSiteIds()));
+    assertEquals("",
         api0.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: default (DELETE,READ,WRITE)", api0.getAccessSummary());
-    assertEquals(DEFAULT_SITE_ID + ",API_KEY", String.join(",", api0.getRoles()));
-    assertEquals("myuser", api0.getUsername());
+    assertEquals("",
+        api0.getPermissions("global").stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("global", String.join(",", api0.getRoles()));
+    assertEquals("oktaidp_test@formkiq.com", api0.getUsername());
+  }
 
-    assertEquals("finance", api1.getSiteId());
-    assertEquals("finance", String.join(",", api1.getSiteIds()));
-    assertEquals("READ,WRITE,DELETE",
-        api1.getPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("groups: finance (DELETE,READ,WRITE)", api1.getAccessSummary());
-    assertEquals("API_KEY,finance", String.join(",", api1.getRoles()));
-    assertEquals("myuser", api1.getUsername());
+  /**
+   * trying to access random site id.
+   */
+  @Test
+  void testApiAuthorizerWithRandomSiteId() throws Exception {
+    // given
+    String s0 = "[default]";
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    event0.setPath("/random");
+    event0.setQueryStringParameters(Map.of("siteId", "anothersite"));
+
+    // when
+    try {
+      new ApiAuthorizationBuilder().build(event0);
+      fail();
+    } catch (Exception e) {
+      // then
+      assertEquals("fkq access denied to siteId (anothersite)", e.getMessage());
+    }
   }
 
   /**

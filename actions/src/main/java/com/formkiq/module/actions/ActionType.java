@@ -250,6 +250,14 @@ public enum ActionType {
   },
   /** Resize. */
   RESIZE {
+    private boolean isGreaterThanZeroInteger(final String value) {
+      try {
+        return Integer.parseInt(value) > 0;
+      } catch (NumberFormatException e) {
+        return false;
+      }
+    }
+
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
@@ -281,14 +289,6 @@ public enum ActionType {
           errors.add(new ValidationErrorImpl().key("parameters." + dimension)
               .error("'" + dimension + "' parameter must be an integer > 0 or 'auto'"));
         }
-      }
-    }
-
-    private boolean isGreaterThanZeroInteger(final String value) {
-      try {
-        return Integer.parseInt(value) > 0;
-      } catch (NumberFormatException e) {
-        return false;
       }
     }
 
@@ -333,6 +333,11 @@ public enum ActionType {
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
 
+  private static boolean hasValue(final Map<String, Object> parameters, final String key) {
+    return parameters != null && parameters.containsKey(key)
+        && !isEmpty(parameters.get(key).toString().trim());
+  }
+
   /**
    * Action Type Parameter Validation.
    * 
@@ -347,9 +352,4 @@ public enum ActionType {
   public abstract void validate(DynamoDbService db, String siteId, Action action,
       Map<String, Object> parameters, String chatGptApiKey, String notificationsEmail,
       Collection<ValidationError> errors);
-
-  private static boolean hasValue(final Map<String, Object> parameters, final String key) {
-    return parameters != null && parameters.containsKey(key)
-        && !isEmpty(parameters.get(key).toString().trim());
-  }
 }

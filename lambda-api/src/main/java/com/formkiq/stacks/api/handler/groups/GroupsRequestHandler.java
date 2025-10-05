@@ -52,13 +52,6 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public static final String URL = "/groups";
 
   @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
-    return !"get".equalsIgnoreCase(method) ? Optional.of(access) : Optional.empty();
-  }
-
-  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -88,6 +81,13 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    return !"get".equalsIgnoreCase(method) ? Optional.of(access) : Optional.empty();
   }
 
   @Override

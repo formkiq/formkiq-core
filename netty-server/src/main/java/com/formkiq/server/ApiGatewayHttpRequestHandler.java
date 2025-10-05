@@ -194,11 +194,6 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     ctx.writeAndFlush(response);
   }
 
-  @Override
-  public boolean isSupported(final FullHttpRequest request) {
-    return request.headers().get("Authorization") != null;
-  }
-
   /**
    * Validate Authorization {@link FullHttpRequest}.
    * 
@@ -217,5 +212,10 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return true;
+  }
+
+  @Override
+  public boolean isSupported(final FullHttpRequest request) {
+    return request.headers().get("Authorization") != null;
   }
 }

@@ -65,6 +65,50 @@ public class LocaleServiceDynamodbTest {
     service = new LocaleServiceDynamodb(db, schemaService);
   }
 
+  private void assertErrorEquals(final ValidationError e, final String key, final String error) {
+    assertEquals(key, e.key());
+    assertEquals(error, e.error());
+  }
+
+  /**
+   * Find all.
+   */
+  @Test
+  void testFindAll01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String locale = "en";
+      service.saveLocale(siteId, locale);
+
+      LocaleTypeRecord r0 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
+          .setLocale(locale).setInterfaceKey("test1").setLocalizedValue("111");
+      LocaleTypeRecord r1 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
+          .setLocale(locale).setInterfaceKey("test2").setLocalizedValue("111");
+      List<ValidationError> errors = service.save(siteId, List.of(r0, r1));
+      assertEquals(0, errors.size());
+
+      // when
+      final Pagination<LocaleTypeRecord> fr0 =
+          service.findAll(siteId, "fr", LocaleResourceType.INTERFACE, null, 1);
+      final Pagination<LocaleTypeRecord> en0 =
+          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, null, 1);
+      final Pagination<LocaleTypeRecord> en1 =
+          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, en0.getNextToken(), LIMIT);
+      final Pagination<LocaleTypeRecord> s0 =
+          service.findAll(siteId, locale, LocaleResourceType.SCHEMA, null, LIMIT);
+      final Pagination<LocaleTypeRecord> c0 =
+          service.findAll(siteId, locale, LocaleResourceType.CLASSIFICATION, null, LIMIT);
+
+      // then
+      assertEquals(0, fr0.getResults().size());
+      assertEquals(1, en0.getResults().size());
+      assertEquals(1, en1.getResults().size());
+      assertEquals(0, s0.getResults().size());
+      assertEquals(0, c0.getResults().size());
+    }
+  }
+
   /**
    * Save null.
    */
@@ -160,50 +204,6 @@ public class LocaleServiceDynamodbTest {
       assertErrorEquals(errors.get(i++), "classificationId", "'classificationId' is required");
       assertErrorEquals(errors.get(i++), "attributeKey", "'attributeKey' is required");
       assertErrorEquals(errors.get(i), "allowedValue", "'allowedValue' is required");
-    }
-  }
-
-  private void assertErrorEquals(final ValidationError e, final String key, final String error) {
-    assertEquals(key, e.key());
-    assertEquals(error, e.error());
-  }
-
-  /**
-   * Find all.
-   */
-  @Test
-  void testFindAll01() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String locale = "en";
-      service.saveLocale(siteId, locale);
-
-      LocaleTypeRecord r0 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
-          .setLocale(locale).setInterfaceKey("test1").setLocalizedValue("111");
-      LocaleTypeRecord r1 = new LocaleTypeRecord().setItemType(LocaleResourceType.INTERFACE)
-          .setLocale(locale).setInterfaceKey("test2").setLocalizedValue("111");
-      List<ValidationError> errors = service.save(siteId, List.of(r0, r1));
-      assertEquals(0, errors.size());
-
-      // when
-      final Pagination<LocaleTypeRecord> fr0 =
-          service.findAll(siteId, "fr", LocaleResourceType.INTERFACE, null, 1);
-      final Pagination<LocaleTypeRecord> en0 =
-          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, null, 1);
-      final Pagination<LocaleTypeRecord> en1 =
-          service.findAll(siteId, locale, LocaleResourceType.INTERFACE, en0.getNextToken(), LIMIT);
-      final Pagination<LocaleTypeRecord> s0 =
-          service.findAll(siteId, locale, LocaleResourceType.SCHEMA, null, LIMIT);
-      final Pagination<LocaleTypeRecord> c0 =
-          service.findAll(siteId, locale, LocaleResourceType.CLASSIFICATION, null, LIMIT);
-
-      // then
-      assertEquals(0, fr0.getResults().size());
-      assertEquals(1, en0.getResults().size());
-      assertEquals(1, en1.getResults().size());
-      assertEquals(0, s0.getResults().size());
-      assertEquals(0, c0.getResults().size());
     }
   }
 }

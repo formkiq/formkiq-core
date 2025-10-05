@@ -176,77 +176,73 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   /** Is Public Urls Enabled. */
   private static boolean isEnablePublicUrls;
 
-  /** constructor. */
-  public AbstractCoreRequestHandler() {}
+  private static void addAttributeRequestHandlers() {
+    addRequestHandler(new AttributesRequestHandler());
+    addRequestHandler(new AttributeRequestHandler());
+    addRequestHandler(new AttributeAllowedValuesRequestHandler());
+  }
 
-  /**
-   * Initialize.
-   *
-   * @param serviceCache {@link AwsServiceCache}
-   */
-  public static void initialize(final AwsServiceCache serviceCache) {
+  private static void addDocumentAttributeEndpoints() {
+    addRequestHandler(new DocumentAttributesRequestHandler());
+    addRequestHandler(new DocumentAttributeRequestHandler());
+    addRequestHandler(new DocumentAttributesValueRequestHandler());
+  }
 
-    registerExtensions(serviceCache);
+  private static void addEntityEndpoints() {
+    addRequestHandler(new EntityTypesRequestHandler());
+    addRequestHandler(new EntityTypeRequestHandler());
+    addRequestHandler(new EntitiesRequestHandler());
+    addRequestHandler(new EntityRequestHandler());
+  }
 
-    if (serviceCache.hasModule("typesense")) {
-      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
-    }
+  private static void addGroupUsersEndpoints() {
+    addRequestHandler(new GroupsRequestHandler());
+    addRequestHandler(new GroupRequestHandler());
+    addRequestHandler(new GroupsUsersRequestHandler());
+    addRequestHandler(new GroupsUserRequestHandler());
+    addRequestHandler(new UsersRequestHandler());
+    addRequestHandler(new UserRequestHandler());
+    addRequestHandler(new UserOperationRequestHandler());
+    addRequestHandler(new UserGroupsRequestHandler());
+    addRequestHandler(new UserLoginRequestHandler());
+    addRequestHandler(new UserChangePasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordRequestHandler());
+    addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
+    addRequestHandler(new UserConfirmRegistrationRequestHandler());
+  }
 
-    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
+  private static void addMappingRequestHandlers() {
+    addRequestHandler(new MappingsRequestHandler());
+    addRequestHandler(new MappingsIdRequestHandler());
+  }
 
-    buildUrlMap();
+  private static void addReindexEndpoints() {
+    addRequestHandler(new ReindexDocumentsRequestHandler());
   }
 
   /**
-   * Register Extensions.
+   * Add Url Request Handler Mapping.
    *
-   * @param serviceCache {@link AwsServiceCache}
+   * @param handler {@link ApiGatewayRequestHandler}
    */
-  private static void registerExtensions(final AwsServiceCache serviceCache) {
-
-    serviceCache.register(CognitoIdentityProviderService.class,
-        new CognitoIdentityProviderServiceExtension());
-    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    serviceCache.register(EventService.class, new EventServiceSnsExtension());
-    serviceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
-    serviceCache.register(ActionsService.class, new ActionsServiceExtension());
-    serviceCache.register(SsmService.class, new SsmServiceExtension());
-    serviceCache.register(S3Service.class, new S3ServiceExtension());
-    serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
-    serviceCache.register(SqsService.class, new SqsServiceExtension());
-    serviceCache.register(CacheService.class, new CacheServiceExtension());
-    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
-    serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
-    serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
-    serviceCache.register(ConfigService.class, new ConfigServiceExtension());
-    serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
-    serviceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
-    serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
-    serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
-    serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
-    serviceCache.register(AttributeService.class, new AttributeServiceExtension());
-    serviceCache.register(AttributeValidator.class, new AttributeValidatorExtension());
-    serviceCache.register(SchemaService.class, new SchemaServiceExtension());
-    serviceCache.register(MappingService.class, new MappingServiceExtension());
-    serviceCache.register(LocaleService.class, new LocaleServiceExtension());
-    serviceCache.register(Gson.class, new CoreGsonExtension());
-
-    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
-        new ClassServiceExtension<>(new DocumentsRequestHandlerInterceptor(serviceCache)));
-
-    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
-        new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
+  public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
+    URL_MAP.put(handler.getRequestUrl(), handler);
   }
 
-  /**
-   * Whether to enable public urls.
-   *
-   * @param serviceCache {@link AwsServiceCache}
-   * @return boolean
-   */
-  private static boolean isEnablePublicUrls(final AwsServiceCache serviceCache) {
-    return "true".equals(serviceCache.environment().getOrDefault("ENABLE_PUBLIC_URLS", "false"));
+  private static void addSchemaEndpoints() {
+    addRequestHandler(new SitesSchemaRequestHandler());
+    addRequestHandler(new SitesClassificationRequestHandler());
+    addRequestHandler(new SitesClassificationIdRequestHandler());
+    addRequestHandler(new SitesClassificationAllowedValuesRequestHandler());
+    addRequestHandler(new SitesSchemaAttributeAllowedValuesRequestHandler());
+  }
+
+  private static void addSystemEndpoints() {
+    addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new SitesRequestHandler());
+    addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new ConfigurationApiKeysRequestHandler());
+    addRequestHandler(new ConfigurationApiKeyRequestHandler());
   }
 
   /**
@@ -305,74 +301,78 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addEntityEndpoints();
   }
 
-  private static void addEntityEndpoints() {
-    addRequestHandler(new EntityTypesRequestHandler());
-    addRequestHandler(new EntityTypeRequestHandler());
-    addRequestHandler(new EntitiesRequestHandler());
-    addRequestHandler(new EntityRequestHandler());
-  }
+  /**
+   * Initialize.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   */
+  public static void initialize(final AwsServiceCache serviceCache) {
 
-  private static void addSystemEndpoints() {
-    addRequestHandler(new VersionRequestHandler());
-    addRequestHandler(new SitesRequestHandler());
-    addRequestHandler(new ConfigurationRequestHandler());
-    addRequestHandler(new ConfigurationApiKeysRequestHandler());
-    addRequestHandler(new ConfigurationApiKeyRequestHandler());
-  }
+    registerExtensions(serviceCache);
 
-  private static void addAttributeRequestHandlers() {
-    addRequestHandler(new AttributesRequestHandler());
-    addRequestHandler(new AttributeRequestHandler());
-    addRequestHandler(new AttributeAllowedValuesRequestHandler());
-  }
+    if (serviceCache.hasModule("typesense")) {
+      serviceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    }
 
-  private static void addMappingRequestHandlers() {
-    addRequestHandler(new MappingsRequestHandler());
-    addRequestHandler(new MappingsIdRequestHandler());
+    isEnablePublicUrls = isEnablePublicUrls(serviceCache);
+
+    buildUrlMap();
   }
 
   /**
-   * Add Url Request Handler Mapping.
+   * Whether to enable public urls.
    *
-   * @param handler {@link ApiGatewayRequestHandler}
+   * @param serviceCache {@link AwsServiceCache}
+   * @return boolean
    */
-  public static void addRequestHandler(final ApiGatewayRequestHandler handler) {
-    URL_MAP.put(handler.getRequestUrl(), handler);
+  private static boolean isEnablePublicUrls(final AwsServiceCache serviceCache) {
+    return "true".equals(serviceCache.environment().getOrDefault("ENABLE_PUBLIC_URLS", "false"));
   }
 
-  private static void addGroupUsersEndpoints() {
-    addRequestHandler(new GroupsRequestHandler());
-    addRequestHandler(new GroupRequestHandler());
-    addRequestHandler(new GroupsUsersRequestHandler());
-    addRequestHandler(new GroupsUserRequestHandler());
-    addRequestHandler(new UsersRequestHandler());
-    addRequestHandler(new UserRequestHandler());
-    addRequestHandler(new UserOperationRequestHandler());
-    addRequestHandler(new UserGroupsRequestHandler());
-    addRequestHandler(new UserLoginRequestHandler());
-    addRequestHandler(new UserChangePasswordRequestHandler());
-    addRequestHandler(new UserForgotPasswordRequestHandler());
-    addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
-    addRequestHandler(new UserConfirmRegistrationRequestHandler());
+  /**
+   * Register Extensions.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   */
+  private static void registerExtensions(final AwsServiceCache serviceCache) {
+
+    serviceCache.register(CognitoIdentityProviderService.class,
+        new CognitoIdentityProviderServiceExtension());
+    serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    serviceCache.register(EventService.class, new EventServiceSnsExtension());
+    serviceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
+    serviceCache.register(ActionsService.class, new ActionsServiceExtension());
+    serviceCache.register(SsmService.class, new SsmServiceExtension());
+    serviceCache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
+    serviceCache.register(SqsService.class, new SqsServiceExtension());
+    serviceCache.register(CacheService.class, new CacheServiceExtension());
+    serviceCache.register(DocumentService.class, new DocumentServiceExtension());
+    serviceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    serviceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    serviceCache.register(ConfigService.class, new ConfigServiceExtension());
+    serviceCache.register(ApiKeysService.class, new ApiKeysServiceExtension());
+    serviceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    serviceCache.register(DocumentOcrService.class, new DocumentOcrServiceExtension());
+    serviceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    serviceCache.register(WebhooksService.class, new WebhooksServiceExtension());
+    serviceCache.register(AttributeService.class, new AttributeServiceExtension());
+    serviceCache.register(AttributeValidator.class, new AttributeValidatorExtension());
+    serviceCache.register(SchemaService.class, new SchemaServiceExtension());
+    serviceCache.register(MappingService.class, new MappingServiceExtension());
+    serviceCache.register(LocaleService.class, new LocaleServiceExtension());
+    serviceCache.register(Gson.class, new CoreGsonExtension());
+
+    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
+        new ClassServiceExtension<>(new DocumentsRequestHandlerInterceptor(serviceCache)));
+
+    serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
+        new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
   }
 
-  private static void addDocumentAttributeEndpoints() {
-    addRequestHandler(new DocumentAttributesRequestHandler());
-    addRequestHandler(new DocumentAttributeRequestHandler());
-    addRequestHandler(new DocumentAttributesValueRequestHandler());
-  }
-
-  private static void addSchemaEndpoints() {
-    addRequestHandler(new SitesSchemaRequestHandler());
-    addRequestHandler(new SitesClassificationRequestHandler());
-    addRequestHandler(new SitesClassificationIdRequestHandler());
-    addRequestHandler(new SitesClassificationAllowedValuesRequestHandler());
-    addRequestHandler(new SitesSchemaAttributeAllowedValuesRequestHandler());
-  }
-
-  private static void addReindexEndpoints() {
-    addRequestHandler(new ReindexDocumentsRequestHandler());
-  }
+  /** constructor. */
+  public AbstractCoreRequestHandler() {}
 
   @Override
   @SuppressWarnings("returncount")

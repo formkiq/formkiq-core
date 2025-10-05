@@ -156,6 +156,11 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     this.attributesApi.addAttribute(req, siteId);
   }
 
+  private String addDocument(final String siteId) throws ApiException {
+    AddDocumentRequest docReq = new AddDocumentRequest().content("test");
+    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+  }
+
   private String addDocument(final String siteId, final String key, final String stringValue,
       final BigDecimal numberValue, final Boolean booleanValue) throws ApiException {
 
@@ -170,11 +175,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
     docReq.addAttributesItem(new AddDocumentAttribute(o));
 
-    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
-  }
-
-  private String addDocument(final String siteId) throws ApiException {
-    AddDocumentRequest docReq = new AddDocumentRequest().content("test");
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
   }
 
@@ -201,6 +201,40 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
   }
 
+  private void addRelationship(final String siteId, final String d0,
+      final DocumentRelationshipType r0, final String d1) throws ApiException {
+
+    AddDocumentAttributeRelationship o =
+        new AddDocumentAttributeRelationship().documentId(d1).relationship(r0);
+
+    AddDocumentAttributesRequest req =
+        new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(o));
+    this.documentAttributesApi.addDocumentAttributes(d0, req, siteId);
+  }
+
+  private Attribute assertAttributeEquals(final String siteId, final String key,
+      final AttributeType attributeType, final String watermarkText) throws ApiException {
+    GetAttributeResponse attribute = this.attributesApi.getAttribute(key, siteId);
+
+    assertNotNull(attribute);
+    assertNotNull(attribute.getAttribute());
+
+    assertEquals(attributeType, attribute.getAttribute().getType());
+
+    if (watermarkText != null) {
+      assertNotNull(attribute.getAttribute().getWatermark());
+      assertEquals(watermarkText, attribute.getAttribute().getWatermark().getText());
+    }
+
+    return attribute.getAttribute();
+  }
+
+  private void assertEmptyTags(final String siteId, final String documentId) throws ApiException {
+    List<DocumentTag> tags =
+        notNull(this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
+    assertEquals(0, tags.size());
+  }
+
   private void assertInvalidSearch(final String siteId, final DocumentSearchRequest searchRequest,
       final String responseBody) {
     try {
@@ -208,6 +242,19 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       fail();
     } catch (ApiException e) {
       assertEquals(responseBody, e.getResponseBody());
+    }
+  }
+
+  private void assertUpdateAttributeException(final String siteId, final String key,
+      final UpdateAttributeRequest updateReq, final String errorMessage) {
+    // when
+    try {
+      this.attributesApi.updateAttribute(key, updateReq, siteId);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(errorMessage, e.getResponseBody());
     }
   }
 
@@ -602,210 +649,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PATCH /attributes/{key} update to governance and back.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testUpdateAttributes01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken("Admins");
-      String key = "abc_" + ID.uuid();
-      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
-
-      // when
-      AddResponse response = this.attributesApi.addAttribute(req, siteId);
-
-      // then
-      assertEquals("Attribute '" + key + "' created", response.getMessage());
-
-      // given
-      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(AttributeType.GOVERNANCE));
-
-      // when
-      UpdateResponse updateResponse = this.attributesApi.updateAttribute(key, updateReq, siteId);
-
-      // then
-      assertEquals("Attribute '" + key + "' updated", updateResponse.getMessage());
-      assertAttributeEquals(siteId, key, AttributeType.GOVERNANCE, null);
-
-      // given
-      updateReq = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
-
-      // when
-      updateResponse = this.attributesApi.updateAttribute(key, updateReq, siteId);
-
-      // then
-      assertEquals("Attribute '" + key + "' updated", updateResponse.getMessage());
-      assertAttributeEquals(siteId, key, AttributeType.STANDARD, null);
-    }
-  }
-
-  /**
-   * PATCH /attributes/{key} update to governance and back not admin.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testUpdateAttributes02() throws ApiException {
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken("Admins");
-
-      String key0 = "abc_" + ID.uuid();
-      AddAttributeRequest req = new AddAttributeRequest()
-          .attribute(new AddAttribute().key(key0).type(AttributeType.STANDARD));
-      this.attributesApi.addAttribute(req, siteId);
-
-      String key1 = "abc_" + ID.uuid();
-      req = new AddAttributeRequest()
-          .attribute(new AddAttribute().key(key1).type(AttributeType.GOVERNANCE));
-      this.attributesApi.addAttribute(req, siteId);
-
-      setBearerToken(siteId);
-      UpdateAttributeRequest updateReq0 = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(AttributeType.GOVERNANCE));
-      UpdateAttributeRequest updateReq1 = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
-
-      assertUpdateAttributeException(siteId, key0, updateReq0,
-          "{\"errors\":[{\"error\":\"Access denied to attribute\"}]}");
-      assertUpdateAttributeException(siteId, key1, updateReq1,
-          "{\"errors\":[{\"error\":\"Access denied to attribute\"}]}");
-    }
-  }
-
-  /**
-   * PATCH /attributes/{key} invalid.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testUpdateAttributes03() throws ApiException {
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken(siteId);
-      String key = "abc_" + ID.uuid();
-
-      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
-      this.attributesApi.addAttribute(req, siteId);
-
-      UpdateAttributeRequest updateReq = new UpdateAttributeRequest();
-      assertUpdateAttributeException(siteId, key, updateReq,
-          "{\"message\":\"invalid request body\"}");
-
-      updateReq = new UpdateAttributeRequest().attribute(new UpdateAttribute().type(null));
-      assertUpdateAttributeException(siteId, key, updateReq,
-          "{\"errors\":[{\"error\":\"Attribute Type or Watermark is required\"}]}");
-    }
-  }
-
-  /**
-   * PATCH /attributes/{key} missing.
-   *
-   */
-  @Test
-  public void testUpdateAttributes04() {
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      // given
-      setBearerToken(siteId);
-      String key = "abc_" + ID.uuid();
-
-      // when
-      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
-
-      // then
-      assertUpdateAttributeException(siteId, key, updateReq,
-          "{\"errors\":[{\"error\":\"Attribute not found\"}]}");
-    }
-  }
-
-  /**
-   * PATCH /attributes/{key} watermark.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testUpdateAttributes05() throws ApiException {
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken(siteId);
-      String key = "wm_" + ID.uuid();
-
-      WatermarkPosition position = new WatermarkPosition().xAnchor(WatermarkPositionXAnchor.RIGHT)
-          .yAnchor(WatermarkPositionYAnchor.BOTTOM).xOffset(new BigDecimal("1"))
-          .yOffset(new BigDecimal("2"));
-      Watermark watermark0 = new Watermark().text("mytext").position(position)
-          .scale(WatermarkScale.ORIGINAL).rotation(new BigDecimal("45"));
-      AddAttributeRequest req = new AddAttributeRequest().attribute(
-          new AddAttribute().key(key).dataType(AttributeDataType.WATERMARK).watermark(watermark0));
-
-      // when
-      this.attributesApi.addAttribute(req, siteId);
-
-      // then
-      assertAttributeEquals(siteId, key, AttributeType.STANDARD, "mytext");
-
-      // given
-      position = new WatermarkPosition().xAnchor(WatermarkPositionXAnchor.LEFT)
-          .xOffset(new BigDecimal("222")).yOffset(new BigDecimal("111"));
-
-      Watermark watermark1 = new Watermark().text("mytext2").position(position);
-      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
-          .attribute(new UpdateAttribute().type(null).watermark(watermark1));
-
-      // when
-      this.attributesApi.updateAttribute(key, updateReq, siteId);
-
-      // then
-      Attribute attribute = assertAttributeEquals(siteId, key, AttributeType.STANDARD, "mytext2");
-      assertNotNull(attribute.getWatermark());
-      assertNotNull(attribute.getWatermark().getPosition());
-      WatermarkPosition pos = attribute.getWatermark().getPosition();
-      assertEquals(WatermarkPositionXAnchor.LEFT, pos.getxAnchor());
-      assertEquals("222.0", Objects.requireNonNull(pos.getxOffset()).toString());
-      assertEquals("111.0", Objects.requireNonNull(pos.getyOffset()).toString());
-      assertNull(pos.getyAnchor());
-    }
-  }
-
-  private void assertUpdateAttributeException(final String siteId, final String key,
-      final UpdateAttributeRequest updateReq, final String errorMessage) {
-    // when
-    try {
-      this.attributesApi.updateAttribute(key, updateReq, siteId);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-      assertEquals(errorMessage, e.getResponseBody());
-    }
-  }
-
-  private Attribute assertAttributeEquals(final String siteId, final String key,
-      final AttributeType attributeType, final String watermarkText) throws ApiException {
-    GetAttributeResponse attribute = this.attributesApi.getAttribute(key, siteId);
-
-    assertNotNull(attribute);
-    assertNotNull(attribute.getAttribute());
-
-    assertEquals(attributeType, attribute.getAttribute().getType());
-
-    if (watermarkText != null) {
-      assertNotNull(attribute.getAttribute().getWatermark());
-      assertEquals(watermarkText, attribute.getAttribute().getWatermark().getText());
-    }
-
-    return attribute.getAttribute();
-  }
-
-  /**
    * POST /documents.
    *
    * @throws ApiException ApiException
@@ -830,12 +673,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       assertEmptyTags(siteId, documentId);
     }
-  }
-
-  private void assertEmptyTags(final String siteId, final String documentId) throws ApiException {
-    List<DocumentTag> tags =
-        notNull(this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
-    assertEquals(0, tags.size());
   }
 
   /**
@@ -1234,7 +1071,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-
   /**
    * POST /documents with Relationships with missing document.
    *
@@ -1293,17 +1129,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(response.getBooleanValue());
       assertFalse(response.getBooleanValue());
     }
-  }
-
-  private void addRelationship(final String siteId, final String d0,
-      final DocumentRelationshipType r0, final String d1) throws ApiException {
-
-    AddDocumentAttributeRelationship o =
-        new AddDocumentAttributeRelationship().documentId(d1).relationship(r0);
-
-    AddDocumentAttributesRequest req =
-        new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(o));
-    this.documentAttributesApi.addDocumentAttributes(d0, req, siteId);
   }
 
   /**
@@ -1404,6 +1229,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
+
 
   /**
    * POST /documents/upload, POST /search attributes 'eq' numberValue.
@@ -2619,74 +2445,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT /documents/{documentId}/attributes/{attributeKey} with OPA.
-   * 
-   * @throws ApiException ApiException
-   */
-  @Test
-  public void testPutDocumentAttributeValue01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
-
-      setBearerToken(siteId + "_govern");
-      addAttribute(siteId, "security", null, AttributeType.OPA);
-
-      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
-
-      setBearerToken(siteId);
-      SetDocumentAttributeRequest sreq = new SetDocumentAttributeRequest()
-          .attribute(new AddDocumentAttributeValue().stringValue("123"));
-
-      // when
-      try {
-        this.documentAttributesApi.setDocumentAttributeValue(documentId, "security", sreq, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"security\","
-                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
-            e.getResponseBody());
-      }
-
-      // given
-      setBearerToken("Admins");
-
-      // when
-      this.documentAttributesApi.setDocumentAttributeValue(documentId, "security", sreq, siteId);
-
-      // then
-      assertEquals("123", getDocumentAttribute(siteId, documentId, "security").getStringValue());
-    }
-  }
-
-  /**
-   * POST /documents/{documentId}/attributes. Invalid documentId.
-   *
-   */
-  @Test
-  public void testSetDocumentAttribute01() {
-    // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken(siteId);
-
-      String documentId = ID.uuid();
-
-      // when
-      try {
-        SetDocumentAttributesRequest sreq = new SetDocumentAttributesRequest();
-        this.documentAttributesApi.setDocumentAttributes(documentId, sreq, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
    * PUT /documents/{documentId}/attributes/{attributeKey} check only replaces the attributeKey.
    *
    * @throws ApiException ApiException
@@ -2791,6 +2549,329 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with OPA.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttributeValue01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      setBearerToken(siteId + "_govern");
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      setBearerToken(siteId);
+      SetDocumentAttributeRequest sreq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().stringValue("123"));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributeValue(documentId, "security", sreq, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      setBearerToken("Admins");
+
+      // when
+      this.documentAttributesApi.setDocumentAttributeValue(documentId, "security", sreq, siteId);
+
+      // then
+      assertEquals("123", getDocumentAttribute(siteId, documentId, "security").getStringValue());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Invalid documentId.
+   *
+   */
+  @Test
+  public void testSetDocumentAttribute01() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+
+      // when
+      try {
+        SetDocumentAttributesRequest sreq = new SetDocumentAttributesRequest();
+        this.documentAttributesApi.setDocumentAttributes(documentId, sreq, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PATCH /attributes/{key} update to governance and back.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateAttributes01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken("Admins");
+      String key = "abc_" + ID.uuid();
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+
+      // when
+      AddResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + key + "' created", response.getMessage());
+
+      // given
+      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.GOVERNANCE));
+
+      // when
+      UpdateResponse updateResponse = this.attributesApi.updateAttribute(key, updateReq, siteId);
+
+      // then
+      assertEquals("Attribute '" + key + "' updated", updateResponse.getMessage());
+      assertAttributeEquals(siteId, key, AttributeType.GOVERNANCE, null);
+
+      // given
+      updateReq = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
+
+      // when
+      updateResponse = this.attributesApi.updateAttribute(key, updateReq, siteId);
+
+      // then
+      assertEquals("Attribute '" + key + "' updated", updateResponse.getMessage());
+      assertAttributeEquals(siteId, key, AttributeType.STANDARD, null);
+    }
+  }
+
+  /**
+   * PATCH /attributes/{key} update to governance and back not admin.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateAttributes02() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken("Admins");
+
+      String key0 = "abc_" + ID.uuid();
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key0).type(AttributeType.STANDARD));
+      this.attributesApi.addAttribute(req, siteId);
+
+      String key1 = "abc_" + ID.uuid();
+      req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key1).type(AttributeType.GOVERNANCE));
+      this.attributesApi.addAttribute(req, siteId);
+
+      setBearerToken(siteId);
+      UpdateAttributeRequest updateReq0 = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.GOVERNANCE));
+      UpdateAttributeRequest updateReq1 = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
+
+      assertUpdateAttributeException(siteId, key0, updateReq0,
+          "{\"errors\":[{\"error\":\"Access denied to attribute\"}]}");
+      assertUpdateAttributeException(siteId, key1, updateReq1,
+          "{\"errors\":[{\"error\":\"Access denied to attribute\"}]}");
+    }
+  }
+
+  /**
+   * PATCH /attributes/{key} invalid.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateAttributes03() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      String key = "abc_" + ID.uuid();
+
+      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
+      this.attributesApi.addAttribute(req, siteId);
+
+      UpdateAttributeRequest updateReq = new UpdateAttributeRequest();
+      assertUpdateAttributeException(siteId, key, updateReq,
+          "{\"message\":\"invalid request body\"}");
+
+      updateReq = new UpdateAttributeRequest().attribute(new UpdateAttribute().type(null));
+      assertUpdateAttributeException(siteId, key, updateReq,
+          "{\"errors\":[{\"error\":\"Attribute Type or Watermark is required\"}]}");
+    }
+  }
+
+  /**
+   * PATCH /attributes/{key} missing.
+   *
+   */
+  @Test
+  public void testUpdateAttributes04() {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      // given
+      setBearerToken(siteId);
+      String key = "abc_" + ID.uuid();
+
+      // when
+      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.STANDARD));
+
+      // then
+      assertUpdateAttributeException(siteId, key, updateReq,
+          "{\"errors\":[{\"error\":\"Attribute not found\"}]}");
+    }
+  }
+
+  /**
+   * PATCH /attributes/{key} watermark.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateAttributes05() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      String key = "wm_" + ID.uuid();
+
+      WatermarkPosition position = new WatermarkPosition().xAnchor(WatermarkPositionXAnchor.RIGHT)
+          .yAnchor(WatermarkPositionYAnchor.BOTTOM).xOffset(new BigDecimal("1"))
+          .yOffset(new BigDecimal("2"));
+      Watermark watermark0 = new Watermark().text("mytext").position(position)
+          .scale(WatermarkScale.ORIGINAL).rotation(new BigDecimal("45"));
+      AddAttributeRequest req = new AddAttributeRequest().attribute(
+          new AddAttribute().key(key).dataType(AttributeDataType.WATERMARK).watermark(watermark0));
+
+      // when
+      this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertAttributeEquals(siteId, key, AttributeType.STANDARD, "mytext");
+
+      // given
+      position = new WatermarkPosition().xAnchor(WatermarkPositionXAnchor.LEFT)
+          .xOffset(new BigDecimal("222")).yOffset(new BigDecimal("111"));
+
+      Watermark watermark1 = new Watermark().text("mytext2").position(position);
+      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(null).watermark(watermark1));
+
+      // when
+      this.attributesApi.updateAttribute(key, updateReq, siteId);
+
+      // then
+      Attribute attribute = assertAttributeEquals(siteId, key, AttributeType.STANDARD, "mytext2");
+      assertNotNull(attribute.getWatermark());
+      assertNotNull(attribute.getWatermark().getPosition());
+      WatermarkPosition pos = attribute.getWatermark().getPosition();
+      assertEquals(WatermarkPositionXAnchor.LEFT, pos.getxAnchor());
+      assertEquals("222.0", Objects.requireNonNull(pos.getxOffset()).toString());
+      assertEquals("111.0", Objects.requireNonNull(pos.getyOffset()).toString());
+      assertNull(pos.getyAnchor());
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId} with OPA.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdateDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      setBearerToken(siteId + "_govern");
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+      setBearerToken(siteId);
+
+      List<SearchResultDocument> documents = notNull(
+          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+      assertEquals(1, documents.size());
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("security").stringValue("other")));
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"security\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
+
+        documents = notNull(
+            foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+        assertEquals(1, documents.size());
+      }
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId} with OPA and Govern permission.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdateDocumentAttribute02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+
+      // setBearerToken(siteId);
+      setBearerToken(new String[] {siteId, siteId + "_govern"});
+
+      addAttribute(siteId, "security", null, AttributeType.OPA);
+
+      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
+
+      List<SearchResultDocument> documents = notNull(
+          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+      assertEquals(1, documents.size());
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("security").stringValue("other")));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+
+      // then
+      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      assertEquals("security", documentAttributes.get(0).getKey());
+      assertEquals("other", documentAttributes.get(0).getStringValue());
+    }
+  }
+
+  /**
    * PATCH /documents, POST /documents/{documentId}/attributes, PUT
    * /documents/{documentId}/attributes, existing attribute .
    *
@@ -2889,87 +2970,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         // then
         assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
       }
-    }
-  }
-
-  /**
-   * PATCH /documents/{documentId} with OPA.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  public void testUpdateDocumentAttribute01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
-
-      setBearerToken(siteId + "_govern");
-
-      addAttribute(siteId, "security", null, AttributeType.OPA);
-
-      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
-      setBearerToken(siteId);
-
-      List<SearchResultDocument> documents = notNull(
-          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
-      assertEquals(1, documents.size());
-
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("security").stringValue("other")));
-
-      // when
-      try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"security\","
-                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
-            e.getResponseBody());
-
-        documents = notNull(
-            foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
-        assertEquals(1, documents.size());
-      }
-    }
-  }
-
-  /**
-   * PATCH /documents/{documentId} with OPA and Govern permission.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  public void testUpdateDocumentAttribute02() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
-
-      // setBearerToken(siteId);
-      setBearerToken(new String[] {siteId, siteId + "_govern"});
-
-      addAttribute(siteId, "security", null, AttributeType.OPA);
-
-      String documentId = addDocumentAttribute(siteId, "security", "confidential", null, null);
-
-      List<SearchResultDocument> documents = notNull(
-          foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
-      assertEquals(1, documents.size());
-
-      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("somepath.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("security").stringValue("other")));
-
-      // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
-
-      // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
-      assertEquals(1, documentAttributes.size());
-      assertEquals("security", documentAttributes.get(0).getKey());
-      assertEquals("other", documentAttributes.get(0).getStringValue());
     }
   }
 }

@@ -53,6 +53,22 @@ public class ObjectExaminePdfIdHandler
   /** {@link PdfService}. */
   private final PdfService service = new PdfServicePdfBox();
 
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String id = event.getPathParameters().get("id");
+
+    Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
+
+    if (fileinfo == null) {
+      throw new DocumentNotFoundException(id);
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body("fileinfo", fileinfo).build();
+  }
+
   private Map<String, Object> getFileInfo(final AwsServiceCache awsservice, final String siteId,
       final String id) throws IOException {
 
@@ -81,21 +97,5 @@ public class ObjectExaminePdfIdHandler
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String id = event.getPathParameters().get("id");
-
-    Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
-
-    if (fileinfo == null) {
-      throw new DocumentNotFoundException(id);
-    }
-
-    return ApiRequestHandlerResponse.builder().ok().body("fileinfo", fileinfo).build();
   }
 }

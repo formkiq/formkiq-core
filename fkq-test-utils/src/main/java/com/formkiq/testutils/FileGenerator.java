@@ -35,11 +35,11 @@ import java.util.zip.ZipOutputStream;
  */
 public class FileGenerator {
 
-  /** {@link Random}. */
-  private Random random = new Random();
-
   /** Buffer Size. */
   private static final int BUFFER_SIZE = 1024;
+
+  /** {@link Random}. */
+  private Random random = new Random();
 
   /**
    * Generates Zip file of a certain size.

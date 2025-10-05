@@ -43,29 +43,28 @@ public class TimeToLiveBuilder {
   public TimeToLiveBuilder() {}
 
   /**
-   * Sets a specific expiration expiryTime.
+   * Builds the TTL value as a Unix timestamp (in seconds).
    *
-   * @param expiryTime Instant representing the expiration expiryTime.
-   * @return TimeToLiveBuilder instance.
+   * @return The Unix epoch timestamp for TTL.
    */
-  public TimeToLiveBuilder withExpirationTime(final Instant expiryTime) {
-    this.time = Objects.requireNonNull(expiryTime, "Expiration expiryTime cannot be null.");
-    return this;
+  public long build() {
+    if (time == null) {
+      throw new IllegalStateException(
+          "Expiration time must be set using withExpirationTime() or withDurationFromNow().");
+    }
+    return time.getEpochSecond();
   }
 
 
   /**
-   * Sets the TTL based on a duration from now.
+   * Builds the TTL as a DynamoDB AttributeValue.
    *
-   * @param durationInSeconds Number of seconds from now until expiration.
-   * @return TimeToLiveBuilder instance.
+   * @return AttributeValue representing the TTL.
    */
-  public TimeToLiveBuilder withDurationFromNow(final long durationInSeconds) {
-    if (durationInSeconds <= 0) {
-      throw new IllegalArgumentException("Duration must be greater than 0 seconds");
-    }
-    this.time = Instant.now().plusSeconds(durationInSeconds);
-    return this;
+  public AttributeValue buildAttributeValue() {
+    long ttl = build();
+    return AttributeValue.builder().n(String.valueOf(ttl)) // DynamoDB stores numbers as strings
+        .build();
   }
 
   /**
@@ -83,26 +82,27 @@ public class TimeToLiveBuilder {
   }
 
   /**
-   * Builds the TTL value as a Unix timestamp (in seconds).
+   * Sets the TTL based on a duration from now.
    *
-   * @return The Unix epoch timestamp for TTL.
+   * @param durationInSeconds Number of seconds from now until expiration.
+   * @return TimeToLiveBuilder instance.
    */
-  public long build() {
-    if (time == null) {
-      throw new IllegalStateException(
-          "Expiration time must be set using withExpirationTime() or withDurationFromNow().");
+  public TimeToLiveBuilder withDurationFromNow(final long durationInSeconds) {
+    if (durationInSeconds <= 0) {
+      throw new IllegalArgumentException("Duration must be greater than 0 seconds");
     }
-    return time.getEpochSecond();
+    this.time = Instant.now().plusSeconds(durationInSeconds);
+    return this;
   }
 
   /**
-   * Builds the TTL as a DynamoDB AttributeValue.
+   * Sets a specific expiration expiryTime.
    *
-   * @return AttributeValue representing the TTL.
+   * @param expiryTime Instant representing the expiration expiryTime.
+   * @return TimeToLiveBuilder instance.
    */
-  public AttributeValue buildAttributeValue() {
-    long ttl = build();
-    return AttributeValue.builder().n(String.valueOf(ttl)) // DynamoDB stores numbers as strings
-        .build();
+  public TimeToLiveBuilder withExpirationTime(final Instant expiryTime) {
+    this.time = Objects.requireNonNull(expiryTime, "Expiration expiryTime cannot be null.");
+    return this;
   }
 }

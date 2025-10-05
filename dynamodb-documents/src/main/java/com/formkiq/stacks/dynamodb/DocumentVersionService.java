@@ -48,21 +48,6 @@ public interface DocumentVersionService {
   void deleteAllVersionIds(String siteId, String documentId);
 
   /**
-   * Get DynamoDB Documents Versions Table Name.
-   * 
-   * @return {@link String}
-   */
-  String getDocumentVersionsTableName();
-
-  /**
-   * Get S3 Version Id.
-   * 
-   * @param attributes {@link Map}
-   * @return {@link String}
-   */
-  String getVersionId(Map<String, AttributeValue> attributes);
-
-  /**
    * Get Version Record.
    *
    * @param siteId {@link String}
@@ -73,12 +58,11 @@ public interface DocumentVersionService {
   Map<String, AttributeValue> get(String siteId, String documentId, String versionKey);
 
   /**
-   * Initialize Service.
-   *
-   * @param map {@link Map}
-   * @param connection {@link DynamoDbConnectionBuilder}
+   * Get {@link DynamoDbService}.
+   * 
+   * @return {@link DynamoDbService}
    */
-  void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
+  DynamoDbService getDb();
 
   /**
    * Get {@link DocumentItem} either current or versioned.
@@ -94,9 +78,25 @@ public interface DocumentVersionService {
       String versionKey, Map<String, AttributeValue> versionAttributes);
 
   /**
-   * Get {@link DynamoDbService}.
+   * Get DynamoDB Documents Versions Table Name.
    * 
-   * @return {@link DynamoDbService}
+   * @return {@link String}
    */
-  DynamoDbService getDb();
+  String getDocumentVersionsTableName();
+
+  /**
+   * Get S3 Version Id.
+   * 
+   * @param attributes {@link Map}
+   * @return {@link String}
+   */
+  String getVersionId(Map<String, AttributeValue> attributes);
+
+  /**
+   * Initialize Service.
+   *
+   * @param map {@link Map}
+   * @param connection {@link DynamoDbConnectionBuilder}
+   */
+  void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
 }

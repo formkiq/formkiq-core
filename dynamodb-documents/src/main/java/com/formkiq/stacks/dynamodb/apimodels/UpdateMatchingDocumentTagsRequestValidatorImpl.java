@@ -57,6 +57,26 @@ public class UpdateMatchingDocumentTagsRequestValidatorImpl
   }
 
   /**
+   * Validate {@link updateMatchingDocumentTagsRequestMatch}.
+   * 
+   * @param match {@link UpdateMatchingDocumentTagsRequestMatch}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateMatch(final UpdateMatchingDocumentTagsRequestMatch match,
+      final Collection<ValidationError> errors) {
+    MatchDocumentTag matchTag = match.getTag();
+    if (matchTag == null) {
+      errors.add(new ValidationErrorImpl().key("match.tag").error("'match.tag' required"));
+    } else {
+
+      if (matchTag.getKey() == null) {
+        errors
+            .add(new ValidationErrorImpl().key("match.tag.key").error("'match.tag.key' required"));
+      }
+    }
+  }
+
+  /**
    * Validate {@link UpdateMatchingDocumentTagsRequestUpdate}.
    * 
    * @param update {@link UpdateMatchingDocumentTagsRequestUpdate}
@@ -74,26 +94,6 @@ public class UpdateMatchingDocumentTagsRequestValidatorImpl
               new ValidationErrorImpl().key("update.keys.key").error("'update.keys.key' required"));
         }
       });
-    }
-  }
-
-  /**
-   * Validate {@link updateMatchingDocumentTagsRequestMatch}.
-   * 
-   * @param match {@link UpdateMatchingDocumentTagsRequestMatch}
-   * @param errors {@link Collection} {@link ValidationError}
-   */
-  private void validateMatch(final UpdateMatchingDocumentTagsRequestMatch match,
-      final Collection<ValidationError> errors) {
-    MatchDocumentTag matchTag = match.getTag();
-    if (matchTag == null) {
-      errors.add(new ValidationErrorImpl().key("match.tag").error("'match.tag' required"));
-    } else {
-
-      if (matchTag.getKey() == null) {
-        errors
-            .add(new ValidationErrorImpl().key("match.tag.key").error("'match.tag.key' required"));
-      }
     }
   }
 

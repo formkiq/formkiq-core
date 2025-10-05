@@ -33,55 +33,6 @@ import java.util.Set;
  * Configuration holder for converting DynamoDB AttributeValue maps.
  */
 public class AttributeValueToMapConfig {
-  /** Whether to remove Db Keys. */
-  private final boolean removeDbKeys;
-  /** {@link Map} of Keys to rename. */
-  private final Map<String, String> renameKeys;
-  /** Delete Keys. */
-  private final Set<String> deleteKeys;
-
-  private AttributeValueToMapConfig(final Builder builder) {
-    this.removeDbKeys = builder.removeDbKeys;
-    this.renameKeys = builder.renameKeys;
-    this.deleteKeys = builder.deleteKeys;
-  }
-
-  /**
-   * Is Remove Db Keys.
-   * 
-   * @return true if PK and SK attributes should be omitted
-   */
-  public boolean isRemoveDbKeys() {
-    return removeDbKeys;
-  }
-
-  /**
-   * Get {@link Map}.
-   * 
-   * @return keys to rename
-   */
-  public Map<String, String> getRenameKeys() {
-    return this.renameKeys;
-  }
-
-  /**
-   * Get Delete Keys.
-   *
-   * @return keys to delete
-   */
-  public Set<String> getDeleteKeys() {
-    return this.deleteKeys;
-  }
-
-  /**
-   * {@link Builder}.
-   *
-   * @return a new Builder instance
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
   public static class Builder {
     /** Whether to remove Db Keys. */
     private boolean removeDbKeys = false;
@@ -89,17 +40,6 @@ public class AttributeValueToMapConfig {
     private final Map<String, String> renameKeys = new HashMap<>();
     /** Delete Keys. */
     private final Set<String> deleteKeys = new HashSet<>();
-
-    /**
-     * {@link Builder}. If true, PK and SK keys will be omitted from the output map
-     * 
-     * @param toRemoveDbKeys boolean
-     * @return Builder
-     */
-    public Builder removeDbKeys(final boolean toRemoveDbKeys) {
-      this.removeDbKeys = toRemoveDbKeys;
-      return this;
-    }
 
     /**
      * Sets the output field name for the DynamoDB "documentId" attribute.
@@ -114,6 +54,15 @@ public class AttributeValueToMapConfig {
     }
 
     /**
+     * Builds the configuration instance.
+     * 
+     * @return AttributeValueToMapConfig
+     */
+    public AttributeValueToMapConfig build() {
+      return new AttributeValueToMapConfig(this);
+    }
+
+    /**
      * Remove Keys from Map.
      *
      * @param keys {@link String}
@@ -125,13 +74,66 @@ public class AttributeValueToMapConfig {
     }
 
     /**
-     * Builds the configuration instance.
+     * {@link Builder}. If true, PK and SK keys will be omitted from the output map
      * 
-     * @return AttributeValueToMapConfig
+     * @param toRemoveDbKeys boolean
+     * @return Builder
      */
-    public AttributeValueToMapConfig build() {
-      return new AttributeValueToMapConfig(this);
+    public Builder removeDbKeys(final boolean toRemoveDbKeys) {
+      this.removeDbKeys = toRemoveDbKeys;
+      return this;
     }
+  }
+
+  /**
+   * {@link Builder}.
+   *
+   * @return a new Builder instance
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Whether to remove Db Keys. */
+  private final boolean removeDbKeys;
+
+  /** {@link Map} of Keys to rename. */
+  private final Map<String, String> renameKeys;
+
+  /** Delete Keys. */
+  private final Set<String> deleteKeys;
+
+  private AttributeValueToMapConfig(final Builder builder) {
+    this.removeDbKeys = builder.removeDbKeys;
+    this.renameKeys = builder.renameKeys;
+    this.deleteKeys = builder.deleteKeys;
+  }
+
+  /**
+   * Get Delete Keys.
+   *
+   * @return keys to delete
+   */
+  public Set<String> getDeleteKeys() {
+    return this.deleteKeys;
+  }
+
+  /**
+   * Get {@link Map}.
+   * 
+   * @return keys to rename
+   */
+  public Map<String, String> getRenameKeys() {
+    return this.renameKeys;
+  }
+
+  /**
+   * Is Remove Db Keys.
+   * 
+   * @return true if PK and SK attributes should be omitted
+   */
+  public boolean isRemoveDbKeys() {
+    return removeDbKeys;
   }
 }
 

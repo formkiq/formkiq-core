@@ -108,6 +108,15 @@ public class ApiGatewayRequestContext {
   }
 
   /**
+   * Get Request Time Epoch.
+   * 
+   * @return Long
+   */
+  public Long getRequestTimeEpoch() {
+    return requestTimeEpoch;
+  }
+
+  /**
    * Set Authorizer.
    * 
    * @param map {@link Map}
@@ -159,15 +168,6 @@ public class ApiGatewayRequestContext {
    */
   public void setRequestTime(final String time) {
     this.requestTime = time;
-  }
-
-  /**
-   * Get Request Time Epoch.
-   * 
-   * @return Long
-   */
-  public Long getRequestTimeEpoch() {
-    return requestTimeEpoch;
   }
 
   /**

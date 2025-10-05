@@ -46,6 +46,19 @@ public class GetEntityRequestBuilder implements HttpRequestBuilder<GetEntityResp
   /**
    * constructor.
    * 
+   * @param entityKey {@link DocumentAttributeEntityKeyValue}
+   * @param entityTypeNamespace {@link EntityTypeNamespace}
+   */
+  public GetEntityRequestBuilder(final DocumentAttributeEntityKeyValue entityKey,
+      final EntityTypeNamespace entityTypeNamespace) {
+    this.entityType = entityKey.entityTypeId();
+    this.entity = entityKey.entityId();
+    this.namespace = entityTypeNamespace;
+  }
+
+  /**
+   * constructor.
+   * 
    * @param entityTypeId {@link String}
    * @param entityId {@link String}
    * @param entityTypeNamespace {@link EntityTypeNamespace}
@@ -54,19 +67,6 @@ public class GetEntityRequestBuilder implements HttpRequestBuilder<GetEntityResp
       final EntityTypeNamespace entityTypeNamespace) {
     this.entityType = entityTypeId;
     this.entity = entityId;
-    this.namespace = entityTypeNamespace;
-  }
-
-  /**
-   * constructor.
-   * 
-   * @param entityKey {@link DocumentAttributeEntityKeyValue}
-   * @param entityTypeNamespace {@link EntityTypeNamespace}
-   */
-  public GetEntityRequestBuilder(final DocumentAttributeEntityKeyValue entityKey,
-      final EntityTypeNamespace entityTypeNamespace) {
-    this.entityType = entityKey.entityTypeId();
-    this.entity = entityKey.entityId();
     this.namespace = entityTypeNamespace;
   }
 

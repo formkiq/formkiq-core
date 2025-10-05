@@ -127,6 +127,85 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
     private String gsi2Sk;
 
     /**
+     * Builds the {@link DynamoDbKey} instance.
+     *
+     * @return a newly constructed DynamoDbKey
+     */
+    public DynamoDbKey build() {
+      return new DynamoDbKey(pk, sk, gsi1Pk, gsi1Sk, gsi2Pk, gsi2Sk);
+    }
+
+    /**
+     * Sets the primary partition key.
+     *
+     * @param siteId partition key
+     * @param gsi1PkKey the GSI1 partition key
+     * @return this Builder instance
+     */
+    public Builder gsi1Pk(final String siteId, final AttributeValue gsi1PkKey) {
+      return gsi1Pk(siteId, gsi1PkKey != null ? gsi1PkKey.s() : null);
+    }
+
+    /**
+     * Sets the GSI1 partition key.
+     *
+     * @param siteId partition key
+     * @param gsi1PkKey the GSI1 partition key
+     * @return this Builder instance
+     */
+    public Builder gsi1Pk(final String siteId, final String gsi1PkKey) {
+      this.gsi1Pk =
+          gsi1PkKey != null ? SiteIdKeyGenerator.createDatabaseKey(siteId, gsi1PkKey) : null;
+      return this;
+    }
+
+    /**
+     * Sets the GSI1 sort key.
+     *
+     * @param gsi1SkKey the GSI1 sort key
+     * @return this Builder instance
+     */
+    public Builder gsi1Sk(final String gsi1SkKey) {
+      this.gsi1Sk = gsi1SkKey;
+      return this;
+    }
+
+    /**
+     * Sets the primary partition key.
+     *
+     * @param siteId partition key
+     * @param gsi2PkKey the GSI2 partition key
+     * @return this Builder instance
+     */
+    public Builder gsi2Pk(final String siteId, final AttributeValue gsi2PkKey) {
+      return gsi2Pk(siteId, gsi2PkKey != null ? gsi2PkKey.s() : null);
+    }
+
+    /**
+     * Sets the GSI2 partition key.
+     *
+     * @param siteId partition key
+     * @param gsi2PkKey the GSI2 partition key
+     * @return this Builder instance
+     */
+    public Builder gsi2Pk(final String siteId, final String gsi2PkKey) {
+      this.gsi2Pk =
+          gsi2PkKey != null ? SiteIdKeyGenerator.createDatabaseKey(siteId, gsi2PkKey) : null;
+      return this;
+    }
+
+    /**
+     * Sets the GSI2 sort key.
+     *
+     * @param gsi2SkKey the GSI2 sort key
+     * @return this Builder instance
+     */
+    public Builder gsi2Sk(final String gsi2SkKey) {
+      this.gsi2Sk = gsi2SkKey;
+      return this;
+    }
+
+    /**
      * Sets the primary partition key.
      *
      * @param siteId partition key
@@ -147,85 +226,6 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
     public Builder sk(final String skKey) {
       this.sk = skKey;
       return this;
-    }
-
-    /**
-     * Sets the GSI1 partition key.
-     *
-     * @param siteId partition key
-     * @param gsi1PkKey the GSI1 partition key
-     * @return this Builder instance
-     */
-    public Builder gsi1Pk(final String siteId, final String gsi1PkKey) {
-      this.gsi1Pk =
-          gsi1PkKey != null ? SiteIdKeyGenerator.createDatabaseKey(siteId, gsi1PkKey) : null;
-      return this;
-    }
-
-    /**
-     * Sets the primary partition key.
-     *
-     * @param siteId partition key
-     * @param gsi1PkKey the GSI1 partition key
-     * @return this Builder instance
-     */
-    public Builder gsi1Pk(final String siteId, final AttributeValue gsi1PkKey) {
-      return gsi1Pk(siteId, gsi1PkKey != null ? gsi1PkKey.s() : null);
-    }
-
-    /**
-     * Sets the GSI1 sort key.
-     *
-     * @param gsi1SkKey the GSI1 sort key
-     * @return this Builder instance
-     */
-    public Builder gsi1Sk(final String gsi1SkKey) {
-      this.gsi1Sk = gsi1SkKey;
-      return this;
-    }
-
-    /**
-     * Sets the GSI2 partition key.
-     *
-     * @param siteId partition key
-     * @param gsi2PkKey the GSI2 partition key
-     * @return this Builder instance
-     */
-    public Builder gsi2Pk(final String siteId, final String gsi2PkKey) {
-      this.gsi2Pk =
-          gsi2PkKey != null ? SiteIdKeyGenerator.createDatabaseKey(siteId, gsi2PkKey) : null;
-      return this;
-    }
-
-    /**
-     * Sets the primary partition key.
-     *
-     * @param siteId partition key
-     * @param gsi2PkKey the GSI2 partition key
-     * @return this Builder instance
-     */
-    public Builder gsi2Pk(final String siteId, final AttributeValue gsi2PkKey) {
-      return gsi2Pk(siteId, gsi2PkKey != null ? gsi2PkKey.s() : null);
-    }
-
-    /**
-     * Sets the GSI2 sort key.
-     *
-     * @param gsi2SkKey the GSI2 sort key
-     * @return this Builder instance
-     */
-    public Builder gsi2Sk(final String gsi2SkKey) {
-      this.gsi2Sk = gsi2SkKey;
-      return this;
-    }
-
-    /**
-     * Builds the {@link DynamoDbKey} instance.
-     *
-     * @return a newly constructed DynamoDbKey
-     */
-    public DynamoDbKey build() {
-      return new DynamoDbKey(pk, sk, gsi1Pk, gsi1Sk, gsi2Pk, gsi2Sk);
     }
   }
 }

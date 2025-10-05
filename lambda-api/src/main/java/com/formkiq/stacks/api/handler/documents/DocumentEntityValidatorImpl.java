@@ -99,22 +99,6 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
   }
 
   /**
-   * Validate Document Tags.
-   * 
-   * @param tags {@link List} {@link DocumentTag}
-   * @param errors {@link Collection} {@link ValidationError}
-   */
-  private void validateTags(final List<DocumentTag> tags,
-      final Collection<ValidationError> errors) {
-
-    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
-
-    DocumentTagValidator validator = new DocumentTagValidatorImpl();
-    errors.addAll(validator.validateKeys(tagKeys));
-  }
-
-
-  /**
    * Validate {@link AddDocumentRequest} against a TagSchema.
    * 
    * @param item {@link AddDocumentRequest}
@@ -128,5 +112,21 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
         new AddDocumentTagToDocumentTag(item.getDocumentId(), userId);
 
     return doctags.stream().map(transform).collect(Collectors.toList());
+  }
+
+
+  /**
+   * Validate Document Tags.
+   * 
+   * @param tags {@link List} {@link DocumentTag}
+   * @param errors {@link Collection} {@link ValidationError}
+   */
+  private void validateTags(final List<DocumentTag> tags,
+      final Collection<ValidationError> errors) {
+
+    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
+
+    DocumentTagValidator validator = new DocumentTagValidatorImpl();
+    errors.addAll(validator.validateKeys(tagKeys));
   }
 }

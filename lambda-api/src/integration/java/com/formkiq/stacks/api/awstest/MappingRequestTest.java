@@ -82,6 +82,79 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
   private static final int TEST_TIMEOUT = 60;
 
   /**
+   * Test IDP action PDF / OCR.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void addIdpAction01() throws ApiException, InterruptedException, IOException {
+    // given
+    final String attributeKey = "document_invoice_" + UUID.randomUUID();
+
+    List<ApiClient> apiClients = getApiClients(null);
+    ApiClient client = apiClients.get(0);
+
+    addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
+    String mappingId = createDocumentInvoiceMapping(client, attributeKey);
+
+    AddAction actionOcr = new AddAction().type(DocumentActionType.OCR);
+    AddAction actionIdp = new AddAction().type(DocumentActionType.IDP)
+        .parameters(new AddActionParameters().mappingId(mappingId));
+
+    // when
+    try (InputStream is = getClass().getResourceAsStream("/invoice.pdf")) {
+      assertNotNull(is);
+      byte[] content = IoUtils.toByteArray(is);
+      String documentId = addDocument(client, null, "document_invoice.txt", content,
+          "application/pdf", List.of(actionOcr, actionIdp), null);
+
+      // then
+      waitForActionsComplete(client, null, documentId);
+
+      assertEquals("INV-3337",
+          getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
+    }
+  }
+
+  /**
+   * Test IDP action with String content.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void addIdpAction02() throws ApiException, InterruptedException {
+    // given
+    final String attributeKey = "document_invoice_" + UUID.randomUUID();
+
+    List<ApiClient> apiClients = getApiClients(null);
+    ApiClient client = apiClients.get(0);
+
+    addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
+    final String mappingId = createDocumentInvoiceMapping(client, attributeKey);
+
+    String content = """
+        From:
+        DEMO - Sliced Invoices
+        Order Number 12345
+        Invoice Number INV-3337
+        123 Somewhere Street Your City AZ 12345 admin@slicedinvoices.com""";
+
+    // when
+    AddAction action = new AddAction().type(DocumentActionType.IDP)
+        .parameters(new AddActionParameters().mappingId(mappingId));
+    String documentId =
+        addDocument(client, null, "document_invoice.txt", content, "text/plain", List.of(action));
+
+    // then
+    waitForActionsComplete(client, null, documentId);
+
+    assertEquals("INV-3337",
+        getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
+  }
+
+  /**
    * Add Attribute empty request.
    *
    * @throws ApiException ApiException
@@ -167,79 +240,6 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
             e.getResponseBody());
       }
     }
-  }
-
-  /**
-   * Test IDP action PDF / OCR.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  void addIdpAction01() throws ApiException, InterruptedException, IOException {
-    // given
-    final String attributeKey = "document_invoice_" + UUID.randomUUID();
-
-    List<ApiClient> apiClients = getApiClients(null);
-    ApiClient client = apiClients.get(0);
-
-    addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
-    String mappingId = createDocumentInvoiceMapping(client, attributeKey);
-
-    AddAction actionOcr = new AddAction().type(DocumentActionType.OCR);
-    AddAction actionIdp = new AddAction().type(DocumentActionType.IDP)
-        .parameters(new AddActionParameters().mappingId(mappingId));
-
-    // when
-    try (InputStream is = getClass().getResourceAsStream("/invoice.pdf")) {
-      assertNotNull(is);
-      byte[] content = IoUtils.toByteArray(is);
-      String documentId = addDocument(client, null, "document_invoice.txt", content,
-          "application/pdf", List.of(actionOcr, actionIdp), null);
-
-      // then
-      waitForActionsComplete(client, null, documentId);
-
-      assertEquals("INV-3337",
-          getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
-    }
-  }
-
-  /**
-   * Test IDP action with String content.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  void addIdpAction02() throws ApiException, InterruptedException {
-    // given
-    final String attributeKey = "document_invoice_" + UUID.randomUUID();
-
-    List<ApiClient> apiClients = getApiClients(null);
-    ApiClient client = apiClients.get(0);
-
-    addAttribute(client, null, attributeKey, AttributeDataType.STRING, null);
-    final String mappingId = createDocumentInvoiceMapping(client, attributeKey);
-
-    String content = """
-        From:
-        DEMO - Sliced Invoices
-        Order Number 12345
-        Invoice Number INV-3337
-        123 Somewhere Street Your City AZ 12345 admin@slicedinvoices.com""";
-
-    // when
-    AddAction action = new AddAction().type(DocumentActionType.IDP)
-        .parameters(new AddActionParameters().mappingId(mappingId));
-    String documentId =
-        addDocument(client, null, "document_invoice.txt", content, "text/plain", List.of(action));
-
-    // then
-    waitForActionsComplete(client, null, documentId);
-
-    assertEquals("INV-3337",
-        getDocumentAttribute(client, null, documentId, attributeKey).getStringValue());
   }
 
   private String createDocumentInvoiceMapping(final ApiClient client, final String attributeKey)

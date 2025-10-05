@@ -28,18 +28,18 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 public interface DynamoDbEntityBuilder<T> {
 
   /**
-   * Build {@link DynamoDbKey}.
-   * 
-   * @param siteId {@link String}
-   * @return DynamoDbKey
-   */
-  DynamoDbKey buildKey(String siteId);
-
-  /**
    * Builds the {@link T}, computing the DynamoDbKey.
    *
    * @param siteId {@link String}
    * @return a new T
    */
   T build(String siteId);
+
+  /**
+   * Build {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return DynamoDbKey
+   */
+  DynamoDbKey buildKey(String siteId);
 }

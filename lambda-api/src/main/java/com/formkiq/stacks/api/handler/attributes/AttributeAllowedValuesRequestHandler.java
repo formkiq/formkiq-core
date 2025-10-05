@@ -43,6 +43,20 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 public class AttributeAllowedValuesRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /**
+   * Get Allowed Values.
+   * 
+   * @param schemaService {@link SchemaService}
+   * @param siteId {@link String}
+   * @param classificationId {@link String}
+   * @param attributeKey {@link String}
+   * @return List String
+   */
+  public List<String> fetchAllowedValues(final SchemaService schemaService, final String siteId,
+      final String classificationId, final String attributeKey) {
+    return schemaService.getAttributeAllowedValues(siteId, attributeKey);
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
@@ -74,19 +88,5 @@ public class AttributeAllowedValuesRequestHandler
   @Override
   public String getRequestUrl() {
     return "/attributes/{key}/allowedValues";
-  }
-
-  /**
-   * Get Allowed Values.
-   * 
-   * @param schemaService {@link SchemaService}
-   * @param siteId {@link String}
-   * @param classificationId {@link String}
-   * @param attributeKey {@link String}
-   * @return List String
-   */
-  public List<String> fetchAllowedValues(final SchemaService schemaService, final String siteId,
-      final String classificationId, final String attributeKey) {
-    return schemaService.getAttributeAllowedValues(siteId, attributeKey);
   }
 }

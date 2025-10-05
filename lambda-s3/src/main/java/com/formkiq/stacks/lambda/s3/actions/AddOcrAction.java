@@ -62,22 +62,6 @@ public class AddOcrAction implements DocumentAction {
     this.http = new SendHttpRequest(serviceCache);
   }
 
-  @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
-    Map<String, Object> payload = buildAddOcrPayload(action);
-    String json = this.gson.toJson(payload);
-
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
-          "ocr", "POST", "/documents/" + documentId + "/ocr", json);
-      logger.debug(s);
-    }
-
-    this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
-    return new ProcessActionStatus(ActionStatus.RUNNING);
-  }
-
   private Map<String, Object> buildAddOcrPayload(final Action action) {
     Map<String, Object> parameters =
         action.parameters() != null ? action.parameters() : new HashMap<>();
@@ -113,16 +97,6 @@ public class AddOcrAction implements DocumentAction {
     return payload;
   }
 
-  private List<Map<String, Object>> getTextractQueries(final Action action) {
-    Map<String, Object> parameters = notNull(action.parameters());
-    Object q = parameters.get("ocrTextractQueries");
-    if (q instanceof List) {
-      return (List<Map<String, Object>>) q;
-    }
-
-    return null;
-  }
-
   /**
    * Get ParseTypes from {@link Action} parameters.
    *
@@ -136,5 +110,31 @@ public class AddOcrAction implements DocumentAction {
 
     return Arrays.stream(s.split(",")).map(t -> t.trim().toUpperCase()).distinct()
         .collect(Collectors.toList());
+  }
+
+  private List<Map<String, Object>> getTextractQueries(final Action action) {
+    Map<String, Object> parameters = notNull(action.parameters());
+    Object q = parameters.get("ocrTextractQueries");
+    if (q instanceof List) {
+      return (List<Map<String, Object>>) q;
+    }
+
+    return null;
+  }
+
+  @Override
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action) throws IOException {
+    Map<String, Object> payload = buildAddOcrPayload(action);
+    String json = this.gson.toJson(payload);
+
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
+          "ocr", "POST", "/documents/" + documentId + "/ocr", json);
+      logger.debug(s);
+    }
+
+    this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
+    return new ProcessActionStatus(ActionStatus.RUNNING);
   }
 }

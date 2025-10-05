@@ -117,6 +117,15 @@ public interface ApiGatewayRequestHandler {
     // empty
   }
 
+  default void checkPermission(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final ApiPermission permission)
+      throws UnauthorizedException {
+    String siteId = event.getPathParameter("siteId");
+    if (!authorization.getPermissions(siteId).contains(permission)) {
+      throw new UnauthorizedException("user is unauthorized");
+    }
+  }
+
   /**
    * DELETE Request Handler.
    *
@@ -256,14 +265,5 @@ public interface ApiGatewayRequestHandler {
       ApiAuthorization authorization, AwsServiceCache awsServices) throws Exception {
     throw new NotFoundException(
         event.getHttpMethod() + " for " + event.getResource() + " not found");
-  }
-
-  default void checkPermission(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final ApiPermission permission)
-      throws UnauthorizedException {
-    String siteId = event.getPathParameter("siteId");
-    if (!authorization.getPermissions(siteId).contains(permission)) {
-      throw new UnauthorizedException("user is unauthorized");
-    }
   }
 }

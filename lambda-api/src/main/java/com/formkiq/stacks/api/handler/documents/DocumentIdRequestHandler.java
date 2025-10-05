@@ -176,6 +176,31 @@ public class DocumentIdRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body(ditem).build();
   }
 
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
+    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
+  }
+
+  /**
+   * Get Document Attribute Records.
+   *
+   * @param request {@link AddDocumentRequest}
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   */
+  private List<DocumentAttributeRecord> getDocumentAttributeRecords(
+      final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId) {
+
+    AddDocumentAttributeToDocumentAttributeRecord tr =
+        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+            request.getDocumentId());
+
+    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
+    return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
+  }
+
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}";
@@ -278,30 +303,5 @@ public class DocumentIdRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-  }
-
-  /**
-   * Get Document Attribute Records.
-   *
-   * @param request {@link AddDocumentRequest}
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @return {@link List} {@link DocumentAttributeRecord}
-   */
-  private List<DocumentAttributeRecord> getDocumentAttributeRecords(
-      final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId) {
-
-    AddDocumentAttributeToDocumentAttributeRecord tr =
-        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-            request.getDocumentId());
-
-    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
-    return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
-  }
-
-  private AttributeValidationAccess getAttributeValidationAccess(
-      final ApiAuthorization authorization, final String siteId) {
-    boolean isAdmin = authorization.isAdminOrGovern(siteId);
-    return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 }

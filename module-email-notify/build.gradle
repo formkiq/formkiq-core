@@ -1,35 +1,29 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
-description = "FormKiQ Core - Email Notify Module"
-
 apply plugin: 'distribution'
 
+description = "FormKiQ Core - Email Notify Module"
+
+// -------------------------------
+// Source sets & configurations
+// -------------------------------
 sourceSets {
   integration {
     java.srcDir "$projectDir/src/integration/java"
     resources.srcDir "$projectDir/src/integration/resources"
-    compileClasspath += main.output + test.output
-    runtimeClasspath += main.output + test.output
+    compileClasspath += sourceSets.main.output + sourceSets.test.output
+    runtimeClasspath += sourceSets.main.output + sourceSets.test.output
   }
 }
 
 configurations {
   integrationImplementation.extendsFrom testImplementation
-  integrationRuntime.extendsFrom testRuntime
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
-def getCmd() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-  String os = System.getProperty("os.name").toLowerCase()
-  return os.contains("win") ? "/c" : "-c"
-}
-
-jar.enabled = false
-
+// -------------------------------
+// Dependencies
+// -------------------------------
 dependencies {
   testImplementation project(':aws-cognito-identity')
   testImplementation project(':aws-cognito-identityprovider')
@@ -37,110 +31,155 @@ dependencies {
   testImplementation project(':aws-sqs')
   testImplementation project(':aws-ssm')
   testImplementation project(':aws-sns')
+
   testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
   testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 }
 
+// -------------------------------
+// Testing
+// -------------------------------
 test {
   failFast = true
   useJUnitPlatform()
 }
 
-task integrationTest(type: Test) {
+tasks.register('integrationTest', Test) {
+  description = "Runs the integration tests."
+  group = "verification"
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
   useJUnitPlatform()
 }
 
-task npmInstall {
-  dependsOn processResources
+// Disable jar for this module (matches your original intent)
+tasks.named('jar') { enabled = false }
 
-  doLast {
+// -------------------------------
+//
+// JS / NPM pipeline (moved out of build/resources/main to avoid overlap)
+//
+/* CHANGED:
+ - Work under build/js, not build/resources/main/js
+ - Add a prepareJs Copy task to stage package.json etc.
+ */
+def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
+def shCmd = { String cmd -> isWindows ? ['cmd', '/c', cmd] : ['bash', '-c', cmd] }
 
-    delete("${buildDir}/resources/main/js/module-email-notify.zip")
+// CHANGED: dedicated JS work dir
+def jsDirProvider       = layout.buildDirectory.dir("js")
+def jsDirFile           = { jsDirProvider.get().asFile }
+def packedZipProvider   = jsDirProvider.map { it.file("module-email-notify.zip") }
+def packOutDirProvider  = layout.buildDirectory.dir("pack")
 
-    exec {
-      workingDir "${buildDir}/resources/main/js"
-      commandLine getCmd(), getCmdParam(), "npm install"
-    }
-
-    exec {
-      workingDir "${buildDir}/resources/main/js"
-      commandLine getCmd(), getCmdParam(), "npm run pack"
-    }
+// Stage JS sources into build/js (so npm runs outside of build/resources)
+tasks.register('prepareJs', Copy) {
+  description = "Stages JS sources into build/js for npm tasks."
+  from("$projectDir/src/main/resources/js") {
+    include "**/*"
   }
+  into(jsDirProvider)
 }
 
-jar.dependsOn npmInstall
-
-task npmtest {
-  onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
-  doFirst {
-    macroLocalStackStart()
-  }
-
-  doLast {
-    exec {
-      workingDir "${buildDir}/resources/main/js"
-      commandLine getCmd(), getCmdParam(), "npm test"
-    }
-    macroDockerComposeDown()
-  }
+// Clean any previously packed zip so pack results are fresh
+tasks.register('deletePackedZip', Delete) {
+  delete packedZipProvider
 }
 
-task buildTemplate {
-  inputs.files("src/main/resources/cloudformation/template.yaml")
-  outputs.files("${buildDir}/distributions/module-email-notify/template.yaml")
-  doLast {
+// npm install in build/js
+tasks.register('npmInstall', Exec) {
+  group = "build"
+  description = "Runs 'npm install' in build/js."
+  dependsOn tasks.named('prepareJs'), tasks.named('deletePackedZip')
 
-    copy {
-      from layout.projectDirectory.file("src/main/resources/cloudformation/template.yaml")
-      into "${buildDir}/distributions/module-email-notify"
-    }
-  }
+  workingDir = jsDirFile()
+  commandLine shCmd("npm install")
+
+  // Inputs/outputs for up-to-date checks
+  inputs.files(
+      fileTree("$projectDir/src/main/resources/js") {
+        include 'package.json', 'package-lock.json', 'npm-shrinkwrap.json'
+        // include any other files that affect dependency resolution
+      }
+      ).withPropertyName("npmInputs")
+  outputs.dir(jsDirProvider.map { it.dir("node_modules") }).withPropertyName("nodeModules")
 }
 
-ext.macroLocalStackStart = {
-  exec {
-    commandLine "bash", "-c", "docker compose  -f ./docker-compose.yml --verbose up -d"
-  }
-  exec {
-    commandLine "bash", "-c", "${project.rootDir}/wait-for-localstack.sh 4567"
-  }
+// npm run pack in build/js
+tasks.register('npmPack', Exec) {
+  group = "build"
+  description = "Runs 'npm run pack' to create module-email-notify.zip in build/js."
+  dependsOn tasks.named('npmInstall')
+  workingDir = jsDirFile()
+  commandLine shCmd("npm run pack")
+
+  outputs.file(packedZipProvider).withPropertyName("packedZip")
 }
 
-ext.macroDockerComposeDown = {
-  exec {
-    commandLine "bash", "-c", "docker compose  -f ./docker-compose.yml down"
-  }
+// Optional: JS tests with LocalStack up/down around them (skips on Windows)
+tasks.register('localstackUp', Exec) {
+  group = "verification"
+  description = "Starts docker compose stack for local testing."
+  commandLine shCmd("docker compose -f ./docker-compose.yml --verbose up -d")
+  outputs.upToDateWhen { false }
 }
 
-task unzipPack(type: Copy) {
-  dependsOn npmInstall
-  def zipFile = file("${buildDir}/resources/main/js/module-email-notify.zip")
-  def outputDir = file("${buildDir}/pack")
-
-  from zipTree(zipFile)
-  into outputDir
+tasks.register('waitForLocalstack', Exec) {
+  group = "verification"
+  description = "Waits for LocalStack to be ready."
+  commandLine shCmd("${project.rootDir}/wait-for-localstack.sh 4567")
+  outputs.upToDateWhen { false }
 }
 
-npmtest.dependsOn npmInstall
-test.dependsOn npmtest
+tasks.register('localstackDown', Exec) {
+  group = "verification"
+  description = "Stops docker compose stack."
+  commandLine shCmd("docker compose -f ./docker-compose.yml down")
+  outputs.upToDateWhen { false }
+}
 
-distZip.dependsOn buildTemplate, npmInstall, unzipPack
+tasks.register('npmTest', Exec) {
+  group = "verification"
+  description = "Runs 'npm test' (non-Windows only) with LocalStack."
+  onlyIf { !isWindows }
+  dependsOn tasks.named('localstackUp'), tasks.named('waitForLocalstack'), tasks.named('npmInstall')
+  finalizedBy tasks.named('localstackDown')
 
-tasks.distTar.enabled = false
+  workingDir = jsDirFile()
+  commandLine shCmd("npm test")
+}
 
-distZip {
+// Keep your linkage: run JS tests as part of 'test'
+tasks.named('test') {
+  dependsOn tasks.named('npmTest')
+}
+
+// -------------------------------
+// Unzip npm pack for distribution
+// -------------------------------
+tasks.register('unzipPack', Copy) {
+  group = "build"
+  description = "Unzips module-email-notify.zip into build/pack."
+  dependsOn tasks.named('npmPack')
+
+  from { zipTree(packedZipProvider.get().asFile) }
+  into packOutDirProvider
+}
+
+// -------------------------------
+// Distribution packaging
+// -------------------------------
+tasks.named('distTar') { enabled = false }
+
+tasks.named('distZip') {
+  dependsOn tasks.named('npmPack'), tasks.named('unzipPack')
   archiveFileName = "module-email-notify/module-email-notify.zip"
 }
 
 distributions {
   main {
     contents {
-      from("${buildDir}/pack") {
-        include "**/**"
-      }
+      from(packOutDirProvider) { include "**/**" }
       into '/'
     }
   }

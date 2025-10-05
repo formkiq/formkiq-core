@@ -109,16 +109,6 @@ public class Document implements DocumentItem {
   }
 
   @Override
-  public String getWidth() {
-    return this.width;
-  }
-
-  @Override
-  public String getHeight() {
-    return this.height;
-  }
-
-  @Override
   public String getDocumentId() {
     return this.documentId;
   }
@@ -126,6 +116,11 @@ public class Document implements DocumentItem {
   @Override
   public List<DocumentItem> getDocuments() {
     return this.documents;
+  }
+
+  @Override
+  public String getHeight() {
+    return this.height;
   }
 
   @Override
@@ -169,6 +164,11 @@ public class Document implements DocumentItem {
   }
 
   @Override
+  public String getWidth() {
+    return this.width;
+  }
+
+  @Override
   public void setBelongsToDocumentId(final String docId) {
     this.belongsToDocumentId = docId;
   }
@@ -199,16 +199,6 @@ public class Document implements DocumentItem {
   }
 
   @Override
-  public void setWidth(final String documentWidth) {
-    this.width = documentWidth;
-  }
-
-  @Override
-  public void setHeight(final String documentHeight) {
-    this.height = documentHeight;
-  }
-
-  @Override
   public void setDocumentId(final String id) {
     this.documentId = id;
   }
@@ -216,6 +206,11 @@ public class Document implements DocumentItem {
   @Override
   public void setDocuments(final List<DocumentItem> childDocuments) {
     this.documents = childDocuments;
+  }
+
+  @Override
+  public void setHeight(final String documentHeight) {
+    this.height = documentHeight;
   }
 
   @Override
@@ -256,5 +251,10 @@ public class Document implements DocumentItem {
   @Override
   public void setVersion(final String documentVersion) {
     this.version = documentVersion;
+  }
+
+  @Override
+  public void setWidth(final String documentWidth) {
+    this.width = documentWidth;
   }
 }

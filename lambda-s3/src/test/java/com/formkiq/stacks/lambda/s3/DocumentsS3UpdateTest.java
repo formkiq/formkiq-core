@@ -183,9 +183,28 @@ public class DocumentsS3UpdateTest implements DbKeys {
     db.close();
   }
 
-  private void login() {
-    ApiAuthorization authorization = new ApiAuthorization().username("firstwriter");
-    ApiAuthorization.login(authorization);
+  private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType)
+      throws InterruptedException {
+    ReceiveMessageResponse response = eventQueue.get();
+    assertEquals(1, response.messages().size());
+    Message m = response.messages().get(0);
+
+    Map<String, String> map = GSON.fromJson(m.body(), Map.class);
+    String message = map.get("Message");
+
+    map = GSON.fromJson(message, Map.class);
+    assertNotNull(map.get("documentId"));
+    assertEquals(eventType, map.get("type"));
+
+    assertNull(map.get("content"));
+
+    if (!"delete".equals(eventType) && !"softDelete".equals(eventType)) {
+      assertTrue(map.get("url").contains("example-bucket"));
+      assertNotNull(map.get("userId"));
+      assertNotNull(map.get("path"));
+    }
+
+    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
   }
 
   /**
@@ -251,6 +270,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
     eventQueue = new SqsMessageReceiver(awsServices, eventSnsQueue);
   }
 
+  private static Map<String, Object> createS3Map(final String siteId,
+      final DynamicDocumentItem doc) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId());
+    return new S3EventJsonBuilder()
+        .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put").withS3(
+            new S3EventJsonBuilder.S3Builder().withBucket("example-bucket").withObject(s3Key)))
+        .build();
+  }
+
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer;
 
@@ -302,6 +330,27 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertNotNull(actual.getInsertedDate());
   }
 
+  private void assertHandleContentType(final String path, final String contentType,
+      final String s3ContenType, final String expectedContentType) throws ValidationException {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      String key = createDatabaseKey(siteId, documentId);
+
+      DynamicDocumentItem doc = createDocument(siteId, documentId, path, contentType);
+      addS3File(key, s3ContenType, false, "testdata");
+
+      Map<String, Object> map = createS3Map(siteId, doc);
+
+      // when
+      DocumentItem item = handleRequest(siteId, documentId, map);
+
+      // then
+      assertEquals(expectedContentType, item.getContentType());
+    }
+  }
+
   /**
    * before.
    */
@@ -323,6 +372,18 @@ public class DocumentsS3UpdateTest implements DbKeys {
     ZoneId defaultZoneId = ZoneId.systemDefault();
     LocalDate localDate = LocalDate.now().minusDays(2);
     return Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
+  }
+
+  private DynamicDocumentItem createDocument(final String siteId, final String documentId,
+      final String path, final String contentType) throws ValidationException {
+    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+    doc.setInsertedDate(new Date());
+    doc.setDocumentId(documentId);
+    doc.setUserId("joe");
+    doc.setContentType(contentType);
+    doc.setPath(path);
+    service.saveDocumentItemWithTag(siteId, doc);
+    return doc;
   }
 
   /**
@@ -389,6 +450,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
     return service.findDocument(siteId, documentId);
   }
 
+  private void login() {
+    ApiAuthorization authorization = new ApiAuthorization().username("firstwriter");
+    ApiAuthorization.login(authorization);
+  }
+
   /**
    * Create Document Request without existing Tags/Formats.
    *
@@ -433,30 +499,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertCreateDocumentSnsMessage(siteId, "create");
     }
-  }
-
-  private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType)
-      throws InterruptedException {
-    ReceiveMessageResponse response = eventQueue.get();
-    assertEquals(1, response.messages().size());
-    Message m = response.messages().get(0);
-
-    Map<String, String> map = GSON.fromJson(m.body(), Map.class);
-    String message = map.get("Message");
-
-    map = GSON.fromJson(message, Map.class);
-    assertNotNull(map.get("documentId"));
-    assertEquals(eventType, map.get("type"));
-
-    assertNull(map.get("content"));
-
-    if (!"delete".equals(eventType) && !"softDelete".equals(eventType)) {
-      assertTrue(map.get("url").contains("example-bucket"));
-      assertNotNull(map.get("userId"));
-      assertNotNull(map.get("path"));
-    }
-
-    assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), map.get("siteId"));
   }
 
   /**
@@ -949,48 +991,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertHandleContentType("test.pdf", null, null, "application/pdf");
     assertHandleContentType("test.txt", "text/plain", "binary/octet-stream", "text/plain");
     assertHandleContentType("test.txt", null, "binary/octet-stream", "text/plain");
-  }
-
-  private void assertHandleContentType(final String path, final String contentType,
-      final String s3ContenType, final String expectedContentType) throws ValidationException {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = ID.uuid();
-      String key = createDatabaseKey(siteId, documentId);
-
-      DynamicDocumentItem doc = createDocument(siteId, documentId, path, contentType);
-      addS3File(key, s3ContenType, false, "testdata");
-
-      Map<String, Object> map = createS3Map(siteId, doc);
-
-      // when
-      DocumentItem item = handleRequest(siteId, documentId, map);
-
-      // then
-      assertEquals(expectedContentType, item.getContentType());
-    }
-  }
-
-  private static Map<String, Object> createS3Map(final String siteId,
-      final DynamicDocumentItem doc) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId());
-    return new S3EventJsonBuilder()
-        .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put").withS3(
-            new S3EventJsonBuilder.S3Builder().withBucket("example-bucket").withObject(s3Key)))
-        .build();
-  }
-
-  private DynamicDocumentItem createDocument(final String siteId, final String documentId,
-      final String path, final String contentType) throws ValidationException {
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-    doc.setInsertedDate(new Date());
-    doc.setDocumentId(documentId);
-    doc.setUserId("joe");
-    doc.setContentType(contentType);
-    doc.setPath(path);
-    service.saveDocumentItemWithTag(siteId, doc);
-    return doc;
   }
 
   /**

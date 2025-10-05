@@ -46,14 +46,14 @@ public class FindEntityTypeByName
   /** {@link ValidationBuilder}. */
   private final ValidationBuilder vb;
 
-  public record EntityTypeName(EntityTypeNamespace namespace, String name) {
-  }
-
   /**
    * constructor.
    */
   public FindEntityTypeByName() {
     vb = new ValidationBuilder();
+  }
+
+  public record EntityTypeName(EntityTypeNamespace namespace, String name) {
   }
 
   @Override

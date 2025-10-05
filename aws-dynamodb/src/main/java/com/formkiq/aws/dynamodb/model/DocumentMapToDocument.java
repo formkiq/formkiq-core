@@ -44,33 +44,6 @@ public class DocumentMapToDocument
   private static final List<String> FIELDS =
       Arrays.asList("documentId", "path", "content", "contentType", "deepLinkPath");
 
-  private String getValue(final Object obj) {
-    String value = null;
-
-    if (obj != null) {
-
-      if (obj instanceof AttributeValue) {
-
-        AttributeValue av = (AttributeValue) obj;
-        value = av.s();
-
-      } else if (obj instanceof Map) {
-
-        Map<String, Object> values = (Map<String, Object>) obj;
-        if (values.containsKey("S")) {
-          value = values.get("S").toString();
-        } else if (values.containsKey("s")) {
-          value = values.get("s").toString();
-        }
-
-      } else if (obj instanceof String) {
-        value = obj.toString();
-      }
-    }
-
-    return value;
-  }
-
   @Override
   public Map<String, Object> apply(final Map<String, ? extends Object> data) {
 
@@ -109,5 +82,32 @@ public class DocumentMapToDocument
     document.put("metadata#", "");
 
     return document;
+  }
+
+  private String getValue(final Object obj) {
+    String value = null;
+
+    if (obj != null) {
+
+      if (obj instanceof AttributeValue) {
+
+        AttributeValue av = (AttributeValue) obj;
+        value = av.s();
+
+      } else if (obj instanceof Map) {
+
+        Map<String, Object> values = (Map<String, Object>) obj;
+        if (values.containsKey("S")) {
+          value = values.get("S").toString();
+        } else if (values.containsKey("s")) {
+          value = values.get("s").toString();
+        }
+
+      } else if (obj instanceof String) {
+        value = obj.toString();
+      }
+    }
+
+    return value;
   }
 }

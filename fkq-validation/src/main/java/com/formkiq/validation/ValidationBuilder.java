@@ -45,126 +45,6 @@ public class ValidationBuilder {
   public ValidationBuilder() {}
 
   /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  public void isRequired(final String key, final String value) {
-    isRequired(key, value, null);
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link Optional}
-   * @param value boolean
-   */
-  public void isRequired(final String key, final Optional<?> value) {
-    isRequired(key, value.orElse(null), "'" + key + "' is required");
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value {@link String}
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final String value, final String errorMessage) {
-    if (value == null || value.isEmpty()) {
-      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
-      errors.add(new ValidationErrorImpl().key(key).error(error));
-    }
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param values {@link String}
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final Collection<?> values, final String errorMessage) {
-    if (values == null || values.isEmpty()) {
-      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
-    }
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param values {@link String}
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final Map<?, ?> values, final String errorMessage) {
-    if (values == null || values.isEmpty()) {
-      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
-    }
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value {@link String}
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final Object value, final String errorMessage) {
-    if (value == null) {
-      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
-    }
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value {@link Double}
-   */
-  public void isRequired(final String key, final Double value) {
-    isRequired(key, value, null);
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value {@link Double}
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final Double value, final String errorMessage) {
-    if (value == null) {
-      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
-      errors.add(new ValidationErrorImpl().key(key).error(error));
-    }
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value boolean
-   */
-  public void isRequired(final String key, final boolean value) {
-    isRequired(key, value, "'" + key + "' is invalid");
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value boolean
-   * @param errorMessage {@link String}
-   */
-  public void isRequired(final String key, final boolean value, final String errorMessage) {
-    if (!value) {
-      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
-    }
-  }
-
-  /**
    * Add Error.
    *
    * @param key String
@@ -174,6 +54,21 @@ public class ValidationBuilder {
   public ValidationBuilder addError(final String key, final String message) {
     this.errors.add(new ValidationErrorImpl().key(key).error(message));
     return this;
+  }
+
+  /**
+   * Add multiple list.
+   * 
+   * @param list {@link Collection} {@link ValidationError}
+   */
+  public void addErrors(final Collection<ValidationError> list) {
+    this.errors.addAll(list);
+  }
+
+  public void authorized(final boolean authorized) {
+    if (!authorized) {
+      errors.add(new UnAuthorizedValidationError());
+    }
   }
 
   /**
@@ -192,6 +87,15 @@ public class ValidationBuilder {
    */
   public Collection<ValidationError> getErrors() {
     return errors;
+  }
+
+  /**
+   * Whether there are {@link ValidationError}.
+   * 
+   * @return boolean
+   */
+  public boolean isEmpty() {
+    return errors.isEmpty();
   }
 
   /**
@@ -224,17 +128,122 @@ public class ValidationBuilder {
   }
 
   /**
-   * Is value valid by regex.
-   * 
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param values {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Collection<?> values, final String errorMessage) {
+    if (values == null || values.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link Double}
+   */
+  public void isRequired(final String key, final Double value) {
+    isRequired(key, value, null);
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link Double}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Double value, final String errorMessage) {
+    if (value == null) {
+      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
+      errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param values {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final Map<?, ?> values, final String errorMessage) {
+    if (values == null || values.isEmpty()) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
    * @param key {@link String}
    * @param value {@link String}
-   * @param regex {@link String}
+   * @param errorMessage {@link String}
    */
-  public void isValidByRegex(final String key, final String value, final String regex) {
-    Pattern pattern = Pattern.compile(regex);
-    if (!pattern.matcher(value).matches()) {
-      String error = "'" + key + "' unexpected value '" + value + "'";
+  public void isRequired(final String key, final Object value, final String errorMessage) {
+    if (value == null) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link Optional}
+   * @param value boolean
+   */
+  public void isRequired(final String key, final Optional<?> value) {
+    isRequired(key, value.orElse(null), "'" + key + "' is required");
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void isRequired(final String key, final String value) {
+    isRequired(key, value, null);
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final String value, final String errorMessage) {
+    if (value == null || value.isEmpty()) {
+      String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
       errors.add(new ValidationErrorImpl().key(key).error(error));
+    }
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   */
+  public void isRequired(final String key, final boolean value) {
+    isRequired(key, value, "'" + key + "' is invalid");
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final boolean value, final String errorMessage) {
+    if (!value) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
   }
 
@@ -259,26 +268,17 @@ public class ValidationBuilder {
   }
 
   /**
-   * Whether there are {@link ValidationError}.
+   * Is value valid by regex.
    * 
-   * @return boolean
+   * @param key {@link String}
+   * @param value {@link String}
+   * @param regex {@link String}
    */
-  public boolean isEmpty() {
-    return errors.isEmpty();
-  }
-
-  /**
-   * Add multiple list.
-   * 
-   * @param list {@link Collection} {@link ValidationError}
-   */
-  public void addErrors(final Collection<ValidationError> list) {
-    this.errors.addAll(list);
-  }
-
-  public void authorized(final boolean authorized) {
-    if (!authorized) {
-      errors.add(new UnAuthorizedValidationError());
+  public void isValidByRegex(final String key, final String value, final String regex) {
+    Pattern pattern = Pattern.compile(regex);
+    if (!pattern.matcher(value).matches()) {
+      String error = "'" + key + "' unexpected value '" + value + "'";
+      errors.add(new ValidationErrorImpl().key(key).error(error));
     }
   }
 }

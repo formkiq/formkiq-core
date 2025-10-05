@@ -44,6 +44,10 @@ public class ActivityRecordTest {
   /** Today. */
   private static final String TODAY = DateUtil.getYyyyMmDdFormatter().format(new Date());
 
+  private void assertKeyEquals(final String siteId, final String expectedPk, final String gotPk) {
+    assertEquals(siteId != null ? siteId + "/" + expectedPk : expectedPk, gotPk);
+  }
+
   @Test
   void testBuildDocumentsKey() {
     // given
@@ -126,9 +130,5 @@ public class ActivityRecordTest {
       assertTrue(key.gsi2Sk().startsWith("activity#"));
       assertTrue(key.gsi2Sk().endsWith("#" + entityTypeId));
     }
-  }
-
-  private void assertKeyEquals(final String siteId, final String expectedPk, final String gotPk) {
-    assertEquals(siteId != null ? siteId + "/" + expectedPk : expectedPk, gotPk);
   }
 }

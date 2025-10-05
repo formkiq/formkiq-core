@@ -135,31 +135,6 @@ public class SearchAttributesToCriteria
     return strs;
   }
 
-  private void increment(final List<ArrayList<String>> strs, final List<Integer> positions) {
-    for (int i = positions.size() - 1; i >= 0; i--) {
-
-      if (positions.get(i) < strs.get(i).size() - 1) {
-        positions.set(i, positions.get(i) + 1);
-        break;
-      } else {
-        positions.set(i, 0);
-      }
-    }
-
-  }
-
-  private String getString(final List<ArrayList<String>> strs, final List<Integer> position) {
-
-    List<String> sb = new ArrayList<>();
-
-    for (int i = 0; i < position.size(); i++) {
-      int pos = position.get(i);
-      sb.add(strs.get(i).get(pos));
-    }
-
-    return String.join(DbKeys.COMPOSITE_KEY_DELIM, sb);
-  }
-
   private void generateRange(final SearchTagCriteriaRange range, final String eq) {
     boolean number = "number".equalsIgnoreCase(range.getType());
 
@@ -179,5 +154,30 @@ public class SearchAttributesToCriteria
 
     range.start(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + start : start);
     range.end(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + end : end);
+  }
+
+  private String getString(final List<ArrayList<String>> strs, final List<Integer> position) {
+
+    List<String> sb = new ArrayList<>();
+
+    for (int i = 0; i < position.size(); i++) {
+      int pos = position.get(i);
+      sb.add(strs.get(i).get(pos));
+    }
+
+    return String.join(DbKeys.COMPOSITE_KEY_DELIM, sb);
+  }
+
+  private void increment(final List<ArrayList<String>> strs, final List<Integer> positions) {
+    for (int i = positions.size() - 1; i >= 0; i--) {
+
+      if (positions.get(i) < strs.get(i).size() - 1) {
+        positions.set(i, positions.get(i) + 1);
+        break;
+      } else {
+        positions.set(i, 0);
+      }
+    }
+
   }
 }

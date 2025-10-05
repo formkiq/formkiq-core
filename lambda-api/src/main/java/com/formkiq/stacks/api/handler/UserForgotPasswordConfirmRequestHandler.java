@@ -47,6 +47,17 @@ public class UserForgotPasswordConfirmRequestHandler
   public static final String URL = "/forgotPasswordConfirm";
 
   @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(true);
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -73,16 +84,5 @@ public class UserForgotPasswordConfirmRequestHandler
       throw new ValidationException(
           List.of(new ValidationErrorImpl().error("'username', 'code', 'password' are required")));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(true);
   }
 }

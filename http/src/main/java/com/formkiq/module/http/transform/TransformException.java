@@ -30,18 +30,18 @@ public class TransformException extends RuntimeException {
   /**
    * constructor.
    * 
-   * @param message {@link String}
+   * @param e {@link Exception}
    */
-  public TransformException(final String message) {
-    super(message);
+  public TransformException(final Exception e) {
+    super(e);
   }
 
   /**
    * constructor.
    * 
-   * @param e {@link Exception}
+   * @param message {@link String}
    */
-  public TransformException(final Exception e) {
-    super(e);
+  public TransformException(final String message) {
+    super(message);
   }
 }

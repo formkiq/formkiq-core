@@ -36,34 +36,6 @@ public enum PresetEntity {
   /** Lock Entity. */
   CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate"));
 
-  /** Entity Name. */
-  private final String name;
-  /** Attribute Keys. */
-  private final List<String> attributeKeys;
-
-  PresetEntity(final String entityName, final List<String> entityAttributeKeys) {
-    this.name = entityName;
-    this.attributeKeys = entityAttributeKeys;
-  }
-
-  /**
-   * Get the string value for this preset entity.
-   *
-   * @return string representation
-   */
-  public String getName() {
-    return name;
-  }
-
-  /**
-   * Get Attribute Keys.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getAttributeKeys() {
-    return attributeKeys;
-  }
-
   /**
    * Convert a string to the matching enum constant. Defaults to {@link #LLM_PROMPT} if no match is
    * found.
@@ -80,5 +52,34 @@ public enum PresetEntity {
       }
     }
     return null;
+  }
+
+  /** Entity Name. */
+  private final String name;
+
+  /** Attribute Keys. */
+  private final List<String> attributeKeys;
+
+  PresetEntity(final String entityName, final List<String> entityAttributeKeys) {
+    this.name = entityName;
+    this.attributeKeys = entityAttributeKeys;
+  }
+
+  /**
+   * Get Attribute Keys.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getAttributeKeys() {
+    return attributeKeys;
+  }
+
+  /**
+   * Get the string value for this preset entity.
+   *
+   * @return string representation
+   */
+  public String getName() {
+    return name;
   }
 }

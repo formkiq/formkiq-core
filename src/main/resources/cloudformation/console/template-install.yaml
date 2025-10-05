@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Console Install
@@ -172,6 +175,7 @@ Resources:
       Runtime: java17
       Timeout: 300
       MemorySize: 512
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Role:
         Fn::GetAtt:
         - ConsoleInstallRole

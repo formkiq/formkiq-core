@@ -49,6 +49,31 @@ public class SitesClassificationIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String classificationId = event.getPathParameters().get("classificationId");
+
+    DocumentSearchService searchService = awsServices.getExtension(DocumentSearchService.class);
+
+    SearchQuery req = new SearchQuery().attribute(new SearchAttributeCriteria()
+        .key(AttributeKeyReserved.CLASSIFICATION.getKey()).eq(classificationId));
+    PaginationResults<DynamicDocumentItem> items = searchService.search(siteId, req, null, null, 1);
+    if (!items.getResults().isEmpty()) {
+      throw new BadException("Classification '" + classificationId + "' in use");
+    }
+
+    SchemaService service = awsServices.getExtension(SchemaService.class);
+    if (!service.deleteClassification(siteId, classificationId)) {
+      throw new NotFoundException("Classification '" + classificationId + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Classification '" + classificationId + "' deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
 
@@ -93,30 +118,5 @@ public class SitesClassificationIdRequestHandler
         authorizer.getUsername());
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Set Classification").build();
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String classificationId = event.getPathParameters().get("classificationId");
-
-    DocumentSearchService searchService = awsServices.getExtension(DocumentSearchService.class);
-
-    SearchQuery req = new SearchQuery().attribute(new SearchAttributeCriteria()
-        .key(AttributeKeyReserved.CLASSIFICATION.getKey()).eq(classificationId));
-    PaginationResults<DynamicDocumentItem> items = searchService.search(siteId, req, null, null, 1);
-    if (!items.getResults().isEmpty()) {
-      throw new BadException("Classification '" + classificationId + "' in use");
-    }
-
-    SchemaService service = awsServices.getExtension(SchemaService.class);
-    if (!service.deleteClassification(siteId, classificationId)) {
-      throw new NotFoundException("Classification '" + classificationId + "' not found");
-    }
-
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "Classification '" + classificationId + "' deleted").build();
   }
 }

@@ -54,6 +54,15 @@ public class AddDocumentSync {
   }
 
   /**
+   * Get {@link DocumentSyncType}.
+   * 
+   * @return {@link DocumentSyncType}
+   */
+  public DocumentSyncType getType() {
+    return this.type;
+  }
+
+  /**
    * Set Service.
    *
    * @param documentSyncService {@link AddDocumentSyncServiceType}
@@ -62,15 +71,6 @@ public class AddDocumentSync {
   public AddDocumentSync setService(final AddDocumentSyncServiceType documentSyncService) {
     this.service = documentSyncService;
     return this;
-  }
-
-  /**
-   * Get {@link DocumentSyncType}.
-   * 
-   * @return {@link DocumentSyncType}
-   */
-  public DocumentSyncType getType() {
-    return this.type;
   }
 
   /**

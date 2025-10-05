@@ -58,46 +58,6 @@ public class SchemaAttributeAllowedValueRecord
 
   }
 
-  /**
-   * Get Attribute Key.
-   * 
-   * @return String
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Attribute Key.
-   * 
-   * @param attributeKey {@link String}
-   * @return SchemaAttributeAllowedValueRecord
-   */
-  public SchemaAttributeAllowedValueRecord setKey(final String attributeKey) {
-    this.key = attributeKey;
-    return this;
-  }
-
-  /**
-   * Get Attribute Value.
-   * 
-   * @return String
-   */
-  public String getValue() {
-    return this.value;
-  }
-
-  /**
-   * Set Attribute Value.
-   * 
-   * @param attributeValue {@link String}
-   * @return SchemaAttributeAllowedValueRecord
-   */
-  public SchemaAttributeAllowedValueRecord setValue(final String attributeValue) {
-    this.value = attributeValue;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -116,6 +76,15 @@ public class SchemaAttributeAllowedValueRecord
     return Map.of("key", fromS(this.key), "value", fromS(this.value));
   }
 
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
   @Override
   public SchemaAttributeAllowedValueRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
@@ -126,6 +95,24 @@ public class SchemaAttributeAllowedValueRecord
     }
 
     return this;
+  }
+
+  /**
+   * Get Attribute Key.
+   * 
+   * @return String
+   */
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Get Attribute Value.
+   * 
+   * @return String
+   */
+  public String getValue() {
+    return this.value;
   }
 
   @Override
@@ -148,6 +135,39 @@ public class SchemaAttributeAllowedValueRecord
     return null;
   }
 
+  /**
+   * Set DocumentId.
+   * 
+   * @param id {@link String}
+   * @return SiteSchemaCompositeKeyRecord
+   */
+  public SchemaAttributeAllowedValueRecord setDocumentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  /**
+   * Set Attribute Key.
+   * 
+   * @param attributeKey {@link String}
+   * @return SchemaAttributeAllowedValueRecord
+   */
+  public SchemaAttributeAllowedValueRecord setKey(final String attributeKey) {
+    this.key = attributeKey;
+    return this;
+  }
+
+  /**
+   * Set Attribute Value.
+   * 
+   * @param attributeValue {@link String}
+   * @return SchemaAttributeAllowedValueRecord
+   */
+  public SchemaAttributeAllowedValueRecord setValue(final String attributeValue) {
+    this.value = attributeValue;
+    return this;
+  }
+
   @Override
   public String sk() {
     if (this.key == null || this.value == null) {
@@ -167,25 +187,5 @@ public class SchemaAttributeAllowedValueRecord
   @Override
   public String skGsi2() {
     return null;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return String
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set DocumentId.
-   * 
-   * @param id {@link String}
-   * @return SiteSchemaCompositeKeyRecord
-   */
-  public SchemaAttributeAllowedValueRecord setDocumentId(final String id) {
-    this.documentId = id;
-    return this;
   }
 }

@@ -54,46 +54,6 @@ public class DocumentPublicationRecord
    */
   public DocumentPublicationRecord() {}
 
-  /**
-   * Get User Id.
-   * 
-   * @return String
-   */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set User Id.
-   * 
-   * @param publicationUserId {@link String}
-   * @return DocumentPublicationRecord
-   */
-  public DocumentPublicationRecord setUserId(final String publicationUserId) {
-    this.userId = publicationUserId;
-    return this;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set Document Id.
-   * 
-   * @param id {@link String}
-   * @return {@link DocumentPublicationRecord}
-   */
-  public DocumentPublicationRecord setDocumentId(final String id) {
-    this.documentId = id;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -106,63 +66,12 @@ public class DocumentPublicationRecord
   }
 
   /**
-   * Get Path.
-   *
-   * @return String
-   */
-  public String getPath() {
-    return this.path;
-  }
-
-  /**
-   * Set Path.
-   *
-   * @param documentPath {@link String}
-   * @return DocumentPublicationRecord
-   */
-  public DocumentPublicationRecord setPath(final String documentPath) {
-    this.path = documentPath;
-    return this;
-  }
-
-  /**
-   * Get S3 Version.
-   *
-   * @return String
-   */
-  public String getS3version() {
-    return this.s3version;
-  }
-
-  /**
    * Get Content Type.
    *
    * @return String
    */
   public String getContentType() {
     return this.contentType;
-  }
-
-  /**
-   * Set Content Type.
-   *
-   * @param documentContentType {@link String}
-   * @return DocumentPublishRecord
-   */
-  public DocumentPublicationRecord setContentType(final String documentContentType) {
-    this.contentType = documentContentType;
-    return this;
-  }
-
-  /**
-   * Set S3 Version.
-   *
-   * @param version {@link String}
-   * @return DocumentPublishRecord
-   */
-  public DocumentPublicationRecord setS3version(final String version) {
-    this.s3version = version;
-    return this;
   }
 
   @Override
@@ -176,6 +85,15 @@ public class DocumentPublicationRecord
     map.put("contentType", fromS(getContentType()));
 
     return map;
+  }
+
+  /**
+   * Get Document Id.
+   * 
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   @Override
@@ -194,6 +112,33 @@ public class DocumentPublicationRecord
     return record;
   }
 
+  /**
+   * Get Path.
+   *
+   * @return String
+   */
+  public String getPath() {
+    return this.path;
+  }
+
+  /**
+   * Get S3 Version.
+   *
+   * @return String
+   */
+  public String getS3version() {
+    return this.s3version;
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @return String
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
   @Override
   public String pk(final String siteId) {
     if (this.documentId == null) {
@@ -210,6 +155,61 @@ public class DocumentPublicationRecord
   @Override
   public String pkGsi2(final String siteId) {
     return null;
+  }
+
+  /**
+   * Set Content Type.
+   *
+   * @param documentContentType {@link String}
+   * @return DocumentPublishRecord
+   */
+  public DocumentPublicationRecord setContentType(final String documentContentType) {
+    this.contentType = documentContentType;
+    return this;
+  }
+
+  /**
+   * Set Document Id.
+   * 
+   * @param id {@link String}
+   * @return {@link DocumentPublicationRecord}
+   */
+  public DocumentPublicationRecord setDocumentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  /**
+   * Set Path.
+   *
+   * @param documentPath {@link String}
+   * @return DocumentPublicationRecord
+   */
+  public DocumentPublicationRecord setPath(final String documentPath) {
+    this.path = documentPath;
+    return this;
+  }
+
+  /**
+   * Set S3 Version.
+   *
+   * @param version {@link String}
+   * @return DocumentPublishRecord
+   */
+  public DocumentPublicationRecord setS3version(final String version) {
+    this.s3version = version;
+    return this;
+  }
+
+  /**
+   * Set User Id.
+   * 
+   * @param publicationUserId {@link String}
+   * @return DocumentPublicationRecord
+   */
+  public DocumentPublicationRecord setUserId(final String publicationUserId) {
+    this.userId = publicationUserId;
+    return this;
   }
 
   @Override

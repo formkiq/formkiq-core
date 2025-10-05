@@ -31,18 +31,6 @@ import com.formkiq.module.lambdaservices.logger.Logger;
  */
 public class MethodTimer {
 
-  /** Timer Name. */
-  private String timerName;
-  /** Start of Timer. */
-  private long startTime = -1;
-  /** End of Timer. */
-  private long endTime = -1;
-
-  /**
-   * constructor.
-   */
-  public MethodTimer() {}
-
   /**
    * Start Timer.
    *
@@ -54,29 +42,34 @@ public class MethodTimer {
   }
 
   /**
-   * Start Timer.
-   * 
-   * @param name {@link String}
-   * @return MethodTimer
+   * Measures and prints the execution time of the provided code block.
+   *
+   * @param logger {@link Logger}
+   * @param timerName {@link String}
+   * @param task The code to run encapsulated as a Runnable.
    */
-  public MethodTimer start(final String name) {
-    this.timerName = name;
-    this.startTime = System.currentTimeMillis();
-    return this;
+  public static void timer(final Logger logger, final String timerName, final Runnable task) {
+    if (logger.isLogged(LogLevel.TRACE)) {
+      MethodTimer methodTimer = startTimer(timerName);
+      task.run();
+      methodTimer.stop();
+      methodTimer.logElapsedTime(logger);
+    }
   }
 
+  /** Timer Name. */
+  private String timerName;
+
+  /** Start of Timer. */
+  private long startTime = -1;
+
+  /** End of Timer. */
+  private long endTime = -1;
+
   /**
-   * Stop Timer.
-   * 
-   * @return MethodTimer
+   * constructor.
    */
-  public MethodTimer stop() {
-    if (startTime < 0) {
-      throw new IllegalStateException("Timer has not been started.");
-    }
-    endTime = System.currentTimeMillis();
-    return this;
-  }
+  public MethodTimer() {}
 
   /**
    * Returns the elapsed time in nanoseconds.
@@ -105,18 +98,27 @@ public class MethodTimer {
   }
 
   /**
-   * Measures and prints the execution time of the provided code block.
-   *
-   * @param logger {@link Logger}
-   * @param timerName {@link String}
-   * @param task The code to run encapsulated as a Runnable.
+   * Start Timer.
+   * 
+   * @param name {@link String}
+   * @return MethodTimer
    */
-  public static void timer(final Logger logger, final String timerName, final Runnable task) {
-    if (logger.isLogged(LogLevel.TRACE)) {
-      MethodTimer methodTimer = startTimer(timerName);
-      task.run();
-      methodTimer.stop();
-      methodTimer.logElapsedTime(logger);
+  public MethodTimer start(final String name) {
+    this.timerName = name;
+    this.startTime = System.currentTimeMillis();
+    return this;
+  }
+
+  /**
+   * Stop Timer.
+   * 
+   * @return MethodTimer
+   */
+  public MethodTimer stop() {
+    if (startTime < 0) {
+      throw new IllegalStateException("Timer has not been started.");
     }
+    endTime = System.currentTimeMillis();
+    return this;
   }
 }

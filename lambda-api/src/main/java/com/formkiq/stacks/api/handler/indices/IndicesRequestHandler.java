@@ -121,6 +121,11 @@ public class IndicesRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body("message", message).build();
   }
 
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
   private void initIndexService(final AwsServiceCache awsServiceCache) {
 
     if (this.writer == null) {
@@ -129,10 +134,5 @@ public class IndicesRequestHandler
       this.writer =
           new GlobalIndexService(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
   }
 }

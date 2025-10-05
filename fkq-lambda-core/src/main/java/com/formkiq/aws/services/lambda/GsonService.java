@@ -50,18 +50,6 @@ public class GsonService {
   }
 
   /**
-   * Register Type Adapter.
-   * 
-   * @param type {@link Type}
-   * @param typeAdapter {@link Object}
-   * @return {@link GsonService}
-   */
-  public GsonService registerTypeAdapter(final Type type, final Object typeAdapter) {
-    builder.registerTypeAdapter(type, typeAdapter);
-    return this;
-  }
-
-  /**
    * Create {@link Gson}.
    * 
    * @return {@link Gson}
@@ -72,5 +60,17 @@ public class GsonService {
     }
 
     return gson;
+  }
+
+  /**
+   * Register Type Adapter.
+   * 
+   * @param type {@link Type}
+   * @param typeAdapter {@link Object}
+   * @return {@link GsonService}
+   */
+  public GsonService registerTypeAdapter(final Type type, final Object typeAdapter) {
+    builder.registerTypeAdapter(type, typeAdapter);
+    return this;
   }
 }

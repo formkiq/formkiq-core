@@ -80,6 +80,15 @@ public interface AttributeService {
       String siteId, String key);
 
   /**
+   * Does Attribute exist.
+   * 
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @return boolean
+   */
+  boolean existsAttribute(String siteId, String key);
+
+  /**
    * Find {@link AttributeRecord}.
    * 
    * @param siteId Optional Grouping siteId
@@ -98,15 +107,6 @@ public interface AttributeService {
    * @return {@link AttributeRecord}
    */
   AttributeRecord getAttribute(String siteId, String key);
-
-  /**
-   * Does Attribute exist.
-   * 
-   * @param siteId {@link String}
-   * @param key {@link String}
-   * @return boolean
-   */
-  boolean existsAttribute(String siteId, String key);
 
   /**
    * Get {@link AttributeRecord} by {@link Map}.

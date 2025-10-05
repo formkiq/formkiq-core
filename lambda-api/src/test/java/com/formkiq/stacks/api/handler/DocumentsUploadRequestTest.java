@@ -65,6 +65,16 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   /** Ten. */
   private static final int TEN = 10;
 
+  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response,
+      final String content) throws IOException {
+    HttpService http = new HttpServiceJdk11();
+
+    HttpHeaders hds = new HttpHeaders();
+    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
+
+    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), content);
+  }
+
   /**
    * Get Request Upload Document Url, MAX DocumentGreater than allowed.
    * 
@@ -763,15 +773,5 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
             + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
       }
     }
-  }
-
-  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response,
-      final String content) throws IOException {
-    HttpService http = new HttpServiceJdk11();
-
-    HttpHeaders hds = new HttpHeaders();
-    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
-
-    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), content);
   }
 }

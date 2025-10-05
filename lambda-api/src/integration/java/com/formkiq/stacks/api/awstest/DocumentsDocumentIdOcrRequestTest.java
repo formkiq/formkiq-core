@@ -70,31 +70,6 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 180;
 
-  /**
-   * POST Document OCR.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testAddOcr01a() throws Exception {
-    ApiClient client = getApiClients(null).get(0);
-    addOcr01(client, null);
-  }
-
-  /**
-   * POST Document OCR.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testAddOcr01b() throws Exception {
-    String siteId = SITE_ID;
-    ApiClient client = getApiClients(siteId).get(0);
-    addOcr01(client, siteId);
-  }
-
   private void addOcr01(final ApiClient client, final String siteId)
       throws IOException, InterruptedException, URISyntaxException, ApiException {
     byte[] content = toBytes("/ocr/receipt.png");
@@ -113,32 +88,6 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     GetDocumentOcrResponse documentOcr = getDocumentOcr(api, siteId, documentId);
     assertNotNull(documentOcr.getData());
     assertTrue(documentOcr.getData().contains("East Repair"));
-  }
-
-  /**
-   * POST Document OCR using Actions.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testAddOcr02a() throws Exception {
-    ApiClient client = getApiClients(null).get(0);
-    addOcr02(client, null);
-  }
-
-  /**
-   * POST Document OCR using Actions.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testAddOcr02b() throws Exception {
-
-    String siteId = SITE_ID;
-    ApiClient client = getApiClients(siteId).get(0);
-    addOcr02(client, siteId);
   }
 
   private void addOcr02(final ApiClient client, final String siteId)
@@ -198,11 +147,55 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     return documentOcr;
   }
 
-  private byte[] toBytes(final String name) throws IOException {
-    try (InputStream is = getClass().getResourceAsStream(name)) {
-      assertNotNull(is);
-      return IoUtils.toByteArray(is);
-    }
+  /**
+   * POST Document OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddOcr01a() throws Exception {
+    ApiClient client = getApiClients(null).get(0);
+    addOcr01(client, null);
+  }
+
+  /**
+   * POST Document OCR.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddOcr01b() throws Exception {
+    String siteId = SITE_ID;
+    ApiClient client = getApiClients(siteId).get(0);
+    addOcr01(client, siteId);
+  }
+
+  /**
+   * POST Document OCR using Actions.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddOcr02a() throws Exception {
+    ApiClient client = getApiClients(null).get(0);
+    addOcr02(client, null);
+  }
+
+  /**
+   * POST Document OCR using Actions.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddOcr02b() throws Exception {
+
+    String siteId = SITE_ID;
+    ApiClient client = getApiClients(siteId).get(0);
+    addOcr02(client, siteId);
   }
 
   /**
@@ -247,5 +240,12 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
         notNull(actionsApi.getDocumentActions(documentId, null, null, null, null).getActions());
     assertEquals(1, actions.size());
     assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
+  }
+
+  private byte[] toBytes(final String name) throws IOException {
+    try (InputStream is = getClass().getResourceAsStream(name)) {
+      assertNotNull(is);
+      return IoUtils.toByteArray(is);
+    }
   }
 }

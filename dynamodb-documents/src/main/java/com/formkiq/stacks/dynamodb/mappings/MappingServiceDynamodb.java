@@ -61,8 +61,13 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  */
 public class MappingServiceDynamodb implements MappingService, DbKeys {
 
+  private static boolean isMissingDefaultValue(final MappingAttribute attribute) {
+    return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty();
+  }
+
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
+
   /** {@link AttributeService}. */
   private final AttributeService attributeService;
 
@@ -105,11 +110,36 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   }
 
   @Override
+  public List<MappingAttribute> getAttributes(final MappingRecord mapping) {
+    Gson gson = new GsonBuilder().create();
+    Type listType = new TypeToken<ArrayList<MappingAttribute>>() {}.getType();
+    return gson.fromJson(mapping.getAttributes(), listType);
+  }
+
+  @Override
   public MappingRecord getMapping(final String siteId, final String mappingId) {
 
     MappingRecord r = new MappingRecord().setDocumentId(mappingId);
     Map<String, AttributeValue> attr = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
     return !attr.isEmpty() ? r.getFromAttributes(siteId, attr) : null;
+  }
+
+  private boolean isKeysOnlyAttribute(final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute) {
+    boolean match = false;
+    String attributeKey = attribute.getAttributeKey();
+
+    if (!isEmpty(attributeKey)) {
+      AttributeRecord a = attributes.get(attributeKey);
+      match = a != null && AttributeDataType.KEY_ONLY.equals(a.getDataType());
+    }
+
+    return match;
+  }
+
+  private boolean isLabelRequired(final MappingAttributeSourceType type) {
+    return !MappingAttributeSourceType.DATA_CLASSIFICATION.equals(type)
+        && !MappingAttributeSourceType.MALWARE_SCAN.equals(type);
   }
 
   @Override
@@ -133,11 +163,35 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     return record;
   }
 
-  @Override
-  public List<MappingAttribute> getAttributes(final MappingRecord mapping) {
-    Gson gson = new GsonBuilder().create();
-    Type listType = new TypeToken<ArrayList<MappingAttribute>>() {}.getType();
-    return gson.fromJson(mapping.getAttributes(), listType);
+  private void validate(final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
+
+    if (isEmpty(attribute.getAttributeKey())) {
+      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].attributeKey")
+          .error("'attributeKey' is required"));
+    }
+
+    if (attribute.getSourceType() == null) {
+      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].sourceType")
+          .error("'sourceType' is required"));
+    }
+
+    if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
+
+      validateManual(attributes, attribute, index, errors);
+
+    } else if (isLabelRequired(attribute.getSourceType())) {
+
+      if (attribute.getLabelMatchingType() == null) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
+            .error("'labelMatchingType' is required"));
+      }
+
+      if (notNull(attribute.getLabelTexts()).isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
+            .error("'labelTexts' is required"));
+      }
+    }
   }
 
   private Collection<ValidationError> validate(final String siteId, final Mapping record) {
@@ -190,42 +244,6 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     return errors;
   }
 
-  private void validate(final Map<String, AttributeRecord> attributes,
-      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
-
-    if (isEmpty(attribute.getAttributeKey())) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].attributeKey")
-          .error("'attributeKey' is required"));
-    }
-
-    if (attribute.getSourceType() == null) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].sourceType")
-          .error("'sourceType' is required"));
-    }
-
-    if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
-
-      validateManual(attributes, attribute, index, errors);
-
-    } else if (isLabelRequired(attribute.getSourceType())) {
-
-      if (attribute.getLabelMatchingType() == null) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
-            .error("'labelMatchingType' is required"));
-      }
-
-      if (notNull(attribute.getLabelTexts()).isEmpty()) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
-            .error("'labelTexts' is required"));
-      }
-    }
-  }
-
-  private boolean isLabelRequired(final MappingAttributeSourceType type) {
-    return !MappingAttributeSourceType.DATA_CLASSIFICATION.equals(type)
-        && !MappingAttributeSourceType.MALWARE_SCAN.equals(type);
-  }
-
   private void validateManual(final Map<String, AttributeRecord> attributes,
       final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
 
@@ -240,23 +258,6 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
           .error("'defaultValue' or 'defaultValues' is required"));
     }
-  }
-
-  private boolean isKeysOnlyAttribute(final Map<String, AttributeRecord> attributes,
-      final MappingAttribute attribute) {
-    boolean match = false;
-    String attributeKey = attribute.getAttributeKey();
-
-    if (!isEmpty(attributeKey)) {
-      AttributeRecord a = attributes.get(attributeKey);
-      match = a != null && AttributeDataType.KEY_ONLY.equals(a.getDataType());
-    }
-
-    return match;
-  }
-
-  private static boolean isMissingDefaultValue(final MappingAttribute attribute) {
-    return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty();
   }
 
   private void validateMetadataField(final MappingAttribute attribute, final int index,

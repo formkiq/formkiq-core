@@ -49,26 +49,14 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
   }
 
   /**
-   * Set String Attribute Key.
-   * 
-   * @param attributeKey {@link String}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddAttributeRequestBuilder keyAsString(final String attributeKey) {
-    this.request.setAttribute(new AddAttribute().key(attributeKey)
-        .dataType(AttributeDataType.STRING).type(AttributeType.STANDARD));
-    return this;
-  }
-
-  /**
-   * Set Number Attribute Key.
+   * Set Key Only Attribute Key.
    *
    * @param attributeKey {@link String}
    * @return AddDocumentRequestBuilder
    */
-  public AddAttributeRequestBuilder keyAsNumber(final String attributeKey) {
+  public AddAttributeRequestBuilder key(final String attributeKey) {
     this.request.setAttribute(new AddAttribute().key(attributeKey)
-        .dataType(AttributeDataType.NUMBER).type(AttributeType.STANDARD));
+        .dataType(AttributeDataType.KEY_ONLY).type(AttributeType.STANDARD));
     return this;
   }
 
@@ -85,14 +73,26 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
   }
 
   /**
-   * Set Key Only Attribute Key.
+   * Set Number Attribute Key.
    *
    * @param attributeKey {@link String}
    * @return AddDocumentRequestBuilder
    */
-  public AddAttributeRequestBuilder key(final String attributeKey) {
+  public AddAttributeRequestBuilder keyAsNumber(final String attributeKey) {
     this.request.setAttribute(new AddAttribute().key(attributeKey)
-        .dataType(AttributeDataType.KEY_ONLY).type(AttributeType.STANDARD));
+        .dataType(AttributeDataType.NUMBER).type(AttributeType.STANDARD));
+    return this;
+  }
+
+  /**
+   * Set String Attribute Key.
+   * 
+   * @param attributeKey {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsString(final String attributeKey) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey)
+        .dataType(AttributeDataType.STRING).type(AttributeType.STANDARD));
     return this;
   }
 

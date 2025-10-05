@@ -62,34 +62,6 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   public FoldersRequestHandler() {}
 
   @Override
-  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    DynamicObject o = fromBodyToDynamicObject(event);
-    String path = o.getString("path");
-    if (Strings.isEmpty(path)) {
-      throw new BadException("missing 'path' parameters");
-    }
-
-    path = new StringToFolder().apply(path);
-
-    String siteId = authorization.getSiteId();
-    FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-    List<FolderIndexRecord> record =
-        indexProcessor.createFolders(siteId, path, authorization.getUsername());
-
-    StringToBase64Encoder encoder = new StringToBase64Encoder();
-    List<Map<String, String>> list = record.stream().map(r -> {
-      String indexKey = encoder.apply(r.createIndexKey(siteId));
-      return Map.of("folder", r.path(), "indexKey", indexKey);
-    }).toList();
-
-    Map<String, Object> map =
-        Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey"));
-    return ApiRequestHandlerResponse.builder().ok().body(map).build();
-  }
-
-  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -149,5 +121,33 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   @Override
   public String getRequestUrl() {
     return "/folders";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    DynamicObject o = fromBodyToDynamicObject(event);
+    String path = o.getString("path");
+    if (Strings.isEmpty(path)) {
+      throw new BadException("missing 'path' parameters");
+    }
+
+    path = new StringToFolder().apply(path);
+
+    String siteId = authorization.getSiteId();
+    FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
+    List<FolderIndexRecord> record =
+        indexProcessor.createFolders(siteId, path, authorization.getUsername());
+
+    StringToBase64Encoder encoder = new StringToBase64Encoder();
+    List<Map<String, String>> list = record.stream().map(r -> {
+      String indexKey = encoder.apply(r.createIndexKey(siteId));
+      return Map.of("folder", r.path(), "indexKey", indexKey);
+    }).toList();
+
+    Map<String, Object> map =
+        Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey"));
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 }

@@ -84,63 +84,6 @@ public class FkqDocumentService {
   private static final HttpClient HTTP = HttpClient.newHttpClient();
 
   /**
-   * Add Document.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param data byte[]
-   * @param contentType {@link String}
-   * @param actions {@link List} {@link AddAction}
-   * @param tags {@link com.formkiq.client.model.AddDocumentTag}
-   * @return {@link String}
-   * @throws ApiException ApiException
-   */
-  public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final byte[] data, final String contentType, final List<AddAction> actions,
-      final List<com.formkiq.client.model.AddDocumentTag> tags) throws ApiException {
-
-    DocumentsApi api = new DocumentsApi(apiClient);
-    String content = Base64.getEncoder().encodeToString(data);
-    com.formkiq.client.model.AddDocumentRequest req =
-        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
-            .isBase64(Boolean.TRUE).path(path).actions(actions).tags(tags);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
-    return response.getDocumentId();
-  }
-
-  /**
-   * Add "file" but this just creates DynamoDB record and the S3 file.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param path {@link String}
-   * @param content byte[]
-   * @param contentType {@link String}
-   * @param shareKey {@link String}
-   * @return {@link String}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   * @throws URISyntaxException URISyntaxException
-   * @throws ApiException ApiException
-   */
-  public static String addDocument(final ApiClient apiClient, final String siteId,
-      final String path, final byte[] content, final String contentType, final String shareKey)
-      throws IOException, InterruptedException, URISyntaxException, ApiException {
-
-    DocumentsApi api = new DocumentsApi(apiClient);
-    GetDocumentUrlResponse response =
-        api.getDocumentUpload(path, siteId, null, null, content.length, null, shareKey);
-    String s3url = response.getUrl();
-
-    if (content.length > 0) {
-      uploadDocumentContent(s3url, content, contentType, Map.of());
-    }
-
-    return response.getDocumentId();
-  }
-
-  /**
    * Add "file" but this just creates DynamoDB record and the S3 file.
    *
    * @param apiClient {@link ApiClient}
@@ -200,32 +143,76 @@ public class FkqDocumentService {
   }
 
   /**
-   * Upload File to S3 presigned Url.
+   * Add Document.
    * 
-   * @param s3url {@link String}
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @param actions {@link List} {@link AddAction}
+   * @param tags {@link com.formkiq.client.model.AddDocumentTag}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final String path, final byte[] data, final String contentType, final List<AddAction> actions,
+      final List<com.formkiq.client.model.AddDocumentTag> tags) throws ApiException {
+
+    DocumentsApi api = new DocumentsApi(apiClient);
+    String content = Base64.getEncoder().encodeToString(data);
+    com.formkiq.client.model.AddDocumentRequest req =
+        new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
+            .isBase64(Boolean.TRUE).path(path).actions(actions).tags(tags);
+    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    return response.getDocumentId();
+  }
+
+  /**
+   * Add "file" but this just creates DynamoDB record and the S3 file.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param path {@link String}
    * @param content byte[]
    * @param contentType {@link String}
-   * @param headers {@link Map}
+   * @param shareKey {@link String}
+   * @return {@link String}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    * @throws URISyntaxException URISyntaxException
+   * @throws ApiException ApiException
    */
-  public static void uploadDocumentContent(final String s3url, final byte[] content,
-      final String contentType, final Map<String, Object> headers)
-      throws IOException, InterruptedException, URISyntaxException {
-    HttpRequest.Builder builder =
-        HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType);
+  public static String addDocument(final ApiClient apiClient, final String siteId,
+      final String path, final byte[] content, final String contentType, final String shareKey)
+      throws IOException, InterruptedException, URISyntaxException, ApiException {
 
-    headers.forEach((k, v) -> builder.header(k, v.toString()));
+    DocumentsApi api = new DocumentsApi(apiClient);
+    GetDocumentUrlResponse response =
+        api.getDocumentUpload(path, siteId, null, null, content.length, null, shareKey);
+    String s3url = response.getUrl();
 
-    HttpResponse<String> response =
-        HTTP.send(builder.method("PUT", BodyPublishers.ofByteArray(content)).build(),
-            BodyHandlers.ofString());
-
-    final int statusCode = 200;
-    if (response.statusCode() != statusCode) {
-      throw new IOException("Status Code: " + response.statusCode());
+    if (content.length > 0) {
+      uploadDocumentContent(s3url, content, contentType, Map.of());
     }
+
+    return response.getDocumentId();
+  }
+
+  /**
+   * Add Document Attribute.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributes {@link List} {@link AddDocumentAttribute}
+   * @throws ApiException ApiException
+   */
+  public static void addDocumentAttributes(final ApiClient apiClient, final String siteId,
+      final String documentId, final List<AddDocumentAttribute> attributes) throws ApiException {
+    DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
+    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
+    api.addDocumentAttributes(documentId, req, siteId);
   }
 
   /**
@@ -275,22 +262,6 @@ public class FkqDocumentService {
   }
 
   /**
-   * Add Document Attribute.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param attributes {@link List} {@link AddDocumentAttribute}
-   * @throws ApiException ApiException
-   */
-  public static void addDocumentAttributes(final ApiClient apiClient, final String siteId,
-      final String documentId, final List<AddDocumentAttribute> attributes) throws ApiException {
-    DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
-    AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    api.addDocumentAttributes(documentId, req, siteId);
-  }
-
-  /**
    * Add Document.
    * 
    * @param apiClient {@link ApiClient}
@@ -315,6 +286,39 @@ public class FkqDocumentService {
   }
 
   /**
+   * Get Document Attribute.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return DocumentAttribute
+   * @throws ApiException ApiException
+   */
+  public static DocumentAttribute getDocumentAttribute(final ApiClient client, final String siteId,
+      final String documentId, final String attributeKey) throws ApiException {
+    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+    return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
+        .getAttribute();
+  }
+
+  /**
+   * Get Document Attribute.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link List} {@link DocumentAttribute}
+   * @throws ApiException ApiException
+   */
+  public static List<DocumentAttribute> getDocumentAttributes(final ApiClient client,
+      final String siteId, final String documentId) throws ApiException {
+    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+    return documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
+        .getAttributes();
+  }
+
+  /**
    * Convert {@link HttpResponse} to {@link Map}.
    * 
    * @param response {@link HttpResponse}
@@ -322,6 +326,35 @@ public class FkqDocumentService {
    */
   public static Map<String, Object> toMap(final HttpResponse<String> response) {
     return GSON.fromJson(response.body(), Map.class);
+  }
+
+  /**
+   * Upload File to S3 presigned Url.
+   * 
+   * @param s3url {@link String}
+   * @param content byte[]
+   * @param contentType {@link String}
+   * @param headers {@link Map}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static void uploadDocumentContent(final String s3url, final byte[] content,
+      final String contentType, final Map<String, Object> headers)
+      throws IOException, InterruptedException, URISyntaxException {
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder(new URI(s3url)).header("Content-Type", contentType);
+
+    headers.forEach((k, v) -> builder.header(k, v.toString()));
+
+    HttpResponse<String> response =
+        HTTP.send(builder.method("PUT", BodyPublishers.ofByteArray(content)).build(),
+            BodyHandlers.ofString());
+
+    final int statusCode = 200;
+    if (response.statusCode() != statusCode) {
+      throw new IOException("Status Code: " + response.statusCode());
+    }
   }
 
   /**
@@ -361,40 +394,6 @@ public class FkqDocumentService {
     }
 
     return response;
-  }
-
-  /**
-   * Wait for Actions to Complete.
-   *
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link GetDocumentActionsResponse}
-   * @throws InterruptedException InterruptedException
-   */
-  public static GetDocumentActionsResponse waitForActionsComplete(final ApiClient client,
-      final String siteId, final String documentId) throws InterruptedException {
-    return waitForActions(client, siteId, documentId, "COMPLETE");
-  }
-
-  /**
-   * Wait for Actions to Complete.
-   * 
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param actionStatus {@link String}
-   * @return {@link GetDocumentActionsResponse}
-   * @throws InterruptedException InterruptedException
-   * @deprecated use with {@link DocumentActionStatus}
-   */
-  @Deprecated
-  public static GetDocumentActionsResponse waitForActions(final ApiClient client,
-      final String siteId, final String documentId, final String actionStatus)
-      throws InterruptedException {
-    return waitForActions(client, siteId, documentId,
-        List.of(DocumentActionStatus.valueOf(actionStatus.toUpperCase())));
   }
 
   /**
@@ -454,6 +453,40 @@ public class FkqDocumentService {
    * @param documentId {@link String}
    * @param actionStatus {@link String}
    * @return {@link GetDocumentActionsResponse}
+   * @throws InterruptedException InterruptedException
+   * @deprecated use with {@link DocumentActionStatus}
+   */
+  @Deprecated
+  public static GetDocumentActionsResponse waitForActions(final ApiClient client,
+      final String siteId, final String documentId, final String actionStatus)
+      throws InterruptedException {
+    return waitForActions(client, siteId, documentId,
+        List.of(DocumentActionStatus.valueOf(actionStatus.toUpperCase())));
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   *
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link GetDocumentActionsResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentActionsResponse waitForActionsComplete(final ApiClient client,
+      final String siteId, final String documentId) throws InterruptedException {
+    return waitForActions(client, siteId, documentId, "COMPLETE");
+  }
+
+  /**
+   * Wait for Actions to Complete.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param actionStatus {@link String}
+   * @return {@link GetDocumentActionsResponse}
    * @throws ApiException ApiException
    * @throws InterruptedException InterruptedException
    */
@@ -503,6 +536,34 @@ public class FkqDocumentService {
 
       } catch (ApiException e) {
         // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
+   * Wait for Document Attribute.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param attributeKey {@link String}
+   * @return DocumentAttribute
+   * @throws InterruptedException InterruptedException
+   */
+  public static DocumentAttribute waitForDocumentAtrribute(final ApiClient client,
+      final String siteId, final String documentId, final String attributeKey)
+      throws InterruptedException {
+    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+
+    while (true) {
+
+      try {
+        return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
+            .getAttribute();
+      } catch (ApiException e) {
+        // ignore
       }
 
       TimeUnit.SECONDS.sleep(1);
@@ -615,6 +676,36 @@ public class FkqDocumentService {
   }
 
   /**
+   * Wait For Document Content Length.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @return {@link GetDocumentResponse}
+   * @throws InterruptedException InterruptedException
+   */
+  public static GetDocumentResponse waitForDocumentContentLength(final ApiClient client,
+      final String siteId, final String documentId) throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        if (response.getContentLength() != null) {
+          return response;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
+    }
+  }
+
+  /**
    * Wait For Document Content.
    *
    * @param client {@link ApiClient}
@@ -635,36 +726,6 @@ public class FkqDocumentService {
       try {
         GetDocumentResponse response = api.getDocument(documentId, siteId, null);
         if ((contentType.equals(response.getContentType()))) {
-          return response;
-        }
-
-      } catch (ApiException e) {
-        // ignore error
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
-  }
-
-  /**
-   * Wait For Document Content Length.
-   * 
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link GetDocumentResponse}
-   * @throws InterruptedException InterruptedException
-   */
-  public static GetDocumentResponse waitForDocumentContentLength(final ApiClient client,
-      final String siteId, final String documentId) throws InterruptedException {
-
-    DocumentsApi api = new DocumentsApi(client);
-
-    while (true) {
-
-      try {
-        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
-        if (response.getContentLength() != null) {
           return response;
         }
 
@@ -767,39 +828,6 @@ public class FkqDocumentService {
   }
 
   /**
-   * Get Document Attribute.
-   * 
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param attributeKey {@link String}
-   * @return DocumentAttribute
-   * @throws ApiException ApiException
-   */
-  public static DocumentAttribute getDocumentAttribute(final ApiClient client, final String siteId,
-      final String documentId, final String attributeKey) throws ApiException {
-    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
-    return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
-        .getAttribute();
-  }
-
-  /**
-   * Get Document Attribute.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link List} {@link DocumentAttribute}
-   * @throws ApiException ApiException
-   */
-  public static List<DocumentAttribute> getDocumentAttributes(final ApiClient client,
-      final String siteId, final String documentId) throws ApiException {
-    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
-    return documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
-        .getAttributes();
-  }
-
-  /**
    * Wait For Document Versions.
    *
    * @param client {@link ApiClient}
@@ -826,34 +854,6 @@ public class FkqDocumentService {
 
       } catch (ApiException e) {
         // ignore error
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
-  }
-
-  /**
-   * Wait for Document Attribute.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param attributeKey {@link String}
-   * @return DocumentAttribute
-   * @throws InterruptedException InterruptedException
-   */
-  public static DocumentAttribute waitForDocumentAtrribute(final ApiClient client,
-      final String siteId, final String documentId, final String attributeKey)
-      throws InterruptedException {
-    DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
-
-    while (true) {
-
-      try {
-        return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
-            .getAttribute();
-      } catch (ApiException e) {
-        // ignore
       }
 
       TimeUnit.SECONDS.sleep(1);

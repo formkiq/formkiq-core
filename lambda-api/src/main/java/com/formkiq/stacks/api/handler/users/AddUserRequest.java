@@ -49,17 +49,6 @@ public class AddUserRequest {
   }
 
   /**
-   * Set User.
-   * 
-   * @param addUser {@link AddUser}
-   * @return AddUserRequest
-   */
-  public AddUserRequest setUser(final AddUser addUser) {
-    this.user = addUser;
-    return this;
-  }
-
-  /**
    * Get Username.
    * 
    * @return String
@@ -72,5 +61,16 @@ public class AddUserRequest {
     }
 
     return username;
+  }
+
+  /**
+   * Set User.
+   * 
+   * @param addUser {@link AddUser}
+   * @return AddUserRequest
+   */
+  public AddUserRequest setUser(final AddUser addUser) {
+    this.user = addUser;
+    return this;
   }
 }

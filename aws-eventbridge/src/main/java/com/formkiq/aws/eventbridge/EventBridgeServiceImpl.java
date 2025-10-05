@@ -67,9 +67,39 @@ public class EventBridgeServiceImpl implements EventBridgeService {
     return client.createEventBus(req);
   }
 
+  @Override
+  public void createRule(final String eventBusName, final String ruleName, final String ruleArn,
+      final String eventPattern, final String targetId, final String targetArn) {
+    PutRuleRequest ruleReq = PutRuleRequest.builder().name(ruleName).eventBusName(eventBusName)
+        .eventPattern(eventPattern).build();
+    client.putRule(ruleReq);
+
+    Target target = Target.builder().id(targetId).roleArn(ruleArn).arn(targetArn).build();
+    PutTargetsRequest putTarget = PutTargetsRequest.builder().rule(ruleName)
+        .eventBusName(eventBusName).targets(target).build();
+    client.putTargets(putTarget);
+  }
+
   public DeleteEventBusResponse deleteEventBus(final String eventBusName) {
     DeleteEventBusRequest req = DeleteEventBusRequest.builder().name(eventBusName).build();
     return client.deleteEventBus(req);
+  }
+
+  @Override
+  public void deleteRule(final String eventBusName, final String ruleName, final String targetId) {
+
+    RemoveTargetsRequest target = RemoveTargetsRequest.builder().rule(ruleName).ids(targetId)
+        .eventBusName(eventBusName).build();
+    client.removeTargets(target);
+
+    DeleteRuleRequest deleteReq =
+        DeleteRuleRequest.builder().name(ruleName).eventBusName(eventBusName).build();
+    client.deleteRule(deleteReq);
+  }
+
+  @Override
+  public PutEventsResponse putEvents(final String eventBusName, final EventBridgeMessage msg) {
+    return putEvents(eventBusName, msg.getDetailType(), msg.getDetail(), msg.getSource());
   }
 
   @Override
@@ -91,35 +121,5 @@ public class EventBridgeServiceImpl implements EventBridgeService {
 
     PutEventsRequest request = PutEventsRequest.builder().entries(requestEntry).build();
     return client.putEvents(request);
-  }
-
-  @Override
-  public PutEventsResponse putEvents(final String eventBusName, final EventBridgeMessage msg) {
-    return putEvents(eventBusName, msg.getDetailType(), msg.getDetail(), msg.getSource());
-  }
-
-  @Override
-  public void createRule(final String eventBusName, final String ruleName, final String ruleArn,
-      final String eventPattern, final String targetId, final String targetArn) {
-    PutRuleRequest ruleReq = PutRuleRequest.builder().name(ruleName).eventBusName(eventBusName)
-        .eventPattern(eventPattern).build();
-    client.putRule(ruleReq);
-
-    Target target = Target.builder().id(targetId).roleArn(ruleArn).arn(targetArn).build();
-    PutTargetsRequest putTarget = PutTargetsRequest.builder().rule(ruleName)
-        .eventBusName(eventBusName).targets(target).build();
-    client.putTargets(putTarget);
-  }
-
-  @Override
-  public void deleteRule(final String eventBusName, final String ruleName, final String targetId) {
-
-    RemoveTargetsRequest target = RemoveTargetsRequest.builder().rule(ruleName).ids(targetId)
-        .eventBusName(eventBusName).build();
-    client.removeTargets(target);
-
-    DeleteRuleRequest deleteReq =
-        DeleteRuleRequest.builder().name(ruleName).eventBusName(eventBusName).build();
-    client.deleteRule(deleteReq);
   }
 }

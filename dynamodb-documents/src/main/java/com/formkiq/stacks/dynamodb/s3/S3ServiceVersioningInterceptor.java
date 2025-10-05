@@ -79,24 +79,6 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     this.auditTable = auditDynamoDbTable;
   }
 
-  @Override
-  public void putObjectEvent(final S3Service s3, final String bucket, final String key,
-      final Map<String, Object> changes) {
-
-    if (this.watchBucket.equalsIgnoreCase(bucket)) {
-
-      ObjectVersion version = getPreviousObject(s3, bucket, key);
-      String siteId = SiteIdKeyGenerator.getSiteIdName(SiteIdKeyGenerator.getSiteId(key));
-      String documentId = SiteIdKeyGenerator.getDocumentId(key);
-
-      if (version != null) {
-        createVersion(siteId, documentId, s3, bucket, key, version);
-      }
-
-      createAudit(siteId, documentId, changes);
-    }
-  }
-
   private void createAudit(final String siteId, final String documentId,
       final Map<String, Object> changes) {
 
@@ -110,21 +92,6 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     DocumentActivityEventRecord event = DocumentActivityEventRecord.builder().documentId(documentId)
         .activityKeys(List.of(ua.key())).build(siteId);
     versionService.putItems(auditTable, List.of(ua.getAttributes(), event.getAttributes()));
-  }
-
-  /**
-   * S3 File has a version.
-   * 
-   * @param s3 {@link S3Service}
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @return ObjectVersion
-   */
-  public ObjectVersion getPreviousObject(final S3Service s3, final String bucket,
-      final String key) {
-    ListObjectVersionsResponse response = s3.getObjectVersions(bucket, key, null, 2);
-    List<ObjectVersion> objectVersions = notNull(response.versions());
-    return objectVersions.size() > 1 ? objectVersions.get(1) : null;
   }
 
   public void createVersion(final String siteId, final String documentId, final S3Service s3,
@@ -158,5 +125,38 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     attr.put("s3version", AttributeValue.fromS(resp.getVersionId()));
 
     this.versionService.putItem(attr);
+  }
+
+  /**
+   * S3 File has a version.
+   * 
+   * @param s3 {@link S3Service}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return ObjectVersion
+   */
+  public ObjectVersion getPreviousObject(final S3Service s3, final String bucket,
+      final String key) {
+    ListObjectVersionsResponse response = s3.getObjectVersions(bucket, key, null, 2);
+    List<ObjectVersion> objectVersions = notNull(response.versions());
+    return objectVersions.size() > 1 ? objectVersions.get(1) : null;
+  }
+
+  @Override
+  public void putObjectEvent(final S3Service s3, final String bucket, final String key,
+      final Map<String, Object> changes) {
+
+    if (this.watchBucket.equalsIgnoreCase(bucket)) {
+
+      ObjectVersion version = getPreviousObject(s3, bucket, key);
+      String siteId = SiteIdKeyGenerator.getSiteIdName(SiteIdKeyGenerator.getSiteId(key));
+      String documentId = SiteIdKeyGenerator.getDocumentId(key);
+
+      if (version != null) {
+        createVersion(siteId, documentId, s3, bucket, key, version);
+      }
+
+      createAudit(siteId, documentId, changes);
+    }
   }
 }

@@ -111,6 +111,16 @@ public final class SiteIdKeyGenerator {
   }
 
   /**
+   * Get Not Null Site Name.
+   * 
+   * @param siteId {@link String}
+   * @return String
+   */
+  public static String getSiteIdName(final String siteId) {
+    return isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId;
+  }
+
+  /**
    * Whether {@link String} has '//'.
    * 
    * @param s {@link String}
@@ -128,16 +138,6 @@ public final class SiteIdKeyGenerator {
    */
   public static boolean isDefaultSiteId(final String siteId) {
     return siteId == null || DEFAULT_SITE_ID.equals(siteId);
-  }
-
-  /**
-   * Get Not Null Site Name.
-   * 
-   * @param siteId {@link String}
-   * @return String
-   */
-  public static String getSiteIdName(final String siteId) {
-    return isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId;
   }
 
   /**

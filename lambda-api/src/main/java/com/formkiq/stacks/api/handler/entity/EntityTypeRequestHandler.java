@@ -65,6 +65,34 @@ public class EntityTypeRequestHandler
   public EntityTypeRequestHandler() {}
 
   @Override
+  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String entityTypeId = event.getPathParameter("entityTypeId");
+    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
+
+    Map<String, AttributeValue> attributes =
+        validateDelete(awsservice, siteId, entityTypeId, namespace);
+
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
+            .apply(attributes, null);
+    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes,
+        Collections.emptyMap());
+
+    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(namespace, EntityTypeNamespace.CUSTOM).name("").buildKey(siteId);
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    if (!db.deleteItem(entityTypeKey)) {
+      throw new NotFoundException("entityType '" + entityTypeId + "' not found");
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body("message", "EntityType deleted").build();
+  }
+
+  @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
@@ -92,34 +120,6 @@ public class EntityTypeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/entityTypes/{entityTypeId}";
-  }
-
-  @Override
-  public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String entityTypeId = event.getPathParameter("entityTypeId");
-    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
-
-    Map<String, AttributeValue> attributes =
-        validateDelete(awsservice, siteId, entityTypeId, namespace);
-
-    Map<String, ChangeRecord> changes =
-        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
-            .apply(attributes, null);
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes,
-        Collections.emptyMap());
-
-    DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId)
-        .namespace(namespace, EntityTypeNamespace.CUSTOM).name("").buildKey(siteId);
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    if (!db.deleteItem(entityTypeKey)) {
-      throw new NotFoundException("entityType '" + entityTypeId + "' not found");
-    }
-
-    return ApiRequestHandlerResponse.builder().ok().body("message", "EntityType deleted").build();
   }
 
   private Map<String, AttributeValue> validateDelete(final AwsServiceCache awsservice,

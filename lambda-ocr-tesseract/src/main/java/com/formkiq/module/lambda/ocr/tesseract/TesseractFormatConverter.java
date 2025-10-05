@@ -144,13 +144,13 @@ public class TesseractFormatConverter implements FormatConverter {
     }
   }
 
-  @Override
-  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
-    return SUPPORTED.contains(mineType);
-  }
-
   private boolean isSupportMimeType(final MimeType mt) {
     return MimeType.MIME_TIF.equals(mt) || MimeType.MIME_TIFF.equals(mt)
         || MimeType.MIME_PDF.equals(mt);
+  }
+
+  @Override
+  public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
+    return SUPPORTED.contains(mineType);
   }
 }

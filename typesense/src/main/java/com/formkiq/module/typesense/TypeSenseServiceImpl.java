@@ -219,6 +219,15 @@ public final class TypeSenseServiceImpl implements TypeSenseService {
     return headers;
   }
 
+  @Override
+  public HttpResponse<String> isHealthy() throws IOException {
+    String url = String.format("%s/health", this.host);
+
+    HttpHeaders headers = getHeader();
+
+    return this.service.get(url, Optional.of(headers), Optional.empty());
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public List<String> searchFulltext(final String siteId, final String text, final int maxResults)
@@ -274,14 +283,5 @@ public final class TypeSenseServiceImpl implements TypeSenseService {
         this.service.patch(url, Optional.of(headers), Optional.empty(), this.json.toJson(payload));
 
     return response;
-  }
-
-  @Override
-  public HttpResponse<String> isHealthy() throws IOException {
-    String url = String.format("%s/health", this.host);
-
-    HttpHeaders headers = getHeader();
-
-    return this.service.get(url, Optional.of(headers), Optional.empty());
   }
 }

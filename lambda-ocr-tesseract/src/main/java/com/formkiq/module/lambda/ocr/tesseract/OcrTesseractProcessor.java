@@ -103,6 +103,15 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   /**
+   * Add Url Request Handler Mapping.
+   * 
+   * @param handler {@link ApiGatewayRequestHandler}
+   */
+  private static void addRequestHandler(final ApiGatewayRequestHandler handler) {
+    URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  /**
    * Initialize.
    * 
    * @param awsServiceCache {@link AwsServiceCache}
@@ -121,15 +130,6 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     addRequestHandler(new ObjectExaminePdfHandler());
     addRequestHandler(new ObjectExaminePdfIdHandler());
-  }
-
-  /**
-   * Add Url Request Handler Mapping.
-   * 
-   * @param handler {@link ApiGatewayRequestHandler}
-   */
-  private static void addRequestHandler(final ApiGatewayRequestHandler handler) {
-    URL_MAP.put(handler.getRequestUrl(), handler);
   }
 
   /** {@link List} {@link FormatConverter}. */
@@ -191,6 +191,14 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
   }
 
+  private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {
+    List<String> parseTypes = Collections.emptyList();
+    if (sqsMessage.request() != null) {
+      parseTypes = notNull(sqsMessage.request().getParseTypes());
+    }
+    return parseTypes;
+  }
+
   protected OcrSqsMessage getSqsMessage(final String body) {
     return this.gson.fromJson(body, OcrSqsMessage.class);
   }
@@ -233,6 +241,18 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     }
 
     return file;
+  }
+
+  private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
+      final String siteId, final String documentId, final String jobId, final String contentType) {
+
+    List<String> parseTypes = getParserTypes(sqsMessage);
+
+    String s = String.format(
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
+            + "\"parseTypes\":\"%s\"}",
+        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
+    logger.info(s);
   }
 
   private void processRecord(final Logger logger, final AwsServiceCache awsServices,
@@ -303,25 +323,5 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         actionsService.updateActionStatus(siteId, documentId, action);
       });
     }
-  }
-
-  private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
-      final String siteId, final String documentId, final String jobId, final String contentType) {
-
-    List<String> parseTypes = getParserTypes(sqsMessage);
-
-    String s = String.format(
-        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
-            + "\"parseTypes\":\"%s\"}",
-        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
-    logger.info(s);
-  }
-
-  private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {
-    List<String> parseTypes = Collections.emptyList();
-    if (sqsMessage.request() != null) {
-      parseTypes = notNull(sqsMessage.request().getParseTypes());
-    }
-    return parseTypes;
   }
 }

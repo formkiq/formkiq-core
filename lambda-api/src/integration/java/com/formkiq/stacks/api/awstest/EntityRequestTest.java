@@ -58,6 +58,22 @@ public class EntityRequestTest extends AbstractAwsIntegrationTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
+  private void assertEntity(final Entity entity) {
+    assertNotNull(entity);
+    assertNotNull(entity.getEntityTypeId());
+    assertNotNull(entity.getEntityId());
+    assertNotNull(entity.getInsertedDate());
+    assertEquals("Acme Inc", entity.getName());
+  }
+
+  private void assertEntityType(final EntityType entityType, final String name) {
+    assertNotNull(entityType);
+    assertNotNull(entityType.getEntityTypeId());
+    assertNotNull(entityType.getInsertedDate());
+    assertEquals(name, entityType.getName());
+    assertEquals(EntityTypeNamespace.CUSTOM, entityType.getNamespace());
+  }
+
   /**
    * Test GET /version.
    * 
@@ -100,21 +116,5 @@ public class EntityRequestTest extends AbstractAwsIntegrationTest {
       GetEntityResponse entity = entityApi.getEntity(entityTypeId, entityId, siteId, null);
       assertEntity(entity.getEntity());
     }
-  }
-
-  private void assertEntity(final Entity entity) {
-    assertNotNull(entity);
-    assertNotNull(entity.getEntityTypeId());
-    assertNotNull(entity.getEntityId());
-    assertNotNull(entity.getInsertedDate());
-    assertEquals("Acme Inc", entity.getName());
-  }
-
-  private void assertEntityType(final EntityType entityType, final String name) {
-    assertNotNull(entityType);
-    assertNotNull(entityType.getEntityTypeId());
-    assertNotNull(entityType.getInsertedDate());
-    assertEquals(name, entityType.getName());
-    assertEquals(EntityTypeNamespace.CUSTOM, entityType.getNamespace());
   }
 }

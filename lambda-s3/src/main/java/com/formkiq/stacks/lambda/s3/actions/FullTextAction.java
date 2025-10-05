@@ -89,6 +89,45 @@ public class FullTextAction implements DocumentAction {
     this.http = new SendHttpRequest(serviceCache);
   }
 
+  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String s = String.format(
+          "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
+              + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
+          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
+          item.getContentType());
+
+      logger.debug(s);
+    }
+  }
+
+  private int getCharacterMax(final Action action) {
+    Map<String, Object> parameters = notNull(action.parameters());
+    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
+  }
+
+  /**
+   * Get Content from {@link Action}.
+   *
+   * @param dcFunc {@link DocumentContentFunction}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private String getContent(final DocumentContentFunction dcFunc, final Action action,
+      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = dcFunc.getContentUrls(contentUrls);
+
+    int characterMax = getCharacterMax(action);
+
+    return characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
+        : sb.toString();
+  }
+
   @Override
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
@@ -132,18 +171,6 @@ public class FullTextAction implements DocumentAction {
     }
 
     return new ProcessActionStatus(status);
-  }
-
-  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      String s = String.format(
-          "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
-              + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
-          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
-          item.getContentType());
-
-      logger.debug(s);
-    }
   }
 
   /**
@@ -221,32 +248,5 @@ public class FullTextAction implements DocumentAction {
     } catch (URISyntaxException | InterruptedException e) {
       throw new IOException(e);
     }
-  }
-
-  /**
-   * Get Content from {@link Action}.
-   *
-   * @param dcFunc {@link DocumentContentFunction}
-   * @param action {@link Action}
-   * @param contentUrls {@link List} {@link String}
-   * @return {@link String}
-   * @throws URISyntaxException URISyntaxException
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private String getContent(final DocumentContentFunction dcFunc, final Action action,
-      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
-
-    StringBuilder sb = dcFunc.getContentUrls(contentUrls);
-
-    int characterMax = getCharacterMax(action);
-
-    return characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
-        : sb.toString();
-  }
-
-  private int getCharacterMax(final Action action) {
-    Map<String, Object> parameters = notNull(action.parameters());
-    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
   }
 }

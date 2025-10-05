@@ -121,6 +121,13 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
     configService.delete(SITEID1);
   }
 
+  private HttpResponse<String> putS3PresignedUrl(final String url, final MimeType mime,
+      final String content) throws IOException, InterruptedException, URISyntaxException {
+    return this.http
+        .send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", mime.getContentType())
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
+  }
+
   /**
    * Get Request Upload Document Url.
    * 
@@ -320,13 +327,6 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("test", tags.get(0).getKey());
       assertEquals("this", tags.get(0).getValue());
     }
-  }
-
-  private HttpResponse<String> putS3PresignedUrl(final String url, final MimeType mime,
-      final String content) throws IOException, InterruptedException, URISyntaxException {
-    return this.http
-        .send(HttpRequest.newBuilder(new URI(url)).header("Content-Type", mime.getContentType())
-            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
   }
 
   /**

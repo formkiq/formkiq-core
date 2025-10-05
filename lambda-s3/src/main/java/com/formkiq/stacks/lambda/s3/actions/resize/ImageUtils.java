@@ -49,12 +49,6 @@ class ImageUtils {
     return imageBaos.toByteArray();
   }
 
-  static BufferedImage resize(final BufferedImage image, final int width, final int height,
-      final boolean isKeepAspectRatio) throws IOException {
-    return Thumbnails.of(image).size(width, height).keepAspectRatio(isKeepAspectRatio)
-        .asBufferedImage();
-  }
-
   static String getImageFormat(final byte[] imageData) throws IOException {
     try (ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
         ImageInputStream iis = ImageIO.createImageInputStream(bais)) {
@@ -70,5 +64,11 @@ class ImageUtils {
 
       return null;
     }
+  }
+
+  static BufferedImage resize(final BufferedImage image, final int width, final int height,
+      final boolean isKeepAspectRatio) throws IOException {
+    return Thumbnails.of(image).size(width, height).keepAspectRatio(isKeepAspectRatio)
+        .asBufferedImage();
   }
 }

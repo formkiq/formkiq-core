@@ -43,8 +43,21 @@ public class UserActivityContext {
   private static final ThreadLocal<Collection<UserActivityContextData>> CONTEXT =
       ThreadLocal.withInitial(ArrayList::new);
 
-  private UserActivityContext() {
-    // Prevent instantiation
+  /**
+   * Clear the user activity context for the current thread. Call this at the end of request
+   * processing to prevent leaks.
+   */
+  public static void clear() {
+    CONTEXT.remove();
+  }
+
+  /**
+   * Get the user activity context for the current thread.
+   *
+   * @return UserActivityContextData, or null if not set
+   */
+  public static Collection<UserActivityContextData> get() {
+    return CONTEXT.get();
   }
 
   /**
@@ -69,20 +82,7 @@ public class UserActivityContext {
     }
   }
 
-  /**
-   * Get the user activity context for the current thread.
-   *
-   * @return UserActivityContextData, or null if not set
-   */
-  public static Collection<UserActivityContextData> get() {
-    return CONTEXT.get();
-  }
-
-  /**
-   * Clear the user activity context for the current thread. Call this at the end of request
-   * processing to prevent leaks.
-   */
-  public static void clear() {
-    CONTEXT.remove();
+  private UserActivityContext() {
+    // Prevent instantiation
   }
 }

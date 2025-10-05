@@ -413,6 +413,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documentIds);
   }
 
+  /**
+   * Handle Document Event Callback.
+   * 
+   * @param s3Key {@link String}
+   */
+  private void handleEventCallBack(final String s3Key) {
+    String key = s3Key.replace("tempfiles/eventcallback/", "");
+    String siteId = SiteIdKeyGenerator.getSiteId(key);
+    String documentId = SiteIdKeyGenerator.getDocumentId(key);
+
+    notificationService.publishNextActionEvent(siteId, documentId);
+  }
+
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
@@ -607,19 +620,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (!objectCreated) {
       logger.trace("skipping event " + eventName);
     }
-  }
-
-  /**
-   * Handle Document Event Callback.
-   * 
-   * @param s3Key {@link String}
-   */
-  private void handleEventCallBack(final String s3Key) {
-    String key = s3Key.replace("tempfiles/eventcallback/", "");
-    String siteId = SiteIdKeyGenerator.getSiteId(key);
-    String documentId = SiteIdKeyGenerator.getDocumentId(key);
-
-    notificationService.publishNextActionEvent(siteId, documentId);
   }
 
   /**

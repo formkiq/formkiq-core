@@ -69,6 +69,15 @@ public class SearchTagCriteriaRange {
   }
 
   /**
+   * Get Range Type.
+   * 
+   * @return {@link String}
+   */
+  public String getType() {
+    return this.type;
+  }
+
+  /**
    * Set Start Range.
    * 
    * @param rangeStart {@link String}
@@ -77,15 +86,6 @@ public class SearchTagCriteriaRange {
   public SearchTagCriteriaRange start(final String rangeStart) {
     this.start = rangeStart;
     return this;
-  }
-
-  /**
-   * Get Range Type.
-   * 
-   * @return {@link String}
-   */
-  public String getType() {
-    return this.type;
   }
 
   /**

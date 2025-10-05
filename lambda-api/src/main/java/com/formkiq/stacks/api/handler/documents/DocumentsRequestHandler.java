@@ -172,39 +172,6 @@ public class DocumentsRequestHandler
     return current;
   }
 
-  private Map<String, Object> getSyncStatus(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId) throws BadException {
-
-    DocumentSyncType syncType;
-    String syncStatus = event.getQueryStringParameter("syncStatus").toUpperCase();
-    DocumentSyncServiceType service =
-        awsservice.hasModule("opensearch") ? DocumentSyncServiceType.OPENSEARCH
-            : DocumentSyncServiceType.TYPESENSE;
-
-    if ("FULLTEXT_METADATA_FAILED".equalsIgnoreCase(syncStatus)) {
-      syncType = DocumentSyncType.METADATA;
-    } else if ("FULLTEXT_CONTENT_FAILED".equalsIgnoreCase(syncStatus)) {
-      syncType = DocumentSyncType.CONTENT;
-    } else {
-      throw new BadException("Unknown 'syncStatus'");
-    }
-
-    int limit = getLimit(awsservice.getLogger(), event);
-    DocumentSyncStatus status = DocumentSyncStatus.FAILED;
-    String documentSyncTable = awsservice.environment("DOCUMENT_SYNC_TABLE");
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    String nextToken = event.getQueryStringParameter("next");
-    QueryResult result = new DocumentSyncStatusQuery(service, status, syncType).query(db,
-        documentSyncTable, siteId, nextToken, limit);
-
-    nextToken = new MapAttributeValueToString().apply(result.lastEvaluatedKey());
-    List<Map<String, String>> documents =
-        result.items().stream().map(rr -> Map.of("documentId", rr.get("documentId").s())).toList();
-
-    return Map.of("next", nextToken, "documents", documents);
-  }
-
   private ApiPagination getDocuments(final ApiGatewayRequestEvent event,
       final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
       throws BadException {
@@ -272,6 +239,39 @@ public class DocumentsRequestHandler
     return current;
   }
 
+  private Map<String, Object> getSyncStatus(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws BadException {
+
+    DocumentSyncType syncType;
+    String syncStatus = event.getQueryStringParameter("syncStatus").toUpperCase();
+    DocumentSyncServiceType service =
+        awsservice.hasModule("opensearch") ? DocumentSyncServiceType.OPENSEARCH
+            : DocumentSyncServiceType.TYPESENSE;
+
+    if ("FULLTEXT_METADATA_FAILED".equalsIgnoreCase(syncStatus)) {
+      syncType = DocumentSyncType.METADATA;
+    } else if ("FULLTEXT_CONTENT_FAILED".equalsIgnoreCase(syncStatus)) {
+      syncType = DocumentSyncType.CONTENT;
+    } else {
+      throw new BadException("Unknown 'syncStatus'");
+    }
+
+    int limit = getLimit(awsservice.getLogger(), event);
+    DocumentSyncStatus status = DocumentSyncStatus.FAILED;
+    String documentSyncTable = awsservice.environment("DOCUMENT_SYNC_TABLE");
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String nextToken = event.getQueryStringParameter("next");
+    QueryResult result = new DocumentSyncStatusQuery(service, status, syncType).query(db,
+        documentSyncTable, siteId, nextToken, limit);
+
+    nextToken = new MapAttributeValueToString().apply(result.lastEvaluatedKey());
+    List<Map<String, String>> documents =
+        result.items().stream().map(rr -> Map.of("documentId", rr.get("documentId").s())).toList();
+
+    return Map.of("next", nextToken, "documents", documents);
+  }
+
   private boolean isFolder(final AddDocumentRequest item) {
     return !isEmpty(item.getPath()) && item.getPath().endsWith("/");
   }
@@ -329,27 +329,6 @@ public class DocumentsRequestHandler
   }
 
   /**
-   * Update {@link AddDocumentRequest} request object.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param o {@link AddDocumentRequest}
-   */
-  private void updatePost(final AwsServiceCache awsservice, final AddDocumentRequest o) {
-
-    if (!isEmpty(o.getContent()) && isEmpty(o.getChecksum()) && !isEmpty(o.getChecksumType())) {
-      S3PresignerService s3PresignerService = awsservice.getExtension(S3PresignerService.class);
-      ChecksumAlgorithm checksumAlgorithm =
-          s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
-
-      byte[] bytes =
-          o.isBase64() ? Base64.getDecoder().decode(o.getContent().getBytes(StandardCharsets.UTF_8))
-              : o.getContent().getBytes(StandardCharsets.UTF_8);
-      String checksum = s3PresignerService.calculateChecksumAsHex(checksumAlgorithm, bytes);
-      o.setChecksum(checksum);
-    }
-  }
-
-  /**
    * Transform {@link String} to {@link ZonedDateTime}.
    *
    * @param awsservice {@link AwsServiceCache}
@@ -389,6 +368,27 @@ public class DocumentsRequestHandler
     }
 
     return date;
+  }
+
+  /**
+   * Update {@link AddDocumentRequest} request object.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param o {@link AddDocumentRequest}
+   */
+  private void updatePost(final AwsServiceCache awsservice, final AddDocumentRequest o) {
+
+    if (!isEmpty(o.getContent()) && isEmpty(o.getChecksum()) && !isEmpty(o.getChecksumType())) {
+      S3PresignerService s3PresignerService = awsservice.getExtension(S3PresignerService.class);
+      ChecksumAlgorithm checksumAlgorithm =
+          s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
+
+      byte[] bytes =
+          o.isBase64() ? Base64.getDecoder().decode(o.getContent().getBytes(StandardCharsets.UTF_8))
+              : o.getContent().getBytes(StandardCharsets.UTF_8);
+      String checksum = s3PresignerService.calculateChecksumAsHex(checksumAlgorithm, bytes);
+      o.setChecksum(checksum);
+    }
   }
 
   private void validatePost(final AddDocumentRequest item) throws ValidationException {

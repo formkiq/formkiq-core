@@ -99,6 +99,21 @@ public abstract class AbstractRequestHandler {
   private static final String URL = "http://localhost:" + PORT;
 
   /**
+   * Assert CORS headers.
+   * 
+   * @param headers {@link Map}
+   */
+  public static void assertCorsHeaders(final Map<String, Object> headers) {
+    final int expectedHeadersSize = 4;
+    assertEquals(expectedHeadersSize, headers.size());
+    assertEquals("*", headers.get("Access-Control-Allow-Origin"));
+    assertEquals("*", headers.get("Access-Control-Allow-Methods"));
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+        headers.get("Access-Control-Allow-Headers"));
+    assertEquals("application/json", headers.get("Content-Type"));
+  }
+
+  /**
    * Before All Tests.
    * 
    * @throws Exception Exception
@@ -126,9 +141,9 @@ public abstract class AbstractRequestHandler {
 
   /** {@link Context}. */
   private final Context context = new LambdaContextRecorder();
-
   /** System Environment Map. */
   private final Map<String, String> map = new HashMap<>();
+
   /** {@link ClientAndServer}. */
   private ClientAndServer mockServer = null;
 
@@ -526,6 +541,7 @@ public abstract class AbstractRequestHandler {
     this.awsServices.environment().put(key, value);
   }
 
+
   /**
    * Set Path Parameter.
    * 
@@ -543,7 +559,6 @@ public abstract class AbstractRequestHandler {
     pathmap.put(parameter, value);
     event.setPathParameters(pathmap);
   }
-
 
   /**
    * Set Cognito Group.
@@ -647,20 +662,5 @@ public abstract class AbstractRequestHandler {
     in.close();
 
     return instream;
-  }
-
-  /**
-   * Assert CORS headers.
-   * 
-   * @param headers {@link Map}
-   */
-  public static void assertCorsHeaders(final Map<String, Object> headers) {
-    final int expectedHeadersSize = 4;
-    assertEquals(expectedHeadersSize, headers.size());
-    assertEquals("*", headers.get("Access-Control-Allow-Origin"));
-    assertEquals("*", headers.get("Access-Control-Allow-Methods"));
-    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
-        headers.get("Access-Control-Allow-Headers"));
-    assertEquals("application/json", headers.get("Content-Type"));
   }
 }

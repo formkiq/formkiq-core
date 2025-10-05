@@ -91,6 +91,17 @@ public enum MimeType {
   MIME_WEBP("image/webp", "webp");
 
   /**
+   * Find {@link MimeType} by Path.
+   * 
+   * @param path {@link String}
+   * @return MimeType
+   */
+  public static MimeType findByPath(final String path) {
+    String ext = Strings.getExtension(path);
+    return MimeType.fromExtension(ext);
+  }
+
+  /**
    * Find {@link MimeType} from Content-Type.
    * 
    * @param ct {@link String}
@@ -148,6 +159,7 @@ public enum MimeType {
 
   /** Content Type. */
   private final String contentType;
+
   /** Extension. */
   private final String extension;
 
@@ -161,17 +173,6 @@ public enum MimeType {
 
     this.contentType = type;
     this.extension = ext;
-  }
-
-  /**
-   * Find {@link MimeType} by Path.
-   * 
-   * @param path {@link String}
-   * @return MimeType
-   */
-  public static MimeType findByPath(final String path) {
-    String ext = Strings.getExtension(path);
-    return MimeType.fromExtension(ext);
   }
 
   /**

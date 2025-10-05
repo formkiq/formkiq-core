@@ -73,47 +73,13 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     this.tableName = serviceCache.environment("DOCUMENTS_TABLE");
   }
 
-  @Override
-  public Collection<DocumentAttributeRecord> apply(final AddDocumentAttribute a) {
-    return buildAttributeRecords(a);
-  }
+  private void addClassification(final AddDocumentAttributeClassification a,
+      final Collection<DocumentAttributeRecord> c) {
+    String k = AttributeKeyReserved.CLASSIFICATION.getKey();
 
-  /**
-   * Build {@link Collection} {@link DocumentAttributeRecord} from {@link AddDocumentAttribute}.
-   *
-   * @param a {@link AddDocumentAttribute}
-   * @return {@link Collection} {@link DocumentAttributeRecord}
-   */
-  private Collection<DocumentAttributeRecord> buildAttributeRecords(final AddDocumentAttribute a)
-      throws ValidationException {
-    Collection<DocumentAttributeRecord> c = new ArrayList<>();
-
-    if (a != null) {
-      boolean used = false;
-
-      if (a instanceof AddDocumentAttributeEntity e) {
-        addEntity(e, c);
-      } else if (a instanceof AddDocumentAttributeRelationship e) {
-        addRelationship(e, c);
-      } else if (a instanceof AddDocumentAttributeClassification e) {
-        addClassification(e, c);
-      } else if (a instanceof AddDocumentAttributeStandard e) {
-
-        if (AttributeKeyReserved.CLASSIFICATION.getKey().equals(e.key())) {
-          if (!isEmpty(e.stringValue())) {
-            addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), e.stringValue(), null,
-                null);
-          }
-
-          notNull(e.stringValues()).forEach(
-              v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), v, null, null));
-        } else {
-          addDocumentAttributeStandard(e, c, used);
-        }
-      }
+    if (!isEmpty(a.classificationId())) {
+      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.classificationId(), null, null);
     }
-
-    return c;
   }
 
   private void addDocumentAttributeStandard(final AddDocumentAttributeStandard a,
@@ -149,15 +115,6 @@ public class AddDocumentAttributeToDocumentAttributeRecord
       addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
     }
 
-  }
-
-  private void addClassification(final AddDocumentAttributeClassification a,
-      final Collection<DocumentAttributeRecord> c) {
-    String k = AttributeKeyReserved.CLASSIFICATION.getKey();
-
-    if (!isEmpty(a.classificationId())) {
-      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.classificationId(), null, null);
-    }
   }
 
   private void addEntity(final AddDocumentAttributeEntity a,
@@ -207,5 +164,48 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     a.setUserId(username);
 
     list.add(a);
+  }
+
+  @Override
+  public Collection<DocumentAttributeRecord> apply(final AddDocumentAttribute a) {
+    return buildAttributeRecords(a);
+  }
+
+  /**
+   * Build {@link Collection} {@link DocumentAttributeRecord} from {@link AddDocumentAttribute}.
+   *
+   * @param a {@link AddDocumentAttribute}
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  private Collection<DocumentAttributeRecord> buildAttributeRecords(final AddDocumentAttribute a)
+      throws ValidationException {
+    Collection<DocumentAttributeRecord> c = new ArrayList<>();
+
+    if (a != null) {
+      boolean used = false;
+
+      if (a instanceof AddDocumentAttributeEntity e) {
+        addEntity(e, c);
+      } else if (a instanceof AddDocumentAttributeRelationship e) {
+        addRelationship(e, c);
+      } else if (a instanceof AddDocumentAttributeClassification e) {
+        addClassification(e, c);
+      } else if (a instanceof AddDocumentAttributeStandard e) {
+
+        if (AttributeKeyReserved.CLASSIFICATION.getKey().equals(e.key())) {
+          if (!isEmpty(e.stringValue())) {
+            addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), e.stringValue(), null,
+                null);
+          }
+
+          notNull(e.stringValues()).forEach(
+              v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), v, null, null));
+        } else {
+          addDocumentAttributeStandard(e, c, used);
+        }
+      }
+    }
+
+    return c;
   }
 }

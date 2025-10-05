@@ -224,6 +224,45 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
 
+  private static void addKeyValueOcrMock() {
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/ocr*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"ocrEngine": "TEXTRACT","ocrStatus": "SUCCESSFUL","keyValues":
+                [
+                    {
+                        "key": "Date",
+                        "values": ["07/21/2024"]
+                    },
+                    {
+                        "key": "Customer first name",
+                        "values": ["John"]
+                    },
+                    {
+                        "key": "City",
+                        "values": ["Los Angeles", "New York"]
+                    },
+                    {
+                        "key": "Anthem plan code (numbers found on ID card)",
+                        "values": ["987654321"]
+                    },
+                    {
+                        "key": "4. Customer certificate or ID no.",
+                        "values": ["28937423"]
+                    },
+                    {
+                        "key": "25. Total charges",
+                        "values": ["$150"]
+                    },
+                    {
+                        "key": "Age",
+                        "values": ["54"]
+                    }
+                ],
+                "contentType": "text/plain","userId": "joe"}"""));
+  }
+
   /**
    * After Class.
    *
@@ -276,6 +315,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
     sqsService = new SqsServiceImpl(sqsBuilder);
+  }
+
+  private static Map<String, String> buildEnvironment(final String module,
+      final String chatgptUrl) {
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", AWS_REGION.toString());
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
+    env.put("MODULE_" + module, "true");
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    return env;
   }
 
   /**
@@ -331,43 +386,30 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("GET")).respond(CALLBACK);
   }
 
-  private static void addKeyValueOcrMock() {
-    mockServer
-        .when(request().withMethod("GET")
-            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/ocr*"))
-        .respond(org.mockserver.model.HttpResponse.response("""
-            {"ocrEngine": "TEXTRACT","ocrStatus": "SUCCESSFUL","keyValues":
-                [
-                    {
-                        "key": "Date",
-                        "values": ["07/21/2024"]
-                    },
-                    {
-                        "key": "Customer first name",
-                        "values": ["John"]
-                    },
-                    {
-                        "key": "City",
-                        "values": ["Los Angeles", "New York"]
-                    },
-                    {
-                        "key": "Anthem plan code (numbers found on ID card)",
-                        "values": ["987654321"]
-                    },
-                    {
-                        "key": "4. Customer certificate or ID no.",
-                        "values": ["28937423"]
-                    },
-                    {
-                        "key": "25. Total charges",
-                        "values": ["$150"]
-                    },
-                    {
-                        "key": "Age",
-                        "values": ["54"]
-                    }
-                ],
-                "contentType": "text/plain","userId": "joe"}"""));
+  private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
+      final String documentId) {
+    return notNull(
+        documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults());
+  }
+
+  private static String getResizedImageKey(final String s3Key) {
+    // S3 bucket should contain 2 objects: original and resized
+    List<S3Object> s3Objects = s3Service.listObjects(BUCKET_NAME, null).contents();
+    assertEquals(2, s3Objects.size());
+
+    // find original image key, and make it the first element in the list
+    if (s3Objects.get(1).key().equals(s3Key)) {
+      s3Objects = List.of(s3Objects.get(1), s3Objects.get(0));
+    }
+
+    // verify original image key
+    assertEquals(s3Key, s3Objects.get(0).key());
+
+    return s3Objects.get(1).key();
+  }
+
+  private static String imageFormatToMimeType(final String format) {
+    return "image/" + ("tif".equals(format) ? "tiff" : format);
   }
 
   private static void initProcessor(final String module, final String chatgptUrl) {
@@ -387,20 +429,78 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static Map<String, String> buildEnvironment(final String module,
-      final String chatgptUrl) {
-    Map<String, String> env = new HashMap<>();
-    env.put("AWS_REGION", AWS_REGION.toString());
-    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
-    env.put("MODULE_" + module, "true");
-    env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
-    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
-    return env;
+  private static void verifyAction(final String siteId, final String documentId) {
+    Action action = actionsService.getActions(siteId, documentId).get(0);
+
+    assertEquals(ActionType.RESIZE, action.type());
+    assertEquals(ActionStatus.COMPLETE, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertNotNull(action.completedDate());
+  }
+
+  private static void verifyData(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String imageFormat) throws IOException {
+    assertEquals(imageFormatToMimeType(imageFormat),
+        s3Service.getObjectMetadata(BUCKET_NAME, imageKey, null).getContentType());
+
+    byte[] resizedImage = s3Service.getContentAsBytes(BUCKET_NAME, imageKey);
+    ByteArrayInputStream bais = new ByteArrayInputStream(resizedImage);
+    BufferedImage bufferedImage = ImageIO.read(bais);
+
+    assertEquals(expectedWidth, bufferedImage.getWidth());
+    assertEquals(expectedHeight, bufferedImage.getHeight());
+  }
+
+  private static void verifyMetadata(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String path) {
+    String[] splitted = imageKey.split("/");
+    DocumentItem item = documentService.findDocument(splitted[0], splitted[1]);
+
+    assertEquals(path, item.getPath());
+    assertEquals(Integer.toString(expectedWidth), item.getWidth());
+    assertEquals(Integer.toString(expectedHeight), item.getHeight());
+  }
+
+  private String addPdfToBucket(final String siteId) {
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, DOCUMENT_ID_OCR_KEY_VALUE);
+    s3Service.putObject(BUCKET_NAME, s3Key, "abc".getBytes(StandardCharsets.UTF_8),
+        "application/pdf");
+
+    return DocumentActionsProcessorTest.DOCUMENT_ID_OCR_KEY_VALUE;
+  }
+
+  private String addTextToBucket(final String siteId, final String text) {
+    String documentId = ID.uuid();
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    s3Service.putObject(BUCKET_NAME, s3Key, text.getBytes(StandardCharsets.UTF_8), "text/plain");
+
+    return documentId;
+  }
+
+  private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
+      final String stringValue, final String numberValue) {
+    assertEquals(key, record.getKey());
+    assertEquals(stringValue, record.getStringValue());
+    assertEquals(numberValue,
+        record.getNumberValue() != null ? record.getNumberValue().toString() : null);
+  }
+
+  private Map<String, Object> assertEventBridgeMessage(final Message message) {
+    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+    assertEquals("formkiq.test", data.get("source"));
+    assertEquals("Document Action Event", data.get("detail-type"));
+    assertTrue(data.get("time").toString().endsWith("Z"));
+
+    data = (Map<String, Object>) data.get("detail");
+    Map<String, Object> document = (Map<String, Object>) data.get("document");
+    assertNotNull(document.get("documentId"));
+    assertNotNull(document.get("url"));
+    assertNotNull(document.get("path"));
+
+    return document;
   }
 
   /**
@@ -414,6 +514,114 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     initProcessor("opensearch", "chatgpt1");
     s3Service.deleteAllFiles(BUCKET_NAME);
+  }
+
+  private String createDocument2(final String siteId, final String contentType) {
+    String documentId = ID.uuid();
+    return createDocument2(siteId, documentId, contentType);
+  }
+
+  private String createDocument2(final String siteId, final String documentId,
+      final String contentType) {
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType(contentType);
+    documentService.saveDocument(siteId, item, null);
+    return documentId;
+  }
+
+  private String createEventBus(final String sqsQueueArn) {
+
+    String eventBusName = "test_" + UUID.randomUUID();
+    eventBridgeService.createEventBridge(eventBusName);
+
+    String eventPattern = "{\"source\":[\"formkiq.test\"]}";
+    eventBridgeService.createRule(eventBusName, "sqs", null, eventPattern, "test", sqsQueueArn);
+    return eventBusName;
+  }
+
+  private Mapping createMapping(final String attributeKey, final String labelText,
+      final MappingAttributeLabelMatchingType matchingType,
+      final MappingAttributeSourceType sourceType, final String value, final List<String> values,
+      final MappingAttributeMetadataField metadataField) {
+
+    List<String> labelTexts = labelText != null ? List.of(labelText) : null;
+
+    MappingAttribute a0 = new MappingAttribute().setAttributeKey(attributeKey)
+        .setSourceType(sourceType).setLabelMatchingType(matchingType).setLabelTexts(labelTexts)
+        .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
+
+    return new Mapping().setName("test").setAttributes(Collections.singletonList(a0));
+  }
+
+  private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {
+    ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
+
+    assertEquals(1, response.messages().size());
+    return response.messages().get(0);
+  }
+
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsQueueUrl);
+    }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
+    return response;
+  }
+
+  private void processIdpRequest(final String siteId, final String documentId,
+      final String contentType, final MappingRecord mappingRecord) throws ValidationException {
+    createDocument2(siteId, documentId, contentType);
+
+    List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")
+        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+    // when
+    processor.handleRequest(map, null);
+  }
+
+  // Helper method to create and process a resize action.
+  private void processResizeAction(final String siteId, final String documentId,
+      final Map<String, Object> parameters) {
+    List<Action> actions = Collections
+        .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+    processor.handleRequest(map, null);
+  }
+
+  private void removeAllS3Objects() {
+    s3Service.deleteAllFiles(BUCKET_NAME);
+  }
+
+  // Helper method to set up an image document for testing.
+  private String setupImageDocument(final String siteId, final String imageFormat)
+      throws IOException, ValidationException {
+    String contentType = imageFormatToMimeType(imageFormat);
+    String documentId = ID.uuid();
+
+    // Save test image to S3 bucket
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    try (InputStream is = new FileInputStream("src/test/resources/resize/input." + imageFormat)) {
+      byte[] imageBytes = IoUtils.toByteArray(is);
+      s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
+    }
+
+    // Save document metadata to DynamoDB
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType(contentType);
+    item.setPath("test." + imageFormat);
+    documentService.saveDocument(siteId, item, null);
+
+    return documentId;
   }
 
   /**
@@ -442,6 +650,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
     }
   }
+
 
   /**
    * Handle documentTagging ChatApt Action.
@@ -891,6 +1100,57 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Export Bridge Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testEventBridge01() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
+    String eventBusName = createEventBus(sqsQueueArn);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "category",
+          AttributeDataType.STRING, AttributeType.STANDARD);
+
+      String documentId = ID.uuid();
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+
+      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
+          .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
+
+      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
+          .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
+
+      List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
+      documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+
+      List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
+          .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.EVENTBRIDGE, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+
+      Map<String, Object> document = assertEventBridgeMessage(message);
+
+      validateAttributes(document);
+    }
+  }
+
+  /**
    * Test converting Ocr Parse Types.
    */
   @Test
@@ -936,44 +1196,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
       assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
       assertEquals("CSV", resultmap.get("ocrOutputType").toString());
-
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionStatus.RUNNING, action.status());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNull(action.completedDate());
-    }
-  }
-
-  /**
-   * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
-   *
-   */
-  @Test
-  public void testHandleOcr01() {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      List<Map<String, Object>> queries =
-          List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
-      String documentId = ID.uuid();
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.OCR).userId("joe").parameters(
-              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
-      actionsService.saveNewActions(siteId, documentId, actions);
-
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-      // when
-      processor.handleRequest(map, null);
-
-      // then
-      HttpRequest lastRequest = CALLBACK.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
-      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertEquals("FORMS, TABLES, QUERIES",
-          String.join(", ", ((List<String>) resultmap.get("parseTypes"))));
-      assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
-          resultmap.get("textractQueries").toString());
 
       Action action = actionsService.getActions(siteId, documentId).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());
@@ -1311,6 +1533,102 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Antivirus Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleAntiVirus() throws ValidationException {
+    for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        // given
+        String documentId = createDocument2(siteId, "application/pdf");
+
+        List<Action> actions = List.of(new Action().type(type).userId("joe"));
+        actionsService.saveNewActions(siteId, documentId, actions);
+
+        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        List<Action> list = actionsService.getActions(siteId, documentId);
+        assertEquals(1, list.size());
+        assertEquals(type, list.get(0).type());
+        assertEquals(ActionStatus.RUNNING, list.get(0).status());
+      }
+    }
+  }
+
+  /**
+   * Handle Data Classification Action.
+   *
+   */
+  @Test
+  public void testHandleDataClassification01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createDocument2(siteId, "text/plain");
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
+      assertEquals("PUT", lastRequest.getMethod().getValue());
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
+
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Data_classification that needs OCR Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleDataClassification02() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, documentId);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.get(0).type());
+      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
+      assertEquals(ActionStatus.PENDING, list.get(0).status());
+      assertEquals(ActionType.DATA_CLASSIFICATION, list.get(1).type());
+      assertEquals(ActionStatus.PENDING, list.get(1).status());
+    }
+  }
+
+  /**
    * Handle Fulltext that needs OCR Action.
    *
    * @throws ValidationException ValidationException
@@ -1375,7 +1693,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-
   /**
    * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
    *
@@ -1410,33 +1727,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Invalid Request.
+   * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
    *
    */
   @Test
-  public void testInvalidRequest() {
-    // given
-    AwsEvent map = new AwsEvent(null);
-
-    // when
-    processor.handleRequest(map, null);
-
-    // then
-  }
-
-  /**
-   * Handle Queue Action.
-   *
-   */
-  @Test
-  public void testQueueAction01() {
+  public void testHandleOcr01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
+      List<Map<String, Object>> queries =
+          List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
       String documentId = ID.uuid();
-      String name = "testqueue#" + documentId;
-
-      List<Action> actions = Collections
-          .singletonList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.OCR).userId("joe").parameters(
+              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1445,27 +1748,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      assertEquals(ActionStatus.IN_QUEUE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("FORMS, TABLES, QUERIES",
+          String.join(", ", ((List<String>) resultmap.get("parseTypes"))));
+      assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
+          resultmap.get("textractQueries").toString());
+
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
     }
-  }
-
-  private String addTextToBucket(final String siteId, final String text) {
-    String documentId = ID.uuid();
-
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    s3Service.putObject(BUCKET_NAME, s3Key, text.getBytes(StandardCharsets.UTF_8), "text/plain");
-
-    return documentId;
-  }
-
-  private String addPdfToBucket(final String siteId) {
-
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, DOCUMENT_ID_OCR_KEY_VALUE);
-    s3Service.putObject(BUCKET_NAME, s3Key, "abc".getBytes(StandardCharsets.UTF_8),
-        "application/pdf");
-
-    return DocumentActionsProcessorTest.DOCUMENT_ID_OCR_KEY_VALUE;
   }
 
   /**
@@ -2111,18 +2407,40 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-  private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
-      final String documentId) {
-    return notNull(
-        documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults());
-  }
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassification() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
 
-  private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
-      final String stringValue, final String numberValue) {
-    assertEquals(key, record.getKey());
-    assertEquals(stringValue, record.getStringValue());
-    assertEquals(numberValue,
-        record.getNumberValue() != null ? record.getNumberValue().toString() : null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
+    }
   }
 
   /**
@@ -2161,42 +2479,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Idp with Mapping Action DATA_CLASSIFICATION.
-   *
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testIdpSourceDataClassification() throws ValidationException {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-
-      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
-          AttributeDataType.STRING, null);
-
-      Mapping mapping = createMapping("certificate_number", null, null,
-          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
-
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
-
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
-
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertNull(action.message());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
-
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
-      assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
-    }
-  }
-
-  /**
    * Handle Idp with Mapping Action DATA_CLASSIFICATION with missing attribute value.
    *
    * @throws ValidationException ValidationException
@@ -2231,81 +2513,25 @@ public class DocumentActionsProcessorTest implements DbKeys {
     }
   }
 
-  private void processIdpRequest(final String siteId, final String documentId,
-      final String contentType, final MappingRecord mappingRecord) throws ValidationException {
-    createDocument2(siteId, documentId, contentType);
-
-    List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")
-        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
-    actionsService.saveNewActions(siteId, documentId, actions);
-
-    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-    // when
-    processor.handleRequest(map, null);
-  }
-
-  private Mapping createMapping(final String attributeKey, final String labelText,
-      final MappingAttributeLabelMatchingType matchingType,
-      final MappingAttributeSourceType sourceType, final String value, final List<String> values,
-      final MappingAttributeMetadataField metadataField) {
-
-    List<String> labelTexts = labelText != null ? List.of(labelText) : null;
-
-    MappingAttribute a0 = new MappingAttribute().setAttributeKey(attributeKey)
-        .setSourceType(sourceType).setLabelMatchingType(matchingType).setLabelTexts(labelTexts)
-        .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
-
-    return new Mapping().setName("test").setAttributes(Collections.singletonList(a0));
-  }
-
   /**
-   * Handle Publish Action.
+   * Handle Invalid Request.
    *
    */
   @Test
-  public void testPublishAction01() {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = createDocument2(siteId, "text/plain");
+  public void testInvalidRequest() {
+    // given
+    AwsEvent map = new AwsEvent(null);
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      String content = "this is some data";
-      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
-          "text/plain");
+    // when
+    processor.handleRequest(map, null);
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.PUBLISH).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+    // then
+  }
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-      // when
-      processor.handleRequest(map, null);
-
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionType.PUBLISH, action.type());
-      assertEquals(ActionStatus.COMPLETE, action.status());
-
-      DocumentPublicationRecord pv = documentService.findPublishDocument(siteId, documentId);
-      assertEquals(documentId, pv.getDocumentId());
-      assertEquals("text/plain", pv.getContentType());
-      assertEquals(documentId, pv.getPath());
-      assertEquals("joe", pv.getUserId());
-      assertNotNull(pv.getS3version());
-
-      AttributeRecord attribute =
-          attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
-      assertNotNull(attribute);
-
-      SearchAttributeCriteria attr =
-          new SearchAttributeCriteria().key(AttributeKeyReserved.PUBLICATION.getKey());
-      SearchQuery req = new SearchQuery().attribute(attr);
-      List<DynamicDocumentItem> docs =
-          notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
-      assertEquals(1, docs.size());
-    }
+  @Test
+  public void testPath() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
+    testResizeTemplate(parameters, 300, 200, "png");
   }
 
   /**
@@ -2412,36 +2638,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Export Bridge Action.
+   * Handle Publish Action.
    *
-   * @throws Exception Exception
    */
   @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testEventBridge01() throws Exception {
-    // given
-    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
-    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
-    String eventBusName = createEventBus(sqsQueueArn);
-
+  public void testPublishAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "category",
-          AttributeDataType.STRING, AttributeType.STANDARD);
+      // given
+      String documentId = createDocument2(siteId, "text/plain");
 
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
 
-      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
-          .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
-
-      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
-          .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
-
-      List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
-      documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
-
-      List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
-          .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
+      List<Action> actions =
+          Collections.singletonList(new Action().type(ActionType.PUBLISH).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2451,49 +2663,53 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       // then
       Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionType.EVENTBRIDGE, action.type());
+      assertEquals(ActionType.PUBLISH, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      Message message = getMessage(sqsDocumentQueueUrl);
+      DocumentPublicationRecord pv = documentService.findPublishDocument(siteId, documentId);
+      assertEquals(documentId, pv.getDocumentId());
+      assertEquals("text/plain", pv.getContentType());
+      assertEquals(documentId, pv.getPath());
+      assertEquals("joe", pv.getUserId());
+      assertNotNull(pv.getS3version());
 
-      Map<String, Object> document = assertEventBridgeMessage(message);
+      AttributeRecord attribute =
+          attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
+      assertNotNull(attribute);
 
-      validateAttributes(document);
+      SearchAttributeCriteria attr =
+          new SearchAttributeCriteria().key(AttributeKeyReserved.PUBLICATION.getKey());
+      SearchQuery req = new SearchQuery().attribute(attr);
+      List<DynamicDocumentItem> docs =
+          notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
+      assertEquals(1, docs.size());
     }
   }
 
-  private String createEventBus(final String sqsQueueArn) {
-
-    String eventBusName = "test_" + UUID.randomUUID();
-    eventBridgeService.createEventBridge(eventBusName);
-
-    String eventPattern = "{\"source\":[\"formkiq.test\"]}";
-    eventBridgeService.createRule(eventBusName, "sqs", null, eventPattern, "test", sqsQueueArn);
-    return eventBusName;
-  }
-
+  /**
+   * Handle Queue Action.
+   *
+   */
   @Test
-  public void testPath() throws IOException, ValidationException {
-    Map<String, Object> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
-    testResizeTemplate(parameters, 300, 200, "png");
-  }
+  public void testQueueAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      String name = "testqueue#" + documentId;
 
-  @Test
-  public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
-    Map<String, Object> parameters = Map.of("width", "300", "height", "200");
-    testResizeTemplate(parameters, 300, 200, "png");
-  }
+      List<Action> actions = Collections
+          .singletonList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
+      actionsService.saveNewActions(siteId, documentId, actions);
 
-  @Test
-  public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
-    Map<String, Object> parameters = Map.of("width", "100", "height", "auto");
-    testResizeTemplate(parameters, 100, 75, "png");
-  }
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
-  @Test
-  public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
-    Map<String, Object> parameters = Map.of("width", "auto", "height", "100");
-    testResizeTemplate(parameters, 133, 100, "png");
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      assertEquals(ActionStatus.IN_QUEUE,
+          actionsService.getActions(siteId, documentId).get(0).status());
+    }
   }
 
   @Test
@@ -2516,20 +2732,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
     testResizeToAllFormatsTemplate("png", VALID_IMAGE_FORMATS);
   }
 
-  @Test
-  public void testResizeTifToAllFormats() throws IOException, ValidationException {
-    testResizeToAllFormatsTemplate("tif", List.of("gif", "png", "tif"));
-  }
-
-  private void testResizeToAllFormatsTemplate(final String srcImageFormat,
-      final List<String> resImageFormats) throws IOException, ValidationException {
-    for (String resImageFormat : resImageFormats) {
-      Map<String, Object> parameters =
-          Map.of("width", "300", "height", "200", "outputType", resImageFormat);
-      testResizeTemplate(parameters, 300, 200, srcImageFormat);
-    }
-  }
-
   public void testResizeTemplate(final Map<String, Object> parameters, final int expectedWidth,
       final int expectedHeight, final String srcImageFormat)
       throws IOException, ValidationException {
@@ -2547,42 +2749,58 @@ public class DocumentActionsProcessorTest implements DbKeys {
     removeAllS3Objects();
   }
 
-  // Helper method to set up an image document for testing.
-  private String setupImageDocument(final String siteId, final String imageFormat)
-      throws IOException, ValidationException {
-    String contentType = imageFormatToMimeType(imageFormat);
-    String documentId = ID.uuid();
+  @Test
+  public void testResizeTifToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("tif", List.of("gif", "png", "tif"));
+  }
 
-    // Save test image to S3 bucket
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    try (InputStream is = new FileInputStream("src/test/resources/resize/input." + imageFormat)) {
-      byte[] imageBytes = IoUtils.toByteArray(is);
-      s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
+  private void testResizeToAllFormatsTemplate(final String srcImageFormat,
+      final List<String> resImageFormats) throws IOException, ValidationException {
+    for (String resImageFormat : resImageFormats) {
+      Map<String, Object> parameters =
+          Map.of("width", "300", "height", "200", "outputType", resImageFormat);
+      testResizeTemplate(parameters, 300, 200, srcImageFormat);
     }
-
-    // Save document metadata to DynamoDB
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    item.setContentType(contentType);
-    item.setPath("test." + imageFormat);
-    documentService.saveDocument(siteId, item, null);
-
-    return documentId;
   }
 
-  private static String imageFormatToMimeType(final String format) {
-    return "image/" + ("tif".equals(format) ? "tiff" : format);
+  @Test
+  public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "auto", "height", "100");
+    testResizeTemplate(parameters, 133, 100, "png");
   }
 
-  // Helper method to create and process a resize action.
-  private void processResizeAction(final String siteId, final String documentId,
-      final Map<String, Object> parameters) {
-    List<Action> actions = Collections
-        .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
-    actionsService.saveNewActions(siteId, documentId, actions);
+  @Test
+  public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "100", "height", "auto");
+    testResizeTemplate(parameters, 100, 75, "png");
+  }
 
-    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+  @Test
+  public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200");
+    testResizeTemplate(parameters, 300, 200, "png");
+  }
 
-    processor.handleRequest(map, null);
+  private void validateAttributes(final Map<String, Object> document) {
+    Collection<Map<String, Object>> attrList =
+        (Collection<Map<String, Object>>) document.get("attributes");
+    assertEquals(1, attrList.size());
+
+    Map<String, Object> attrMap = attrList.iterator().next();
+    final int expected = 3;
+    assertEquals(expected, attrMap.size());
+    assertEquals("category", attrMap.get("key"));
+    assertEquals("STRING", attrMap.get("valueType"));
+    assertEquals("[other, person]", attrMap.get("stringValues").toString());
+  }
+
+  private void verifyDocumentAttributes(final String siteId, final String documentId) {
+    List<DocumentAttributeRecord> attributes =
+        documentService.findDocumentAttributes(siteId, documentId, null, 2).getResults();
+    assertEquals(1, attributes.size());
+    DocumentAttributeRecord attribute = attributes.get(0);
+    assertEquals("Relationships", attribute.getKey());
+    assertTrue(attribute.getStringValue().startsWith("RENDITION#"));
   }
 
   // Helper method to verify successful resize operation.
@@ -2599,223 +2817,5 @@ public class DocumentActionsProcessorTest implements DbKeys {
     String path = (String) parameters.getOrDefault("path",
         "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
     verifyMetadata(expectedWidth, expectedHeight, imageKey, path);
-  }
-
-  private void verifyDocumentAttributes(final String siteId, final String documentId) {
-    List<DocumentAttributeRecord> attributes =
-        documentService.findDocumentAttributes(siteId, documentId, null, 2).getResults();
-    assertEquals(1, attributes.size());
-    DocumentAttributeRecord attribute = attributes.get(0);
-    assertEquals("Relationships", attribute.getKey());
-    assertTrue(attribute.getStringValue().startsWith("RENDITION#"));
-  }
-
-  private static String getResizedImageKey(final String s3Key) {
-    // S3 bucket should contain 2 objects: original and resized
-    List<S3Object> s3Objects = s3Service.listObjects(BUCKET_NAME, null).contents();
-    assertEquals(2, s3Objects.size());
-
-    // find original image key, and make it the first element in the list
-    if (s3Objects.get(1).key().equals(s3Key)) {
-      s3Objects = List.of(s3Objects.get(1), s3Objects.get(0));
-    }
-
-    // verify original image key
-    assertEquals(s3Key, s3Objects.get(0).key());
-
-    return s3Objects.get(1).key();
-  }
-
-  private static void verifyAction(final String siteId, final String documentId) {
-    Action action = actionsService.getActions(siteId, documentId).get(0);
-
-    assertEquals(ActionType.RESIZE, action.type());
-    assertEquals(ActionStatus.COMPLETE, action.status());
-    assertNotNull(action.startDate());
-    assertNotNull(action.insertedDate());
-    assertNotNull(action.completedDate());
-  }
-
-  private static void verifyData(final int expectedWidth, final int expectedHeight,
-      final String imageKey, final String imageFormat) throws IOException {
-    assertEquals(imageFormatToMimeType(imageFormat),
-        s3Service.getObjectMetadata(BUCKET_NAME, imageKey, null).getContentType());
-
-    byte[] resizedImage = s3Service.getContentAsBytes(BUCKET_NAME, imageKey);
-    ByteArrayInputStream bais = new ByteArrayInputStream(resizedImage);
-    BufferedImage bufferedImage = ImageIO.read(bais);
-
-    assertEquals(expectedWidth, bufferedImage.getWidth());
-    assertEquals(expectedHeight, bufferedImage.getHeight());
-  }
-
-  private static void verifyMetadata(final int expectedWidth, final int expectedHeight,
-      final String imageKey, final String path) {
-    String[] splitted = imageKey.split("/");
-    DocumentItem item = documentService.findDocument(splitted[0], splitted[1]);
-
-    assertEquals(path, item.getPath());
-    assertEquals(Integer.toString(expectedWidth), item.getWidth());
-    assertEquals(Integer.toString(expectedHeight), item.getHeight());
-  }
-
-  private void removeAllS3Objects() {
-    s3Service.deleteAllFiles(BUCKET_NAME);
-  }
-
-  private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {
-    ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
-
-    assertEquals(1, response.messages().size());
-    return response.messages().get(0);
-  }
-
-  private Map<String, Object> assertEventBridgeMessage(final Message message) {
-    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
-    assertEquals("formkiq.test", data.get("source"));
-    assertEquals("Document Action Event", data.get("detail-type"));
-    assertTrue(data.get("time").toString().endsWith("Z"));
-
-    data = (Map<String, Object>) data.get("detail");
-    Map<String, Object> document = (Map<String, Object>) data.get("document");
-    assertNotNull(document.get("documentId"));
-    assertNotNull(document.get("url"));
-    assertNotNull(document.get("path"));
-
-    return document;
-  }
-
-  private void validateAttributes(final Map<String, Object> document) {
-    Collection<Map<String, Object>> attrList =
-        (Collection<Map<String, Object>>) document.get("attributes");
-    assertEquals(1, attrList.size());
-
-    Map<String, Object> attrMap = attrList.iterator().next();
-    final int expected = 3;
-    assertEquals(expected, attrMap.size());
-    assertEquals("category", attrMap.get("key"));
-    assertEquals("STRING", attrMap.get("valueType"));
-    assertEquals("[other, person]", attrMap.get("stringValues").toString());
-  }
-
-  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
-      throws InterruptedException {
-    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
-    while (response.messages().isEmpty()) {
-      TimeUnit.SECONDS.sleep(1);
-      response = sqsService.receiveMessages(sqsQueueUrl);
-    }
-
-    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
-    return response;
-  }
-
-  /**
-   * Handle Data Classification Action.
-   *
-   */
-  @Test
-  public void testHandleDataClassification01() {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = createDocument2(siteId, "text/plain");
-
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-      actionsService.saveNewActions(siteId, documentId, actions);
-
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-      // when
-      processor.handleRequest(map, null);
-
-      // then
-      HttpRequest lastRequest = CALLBACK.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
-      assertEquals("PUT", lastRequest.getMethod().getValue());
-      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
-
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
-    }
-  }
-
-  /**
-   * Handle Data_classification that needs OCR Action.
-   *
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testHandleDataClassification02() throws ValidationException {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = createDocument2(siteId, "application/pdf");
-
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-      actionsService.saveNewActions(siteId, documentId, actions);
-
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-      // when
-      processor.handleRequest(map, null);
-
-      // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
-      assertEquals(2, list.size());
-      assertEquals(ActionType.OCR, list.get(0).type());
-      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
-      assertEquals(ActionStatus.PENDING, list.get(0).status());
-      assertEquals(ActionType.DATA_CLASSIFICATION, list.get(1).type());
-      assertEquals(ActionStatus.PENDING, list.get(1).status());
-    }
-  }
-
-  /**
-   * Handle Antivirus Action.
-   *
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testHandleAntiVirus() throws ValidationException {
-    for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
-      for (String siteId : Arrays.asList(null, ID.uuid())) {
-        // given
-        String documentId = createDocument2(siteId, "application/pdf");
-
-        List<Action> actions = List.of(new Action().type(type).userId("joe"));
-        actionsService.saveNewActions(siteId, documentId, actions);
-
-        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
-
-        // when
-        processor.handleRequest(map, null);
-
-        // then
-        List<Action> list = actionsService.getActions(siteId, documentId);
-        assertEquals(1, list.size());
-        assertEquals(type, list.get(0).type());
-        assertEquals(ActionStatus.RUNNING, list.get(0).status());
-      }
-    }
-  }
-
-  private String createDocument2(final String siteId, final String documentId,
-      final String contentType) {
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    item.setContentType(contentType);
-    documentService.saveDocument(siteId, item, null);
-    return documentId;
-  }
-
-  private String createDocument2(final String siteId, final String contentType) {
-    String documentId = ID.uuid();
-    return createDocument2(siteId, documentId, contentType);
   }
 }

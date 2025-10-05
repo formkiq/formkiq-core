@@ -43,6 +43,25 @@ public class FolderRolePermissionAttributeBuilder implements CustomDynamoDbAttri
   private static final String ATTRIBUTE_KEY_PREFIX = "role#";
 
   @Override
+  public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
+
+    List<FolderRolePermission> list = null;
+    List<String> keys =
+        attrs.keySet().stream().filter(k -> k.startsWith(ATTRIBUTE_KEY_PREFIX)).toList();
+
+    if (!keys.isEmpty()) {
+      list = keys.stream().map(k -> {
+        String roleName = k.substring(ATTRIBUTE_KEY_PREFIX.length());
+        List<ApiPermission> permissions =
+            attrs.get(k).l().stream().map(a -> ApiPermission.valueOf(a.s())).toList();
+        return new FolderRolePermission(roleName, permissions);
+      }).toList();
+    }
+
+    return (T) list;
+  }
+
+  @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
     boolean encodedValue = false;
@@ -63,24 +82,5 @@ public class FolderRolePermissionAttributeBuilder implements CustomDynamoDbAttri
       throw new IllegalArgumentException("Folder Permissions are missing");
     }
     return builder.build();
-  }
-
-  @Override
-  public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
-
-    List<FolderRolePermission> list = null;
-    List<String> keys =
-        attrs.keySet().stream().filter(k -> k.startsWith(ATTRIBUTE_KEY_PREFIX)).toList();
-
-    if (!keys.isEmpty()) {
-      list = keys.stream().map(k -> {
-        String roleName = k.substring(ATTRIBUTE_KEY_PREFIX.length());
-        List<ApiPermission> permissions =
-            attrs.get(k).l().stream().map(a -> ApiPermission.valueOf(a.s())).toList();
-        return new FolderRolePermission(roleName, permissions);
-      }).toList();
-    }
-
-    return (T) list;
   }
 }

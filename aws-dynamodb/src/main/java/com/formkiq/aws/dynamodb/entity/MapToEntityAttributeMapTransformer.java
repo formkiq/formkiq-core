@@ -62,22 +62,6 @@ public class MapToEntityAttributeMapTransformer
     return list;
   }
 
-  private String findObjectValueType(final Object value) {
-    String objectKey = "KEY_ONLY";
-
-    if (value instanceof Collection<?> c && !c.isEmpty()) {
-      objectKey = findObjectValueType(c.iterator().next());
-    } else if (value instanceof Double) {
-      objectKey = "NUMBER";
-    } else if (value instanceof Boolean) {
-      objectKey = "BOOLEAN";
-    } else if (value instanceof String) {
-      objectKey = "STRING";
-    }
-
-    return objectKey;
-  }
-
   private String findObjectKey(final Object value) {
     String objectKey = null;
 
@@ -89,6 +73,22 @@ public class MapToEntityAttributeMapTransformer
       objectKey = "booleanValue";
     } else if (value instanceof String) {
       objectKey = "stringValue";
+    }
+
+    return objectKey;
+  }
+
+  private String findObjectValueType(final Object value) {
+    String objectKey = "KEY_ONLY";
+
+    if (value instanceof Collection<?> c && !c.isEmpty()) {
+      objectKey = findObjectValueType(c.iterator().next());
+    } else if (value instanceof Double) {
+      objectKey = "NUMBER";
+    } else if (value instanceof Boolean) {
+      objectKey = "BOOLEAN";
+    } else if (value instanceof String) {
+      objectKey = "STRING";
     }
 
     return objectKey;

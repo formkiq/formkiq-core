@@ -39,16 +39,19 @@ public class LoggerRecorder implements Logger {
    */
   public LoggerRecorder() {}
 
-  public void log(final LogLevel level, final String message) {
-    if (isLogged(level)) {
-      messages.add(message);
-      System.out.print(message);
-    }
+  /**
+   * Contains {@link String}.
+   * 
+   * @param s {@link String}
+   * @return boolean
+   */
+  public boolean containsString(final String s) {
+    return this.messages.stream().anyMatch(m -> m.contains(s));
   }
 
   @Override
-  public void log(final LogLevel level, final Throwable ex) {
-    log(level, ex.getMessage());
+  public LogLevel getCurrentLogLevel() {
+    return LogLevel.TRACE;
   }
 
   /**
@@ -60,18 +63,15 @@ public class LoggerRecorder implements Logger {
     return this.messages;
   }
 
-  @Override
-  public LogLevel getCurrentLogLevel() {
-    return LogLevel.TRACE;
+  public void log(final LogLevel level, final String message) {
+    if (isLogged(level)) {
+      messages.add(message);
+      System.out.print(message);
+    }
   }
 
-  /**
-   * Contains {@link String}.
-   * 
-   * @param s {@link String}
-   * @return boolean
-   */
-  public boolean containsString(final String s) {
-    return this.messages.stream().anyMatch(m -> m.contains(s));
+  @Override
+  public void log(final LogLevel level, final Throwable ex) {
+    log(level, ex.getMessage());
   }
 }

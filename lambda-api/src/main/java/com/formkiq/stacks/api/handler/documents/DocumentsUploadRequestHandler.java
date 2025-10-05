@@ -86,6 +86,114 @@ public class DocumentsUploadRequestHandler
    */
   public DocumentsUploadRequestHandler() {}
 
+  /**
+   * Build Presigned Url Response.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param authorization {@link ApiAuthorization}
+   * @param awsservice {@link AwsServiceCache}
+   * @param siteId {@link String}
+   * @param request {@link AddDocumentRequest}
+   * @param tags {@link List} {@link DocumentTag}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
+   * @return {@link ApiRequestHandlerResponse}
+   * @throws BadException BadException
+   * @throws ValidationException ValidationException
+   */
+  private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
+      final AddDocumentRequest request, final List<DocumentTag> tags,
+      final Collection<DocumentAttributeRecord> documentAttributes)
+      throws BadException, ValidationException {
+
+    String documentId = request.getDocumentId();
+
+    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
+            caculateDuration(event.getQueryStringParameters()),
+            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
+
+    DocumentItem item =
+        new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
+            .apply(request);
+
+    AttributeValidationAccess validationAccess =
+        getAttributeValidationAccess(authorization, siteId);
+    SaveDocumentOptions options =
+        new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    service.saveDocument(siteId, item, tags, documentAttributes, options);
+
+    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
+    List<Action> actions = notNull(request.getActions());
+    actions.forEach(a -> a.userId(authorization.getUsername()));
+    actionsService.saveNewActions(siteId, documentId, actions);
+
+    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+      ActionsNotificationService notificationService =
+          awsservice.getExtension(ActionsNotificationService.class);
+      notificationService.publishNextActionEvent(siteId, documentId);
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
+  }
+
+  /**
+   * Calculate Duration.
+   *
+   * @param query {@link Map}
+   * @return {@link Duration}
+   */
+  private Duration caculateDuration(final Map<String, String> query) {
+
+    Integer durationHours =
+        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
+            : Integer.valueOf(DEFAULT_DURATION_HOURS);
+
+    return Duration.ofHours(durationHours);
+  }
+
+  /**
+   * Calculate Content Length.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param query {@link Map}
+   * @param siteId {@link String}
+   * @return {@link Optional} {@link Long}
+   * @throws BadException BadException
+   */
+  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
+      final Map<String, String> query, final String siteId) throws BadException {
+
+    ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration siteConfiguration = configService.get(siteId);
+
+    Long contentLength = query != null && query.containsKey("contentLength")
+        ? Long.valueOf(query.get("contentLength"))
+        : null;
+
+    if (!Strings.isEmpty(siteConfiguration.getMaxContentLengthBytes())) {
+
+      if (contentLength == null) {
+        throw new BadException(
+            "'contentLength' is required when MaxContentLengthBytes is configured");
+      } else {
+        DocumentItem item = new DocumentItemDynamoDb();
+        item.setContentLength(contentLength);
+
+        if (this.restrictionMaxContentLength.isViolated(awsservice, siteConfiguration, siteId,
+            item)) {
+          throw new BadException("'contentLength' cannot exceed "
+              + siteConfiguration.getMaxContentLengthBytes() + " bytes");
+        }
+      }
+    }
+
+    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
+  }
+
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -113,6 +221,12 @@ public class DocumentsUploadRequestHandler
     }
 
     return response;
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId) {
+    boolean isAdmin = authorization.isAdminOrGovern(siteId);
+    return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
   }
 
   @Override
@@ -235,6 +349,14 @@ public class DocumentsUploadRequestHandler
     }
   }
 
+  private void validateMaxDocuments(final AwsServiceCache awsservice,
+      final SiteConfiguration config, final String siteId) throws BadException {
+
+    if (this.restrictionMaxDocuments.isViolated(awsservice, config, siteId, null)) {
+      throw new BadException("Max Number of Documents reached");
+    }
+  }
+
   private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
       final String siteId, final AddDocumentRequest item) throws BadException, ValidationException {
 
@@ -245,127 +367,5 @@ public class DocumentsUploadRequestHandler
     }
 
     validateMaxDocuments(awsservice, config, siteId);
-  }
-
-  private void validateMaxDocuments(final AwsServiceCache awsservice,
-      final SiteConfiguration config, final String siteId) throws BadException {
-
-    if (this.restrictionMaxDocuments.isViolated(awsservice, config, siteId, null)) {
-      throw new BadException("Max Number of Documents reached");
-    }
-  }
-
-  /**
-   * Build Presigned Url Response.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @param awsservice {@link AwsServiceCache}
-   * @param siteId {@link String}
-   * @param request {@link AddDocumentRequest}
-   * @param tags {@link List} {@link DocumentTag}
-   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @return {@link ApiRequestHandlerResponse}
-   * @throws BadException BadException
-   * @throws ValidationException ValidationException
-   */
-  private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request, final List<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> documentAttributes)
-      throws BadException, ValidationException {
-
-    String documentId = request.getDocumentId();
-
-    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
-            caculateDuration(event.getQueryStringParameters()),
-            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
-
-    DocumentItem item =
-        new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
-            .apply(request);
-
-    AttributeValidationAccess validationAccess =
-        getAttributeValidationAccess(authorization, siteId);
-    SaveDocumentOptions options =
-        new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
-
-    DocumentService service = awsservice.getExtension(DocumentService.class);
-    service.saveDocument(siteId, item, tags, documentAttributes, options);
-
-    ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = notNull(request.getActions());
-    actions.forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, actions);
-
-    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
-      ActionsNotificationService notificationService =
-          awsservice.getExtension(ActionsNotificationService.class);
-      notificationService.publishNextActionEvent(siteId, documentId);
-    }
-
-    return ApiRequestHandlerResponse.builder().ok().body(map).build();
-  }
-
-  /**
-   * Calculate Duration.
-   *
-   * @param query {@link Map}
-   * @return {@link Duration}
-   */
-  private Duration caculateDuration(final Map<String, String> query) {
-
-    Integer durationHours =
-        query != null && query.containsKey("duration") ? Integer.valueOf(query.get("duration"))
-            : Integer.valueOf(DEFAULT_DURATION_HOURS);
-
-    return Duration.ofHours(durationHours);
-  }
-
-  /**
-   * Calculate Content Length.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param query {@link Map}
-   * @param siteId {@link String}
-   * @return {@link Optional} {@link Long}
-   * @throws BadException BadException
-   */
-  private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
-      final Map<String, String> query, final String siteId) throws BadException {
-
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-    SiteConfiguration siteConfiguration = configService.get(siteId);
-
-    Long contentLength = query != null && query.containsKey("contentLength")
-        ? Long.valueOf(query.get("contentLength"))
-        : null;
-
-    if (!Strings.isEmpty(siteConfiguration.getMaxContentLengthBytes())) {
-
-      if (contentLength == null) {
-        throw new BadException(
-            "'contentLength' is required when MaxContentLengthBytes is configured");
-      } else {
-        DocumentItem item = new DocumentItemDynamoDb();
-        item.setContentLength(contentLength);
-
-        if (this.restrictionMaxContentLength.isViolated(awsservice, siteConfiguration, siteId,
-            item)) {
-          throw new BadException("'contentLength' cannot exceed "
-              + siteConfiguration.getMaxContentLengthBytes() + " bytes");
-        }
-      }
-    }
-
-    return contentLength != null ? Optional.of(contentLength) : Optional.empty();
-  }
-
-  private AttributeValidationAccess getAttributeValidationAccess(
-      final ApiAuthorization authorization, final String siteId) {
-    boolean isAdmin = authorization.isAdminOrGovern(siteId);
-    return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
   }
 }

@@ -113,25 +113,35 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     private List<Map<String, Object>> attributes;
 
     /**
-     * Sets the document identifier.
-     *
-     * @param llmResultDocumentId the document ID
+     * Llm Result Attributes.
+     * 
+     * @param resultAttributes {@link List} {@link Map}
      * @return this Builder
      */
-    public Builder documentId(final String llmResultDocumentId) {
-      this.documentId = llmResultDocumentId;
+    public Builder attributes(final List<Map<String, Object>> resultAttributes) {
+      this.attributes = resultAttributes;
       return this;
     }
 
-    /**
-     * Sets the User identifier.
-     *
-     * @param llmResultUserId the user ID
-     * @return this Builder
-     */
-    public Builder userId(final String llmResultUserId) {
-      this.userId = llmResultUserId;
-      return this;
+    @Override
+    public LlmResultRecord build(final String siteId) {
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+
+      DynamoDbKey key = buildKey(siteId);
+      return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
+          attributes, userId);
+    }
+
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+
+      Objects.requireNonNull(documentId, "documentId must not be null");
+      Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
+
+      String pk = PREFIX_DOCS + documentId;
+      String sk = "llmresult#" + DateUtil.getNowInIso8601Format() + "#" + llmPromptEntityName;
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
     }
 
     /**
@@ -146,13 +156,13 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     }
 
     /**
-     * Sets the llmPromptEntity of the document.
+     * Sets the document identifier.
      *
-     * @param llmPromptEntity the llmPromptEntity
+     * @param llmResultDocumentId the document ID
      * @return this Builder
      */
-    public Builder llmPromptEntityName(final String llmPromptEntity) {
-      this.llmPromptEntityName = llmPromptEntity;
+    public Builder documentId(final String llmResultDocumentId) {
+      this.documentId = llmResultDocumentId;
       return this;
     }
 
@@ -168,35 +178,25 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     }
 
     /**
-     * Llm Result Attributes.
-     * 
-     * @param resultAttributes {@link List} {@link Map}
+     * Sets the llmPromptEntity of the document.
+     *
+     * @param llmPromptEntity the llmPromptEntity
      * @return this Builder
      */
-    public Builder attributes(final List<Map<String, Object>> resultAttributes) {
-      this.attributes = resultAttributes;
+    public Builder llmPromptEntityName(final String llmPromptEntity) {
+      this.llmPromptEntityName = llmPromptEntity;
       return this;
     }
 
-    @Override
-    public DynamoDbKey buildKey(final String siteId) {
-
-      Objects.requireNonNull(documentId, "documentId must not be null");
-      Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
-
-      String pk = PREFIX_DOCS + documentId;
-      String sk = "llmresult#" + DateUtil.getNowInIso8601Format() + "#" + llmPromptEntityName;
-
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
-    }
-
-    @Override
-    public LlmResultRecord build(final String siteId) {
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-
-      DynamoDbKey key = buildKey(siteId);
-      return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
-          attributes, userId);
+    /**
+     * Sets the User identifier.
+     *
+     * @param llmResultUserId the user ID
+     * @return this Builder
+     */
+    public Builder userId(final String llmResultUserId) {
+      this.userId = llmResultUserId;
+      return this;
     }
   }
 }

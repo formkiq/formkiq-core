@@ -56,15 +56,6 @@ public class AddDocumentTag {
   }
 
   /**
-   * Set Tag Key.
-   * 
-   * @param tagKey {@link String}
-   */
-  public void setKey(final String tagKey) {
-    this.key = tagKey;
-  }
-
-  /**
    * Get Tag Value.
    * 
    * @return {@link String}
@@ -74,21 +65,30 @@ public class AddDocumentTag {
   }
 
   /**
-   * Set Tag Value.
-   * 
-   * @param tagValue {@link String}
-   */
-  public void setValue(final String tagValue) {
-    this.value = tagValue;
-  }
-
-  /**
    * Get Tag Values.
    * 
    * @return {@link List} {@link String}
    */
   public List<String> getValues() {
     return this.values;
+  }
+
+  /**
+   * Set Tag Key.
+   * 
+   * @param tagKey {@link String}
+   */
+  public void setKey(final String tagKey) {
+    this.key = tagKey;
+  }
+
+  /**
+   * Set Tag Value.
+   * 
+   * @param tagValue {@link String}
+   */
+  public void setValue(final String tagValue) {
+    this.value = tagValue;
   }
 
   /**

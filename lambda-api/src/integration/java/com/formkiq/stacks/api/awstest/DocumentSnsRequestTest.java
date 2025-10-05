@@ -56,6 +56,18 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
   /** Document Sns Queue. */
   private static String documentSnsQueue;
 
+  private static Message getMessage(final SqsMessageReceiver receiver) throws InterruptedException {
+    List<Message> messages = receiver.get().messages();
+    assertEquals(1, messages.size());
+    return messages.get(0);
+  }
+
+  private static SqsMessageReceiver getSqsMessageReceiver() {
+    String eventBridgeQueueUrl =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
+    return new SqsMessageReceiver(getSqs(), eventBridgeQueueUrl);
+  }
+
   @BeforeAll
   public static void setup() {
     documentSnsQueue =
@@ -63,13 +75,27 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
     getSqs().clearQueue(documentSnsQueue);
   }
 
-  @BeforeEach
-  public void setupTest() {
+  @AfterAll
+  public static void teardown() {
     getSqs().clearQueue(documentSnsQueue);
   }
 
-  @AfterAll
-  public static void teardown() {
+  private Map<String, Object> assertMessage(final Message message, final String type,
+      final String documentId, final String path) {
+    Map<String, Object> map = getDocument(message);
+    assertEquals(type, map.get("type"));
+    assertEquals("default", map.get("siteId"));
+    assertEquals(path, map.get("path"));
+    assertEquals(documentId, map.get("documentId"));
+    return map;
+  }
+
+  private Map<String, Object> getDocument(final Message message) {
+    return GSON.fromJson(message.body(), Map.class);
+  }
+
+  @BeforeEach
+  public void setupTest() {
     getSqs().clearQueue(documentSnsQueue);
   }
 
@@ -108,31 +134,5 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
     // then
     message = getMessage(receiver);
     assertMessage(message, "delete", documentId, null);
-  }
-
-  private Map<String, Object> assertMessage(final Message message, final String type,
-      final String documentId, final String path) {
-    Map<String, Object> map = getDocument(message);
-    assertEquals(type, map.get("type"));
-    assertEquals("default", map.get("siteId"));
-    assertEquals(path, map.get("path"));
-    assertEquals(documentId, map.get("documentId"));
-    return map;
-  }
-
-  private static SqsMessageReceiver getSqsMessageReceiver() {
-    String eventBridgeQueueUrl =
-        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
-    return new SqsMessageReceiver(getSqs(), eventBridgeQueueUrl);
-  }
-
-  private static Message getMessage(final SqsMessageReceiver receiver) throws InterruptedException {
-    List<Message> messages = receiver.get().messages();
-    assertEquals(1, messages.size());
-    return messages.get(0);
-  }
-
-  private Map<String, Object> getDocument(final Message message) {
-    return GSON.fromJson(message.body(), Map.class);
   }
 }

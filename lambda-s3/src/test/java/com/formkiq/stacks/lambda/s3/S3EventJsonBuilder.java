@@ -35,12 +35,69 @@ import java.util.Map;
  * Builder for constructing an S3 event notification payload as a Map using GSON.
  */
 public class S3EventJsonBuilder {
+  /**
+   * Builder for individual Records entries.
+   */
+  public static class RecordBuilder {
+    /** {@link JsonObject}. */
+    private final JsonObject record;
+
+    public RecordBuilder() {
+      record = new JsonObject();
+    }
+
+    private JsonObject build() {
+      return record;
+    }
+
+    public RecordBuilder withEventName(final String name) {
+      record.addProperty("eventName", name);
+      return this;
+    }
+
+    public RecordBuilder withS3(final S3Builder s3Builder) {
+      record.add("s3", s3Builder.build());
+      return this;
+    }
+  }
+  /**
+   * Builder for the nested S3 object in each record.
+   */
+  public static class S3Builder {
+    /** {@link JsonObject}. */
+    private final JsonObject s3;
+
+    public S3Builder() {
+      s3 = new JsonObject();
+    }
+
+    private JsonObject build() {
+      return s3;
+    }
+
+    public S3Builder withBucket(final String name) {
+      JsonObject bucket = new JsonObject();
+      bucket.addProperty("name", name);
+      s3.add("bucket", bucket);
+      return this;
+    }
+
+    public S3Builder withObject(final String key) {
+      JsonObject objectNode = new JsonObject();
+      objectNode.addProperty("key", key);
+      s3.add("object", objectNode);
+      return this;
+    }
+  }
+
   /** {@link Gson}. */
   private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
   /** {@link Type}. */
   private static final Type MAP_TYPE = new TypeToken<Map<String, Object>>() {}.getType();
+
   /** {@link JsonObject}. */
   private final JsonObject root;
+
   /** {@link JsonArray}. */
   private final JsonArray records;
 
@@ -72,61 +129,5 @@ public class S3EventJsonBuilder {
    */
   public Map<String, Object> build() {
     return GSON.fromJson(root, MAP_TYPE);
-  }
-
-  /**
-   * Builder for individual Records entries.
-   */
-  public static class RecordBuilder {
-    /** {@link JsonObject}. */
-    private final JsonObject record;
-
-    public RecordBuilder() {
-      record = new JsonObject();
-    }
-
-    public RecordBuilder withEventName(final String name) {
-      record.addProperty("eventName", name);
-      return this;
-    }
-
-    public RecordBuilder withS3(final S3Builder s3Builder) {
-      record.add("s3", s3Builder.build());
-      return this;
-    }
-
-    private JsonObject build() {
-      return record;
-    }
-  }
-
-  /**
-   * Builder for the nested S3 object in each record.
-   */
-  public static class S3Builder {
-    /** {@link JsonObject}. */
-    private final JsonObject s3;
-
-    public S3Builder() {
-      s3 = new JsonObject();
-    }
-
-    public S3Builder withBucket(final String name) {
-      JsonObject bucket = new JsonObject();
-      bucket.addProperty("name", name);
-      s3.add("bucket", bucket);
-      return this;
-    }
-
-    public S3Builder withObject(final String key) {
-      JsonObject objectNode = new JsonObject();
-      objectNode.addProperty("key", key);
-      s3.add("object", objectNode);
-      return this;
-    }
-
-    private JsonObject build() {
-      return s3;
-    }
   }
 }

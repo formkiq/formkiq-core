@@ -61,12 +61,6 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         .collect(Collectors.toList());
   }
 
-  private boolean isPublicEndpoint(final String url) {
-    List<String> publicUrls =
-        List.of("/login", "/forgotPassword", "/confirmRegistration", "/changePassword");
-    return publicUrls.stream().anyMatch(url::contains);
-  }
-
   @Override
   public ApiHttpRequest apply(final HttpRequest httpRequest) {
 
@@ -99,24 +93,6 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         .resource(resource).path(path).pathParameters(pathParameters)
         .queryParameters(queryParameters).user(getUsername(decoder)).group(group)
         .permissions(permissions).body(body);
-  }
-
-  private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
-    return decoder != null ? decoder.getPermissions() : Map.of();
-  }
-
-  private String getGroup(final JwtTokenDecoder decoder) {
-    return decoder != null ? String.join(" ", decoder.getGroups()) : "";
-  }
-
-  private JwtTokenDecoder getDecoder(final List<String> headers) {
-    String bearerToken =
-        !headers.isEmpty() && headers.get(0).startsWith("ey") ? headers.get(0) : null;
-    return bearerToken != null ? new JwtTokenDecoder(headers.get(0)) : null;
-  }
-
-  private String getUsername(final JwtTokenDecoder decoder) {
-    return decoder != null ? decoder.getUsername() : "";
   }
 
   /**
@@ -196,5 +172,29 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     }
 
     return map;
+  }
+
+  private JwtTokenDecoder getDecoder(final List<String> headers) {
+    String bearerToken =
+        !headers.isEmpty() && headers.get(0).startsWith("ey") ? headers.get(0) : null;
+    return bearerToken != null ? new JwtTokenDecoder(headers.get(0)) : null;
+  }
+
+  private String getGroup(final JwtTokenDecoder decoder) {
+    return decoder != null ? String.join(" ", decoder.getGroups()) : "";
+  }
+
+  private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getPermissions() : Map.of();
+  }
+
+  private String getUsername(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getUsername() : "";
+  }
+
+  private boolean isPublicEndpoint(final String url) {
+    List<String> publicUrls =
+        List.of("/login", "/forgotPassword", "/confirmRegistration", "/changePassword");
+    return publicUrls.stream().anyMatch(url::contains);
   }
 }

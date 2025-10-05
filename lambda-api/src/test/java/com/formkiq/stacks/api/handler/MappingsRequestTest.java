@@ -57,6 +57,29 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   /** SiteId. */
   private static final String SITE_ID = ID.uuid();
 
+  private static void validateAddMappingsAttributes03(final Mapping mapping) {
+    assertEquals(1, notNull(mapping.getAttributes()).size());
+    assertEquals("invoice", notNull(mapping.getAttributes()).get(0).getAttributeKey());
+    assertEquals(MappingAttributeSourceType.CONTENT,
+        notNull(mapping.getAttributes()).get(0).getSourceType());
+    assertEquals(MappingAttributeLabelMatchingType.CONTAINS,
+        notNull(mapping.getAttributes()).get(0).getLabelMatchingType());
+    assertEquals("invoice",
+        String.join(",", notNull(notNull(mapping.getAttributes()).get(0).getLabelTexts())));
+  }
+
+  private void addAttribute(final String siteId) throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key("invoice")), siteId);
+  }
+
+  private void addAttribute(final String siteId, final AttributeDataType dataType)
+      throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key("invoice").dataType(dataType)),
+        siteId);
+  }
+
   /**
    * POST /mappings empty body.
    *
@@ -302,28 +325,5 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
             e.getResponseBody());
       }
     }
-  }
-
-  private static void validateAddMappingsAttributes03(final Mapping mapping) {
-    assertEquals(1, notNull(mapping.getAttributes()).size());
-    assertEquals("invoice", notNull(mapping.getAttributes()).get(0).getAttributeKey());
-    assertEquals(MappingAttributeSourceType.CONTENT,
-        notNull(mapping.getAttributes()).get(0).getSourceType());
-    assertEquals(MappingAttributeLabelMatchingType.CONTAINS,
-        notNull(mapping.getAttributes()).get(0).getLabelMatchingType());
-    assertEquals("invoice",
-        String.join(",", notNull(notNull(mapping.getAttributes()).get(0).getLabelTexts())));
-  }
-
-  private void addAttribute(final String siteId) throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key("invoice")), siteId);
-  }
-
-  private void addAttribute(final String siteId, final AttributeDataType dataType)
-      throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key("invoice").dataType(dataType)),
-        siteId);
   }
 }

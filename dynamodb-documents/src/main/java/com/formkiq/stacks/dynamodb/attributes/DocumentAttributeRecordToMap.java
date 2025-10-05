@@ -52,6 +52,39 @@ public class DocumentAttributeRecordToMap
     this.uniqueKeys = uniqueAttributeKeys;
   }
 
+  private void addNumberValues(final Map<String, Object> lastValues,
+      final DocumentAttributeRecord a) {
+    if (lastValues.containsKey("numberValue")) {
+
+      List<Double> s = new ArrayList<>();
+      s.add((Double) lastValues.get("numberValue"));
+      s.add(a.getNumberValue());
+
+      lastValues.remove("numberValue");
+      lastValues.put("numberValues", s);
+
+    } else if (lastValues.containsKey("numberValues")) {
+      ((List<Double>) lastValues.get("numberValues")).add(a.getNumberValue());
+    }
+  }
+
+  private void addStringValues(final Map<String, Object> lastValues,
+      final DocumentAttributeRecord a) {
+
+    if (lastValues.containsKey("stringValue")) {
+
+      List<String> s = new ArrayList<>();
+      s.add((String) lastValues.get("stringValue"));
+      s.add(a.getStringValue());
+
+      lastValues.remove("stringValue");
+      lastValues.put("stringValues", s);
+
+    } else if (lastValues.containsKey("stringValues")) {
+      ((List<String>) lastValues.get("stringValues")).add(a.getStringValue());
+    }
+  }
+
   @Override
   public Collection<Map<String, Object>> apply(
       final Collection<DocumentAttributeRecord> attributes) {
@@ -90,39 +123,6 @@ public class DocumentAttributeRecordToMap
     }
 
     return c;
-  }
-
-  private void addNumberValues(final Map<String, Object> lastValues,
-      final DocumentAttributeRecord a) {
-    if (lastValues.containsKey("numberValue")) {
-
-      List<Double> s = new ArrayList<>();
-      s.add((Double) lastValues.get("numberValue"));
-      s.add(a.getNumberValue());
-
-      lastValues.remove("numberValue");
-      lastValues.put("numberValues", s);
-
-    } else if (lastValues.containsKey("numberValues")) {
-      ((List<Double>) lastValues.get("numberValues")).add(a.getNumberValue());
-    }
-  }
-
-  private void addStringValues(final Map<String, Object> lastValues,
-      final DocumentAttributeRecord a) {
-
-    if (lastValues.containsKey("stringValue")) {
-
-      List<String> s = new ArrayList<>();
-      s.add((String) lastValues.get("stringValue"));
-      s.add(a.getStringValue());
-
-      lastValues.remove("stringValue");
-      lastValues.put("stringValues", s);
-
-    } else if (lastValues.containsKey("stringValues")) {
-      ((List<String>) lastValues.get("stringValues")).add(a.getStringValue());
-    }
   }
 
 }

@@ -47,66 +47,6 @@ public class AddDocumentTag {
    */
   public AddDocumentTag() {}
 
-  /**
-   * Set Key.
-   * 
-   * @param tagKey {@link String}
-   * @return {@link AddDocumentTag}
-   */
-  public AddDocumentTag key(final String tagKey) {
-    this.key = tagKey;
-    return this;
-  }
-
-  /**
-   * Tag key.
-   * 
-   * @return key
-   **/
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Tag Value.
-   * 
-   * @param tagValue {@link String}
-   * @return {@link AddDocumentTag}
-   */
-  public AddDocumentTag value(final String tagValue) {
-    this.value = tagValue;
-    return this;
-  }
-
-  /**
-   * Tag value.
-   * 
-   * @return value
-   **/
-  public String getValue() {
-    return this.value;
-  }
-
-  /**
-   * Set Tag Value.
-   * 
-   * @param tagValues {@link List} {@link String}
-   * @return {@link AddDocumentTag}
-   */
-  public AddDocumentTag values(final List<String> tagValues) {
-    this.values = tagValues;
-    return this;
-  }
-
-  /**
-   * Tag values.
-   * 
-   * @return values {@link List} {@link String}
-   **/
-  public List<String> getValues() {
-    return this.values;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -121,9 +61,60 @@ public class AddDocumentTag {
         && Objects.equals(this.values, addDocumentTag.values);
   }
 
+  /**
+   * Tag key.
+   * 
+   * @return key
+   **/
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Tag value.
+   * 
+   * @return value
+   **/
+  public String getValue() {
+    return this.value;
+  }
+
+  /**
+   * Tag values.
+   * 
+   * @return values {@link List} {@link String}
+   **/
+  public List<String> getValues() {
+    return this.values;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(this.key, this.value, this.values);
+  }
+
+  /**
+   * Set Key.
+   * 
+   * @param tagKey {@link String}
+   * @return {@link AddDocumentTag}
+   */
+  public AddDocumentTag key(final String tagKey) {
+    this.key = tagKey;
+    return this;
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   * 
+   * @param o {@link Object}
+   * @return {@link String}
+   */
+  private String toIndentedString(final Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
   }
 
   @Override
@@ -138,16 +129,25 @@ public class AddDocumentTag {
   }
 
   /**
-   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   * Set Tag Value.
    * 
-   * @param o {@link Object}
-   * @return {@link String}
+   * @param tagValue {@link String}
+   * @return {@link AddDocumentTag}
    */
-  private String toIndentedString(final Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  public AddDocumentTag value(final String tagValue) {
+    this.value = tagValue;
+    return this;
+  }
+
+  /**
+   * Set Tag Value.
+   * 
+   * @param tagValues {@link List} {@link String}
+   * @return {@link AddDocumentTag}
+   */
+  public AddDocumentTag values(final List<String> tagValues) {
+    this.values = tagValues;
+    return this;
   }
 }
 

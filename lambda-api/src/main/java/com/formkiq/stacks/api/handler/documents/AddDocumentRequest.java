@@ -73,6 +73,87 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Document Actions.
+   * 
+   * @return {@link List} {@link Action}
+   */
+  public List<Action> getActions() {
+    return this.actions;
+  }
+
+  /**
+   * Get Document Attributes.
+   *
+   * @return {@link List} {@link AddDocumentAttribute}
+   */
+  public List<AddDocumentAttribute> getAttributes() {
+    return this.attributes;
+  }
+
+  /**
+   * Get Checksum.
+   * 
+   * @return String
+   */
+  public String getChecksum() {
+    return checksum;
+  }
+
+  /**
+   * Get Checksum Type.
+   * 
+   * @return String
+   */
+  public String getChecksumType() {
+    return this.checksumType != null ? this.checksumType.toUpperCase() : null;
+  }
+
+  /**
+   * Document Content.
+   *
+   * @return {@link String}
+   */
+  public String getContent() {
+    return this.content;
+  }
+
+  /**
+   * Get Content Type.
+   *
+   * @return {@link String}
+   */
+  public String getContentType() {
+    return this.contentType;
+  }
+
+  /**
+   * Get Deep Link Path.
+   *
+   * @return {@link String}
+   */
+  public String getDeepLinkPath() {
+    return this.deepLinkPath;
+  }
+
+  /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Get Child Documents.
+   *
+   * @return {@link List} {@link AddDocumentRequest}
+   */
+  public List<AddDocumentRequest> getDocuments() {
+    return this.documents;
+  }
+
+  /**
    * Get Height.
    * 
    * @return String
@@ -82,14 +163,30 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Set Height.
-   * 
-   * @param documentHeight {@link String}
-   * @return AddDocumentRequest
+   * Get Document Metadata.
+   *
+   * @return {@link List} {@link DocumentMetadata}
    */
-  public AddDocumentRequest setHeight(final String documentHeight) {
-    this.height = documentHeight;
-    return this;
+  public List<DocumentMetadata> getMetadata() {
+    return this.metadata;
+  }
+
+  /**
+   * Get Document Path.
+   *
+   * @return {@link String}
+   */
+  public String getPath() {
+    return this.path;
+  }
+
+  /**
+   * Get Document Tags.
+   *
+   * @return {@link List} {@link AddDocumentTag}
+   */
+  public List<AddDocumentTag> getTags() {
+    return this.tags;
   }
 
   /**
@@ -102,23 +199,48 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Set Width.
-   * 
-   * @param documentWidth {@link String}
-   * @return AddDocumentRequest
+   * Is Base 64.
+   *
+   * @return boolean
    */
-  public AddDocumentRequest setWidth(final String documentWidth) {
-    this.width = documentWidth;
-    return this;
+  public boolean isBase64() {
+    return this.isBase64;
   }
 
   /**
-   * Get Checksum Type.
-   * 
-   * @return String
+   * Set Document Actions.
+   *
+   * @param documentActions {@link List} {@link Action}
    */
-  public String getChecksumType() {
-    return this.checksumType != null ? this.checksumType.toUpperCase() : null;
+  public void setActions(final List<Action> documentActions) {
+    this.actions = documentActions;
+  }
+
+  /**
+   * Set Document Attributes.
+   *
+   * @param documentAttributes {@link List} {@link AddDocumentAttribute}
+   */
+  public void setAttributes(final List<AddDocumentAttribute> documentAttributes) {
+    this.attributes = documentAttributes;
+  }
+
+  /**
+   * Set Base 64.
+   *
+   * @param contentIsBase64 boolean
+   */
+  public void setBase64(final boolean contentIsBase64) {
+    this.isBase64 = contentIsBase64;
+  }
+
+  /**
+   * Set Checksum.
+   * 
+   * @param documentChecksum {@link String}
+   */
+  public void setChecksum(final String documentChecksum) {
+    this.checksum = documentChecksum;
   }
 
   /**
@@ -133,84 +255,12 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Checksum.
-   * 
-   * @return String
-   */
-  public String getChecksum() {
-    return checksum;
-  }
-
-  /**
-   * Set Checksum.
-   * 
-   * @param documentChecksum {@link String}
-   */
-  public void setChecksum(final String documentChecksum) {
-    this.checksum = documentChecksum;
-  }
-
-  /**
-   * Get Document Actions.
-   * 
-   * @return {@link List} {@link Action}
-   */
-  public List<Action> getActions() {
-    return this.actions;
-  }
-
-  /**
-   * Set Document Actions.
-   *
-   * @param documentActions {@link List} {@link Action}
-   */
-  public void setActions(final List<Action> documentActions) {
-    this.actions = documentActions;
-  }
-
-  /**
-   * Get Document Attributes.
-   *
-   * @return {@link List} {@link AddDocumentAttribute}
-   */
-  public List<AddDocumentAttribute> getAttributes() {
-    return this.attributes;
-  }
-
-  /**
-   * Set Document Attributes.
-   *
-   * @param documentAttributes {@link List} {@link AddDocumentAttribute}
-   */
-  public void setAttributes(final List<AddDocumentAttribute> documentAttributes) {
-    this.attributes = documentAttributes;
-  }
-
-  /**
-   * Document Content.
-   *
-   * @return {@link String}
-   */
-  public String getContent() {
-    return this.content;
-  }
-
-  /**
    * Set Document Content.
    *
    * @param documentContent {@link String}
    */
   public void setContent(final String documentContent) {
     this.content = documentContent;
-  }
-
-  /**
-   * Get Content Type.
-   *
-   * @return {@link String}
-   */
-  public String getContentType() {
-    return this.contentType;
   }
 
   /**
@@ -223,30 +273,12 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Deep Link Path.
-   *
-   * @return {@link String}
-   */
-  public String getDeepLinkPath() {
-    return this.deepLinkPath;
-  }
-
-  /**
    * Set Deep Link Path.
    *
    * @param documentDeepLinkPath {@link String}
    */
   public void setDeepLinkPath(final String documentDeepLinkPath) {
     this.deepLinkPath = documentDeepLinkPath;
-  }
-
-  /**
-   * Get Document Id.
-   *
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
   }
 
   /**
@@ -259,15 +291,6 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Child Documents.
-   *
-   * @return {@link List} {@link AddDocumentRequest}
-   */
-  public List<AddDocumentRequest> getDocuments() {
-    return this.documents;
-  }
-
-  /**
    * Set Child Documents.
    *
    * @param childDocuments {@link List} {@link AddDocumentRequest}
@@ -277,12 +300,14 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Document Metadata.
-   *
-   * @return {@link List} {@link DocumentMetadata}
+   * Set Height.
+   * 
+   * @param documentHeight {@link String}
+   * @return AddDocumentRequest
    */
-  public List<DocumentMetadata> getMetadata() {
-    return this.metadata;
+  public AddDocumentRequest setHeight(final String documentHeight) {
+    this.height = documentHeight;
+    return this;
   }
 
   /**
@@ -295,30 +320,12 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Get Document Path.
-   *
-   * @return {@link String}
-   */
-  public String getPath() {
-    return this.path;
-  }
-
-  /**
    * Set Document Path.
    *
    * @param documentPath {@link String}
    */
   public void setPath(final String documentPath) {
     this.path = documentPath;
-  }
-
-  /**
-   * Get Document Tags.
-   *
-   * @return {@link List} {@link AddDocumentTag}
-   */
-  public List<AddDocumentTag> getTags() {
-    return this.tags;
   }
 
   /**
@@ -331,20 +338,13 @@ public class AddDocumentRequest {
   }
 
   /**
-   * Is Base 64.
-   *
-   * @return boolean
+   * Set Width.
+   * 
+   * @param documentWidth {@link String}
+   * @return AddDocumentRequest
    */
-  public boolean isBase64() {
-    return this.isBase64;
-  }
-
-  /**
-   * Set Base 64.
-   *
-   * @param contentIsBase64 boolean
-   */
-  public void setBase64(final boolean contentIsBase64) {
-    this.isBase64 = contentIsBase64;
+  public AddDocumentRequest setWidth(final String documentWidth) {
+    this.width = documentWidth;
+    return this;
   }
 }
