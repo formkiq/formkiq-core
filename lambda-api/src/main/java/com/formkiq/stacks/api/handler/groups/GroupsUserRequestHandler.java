@@ -45,8 +45,8 @@ public class GroupsUserRequestHandler
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String groupName = event.getPathParameters().get("groupName");
-    String username = event.getPathParameters().get("username");
+    String groupName = event.getPathParameter("groupName");
+    String username = event.getPathParameter("username");
 
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);

@@ -79,7 +79,7 @@ public class DocumentTagsRequestHandler
     PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
     PaginationResults<DocumentTag> results =
@@ -145,7 +145,7 @@ public class DocumentTagsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
-    final String documentId = event.getPathParameters().get("documentId");
+    final String documentId = event.getPathParameter("documentId");
 
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
 
@@ -167,7 +167,7 @@ public class DocumentTagsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
-    final String documentId = event.getPathParameters().get("documentId");
+    final String documentId = event.getPathParameter("documentId");
 
     DocumentTag tag = JsonToObject.fromJson(awsservice, event, DocumentTag.class);
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
@@ -212,7 +212,7 @@ public class DocumentTagsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String siteId = authorization.getSiteId();
-    final String documentId = event.getPathParameters().get("documentId");
+    final String documentId = event.getPathParameter("documentId");
 
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
     validate(tags);

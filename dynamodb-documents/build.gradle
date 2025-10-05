@@ -17,7 +17,7 @@ configurations {
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.0'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.1'
 
   implementation project(':strings')
   implementation project(':aws-s3')

@@ -66,7 +66,7 @@ public class DocumentsActionsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
@@ -129,7 +129,7 @@ public class DocumentsActionsRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     DocumentItem item = getDocument(awsservice, siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));

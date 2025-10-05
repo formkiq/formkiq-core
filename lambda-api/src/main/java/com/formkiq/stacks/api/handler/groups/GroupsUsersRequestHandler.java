@@ -55,7 +55,7 @@ public class GroupsUsersRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String groupName = event.getPathParameters().get("groupName");
+    String groupName = event.getPathParameter("groupName");
     String token = event.getQueryStringParameter("next");
     String limitS = event.getQueryStringParameter("limit");
     int limit = limitS != null ? Integer.parseInt(limitS) : DEFAULT_LIMIT;
@@ -91,7 +91,7 @@ public class GroupsUsersRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String groupName = event.getPathParameters().get("groupName");
+    String groupName = event.getPathParameter("groupName");
 
     AddUserRequest request = JsonToObject.fromJson(awsservice, event, AddUserRequest.class);
     String username = request.getUsername();

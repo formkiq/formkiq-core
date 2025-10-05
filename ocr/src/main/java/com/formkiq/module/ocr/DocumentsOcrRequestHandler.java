@@ -115,7 +115,7 @@ public class DocumentsOcrRequestHandler
 
     ApiResponseStatus status = SC_OK;
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 
@@ -283,7 +283,7 @@ public class DocumentsOcrRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 
@@ -306,7 +306,7 @@ public class DocumentsOcrRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 

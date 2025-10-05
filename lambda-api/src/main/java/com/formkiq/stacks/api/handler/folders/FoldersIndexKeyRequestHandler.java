@@ -53,7 +53,7 @@ public class FoldersIndexKeyRequestHandler
     String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
 
-    String indexKey = new IndexKeyToString().apply(event.getPathParameters().get("indexKey"));
+    String indexKey = new IndexKeyToString().apply(event.getPathParameter("indexKey"));
 
     try {
       boolean deleted = indexProcessor.deleteEmptyDirectory(siteId, indexKey);
