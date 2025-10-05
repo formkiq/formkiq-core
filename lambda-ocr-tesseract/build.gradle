@@ -52,7 +52,7 @@ tasks.register('downloadAndUnzipFile', Copy) {
 
 tasks.register('buildTesseractLayer', Zip) {
   dependsOn 'downloadAndUnzipFile'
-  archiveFileName = 'layer-tesseract-5.3.1.zip'
+  archiveFileName = 'layer-tesseract-5.3.9.zip'
   destinationDirectory = layout.buildDirectory.dir('distributions/api')
 
   from(layout.buildDirectory.dir('tesseract')) { spec ->
