@@ -35,6 +35,8 @@ jobs:
         ytt --version
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
     - name: Build Project
       timeout-minutes: 35
       run: ./gradlew build --scan --no-daemon | tee gradle.log
