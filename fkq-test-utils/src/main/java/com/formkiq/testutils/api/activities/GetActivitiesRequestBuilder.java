@@ -55,17 +55,6 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   public GetActivitiesRequestBuilder() {}
 
   /**
-   * Set User Id.
-   *
-   * @param activitiesUserId {@link String}
-   * @return this builder
-   */
-  public GetActivitiesRequestBuilder userId(final String activitiesUserId) {
-    this.userId = activitiesUserId;
-    return this;
-  }
-
-  /**
    * Set Document Id.
    *
    * @param activitiesDocumentId {@link String}
@@ -99,17 +88,6 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
-   * Set Entity Type Namespace.
-   *
-   * @param activitiesNamespace {@link String}
-   * @return this builder
-   */
-  public GetActivitiesRequestBuilder namespace(final String activitiesNamespace) {
-    this.namespace = activitiesNamespace;
-    return this;
-  }
-
-  /**
    * Set the maximum number of results to return.
    *
    * @param activitiesLimit {@link String}
@@ -117,6 +95,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder limit(final String activitiesLimit) {
     this.limit = activitiesLimit;
+    return this;
+  }
+
+  /**
+   * Set Entity Type Namespace.
+   *
+   * @param activitiesNamespace {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder namespace(final String activitiesNamespace) {
+    this.namespace = activitiesNamespace;
     return this;
   }
 
@@ -137,5 +126,16 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
     return executeApiCall(
         () -> new UserActivitiesApi(apiClient).getResourceActivities(siteId, this.documentId,
             this.entityTypeId, this.namespace, this.entityId, next, limit, this.userId));
+  }
+
+  /**
+   * Set User Id.
+   *
+   * @param activitiesUserId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder userId(final String activitiesUserId) {
+    this.userId = activitiesUserId;
+    return this;
   }
 }

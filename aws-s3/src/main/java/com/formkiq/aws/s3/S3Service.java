@@ -468,6 +468,23 @@ public class S3Service {
   }
 
   /**
+   * Check if a specific S3 object version has Object Lock (retention or legal hold).
+   *
+   * @param bucket Bucket name
+   * @param s3Key Object key
+   * @param versionId Object version ID (required)
+   * @return true if the object has a lock (retention or legal hold ON)
+   */
+  public boolean isObjectLock(final String bucket, final String s3Key, final String versionId) {
+    GetObjectLegalHoldRequest getHoldReq =
+        GetObjectLegalHoldRequest.builder().bucket(bucket).key(s3Key).versionId(versionId).build();
+
+    GetObjectLegalHoldResponse holdResp = this.s3Client.getObjectLegalHold(getHoldReq);
+    return holdResp.legalHold() != null
+        && holdResp.legalHold().status() == ObjectLockLegalHoldStatus.ON;
+  }
+
+  /**
    * List S3 Objects.
    * 
    * @param bucket {@link String}
@@ -548,6 +565,24 @@ public class S3Service {
   }
 
   /**
+   * Set Object Lock.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @param lockOn boolean
+   */
+  public void setObjectLock(final String bucket, final String key, final String versionId,
+      final boolean lockOn) {
+    ObjectLockLegalHold hold = ObjectLockLegalHold.builder()
+        .status(lockOn ? ObjectLockLegalHoldStatus.ON : ObjectLockLegalHoldStatus.OFF).build();
+    PutObjectLegalHoldRequest req = PutObjectLegalHoldRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).legalHold(hold).build();
+
+    this.s3Client.putObjectLegalHold(req);
+  }
+
+  /**
    * Set S3 Object Tag.
    * 
    * @param bucket {@link String}
@@ -574,40 +609,5 @@ public class S3Service {
     PutObjectTaggingRequest req =
         PutObjectTaggingRequest.builder().bucket(bucket).key(key).tagging(tagging).build();
     this.s3Client.putObjectTagging(req);
-  }
-
-  /**
-   * Set Object Lock.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
-   * @param versionId {@link String}
-   * @param lockOn boolean
-   */
-  public void setObjectLock(final String bucket, final String key, final String versionId,
-      final boolean lockOn) {
-    ObjectLockLegalHold hold = ObjectLockLegalHold.builder()
-        .status(lockOn ? ObjectLockLegalHoldStatus.ON : ObjectLockLegalHoldStatus.OFF).build();
-    PutObjectLegalHoldRequest req = PutObjectLegalHoldRequest.builder().bucket(bucket).key(key)
-        .versionId(versionId).legalHold(hold).build();
-
-    this.s3Client.putObjectLegalHold(req);
-  }
-
-  /**
-   * Check if a specific S3 object version has Object Lock (retention or legal hold).
-   *
-   * @param bucket Bucket name
-   * @param s3Key Object key
-   * @param versionId Object version ID (required)
-   * @return true if the object has a lock (retention or legal hold ON)
-   */
-  public boolean isObjectLock(final String bucket, final String s3Key, final String versionId) {
-    GetObjectLegalHoldRequest getHoldReq =
-        GetObjectLegalHoldRequest.builder().bucket(bucket).key(s3Key).versionId(versionId).build();
-
-    GetObjectLegalHoldResponse holdResp = this.s3Client.getObjectLegalHold(getHoldReq);
-    return holdResp.legalHold() != null
-        && holdResp.legalHold().status() == ObjectLockLegalHoldStatus.ON;
   }
 }
