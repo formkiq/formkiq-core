@@ -37,7 +37,11 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
     - name: Build Project
       timeout-minutes: 35
-      run: ./gradlew build --no-daemon
+      run: ./gradlew build --scan --no-daemon | tee gradle.log
+    - name: Extract build scan link
+      run: |
+        SCAN_URL=$(grep -o 'https://gradle.com/s/[a-zA-Z0-9]*' gradle.log | tail -1)
+        echo "🔍 [View Build Scan]($SCAN_URL)" >> $GITHUB_STEP_SUMMARY
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()
