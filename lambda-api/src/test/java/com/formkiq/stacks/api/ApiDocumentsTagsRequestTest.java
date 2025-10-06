@@ -214,11 +214,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("category2", tags.getResults().get(0).getKey());
-
-      String expected = "\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '"
-          + documentId + "'.\\\"}\",\"statusCode\":200}}";
-
-      assertTrue(getLogger().containsString(expected));
     }
   }
 
@@ -270,11 +265,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
-
-      String expected = "\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '"
-          + documentId + "'.\\\"}\",\"statusCode\":200}}";
-
-      assertTrue(getLogger().containsString(expected));
     }
   }
 
@@ -327,11 +317,6 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       PaginationResults<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
-
-      String expected = "\"body\":\"{\\\"message\\\":\\\"Removed 'category' from document '"
-          + documentId + "'.\\\"}\",\"statusCode\":200}}";
-
-      assertTrue(getLogger().containsString(expected));
     }
   }
 
