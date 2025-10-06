@@ -30,6 +30,8 @@
 				<allow pkg="com.formkiq.aws.dynamodb.objects" />
 				<allow pkg="org.apache.poi.hwpf" />
 				<allow pkg="org.apache.poi.hwpf.extractor" />
+                <allow pkg="org.apache.poi.extractor" />
+                <allow pkg="org.apache.poi.ooxml.extractor" />
 				
 				<allow pkg="org.apache.poi.openxml4j.exceptions" />
 				<allow pkg="org.apache.poi.openxml4j.opc" />
