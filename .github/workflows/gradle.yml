@@ -42,11 +42,7 @@ jobs:
       env:
         PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
           && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-      run: ./gradlew build --scan --no-daemon | tee gradle.log
-    - name: Extract build scan link
-      run: |
-        SCAN_URL=$(grep -o 'https://gradle.com/s/[a-zA-Z0-9]*' gradle.log | tail -1)
-        echo "🔍 [View Build Scan]($SCAN_URL)" >> $GITHUB_STEP_SUMMARY
+      run: ./gradlew build --scan --no-daemon
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()
