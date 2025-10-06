@@ -65,6 +65,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
   private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
 
+  static String redactAuthorizationToken(final String input) {
+    return input != null ? input.replaceAll("(\"Authorization\"\\s*:\\s*\")([^\"]+)(\")", "$1***$3")
+        : null;
+  }
+
   private static void resetThreadLocal() {
     ApiAuthorization.logout();
     UserActivityContext.clear();
@@ -226,7 +231,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private ApiGatewayRequestEvent getApiGatewayEvent(final String str,
       final AwsServiceCache awsservice) {
 
-    awsservice.getLogger().debug(str);
+    Logger logger = awsservice.getLogger();
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      logger.debug(redactAuthorizationToken(str));
+    }
 
     return this.gson.fromJson(str, ApiGatewayRequestEvent.class);
   }
