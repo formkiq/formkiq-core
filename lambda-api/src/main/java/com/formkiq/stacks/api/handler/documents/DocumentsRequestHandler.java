@@ -30,9 +30,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRulesException;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -71,7 +69,7 @@ import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -397,18 +395,18 @@ public class DocumentsRequestHandler
 
     boolean emptyContent = isEmpty(item.getContent());
     boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
 
     if (!isFolder && emptyContent && notNull(item.getDocuments()).isEmpty() && emptyDeepLink) {
-      errors.add(new ValidationErrorImpl()
-          .error("either 'content', 'documents', or 'deepLinkPath' are required"));
+      vb.addError(null, "either 'content', 'documents', or 'deepLinkPath' are required");
     } else if (!emptyDeepLink && !emptyContent) {
-      errors
-          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+      vb.addError(null, "both 'content', and 'deepLinkPath' cannot be set");
     }
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    if (!isEmpty(item.getChecksum()) && item.getChecksumType() == null) {
+      vb.addError("checksumType", "'checksumType' required when 'checksum' is set");
     }
+
+    vb.check();
   }
 }

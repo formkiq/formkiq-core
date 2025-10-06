@@ -609,46 +609,6 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Save new File with valid SHA-256.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  public void testPost15() throws ApiException {
-    // given
-    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
-
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      for (String checksum : Arrays.asList(null, reqChecksum)) {
-        setBearerToken(siteId);
-
-        String content = "dummy data";
-
-        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
-            .checksum(checksum).checksumType(ChecksumType.SHA256);
-
-        // when
-        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
-
-        // then
-        assertNotNull(response.getDocumentId());
-        assertEquals(siteId, response.getSiteId());
-
-        GetDocumentResponse site =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
-        assertEquals("text/plain", site.getContentType());
-        assertEquals(ChecksumType.SHA256, site.getChecksumType());
-        assertEquals(reqChecksum, site.getChecksum());
-        assertNotNull(site.getPath());
-        assertNotNull(site.getDocumentId());
-        assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
-      }
-    }
-  }
-
-  /**
    * Save new File with valid SHA-1.
    *
    * @throws ApiException ApiException
@@ -838,6 +798,79 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(
             "{\"errors\":[{\"key\":\"width\","
                 + "\"error\":\"invalid 'width' must be numeric or 'auto'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostChecksum() throws ApiException {
+    // given
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA256, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 but missing checksum type.
+   *
+   */
+  @Test
+  public void testPostChecksumMissingType() {
+    // given
+    final String checksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String content = "dummy data";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content).contentType("text/plain").checksum(checksum);
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"checksumType\","
+                + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
             e.getResponseBody());
       }
     }
