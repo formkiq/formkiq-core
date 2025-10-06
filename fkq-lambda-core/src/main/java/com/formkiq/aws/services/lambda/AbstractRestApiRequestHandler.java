@@ -65,11 +65,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
   private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
 
-  static String redactAuthorizationToken(final String input) {
-    return input != null ? input.replaceAll("(\"Authorization\"\\s*:\\s*\")([^\"]+)(\")", "$1***$3")
-        : null;
-  }
-
   private static void resetThreadLocal() {
     ApiAuthorization.logout();
     UserActivityContext.clear();
@@ -233,7 +228,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     Logger logger = awsservice.getLogger();
     if (logger.isLogged(LogLevel.DEBUG)) {
-      logger.debug(redactAuthorizationToken(str));
+      ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
+      if (event != null && event.getHeaders() != null) {
+        event.getHeaders().put("authorization", "****");
+        logger.debug(gson.toJson(event));
+      }
     }
 
     return this.gson.fromJson(str, ApiGatewayRequestEvent.class);
@@ -467,7 +466,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
       ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, response);
-      writeJson(awsServices, output, response.toMap());
+      writeJson(output, response.toMap());
       writeUserActivity(awsServices, authorization, ua);
 
     } catch (Exception e) {
@@ -483,7 +482,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         a.status(response.statusCode()).message(e.getMessage());
       }
 
-      writeJson(awsServices, output, response.toMap());
+      writeJson(output, response.toMap());
       writeUserActivity(awsServices, authorization, ua);
 
     } finally {
@@ -537,21 +536,14 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /**
    * Write JSON Response {@link OutputStream}.
    *
-   * @param awsservices {@link AwsServiceCache}
    * @param output {@link OutputStream}
    * @param response {@link Map}
    * @throws IOException IOException
    */
-  protected void writeJson(final AwsServiceCache awsservices, final OutputStream output,
-      final Map<String, Object> response) throws IOException {
+  protected void writeJson(final OutputStream output, final Map<String, Object> response)
+      throws IOException {
 
     String json = this.gson.toJson(response);
-
-    Logger logger = awsservices.getLogger();
-
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      logger.debug(this.gson.toJson(Map.of("response", response)));
-    }
 
     OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
 
