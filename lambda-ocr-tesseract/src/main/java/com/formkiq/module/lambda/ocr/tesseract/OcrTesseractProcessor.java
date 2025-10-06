@@ -65,6 +65,8 @@ import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambda.ocr.docx.DocFormatConverter;
 import com.formkiq.module.lambda.ocr.docx.DocxFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.PptxFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.XlsxFormatConverter;
 import com.formkiq.module.lambda.ocr.handlers.ObjectExaminePdfHandler;
 import com.formkiq.module.lambda.ocr.handlers.ObjectExaminePdfIdHandler;
 import com.formkiq.module.lambda.ocr.pdf.PdfFormatConverter;
@@ -188,7 +190,8 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
    */
   protected List<FormatConverter> getDefaultConverters() {
     return Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
-        new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
+        new XlsxFormatConverter(), new PptxFormatConverter(), new PdfFormatConverter(),
+        new TesseractFormatConverter(new TesseractWrapperImpl()));
   }
 
   private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {

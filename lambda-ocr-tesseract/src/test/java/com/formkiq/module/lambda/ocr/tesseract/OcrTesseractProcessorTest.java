@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -41,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.lambda.ocr.docx.PptxFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.XlsxFormatConverter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -113,12 +116,29 @@ class OcrTesseractProcessorTest {
         .build();
 
     TesseractWrapperData wrapper = new TesseractWrapperData(OCR_TEXT);
-    processor = new OcrTesseractProcessor(services, Arrays.asList(new DocxFormatConverter(),
-        new DocFormatConverter(), new PdfFormatConverter(), new TesseractFormatConverter(wrapper)));
+    processor = new OcrTesseractProcessor(services,
+        Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
+            new XlsxFormatConverter(), new PptxFormatConverter(), new PdfFormatConverter(),
+            new TesseractFormatConverter(wrapper)));
 
     ocrService = services.getExtension(DocumentOcrService.class);
     s3 = services.getExtension(S3Service.class);
     actionsService = services.getExtension(ActionsService.class);
+  }
+
+  private static void createOcrRecord(final String siteId, final String documentId,
+      final String jobId) {
+    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
+        .status(OcrScanStatus.REQUESTED);
+    ocrService.save(siteId, ocr);
+  }
+
+  private static void putFileInS3(final String siteId, final String documentId, final String name,
+      final MimeType mimeXlsx) throws IOException {
+    String documentS3Key = createS3Key(siteId, documentId);
+    try (InputStream is = LambdaContextRecorder.class.getResourceAsStream(name)) {
+      s3.putObject(BUCKET_NAME, documentS3Key, is, mimeXlsx.getContentType());
+    }
   }
 
   /** {@link Context}. */
@@ -141,9 +161,7 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
@@ -188,9 +206,7 @@ class OcrTesseractProcessorTest {
       s3.putObject(BUCKET_NAME, documentS3Key, "testdata".getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -233,9 +249,7 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
@@ -275,15 +289,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is =
-          LambdaContextRecorder.class.getResourceAsStream("/file-sample_100kB.docx")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOCX.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/file-sample_100kB.docx", MimeType.MIME_DOCX);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -327,15 +335,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is =
-          LambdaContextRecorder.class.getResourceAsStream("/file-sample_100kB.doc")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_DOC.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/file-sample_100kB.doc", MimeType.MIME_DOC);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -379,14 +381,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/sample.pdf")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/sample.pdf", MimeType.MIME_PDF);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -429,14 +426,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/collection.pdf")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/collection.pdf", MimeType.MIME_PDF);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -481,15 +473,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is =
-          LambdaContextRecorder.class.getResourceAsStream("/multipage_example.tif")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_TIF.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/multipage_example.tif", MimeType.MIME_TIF);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -536,15 +522,9 @@ class OcrTesseractProcessorTest {
           new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
-      try (InputStream is =
-          LambdaContextRecorder.class.getResourceAsStream("/multipage_example.pdf")) {
-        s3.putObject(BUCKET_NAME, documentS3Key, is, MimeType.MIME_PDF.getContentType());
-      }
+      putFileInS3(siteId, documentId, "/multipage_example.pdf", MimeType.MIME_PDF);
 
-      Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-          .status(OcrScanStatus.REQUESTED);
-      ocrService.save(siteId, ocr);
+      createOcrRecord(siteId, documentId, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -575,6 +555,100 @@ class OcrTesseractProcessorTest {
       // ensure no duplicate text
       int pos = text.indexOf(match);
       assertFalse(text.substring(pos + match.length()).contains(match));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful XLSX OCR.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequestPptxSuccess() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
+
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      putFileInS3(siteId, documentId, "/example.pptx", MimeType.MIME_PPTX);
+
+      createOcrRecord(siteId, documentId, jobId);
+
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_XLSX.getContentType())));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
+      assertTrue(text.contains("Quarterly Sales Overview"));
+      assertTrue(text.contains("Sales Breakdown"));
+
+      actions = actionsService.getActions(siteId, documentId);
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+    }
+  }
+
+  /**
+   * Test Successful XLSX OCR.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleRequestXlsxSuccess() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      String jobId = ID.uuid();
+
+      List<Action> actions = Collections.singletonList(
+          new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      putFileInS3(siteId, documentId, "/example.xlsx", MimeType.MIME_XLSX);
+
+      createOcrRecord(siteId, documentId, jobId);
+
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_XLSX.getContentType())));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
+      assertTrue(text.contains("Product\tRegion"));
+      assertTrue(text.contains("Accessories\tWest"));
 
       actions = actionsService.getActions(siteId, documentId);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
