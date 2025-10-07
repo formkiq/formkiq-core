@@ -82,14 +82,15 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       final String key, final AttributeDataType dataType, final AttributeType type,
       final boolean allowReservedAttributeKey, final Watermark watermark) {
 
-    WatermarkPosition position = watermark != null ? watermark.getPosition() : null;
+    WatermarkPosition position = watermark != null ? watermark.position() : null;
 
     AttributeRecord a = new AttributeRecord().documentId(key).key(key)
         .type(type != null ? type : AttributeType.STANDARD)
-        .setWatermarkText(watermark != null ? watermark.getText() : null)
-        .setWatermarkImageDocumentId(watermark != null ? watermark.getImageDocumentId() : null)
-        .setWatermarkRotation(watermark != null ? watermark.getRotation() : null)
-        .setWatermarkScale(watermark != null ? watermark.getScale() : null)
+        .setWatermarkText(watermark != null ? watermark.text() : null)
+        .setWatermarkImageDocumentId(watermark != null ? watermark.imageDocumentId() : null)
+        .setWatermarkRotation(watermark != null ? watermark.rotation() : null)
+        .setWatermarkScale(watermark != null ? watermark.scale() : null)
+        .setWatermarkFontSize(watermark != null ? watermark.fontSize() : null)
         .dataType(dataType != null ? dataType : AttributeDataType.STRING);
 
     if (position != null) {
@@ -238,28 +239,28 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   private void updateWatermark(final AttributeRecord record, final Watermark watermark) {
-    record.setWatermarkScale(watermark.getScale());
-    record.setWatermarkRotation(watermark.getRotation());
-    record.setWatermarkText(watermark.getText());
-    record.setWatermarkxAnchor(
-        watermark.getPosition() != null ? watermark.getPosition().getxAnchor() : null);
-    record.setWatermarkxOffset(
-        watermark.getPosition() != null ? watermark.getPosition().getxOffset() : null);
-    record.setWatermarkyOffset(
-        watermark.getPosition() != null ? watermark.getPosition().getyOffset() : null);
-    record.setWatermarkyAnchor(
-        watermark.getPosition() != null ? watermark.getPosition().getyAnchor() : null);
-    record.setWatermarkImageDocumentId(watermark.getImageDocumentId());
+    record.setWatermarkScale(watermark.scale());
+    record.setWatermarkRotation(watermark.rotation());
+    record.setWatermarkText(watermark.text());
+    record
+        .setWatermarkxAnchor(watermark.position() != null ? watermark.position().xAnchor() : null);
+    record
+        .setWatermarkxOffset(watermark.position() != null ? watermark.position().xOffset() : null);
+    record
+        .setWatermarkyOffset(watermark.position() != null ? watermark.position().yOffset() : null);
+    record
+        .setWatermarkyAnchor(watermark.position() != null ? watermark.position().yAnchor() : null);
+    record.setWatermarkImageDocumentId(watermark.imageDocumentId());
   }
 
   private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
     WatermarkXanchor xanchor =
-        position != null && position.getxAnchor() != null ? position.getxAnchor() : null;
+        position != null && position.xAnchor() != null ? position.xAnchor() : null;
     WatermarkYanchor yanchor =
-        position != null && position.getyAnchor() != null ? position.getyAnchor() : null;
+        position != null && position.yAnchor() != null ? position.yAnchor() : null;
 
-    a.setWatermarkxOffset(position != null ? position.getxOffset() : null)
-        .setWatermarkyOffset(position != null ? position.getyOffset() : null)
+    a.setWatermarkxOffset(position != null ? position.xOffset() : null)
+        .setWatermarkyOffset(position != null ? position.yOffset() : null)
         .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
   }
 

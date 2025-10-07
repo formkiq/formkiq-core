@@ -11158,6 +11158,9 @@ Resources:
             Watermark:
               type: "object"
               properties:
+                fontSize:
+                  type: "number"
+                  description: "Watermark Font Size"
                 text:
                   type: "string"
                   description: "Watermark text"

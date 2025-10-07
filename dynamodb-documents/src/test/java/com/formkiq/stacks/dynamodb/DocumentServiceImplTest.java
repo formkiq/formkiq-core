@@ -748,8 +748,10 @@ public class DocumentServiceImplTest implements DbKeys {
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "key",
           AttributeDataType.STRING, AttributeType.STANDARD);
-      attributeService.addWatermarkAttribute(siteId, "wm1", new Watermark().setText("watermark1"));
-      attributeService.addWatermarkAttribute(siteId, "wm2", new Watermark().setText("watermark2"));
+      attributeService.addWatermarkAttribute(siteId, "wm1",
+          new Watermark("watermark1", null, null, null, null, null));
+      attributeService.addWatermarkAttribute(siteId, "wm2",
+          new Watermark("watermark2", null, null, null, null, null));
 
       String documentId = ID.uuid();
 
