@@ -71,6 +71,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private Double watermarkyOffset;
   /** Watermark Y Offset. */
   private Double watermarkRotation;
+  /** Watermark Font Size. */
+  private Double watermarkFontSize;
   /** {@link WatermarkScale}. */
   private WatermarkScale watermarkScale;
 
@@ -136,6 +138,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     addNumberIfNotEmpty(attr, "watermarkxOffset", this.watermarkxOffset);
     addNumberIfNotEmpty(attr, "watermarkyOffset", this.watermarkyOffset);
     addNumberIfNotEmpty(attr, "watermarkRotation", this.watermarkRotation);
+    addNumberIfNotEmpty(attr, "watermarkFontSize", this.watermarkFontSize);
 
     return attr;
   }
@@ -174,6 +177,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
           .setWatermarkxOffset(toDoubleValue(attrs, "watermarkxOffset"))
           .setWatermarkRotation(toDoubleValue(attrs, "watermarkRotation"))
           .setWatermarkyOffset(toDoubleValue(attrs, "watermarkyOffset"))
+          .setWatermarkFontSize(toDoubleValue(attrs, "watermarkFontSize"))
           .setWatermarkScale(toEnumValue(attrs, WatermarkScale.class, "watermarkScale"))
           .dataType(toEnumValue(attrs, AttributeDataType.class, "dataType"));
     }
@@ -197,6 +201,15 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    */
   public AttributeType getType() {
     return this.type;
+  }
+
+  /**
+   * Get Watermark Font Size.
+   * 
+   * @return {@link Double}
+   */
+  public Double getWatermarkFontSize() {
+    return this.watermarkFontSize;
   }
 
   /**
@@ -298,6 +311,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return !isEmpty(this.watermarkText) ? createDatabaseKey(siteId, ATTR) : null;
+  }
+
+  /**
+   * Set Watermark Font Size.
+   *
+   * @param fontSize {@link Double}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setWatermarkFontSize(final Double fontSize) {
+    this.watermarkFontSize = fontSize;
+    return this;
   }
 
   public AttributeRecord setWatermarkImageDocumentId(final String imageDocumentId) {

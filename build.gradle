@@ -223,3 +223,50 @@ openApiGenerate {
   invokerPackage.set("com.formkiq.springboot.invoker")
   modelPackage.set("com.formkiq.springboot.model")
 }
+
+tasks.register("cleanOpenApi") {
+  def fileMappings = [
+    (file("build/ytt/api/api.yaml"))        : "openapi-jwt.yaml",
+    (file("build/ytt/api/api-iam.yaml"))    : "openapi-iam.yaml",
+    (file("build/ytt/api/api-apikey.yaml")) : "openapi-key.yaml"
+  ]
+
+  def destDir = layout.buildDirectory.dir("../docs/openapi")
+
+  inputs.files(fileMappings.keySet())
+  outputs.dir(destDir)
+
+  doLast {
+    def outDir = destDir.get().asFile
+    outDir.mkdirs()
+
+    fileMappings.each { File src, String outName ->
+      if (!src.exists()) {
+        logger.warn("⚠️  Skipping missing file: ${src}")
+        return
+      }
+
+      def lines = src.readLines()
+      def startIdx = lines.findIndexOf { it.trim().startsWith("openapi:") }
+      def endIdx   = lines.findIndexOf { it.trim().startsWith("Outputs:") }
+
+      if (startIdx < 0) {
+        logger.warn("⚠️  No 'openapi:' found in ${src}; skipping.")
+        return
+      }
+      if (endIdx < 0 || endIdx <= startIdx) {
+        endIdx = lines.size() // take until EOF if no 'Outputs:'
+      }
+
+      def extracted = lines.subList(startIdx, endIdx)
+      def outFile = new File(outDir, outName)
+
+      outFile.parentFile.mkdirs()
+      outFile.text = extracted.join(System.lineSeparator()) + System.lineSeparator()
+
+      logger.lifecycle("✅ Extracted ${src.name} → ${outFile}")
+    }
+  }
+}
+
+cleanOpenApi.dependsOn 'yttRenderAll'

@@ -438,6 +438,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(watermark);
       assertEquals(text, watermark.getText());
       assertEquals(WatermarkScale.ORIGINAL, watermark.getScale());
+      assertNull(watermark.getFontSize());
       assertEquals("123.0", String.valueOf(watermark.getRotation()));
       WatermarkPosition position = watermark.getPosition();
       assertNotNull(position);
@@ -645,6 +646,38 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("Attribute '" + key + "' created", response.getMessage());
+    }
+  }
+
+  /**
+   * POST /attributes watermark with font size.
+   *
+   */
+  @Test
+  public void testAddAttributesFontSize() throws ApiException {
+    // given
+    final String text = "sample text";
+    final String attributeKey = "wm1";
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.WATERMARK)
+              .watermark(new Watermark().fontSize(new BigDecimal("17"))
+                  .scale(com.formkiq.client.model.WatermarkScale.ORIGINAL).text(text)));
+
+      // when
+      AddResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + attributeKey + "' created", response.getMessage());
+
+      GetAttributeResponse attr = this.attributesApi.getAttribute(attributeKey, siteId);
+      assertNotNull(attr.getAttribute());
+      Watermark watermark = attr.getAttribute().getWatermark();
+      assertNotNull(watermark);
+      assertEquals("17.0", String.valueOf(watermark.getFontSize()));
     }
   }
 

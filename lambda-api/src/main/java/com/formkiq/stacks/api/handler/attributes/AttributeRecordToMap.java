@@ -51,22 +51,16 @@ public class AttributeRecordToMap implements Function<AttributeRecord, Map<Strin
     Set<Map.Entry<String, Object>> keys = attr.entrySet();
     keys.removeIf(e -> e.getKey().startsWith("watermark"));
 
-    Watermark watermark = new Watermark();
-    watermark.setScale(a.getWatermarkScale());
-    watermark.setRotation(a.getWatermarkRotation());
-    watermark.setText(a.getWatermarkText());
-    watermark.setImageDocumentId(a.getWatermarkImageDocumentId());
+    Watermark watermark = new Watermark(a.getWatermarkText(), a.getWatermarkRotation(),
+        a.getWatermarkImageDocumentId(), null, a.getWatermarkScale(), null);
 
     boolean addWatermark = hasWatermark(a);
 
     if (addWatermark) {
-      WatermarkPosition pos = new WatermarkPosition();
-      pos.setxAnchor(a.getWatermarkxAnchor());
-      pos.setyAnchor(a.getWatermarkyAnchor());
-      pos.setxOffset(a.getWatermarkxOffset());
-      pos.setyOffset(a.getWatermarkyOffset());
-
-      watermark.setPosition(pos);
+      WatermarkPosition pos = new WatermarkPosition(a.getWatermarkxOffset(),
+          a.getWatermarkyOffset(), a.getWatermarkxAnchor(), a.getWatermarkyAnchor());
+      watermark = new Watermark(a.getWatermarkText(), a.getWatermarkRotation(),
+          a.getWatermarkImageDocumentId(), pos, a.getWatermarkScale(), a.getWatermarkFontSize());
     }
 
     if (addWatermark) {

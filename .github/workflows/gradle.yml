@@ -42,7 +42,7 @@ jobs:
       env:
         PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
           && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-      run: ./gradlew build --scan --no-daemon
+      run: ./gradlew build --scan --no-daemon --console=plain
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()
