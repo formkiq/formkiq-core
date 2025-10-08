@@ -46,6 +46,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -58,12 +59,19 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class DocumentExternalSystemExport implements BiFunction<String, String, String> {
 
+  private static Map<Object, List<Map<String, Object>>> getAttributeKeyMap(
+      final Collection<Map<String, Object>> activities) {
+    return activities.stream().filter(a -> "documentAttributes".equals(a.get("resource")))
+        .collect(Collectors.groupingBy(a -> a.get("attributeKey")));
+  }
+
   /** {@link DocumentService}. */
   private final DocumentService documentService;
   /** {@link Gson}. */
   private final Gson gson = GsonUtil.getInstance();
   /** Documents S3 Bucket. */
   private final String documentsBucket;
+
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3Presigner;
 
@@ -75,12 +83,15 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
 
   private void addChanged(final Collection<Map<String, Object>> activities,
       final DynamicDocumentItem item) {
+
     if (!notNull(activities).isEmpty()) {
 
       Collection<Map<String, Object>> documentActivities =
           activities.stream().filter(a -> "documents".equals(a.get("resource"))).toList();
+
       Map<String, Object> changed = new HashMap<>();
       documentActivities.forEach(a -> {
+
         Map<String, Object> valuesMap = (Map<String, Object>) a.get("changes");
         if (!notNull(valuesMap).isEmpty()) {
           valuesMap.forEach((k, v) -> {
@@ -103,44 +114,70 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
 
     if (!notNull(activities).isEmpty()) {
 
-      Map<Object, List<Map<String, Object>>> attributesActivities =
-          activities.stream().filter(a -> "documentAttributes".equals(a.get("resource")))
-              .collect(Collectors.groupingBy(a -> a.get("attributeKey")));
+      boolean documentCreate = isDocumentCreate(activities);
 
+      Map<String, Map<String, Object>> addedAttributes = new HashMap<>();
       Map<String, Map<String, Object>> changedAttributes = new HashMap<>();
-      attributesActivities.forEach((k, v) -> {
-        Map<String, List<Object>> values = new HashMap<>();
-        v.forEach(a -> {
+      Map<String, Map<String, Object>> deletedAttributes = new HashMap<>();
+
+      Map<Object, List<Map<String, Object>>> attributesActivities = getAttributeKeyMap(activities);
+      attributesActivities.forEach((key, value) -> {
+
+        Map<String, List<Object>> addedValues = new HashMap<>();
+        Map<String, List<Object>> changedValues = new HashMap<>();
+        Map<String, List<Object>> deletedValues = new HashMap<>();
+
+        for (Map<String, Object> a : value) {
+
+          String type = (String) a.get("type");
+
           if (a.get("changes") instanceof Map m) {
+
             Map<String, Object> map = new HashMap<>(m);
-            map.keySet().removeIf(key -> !key.contains("Value"));
-            map.forEach((k1, v1) -> {
-              if (v1 instanceof Map mm && mm.containsKey("oldValue")) {
-                Object oldValue = mm.get("oldValue");
-                values.computeIfAbsent(k1, s -> new ArrayList<>()).add(oldValue);
-              }
-            });
-          }
-        });
+            map.keySet().removeIf(k -> !k.contains("Value"));
 
-        Map<String, Object> m = new HashMap<>();
-        values.forEach((k1, v1) -> {
-          if (v1.size() == 1) {
-            m.put(k1, v1.get(0));
-          } else {
-            m.put(k1 + "s", v1);
+            updateValuesMaps(type, map, addedValues, changedValues, deletedValues);
           }
-        });
+        }
 
-        if (!m.isEmpty()) {
-          changedAttributes.put((String) k, m);
+        if (!documentCreate) {
+          addChangedAttributes(addedAttributes, addedValues, key);
+          addChangedAttributes(changedAttributes, changedValues, key);
+          addChangedAttributes(deletedAttributes, deletedValues, key);
         }
       });
 
+      if (!addedAttributes.isEmpty()) {
+        item.put("addedAttributes", addedAttributes.keySet().stream().sorted().toList());
+      }
+
       if (!changedAttributes.isEmpty()) {
         item.put("changedAttributes", changedAttributes);
+      } else if (!deletedAttributes.isEmpty()) {
+        item.put("changedAttributes", deletedAttributes);
       }
     }
+  }
+
+  private void addChangedAttributes(final Map<String, Map<String, Object>> changedAttributes,
+      final Map<String, List<Object>> changedValues, final Object key) {
+    Map<String, Object> m = changedValues.entrySet().stream()
+        .collect(Collectors.toMap(e -> e.getValue().size() == 1 ? e.getKey() : e.getKey() + "s",
+            e -> e.getValue().size() == 1 ? e.getValue().get(0) : e.getValue()));
+
+    if (!m.isEmpty()) {
+      changedAttributes.put((String) key, m);
+    }
+  }
+
+  private void addChangedValues(final Map<String, List<Object>> values,
+      final Map<String, Object> map, final String changeKey) {
+    map.forEach((k1, v1) -> {
+      if (v1 instanceof Map mm && mm.containsKey(changeKey)) {
+        Object oldValue = mm.get(changeKey);
+        values.computeIfAbsent(k1, s -> new ArrayList<>()).add(oldValue);
+      }
+    });
   }
 
   private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,
@@ -244,5 +281,23 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     }
 
     return url;
+  }
+
+  private boolean isDocumentCreate(final Collection<Map<String, Object>> activities) {
+    Set<String> types = Set.of("CREATE", "RESTORE", "SOFT_DELETE", "DELETE");
+    return activities.stream().anyMatch(
+        a -> "documents".equals(a.get("resource")) && types.contains((String) a.get("type")));
+  }
+
+  private void updateValuesMaps(final String type, final Map<String, Object> map,
+      final Map<String, List<Object>> addedValues, final Map<String, List<Object>> changedValues,
+      final Map<String, List<Object>> deletedValues) {
+    if ("CREATE".equals(type)) {
+      addChangedValues(addedValues, map, "newValue");
+    } else if ("UPDATE".equals(type)) {
+      addChangedValues(changedValues, map, "oldValue");
+    } else if ("DELETE".equals(type)) {
+      addChangedValues(deletedValues, map, "oldValue");
+    }
   }
 }

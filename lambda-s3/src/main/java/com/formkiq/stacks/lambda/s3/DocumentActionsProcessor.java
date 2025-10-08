@@ -292,7 +292,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     logAction(logger, "action complete", siteId, documentId, action);
 
-    updateComplete(logger, siteId, documentId, actions, action, actionStatus);
+    updateComplete(logger, siteId, documentId, action, actionStatus);
   }
 
   private ProcessActionStatus performAction(final Logger logger, final String siteId,
@@ -460,12 +460,11 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     if (newImage != null) {
       String siteId = newImage.siteId().s();
       String documentId = newImage.documentId().s();
-      Collection<List<Map<String, AttributeValue>>> activities = fetchActivityKeys(newImage);
-      activities = filterActivities(activities);
+      Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
 
       DetailTypeResolver resolver = new DetailTypeResolver();
 
-      for (List<Map<String, AttributeValue>> activity : activities) {
+      for (List<Map<String, AttributeValue>> activity : activitiesByDoc) {
 
         String detailType = resolver.apply(activity);
         if (!detailType.equals(DEFAULT_DETAIL)) {
@@ -494,31 +493,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
-  /**
-   * Filter out activities we don't want to send event bridge messages for.
-   * 
-   * @param activities {@link Collection}
-   * @return {@link Collection}
-   */
-  private Collection<List<Map<String, AttributeValue>>> filterActivities(
-      final Collection<List<Map<String, AttributeValue>>> activities) {
-
-    boolean exists = activities.stream().flatMap(List::stream).anyMatch(av -> {
-      String resource = DynamoDbTypes.toString(av.get("resource"));
-      String type = DynamoDbTypes.toString(av.get("type"));
-      return "documents".equals(resource) && ("CREATE".equals(type) || "DELETE".equals(type));
-    });
-
-    // Join Document Create / Delete activities together
-    if (exists) {
-      return List.of(activities.stream().flatMap(List::stream).toList());
-    }
-
-    return activities;
-  }
-
   private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
       final AwsEventDynamodbNewImage newImage) {
+
     DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
     List<DynamoDbKey> keys = activityKeys.l().stream()
@@ -530,8 +507,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
 
     Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
-        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("resource")) + "#"
-            + DynamoDbTypes.toString(e.get("type"))));
+        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("documentId"))));
 
     return map.values();
   }
@@ -599,12 +575,11 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @param processStatus {@link ProcessActionStatus}
    */
   private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action, final ProcessActionStatus processStatus) {
+      final Action action, final ProcessActionStatus processStatus) {
 
     switch (processStatus.actionStatus()) {
       case RUNNING -> {
