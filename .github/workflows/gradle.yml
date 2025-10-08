@@ -37,6 +37,13 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
       with:
         cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
+    - name: Cache Cognito ZIP
+      uses: actions/cache@v4
+      with:
+        path: build/aws-cognito-v${{ env.AWS_COGNITO_VERSION }}.zip
+        key: cognito-${{ runner.os }}-v${{ env.AWS_COGNITO_VERSION }}
+        restore-keys: |
+          cognito-${{ runner.os }}-
     - name: Build Project
       timeout-minutes: 35
       env:
