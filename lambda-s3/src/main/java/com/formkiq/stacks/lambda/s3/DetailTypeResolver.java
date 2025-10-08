@@ -47,13 +47,13 @@ public class DetailTypeResolver
   private final List<Map.Entry<Predicate<Map<String, AttributeValue>>, String>> rules =
       List.of(Map.entry(hasTypeResource("CREATE", "documents"), "New Document Create Metadata"),
           Map.entry(hasTypeResource("NEW_VERSION", "documents"), "New Document Create Content"),
-          Map.entry(hasTypeResource("DELETE", "documents"), "Document Delete"),
-          Map.entry(hasTypeResource("SOFT_DELETE", "documents"), "Document Soft Delete"),
           Map.entry(hasTypeResource("RESTORE", "documents"), "Document Restore"),
           Map.entry(hasTypeResource("UPDATE", "documents"), "Document Update Metadata"),
           Map.entry(hasTypeResource("CREATE", "documentAttributes"), "Document Create Metadata"),
-          Map.entry(hasTypeResource("DELETE", "documentAttributes"), "Document Delete Metadata"),
-          Map.entry(hasTypeResource("UPDATE", "documentAttributes"), "Document Update Metadata"));
+          Map.entry(hasTypeResource("UPDATE", "documentAttributes"), "Document Update Metadata"),
+          Map.entry(hasTypeResource("SOFT_DELETE", "documents"), "Document Soft Delete"),
+          Map.entry(hasTypeResource("DELETE", "documents"), "Document Delete"),
+          Map.entry(hasTypeResource("DELETE", "documentAttributes"), "Document Delete Metadata"));
 
   @Override
   public String apply(final Collection<Map<String, AttributeValue>> activities) {

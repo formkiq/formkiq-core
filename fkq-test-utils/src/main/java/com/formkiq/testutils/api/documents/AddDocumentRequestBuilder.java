@@ -205,6 +205,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Set Deep Link.
+   *
+   * @param deepLink {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder deepLink(final String deepLink) {
+    this.request.setDeepLinkPath(deepLink);
+    return this;
+  }
+
+  /**
    * Set Path.
    * 
    * @param path {@link String}
