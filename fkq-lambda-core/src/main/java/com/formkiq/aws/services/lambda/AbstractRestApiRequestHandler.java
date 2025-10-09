@@ -416,12 +416,18 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       String userAgent = event.getHeaderValue("User-Agent");
       Map<String, Object> identity = rc.getIdentity() != null ? rc.getIdentity() : Map.of();
 
+      String responseBody = null;
+      if (response.statusCode() >= ApiResponseStatus.SC_BAD_REQUEST.getStatusCode()
+          && response.body() instanceof String s) {
+        responseBody = s;
+      }
+
       HttpAccessLog accessLog = new HttpAccessLogBuilder().requestTime(rc.getRequestTime())
           .requestId(rc.getRequestId()).clientIp((String) identity.get("sourceIp"))
           .userId(authorization != null ? authorization.getUsername() : "Unknown")
           .http(event.getHttpMethod(), rc.getProtocol(), event.getResource(),
               event.getPathParameters(), event.getQueryStringParameters())
-          .resp(response.statusCode()).userAgent(userAgent).build();
+          .resp(response.statusCode(), responseBody).userAgent(userAgent).build();
 
       logger.info(gson.toJson(accessLog));
 
