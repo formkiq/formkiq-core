@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -340,24 +340,28 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       final ApiAuthorization authorization, final ApiGatewayRequestHandler handler)
       throws Exception {
 
-    Collection<ApiPermission> permissions = authorization.getPermissions();
-
     Optional<Boolean> hasAccess =
         handler.isAuthorized(getAwsServices(), method, event, authorization);
 
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
-    if (hasAccess.isEmpty()) {
-      hasAccess = switch (method) {
-        case "head", "get" -> checkPermission(ApiPermission.READ, permissions);
-        case "post", "patch", "put" -> checkPermission(ApiPermission.WRITE, permissions);
-        case "delete" -> checkPermission(ApiPermission.DELETE, permissions);
-        default -> Optional.empty();
-      };
+    String siteId = authorization.getSiteId();
+    if (siteId != null) {
+      Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
+
+      if (hasAccess.isEmpty()) {
+        hasAccess = switch (method) {
+          case "head", "get" -> checkPermission(ApiPermission.READ, permissions);
+          case "post", "patch", "put" -> checkPermission(ApiPermission.WRITE, permissions);
+          case "delete" -> checkPermission(ApiPermission.DELETE, permissions);
+          default -> Optional.empty();
+        };
+      }
     }
 
-    hasAccess = permissions.contains(ApiPermission.ADMIN) ? Optional.of(Boolean.TRUE) : hasAccess;
-
+    hasAccess =
+        authorization.getAllPermissions().contains(ApiPermission.ADMIN) ? Optional.of(Boolean.TRUE)
+            : hasAccess;
     return hasAccess.orElse(Boolean.FALSE);
   }
 
@@ -524,13 +528,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private List<ApiAuthorizationInterceptor> setupApiAuthorizationInterceptor(
       final AwsServiceCache awsServices) {
     return awsServices.getExtensions(ApiAuthorizationInterceptor.class);
-  }
-
-  private String toStringFromMap(final Map<String, String> map) {
-    return map != null
-        ? map.entrySet().stream().map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
-            .collect(Collectors.joining(","))
-        : "";
   }
 
   /**

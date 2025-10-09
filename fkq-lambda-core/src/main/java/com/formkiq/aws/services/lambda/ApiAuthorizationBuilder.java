@@ -130,8 +130,7 @@ public class ApiAuthorizationBuilder {
                 List.of(ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE,
                     ApiPermission.DELETE));
           } else if (admin) {
-            authorization.addPermission(group, Arrays.asList(ApiPermission.READ,
-                ApiPermission.WRITE, ApiPermission.DELETE, ApiPermission.ADMIN));
+            authorization.addPermission(group, List.of(ApiPermission.values()));
           } else if (claims.containsKey("permissions")) {
 
             String[] list = claims.get("permissions").toString().split(",");

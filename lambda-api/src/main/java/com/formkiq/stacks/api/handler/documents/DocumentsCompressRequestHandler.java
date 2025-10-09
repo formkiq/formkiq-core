@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
@@ -100,8 +101,10 @@ public class DocumentsCompressRequestHandler
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.READ);
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
+      throws UnauthorizedException {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
     return Optional.of(access);
   }
 

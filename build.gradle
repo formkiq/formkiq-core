@@ -20,9 +20,11 @@ allprojects {
   ext.awsCognitoVersion = '1.6.2'
   group = 'com.formkiq.stacks'
 
-  // configurations.configureEach {
-  //   resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
-  // }
+  configurations.all {
+    resolutionStrategy {
+      cacheChangingModulesFor 0, 'seconds'
+    }
+  }
 
   licenseReport {
     configurations = ['runtimeClasspath']

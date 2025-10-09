@@ -105,7 +105,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     Site site = sites.get(0);
     assertEquals(DEFAULT_SITE_ID, site.getSiteId());
     assertEquals(Site.PermissionEnum.READ_WRITE, site.getPermission());
-    assertEquals("ADMIN,DELETE,READ,WRITE",
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE",
         notNull(site.getPermissions()).stream().map(Enum::name).collect(Collectors.joining(",")));
     assertNotNull(site.getUploadEmail());
 
