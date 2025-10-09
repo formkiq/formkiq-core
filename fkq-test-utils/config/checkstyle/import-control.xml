@@ -53,6 +53,10 @@
             <allow pkg="com.formkiq.testutils.api" />
         </subpackage>
 
+        <subpackage name="users">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 	</subpackage>
 
 	<subpackage name="aws">

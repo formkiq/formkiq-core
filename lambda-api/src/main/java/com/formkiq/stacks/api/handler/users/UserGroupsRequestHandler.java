@@ -84,7 +84,7 @@ public class UserGroupsRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
+    boolean access = authorization.getAllPermissions().contains(ApiPermission.ADMIN);
     return Optional.of(access);
   }
 }

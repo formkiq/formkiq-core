@@ -94,7 +94,8 @@ public class DocumentsIdUploadRequestHandler
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.WRITE);
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.WRITE);
     return Optional.of(access);
   }
 
