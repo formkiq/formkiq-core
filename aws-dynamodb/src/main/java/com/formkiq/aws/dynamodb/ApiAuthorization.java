@@ -157,6 +157,16 @@ public class ApiAuthorization {
   }
 
   /**
+   * All permissions across ALL sites.
+   * 
+   * @return {@link Collection} {@link ApiPermission}
+   */
+  public Collection<ApiPermission> getAllPermissions() {
+    return this.permissionsBySiteId.keySet().stream()
+        .flatMap(siteId -> getPermissions(siteId).stream()).collect(Collectors.toSet());
+  }
+
+  /**
    * Get Object from Cache.
    * 
    * @param <T> Type of Object.
@@ -165,15 +175,6 @@ public class ApiAuthorization {
    */
   public <T> T getCacheObject(final String key) {
     return (T) this.cache.get(key);
-  }
-
-  /**
-   * Get {@link ApiPermission}.
-   * 
-   * @return {@link Collection} {@link ApiPermission}
-   */
-  public Collection<ApiPermission> getPermissions() {
-    return getPermissions(this.defaultSiteId);
   }
 
   /**

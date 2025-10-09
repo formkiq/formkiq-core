@@ -25,18 +25,16 @@ package com.formkiq.stacks.api.handler.groups;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-import java.util.Optional;
-
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}/users/{username}". */
 public class GroupsUserRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements ApiGatewayRequestHandler, AdminRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link GroupsUserRequestHandler} URL. */
   public static final String URL = "/groups/{groupName}/users/{username}";
@@ -59,12 +57,5 @@ public class GroupsUserRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 }
