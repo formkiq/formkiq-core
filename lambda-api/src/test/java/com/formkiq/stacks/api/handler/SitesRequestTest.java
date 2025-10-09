@@ -97,22 +97,25 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     GetSitesResponse response = this.systemApi.getSites(null);
 
     // then
+    assertEquals("default,Admins,finance", String.join(",", notNull(response.getRoles())));
+
     List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
 
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals(Site.PermissionEnum.READ_WRITE, sites.get(0).getPermission());
-    assertEquals("ADMIN,DELETE,READ,WRITE", notNull(sites.get(0).getPermissions()).stream()
-        .map(Enum::name).collect(Collectors.joining(",")));
-    assertNotNull(sites.get(0).getUploadEmail());
+    Site site = sites.get(0);
+    assertEquals(DEFAULT_SITE_ID, site.getSiteId());
+    assertEquals(Site.PermissionEnum.READ_WRITE, site.getPermission());
+    assertEquals("ADMIN,DELETE,READ,WRITE",
+        notNull(site.getPermissions()).stream().map(Enum::name).collect(Collectors.joining(",")));
+    assertNotNull(site.getUploadEmail());
 
-    String uploadEmail = sites.get(0).getUploadEmail();
+    String uploadEmail = site.getUploadEmail();
     assertNotNull(uploadEmail);
     assertTrue(uploadEmail.endsWith("@tryformkiq.com"));
     assertTrue(Pattern.matches(EMAIL, uploadEmail.subSequence(0, uploadEmail.indexOf("@"))));
 
-    assertNotNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
-        FORMKIQ_APP_ENVIRONMENT, sites.get(0).getSiteId())));
+    assertNotNull(ssm.getParameterValue(
+        String.format("/formkiq/%s/siteid/%s/email", FORMKIQ_APP_ENVIRONMENT, site.getSiteId())));
 
     String[] strs = uploadEmail.split("@");
     assertEquals("tryformkiq.com", strs[1]);

@@ -12889,6 +12889,10 @@ Resources:
                 username:
                   type: "string"
                   description: "Username of request caller"
+                roles:
+                  type: "array"
+                  items:
+                    type: "string"
                 sites:
                   type: "array"
                   description: "List of sites"

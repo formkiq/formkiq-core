@@ -136,7 +136,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
 
     String userId = authorization.getUsername();
 
-    return ApiRequestHandlerResponse.builder().ok().body(Map.of("username", userId, "sites", sites))
+    return ApiRequestHandlerResponse.builder().ok()
+        .body(Map.of("username", userId, "roles", authorization.getRoles(), "sites", sites))
         .build();
   }
 
