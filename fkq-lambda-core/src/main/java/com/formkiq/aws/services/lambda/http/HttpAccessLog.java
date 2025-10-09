@@ -52,6 +52,6 @@ public record HttpAccessLog(String requestTime, String requestId, Client client,
 
   /** Represents the HTTP response metadata. */
   @Reflectable
-  public record Resp(int status) {
+  public record Resp(int status, String message) {
   }
 }

@@ -94,8 +94,8 @@ public class HttpAccessLogBuilder {
     return this;
   }
 
-  public HttpAccessLogBuilder resp(final int status) {
-    this.resp = new HttpAccessLog.Resp(status);
+  public HttpAccessLogBuilder resp(final int status, final String message) {
+    this.resp = new HttpAccessLog.Resp(status, message);
     return this;
   }
 

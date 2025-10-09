@@ -53,7 +53,7 @@ class HttpAccessLogBuilderTest {
         .requestId("R-lgrgHiiYcEPeA=").clientIp("50.71.4.111")
         .userId("c1abc5a0-3001-701c-2184-1fe53d0cfc9e")
         .http("GET", "HTTP/1.1", "GET /sites", Map.of("documentId", "1"), Map.of("siteId", "111"))
-        .resp(status).userAgent("Mozilla/5.0 (...)").build();
+        .resp(status, null).userAgent("Mozilla/5.0 (...)").build();
 
     // when
     String json = GSON.toJson(log);
