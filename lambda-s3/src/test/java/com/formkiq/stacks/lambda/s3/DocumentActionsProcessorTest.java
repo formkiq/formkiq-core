@@ -2782,14 +2782,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private void validateAttributes(final Map<String, Object> document) {
-    Collection<Map<String, Object>> attrList =
-        (Collection<Map<String, Object>>) document.get("attributes");
+    Map<String, Map<String, Object>> attrList =
+        (Map<String, Map<String, Object>>) document.get("attributes");
     assertEquals(1, attrList.size());
 
-    Map<String, Object> attrMap = attrList.iterator().next();
-    final int expected = 3;
-    assertEquals(expected, attrMap.size());
-    assertEquals("category", attrMap.get("key"));
+    assertTrue(attrList.containsKey("category"));
+    Map<String, Object> attrMap = attrList.get("category");
+    assertEquals(2, attrMap.size());
     assertEquals("STRING", attrMap.get("valueType"));
     assertEquals("[other, person]", attrMap.get("stringValues").toString());
   }
