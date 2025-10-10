@@ -49,7 +49,7 @@ jobs:
       env:
         PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
           && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-      run: ./gradlew build --scan --no-daemon --console=plain
+      run: ./gradlew :lambda-apikey-authorizer:graalvmNativeImage --build-cache -Dorg.gradle.caching.debug=true --info --no-daemon --console=plain
     - name: Upload test reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -63,11 +63,3 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
-
-    # Runs a set of commands using the runners shell
-    - name: Deploy to S3
-      env:
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-        DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
-      run: |
-        aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
