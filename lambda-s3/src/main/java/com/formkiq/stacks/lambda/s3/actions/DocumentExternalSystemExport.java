@@ -180,7 +180,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     });
   }
 
-  private Collection<Map<String, Object>> addDocumentAttributes(final String siteId,
+  private Map<String, Map<String, Object>> addDocumentAttributes(final String siteId,
       final String documentId) {
 
     final int limit = 100;
@@ -191,12 +191,18 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     Collection<Map<String, Object>> list =
         new DocumentAttributeRecordToMap(true).apply(results.getResults());
 
+    Map<String, Map<String, Object>> map = new HashMap<>();
+
     list.forEach(l -> {
+      String key = (String) l.get("key");
+      map.put(key, l);
+
+      l.remove("key");
       l.remove("userId");
       l.remove("insertedDate");
     });
 
-    return list;
+    return map;
   }
 
   private void addDocumentTags(final String siteId, final String documentId,
@@ -247,7 +253,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     URL s3Url = getS3Url(siteId, documentId, item);
     item.put("url", s3Url);
 
-    Collection<Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
+    Map<String, Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
     if (!attributes.isEmpty()) {
       item.put("attributes", attributes);
     }
