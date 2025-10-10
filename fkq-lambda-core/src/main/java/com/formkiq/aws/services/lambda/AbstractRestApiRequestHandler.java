@@ -418,8 +418,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       String responseBody = null;
       if (response.statusCode() >= ApiResponseStatus.SC_BAD_REQUEST.getStatusCode()
-          && response.body() instanceof String s) {
-        responseBody = s;
+          && response.body() instanceof Map m) {
+        if (m.containsKey("message")) {
+          responseBody = (String) m.get("message");
+        }
       }
 
       HttpAccessLog accessLog = new HttpAccessLogBuilder().requestTime(rc.getRequestTime())
