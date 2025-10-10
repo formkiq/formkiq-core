@@ -184,9 +184,12 @@ Resources:
           Id: s3origin
           OriginPath:
             Fn::Sub: "/${ConsoleVersion}"
+          OriginAccessControlId:
+            Fn::GetAtt:
+              - ConsoleOAC
+              - Id
           S3OriginConfig:
-            OriginAccessIdentity:
-              Fn::Sub: 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+            OriginAccessIdentity: ''
         DefaultCacheBehavior:
           Compress: true
           DefaultTTL: 600
@@ -217,6 +220,7 @@ Resources:
             - HasCertificateStackNameDomainName
             - sni-only
             - Ref: "AWS::NoValue"
+          MinimumProtocolVersion: TLSv1.2_2021
           CloudFrontDefaultCertificate:
             Fn::If:
             - HasCertificateStackNameDomainName
@@ -228,7 +232,7 @@ Resources:
             - HasWAF
             - Ref: WAFWebACLId
             - Ref: AWS::NoValue
-        HttpVersion: http2
+        HttpVersion: http2and3
         CustomErrorResponses:
         - ErrorCode: '403'
           ResponsePagePath: "/index.html"
@@ -271,19 +275,21 @@ Resources:
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
-  CloudFrontOriginAccessIdentity:
-    Condition: IsNotGovCloud
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+  ConsoleOAC:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment:
-          Fn::Sub: "FormKiQ Console CloudFront Identity"
+      OriginAccessControlConfig:
+        Name:
+          Fn::Sub: "FormKiQ-Console-${AppEnvironment}-Oac"
+        Description: Access control for S3 origin
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
 
   ConsoleBucketPolicy:
     Condition: IsNotGovCloud
     Type: "AWS::S3::BucketPolicy"
     DependsOn:
-    - CloudFrontOriginAccessIdentity
     - Console
     Properties:
       Bucket:
@@ -291,23 +297,16 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-        -
-          Action:
-            - "s3:GetObject"
-          Effect: "Allow"
-          Resource:
-            Fn::Join:
-              - ""
-              -
-                - Fn::GetAtt:
-                  - Console
-                  - Arn
-                - "/*"
-          Principal:
-            CanonicalUser:
-              Fn::GetAtt:
-              - CloudFrontOriginAccessIdentity
-              - S3CanonicalUserId
+          - Sid: AllowCloudFrontOACReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource:
+              Fn::Sub: 'arn:aws:s3:::${Console}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
 
 Outputs:
 
