@@ -4,22 +4,22 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="http">
-	
+
 		<allow pkg="com.google.gson" />
-	
+
 		<allow pkg="java.io" />
-        <allow pkg="java.time" />
+		<allow pkg="java.time" />
 		<allow pkg="java.net" />
 		<allow pkg="java.net.http" />
 		<allow pkg="java.nio.charset" />
 		<allow pkg="java.nio.file" />
 		<allow pkg="java.util" />
 
-        <subpackage name="transform">
-            <allow pkg="com.formkiq.module.http" />
-        </subpackage>
+		<subpackage name="transform">
+			<allow pkg="com.formkiq.module.http" />
+		</subpackage>
 	</subpackage>
-	
+
 </import-control>

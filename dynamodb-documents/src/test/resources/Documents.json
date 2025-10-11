@@ -51,10 +51,7 @@
       ],
       "Projection": {
         "ProjectionType": "INCLUDE",
-        "NonKeyAttributes": [
-          "inserteddate",
-          "documentId"
-        ]
+        "NonKeyAttributes": ["inserteddate", "documentId"]
       },
       "ProvisionedThroughput": {
         "ReadCapacityUnits": 5,
@@ -75,10 +72,7 @@
       ],
       "Projection": {
         "ProjectionType": "INCLUDE",
-        "NonKeyAttributes": [
-          "inserteddate",
-          "documentId"
-        ]
+        "NonKeyAttributes": ["inserteddate", "documentId"]
       },
       "ProvisionedThroughput": {
         "ReadCapacityUnits": 5,

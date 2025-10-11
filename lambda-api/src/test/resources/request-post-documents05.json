@@ -16,33 +16,17 @@
     "authorization": "AWS4-HMAC-SHA256 Credential=ASIAZB6IP7U6Z7EI6M4U/20201127/us-east-1/execute-api/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date;x-amz-security-token, Signature=002cdf7227c9ad44669b598cc395e86a49efded9877a08b3ffdc829bc885e483"
   },
   "multiValueHeaders": {
-    "Content-Length": [
-      "391093"
-    ],
-    "Content-Type": [
-      "text/html"
-    ],
-    "Host": [
-      "iamapi-demo.tryformkiq.com"
-    ],
-    "X-Amz-Date": [
-      "20201127T192542Z"
-    ],
+    "Content-Length": ["391093"],
+    "Content-Type": ["text/html"],
+    "Host": ["iamapi-demo.tryformkiq.com"],
+    "X-Amz-Date": ["20201127T192542Z"],
     "X-Amz-Security-Token": [
       "IQoJb3JpZ2luX2VjEKz//////////wEaCXVzLWVhc3QtMSJGMEQCIAczXYTFVgoHzDUQufPr/Jq/uuI7MG+Ugpx+BbMmhYK+AiAF+9+eLzf6GNMwEs1kXYtqMgdlO1fQbavidvpR6NJriyrvAQg1EAEaDDYyMjY1Mzg2NTI3NyIMbivNAxTGCH8oRA5MKswB+D/m2WnvBRK9vYaYobmmK73MXbwWgYPer4uhercPx4M+VBPuO1x738V/lx4nKXL5HgEhoA2Lv8v1GGEeT1BrJYuT8GKFD5Y/NQFL/HQsrHlKOe2ZzPgy8K3cT+6WBhwY1eRA/2DsU/SV8Wz5s+4CLFFVlXdjESr9m4HCtEvdQEW5UWcGMTedNMheEZ+8+QY+V9YcGTacwJZ9/DfTmUF3PbvrCDapBitZlDUgS5Mx34TaZt3sYT+BeyTks2iOEHhSCN0LIGrk3lWyrjEaMLWlhf4FOuEBWU+ewi6S1QMoAZDkUMYufZqv88ofDU4RKqGj1RswQWtD+icwEySWAco/mjwBQn/vPt80YafTOlo8nTKDmHGdUmLQycShsr+cWBWPPZxsMHWmhFcPoA3DfrSB1U3sKb7u9cYDhGhB1ia7t1ICnfx4JUahm2KegWf8+VIJFIWABAhhVURxUOxebU6NhMRPZkErG2DHHcjyYkMaCTEmVDpsmm6B7e+XGVyQjqv/H2bjoJa1cHnugHP5ZvInO7iwYWCicHxvPtWZ5Je3pui3PMYeRizF2YLZzB8GKH84Z6h2Czo2"
     ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-5fc152b6-7d19bf75641e16b572d94461"
-    ],
-    "X-Forwarded-For": [
-      "3.90.244.29"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ],
+    "X-Amzn-Trace-Id": ["Root=1-5fc152b6-7d19bf75641e16b572d94461"],
+    "X-Forwarded-For": ["3.90.244.29"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
     "authorization": [
       "AWS4-HMAC-SHA256 Credential=ASIAZB6IP7U6Z7EI6M4U/20201127/us-east-1/execute-api/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date;x-amz-security-token, Signature=002cdf7227c9ad44669b598cc395e86a49efded9877a08b3ffdc829bc885e483"
     ]

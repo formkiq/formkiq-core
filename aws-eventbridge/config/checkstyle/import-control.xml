@@ -4,7 +4,7 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.aws">
-	
+
 	<subpackage name="eventbridge">
 
 		<allow pkg="java.net" />
@@ -19,5 +19,5 @@
 		<allow pkg="software.amazon.awssdk.services.eventbridge" />
 
 	</subpackage>
-	
+
 </import-control>

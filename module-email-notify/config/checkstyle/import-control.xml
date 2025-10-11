@@ -4,10 +4,10 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.stacks">
-	
+
 	<subpackage name="module">
 		<subpackage name="emailnotify">
-		
+
 		</subpackage>
 	</subpackage>
 </import-control>

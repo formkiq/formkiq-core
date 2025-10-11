@@ -4,26 +4,26 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="lambda">
-	
+
 		<subpackage name="typesense">
-		
+
 			<allow pkg="com.formkiq.module.http" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
-			<allow pkg="com.formkiq.aws.dynamodb" />			
+			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.google.gson" />
-			
+
 			<allow pkg="java.io" />
 			<allow pkg="java.net.http" />
 			<allow pkg="java.nio" />
 			<allow pkg="java.util" />
-				
+
 			<allow pkg="com.formkiq.module.typesense" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
-			
+
 			<allow pkg="software.amazon.awssdk.utils" />
 			<allow pkg="com.formkiq.module.typesense" />
 
@@ -32,5 +32,5 @@
 
 		</subpackage>
 	</subpackage>
-	
+
 </import-control>

@@ -4,14 +4,14 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.aws">
-	
+
 	<subpackage name="dynamodb">
 
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.validation" />
-		
+
 		<allow pkg="java.io" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
@@ -41,5 +41,5 @@
 			<allow pkg="java.nio.charset" />
 		</subpackage>
 	</subpackage>
-	
+
 </import-control>

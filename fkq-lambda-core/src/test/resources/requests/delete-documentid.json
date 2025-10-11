@@ -24,63 +24,25 @@
     "X-Forwarded-Proto": "https"
   },
   "multiValueHeaders": {
-    "Accept": [
-      "*/*"
-    ],
-    "Accept-Encoding": [
-      "gzip, deflate"
-    ],
-    "cache-control": [
-      "no-cache"
-    ],
-    "CloudFront-Forwarded-Proto": [
-      "https"
-    ],
-    "CloudFront-Is-Desktop-Viewer": [
-      "true"
-    ],
-    "CloudFront-Is-Mobile-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-SmartTV-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-Tablet-Viewer": [
-      "false"
-    ],
-    "CloudFront-Viewer-Country": [
-      "CA"
-    ],
-    "Content-Type": [
-      "text/plain"
-    ],
-    "Host": [
-      "u8nk1xfkj6.execute-api.us-east-1.amazonaws.com"
-    ],
-    "User-Agent": [
-      "PostmanRuntime/7.4.0"
-    ],
-    "Via": [
-      "1.1 249aa6f890bf73000af910ed0724d955.cloudfront.net (CloudFront)"
-    ],
-    "X-Amz-Cf-Id": [
-      "hxOL_R4uvizpgg0ve265Xt7ikI4jyZeYB3II4vp1VciekF5BvhauWg=="
-    ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-5c27b1ab-27921aaaa8cbac58b11f5ac7"
-    ],
-    "X-API-KEY": [
-      "lLeJkzRmw36YBzhPXZbN21gIFYzoRpxA4zicrsCe"
-    ],
-    "X-Forwarded-For": [
-      "1.73.5.111, 70.132.37.151"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ]
+    "Accept": ["*/*"],
+    "Accept-Encoding": ["gzip, deflate"],
+    "cache-control": ["no-cache"],
+    "CloudFront-Forwarded-Proto": ["https"],
+    "CloudFront-Is-Desktop-Viewer": ["true"],
+    "CloudFront-Is-Mobile-Viewer": ["false"],
+    "CloudFront-Is-SmartTV-Viewer": ["false"],
+    "CloudFront-Is-Tablet-Viewer": ["false"],
+    "CloudFront-Viewer-Country": ["CA"],
+    "Content-Type": ["text/plain"],
+    "Host": ["u8nk1xfkj6.execute-api.us-east-1.amazonaws.com"],
+    "User-Agent": ["PostmanRuntime/7.4.0"],
+    "Via": ["1.1 249aa6f890bf73000af910ed0724d955.cloudfront.net (CloudFront)"],
+    "X-Amz-Cf-Id": ["hxOL_R4uvizpgg0ve265Xt7ikI4jyZeYB3II4vp1VciekF5BvhauWg=="],
+    "X-Amzn-Trace-Id": ["Root=1-5c27b1ab-27921aaaa8cbac58b11f5ac7"],
+    "X-API-KEY": ["lLeJkzRmw36YBzhPXZbN21gIFYzoRpxA4zicrsCe"],
+    "X-Forwarded-For": ["1.73.5.111, 70.132.37.151"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
   },
   "queryStringParameters": null,
   "multiValueQueryStringParameters": null,

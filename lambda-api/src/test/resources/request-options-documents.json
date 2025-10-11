@@ -1,90 +1,68 @@
 {
-    "version": "1.0",
-    "resource": "/documents",
-    "path": "/unittest/documents",
+  "version": "1.0",
+  "resource": "/documents",
+  "path": "/unittest/documents",
+  "httpMethod": "OPTIONS",
+  "headers": {
+    "Content-Length": "0",
+    "Host": "els0njlks5.execute-api.us-east-1.amazonaws.com",
+    "Postman-Token": "31de9a42-e4d0-44fb-9790-c876cb42cc51",
+    "User-Agent": "PostmanRuntime/7.24.0",
+    "X-Amzn-Trace-Id": "Root=1-5e7abe04-c8df0ddbb566f450e133a393",
+    "X-Forwarded-For": "104.246.140.89",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https",
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
+    "cache-control": "no-cache"
+  },
+  "multiValueHeaders": {
+    "Content-Length": ["0"],
+    "Host": ["els0njlks5.execute-api.us-east-1.amazonaws.com"],
+    "Postman-Token": ["31de9a42-e4d0-44fb-9790-c876cb42cc51"],
+    "User-Agent": ["PostmanRuntime/7.24.0"],
+    "X-Amzn-Trace-Id": ["Root=1-5e7abe04-c8df0ddbb566f450e133a393"],
+    "X-Forwarded-For": ["104.246.140.89"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
+    "accept": ["*/*"],
+    "accept-encoding": ["gzip, deflate, br"],
+    "cache-control": ["no-cache"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "requestContext": {
+    "accountId": "111111111111",
+    "apiId": "els0njlks5",
+    "domainName": "els0njlks5.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "els0njlks5",
+    "extendedRequestId": "J7KgvjHhIAMEPEA=",
     "httpMethod": "OPTIONS",
-    "headers": {
-        "Content-Length": "0",
-        "Host": "els0njlks5.execute-api.us-east-1.amazonaws.com",
-        "Postman-Token": "31de9a42-e4d0-44fb-9790-c876cb42cc51",
-        "User-Agent": "PostmanRuntime/7.24.0",
-        "X-Amzn-Trace-Id": "Root=1-5e7abe04-c8df0ddbb566f450e133a393",
-        "X-Forwarded-For": "104.246.140.89",
-        "X-Forwarded-Port": "443",
-        "X-Forwarded-Proto": "https",
-        "accept": "*/*",
-        "accept-encoding": "gzip, deflate, br",
-        "cache-control": "no-cache"
+    "identity": {
+      "accessKey": null,
+      "accountId": null,
+      "caller": null,
+      "cognitoAuthenticationProvider": null,
+      "cognitoAuthenticationType": null,
+      "cognitoIdentityId": null,
+      "cognitoIdentityPoolId": null,
+      "principalOrgId": null,
+      "sourceIp": "104.246.140.89",
+      "user": null,
+      "userAgent": "PostmanRuntime/7.24.0",
+      "userArn": null
     },
-    "multiValueHeaders": {
-        "Content-Length": [
-            "0"
-        ],
-        "Host": [
-            "els0njlks5.execute-api.us-east-1.amazonaws.com"
-        ],
-        "Postman-Token": [
-            "31de9a42-e4d0-44fb-9790-c876cb42cc51"
-        ],
-        "User-Agent": [
-            "PostmanRuntime/7.24.0"
-        ],
-        "X-Amzn-Trace-Id": [
-            "Root=1-5e7abe04-c8df0ddbb566f450e133a393"
-        ],
-        "X-Forwarded-For": [
-            "104.246.140.89"
-        ],
-        "X-Forwarded-Port": [
-            "443"
-        ],
-        "X-Forwarded-Proto": [
-            "https"
-        ],
-        "accept": [
-            "*/*"
-        ],
-        "accept-encoding": [
-            "gzip, deflate, br"
-        ],
-        "cache-control": [
-            "no-cache"
-        ]
-    },
-    "queryStringParameters": null,
-    "multiValueQueryStringParameters": null,
-    "requestContext": {
-        "accountId": "111111111111",
-        "apiId": "els0njlks5",
-        "domainName": "els0njlks5.execute-api.us-east-1.amazonaws.com",
-        "domainPrefix": "els0njlks5",
-        "extendedRequestId": "J7KgvjHhIAMEPEA=",
-        "httpMethod": "OPTIONS",
-        "identity": {
-            "accessKey": null,
-            "accountId": null,
-            "caller": null,
-            "cognitoAuthenticationProvider": null,
-            "cognitoAuthenticationType": null,
-            "cognitoIdentityId": null,
-            "cognitoIdentityPoolId": null,
-            "principalOrgId": null,
-            "sourceIp": "104.246.140.89",
-            "user": null,
-            "userAgent": "PostmanRuntime/7.24.0",
-            "userArn": null
-        },
-        "path": "/unittest/documents",
-        "protocol": "HTTP/1.1",
-        "requestId": "J7KgvjHhIAMEPEA=",
-        "requestTime": "25/Mar/2020:02:12:20 +0000",
-        "requestTimeEpoch": 1585102340670,
-        "resourceId": "OPTIONS /documents",
-        "resourcePath": "/documents",
-        "stage": "unittest"
-    },
-    "pathParameters": null,
-    "stageVariables": null,
-    "body": null,
-    "isBase64Encoded": false
+    "path": "/unittest/documents",
+    "protocol": "HTTP/1.1",
+    "requestId": "J7KgvjHhIAMEPEA=",
+    "requestTime": "25/Mar/2020:02:12:20 +0000",
+    "requestTimeEpoch": 1585102340670,
+    "resourceId": "OPTIONS /documents",
+    "resourcePath": "/documents",
+    "stage": "unittest"
+  },
+  "pathParameters": null,
+  "stageVariables": null,
+  "body": null,
+  "isBase64Encoded": false
 }

@@ -4,7 +4,7 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="lambdaservices">
 
 		<allow pkg="java.io" />
@@ -17,5 +17,5 @@
 		<allow pkg="com.formkiq.module.lambdaservices.logger" />
 
 	</subpackage>
-	
+
 </import-control>

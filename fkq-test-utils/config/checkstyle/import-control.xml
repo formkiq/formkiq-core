@@ -4,7 +4,7 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.testutils">
-		
+
 	<allow pkg="java.io" />
 	<allow pkg="java.nio" />
 	<allow pkg="java.util" />
@@ -15,7 +15,7 @@
 	</subpackage>
 
 	<subpackage name="api">
-        <allow pkg="org.junit.jupiter.api" />
+		<allow pkg="org.junit.jupiter.api" />
 		<allow pkg="com.formkiq.client.invoker" />
 		<allow pkg="com.formkiq.client.api" />
 		<allow pkg="com.formkiq.client.model" />
@@ -36,26 +36,26 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
-        <subpackage name="entity">
-            <allow pkg="com.formkiq.testutils.api" />
-        </subpackage>
+		<subpackage name="entity">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
 
-        <subpackage name="accesscontrol">
-            <allow pkg="com.formkiq.testutils.api" />
-        </subpackage>
+		<subpackage name="accesscontrol">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
 
 		<subpackage name="activities">
 			<allow pkg="com.formkiq.testutils.api" />
 			<allow pkg="org.junit.jupiter.api" />
 		</subpackage>
 
-        <subpackage name="opensearch">
-            <allow pkg="com.formkiq.testutils.api" />
-        </subpackage>
+		<subpackage name="opensearch">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
 
-        <subpackage name="users">
-            <allow pkg="com.formkiq.testutils.api" />
-        </subpackage>
+		<subpackage name="users">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
 
 	</subpackage>
 
@@ -78,7 +78,7 @@
 		<allow pkg="java.math" />
 		<allow pkg="com.formkiq.testutils.api" />
 		<allow pkg="com.google.gson" />
-		
+
 		<allow pkg="com.formkiq.client.api" />
 		<allow pkg="com.formkiq.client.invoker" />
 		<allow pkg="com.formkiq.client.model" />
@@ -94,13 +94,14 @@
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.regions" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb" />
-		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />		
-		<allow pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+		<allow
+			pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
 		<allow pkg="software.amazon.awssdk.services.s3" />
 		<allow pkg="software.amazon.awssdk.services.ssm" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		<allow pkg="software.amazon.awssdk.services.sqs.model" />
 
 	</subpackage>
-	
+
 </import-control>

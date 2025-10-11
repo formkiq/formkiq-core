@@ -4,21 +4,21 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="actions">
 
-        <allow pkg="com.formkiq.validation" />
+		<allow pkg="com.formkiq.validation" />
 
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.module.actions" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
-		
+
 		<allow pkg="java.io" />
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
-		
+
 		<subpackage name="services">
 			<allow pkg="java.text" />
 			<allow pkg="com.formkiq.aws.sns" />
@@ -27,9 +27,9 @@
 			<allow pkg="com.formkiq.module.events.document" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
-			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />	
+			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 			<allow pkg="software.amazon.awssdk.utils" />
 		</subpackage>
 	</subpackage>
-	
+
 </import-control>

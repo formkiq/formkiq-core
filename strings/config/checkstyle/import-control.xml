@@ -4,9 +4,9 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq">
-	
+
 	<subpackage name="strings">
 		<allow pkg="java.util" />
 	</subpackage>
-	
+
 </import-control>

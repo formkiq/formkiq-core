@@ -5,7 +5,7 @@
 
 <import-control pkg="com.formkiq.aws.ses">
 	<allow pkg="com.formkiq.module.lambdaservices" />
-	
+
 	<allow pkg="java.net" />
 	<allow pkg="java.util" />
 	<allow pkg="com.amazonaws.xray.interceptors" />
