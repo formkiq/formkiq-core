@@ -297,6 +297,16 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}"
+              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
           - Sid: AllowCloudFrontOACReadOnly
             Effect: Allow
             Principal:
