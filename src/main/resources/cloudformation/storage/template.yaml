@@ -131,7 +131,26 @@ Resources:
         Application: "FormKiQ"
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
-                      
+
+  DocumentsStageS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: DocumentsStageS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}"
+              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
   DocumentsStageS3Bucket:
     Type: AWS::S3::Bucket
     DependsOn:
@@ -207,6 +226,25 @@ Resources:
             Ref: SnsDocumentEvent
       Topics:
       - Ref: SnsDocumentEvent
+
+  DocumentsS3BucketsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: DocumentsS3Buckets
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - Fn::Sub: "arn:aws:s3:::${DocumentsS3Buckets}"
+              - Fn::Sub: "arn:aws:s3:::${DocumentsS3Buckets}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
 
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket

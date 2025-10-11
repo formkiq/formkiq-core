@@ -6,6 +6,26 @@
 Resources:
 
   #@overlay/match missing_ok=True
+  OcrBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: OcrBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - Fn::Sub: "arn:aws:s3:::${OcrBucket}"
+              - Fn::Sub: "arn:aws:s3:::${OcrBucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  #@overlay/match missing_ok=True
   OcrBucket:
     Type: AWS::S3::Bucket
     Properties:
