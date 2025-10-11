@@ -19,45 +19,23 @@
     "x-amz-date": "20250704T004416Z"
   },
   "multiValueHeaders": {
-    "Content-Length": [
-      "75"
-    ],
-    "Content-Type": [
-      "text/plain"
-    ],
-    "Host": [
-      "fsdfsfsdfsdfsd.execute-api.us-east-2.amazonaws.com"
-    ],
-    "User-Agent": [
-      "PostmanRuntime/7.44.1"
-    ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-686723e0-1bf3a4e94135f0e61a404f5a"
-    ],
-    "X-Forwarded-For": [
-      "2.7.1.11"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ],
-    "accept": [
-      "*/*"
-    ],
-    "accept-encoding": [
-      "gzip, deflate, br"
-    ],
+    "Content-Length": ["75"],
+    "Content-Type": ["text/plain"],
+    "Host": ["fsdfsfsdfsdfsd.execute-api.us-east-2.amazonaws.com"],
+    "User-Agent": ["PostmanRuntime/7.44.1"],
+    "X-Amzn-Trace-Id": ["Root=1-686723e0-1bf3a4e94135f0e61a404f5a"],
+    "X-Forwarded-For": ["2.7.1.11"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
+    "accept": ["*/*"],
+    "accept-encoding": ["gzip, deflate, br"],
     "authorization": [
       "AWS4-HMAC-SHA256 Credential=LFJSLDFJDLSFJLKDSFSDF/20250704/us-east-2/execute-api/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=HDLADLKAJSDLJASD"
     ],
     "x-amz-content-sha256": [
       "d4f2776f204ace3679b5b72d2444f2d7e2689a00f7a7754989dfcfa1af191d36"
     ],
-    "x-amz-date": [
-      "20250704T004416Z"
-    ]
+    "x-amz-date": ["20250704T004416Z"]
   },
   "queryStringParameters": null,
   "multiValueQueryStringParameters": null,

@@ -7,7 +7,7 @@
 
 name: Java CI with Gradle
 
-on: 
+on:
   push:
   workflow_dispatch:
 
@@ -20,54 +20,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
-    - name: Build Project
-      uses: actions/setup-java@v5
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    - name: add binaries to path
-      run: |
-        mkdir -p "$HOME/.local/bin"
-        curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
-        chmod +x "$HOME/.local/bin/ytt"
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        ytt --version
-    - name: Set up Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
-    - name: Cache Cognito ZIP
-      uses: actions/cache@v4
-      with:
-        path: build/aws-cognito-v${{ env.AWS_COGNITO_VERSION }}.zip
-        key: cognito-${{ runner.os }}-v${{ env.AWS_COGNITO_VERSION }}
-        restore-keys: |
-          cognito-${{ runner.os }}-
-    - name: Build Project
-      timeout-minutes: 35
-      env:
-        PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-          && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-      run: ./gradlew build --scan --no-daemon --console=plain
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-reports
-        path: "**/build/reports/*"
-        retention-days: 5
-    - name: Set AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2
+      - uses: actions/checkout@v5
+      - name: Build Project
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: add binaries to path
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
+          chmod +x "$HOME/.local/bin/ytt"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          ytt --version
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
+      - name: Cache Cognito ZIP
+        uses: actions/cache@v4
+        with:
+          path: build/aws-cognito-v${{ env.AWS_COGNITO_VERSION }}.zip
+          key: cognito-${{ runner.os }}-v${{ env.AWS_COGNITO_VERSION }}
+          restore-keys: |
+            cognito-${{ runner.os }}-
+      - name: Build Project
+        timeout-minutes: 35
+        env:
+          PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+            && (github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
+        run: ./gradlew build --scan --no-daemon --console=plain
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: "**/build/reports/*"
+          retention-days: 5
+      - name: Set AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
 
-    # Runs a set of commands using the runners shell
-    - name: Deploy to S3
-      env:
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-        DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
-      run: |
-        aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
+      # Runs a set of commands using the runners shell
+      - name: Deploy to S3
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
+        run: |
+          aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
