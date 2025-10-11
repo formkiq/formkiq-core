@@ -302,8 +302,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}"
-              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}/*"
+              - Fn::Sub: "arn:aws:s3:::${Console}"
+              - Fn::Sub: "arn:aws:s3:::${Console}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
