@@ -1,23 +1,23 @@
 {
-    "name": "module-email-notify",
-    "version": "1.0.0",
-    "description": "Send Email Notification on Document Events",
-    "main": "index.js",
-    "scripts": {
-        "test": "nyc --reporter=html --reporter=text mocha --check-coverage --lines 85 --per-file",
-        "pack": "npm-pack-zip"
-    },
-    "author": "",
-    "license": "ISC",
-    "bundledDependencies": {
-    	"aws-sdk": "^2.773.0"
-    },
-    "dependencies": {
-    	"aws-sdk": "^2.773.0"
-    },
-    "devDependencies": {
-        "mocha": "^8.1.3",
-        "npm-pack-zip": "^1.3.0",
-        "nyc": "^15.1.0"
-    }
+  "name": "module-email-notify",
+  "version": "1.0.0",
+  "description": "Send Email Notification on Document Events",
+  "main": "index.js",
+  "scripts": {
+    "test": "nyc --reporter=html --reporter=text mocha --check-coverage --lines 85 --per-file",
+    "pack": "npm-pack-zip"
+  },
+  "author": "",
+  "license": "ISC",
+  "bundledDependencies": {
+    "aws-sdk": "^2.773.0"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.773.0"
+  },
+  "devDependencies": {
+    "mocha": "^8.1.3",
+    "npm-pack-zip": "^1.3.0",
+    "nyc": "^15.1.0"
+  }
 }

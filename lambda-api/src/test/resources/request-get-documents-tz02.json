@@ -1,104 +1,86 @@
 {
-    "resource": "/documents",
-    "path": "/documents",
+  "resource": "/documents",
+  "path": "/documents",
+  "httpMethod": "GET",
+  "headers": {
+    "Accept-Encoding": "gzip,deflate",
+    "Authorization": "eyJraWQiOiJoN1wvWHVBZjF2S29HcDJKQzRVN0kreW5LeVczRmNXRTdwRUtPUlBwck1FWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI5NzNhMzE3Ny05YTI1LTQyNWYtOTViOC03MGJjMWE0ZWFmMWUiLCJjb2duaXRvOmdyb3VwcyI6WyJkb2NzdGFjay11bml0dGVzdC1hZG1pbi1ncm91cCJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfMnBUVHRZMmgyIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIl0sImF1ZCI6IjYxbGFvMnNoNmVzdGNnazhmN29hbW5iN3Y1IiwiZXZlbnRfaWQiOiI0ODExZDY2MC00NThmLTQ4YTctYjYzMy1kNWM2NDE0MWUzNGEiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4MDE4MTU1OSwiZXhwIjoxNTgwMTg1MTU5LCJpYXQiOjE1ODAxODE1NTksImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.ixzoApa6xQHSjOkUF9rNCPnsC8Fhxsd1XW_qOWNJBEXdCPnrYGnP-oMx3UOBb1qCVR3UIX--CBM3gNjATMNNB-o073iEqaegCF3LNmIjqpuks-4LWGCD6qySVIZ8Ot6aZQ74QgBZqipSx20hHBl_qnQg7AIN7XY7GHPXcNe0QB80IYqYtoMHDOGG7-qDYDwFEz6kP9EGZrN8UBukRR-Y-LdX0Fuvd4_x5Zw6YRhurWeSDhubNf0i70KAYMi_MNsetFLyNgmLXT7KcZu8JIsZdlzqXNH0GIXcP8zeiIifBwpnstygIrwo-ASDgS-7MY0dWZ6MUzUcLHXq8R9A1YcgFw",
+    "Host": "xhz8krusz2.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "Apache-HttpClient/4.5.11 (Java/1.8.0_121)",
+    "X-Amzn-Trace-Id": "Root=1-5e2fa838-460fa880b456351c582cb036",
+    "X-Forwarded-For": "104.246.140.89",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept-Encoding": ["gzip,deflate"],
+    "Authorization": [
+      "eyJraWQiOiJoN1wvWHVBZjF2S29HcDJKQzRVN0kreW5LeVczRmNXRTdwRUtPUlBwck1FWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI5NzNhMzE3Ny05YTI1LTQyNWYtOTViOC03MGJjMWE0ZWFmMWUiLCJjb2duaXRvOmdyb3VwcyI6WyJkb2NzdGFjay11bml0dGVzdC1hZG1pbi1ncm91cCJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfMnBUVHRZMmgyIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIl0sImF1ZCI6IjYxbGFvMnNoNmVzdGNnazhmN29hbW5iN3Y1IiwiZXZlbnRfaWQiOiI0ODExZDY2MC00NThmLTQ4YTctYjYzMy1kNWM2NDE0MWUzNGEiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4MDE4MTU1OSwiZXhwIjoxNTgwMTg1MTU5LCJpYXQiOjE1ODAxODE1NTksImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.ixzoApa6xQHSjOkUF9rNCPnsC8Fhxsd1XW_qOWNJBEXdCPnrYGnP-oMx3UOBb1qCVR3UIX--CBM3gNjATMNNB-o073iEqaegCF3LNmIjqpuks-4LWGCD6qySVIZ8Ot6aZQ74QgBZqipSx20hHBl_qnQg7AIN7XY7GHPXcNe0QB80IYqYtoMHDOGG7-qDYDwFEz6kP9EGZrN8UBukRR-Y-LdX0Fuvd4_x5Zw6YRhurWeSDhubNf0i70KAYMi_MNsetFLyNgmLXT7KcZu8JIsZdlzqXNH0GIXcP8zeiIifBwpnstygIrwo-ASDgS-7MY0dWZ6MUzUcLHXq8R9A1YcgFw"
+    ],
+    "Host": ["xhz8krusz2.execute-api.us-east-1.amazonaws.com"],
+    "User-Agent": ["Apache-HttpClient/4.5.11 (Java/1.8.0_121)"],
+    "X-Amzn-Trace-Id": ["Root=1-5e2fa838-460fa880b456351c582cb036"],
+    "X-Forwarded-For": ["104.246.140.89"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
+  },
+  "queryStringParameters": {
+    "tz": "0500"
+  },
+  "multiValueQueryStringParameters": {
+    "date": ["2019-08-15"],
+    "tz": [" 0500"]
+  },
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "q512ix",
+    "authorizer": {
+      "claims": {
+        "sub": "973a3177-9a25-425f-95b8-70bc1a4eaf1e",
+        "cognito:groups": "",
+        "email_verified": "true",
+        "cognito:preferred_role": "arn:aws:iam::111111111111111:role/docstack-unittest-cognito-admin-role",
+        "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_2pTTtY2h2",
+        "cognito:username": "testadminuser@formkiq.com",
+        "cognito:roles": "arn:aws:iam::111111111111111:role/docstack-unittest-cognito-admin-role",
+        "aud": "61lao2sh6estcgk8f7oamnb7v5",
+        "event_id": "4811d660-458f-48a7-b633-d5c64141e34a",
+        "token_use": "id",
+        "auth_time": "1580181559",
+        "exp": "Tue Jan 28 04:19:19 UTC 2020",
+        "iat": "Tue Jan 28 03:19:19 UTC 2020",
+        "email": "testadminuser@formkiq.com"
+      }
+    },
+    "resourcePath": "/documents",
     "httpMethod": "GET",
-    "headers": {
-        "Accept-Encoding": "gzip,deflate",
-        "Authorization": "eyJraWQiOiJoN1wvWHVBZjF2S29HcDJKQzRVN0kreW5LeVczRmNXRTdwRUtPUlBwck1FWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI5NzNhMzE3Ny05YTI1LTQyNWYtOTViOC03MGJjMWE0ZWFmMWUiLCJjb2duaXRvOmdyb3VwcyI6WyJkb2NzdGFjay11bml0dGVzdC1hZG1pbi1ncm91cCJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfMnBUVHRZMmgyIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIl0sImF1ZCI6IjYxbGFvMnNoNmVzdGNnazhmN29hbW5iN3Y1IiwiZXZlbnRfaWQiOiI0ODExZDY2MC00NThmLTQ4YTctYjYzMy1kNWM2NDE0MWUzNGEiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4MDE4MTU1OSwiZXhwIjoxNTgwMTg1MTU5LCJpYXQiOjE1ODAxODE1NTksImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.ixzoApa6xQHSjOkUF9rNCPnsC8Fhxsd1XW_qOWNJBEXdCPnrYGnP-oMx3UOBb1qCVR3UIX--CBM3gNjATMNNB-o073iEqaegCF3LNmIjqpuks-4LWGCD6qySVIZ8Ot6aZQ74QgBZqipSx20hHBl_qnQg7AIN7XY7GHPXcNe0QB80IYqYtoMHDOGG7-qDYDwFEz6kP9EGZrN8UBukRR-Y-LdX0Fuvd4_x5Zw6YRhurWeSDhubNf0i70KAYMi_MNsetFLyNgmLXT7KcZu8JIsZdlzqXNH0GIXcP8zeiIifBwpnstygIrwo-ASDgS-7MY0dWZ6MUzUcLHXq8R9A1YcgFw",
-        "Host": "xhz8krusz2.execute-api.us-east-1.amazonaws.com",
-        "User-Agent": "Apache-HttpClient/4.5.11 (Java/1.8.0_121)",
-        "X-Amzn-Trace-Id": "Root=1-5e2fa838-460fa880b456351c582cb036",
-        "X-Forwarded-For": "104.246.140.89",
-        "X-Forwarded-Port": "443",
-        "X-Forwarded-Proto": "https"
+    "extendedRequestId": "G_c45G6doAMF3Gg=",
+    "requestTime": "28/Jan/2020:03:19:20 +0000",
+    "path": "/unittest/documents",
+    "accountId": "111111111111111",
+    "protocol": "HTTP/1.1",
+    "stage": "unittest",
+    "domainPrefix": "xhz8krusz2",
+    "requestTimeEpoch": 1580181560846,
+    "requestId": "d1050f93-7a8d-4411-9b55-ff9f60383be7",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "104.246.140.89",
+      "principalOrgId": null,
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+      "userAgent": "Apache-HttpClient/4.5.11 (Java/1.8.0_121)",
+      "user": null
     },
-    "multiValueHeaders": {
-        "Accept-Encoding": [
-            "gzip,deflate"
-        ],
-        "Authorization": [
-            "eyJraWQiOiJoN1wvWHVBZjF2S29HcDJKQzRVN0kreW5LeVczRmNXRTdwRUtPUlBwck1FWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI5NzNhMzE3Ny05YTI1LTQyNWYtOTViOC03MGJjMWE0ZWFmMWUiLCJjb2duaXRvOmdyb3VwcyI6WyJkb2NzdGFjay11bml0dGVzdC1hZG1pbi1ncm91cCJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfMnBUVHRZMmgyIiwiY29nbml0bzp1c2VybmFtZSI6InRlc3RhZG1pbnVzZXJAZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZG9jc3RhY2stdW5pdHRlc3QtY29nbml0by1hZG1pbi1yb2xlIl0sImF1ZCI6IjYxbGFvMnNoNmVzdGNnazhmN29hbW5iN3Y1IiwiZXZlbnRfaWQiOiI0ODExZDY2MC00NThmLTQ4YTctYjYzMy1kNWM2NDE0MWUzNGEiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4MDE4MTU1OSwiZXhwIjoxNTgwMTg1MTU5LCJpYXQiOjE1ODAxODE1NTksImVtYWlsIjoidGVzdGFkbWludXNlckBmb3Jta2lxLmNvbSJ9.ixzoApa6xQHSjOkUF9rNCPnsC8Fhxsd1XW_qOWNJBEXdCPnrYGnP-oMx3UOBb1qCVR3UIX--CBM3gNjATMNNB-o073iEqaegCF3LNmIjqpuks-4LWGCD6qySVIZ8Ot6aZQ74QgBZqipSx20hHBl_qnQg7AIN7XY7GHPXcNe0QB80IYqYtoMHDOGG7-qDYDwFEz6kP9EGZrN8UBukRR-Y-LdX0Fuvd4_x5Zw6YRhurWeSDhubNf0i70KAYMi_MNsetFLyNgmLXT7KcZu8JIsZdlzqXNH0GIXcP8zeiIifBwpnstygIrwo-ASDgS-7MY0dWZ6MUzUcLHXq8R9A1YcgFw"
-        ],
-        "Host": [
-            "xhz8krusz2.execute-api.us-east-1.amazonaws.com"
-        ],
-        "User-Agent": [
-            "Apache-HttpClient/4.5.11 (Java/1.8.0_121)"
-        ],
-        "X-Amzn-Trace-Id": [
-            "Root=1-5e2fa838-460fa880b456351c582cb036"
-        ],
-        "X-Forwarded-For": [
-            "104.246.140.89"
-        ],
-        "X-Forwarded-Port": [
-            "443"
-        ],
-        "X-Forwarded-Proto": [
-            "https"
-        ]
-    },
-    "queryStringParameters": {
-        "tz": "0500"
-    },
-    "multiValueQueryStringParameters": {
-        "date": [
-            "2019-08-15"
-        ],
-        "tz": [
-            " 0500"
-        ]
-    },
-    "pathParameters": null,
-    "stageVariables": null,
-    "requestContext": {
-        "resourceId": "q512ix",
-        "authorizer": {
-            "claims": {
-                "sub": "973a3177-9a25-425f-95b8-70bc1a4eaf1e",
-                "cognito:groups": "",
-                "email_verified": "true",
-                "cognito:preferred_role": "arn:aws:iam::111111111111111:role/docstack-unittest-cognito-admin-role",
-                "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_2pTTtY2h2",
-                "cognito:username": "testadminuser@formkiq.com",
-                "cognito:roles": "arn:aws:iam::111111111111111:role/docstack-unittest-cognito-admin-role",
-                "aud": "61lao2sh6estcgk8f7oamnb7v5",
-                "event_id": "4811d660-458f-48a7-b633-d5c64141e34a",
-                "token_use": "id",
-                "auth_time": "1580181559",
-                "exp": "Tue Jan 28 04:19:19 UTC 2020",
-                "iat": "Tue Jan 28 03:19:19 UTC 2020",
-                "email": "testadminuser@formkiq.com"
-            }
-        },
-        "resourcePath": "/documents",
-        "httpMethod": "GET",
-        "extendedRequestId": "G_c45G6doAMF3Gg=",
-        "requestTime": "28/Jan/2020:03:19:20 +0000",
-        "path": "/unittest/documents",
-        "accountId": "111111111111111",
-        "protocol": "HTTP/1.1",
-        "stage": "unittest",
-        "domainPrefix": "xhz8krusz2",
-        "requestTimeEpoch": 1580181560846,
-        "requestId": "d1050f93-7a8d-4411-9b55-ff9f60383be7",
-        "identity": {
-            "cognitoIdentityPoolId": null,
-            "accountId": null,
-            "cognitoIdentityId": null,
-            "caller": null,
-            "sourceIp": "104.246.140.89",
-            "principalOrgId": null,
-            "accessKey": null,
-            "cognitoAuthenticationType": null,
-            "cognitoAuthenticationProvider": null,
-            "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
-            "userAgent": "Apache-HttpClient/4.5.11 (Java/1.8.0_121)",
-            "user": null
-        },
-        "domainName": "xhz8krusz2.execute-api.us-east-1.amazonaws.com",
-        "apiId": "xhz8krusz2"
-    },
-    "body": null,
-    "isBase64Encoded": false
+    "domainName": "xhz8krusz2.execute-api.us-east-1.amazonaws.com",
+    "apiId": "xhz8krusz2"
+  },
+  "body": null,
+  "isBase64Encoded": false
 }

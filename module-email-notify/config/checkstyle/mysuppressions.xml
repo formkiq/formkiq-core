@@ -3,7 +3,7 @@
     "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-	<suppress files=".*[\\/]src[\\/](test)[\\/]" checks="ImportControl"/>
-    <suppress files="\.*Test\.java" checks="ImportControl"/>
+	<suppress files=".*[\\/]src[\\/](test)[\\/]"
+		checks="ImportControl" />
+	<suppress files="\.*Test\.java" checks="ImportControl" />
 </suppressions>
-

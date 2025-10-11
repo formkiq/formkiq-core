@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.SetBearers;
 import com.formkiq.testutils.api.SitesRequestRequestBuilder;
@@ -137,7 +138,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
    * Test GET /groups with multiple roles.
    */
   @Test
-  public void testMultipleRoles() {
+  public void testMultipleRoles() throws ApiException {
     new SetBearers().apply(client, new String[] {"manager", "finance"});
     assertValidCognitoRequest(new GetGroupsRequestBuilder().submit(client, null));
     assertValidCognitoRequest(new GetGroupRequestBuilder("name").submit(client, null));
