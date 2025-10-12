@@ -30,7 +30,7 @@ import java.util.List;
  */
 public enum PresetEntity {
   /** LLM Prompt entity. */
-  LLM_PROMPT("LlmPrompt", List.of("userPrompt")),
+  LLM_PROMPT("LlmPrompt", List.of("UserPrompt")),
   /** Checkout Lock Entity. */
   CHECKOUT("Checkout", List.of("LockedBy", "LockedDate")),
   /** Lock Entity. */

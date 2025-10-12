@@ -83,7 +83,7 @@ public class EntityTypesRequestHandler
       if (presetEntity != null) {
         presetEntity.getAttributeKeys().forEach(k -> {
           AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD)
-              .dataType(AttributeDataType.STRING).key(k).documentId(ID.uuid());
+              .dataType(AttributeDataType.STRING).key(k).documentId(k);
           attributeList.add(a.getAttributes(siteId));
         });
       }

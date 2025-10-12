@@ -37,7 +37,9 @@ import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -46,6 +48,7 @@ import java.util.List;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -215,6 +218,39 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"name\","
             + "\"error\":\"'name' unexpected value 'da entity'\"}]}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Test Preset Entity Type attribute already exists.
+   */
+  @Test
+  void testAddPresentEntityTypeWhenAttributeExists() {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(new String[] {siteId});
+
+      // when
+      var addResp =
+          new AddAttributeRequestBuilder().keyAsString("UserPrompt").submit(client, siteId);
+
+      // then
+      assertFalse(addResp.isError());
+
+      // when
+      var add = new AddEntityTypeRequestBuilder()
+          .setEntityType(PresetEntity.LLM_PROMPT.getName(), EntityTypeNamespace.PRESET)
+          .submit(client, siteId);
+
+      // then
+      assertFalse(add.isError());
+
+      var get = new GetAttributeRequestBuilder().submit(client, siteId);
+      assertFalse(get.isError());
+
+      List<Attribute> attributes = notNull(get.response().getAttributes());
+      assertEquals(1, attributes.size());
+      assertEquals("UserPrompt", attributes.get(0).getKey());
     }
   }
 
