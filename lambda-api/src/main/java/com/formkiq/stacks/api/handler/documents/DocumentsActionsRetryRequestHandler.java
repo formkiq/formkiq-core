@@ -77,6 +77,9 @@ public class DocumentsActionsRetryRequestHandler
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
 
+    actions.stream().filter(a -> ActionStatus.RUNNING.equals(a.status()))
+        .forEach(a -> a.status(ActionStatus.FAILED));
+
     List<Action> failed = actions.stream().filter(a -> ActionStatus.FAILED.equals(a.status()))
         .map(a -> a.status(ActionStatus.FAILED_RETRY)).toList();
 
