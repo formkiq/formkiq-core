@@ -25,10 +25,10 @@ package com.formkiq.stacks.api.handler.users;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.GroupNameComparator;
@@ -38,11 +38,10 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGr
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/users/{username}/groups". */
 public class UserGroupsRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;
@@ -79,12 +78,5 @@ public class UserGroupsRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getAllPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 }

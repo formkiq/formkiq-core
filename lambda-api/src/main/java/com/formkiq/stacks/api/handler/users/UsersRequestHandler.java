@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.users;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -38,10 +39,10 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRe
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/users". */
-public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class UsersRequestHandler
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;
@@ -74,12 +75,6 @@ public class UsersRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(new UsersApiHasAccess().test(method, authorization));
   }
 
   @Override

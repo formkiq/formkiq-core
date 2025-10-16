@@ -33,12 +33,11 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
@@ -50,33 +49,13 @@ import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys". */
 public class ConfigurationApiKeysRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
    *
    */
   public ConfigurationApiKeysRequestHandler() {}
-
-  @Override
-  public void beforeGet(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(event, authorization);
-  }
-
-  @Override
-  public void beforePost(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(event, authorization);
-  }
-
-  private void checkPermissions(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization) throws UnauthorizedException {
-    String siteId = event.getPathParameter("siteId");
-    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
-      throw new UnauthorizedException("user is unauthorized");
-    }
-  }
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,

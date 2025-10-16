@@ -21,28 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.services.lambda;
+package com.formkiq.testutils.api.opensearch;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetOpenSearchSnapshotRepositoryResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
-import java.util.Collection;
-import java.util.Optional;
+/**
+ * Builder for GET /sites/{siteId}/opensearch/snapshotRepository.
+ */
+public class GetOpenSearchSnapshotRepositoryRequestBuilder
+    implements HttpRequestBuilder<GetOpenSearchSnapshotRepositoryResponse> {
 
-/** {@link ApiGatewayRequestHandler} for Admin or Govern permissions. */
-public interface AdminRequestHandler extends ApiGatewayRequestHandler {
+  /**
+   * constructor.
+   *
+   */
+  public GetOpenSearchSnapshotRepositoryRequestBuilder() {}
 
-  @Override
-  default Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-
-    String siteId = authorization.getSiteId();
-    Collection<ApiPermission> permissions =
-        siteId != null ? authorization.getPermissions(siteId) : authorization.getAllPermissions();
-    boolean access = permissions.contains(ApiPermission.ADMIN);
-    boolean accessGovern =
-        "get".equalsIgnoreCase(method) && permissions.contains(ApiPermission.GOVERN);
-    return Optional.of(access || accessGovern);
+  /**
+   * Optionally run the request using the FormKiQ API.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return GetDocumentFulltextResponse
+   */
+  public ApiHttpResponse<GetOpenSearchSnapshotRepositoryResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(
+        () -> new SystemManagementApi(apiClient).getOpenSearchSnapshotRepository(siteId));
   }
 }

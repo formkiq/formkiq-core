@@ -21,24 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
+package com.formkiq.testutils.api.accesscontrol;
 
-import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.api.AccessControlApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.GetSitesResponse;
+import com.formkiq.client.model.GetOpaAccessPolicyItemsResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Builder for Set Access Policy Items.
+ * Get /sites/{siteId}/opa/accessPolicy/policyItems.
  */
-public class SitesRequestRequestBuilder implements HttpRequestBuilder<GetSitesResponse> {
+public class GetOpaAccessPolicyItemsRequestBuilder
+    implements HttpRequestBuilder<GetOpaAccessPolicyItemsResponse> {
 
   /**
    * constructor.
    */
-  public SitesRequestRequestBuilder() {}
+  public GetOpaAccessPolicyItemsRequestBuilder() {}
 
   @Override
-  public ApiHttpResponse<GetSitesResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new SystemManagementApi(apiClient).getSites(null));
+  public ApiHttpResponse<GetOpaAccessPolicyItemsResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(() -> new AccessControlApi(apiClient).getOpaAccessPolicyItems(siteId));
   }
 }

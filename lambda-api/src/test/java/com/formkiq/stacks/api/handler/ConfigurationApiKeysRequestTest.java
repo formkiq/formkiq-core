@@ -108,6 +108,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       // given
       String apiKey = apiKeys.get(0).getApiKey();
+      assertNotNull(apiKey);
 
       // when
       DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(siteId, apiKey);
@@ -133,7 +134,9 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       this.systemApi.getApiKeys(DEFAULT_SITE_ID, null, null);
       fail();
     } catch (ApiException e) {
-      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"fkq access denied" + " (groups: default (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
     }
   }
 
@@ -247,7 +250,9 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+        assertEquals(
+            "{\"message\":\"fkq access denied (groups: " + siteId + " (DELETE,READ,WRITE))\"}",
+            e.getResponseBody());
       }
     }
   }
