@@ -459,6 +459,65 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/actions/retry request. RUNNING
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry04() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      // when
+      this.service.saveNewActions(siteId, documentId,
+          Collections.singletonList(new Action().userId("joe").status(ActionStatus.RUNNING)
+              .message("some message").parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      List<Document> failed = getFailedActionDocuments(siteId);
+      assertEquals(0, failed.size());
+
+      // then
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      List<DocumentAction> actions = notNull(response.getActions());
+      assertEquals(1, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR, DocumentActionStatus.RUNNING,
+          "some message");
+
+      // when
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      assertEquals("Actions retrying", retry.getMessage());
+
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+
+      actions = notNull(response.getActions());
+      assertEquals(2, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
+          DocumentActionStatus.FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
+          null);
+
+      // when - 2nd time
+      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      actions = notNull(response.getActions());
+      assertEquals(2, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
+          DocumentActionStatus.FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
+          null);
+    }
+  }
+
+  /**
    * Get /documents/{documentId}/actions request.
    *
    * @throws Exception an error has occurred
