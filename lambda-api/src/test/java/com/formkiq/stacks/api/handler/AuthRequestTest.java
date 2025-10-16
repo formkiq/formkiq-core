@@ -25,14 +25,16 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 import com.formkiq.testutils.api.SetBearers;
-import com.formkiq.testutils.api.SitesRequestRequestBuilder;
-import com.formkiq.testutils.api.VersionRequestRequestBuilder;
+import com.formkiq.testutils.api.SitesRequestBuilder;
+import com.formkiq.testutils.api.VersionRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentPurgeRequestBuilder;
 import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetSiteApiKeysRequestBuilder;
 import com.formkiq.testutils.api.users.GetGroupRequestBuilder;
 import com.formkiq.testutils.api.users.GetGroupUsersRequestBuilder;
 import com.formkiq.testutils.api.users.GetGroupsRequestBuilder;
@@ -42,6 +44,7 @@ import com.formkiq.testutils.api.users.GetUsersRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +59,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
 
   private static void assertFail(final ApiHttpResponse<?> resp) {
     assertTrue(resp.isError());
+    assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
     assertNull(resp.response());
   }
 
@@ -121,6 +125,107 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * <p>
+   * GET /sites/{siteId}/apiKeys
+   * </p>
+   * .
+   *
+   */
+  @Test
+  void testGetApiKeys() {
+    HttpRequestBuilder<?> build = new GetSiteApiKeysRequestBuilder();
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId});
+      assertFail(build.submit(client, siteId));
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId + "_govern"});
+      assertOk(build.submit(client, siteId));
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId, "Admins"});
+      assertOk(build.submit(client, siteId));
+    }
+  }
+
+  /**
+   * <p>
+   * GET /folders/{indexKey}/permissions
+   * </p>
+   * .
+   *
+   */
+  @Test
+  void testGetFolderPermissions() {
+    HttpRequestBuilder<?> build = new GetFolderPermissionsRequestBuilder().indexKey("asd");
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId});
+      assertFail(build.submit(client, siteId));
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId + "_govern"});
+      assertOk(build.submit(client, siteId));
+
+      new SetBearers().apply(client, new String[] {"bleh", siteId, "Admins"});
+      assertOk(build.submit(client, siteId));
+    }
+  }
+
+  /**
+   * <p>
+   * GET /groups/{groupName}
+   * </p>
+   * .
+   * <p>
+   * GET /groups/{groupName}/users
+   * </p>
+   * <p>
+   * GET /users
+   * </p>
+   * <p>
+   * GET /users/{username}
+   * </p>
+   * <p>
+   * GET /users/{username}/groups
+   * </p>
+   *
+   */
+  @Test
+  void testGetGroup() {
+    HttpRequestBuilder<?> build0 = new GetGroupRequestBuilder("name");
+    HttpRequestBuilder<?> build1 = new GetGroupUsersRequestBuilder("name");
+    HttpRequestBuilder<?> build2 = new GetUsersRequestBuilder();
+    HttpRequestBuilder<?> build3 = new GetUserRequestBuilder("joe");
+    HttpRequestBuilder<?> build4 = new GetUserGroupsRequestBuilder("joe");
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      for (HttpRequestBuilder<?> build : List.of(build0, build1, build2, build3, build4)) {
+
+        new SetBearers().apply(client, new String[] {"bleh", siteId});
+        assertFail(build.submit(client, null));
+
+        new SetBearers().apply(client, new String[] {"bleh", siteId + "_govern"});
+        assertValidCognitoRequest(build.submit(client, null));
+
+        new SetBearers().apply(client, new String[] {"bleh", siteId, "Admins"});
+        assertValidCognitoRequest(build.submit(client, null));
+      }
+    }
+  }
+
+  /**
+   * Get /groups.
+   */
+  @Test
+  void testGetGroups() {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearers().apply(client, new String[] {siteId});
+      assertValidCognitoRequest(new GetGroupsRequestBuilder().submit(client, null));
+    }
+  }
+
+  /**
    * Test siteId govern access.
    */
   @Test
@@ -138,16 +243,16 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
    * Test GET /groups with multiple roles.
    */
   @Test
-  public void testMultipleRoles() throws ApiException {
+  public void testMultipleRoles() {
     new SetBearers().apply(client, new String[] {"manager", "finance"});
     assertValidCognitoRequest(new GetGroupsRequestBuilder().submit(client, null));
-    assertValidCognitoRequest(new GetGroupRequestBuilder("name").submit(client, null));
+    assertFail(new GetGroupRequestBuilder("name").submit(client, null));
     assertFail(new GetGroupUsersRequestBuilder("name").submit(client, null));
     assertFail(new GetUsersRequestBuilder().submit(client, null));
     assertFail(new GetUserRequestBuilder("joe").submit(client, null));
     assertFail(new GetUserGroupsRequestBuilder("joe").submit(client, null));
-    assertOk(new VersionRequestRequestBuilder().submit(client, null));
-    assertOk(new SitesRequestRequestBuilder().submit(client, null));
+    assertOk(new VersionRequestBuilder().submit(client, null));
+    assertOk(new SitesRequestBuilder().submit(client, null));
   }
 
   /**

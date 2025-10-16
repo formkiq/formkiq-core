@@ -105,9 +105,9 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     assertEquals(SC_UNAUTHORIZED.getStatusCode(), submit.exception().getCode());
   }
 
-  private void assertFolderPermission(final String siteId, final String indexKey,
-      final String roleName, final String permissions) {
-    List<FolderPermission> roles = getFolderPermissions(siteId, indexKey);
+  private void assertFolderPermission(final String indexKey, final String roleName,
+      final String permissions) {
+    List<FolderPermission> roles = getFolderPermissions(indexKey);
     assertEquals(1, roles.size());
     assertEquals(roleName, roles.get(0).getRoleName());
     assertEquals(permissions, notNull(roles.get(0).getPermissions()).stream()
@@ -129,8 +129,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         .map(SearchResultDocument::getIndexKey).findFirst().orElse(null);
   }
 
-  private List<FolderPermission> getFolderPermissions(final String siteId, final String indexKey) {
-    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, siteId);
+  private List<FolderPermission> getFolderPermissions(final String indexKey) {
+    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, null);
     return notNull(perm.response().getRoles());
   }
 
@@ -147,14 +147,14 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
   }
 
-  private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId,
-      final String roleName, final String path, final FolderPermissionType permission) {
-    return new SetFolderPermissionsRequestBuilder().path(path).addRole(roleName, permission)
+  private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId, final String path,
+      final List<FolderPermissionType> permission) {
+    return new SetFolderPermissionsRequestBuilder().path(path).addRole("aRole", permission)
         .submit(client, siteId);
   }
 
   private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId,
-      final String roleName, final String path, final List<FolderPermissionType> permission) {
+      final String roleName, final String path, final FolderPermissionType permission) {
     return new SetFolderPermissionsRequestBuilder().path(path).addRole(roleName, permission)
         .submit(client, siteId);
   }
@@ -187,8 +187,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     return path;
   }
 
-  private <T> ApiHttpResponse<T> submit(final String role, final HttpRequestBuilder requestBuilder,
-      final String siteId, final boolean unauthorized) {
+  private <T> ApiHttpResponse<T> submit(final String role,
+      final HttpRequestBuilder<?> requestBuilder, final String siteId, final boolean unauthorized) {
     setBearerToken(new String[] {siteId, role});
     ApiHttpResponse<?> response = requestBuilder.submit(client, siteId);
     if (unauthorized) {
@@ -265,7 +265,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // then
     assertFalse(resp.isError());
-    assertFolderPermission(null, indexKey, "myrole", "READ");
+    assertFolderPermission(indexKey, "myrole", "READ");
 
     // when
     var set = new SetFolderPermissionsRequestBuilder().path(path).addRole("john", List.of())
@@ -273,7 +273,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // then
     assertFalse(set.isError());
-    assertFolderPermission(null, indexKey, "john", "");
+    assertFolderPermission(indexKey, "john", "");
   }
 
   /**
@@ -787,7 +787,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      setBearerToken(siteId);
+      setBearerToken(siteId + "_govern");
 
       // given
       String indexKey = ID.uuid();
@@ -821,7 +821,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     createFolder(siteId, path);
 
     // set folder permissions
-    assertFalse(setPathPermissions(siteId, "aRole", path, List.of()).isError());
+    assertFalse(setPathPermissions(siteId, path, List.of()).isError());
 
     // given
     String content = "mycontent";
@@ -1007,7 +1007,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     createFolder(siteId, path);
 
     // when
-    var resp = setPathPermissions(siteId, "aRole", path, (FolderPermissionType) null);
+    var resp = setPathPermissions(siteId, "aRole", path, null);
 
     // then
     assertTrue(resp.isError());

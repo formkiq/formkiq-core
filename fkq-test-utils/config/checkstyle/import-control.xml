@@ -57,6 +57,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="systemmanagement">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 	</subpackage>
 
 	<subpackage name="aws">

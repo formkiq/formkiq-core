@@ -25,22 +25,20 @@ package com.formkiq.testutils.api;
 
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.GetVersionResponse;
-
+import com.formkiq.client.model.GetSitesResponse;
 
 /**
- * Get /version.
+ * Builder for Set Access Policy Items.
  */
-public class VersionRequestRequestBuilder implements HttpRequestBuilder<GetVersionResponse> {
+public class SitesRequestBuilder implements HttpRequestBuilder<GetSitesResponse> {
 
   /**
    * constructor.
    */
-  public VersionRequestRequestBuilder() {}
+  public SitesRequestBuilder() {}
 
   @Override
-  public ApiHttpResponse<GetVersionResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(() -> new SystemManagementApi(apiClient).getVersion());
+  public ApiHttpResponse<GetSitesResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new SystemManagementApi(apiClient).getSites(null));
   }
 }

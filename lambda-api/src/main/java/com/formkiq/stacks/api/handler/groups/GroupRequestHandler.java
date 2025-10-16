@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.groups;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -34,10 +35,10 @@ import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 
 import java.util.Map;
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}". */
-public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class GroupRequestHandler
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link GroupRequestHandler} URL. */
   public static final String URL = "/groups/{groupName}";
@@ -72,11 +73,5 @@ public class GroupRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(new GroupsApiHasAccess().test(method, authorization));
   }
 }

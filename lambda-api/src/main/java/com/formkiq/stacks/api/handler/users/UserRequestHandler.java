@@ -25,10 +25,10 @@ package com.formkiq.stacks.api.handler.users;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -36,10 +36,10 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
 import java.util.Map;
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/users/{username}". */
-public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class UserRequestHandler
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link UserRequestHandler} URL. */
   public static final String URL = "/users/{username}";
@@ -83,12 +83,5 @@ public class UserRequestHandler implements ApiGatewayRequestHandler, ApiGatewayR
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getAllPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 }

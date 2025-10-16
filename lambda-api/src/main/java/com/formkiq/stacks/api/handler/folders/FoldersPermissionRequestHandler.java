@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -38,7 +39,7 @@ import java.util.Collections;
 
 /** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}/permissions". */
 public class FoldersPermissionRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
