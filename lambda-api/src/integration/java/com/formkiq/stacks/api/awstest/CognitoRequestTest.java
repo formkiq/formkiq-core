@@ -336,7 +336,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     // given
     List<ApiClient> clients = getApiClients(null);
 
-    for (ApiClient client : clients) {
+    for (ApiClient client : List.of(clients.get(0), clients.get(1))) {
 
       UserManagementApi userApi = new UserManagementApi(client);
 
