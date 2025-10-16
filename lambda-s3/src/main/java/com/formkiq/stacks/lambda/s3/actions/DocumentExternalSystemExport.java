@@ -290,7 +290,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
   }
 
   private boolean isDocumentCreate(final Collection<Map<String, Object>> activities) {
-    Set<String> types = Set.of("CREATE", "RESTORE", "SOFT_DELETE", "DELETE");
+    Set<String> types = Set.of("CREATE", "RESTORE");
     return activities.stream().anyMatch(
         a -> "documents".equals(a.get("resource")) && types.contains((String) a.get("type")));
   }
@@ -298,11 +298,11 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
   private void updateValuesMaps(final String type, final Map<String, Object> map,
       final Map<String, List<Object>> addedValues, final Map<String, List<Object>> changedValues,
       final Map<String, List<Object>> deletedValues) {
-    if ("CREATE".equals(type)) {
+    if ("CREATE".equals(type) || "RESTORE".equals(type)) {
       addChangedValues(addedValues, map, "newValue");
     } else if ("UPDATE".equals(type)) {
       addChangedValues(changedValues, map, "oldValue");
-    } else if ("DELETE".equals(type)) {
+    } else if ("DELETE".equals(type) || "SOFT_DELETE".equals(type)) {
       addChangedValues(deletedValues, map, "oldValue");
     }
   }
