@@ -47,6 +47,8 @@ import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
@@ -67,6 +69,12 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
    * JUnit Test Timeout.
    */
   private static final int TEST_TIMEOUT = 90;
+
+  @BeforeAll
+  public static void beforeAll() throws ApiException {
+    new OpenSearchIndexPurgeRequestBuilder().submit(getApiClients(null).get(1), null)
+        .throwIfError();
+  }
 
   private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
     return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
