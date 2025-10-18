@@ -57,7 +57,7 @@ tasks.register('buildTesseractLayer', Zip) {
 
   from(layout.buildDirectory.dir('tesseract')) { spec ->
     eachFile { details ->
-      if (details.path == 'tesseract/lib/libtesseract.so.5') {
+      if (details.path.matches('tesseract/lib/libtesseract\\.so\\..*')) {
         details.path = 'tesseract/lib/libtesseract.so'
       }
     }
