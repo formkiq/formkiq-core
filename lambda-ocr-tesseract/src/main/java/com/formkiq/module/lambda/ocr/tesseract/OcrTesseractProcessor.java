@@ -308,7 +308,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         }
       }
 
-    } catch (IOException | RuntimeException e) {
+    } catch (Throwable e) {
 
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
 
