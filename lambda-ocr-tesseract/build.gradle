@@ -57,8 +57,8 @@ tasks.register('buildTesseractLayer', Zip) {
 
   from(layout.buildDirectory.dir('tesseract')) { spec ->
     eachFile { details ->
-      if (details.path.matches('tesseract/lib/libtesseract\\.so\\..*')) {
-        details.path = 'tesseract/lib/libtesseract.so'
+      if (details.path.matches('lib/libtesseract\\.so\\..*')) {
+        details.path = 'lib/libtesseract.so'
       }
     }
     includeEmptyDirs = false
