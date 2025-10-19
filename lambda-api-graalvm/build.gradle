@@ -32,11 +32,6 @@ nativeImage {
   ]
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 task downloadOpenApiGenerator(type: Download) {
   dependsOn check
   src "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.13.0/openapi-generator-cli-7.13.0.jar"

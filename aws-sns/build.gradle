@@ -12,8 +12,3 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
 }
-
-test {
-  failFast = true
-  useJUnitPlatform()
-}

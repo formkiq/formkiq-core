@@ -54,11 +54,6 @@ nativeImage {
   ]
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 // task buildTemplate {
 //   inputs.files("src/main/resources/cloudformation/typesense/template.yaml")
 //   outputs.files("${buildDir}/distributions/typesense/template.yaml")

@@ -33,11 +33,6 @@ dependencies {
   testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 task integrationTest(type: Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath

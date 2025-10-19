@@ -387,7 +387,9 @@ Resources:
               Fn::GetAtt: 
               - DocumentActionsQueue
               - Arn
-            BatchSize: 1          
+            BatchSize: 1
+            ScalingConfig:
+              MaximumConcurrency: 200
 
   StagingS3CreateLogGroup:
     Type: AWS::Logs::LogGroup

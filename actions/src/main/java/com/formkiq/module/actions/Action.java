@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.github.f4b6a3.ulid.UlidCreator;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -260,12 +261,22 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   /**
    * Set Index.
-   * 
+   *
    * @param idx int
    * @return {@link Action}
    */
   public Action index(final String idx) {
     this.index = idx;
+    return this;
+  }
+
+  /**
+   * Set Index to Ulid.
+   * 
+   * @return {@link Action}
+   */
+  public Action indexUlid() {
+    index(UlidCreator.getMonotonicUlid().toString());
     return this;
   }
 

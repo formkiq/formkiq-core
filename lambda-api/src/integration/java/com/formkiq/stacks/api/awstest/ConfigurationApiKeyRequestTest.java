@@ -211,7 +211,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+      assertEquals("{\"message\":\"fkq access denied " + "(groups: default (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
     }
   }
 

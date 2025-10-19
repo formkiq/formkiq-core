@@ -114,12 +114,11 @@ public interface ActionsService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param currentAction {@link Action}
    * @param insertedAction {@link Action}
    */
-  void insertBeforeAction(String siteId, String documentId, List<Action> actions,
-      Action currentAction, Action insertedAction);
+  void insertBeforeAction(String siteId, String documentId, Action currentAction,
+      Action insertedAction);
 
   /**
    * Save {@link Action}.
@@ -128,16 +127,6 @@ public interface ActionsService {
    * @param action {@link Action}
    */
   void saveAction(String siteId, Action action);
-
-  /**
-   * Save {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param action {@link Action}
-   * @param index int
-   */
-  void saveAction(String siteId, String documentId, Action action, int index);
 
   /**
    * Save {@link Action}.

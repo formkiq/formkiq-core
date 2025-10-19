@@ -19,6 +19,8 @@
 		<allow pkg="java.util" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 
+        <allow pkg="com.github.f4b6a3.ulid" />
+
 		<subpackage name="services">
 			<allow pkg="java.text" />
 			<allow pkg="com.formkiq.aws.sns" />

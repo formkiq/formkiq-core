@@ -77,7 +77,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     waitForDocumentContent(client, siteId, documentId);
 
     DocumentOcrApi api = new DocumentOcrApi(client);
-    AddDocumentOcrRequest req = new AddDocumentOcrRequest();
+    AddDocumentOcrRequest req = new AddDocumentOcrRequest().ocrEngine(OcrEngine.TESSERACT);
 
     // when
     AddDocumentOcrResponse response = api.addDocumentOcr(documentId, siteId, req);
@@ -97,8 +97,9 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     waitForDocumentContent(client, siteId, documentId);
 
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
-    AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-        .actions(List.of(new AddAction().type(DocumentActionType.OCR)));
+    AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
+        List.of(new AddAction().parameters(new AddActionParameters().ocrEngine(OcrEngine.TESSERACT))
+            .type(DocumentActionType.OCR)));
 
     // when
     AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
