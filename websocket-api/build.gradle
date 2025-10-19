@@ -47,11 +47,6 @@ dependencies {
   testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 task integrationTest(type: Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath

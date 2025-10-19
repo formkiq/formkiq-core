@@ -59,11 +59,6 @@ task createZip(type: Zip) {
 createZip.dependsOn check
 build.dependsOn createZip
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 task integrationTest(type: Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath

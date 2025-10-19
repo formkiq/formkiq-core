@@ -86,7 +86,7 @@ public class SetDataClassificationAction implements DocumentAction {
 
       Action ocrAction = new Action().userId("System").type(ActionType.OCR)
           .parameters(Map.of("ocrEngine", "tesseract"));
-      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
+      this.actionsService.insertBeforeAction(siteId, documentId, action, ocrAction);
       status = ActionStatus.PENDING;
 
     } else {

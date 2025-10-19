@@ -25,8 +25,3 @@ dependencies {
   implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.12.6'
   implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.14.0'
 }
-
-test {
-  failFast = true
-  useJUnitPlatform()
-}

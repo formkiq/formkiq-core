@@ -1402,8 +1402,8 @@ public class StagingS3CreateTest implements DbKeys {
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
 
-      actionsService.saveAction(siteId, documentId,
-          new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE), 0);
+      actionsService.saveNewActions(siteId, documentId, List
+          .of(new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE)));
 
       TimeUnit.SECONDS.sleep(1);
 
@@ -1439,8 +1439,11 @@ public class StagingS3CreateTest implements DbKeys {
           "1234", "type", "USERDEFINED", "userId", userId));
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionType.FULLTEXT, actions.get(0).type());
+      assertEquals(ActionStatus.PENDING, actions.get(1).status());
+      assertEquals(ActionType.FULLTEXT, actions.get(1).type());
       assertPublishedSnsMessage();
     }
   }

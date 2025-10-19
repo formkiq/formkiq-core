@@ -428,8 +428,8 @@ public class FkqDocumentService {
           o = Collections.emptyList();
 
           if (actions.stream().anyMatch(a -> DocumentActionStatus.FAILED.equals(a.getStatus()))) {
-            throw new InterruptedException(
-                "Found " + DocumentActionStatus.FAILED.name() + " action");
+            throw new InterruptedException("Found " + DocumentActionStatus.FAILED.name()
+                + " action for site " + siteId + " documentId " + documentId);
           }
         }
 

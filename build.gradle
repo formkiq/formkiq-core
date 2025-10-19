@@ -4,7 +4,7 @@ import com.github.jk1.license.render.JsonReportRenderer
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
-  id 'com.formkiq.gradle.java-base' version '1.0.4'
+  id 'com.formkiq.gradle.java-base' version '1.0.6'
   id 'com.formkiq.gradle.ytt' version '1.0.1'
   id 'de.undercouch.download' version '5.6.0'
   id 'org.openapi.generator' version '7.13.0'
@@ -17,7 +17,7 @@ allprojects {
 
   version = '1.18.0'
 
-  ext.awsCognitoVersion = '1.6.2'
+  ext.awsCognitoVersion = '1.6.3'
   group = 'com.formkiq.stacks'
 
   configurations.all {

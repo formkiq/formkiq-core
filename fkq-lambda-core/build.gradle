@@ -23,8 +23,3 @@ dependencies {
   testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
   testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.1'
 }
-
-test {
-  failFast = true
-  useJUnitPlatform()
-}
