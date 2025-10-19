@@ -82,7 +82,7 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
       String documentId =
           addDocument(client, siteId, "sample.pdf", content, "application/pdf", null);
       waitForDocumentContent(client, siteId, documentId);
-System.out.println("SITEID: " + siteId + " DOCUMENT ID: " + documentId);
+
       DocumentActionsApi api = new DocumentActionsApi(client);
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
           .addActionsItem(new AddAction().type(DocumentActionType.FULLTEXT));
