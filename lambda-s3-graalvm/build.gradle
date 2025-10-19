@@ -6,11 +6,6 @@ dependencies {
   implementation project(':lambda-s3')
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 tasks.distTar.enabled = false
 
 distZip {

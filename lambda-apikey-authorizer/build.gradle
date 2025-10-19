@@ -46,11 +46,6 @@ nativeImage {
   ]
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 /*
  task buildZip(type: Zip) {
  dependsOn test, graalvmNativeImage

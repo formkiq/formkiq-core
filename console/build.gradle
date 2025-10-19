@@ -39,11 +39,6 @@ dependencies {
   testImplementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.52.0'
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
 task integrationTest(type: Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath

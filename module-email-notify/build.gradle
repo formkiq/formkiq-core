@@ -39,10 +39,6 @@ dependencies {
 // -------------------------------
 // Testing
 // -------------------------------
-test {
-  failFast = true
-  useJUnitPlatform()
-}
 
 tasks.register('integrationTest', Test) {
   description = "Runs the integration tests."

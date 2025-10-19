@@ -33,12 +33,6 @@ dependencies {
   testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.1'
 }
 
-test {
-  failFast = true
-  useJUnitPlatform()
-  maxHeapSize = '2G'
-}
-
 tasks.register('downloadZipFile', Download) {
   src('https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip')
   dest(layout.buildDirectory.file('tesseract-al2-x86.zip'))
