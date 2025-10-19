@@ -6,6 +6,7 @@ dependencies {
   annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.1'
 
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+  implementation group: 'com.github.f4b6a3', name: 'ulid-creator', version: '5.2.3'
 
   implementation project(':aws-dynamodb')
   implementation project(':aws-sns')

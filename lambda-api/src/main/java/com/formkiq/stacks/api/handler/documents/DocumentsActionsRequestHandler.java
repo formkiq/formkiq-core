@@ -143,12 +143,7 @@ public class DocumentsActionsRequestHandler
     validateActions(awsservice, config, siteId, actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    int idx = service.getActions(siteId, documentId).size();
-
-    for (Action a : actions) {
-      service.saveAction(siteId, documentId, a, idx);
-      idx++;
-    }
+    service.saveNewActions(siteId, documentId, actions);
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);

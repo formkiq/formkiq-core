@@ -15,6 +15,7 @@ dependencies {
   implementation project(':ocr')
   implementation project(':fkq-lambda-services')
   implementation project(':fkq-lambda-core')
+  // 5.16.0 of tess4j breaks everything - should look at removing this
   implementation("net.sourceforge.tess4j:tess4j:5.13.0")
   implementation("org.slf4j:slf4j-simple:2.0.17")
   implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.3.0'
