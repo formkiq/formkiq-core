@@ -27,6 +27,9 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.client.model.DocumentActionStatus.FAILED;
 import static com.formkiq.client.model.DocumentActionStatus.FAILED_RETRY;
 import static com.formkiq.client.model.DocumentActionStatus.PENDING;
+import static com.formkiq.module.actions.ActionStatus.MAX_RETRIES_REACHED;
+import static com.formkiq.module.actions.ActionStatus.RUNNING;
+import static com.formkiq.module.actions.ActionStatus.WAITING_FOR_RETRY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -470,7 +473,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/{documentId}/actions/retry request. RUNNING
+   * POST /documents/{documentId}/actions/retry request. RUNNING / MAX RETRIES / RETRYING.
    *
    * @throws Exception an error has occurred
    */
@@ -480,31 +483,34 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-      Action a0 = new Action().userId("joe").status(ActionStatus.RUNNING).type(ActionType.OCR);
-      Action a1 =
-          new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.ANTIVIRUS);
-      Action a2 =
-          new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.MALWARE_SCAN);
-      List<Action> addActions = Arrays.asList(a0, a1, a2);
 
-      // when
-      this.service.saveNewActions(siteId, documentId, addActions);
+      for (ActionStatus status : List.of(RUNNING, MAX_RETRIES_REACHED, WAITING_FOR_RETRY)) {
+        String documentId = saveDocument(siteId);
+        Action a0 = new Action().userId("joe").status(status).type(ActionType.OCR);
+        Action a1 =
+            new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.ANTIVIRUS);
+        Action a2 =
+            new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.MALWARE_SCAN);
+        List<Action> addActions = Arrays.asList(a0, a1, a2);
 
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+        // when
+        this.service.saveNewActions(siteId, documentId, addActions);
 
-      // then
-      assertEquals("Actions retrying", retry.getMessage());
+        AddDocumentActionsRetryResponse retry =
+            this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
-      List<DocumentAction> actions = getDocumentActions(siteId, documentId);
-      assertEquals(addActions.size() + 1, actions.size());
+        // then
+        assertEquals("Actions retrying", retry.getMessage());
 
-      int i = 0;
-      assertDocumentAction(actions.get(i++), DocumentActionType.OCR, FAILED_RETRY, null);
-      assertDocumentAction(actions.get(i++), DocumentActionType.OCR, PENDING, null);
-      assertDocumentAction(actions.get(i++), DocumentActionType.ANTIVIRUS, PENDING, null);
-      assertDocumentAction(actions.get(i), DocumentActionType.MALWARE_SCAN, PENDING, null);
+        List<DocumentAction> actions = getDocumentActions(siteId, documentId);
+        assertEquals(addActions.size() + 1, actions.size());
+
+        int i = 0;
+        assertDocumentAction(actions.get(i++), DocumentActionType.OCR, FAILED_RETRY, null);
+        assertDocumentAction(actions.get(i++), DocumentActionType.OCR, PENDING, null);
+        assertDocumentAction(actions.get(i++), DocumentActionType.ANTIVIRUS, PENDING, null);
+        assertDocumentAction(actions.get(i), DocumentActionType.MALWARE_SCAN, PENDING, null);
+      }
     }
   }
 

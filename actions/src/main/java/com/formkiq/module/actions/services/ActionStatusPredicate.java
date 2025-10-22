@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.actions.services;
 
+import java.util.List;
 import java.util.function.Predicate;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -35,19 +36,19 @@ import com.formkiq.module.actions.ActionStatus;
 public class ActionStatusPredicate implements Predicate<Action> {
 
   /** {@link ActionStatus}. */
-  private ActionStatus status;
+  private List<ActionStatus> status;
 
   /**
    * constructor.
    * 
    * @param actionStatus {@link ActionStatus}
    */
-  public ActionStatusPredicate(final ActionStatus actionStatus) {
-    this.status = actionStatus;
+  public ActionStatusPredicate(final ActionStatus... actionStatus) {
+    this.status = List.of(actionStatus);
   }
 
   @Override
   public boolean test(final Action a) {
-    return this.status.equals(a.status());
+    return this.status.contains(a.status());
   }
 }

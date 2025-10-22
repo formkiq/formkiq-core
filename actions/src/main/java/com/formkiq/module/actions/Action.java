@@ -91,6 +91,12 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   /** Workflow Step Id. */
   @Reflectable
   private String workflowStepId;
+  /** Retry Count. */
+  @Reflectable
+  private Integer retryCount;
+  /** Max Retries. */
+  @Reflectable
+  private Integer maxRetries;
 
   /**
    * constructor.
@@ -180,6 +186,8 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put("startDate", AttributeValue.fromS(df.format(this.startDate)));
     }
 
+    addN(attrs, "retryCount", this.retryCount);
+    addN(attrs, "maxRetries", this.maxRetries);
     addS(attrs, "message", this.message);
     addS(attrs, "queueId", this.queueId);
     addS(attrs, "workflowId", this.workflowId);
@@ -216,7 +224,8 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
         .message(ss(attrs, "message")).queueId(ss(attrs, "queueId"))
         .workflowId(ss(attrs, "workflowId")).workflowLastStep(ss(attrs, "workflowLastStep"))
-        .workflowStepId(ss(attrs, "workflowStepId"));
+        .workflowStepId(ss(attrs, "workflowStepId")).retryCount(toInt(attrs, "retryCount"))
+        .maxRetries(toInt(attrs, "maxRetries"));
 
     if (attrs.containsKey("status")) {
       record.status(ActionStatus.valueOf(ss(attrs, "status")));
@@ -297,6 +306,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action insertedDate(final Date date) {
     this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Get Max Retries.
+   * 
+   * @return {@link Integer}
+   */
+  public Integer maxRetries() {
+    return maxRetries;
+  }
+
+  /**
+   * Set Max Retries.
+   * 
+   * @param count {@link Integer}
+   * @return {@link Action}
+   */
+  public Action maxRetries(final Integer count) {
+    this.maxRetries = count;
     return this;
   }
 
@@ -407,6 +436,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action queueId(final String id) {
     this.queueId = id;
+    return this;
+  }
+
+  /**
+   * Get Retry Count.
+   * 
+   * @return {@link Integer}
+   */
+  public Integer retryCount() {
+    return retryCount;
+  }
+
+  /**
+   * Set retry Count.
+   * 
+   * @param count {@link Integer}
+   * @return {@link Action}
+   */
+  public Action retryCount(final Integer count) {
+    this.retryCount = count;
     return this;
   }
 

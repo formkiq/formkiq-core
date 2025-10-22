@@ -578,10 +578,10 @@ Resources:
   DocumentActionsQueue:
     Type: "AWS::SQS::Queue"
     Properties:
-      VisibilityTimeout: 300
+      VisibilityTimeout: 360
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        maxReceiveCount: 3
+        maxReceiveCount: 5
         deadLetterTargetArn:
           Fn::GetAtt:
             - DocumentsDeadLetterQueue

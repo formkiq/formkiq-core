@@ -98,6 +98,13 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
   }
 
+  private void addKeyIfNotNull(final Map<String, AttributeValueUpdate> updates,
+      final Map<String, AttributeValue> attrs, final String key) {
+    if (attrs.get(key) != null) {
+      updates.put(key, AttributeValueUpdate.builder().value(attrs.get(key)).build());
+    }
+  }
+
   private void deleteAction(final String siteId, final Action action) {
     String pk = action.pk(siteId);
     String sk = action.sk();
@@ -364,14 +371,10 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
           AttributeValueUpdate.builder().value(fromS(df.format(new Date()))).build());
     }
 
-    if (action.message() != null) {
-      updates.put("message", AttributeValueUpdate.builder().value(attrs.get("message")).build());
-    }
-
-    if (action.completedDate() != null) {
-      updates.put("completedDate",
-          AttributeValueUpdate.builder().value(attrs.get("completedDate")).build());
-    }
+    addKeyIfNotNull(updates, attrs, "message");
+    addKeyIfNotNull(updates, attrs, "retryCount");
+    addKeyIfNotNull(updates, attrs, "maxRetries");
+    addKeyIfNotNull(updates, attrs, "completedDate");
 
     for (String index : Arrays.asList(GSI1, GSI2)) {
 

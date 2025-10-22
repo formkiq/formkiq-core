@@ -167,6 +167,19 @@ public interface DbKeys {
 
   /**
    * Add Number to {@link Map} {@link AttributeValue}.
+   *
+   * @param map {@link Map} {@link AttributeValue}
+   * @param key {@link String}
+   * @param value {@link Number}
+   */
+  default void addN(final Map<String, AttributeValue> map, final String key, final Number value) {
+    if (value != null) {
+      map.put(key, AttributeValue.builder().n(String.valueOf(value)).build());
+    }
+  }
+
+  /**
+   * Add Number to {@link Map} {@link AttributeValue}.
    * 
    * @param map {@link Map} {@link AttributeValue}
    * @param key {@link String}

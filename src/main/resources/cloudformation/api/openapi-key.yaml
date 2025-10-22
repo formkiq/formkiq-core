@@ -11384,6 +11384,8 @@ Resources:
                 - RUNNING
                 - SKIPPED
                 - FAILED_RETRY
+                - MAX_RETRIES_REACHED
+                - WAITING_FOR_RETRY
             DocumentActionType:
               type: string
               description: Type of the Document Action
@@ -11409,6 +11411,12 @@ Resources:
                   $ref: "#/components/schemas/DocumentActionStatus"
                 type:
                   $ref: "#/components/schemas/DocumentActionType"
+                retryCount:
+                  type: "number"
+                  description: "The number of times this action has already been attempted"
+                maxRetries:
+                  type: "number"
+                  description: "The maximum number of retry attempts allowed for this action"
                 queueId:
                   type: string
                   description: Queue Id

@@ -42,6 +42,7 @@ import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -89,7 +90,9 @@ public class DocumentsActionsRetryRequestHandler
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
 
-    actions.stream().filter(a -> ActionStatus.RUNNING.equals(a.status()))
+    actions
+        .stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING,
+            ActionStatus.MAX_RETRIES_REACHED, ActionStatus.WAITING_FOR_RETRY))
         .forEach(a -> a.status(ActionStatus.FAILED));
 
     int index = IntStream.range(0, actions.size()).map(i -> actions.size() - 1 - i)

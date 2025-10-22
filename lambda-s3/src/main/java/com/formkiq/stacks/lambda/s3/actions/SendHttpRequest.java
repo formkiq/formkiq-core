@@ -32,6 +32,11 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_429;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_502;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_503;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_509;
+
 /**
  * Send Http Request.
  */
@@ -49,6 +54,13 @@ public class SendHttpRequest {
   public SendHttpRequest(final AwsServiceCache serviceCache) {
     this.http = serviceCache.getExtension(HttpService.class);
     this.documentsIamUrl = serviceCache.environment("documentsIamUrl");
+  }
+
+  private boolean isRetryStatus(final HttpResponse<String> response) {
+    return switch (response.statusCode()) {
+      case STATUS_429, STATUS_502, STATUS_503, STATUS_509 -> true;
+      default -> false;
+    };
   }
 
   /**
@@ -83,6 +95,10 @@ public class SendHttpRequest {
       response = this.http.patch(u, Optional.empty(), parameters, payload);
     } else {
       throw new UnsupportedOperationException("unsupported method '" + method + "'");
+    }
+
+    if (isRetryStatus(response)) {
+      throw new HttpRetryException(u, response);
     }
 
     if (!HttpResponseStatus.is2XX(response)) {
