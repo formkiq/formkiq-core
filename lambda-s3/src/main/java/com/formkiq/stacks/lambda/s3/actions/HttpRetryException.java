@@ -21,30 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.stacks.lambda.s3.actions;
+
+import java.net.http.HttpResponse;
 
 /**
- * 
- * Action Status.
- *
+ * Http Retry Exception that should be retried.
  */
-public enum ActionStatus {
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** Failed Retry. */
-  FAILED_RETRY,
-  /** In Queue. */
-  IN_QUEUE,
-  /** Pending. */
-  PENDING,
-  /** Running. */
-  RUNNING,
-  /** Skipped. */
-  SKIPPED,
-  /** Max Retry Reachd. */
-  MAX_RETRIES_REACHED,
-  /** Waiting for Retry. */
-  WAITING_FOR_RETRY
+public class HttpRetryException extends RuntimeException {
+
+  /**
+   * constructor.
+   * 
+   * @param url {@link String}
+   * @param response {@link HttpResponse}
+   */
+  public HttpRetryException(final String url, final HttpResponse<String> response) {
+    super(url + " returned " + response.statusCode() + ": " + response.body());
+  }
 }

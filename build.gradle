@@ -226,7 +226,7 @@ openApiGenerate {
   modelPackage.set("com.formkiq.springboot.model")
 }
 
-tasks.register("cleanOpenApi") {
+tasks.register("buildOpenApi") {
   def fileMappings = [
     (file("build/ytt/api/api.yaml"))        : "openapi-jwt.yaml",
     (file("build/ytt/api/api-iam.yaml"))    : "openapi-iam.yaml",
@@ -271,4 +271,4 @@ tasks.register("cleanOpenApi") {
   }
 }
 
-cleanOpenApi.dependsOn 'yttRenderAll'
+buildOpenApi.dependsOn 'yttRenderAll'

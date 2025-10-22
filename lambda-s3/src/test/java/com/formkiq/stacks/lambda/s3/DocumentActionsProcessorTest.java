@@ -113,6 +113,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpStatusCode;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -166,11 +167,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final String APP_ENVIRONMENT = "test";
   /** {@link RequestRecordExpectationResponseCallback}. */
   private static final RequestRecordExpectationResponseCallback CALLBACK =
-      new RequestRecordExpectationResponseCallback();
+      new RequestRecordExpectationResponseCallback(200, "{\"contentUrls\":[]}");
+  /** {@link RequestRecordExpectationResponseCallback} 429. */
+  private static final RequestRecordExpectationResponseCallback CALLBACK429 =
+      new RequestRecordExpectationResponseCallback(429, "");
   /** {@link AwsBasicCredentials}. */
   private static final AwsBasicCredentials CREDENTIALS = AwsBasicCredentials.create("asd", "asd");
   /** Full text 404 document. */
   private static final String DOCUMENT_ID_404 = ID.uuid();
+  /** Full text 429 document. */
+  private static final String DOCUMENT_ID_429 = ID.uuid();
   /** Document Id with OCR. */
   private static final String DOCUMENT_ID_OCR = ID.uuid();
   /** Document Id for Data Classification. */
@@ -350,10 +356,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
           .respond(org.mockserver.model.HttpResponse.response(text).withStatusCode(status));
     }
 
-    final int notFound = 404;
+    mockServer
+        .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_429 + "/fulltext"))
+        .respond(CALLBACK429);
+
     mockServer
         .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
-        .respond(org.mockserver.model.HttpResponse.response("").withStatusCode(notFound));
+        .respond(org.mockserver.model.HttpResponse.response("")
+            .withStatusCode(HttpStatusCode.NOT_FOUND_404.code()));
 
     mockServer
         .when(request().withMethod("POST").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
@@ -503,6 +513,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return document;
   }
 
+  private void assertRetryAction(final Action action, final int retryCount) {
+    assertEquals(retryCount, action.retryCount());
+    assertEquals(5, action.maxRetries());
+    assertEquals(ActionStatus.WAITING_FOR_RETRY, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertEquals("http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+        action.message());
+    assertNull(action.completedDate());
+  }
+
   /**
    * BeforeEach.
    *
@@ -550,7 +571,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         .setSourceType(sourceType).setLabelMatchingType(matchingType).setLabelTexts(labelTexts)
         .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
 
-    return new Mapping().setName("test").setAttributes(Collections.singletonList(a0));
+    return new Mapping().setName("test").setAttributes(List.of(a0));
   }
 
   private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {
@@ -576,7 +597,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       final String contentType, final MappingRecord mappingRecord) throws ValidationException {
     createDocument2(siteId, documentId, contentType);
 
-    List<Action> actions = Collections.singletonList(new Action().type(ActionType.IDP).userId("joe")
+    List<Action> actions = List.of(new Action().type(ActionType.IDP).userId("joe")
         .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
     actionsService.saveNewActions(siteId, documentId, actions);
 
@@ -624,6 +645,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return documentId;
   }
 
+
   /**
    * Handle documentTagging ChatApt Action missing GptKey.
    *
@@ -633,7 +655,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -650,7 +672,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
     }
   }
-
 
   /**
    * Handle documentTagging ChatApt Action.
@@ -679,7 +700,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -729,7 +750,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -776,7 +797,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -849,7 +870,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -920,7 +941,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -987,8 +1008,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(new Action().type(ActionType.DOCUMENTTAGGING)
-          .userId("joe").parameters(Map.of("engine", "chatgpt", "tags",
+      List<Action> actions = List.of(new Action().type(ActionType.DOCUMENTTAGGING).userId("joe")
+          .parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
@@ -1060,7 +1081,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = Collections.singletonList(
+      List<Action> actions = List.of(
           new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
               "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
       actionsService.saveNewActions(siteId, documentId, actions);
@@ -1128,7 +1149,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
       documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
 
-      List<Action> actions = Collections.singletonList(new Action().type(ActionType.EVENTBRIDGE)
+      List<Action> actions = List.of(new Action().type(ActionType.EVENTBRIDGE)
           .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
@@ -1177,9 +1198,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = Collections.singletonList(new Action().type(ActionType.OCR)
-          .userId("joe").parameters(Map.of("addPdfDetectedCharactersAsText", "true",
-              "ocrNumberOfPages", "2", "ocrOutputType", "CSV")));
+      List<Action> actions = List.of(new Action().type(ActionType.OCR).userId("joe")
+          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2",
+              "ocrOutputType", "CSV")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1215,8 +1236,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = createDocument2(siteId, "text/plain");
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1250,8 +1270,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = createDocument2(siteId, DOCUMENT_ID_OCR, "application/pdf");
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1282,8 +1301,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1315,8 +1333,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = Collections.singletonList(new Action().type(ActionType.WEBHOOK)
-          .userId("joe").parameters(Map.of("url", URL + "/callback")));
+      List<Action> actions = List.of(new Action().type(ActionType.WEBHOOK).userId("joe")
+          .parameters(Map.of("url", URL + "/callback")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1430,8 +1448,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1571,9 +1588,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      List<Action> actions = List.of(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+          .parameters(Map.of("llmPromptEntityName", "Myprompt")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1607,9 +1623,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-              .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+      List<Action> actions = List.of(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+          .parameters(Map.of("llmPromptEntityName", "Myprompt")));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1639,8 +1654,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1703,8 +1717,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = createDocument2(siteId, DOCUMENT_ID_404, "text/plain");
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1727,6 +1740,47 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Fulltext(Opensearch) 429 retry, 429, 502, 503, and 509.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleFulltext04() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createDocument2(siteId, DOCUMENT_ID_429, "text/plain");
+      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      for (int i = 1; i <= 5; i++) {
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertRetryAction(action, i);
+      }
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(5, action.retryCount());
+      assertEquals(5, action.maxRetries());
+      assertEquals(ActionStatus.MAX_RETRIES_REACHED, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertEquals(
+          "http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+          action.message());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
    * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
    *
    */
@@ -1737,9 +1791,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Map<String, Object>> queries =
           List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
       String documentId = ID.uuid();
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.OCR).userId("joe").parameters(
-              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
+      List<Action> actions = List.of(new Action().type(ActionType.OCR).userId("joe").parameters(
+          Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2544,8 +2597,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2576,8 +2628,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2612,8 +2663,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.PDFEXPORT).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2652,8 +2702,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      List<Action> actions =
-          Collections.singletonList(new Action().type(ActionType.PUBLISH).userId("joe"));
+      List<Action> actions = List.of(new Action().type(ActionType.PUBLISH).userId("joe"));
       actionsService.saveNewActions(siteId, documentId, actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();

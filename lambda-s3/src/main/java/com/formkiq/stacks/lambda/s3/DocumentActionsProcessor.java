@@ -88,6 +88,7 @@ import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
+import com.formkiq.stacks.lambda.s3.actions.HttpRetryException;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
@@ -116,6 +117,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -123,6 +125,7 @@ import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.actions.ActionStatus.PENDING;
+import static com.formkiq.module.actions.ActionStatus.WAITING_FOR_RETRY;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 
@@ -130,6 +133,8 @@ import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 @Reflectable
 public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>, DbKeys {
 
+  /** Max Retry Count. */
+  private static final int MAX_RETRY_COUNT = 5;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
 
@@ -376,8 +381,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
-      Optional<Action> o =
-          actions.stream().filter((new ActionStatusPredicate(PENDING))).findFirst();
+      Optional<Action> o = actions.stream()
+          .filter(new ActionStatusPredicate(PENDING, WAITING_FOR_RETRY)).findFirst();
 
       if (running.isPresent()) {
 
@@ -397,14 +402,32 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
         } catch (Throwable e) {
 
-          String stacktrace = Strings.toString(e);
-          logger.error(e);
-
           action.status(ActionStatus.FAILED);
+
+          boolean isRetry = e instanceof HttpRetryException;
+          if (isRetry) {
+
+            Integer retryCount = action.retryCount();
+            action.status(WAITING_FOR_RETRY);
+
+            if (retryCount < 0) {
+              action.retryCount(1);
+              action.maxRetries(MAX_RETRY_COUNT);
+            } else if (retryCount < MAX_RETRY_COUNT) {
+              action.retryCount(action.retryCount() + 1);
+            } else {
+              action.status(ActionStatus.MAX_RETRIES_REACHED);
+              action.completedDate(new Date());
+            }
+
+          } else {
+            logger.error(e);
+          }
 
           if (!isEmpty(e.getMessage())) {
             action.message(e.getMessage());
           } else {
+            String stacktrace = Strings.toString(e);
             action.message(stacktrace);
           }
 

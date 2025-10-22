@@ -21,30 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.testutils.api;
+
+import java.util.function.Predicate;
 
 /**
+ * {@link Predicate} for {@link ApiHttpResponse} for no error.
  * 
- * Action Status.
- *
+ * @param <T> Type of {@link ApiHttpResponse}
  */
-public enum ActionStatus {
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** Failed Retry. */
-  FAILED_RETRY,
-  /** In Queue. */
-  IN_QUEUE,
-  /** Pending. */
-  PENDING,
-  /** Running. */
-  RUNNING,
-  /** Skipped. */
-  SKIPPED,
-  /** Max Retry Reachd. */
-  MAX_RETRIES_REACHED,
-  /** Waiting for Retry. */
-  WAITING_FOR_RETRY
+public class ApiHttpResponseOkPredicate<T> implements Predicate<ApiHttpResponse<T>> {
+  @Override
+  public boolean test(final ApiHttpResponse<T> apiHttpResponse) {
+    return !apiHttpResponse.isError();
+  }
 }
