@@ -12678,6 +12678,12 @@
                 numberOfShards:
                   type: string
                   description: The number of shards in index
+                documentCount:
+                  type: string
+                  description: The number of documents in index
+                storeSize:
+                  type: string
+                  description: The store size of the index
                 name:
                   type: string
                   description: Name of Index
