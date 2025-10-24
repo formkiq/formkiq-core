@@ -466,6 +466,22 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+          /sites/global/opensearch/indices/{indexName}:
+            delete:
+              operationId: DeleteOpenSearchIndexByName
+              description: Deletes the OpenSearch index by name
+              summary: Deletes OpenSearch index by name
+              tags:
+                - System Management
+              parameters:
+                - $ref: '#/components/parameters/indexNamePath'
+              responses:
+                '200':
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+                - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
           /sites/{siteId}/opensearch/indices:
             get:
               operationId: GetOpenSearchIndices
@@ -7499,6 +7515,13 @@ Resources:
               in: query
               description: Site Identifier
               required: false
+              schema:
+                type: string
+            indexNamePath:
+              name: indexName
+              in: path
+              description: IndexName to path
+              required: true
               schema:
                 type: string
             indexNameQuery:
