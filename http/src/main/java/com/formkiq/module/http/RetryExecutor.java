@@ -71,6 +71,8 @@ public class RetryExecutor {
           }
 
           waitTime *= 2;
+        } else {
+          return null;
         }
       }
     }
