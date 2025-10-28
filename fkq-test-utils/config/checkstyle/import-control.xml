@@ -47,6 +47,7 @@
 		<subpackage name="activities">
 			<allow pkg="com.formkiq.testutils.api" />
 			<allow pkg="org.junit.jupiter.api" />
+            <allow pkg="java.time" />
 		</subpackage>
 
 		<subpackage name="opensearch">

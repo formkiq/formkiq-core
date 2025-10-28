@@ -30,6 +30,9 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -152,8 +155,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(userId, "userId must not be null");
 
       String pk = "doc#" + documentId;
-      String sk =
-          "activity#" + DateUtil.getNowInIso8601Format() + "#" + documentId + "#" + ID.uuid();
+      String sk = "activity#" + getSkDate() + "#" + documentId + "#" + ID.ulid();
       String gsi1Pk = "activity#user#" + userId;
 
       String gsi2Pk = getGsi2Pk();
@@ -169,7 +171,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(userId, "userId must not be null");
 
       String pk = "entity#" + entityTypeId + "#" + entityId;
-      String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + entityId;
+      String sk = "activity#" + getSkDate() + "#" + entityId + "#" + ID.ulid();
       String gsi1Pk = "activity#user#" + userId;
 
       String gsi2Pk = getGsi2Pk();
@@ -184,7 +186,7 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(userId, "userId must not be null");
 
       String pk = "entityType#" + entityTypeId;
-      String sk = "activity#" + DateUtil.getNowInIso8601Format() + "#" + entityTypeId;
+      String sk = "activity#" + getSkDate() + "#" + entityTypeId + "#" + ID.ulid();
       String gsi1Pk = "activity#user#" + userId;
 
       String gsi2Pk = getGsi2Pk();
@@ -248,7 +250,12 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     }
 
     private String getGsi2Pk() {
-      return "activity#" + DateUtil.getYyyyMmDdFormatter().format(new Date());
+      return "activity#" + DateUtil.getYyyyMmDdFormatter().format(insertedDate);
+    }
+
+    private String getSkDate() {
+      return DateTimeFormatter.ISO_INSTANT
+          .format(insertedDate.toInstant().truncatedTo(ChronoUnit.SECONDS));
     }
 
     /**
@@ -259,6 +266,17 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
      */
     public Builder insertedDate(final Date activityInsertedDate) {
       this.insertedDate = new Date(activityInsertedDate.getTime());
+      return this;
+    }
+
+    /**
+     * Sets the insertion date of the activity.
+     *
+     * @param activityInsertedDate the insertion date
+     * @return this Builder
+     */
+    public Builder insertedDate(final Instant activityInsertedDate) {
+      this.insertedDate = Date.from(activityInsertedDate);
       return this;
     }
 

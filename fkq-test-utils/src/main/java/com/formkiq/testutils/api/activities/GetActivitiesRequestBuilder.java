@@ -29,6 +29,10 @@ import com.formkiq.client.model.GetActivitesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+
 /**
  * Builder for Get Document Request.
  */
@@ -48,6 +52,12 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private String entityId;
   /** User Id. */
   private String userId;
+  /** Start {@link OffsetDateTime}. */
+  private OffsetDateTime start;
+  /** End {@link OffsetDateTime}. */
+  private OffsetDateTime end;
+  /** Sort. */
+  private String sort;
 
   /**
    * constructor.
@@ -62,6 +72,28 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder documentId(final String activitiesDocumentId) {
     this.documentId = activitiesDocumentId;
+    return this;
+  }
+
+  /**
+   * Set the End Date.
+   *
+   * @param date {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder end(final Instant date) {
+    this.end = date.atOffset(ZoneOffset.UTC);
+    return this;
+  }
+
+  /**
+   * Set the End Date.
+   *
+   * @param date {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder end(final String date) {
+    this.end = Instant.parse(date).atOffset(ZoneOffset.UTC);
     return this;
   }
 
@@ -120,12 +152,45 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
     return this;
   }
 
+  /**
+   * Set the Sort.
+   *
+   * @param sortOrder {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder sort(final String sortOrder) {
+    this.sort = sortOrder;
+    return this;
+  }
+
+  /**
+   * Set the Start Date.
+   *
+   * @param date {@link Instant}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder start(final Instant date) {
+    this.start = date.atOffset(ZoneOffset.UTC);
+    return this;
+  }
+
+  /**
+   * Set the Start Date.
+   *
+   * @param date {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder start(final String date) {
+    this.start = Instant.parse(date).atOffset(ZoneOffset.UTC);
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetActivitesResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new UserActivitiesApi(apiClient).getResourceActivities(siteId, this.documentId,
-            this.entityTypeId, this.namespace, this.entityId, next, limit, this.userId));
+    return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
+        this.documentId, this.entityTypeId, this.namespace, this.entityId, start, end, sort, next,
+        limit, this.userId));
   }
 
   /**

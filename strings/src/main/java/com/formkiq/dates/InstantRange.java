@@ -21,53 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
+package com.formkiq.dates;
 
-import com.formkiq.client.invoker.ApiException;
+import java.time.Instant;
 
 /**
- * Api Http Response.
- * 
- * @param response Object response
- * @param exception {@link ApiException}
- * @param <T> Type of Object response
+ * A value object representing a time range between two Instants. The range is typically interpreted
+ * as: start <= time < end.
  */
-public record ApiHttpResponse<T>(T response, ApiException exception) {
-  /** 500 Http Code. */
-  private static final int STATUS_INTERNAL_SERVER_ERROR = 500;
-  /** 600 Http Code. */
-  private static final int STATUS_SERVER_ERROR_UPPER_BOUND = 600;
+public record InstantRange(Instant start, Instant end) implements Comparable<InstantRange> {
+  @Override
+  public int compareTo(final InstantRange other) {
+    int result;
 
-  /**
-   * Is Error Response.
-   * 
-   * @return boolean
-   */
-  public boolean isError() {
-    return exception != null;
-  }
-
-  /**
-   * Throw {@link ApiException} if error.
-   *
-   * @return ApiHttpResponse
-   * @throws ApiException Api exception
-   */
-  public ApiHttpResponse<T> throwIfError() throws ApiException {
-    if (isError()) {
-      throw exception;
+    // null other means this is greater
+    if (other == null) {
+      return 1;
     }
-    return this;
+
+    // 1) compare start
+    result = compareNullableInstant(this.start, other.start);
+
+    // 2) compare end only if start is equal
+    if (result == 0) {
+      result = compareNullableInstant(this.end, other.end);
+    }
+
+    return result;
   }
 
   /**
-   * Is 5XX status code.
-   * 
-   * @return boolean
+   * Compares two Instants where null is considered the earliest (for start) and the smallest (for
+   * ordering). Example: null < any Instant
    */
-  public boolean is5XX() {
-    int statusCode = exception != null ? exception().getCode() : -1;
-    return statusCode >= STATUS_INTERNAL_SERVER_ERROR
-        && statusCode < STATUS_SERVER_ERROR_UPPER_BOUND;
+  private static int compareNullableInstant(final Instant a, final Instant b) {
+    int result;
+    if (a == null && b == null) {
+      result = 0;
+    } else if (a == null) {
+      result = -1;
+    } else if (b == null) {
+      result = 1;
+    } else {
+      result = a.compareTo(b);
+    }
+    return result;
   }
 }

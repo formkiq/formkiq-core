@@ -21,53 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
-
-import com.formkiq.client.invoker.ApiException;
+package com.formkiq.aws.dynamodb;
 
 /**
- * Api Http Response.
- * 
- * @param response Object response
- * @param exception {@link ApiException}
- * @param <T> Type of Object response
+ * Record representing the {@link DynamoDbKey} range.
+ *
+ * @param start {@link DynamoDbKey}
+ * @param end {@link DynamoDbKey}
  */
-public record ApiHttpResponse<T>(T response, ApiException exception) {
-  /** 500 Http Code. */
-  private static final int STATUS_INTERNAL_SERVER_ERROR = 500;
-  /** 600 Http Code. */
-  private static final int STATUS_SERVER_ERROR_UPPER_BOUND = 600;
-
-  /**
-   * Is Error Response.
-   * 
-   * @return boolean
-   */
-  public boolean isError() {
-    return exception != null;
-  }
-
-  /**
-   * Throw {@link ApiException} if error.
-   *
-   * @return ApiHttpResponse
-   * @throws ApiException Api exception
-   */
-  public ApiHttpResponse<T> throwIfError() throws ApiException {
-    if (isError()) {
-      throw exception;
-    }
-    return this;
-  }
-
-  /**
-   * Is 5XX status code.
-   * 
-   * @return boolean
-   */
-  public boolean is5XX() {
-    int statusCode = exception != null ? exception().getCode() : -1;
-    return statusCode >= STATUS_INTERNAL_SERVER_ERROR
-        && statusCode < STATUS_SERVER_ERROR_UPPER_BOUND;
-  }
+public record DynamoDbKeyRange(DynamoDbKey start, DynamoDbKey end) {
 }
+

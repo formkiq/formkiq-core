@@ -4700,6 +4700,9 @@
               - $ref: '#/components/parameters/entityTypeIdQuery'
               - $ref: '#/components/parameters/namespaceParam'
               - $ref: '#/components/parameters/entityIdQuery'
+              - $ref: '#/components/parameters/startParam'
+              - $ref: '#/components/parameters/endParam'
+              - $ref: '#/components/parameters/sortParam'
               - $ref: '#/components/parameters/nextParam'
               - $ref: '#/components/parameters/limitParam'
               - name: userId
@@ -7608,6 +7611,30 @@
               required: false
               schema:
                 type: string
+            startParam:
+              name: start
+              in: query
+              description: Start of date-time range (UTC)
+              schema:
+                type: string
+                format: date-time
+            endParam:
+              name: end
+              in: query
+              description: End of date-time range (UTC)
+              schema:
+                type: string
+                format: date-time
+            sortParam:
+              name: sort
+              in: query
+              description: Sort order (default DESC)
+              required: false
+              schema:
+                type: string
+                enum:
+                - ASC
+                - DESC
             apiKeyParam:
               name: apiKey
               in: path

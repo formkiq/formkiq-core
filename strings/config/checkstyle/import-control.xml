@@ -5,8 +5,13 @@
 
 <import-control pkg="com.formkiq">
 
-	<subpackage name="strings">
+	<subpackage name="dates">
+        <allow pkg="java.time" />
 		<allow pkg="java.util" />
 	</subpackage>
+
+    <subpackage name="strings">
+        <allow pkg="java.util" />
+    </subpackage>
 
 </import-control>

@@ -35,9 +35,9 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.github.f4b6a3.ulid.UlidCreator;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -285,7 +285,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * @return {@link Action}
    */
   public Action indexUlid() {
-    index(UlidCreator.getMonotonicUlid().toString());
+    index(ID.ulid());
     return this;
   }
 

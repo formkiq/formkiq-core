@@ -26,7 +26,6 @@ package com.formkiq.aws.services.lambda;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
@@ -37,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
@@ -45,10 +43,6 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
  * Convert {@link ApiGatewayRequestEvent} to {@link UserActivity}.
  */
 public class ApiGatewayRequestToUserActivityFunction {
-
-  /** List of Change Types. */
-  private static final Collection<UserActivityType> CHANGE_TYPES =
-      Set.of(UserActivityType.CREATE, UserActivityType.UPDATE, UserActivityType.DELETE);
 
   /**
    * Build {@link UserActivity.Builder}.
@@ -156,26 +150,6 @@ public class ApiGatewayRequestToUserActivityFunction {
     return split[1];
   }
 
-  private static UserActivityType getType(final ApiGatewayRequestEvent request) {
-
-    UserActivityType type;
-    String method = request.getHttpMethod().toUpperCase();
-
-    if (request.getResource().equals("/documents/upload")) {
-      type = UserActivityType.CREATE;
-    } else {
-      type = switch (method) {
-        case "GET" -> UserActivityType.VIEW;
-        case "POST" -> UserActivityType.CREATE;
-        case "PUT", "PATCH" -> UserActivityType.UPDATE;
-        case "DELETE" -> UserActivityType.DELETE;
-        default -> null;
-      };
-    }
-
-    return type;
-  }
-
   private static String getSourceIp(final ApiGatewayRequestEvent request) {
     return request != null && request.getRequestContext() != null
         && request.getRequestContext().getIdentity() != null
@@ -197,25 +171,4 @@ public class ApiGatewayRequestToUserActivityFunction {
     }
     return insertedDate;
   }
-
-  // private boolean isGenerateS3Key(final ApiGatewayRequestEvent request) {
-  // String url = request.getResource();
-  // UserActivityType type = getType(request);
-  // return type != null
-  // && (isDocumentView(url, type) || isDocumentChange(url, type) || isEntityChange(url, type));
-  // }
-  //
-  // private boolean isDocumentChange(final String url, final UserActivityType type) {
-  // return CHANGE_TYPES.contains(type) && url.startsWith("/documents");
-  // }
-  //
-  // private boolean isDocumentView(final String url, final UserActivityType type) {
-  // return UserActivityType.VIEW.equals(type) && url.startsWith("/documents")
-  // && (url.endsWith("/url") || url.endsWith("/content"));
-  // }
-  //
-  // private boolean isEntityChange(final String url, final UserActivityType type) {
-  // return CHANGE_TYPES.contains(type)
-  // && (url.startsWith("/entities") || url.startsWith("/entityTypes"));
-  // }
 }

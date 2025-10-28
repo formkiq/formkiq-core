@@ -92,15 +92,15 @@ public class ActivityRecordTest {
       // then
       assertKeyEquals(siteId, "entity#" + entityTypeId + "#" + entityId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
-      assertTrue(key.sk().endsWith("#" + entityId));
+      assertTrue(key.sk().contains("#" + entityId + "#"));
 
       assertKeyEquals(siteId, "activity#user#" + USER_ID, key.gsi1Pk());
       assertTrue(key.gsi1Sk().startsWith("activity#"));
-      assertTrue(key.gsi1Sk().endsWith("#" + entityId));
+      assertTrue(key.gsi1Sk().contains("#" + entityId + "#"));
 
       assertKeyEquals(siteId, "activity#" + TODAY, key.gsi2Pk());
       assertTrue(key.gsi2Sk().startsWith("activity#"));
-      assertTrue(key.gsi2Sk().endsWith("#" + entityId));
+      assertTrue(key.gsi2Sk().contains("#" + entityId + "#"));
 
     }
   }
@@ -120,15 +120,15 @@ public class ActivityRecordTest {
       // then
       assertKeyEquals(siteId, "entityType#" + entityTypeId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
-      assertTrue(key.sk().endsWith("#" + entityTypeId));
+      assertTrue(key.sk().contains("#" + entityTypeId + "#"));
 
       assertKeyEquals(siteId, "activity#user#" + USER_ID, key.gsi1Pk());
       assertTrue(key.gsi1Sk().startsWith("activity#"));
-      assertTrue(key.gsi1Sk().endsWith("#" + entityTypeId));
+      assertTrue(key.gsi1Sk().contains("#" + entityTypeId + "#"));
 
       assertKeyEquals(siteId, "activity#" + TODAY, key.gsi2Pk());
       assertTrue(key.gsi2Sk().startsWith("activity#"));
-      assertTrue(key.gsi2Sk().endsWith("#" + entityTypeId));
+      assertTrue(key.gsi2Sk().contains("#" + entityTypeId + "#"));
     }
   }
 }
