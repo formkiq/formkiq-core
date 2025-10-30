@@ -61,6 +61,7 @@ import com.formkiq.client.model.OcrOutputType;
 import com.formkiq.client.model.TextractQuery;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -166,11 +167,66 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    * @throws ValidationException ValidationException
    */
   private String saveDocument(final String siteId) throws ValidationException {
+    return saveDocument(siteId, null);
+  }
+
+  /**
+   * Save Document with path.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link String}
+   * @throws ValidationException ValidationException
+   */
+  private String saveDocument(final String siteId, final String path) throws ValidationException {
     String documentId = ID.uuid();
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    if (path != null) {
+      item.setPath(path);
+    }
+
     this.documentService.saveDocument(siteId, item, null);
     return documentId;
+  }
+
+  /**
+   * GET /documents?actionStatus request.
+   *
+   */
+  @Test
+  public void testActionStatus() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      var path = "mypath_" + ID.ulid();
+      var documentId = saveDocument(siteId, path);
+
+      for (var status : ActionStatus.values()) {
+        this.service.saveNewActions(siteId, documentId, List.of(new Action().userId("joe")
+            .status(status).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+      }
+
+      for (var status : ActionStatus.values()) {
+        // when
+        var resp =
+            new GetDocumentsRequestBuilder().actionStatus(status.name()).submit(client, siteId);
+
+        // then
+        if (ActionStatus.COMPLETE == status) {
+          var e = resp.exception();
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"message\":\"invalid actionStatus 'COMPLETE'\"}", e.getResponseBody());
+        } else {
+          assertFalse(resp.isError());
+          List<Document> docs = notNull(resp.response().getDocuments());
+          assertEquals(1, docs.size());
+          assertEquals(documentId, docs.get(0).getDocumentId());
+          assertEquals(path, docs.get(0).getPath());
+        }
+      }
+    }
   }
 
   /**

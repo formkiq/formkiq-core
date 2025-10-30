@@ -787,9 +787,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0).get("documentId"));
-      assertNull(documents.get(0).get("insertedDate"));
-      assertNull(documents.get(0).get("lastModifiedDate"));
-      assertNull(documents.get(0).get("userId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertNotNull(documents.get(0).get("userId"));
     }
   }
 

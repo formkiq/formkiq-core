@@ -160,13 +160,16 @@ public class DocumentsRequestHandler
     PaginationResults<String> results =
         actions.findDocumentsWithStatus(siteId, actionStatus, token, limit);
 
-    List<Map<String, String>> documents = results.getResults().stream()
-        .map(r -> Map.of("documentId", r)).collect(Collectors.toList());
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    List<DocumentItem> documents = documentService.findDocuments(siteId, results.getResults());
+
+    List<DynamicDocumentItem> docs =
+        documents.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList();
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);
 
-    map.put("documents", documents);
+    map.put("documents", docs);
     return current;
   }
 
