@@ -16,6 +16,8 @@
 
 	<subpackage name="api">
 		<allow pkg="org.junit.jupiter.api" />
+
+        <allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="com.formkiq.client.invoker" />
 		<allow pkg="com.formkiq.client.api" />
 		<allow pkg="com.formkiq.client.model" />

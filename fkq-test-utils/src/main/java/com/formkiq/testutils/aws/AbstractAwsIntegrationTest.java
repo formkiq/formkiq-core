@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.formkiq.testutils.api.ApiClientBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
@@ -148,9 +150,7 @@ public abstract class AbstractAwsIntegrationTest {
    * @return ApiClient
    */
   public static ApiClient getApiClientWithToken(final String token) {
-    ApiClient keyClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootKeyUrl());
-    keyClient.addDefaultHeader("Authorization", token);
-    return keyClient;
+    return new ApiClientBuilder().basePath(cognito.getRootKeyUrl()).bearerToken(token).build();
   }
 
   /**
@@ -164,14 +164,13 @@ public abstract class AbstractAwsIntegrationTest {
 
     try (ProfileCredentialsProvider p = ProfileCredentialsProvider.create(awsprofile)) {
 
-      ApiClient jwtClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootJwtUrl());
-      jwtClient.addDefaultHeader("Authorization", adminToken.accessToken());
+      ApiClient jwtClient = new ApiClientBuilder().basePath(cognito.getRootJwtUrl())
+          .bearerToken(adminToken.accessToken()).build();
 
       AwsCredentials credentials = p.resolveCredentials();
 
-      ApiClient iamClient = new ApiClient().setReadTimeout(0).setBasePath(cognito.getRootIamUrl());
-      iamClient.setAWS4Configuration(credentials.accessKeyId(), credentials.secretAccessKey(),
-          cognito.getAwsregion().toString(), "execute-api");
+      ApiClient iamClient = new ApiClientBuilder().basePath(cognito.getRootIamUrl())
+          .iamCredentials(credentials, cognito.getAwsregion()).build();
 
       String token = getApiKey(iamClient, siteId);
       ApiClient keyClient = getApiClientWithToken(token);
