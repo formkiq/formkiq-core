@@ -11595,6 +11595,9 @@
                 s3version:
                   type: string
                   description: Document storage version
+                scanMessage:
+                  type: string
+                  description: Document Malware scan message
                 scannedDate:
                   type: string
                   description: Scanned Timestamp
