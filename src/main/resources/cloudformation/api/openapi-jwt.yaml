@@ -4292,6 +4292,7 @@ Resources:
               parameters:
                 - $ref: '#/components/parameters/siteIdParam'
                 - $ref: '#/components/parameters/documentIdParam'
+                - $ref: '#/components/parameters/nextParam'
                 - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':
@@ -11749,6 +11750,9 @@ Resources:
             GetMalwareScanResponse:
               type: object
               properties:
+                next:
+                  type: "string"
+                  description: "Next page of results token"
                 malwareScanResults:
                   type: array
                   description: "List of Malware Scan Results"
