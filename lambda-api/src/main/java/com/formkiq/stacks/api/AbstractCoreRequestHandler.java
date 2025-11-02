@@ -57,11 +57,15 @@ import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
+import com.formkiq.stacks.api.handler.UserChallengeRequestHandler;
 import com.formkiq.stacks.api.handler.UserChangePasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordConfirmRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
+import com.formkiq.stacks.api.handler.UserMfaChallengeRequestHandler;
+import com.formkiq.stacks.api.handler.UserMfaLoginRequestHandler;
+import com.formkiq.stacks.api.handler.UserMfaVerifyRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeRequestHandler;
@@ -205,10 +209,14 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserOperationRequestHandler());
     addRequestHandler(new UserGroupsRequestHandler());
     addRequestHandler(new UserLoginRequestHandler());
+    addRequestHandler(new UserMfaLoginRequestHandler());
+    addRequestHandler(new UserChallengeRequestHandler());
     addRequestHandler(new UserChangePasswordRequestHandler());
     addRequestHandler(new UserForgotPasswordRequestHandler());
     addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
     addRequestHandler(new UserConfirmRegistrationRequestHandler());
+    addRequestHandler(new UserMfaChallengeRequestHandler());
+    addRequestHandler(new UserMfaVerifyRequestHandler());
   }
 
   private static void addMappingRequestHandlers() {

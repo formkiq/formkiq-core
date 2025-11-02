@@ -61,12 +61,6 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         .collect(Collectors.toList());
   }
 
-  private boolean isPublicEndpoint(final String url) {
-    List<String> publicUrls = List.of("/login", "/forgotPassword", "/challenge", "/changePassword",
-        "/mfa/challenge", "/mfa/verify");
-    return publicUrls.stream().anyMatch(url::contains);
-  }
-
   @Override
   public ApiHttpRequest apply(final HttpRequest httpRequest) {
 
@@ -199,8 +193,8 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
   }
 
   private boolean isPublicEndpoint(final String url) {
-    List<String> publicUrls =
-        List.of("/login", "/forgotPassword", "/confirmRegistration", "/changePassword");
+    List<String> publicUrls = List.of("/login", "/forgotPassword", "/challenge",
+        "/confirmRegistration", "/changePassword", "/mfa/challenge", "/mfa/verify");
     return publicUrls.stream().anyMatch(url::contains);
   }
 }

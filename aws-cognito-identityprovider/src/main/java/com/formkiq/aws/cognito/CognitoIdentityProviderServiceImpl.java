@@ -194,30 +194,6 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
-  public ChangePasswordResponse setChangePassword(final String accessToken,
-      final String previousPassword, final String proposedPassword) {
-    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
-        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
-    return this.cognitoProvider.changePassword(request);
-  }
-
-  @Override
-  public ForgotPasswordResponse forgotPassword(final String username) {
-    ForgotPasswordRequest request =
-        ForgotPasswordRequest.builder().clientId(this.clientId).username(username).build();
-    return this.cognitoProvider.forgotPassword(request);
-  }
-
-  @Override
-  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
-      final String code, final String password) {
-    ConfirmForgotPasswordRequest request =
-        ConfirmForgotPasswordRequest.builder().clientId(this.clientId).username(username)
-            .confirmationCode(code).password(password).build();
-    return this.cognitoProvider.confirmForgotPassword(request);
-  }
-
-  @Override
   public void addUserToGroup(final String email, final String groupname) {
 
     AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
@@ -227,11 +203,10 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
-  public void removeUserFromGroup(final String username, final String groupname) {
-
-    AdminRemoveUserFromGroupRequest removeUserFromGroupRequest = AdminRemoveUserFromGroupRequest
-        .builder().groupName(groupname).userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminRemoveUserFromGroup(removeUserFromGroupRequest);
+  public AssociateSoftwareTokenResponse associateSoftwareToken(final String session) {
+    AssociateSoftwareTokenRequest req =
+        AssociateSoftwareTokenRequest.builder().session(session).build();
+    return this.cognitoProvider.associateSoftwareToken(req);
   }
 
   /**
@@ -244,6 +219,34 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
     AdminConfirmSignUpRequest req =
         AdminConfirmSignUpRequest.builder().userPoolId(this.userPoolId).username(username).build();
     return this.cognitoProvider.adminConfirmSignUp(req);
+  }
+
+  @Override
+  public void deleteGroup(final String groupName) {
+    DeleteGroupRequest req =
+        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
+    this.cognitoProvider.deleteGroup(req);
+  }
+
+  @Override
+  public void deleteUser(final String username) {
+    AdminDeleteUserRequest req =
+        AdminDeleteUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminDeleteUser(req);
+  }
+
+  @Override
+  public void disableUser(final String username) {
+    AdminDisableUserRequest req =
+        AdminDisableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminDisableUser(req);
+  }
+
+  @Override
+  public void enableUser(final String username) {
+    AdminEnableUserRequest req =
+        AdminEnableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminEnableUser(req);
   }
 
   /**
@@ -262,10 +265,19 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
-  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
-    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
-        .paginationToken(paginationToken).limit(limit).build();
-    return this.cognitoProvider.listUsers(usersRequest);
+  public ForgotPasswordResponse forgotPassword(final String username) {
+    ForgotPasswordRequest request =
+        ForgotPasswordRequest.builder().clientId(this.clientId).username(username).build();
+    return this.cognitoProvider.forgotPassword(request);
+  }
+
+  @Override
+  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
+      final String code, final String password) {
+    ConfirmForgotPasswordRequest request =
+        ConfirmForgotPasswordRequest.builder().clientId(this.clientId).username(username)
+            .confirmationCode(code).password(password).build();
+    return this.cognitoProvider.confirmForgotPassword(request);
   }
 
   @Override
@@ -290,6 +302,15 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   public AdminGetUserResponse getUser(final String username) {
     return this.cognitoProvider.adminGetUser(
         AdminGetUserRequest.builder().userPoolId(this.userPoolId).username(username).build());
+  }
+
+  @Override
+  public InitiateAuthResponse initiateAuth(final String username, final String password) {
+    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
+    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
+    InitiateAuthRequest req =
+        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
+    return this.cognitoProvider.initiateAuth(req);
   }
 
   /**
@@ -317,19 +338,17 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
+  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
+    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
+        .paginationToken(paginationToken).limit(limit).build();
+    return this.cognitoProvider.listUsers(usersRequest);
+  }
+
+  @Override
   public ListUsersInGroupResponse listUsersInGroup(final String groupName, final String token,
       final Integer limit) {
     return this.cognitoProvider.listUsersInGroup(ListUsersInGroupRequest.builder()
         .userPoolId(this.userPoolId).groupName(groupName).nextToken(token).limit(limit).build());
-  }
-
-  @Override
-  public InitiateAuthResponse loginUserPasswordAuth(final String email, final String password) {
-    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
-    InitiateAuthRequest auth =
-        InitiateAuthRequest.builder().authFlow(AuthFlowType.USER_PASSWORD_AUTH)
-            .authParameters(authParams).clientId(this.clientId).build();
-    return this.cognitoProvider.initiateAuth(auth);
   }
 
   /**
@@ -362,36 +381,12 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
-  public InitiateAuthResponse initiateAuth(final String username, final String password) {
-    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
-    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
-    InitiateAuthRequest req =
-        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
-    return this.cognitoProvider.initiateAuth(req);
-  }
-
-  @Override
-  public AssociateSoftwareTokenResponse associateSoftwareToken(final String session) {
-    AssociateSoftwareTokenRequest req =
-        AssociateSoftwareTokenRequest.builder().session(session).build();
-    return this.cognitoProvider.associateSoftwareToken(req);
-  }
-
-  @Override
-  public VerifySoftwareTokenResponse verifySoftwareToken(final String session,
-      final String userCode, final String deviceName) {
-    VerifySoftwareTokenRequest req = VerifySoftwareTokenRequest.builder().session(session)
-        .userCode(userCode).friendlyDeviceName(deviceName).build();
-    return this.cognitoProvider.verifySoftwareToken(req);
-  }
-
-  @Override
-  public RespondToAuthChallengeResponse responseToAuthChallenge(final String session,
-      final String challengeName, final Map<String, String> challengeResponses) {
-    RespondToAuthChallengeRequest req =
-        RespondToAuthChallengeRequest.builder().clientId(this.clientId).challengeName(challengeName)
-            .session(session).challengeResponses(challengeResponses).build();
-    return this.cognitoProvider.respondToAuthChallenge(req);
+  public InitiateAuthResponse loginUserPasswordAuth(final String email, final String password) {
+    Map<String, String> authParams = Map.of("USERNAME", email, "PASSWORD", password);
+    InitiateAuthRequest auth =
+        InitiateAuthRequest.builder().authFlow(AuthFlowType.USER_PASSWORD_AUTH)
+            .authParameters(authParams).clientId(this.clientId).build();
+    return this.cognitoProvider.initiateAuth(auth);
   }
 
   /**
@@ -432,6 +427,38 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
     return authentication;
   }
 
+  @Override
+  public void removeUserFromGroup(final String username, final String groupname) {
+
+    AdminRemoveUserFromGroupRequest removeUserFromGroupRequest = AdminRemoveUserFromGroupRequest
+        .builder().groupName(groupname).userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminRemoveUserFromGroup(removeUserFromGroupRequest);
+  }
+
+  @Override
+  public void resetUserPassword(final String username) {
+    AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
+        .userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminResetUserPassword(req);
+  }
+
+  @Override
+  public RespondToAuthChallengeResponse responseToAuthChallenge(final String session,
+      final String challengeName, final Map<String, String> challengeResponses) {
+    RespondToAuthChallengeRequest req =
+        RespondToAuthChallengeRequest.builder().clientId(this.clientId).challengeName(challengeName)
+            .session(session).challengeResponses(challengeResponses).build();
+    return this.cognitoProvider.respondToAuthChallenge(req);
+  }
+
+  @Override
+  public ChangePasswordResponse setChangePassword(final String accessToken,
+      final String previousPassword, final String proposedPassword) {
+    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
+        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
+    return this.cognitoProvider.changePassword(request);
+  }
+
   /**
    * Sets User Password.
    * 
@@ -462,37 +489,10 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
   }
 
   @Override
-  public void deleteUser(final String username) {
-    AdminDeleteUserRequest req =
-        AdminDeleteUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDeleteUser(req);
-  }
-
-  @Override
-  public void disableUser(final String username) {
-    AdminDisableUserRequest req =
-        AdminDisableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDisableUser(req);
-  }
-
-  @Override
-  public void enableUser(final String username) {
-    AdminEnableUserRequest req =
-        AdminEnableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminEnableUser(req);
-  }
-
-  @Override
-  public void resetUserPassword(final String username) {
-    AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
-        .userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminResetUserPassword(req);
-  }
-
-  @Override
-  public void deleteGroup(final String groupName) {
-    DeleteGroupRequest req =
-        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
-    this.cognitoProvider.deleteGroup(req);
+  public VerifySoftwareTokenResponse verifySoftwareToken(final String session,
+      final String userCode, final String deviceName) {
+    VerifySoftwareTokenRequest req = VerifySoftwareTokenRequest.builder().session(session)
+        .userCode(userCode).friendlyDeviceName(deviceName).build();
+    return this.cognitoProvider.verifySoftwareToken(req);
   }
 }

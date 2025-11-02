@@ -49,8 +49,34 @@ import java.util.Map;
  */
 public class CognitoIdentityProviderServiceMock implements CognitoIdentityProviderService {
   @Override
-  public GetGroupResponse getGroup(final String groupName) {
+  public CreateGroupResponse addGroup(final String groupName, final String groupDescription) {
     return null;
+  }
+
+  @Override
+  public UserType addUser(final String username, final Map<String, String> userAttributes,
+      final boolean emailVerified) {
+    return null;
+  }
+
+  @Override
+  public void addUserToGroup(final String email, final String groupname) {
+
+  }
+
+  @Override
+  public AssociateSoftwareTokenResponse associateSoftwareToken(final String session) {
+    return AssociateSoftwareTokenResponse.builder().secretCode("12345").session("abcdef").build();
+  }
+
+  @Override
+  public void deleteGroup(final String groupName) {
+
+  }
+
+  @Override
+  public void deleteUser(final String username) {
+
   }
 
   @Override
@@ -64,13 +90,33 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   }
 
   @Override
-  public void resetUserPassword(final String username) {
-
+  public ForgotPasswordResponse forgotPassword(final String username) {
+    return null;
   }
 
   @Override
-  public ChangePasswordResponse setChangePassword(final String accessToken,
-      final String previousPassword, final String proposedPassword) {
+  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
+      final String code, final String password) {
+    return null;
+  }
+
+  @Override
+  public GetGroupResponse getGroup(final String groupName) {
+    return null;
+  }
+
+  @Override
+  public GetUserResponse getUser(final AuthenticationResultType token) {
+    return null;
+  }
+
+  @Override
+  public AdminGetUserResponse getUser(final String username) {
+    return null;
+  }
+
+  @Override
+  public InitiateAuthResponse initiateAuth(final String username, final String password) {
     return null;
   }
 
@@ -86,7 +132,13 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   }
 
   @Override
-  public ForgotPasswordResponse forgotPassword(final String username) {
+  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
+    return null;
+  }
+
+  @Override
+  public ListUsersInGroupResponse listUsersInGroup(final String groupName, final String token,
+      final Integer limit) {
     return null;
   }
 
@@ -105,77 +157,13 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
   }
 
   @Override
-  public ConfirmForgotPasswordResponse forgotPasswordConfirm(final String username,
-      final String code, final String password) {
-    return null;
-  }
-
-  @Override
-  public CreateGroupResponse addGroup(final String groupName, final String groupDescription) {
-    return null;
-  }
-
-  @Override
-  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
-    return null;
-  }
-
-  @Override
-  public UserType addUser(final String username, final Map<String, String> userAttributes,
-      final boolean emailVerified) {
-    return null;
-  }
-
-  @Override
   public void removeUserFromGroup(final String username, final String groupname) {
 
   }
 
   @Override
-  public ListUsersInGroupResponse listUsersInGroup(final String groupName, final String token,
-      final Integer limit) {
-    return null;
-  }
+  public void resetUserPassword(final String username) {
 
-  @Override
-  public void addUserToGroup(final String email, final String groupname) {
-
-  }
-
-  @Override
-  public GetUserResponse getUser(final AuthenticationResultType token) {
-    return null;
-  }
-
-  @Override
-  public AdminGetUserResponse getUser(final String username) {
-    return null;
-  }
-
-  @Override
-  public void deleteUser(final String username) {
-
-  }
-
-  @Override
-  public void deleteGroup(final String groupName) {
-
-  }
-
-  @Override
-  public InitiateAuthResponse initiateAuth(final String username, final String password) {
-    return null;
-  }
-
-  @Override
-  public AssociateSoftwareTokenResponse associateSoftwareToken(final String session) {
-    return AssociateSoftwareTokenResponse.builder().secretCode("12345").session("abcdef").build();
-  }
-
-  @Override
-  public VerifySoftwareTokenResponse verifySoftwareToken(final String session,
-      final String userCode, final String deviceName) {
-    return VerifySoftwareTokenResponse.builder().session("9873432").status("SUCCESS").build();
   }
 
   @Override
@@ -185,5 +173,17 @@ public class CognitoIdentityProviderServiceMock implements CognitoIdentityProvid
         .authenticationResult(AuthenticationResultType.builder().accessToken("ABC").build())
         .build();
 
+  }
+
+  @Override
+  public ChangePasswordResponse setChangePassword(final String accessToken,
+      final String previousPassword, final String proposedPassword) {
+    return null;
+  }
+
+  @Override
+  public VerifySoftwareTokenResponse verifySoftwareToken(final String session,
+      final String userCode, final String deviceName) {
+    return VerifySoftwareTokenResponse.builder().session("9873432").status("SUCCESS").build();
   }
 }

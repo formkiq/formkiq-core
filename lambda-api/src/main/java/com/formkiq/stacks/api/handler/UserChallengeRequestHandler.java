@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -44,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/challenge". */
@@ -53,6 +51,29 @@ public class UserChallengeRequestHandler
 
   /** {@link UserChallengeRequestHandler} URL. */
   public static final String URL = "/challenge";
+
+  private Map<String, String> createChallengeResponse(final Map<String, Object> map) {
+    String username = (String) map.get("username");
+    String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
+    String newPassword = (String) map.get("newPassword");
+
+    Map<String, String> challengeResponses = new HashMap<>();
+    challengeResponses.put("USERNAME", username);
+    challengeResponses.put("SOFTWARE_TOKEN_MFA_CODE", softwareTokenMfaCode);
+    challengeResponses.put("NEW_PASSWORD", newPassword);
+    return challengeResponses;
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(true);
+  }
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
@@ -79,24 +100,11 @@ public class UserChallengeRequestHandler
           service.responseToAuthChallenge(session, challengeName, challengeResponses);
 
       Map<String, Object> data = transform(response);
-      ApiMapResponse resp = new ApiMapResponse(data);
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok().body(data).build();
 
     } catch (NotAuthorizedException e) {
       throw new BadException("Incorrect username or password");
     }
-  }
-
-  private Map<String, String> createChallengeResponse(final Map<String, Object> map) {
-    String username = (String) map.get("username");
-    String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
-    String newPassword = (String) map.get("newPassword");
-
-    Map<String, String> challengeResponses = new HashMap<>();
-    challengeResponses.put("USERNAME", username);
-    challengeResponses.put("SOFTWARE_TOKEN_MFA_CODE", softwareTokenMfaCode);
-    challengeResponses.put("NEW_PASSWORD", newPassword);
-    return challengeResponses;
   }
 
   private Map<String, Object> transform(final RespondToAuthChallengeResponse response) {
@@ -132,17 +140,6 @@ public class UserChallengeRequestHandler
     }
   }
 
-  private void validateSoftwareToken(final Map<String, Object> map) throws ValidationException {
-    String username = (String) map.get("username");
-    String session = (String) map.get("session");
-    String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
-
-    if (isEmpty(username) || isEmpty(session) || isEmpty(softwareTokenMfaCode)) {
-      throw new ValidationException(List.of(new ValidationErrorImpl()
-          .error("'username', 'session' and 'softwareTokenMfaCode' are required")));
-    }
-  }
-
   private void validateNewPasswordRequired(final Map<String, Object> map)
       throws ValidationException {
     String username = (String) map.get("username");
@@ -155,14 +152,14 @@ public class UserChallengeRequestHandler
     }
   }
 
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
+  private void validateSoftwareToken(final Map<String, Object> map) throws ValidationException {
+    String username = (String) map.get("username");
+    String session = (String) map.get("session");
+    String softwareTokenMfaCode = (String) map.get("softwareTokenMfaCode");
 
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(true);
+    if (isEmpty(username) || isEmpty(session) || isEmpty(softwareTokenMfaCode)) {
+      throw new ValidationException(List.of(new ValidationErrorImpl()
+          .error("'username', 'session' and 'softwareTokenMfaCode' are required")));
+    }
   }
 }

@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/mfa/challenge". */
@@ -50,6 +48,17 @@ public class UserMfaChallengeRequestHandler
 
   /** {@link UserMfaChallengeRequestHandler} URL. */
   public static final String URL = "/mfa/challenge";
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(true);
+  }
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
@@ -66,8 +75,7 @@ public class UserMfaChallengeRequestHandler
           service.associateSoftwareToken((String) map.get("session"));
       Map<String, Object> data =
           Map.of("secretCode", response.secretCode(), "session", response.session());
-      ApiMapResponse resp = new ApiMapResponse(data);
-      return new ApiRequestHandlerResponse(SC_OK, resp);
+      return ApiRequestHandlerResponse.builder().ok().body(data).build();
 
     } catch (NotAuthorizedException e) {
       throw new BadException("Incorrect username or password");
@@ -81,16 +89,5 @@ public class UserMfaChallengeRequestHandler
       throw new ValidationException(
           List.of(new ValidationErrorImpl().error("'session' is required")));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(true);
   }
 }

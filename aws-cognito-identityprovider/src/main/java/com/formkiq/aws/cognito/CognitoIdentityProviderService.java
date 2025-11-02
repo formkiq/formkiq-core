@@ -49,12 +49,54 @@ import java.util.Map;
 public interface CognitoIdentityProviderService {
 
   /**
-   * Get Group.
+   * Add Cognito Group.
    *
-   * @param groupName {@link String}.
-   * @return {@link GetGroupResponse}
+   * @param groupName {@link String}
+   * @param groupDescription {@link String}
+   * @return {@link CreateGroupResponse}
    */
-  GetGroupResponse getGroup(String groupName);
+  CreateGroupResponse addGroup(String groupName, String groupDescription);
+
+  /**
+   * Add Cognito User.
+   *
+   * @param username {@link String}
+   * @param userAttributes {@link Map}
+   * @param emailVerified boolean
+   * @return {@link UserType}
+   */
+  UserType addUser(String username, Map<String, String> userAttributes, boolean emailVerified);
+
+  /**
+   * Add Cognito User to Cognito Group.
+   *
+   * @param email {@link String}
+   * @param groupname {@link String}
+   */
+  void addUserToGroup(String email, String groupname);
+
+  /**
+   * Begins setup of time-based one-time password (TOTP) multi-factor authentication (MFA) for a
+   * user.
+   *
+   * @param session {@link String}
+   * @return AssociateSoftwareTokenResponse
+   */
+  AssociateSoftwareTokenResponse associateSoftwareToken(String session);
+
+  /**
+   * Delete Group.
+   *
+   * @param groupName {@link String}
+   */
+  void deleteGroup(String groupName);
+
+  /**
+   * Delete User.
+   * 
+   * @param username {@link String}
+   */
+  void deleteUser(String username);
 
   /**
    * Disable Username.
@@ -71,22 +113,56 @@ public interface CognitoIdentityProviderService {
   void enableUser(String username);
 
   /**
-   * Reset Password for Username.
+   * Sends Forgot Password Reset.
    *
    * @param username {@link String}
+   * @return ForgotPasswordResponse
    */
-  void resetUserPassword(String username);
+  ForgotPasswordResponse forgotPassword(String username);
 
   /**
-   * Change User Password.
+   * Confirms Forgot Password Reset.
    *
-   * @param accessToken {@link String}
-   * @param previousPassword {@link String}
-   * @param proposedPassword {@link String}
-   * @return ChangePasswordResponse
+   * @param username {@link String}
+   * @param code {@link String}
+   * @param password {@link String}
+   * @return ForgotPasswordResponse
    */
-  ChangePasswordResponse setChangePassword(String accessToken, String previousPassword,
-      String proposedPassword);
+  ConfirmForgotPasswordResponse forgotPasswordConfirm(String username, String code,
+      String password);
+
+  /**
+   * Get Group.
+   *
+   * @param groupName {@link String}.
+   * @return {@link GetGroupResponse}
+   */
+  GetGroupResponse getGroup(String groupName);
+
+  /**
+   * Get User.
+   *
+   * @param token {@link AuthenticationResultType}.
+   * @return {@link GetUserResponse}
+   */
+  GetUserResponse getUser(AuthenticationResultType token);
+
+  /**
+   * Get User.
+   *
+   * @param username {@link String}
+   * @return {@link AdminGetUserResponse}
+   */
+  AdminGetUserResponse getUser(String username);
+
+  /**
+   * Login User.
+   *
+   * @param username {@link String}
+   * @param password {@link String}
+   * @return InitiateAuthResponse
+   */
+  InitiateAuthResponse initiateAuth(String username, String password);
 
   /**
    * List Cognito Groups.
@@ -108,43 +184,6 @@ public interface CognitoIdentityProviderService {
   AdminListGroupsForUserResponse listGroups(String username, String token, Integer limit);
 
   /**
-   * Sends Forgot Password Reset.
-   *
-   * @param username {@link String}
-   * @return ForgotPasswordResponse
-   */
-  ForgotPasswordResponse forgotPassword(String username);
-
-  /**
-   * Login User using User Password Auth.
-   *
-   * @param email {@link String}
-   * @param password {@link String}
-   * @return {@link AuthenticationResultType}
-   */
-  InitiateAuthResponse loginUserPasswordAuth(String email, String password);
-
-  /**
-   * Confirms Forgot Password Reset.
-   *
-   * @param username {@link String}
-   * @param code {@link String}
-   * @param password {@link String}
-   * @return ForgotPasswordResponse
-   */
-  ConfirmForgotPasswordResponse forgotPasswordConfirm(String username, String code,
-      String password);
-
-  /**
-   * Add Cognito Group.
-   *
-   * @param groupName {@link String}
-   * @param groupDescription {@link String}
-   * @return {@link CreateGroupResponse}
-   */
-  CreateGroupResponse addGroup(String groupName, String groupDescription);
-
-  /**
    * List Users.
    *
    * @param paginationToken {@link String}
@@ -152,24 +191,6 @@ public interface CognitoIdentityProviderService {
    * @return {@link ListUsersResponse}
    */
   ListUsersResponse listUsers(String paginationToken, Integer limit);
-
-  /**
-   * Add Cognito User.
-   *
-   * @param username {@link String}
-   * @param userAttributes {@link Map}
-   * @param emailVerified boolean
-   * @return {@link UserType}
-   */
-  UserType addUser(String username, Map<String, String> userAttributes, boolean emailVerified);
-
-  /**
-   * Remove Cognito User from Cognito Group.
-   *
-   * @param username {@link String}
-   * @param groupname {@link String}
-   */
-  void removeUserFromGroup(String username, String groupname);
 
   /**
    * List Users in Cognito Groups.
@@ -182,71 +203,28 @@ public interface CognitoIdentityProviderService {
   ListUsersInGroupResponse listUsersInGroup(String groupName, String token, Integer limit);
 
   /**
-   * Add Cognito User to Cognito Group.
+   * Login User using User Password Auth.
    *
    * @param email {@link String}
+   * @param password {@link String}
+   * @return {@link AuthenticationResultType}
+   */
+  InitiateAuthResponse loginUserPasswordAuth(String email, String password);
+
+  /**
+   * Remove Cognito User from Cognito Group.
+   *
+   * @param username {@link String}
    * @param groupname {@link String}
    */
-  void addUserToGroup(String email, String groupname);
+  void removeUserFromGroup(String username, String groupname);
 
   /**
-   * Get User.
-   *
-   * @param token {@link AuthenticationResultType}.
-   * @return {@link GetUserResponse}
-   */
-  GetUserResponse getUser(AuthenticationResultType token);
-
-  /**
-   * Get User.
+   * Reset Password for Username.
    *
    * @param username {@link String}
-   * @return {@link AdminGetUserResponse}
    */
-  AdminGetUserResponse getUser(String username);
-
-  /**
-   * Delete User.
-   * 
-   * @param username {@link String}
-   */
-  void deleteUser(String username);
-
-  /**
-   * Delete Group.
-   *
-   * @param groupName {@link String}
-   */
-  void deleteGroup(String groupName);
-
-  /**
-   * Login User.
-   *
-   * @param username {@link String}
-   * @param password {@link String}
-   * @return InitiateAuthResponse
-   */
-  InitiateAuthResponse initiateAuth(String username, String password);
-
-  /**
-   * Begins setup of time-based one-time password (TOTP) multi-factor authentication (MFA) for a
-   * user.
-   *
-   * @param session {@link String}
-   * @return AssociateSoftwareTokenResponse
-   */
-  AssociateSoftwareTokenResponse associateSoftwareToken(String session);
-
-  /**
-   * Verify Software Token.
-   *
-   * @param session {@link String}
-   * @param userCode {@link String}
-   * @param deviceName {@link String}
-   * @return VerifySoftwareTokenResponse
-   */
-  VerifySoftwareTokenResponse verifySoftwareToken(String session, String userCode,
-      String deviceName);
+  void resetUserPassword(String username);
 
   /**
    * Allows the answer to that challenge, like a code or a secure remote password (SRP).
@@ -258,4 +236,26 @@ public interface CognitoIdentityProviderService {
    */
   RespondToAuthChallengeResponse responseToAuthChallenge(String session, String challengeName,
       Map<String, String> challengeResponses);
+
+  /**
+   * Change User Password.
+   *
+   * @param accessToken {@link String}
+   * @param previousPassword {@link String}
+   * @param proposedPassword {@link String}
+   * @return ChangePasswordResponse
+   */
+  ChangePasswordResponse setChangePassword(String accessToken, String previousPassword,
+      String proposedPassword);
+
+  /**
+   * Verify Software Token.
+   *
+   * @param session {@link String}
+   * @param userCode {@link String}
+   * @param deviceName {@link String}
+   * @return VerifySoftwareTokenResponse
+   */
+  VerifySoftwareTokenResponse verifySoftwareToken(String session, String userCode,
+      String deviceName);
 }
