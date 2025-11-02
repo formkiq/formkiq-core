@@ -33,6 +33,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.CreateGroup
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GlobalSignOutResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersInGroupResponse;
@@ -210,6 +211,14 @@ public interface CognitoIdentityProviderService {
    * @return {@link AuthenticationResultType}
    */
   InitiateAuthResponse loginUserPasswordAuth(String email, String password);
+
+  /**
+   * Logout Access Token.
+   *
+   * @param accessToken {@link String}
+   * @return {@link GlobalSignOutResponse}
+   */
+  GlobalSignOutResponse logout(String accessToken);
 
   /**
    * Remove Cognito User from Cognito Group.

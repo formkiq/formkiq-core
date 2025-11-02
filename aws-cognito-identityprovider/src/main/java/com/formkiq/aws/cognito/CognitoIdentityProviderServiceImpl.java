@@ -66,6 +66,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupReq
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GlobalSignOutRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.GlobalSignOutResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsRequest;
@@ -425,6 +427,13 @@ public class CognitoIdentityProviderServiceImpl implements CognitoIdentityProvid
     }
 
     return authentication;
+  }
+
+  @Override
+  public GlobalSignOutResponse logout(final String accessToken) {
+    GlobalSignOutRequest request = GlobalSignOutRequest.builder().accessToken(accessToken).build();
+
+    return this.cognitoProvider.globalSignOut(request);
   }
 
   @Override
