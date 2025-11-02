@@ -4,9 +4,14 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.plugins">
-	
+
 	<subpackage name="useractivity">
 		<allow pkg="java.util" />
+		<allow pkg="java.math" />
+		<allow pkg="java.time" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.aws.dynamodb.objects" />
+		<allow pkg="com.formkiq.aws.dynamodb.useractivities" />
 	</subpackage>
 
 </import-control>

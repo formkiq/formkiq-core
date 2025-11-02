@@ -25,6 +25,7 @@ package com.formkiq.aws.services.lambda;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -53,8 +55,32 @@ public class ApiAuthorizationBuilder {
   public static final String COGNITO_READ_SUFFIX = "_read";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
+
+  private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
+    Map<String, Object> claims = Collections.emptyMap();
+
+    if (authorizer != null && authorizer.containsKey("claims")) {
+      claims = (Map<String, Object>) authorizer.get("claims");
+    }
+
+    if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
+      claims = (Map<String, Object>) authorizer.get("apiKeyClaims");
+    }
+
+    return claims;
+  }
+
+  private static ApiPermission toApiPermission(final String val) {
+    try {
+      return ApiPermission.valueOf(val.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
   /** {@link List} {@link ApiAuthorizationInterceptor}. */
   private List<ApiAuthorizationInterceptor> interceptors = null;
+
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
@@ -74,51 +100,50 @@ public class ApiAuthorizationBuilder {
   private void addPermissions(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final Collection<String> groups, final boolean admin) {
 
-    Map<String, Object> claims = getAuthorizerClaims(event);
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
-    for (String group : groups) {
+    if (claims.containsKey("permissionsMap")) {
 
-      if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
-        if (group.endsWith(COGNITO_READ_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
-              List.of(ApiPermission.READ));
-        } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
-          authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""), List.of(
-              ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
-        } else if (admin) {
-          authorization.addPermission(group, Arrays.asList(ApiPermission.READ, ApiPermission.WRITE,
-              ApiPermission.DELETE, ApiPermission.ADMIN));
-        } else if (claims.containsKey("permissions")) {
+      String siteId = event.getQueryStringParameter("siteId");
+      Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
 
-          String[] list = claims.get("permissions").toString().split(",");
-          List<ApiPermission> permissions = Arrays.stream(list)
-              .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
-          authorization.addPermission(group, permissions);
+      map.forEach((group, perms) -> {
+        List<ApiPermission> permissions = perms.stream()
+            .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+        authorization.addPermission(group, permissions);
+      });
 
-        } else if (claims.containsKey("permissionsMap")) {
+      if (map.size() == 1 && siteId == null) {
+        authorization.siteId(map.keySet().iterator().next());
+      }
 
-          Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
+    } else {
 
-          if (map.containsKey(group)) {
-            List<String> strs = map.get(group);
-            List<ApiPermission> permissions = strs.stream()
-                .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+      for (String group : groups) {
+
+        if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
+          if (group.endsWith(COGNITO_READ_SUFFIX)) {
+            authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
+                List.of(ApiPermission.READ));
+          } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
+            authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
+                List.of(ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE,
+                    ApiPermission.DELETE));
+          } else if (admin) {
+            authorization.addPermission(group, List.of(ApiPermission.values()));
+          } else if (claims.containsKey("permissions")) {
+
+            String[] list = claims.get("permissions").toString().split(",");
+            List<ApiPermission> permissions = Arrays.stream(list)
+                .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
             authorization.addPermission(group, permissions);
-          }
 
-        } else {
-          authorization.addPermission(group,
-              Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
+          } else {
+            authorization.addPermission(group,
+                Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
+          }
         }
       }
-    }
-  }
-
-  private static ApiPermission toApiPermission(final String val) {
-    try {
-      return ApiPermission.valueOf(val.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      return null;
     }
   }
 
@@ -150,7 +175,10 @@ public class ApiAuthorizationBuilder {
       }
     }
 
-    if (defaultSiteId != null && !isValidSiteId(defaultSiteId, groups)
+    defaultSiteId = authorization.getSiteId();
+
+    if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
+        && notNull(authorization.getPermissions(defaultSiteId)).isEmpty()
         && !event.getPath().startsWith("/public/")) {
       String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
       throw new ForbiddenException(s);
@@ -165,7 +193,7 @@ public class ApiAuthorizationBuilder {
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link Map}
    */
-  private Map<String, Object> getAuthorizerClaims(final ApiGatewayRequestEvent event) {
+  private Map<String, Object> getAuthorizerClaimsOrSitesClaims(final ApiGatewayRequestEvent event) {
 
     Map<String, Object> claims = Collections.emptyMap();
 
@@ -174,18 +202,15 @@ public class ApiAuthorizationBuilder {
     if (requestContext != null) {
       Map<String, Object> authorizer = requestContext.getAuthorizer();
 
-      claims = getAuthorizerClaims(authorizer);
+      claims = getAuthorizerClaimsOrSitesClaims(authorizer);
     }
 
     return claims;
   }
 
-  private Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
-    Map<String, Object> claims = Collections.emptyMap();
-
-    if (authorizer != null && authorizer.containsKey("claims")) {
-      claims = (Map<String, Object>) authorizer.get("claims");
-    }
+  private Map<String, Object> getAuthorizerClaimsOrSitesClaims(
+      final Map<String, Object> authorizer) {
+    Map<String, Object> claims = getAuthorizerClaims(authorizer);
 
     if (claims != null && claims.containsKey("sitesClaims")) {
       String sitesClaims = (String) claims.get("sitesClaims");
@@ -229,11 +254,6 @@ public class ApiAuthorizationBuilder {
     return siteId;
   }
 
-  private boolean isValidSiteId(final String siteId, final Collection<String> groups) {
-    return groups.contains(siteId) || groups.contains(siteId + COGNITO_READ_SUFFIX)
-        || groups.contains(siteId + COGNITO_GOVERN_SUFFIX);
-  }
-
   /**
    * Get the Groups of the calling Cognito Username.
    * 
@@ -242,6 +262,29 @@ public class ApiAuthorizationBuilder {
    */
   private Collection<String> getGroups(final ApiGatewayRequestEvent event) {
     return loadJwtGroups(event);
+  }
+
+  /**
+   * Get {@link ApiGatewayRequestEvent} roles.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Collection} {@link String}
+   */
+  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
+    Collection<String> groups = new HashSet<>();
+
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    if (claims.containsKey("cognito:groups")) {
+      Object obj = claims.get("cognito:groups");
+      if (obj != null) {
+        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+        groups = new HashSet<>(Arrays.asList(s.split(" ")));
+        groups.removeIf(String::isEmpty);
+      }
+    }
+
+    return groups;
   }
 
   /**
@@ -268,25 +311,28 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
-   * Get {@link ApiGatewayRequestEvent} roles.
-   * 
+   * Get the Cognito Groups of the calling Cognito Username.
+   *
    * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link Collection} {@link String}
+   * @return {@link String}
    */
-  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
-    Collection<String> groups = new HashSet<>();
+  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
 
-    Map<String, Object> claims = getAuthorizerClaims(event);
+    String arn = null;
 
-    if (claims.containsKey("cognito:groups")) {
-      Object obj = claims.get("cognito:groups");
-      if (obj != null) {
-        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-        groups = new HashSet<>(Arrays.asList(s.split(" ")));
-        groups.removeIf(String::isEmpty);
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+
+    if (requestContext != null) {
+
+      Map<String, Object> identity = requestContext.getIdentity();
+
+      if (identity != null) {
+        Object obj = identity.getOrDefault("userArn", null);
+        arn = obj != null ? obj.toString() : null;
       }
     }
-    return groups;
+
+    return arn;
   }
 
   /**
@@ -333,31 +379,6 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
-   * Get the Cognito Groups of the calling Cognito Username.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
-
-    String arn = null;
-
-    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
-
-    if (requestContext != null) {
-
-      Map<String, Object> identity = requestContext.getIdentity();
-
-      if (identity != null) {
-        Object obj = identity.getOrDefault("userArn", null);
-        arn = obj != null ? obj.toString() : null;
-      }
-    }
-
-    return arn;
-  }
-
-  /**
    * Set {@link ApiAuthorizationInterceptor}.
    * 
    * @param apiAuthorizationInterceptors {@link ApiAuthorizationInterceptor}
@@ -389,6 +410,11 @@ public class ApiAuthorizationBuilder {
     return roleArn != null && (roleArn.contains(":assumed-role/") || roleArn.contains(":user/"));
   }
 
+  private boolean isReservedSite(final boolean admin, final String siteId) {
+    Optional<ReservedSiteId> o = ReservedSiteId.fromString(siteId);
+    return o.isPresent() && (!ReservedSiteId.GLOBAL.equals(o.get()) || admin);
+  }
+
   private Collection<String> loadJwtGroups(final ApiGatewayRequestEvent event) {
 
     Collection<String> groups = getRoles(event);
@@ -407,6 +433,8 @@ public class ApiAuthorizationBuilder {
       }
     }
 
+    groups.remove("API_KEY");
+    groups.remove("global");
     groups.remove("authentication_only");
 
     return groups;

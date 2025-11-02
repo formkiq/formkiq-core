@@ -143,6 +143,19 @@ Parameters:
       - "true"
       - "false"
 
+  UserPoolTier:
+    Type: String
+    Description: >
+      Cognito User Pool feature plan (tier). Determines the set of capabilities and limits
+      available for the pool. Valid values:
+        - LITE: Basic authentication and user management features at the lowest cost.
+        - ESSENTIALS: Standard tier with advanced authentication features (default).
+        - PLUS: Includes all ESSENTIALS features plus premium capabilities such as
+          advanced security protections, WebAuthn/passkey support, and additional customization.
+      The default is ESSENTIALS if not otherwise specified.
+    AllowedValues: ["LITE", "ESSENTIALS", "PLUS"]
+    Default: "LITE"
+
 Conditions:
 
   HasTypesenseApiKey:
@@ -202,18 +215,8 @@ Resources:
         FormKiQType: "core"
         FormKiQVersion: #@ data.values.version or assert.fail("missing version")
 
-  EventMessages:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: event-message.yaml
-      Parameters:
-        AppEnvironment:
-          Ref: AppEnvironment
-
   CoreStorage:
     Type: AWS::Serverless::Application
-    DependsOn:
-      - EventMessages
     Properties:
       Location: storage/template.yaml
       Parameters:
@@ -237,10 +240,6 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
-        DocumentEventsBus:
-          Fn::GetAtt:
-            - EventMessages
-            - Outputs.DocumentEventsBus
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -275,6 +274,8 @@ Resources:
     Properties:
       Location: console/template-install.yaml
       Parameters:
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
         LogFormat:
           Ref: LogFormat
         LogLevelApplication:
@@ -374,6 +375,8 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
+        UserPoolTier:
+          Ref: UserPoolTier
         RedirectUrl:
           Fn::GetAtt:
           - CoreConsole

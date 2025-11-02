@@ -27,11 +27,15 @@ import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.validation.ValidationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,12 +79,14 @@ class AttributeServiceDynamoDbTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
-      service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);
+      service.addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.STRING,
+          AttributeType.STANDARD);
       AttributeRecord record = service.getAttribute(siteId, key);
       assertNotNull(record);
 
       // when
-      Collection<ValidationError> errors = service.deleteAttribute(siteId, key);
+      Collection<ValidationError> errors =
+          service.deleteAttribute(AttributeValidationAccess.CREATE, siteId, key);
 
       // then
       assertEquals(0, errors.size());
@@ -99,7 +105,8 @@ class AttributeServiceDynamoDbTest implements DbKeys {
       String key = "category";
 
       // when
-      Collection<ValidationError> errors = service.deleteAttribute(siteId, key);
+      Collection<ValidationError> errors =
+          service.deleteAttribute(AttributeValidationAccess.CREATE, siteId, key);
 
       // then
       assertEquals(1, errors.size());
@@ -108,7 +115,7 @@ class AttributeServiceDynamoDbTest implements DbKeys {
   }
 
   /**
-   * Set Attribute Type.
+   * Set Attribute Type as ADMIN.
    */
   @Test
   void testSetAttributeType01() {
@@ -116,16 +123,43 @@ class AttributeServiceDynamoDbTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String key = "category";
-      service.addAttribute(siteId, key, AttributeDataType.STRING, AttributeType.STANDARD);
+      service.addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.STRING,
+          AttributeType.STANDARD);
       AttributeRecord record = service.getAttribute(siteId, key);
       assertEquals(AttributeType.STANDARD, record.getType());
 
       // when
-      service.setAttributeType(siteId, key, AttributeType.OPA);
+      service.setAttributeType(AttributeValidationAccess.ADMIN_UPDATE, siteId, key,
+          AttributeType.OPA);
 
       // then
       record = service.getAttribute(siteId, key);
       assertEquals(AttributeType.OPA, record.getType());
+    }
+  }
+
+  /**
+   * Set Attribute Type as regular user.
+   */
+  @Test
+  void testSetAttributeType02() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String key = "category";
+      service.addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.STRING,
+          AttributeType.STANDARD);
+      AttributeRecord record = service.getAttribute(siteId, key);
+      assertEquals(AttributeType.STANDARD, record.getType());
+
+      // when
+      try {
+        service.setAttributeType(AttributeValidationAccess.CREATE, siteId, key, AttributeType.OPA);
+        fail();
+      } catch (ValidationException e) {
+        // then
+        assertEquals("Access denied to attribute", e.getMessage());
+      }
     }
   }
 }

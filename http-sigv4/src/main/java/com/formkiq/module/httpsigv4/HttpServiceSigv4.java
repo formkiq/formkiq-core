@@ -65,12 +65,23 @@ public final class HttpServiceSigv4 implements HttpService {
   private static final Set<String> NOT_ALLOWED_HEADERS = Set.of("connection", "content-length",
       "date", "expect", "from", "host", "upgrade", "via", "warning");
 
+  private static String sha256Hex(final byte[] data) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] digest = md.digest(data);
+      return HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   /** {@link HttpClient}. */
   private final HttpClient client;
   /** {@link AwsCredentials}. */
   private final AwsCredentials signingCredentials;
   /** {@link Region}. */
   private final Region signingRegion;
+
   /** Sigv4 Signing Name. */
   private final String signingName;
 
@@ -229,6 +240,15 @@ public final class HttpServiceSigv4 implements HttpService {
   }
 
   @Override
+  public HttpResponse<String> head(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    SdkHttpFullRequest.Builder request =
+        buildRequest(url, SdkHttpMethod.HEAD, headers, parameters, Optional.empty());
+    SdkHttpFullRequest req = sign(request);
+    return execute(req);
+  }
+
+  @Override
   public HttpResponse<String> patch(final String url, final Optional<HttpHeaders> headers,
       final Optional<Map<String, String>> parameters, final String payload) throws IOException {
     SdkHttpFullRequest.Builder request =
@@ -293,16 +313,6 @@ public final class HttpServiceSigv4 implements HttpService {
       return new URI(uri);
     } catch (URISyntaxException e) {
       throw new IOException(e);
-    }
-  }
-
-  private static String sha256Hex(final byte[] data) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] digest = md.digest(data);
-      return HexFormat.of().formatHex(digest);
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException(e);
     }
   }
 }

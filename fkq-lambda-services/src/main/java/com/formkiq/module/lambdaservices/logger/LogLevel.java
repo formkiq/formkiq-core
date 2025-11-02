@@ -36,18 +36,6 @@ public enum LogLevel {
   /** Error. */
   ERROR(8);
 
-  /** Log Level. */
-  private final int level;
-
-  /**
-   * constructor.
-   * 
-   * @param logLevel int
-   */
-  LogLevel(final int logLevel) {
-    this.level = logLevel;
-  }
-
   /**
    * Convert {@link String} to {@link LogLevel}.
    * 
@@ -60,6 +48,18 @@ public enum LogLevel {
     } catch (Exception e) {
       return LogLevel.INFO;
     }
+  }
+
+  /** Log Level. */
+  private final int level;
+
+  /**
+   * constructor.
+   * 
+   * @param logLevel int
+   */
+  LogLevel(final int logLevel) {
+    this.level = logLevel;
   }
 
   /**

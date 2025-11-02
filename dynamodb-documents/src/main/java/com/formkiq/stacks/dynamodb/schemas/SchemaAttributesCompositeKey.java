@@ -43,15 +43,6 @@ public class SchemaAttributesCompositeKey {
   }
 
   /**
-   * Get Attribute Keys.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getAttributeKeys() {
-    return this.attributeKeys;
-  }
-
-  /**
    * Set Attribute Keys.
    * 
    * @param compositeAttributeKeys {@link List} {@link String}
@@ -60,5 +51,14 @@ public class SchemaAttributesCompositeKey {
   public SchemaAttributesCompositeKey attributeKeys(final List<String> compositeAttributeKeys) {
     this.attributeKeys = compositeAttributeKeys;
     return this;
+  }
+
+  /**
+   * Get Attribute Keys.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getAttributeKeys() {
+    return this.attributeKeys;
   }
 }

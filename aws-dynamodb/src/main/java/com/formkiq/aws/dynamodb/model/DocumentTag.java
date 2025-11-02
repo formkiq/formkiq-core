@@ -61,6 +61,27 @@ public class DocumentTag {
    *
    * @param docid {@link String}
    * @param tagKey {@link String}
+   * @param tagValues {@link List} {@link String}
+   * @param date {@link Date}
+   * @param user {@link String}
+   * @param tagType {@link DocumentTagType}
+   */
+  public DocumentTag(final String docid, final String tagKey, final List<String> tagValues,
+      final Date date, final String user, final DocumentTagType tagType) {
+    this();
+    setDocumentId(docid);
+    setKey(tagKey);
+    setValues(tagValues);
+    setInsertedDate(date);
+    setUserId(user);
+    setType(tagType);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param docid {@link String}
+   * @param tagKey {@link String}
    * @param tagValue {@link String}
    * @param date {@link Date}
    * @param user {@link String}
@@ -92,33 +113,66 @@ public class DocumentTag {
   }
 
   /**
-   * constructor.
-   *
-   * @param docid {@link String}
-   * @param tagKey {@link String}
-   * @param tagValues {@link List} {@link String}
-   * @param date {@link Date}
-   * @param user {@link String}
-   * @param tagType {@link DocumentTagType}
-   */
-  public DocumentTag(final String docid, final String tagKey, final List<String> tagValues,
-      final Date date, final String user, final DocumentTagType tagType) {
-    this();
-    setDocumentId(docid);
-    setKey(tagKey);
-    setValues(tagValues);
-    setInsertedDate(date);
-    setUserId(user);
-    setType(tagType);
-  }
-
-  /**
    * get Document Id.
    *
    * @return {@link String}
    */
   public String getDocumentId() {
     return this.documentId;
+  }
+
+  /**
+   * Get Inserted Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate != null ? (Date) this.insertedDate.clone() : null;
+  }
+
+  /**
+   * Get Document Tag Key.
+   * 
+   * @return {@link String}
+   */
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Get {@link DocumentTagType}.
+   * 
+   * @return {@link DocumentTagType}
+   */
+  public DocumentTagType getType() {
+    return this.type;
+  }
+
+  /**
+   * Get UserId.
+   * 
+   * @return {@link String}
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
+  /**
+   * Get Value.
+   * 
+   * @return {@link String}
+   */
+  public String getValue() {
+    return this.value;
+  }
+
+  /**
+   * Get Values.
+   * 
+   * @return {@link List} {@link String}
+   */
+  public List<String> getValues() {
+    return this.values;
   }
 
   /**
@@ -133,12 +187,14 @@ public class DocumentTag {
   }
 
   /**
-   * Get Document Tag Key.
-   * 
-   * @return {@link String}
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentTag}
    */
-  public String getKey() {
-    return this.key;
+  public DocumentTag setInsertedDate(final Date date) {
+    this.insertedDate = date != null ? (Date) date.clone() : null;
+    return this;
   }
 
   /**
@@ -153,52 +209,14 @@ public class DocumentTag {
   }
 
   /**
-   * Get Value.
+   * Set Document Type.
    * 
-   * @return {@link String}
-   */
-  public String getValue() {
-    return this.value;
-  }
-
-  /**
-   * Set Value.
-   * 
-   * @param s {@link String}
+   * @param tagType {@link DocumentTagType}
    * @return {@link DocumentTag}
    */
-  public DocumentTag setValue(final String s) {
-    this.value = s;
+  public DocumentTag setType(final DocumentTagType tagType) {
+    this.type = tagType;
     return this;
-  }
-
-  /**
-   * Get Values.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getValues() {
-    return this.values;
-  }
-
-  /**
-   * Set Values.
-   * 
-   * @param list {@link List} {@link String}
-   * @return {@link DocumentTag}
-   */
-  public DocumentTag setValues(final List<String> list) {
-    this.values = list;
-    return this;
-  }
-
-  /**
-   * Get UserId.
-   * 
-   * @return {@link String}
-   */
-  public String getUserId() {
-    return this.userId;
   }
 
   /**
@@ -213,42 +231,24 @@ public class DocumentTag {
   }
 
   /**
-   * Get Inserted Date.
+   * Set Value.
    * 
-   * @return {@link Date}
-   */
-  public Date getInsertedDate() {
-    return this.insertedDate != null ? (Date) this.insertedDate.clone() : null;
-  }
-
-  /**
-   * Set Inserted Date.
-   *
-   * @param date {@link Date}
+   * @param s {@link String}
    * @return {@link DocumentTag}
    */
-  public DocumentTag setInsertedDate(final Date date) {
-    this.insertedDate = date != null ? (Date) date.clone() : null;
+  public DocumentTag setValue(final String s) {
+    this.value = s;
     return this;
   }
 
   /**
-   * Get {@link DocumentTagType}.
+   * Set Values.
    * 
-   * @return {@link DocumentTagType}
-   */
-  public DocumentTagType getType() {
-    return this.type;
-  }
-
-  /**
-   * Set Document Type.
-   * 
-   * @param tagType {@link DocumentTagType}
+   * @param list {@link List} {@link String}
    * @return {@link DocumentTag}
    */
-  public DocumentTag setType(final DocumentTagType tagType) {
-    this.type = tagType;
+  public DocumentTag setValues(final List<String> list) {
+    this.values = list;
     return this;
   }
 }

@@ -24,6 +24,7 @@
 package com.formkiq.testutils.aws;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.ACTIVITY_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.FORMKIQ_APP_ENVIRONMENT;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
@@ -112,7 +113,7 @@ public class LocalStackExtension
   private void createS3Buckets(final S3Service s3service) {
 
     if (!s3service.exists(BUCKET_NAME)) {
-      s3service.createBucket(BUCKET_NAME);
+      s3service.createBucket(BUCKET_NAME, true);
     }
 
     if (!s3service.exists(STAGE_BUCKET_NAME)) {
@@ -122,17 +123,14 @@ public class LocalStackExtension
     if (!s3service.exists(OCR_BUCKET_NAME)) {
       s3service.createBucket(OCR_BUCKET_NAME);
     }
+
+    if (!s3service.exists(ACTIVITY_BUCKET_NAME)) {
+      s3service.createBucket(ACTIVITY_BUCKET_NAME);
+    }
   }
 
   private String createSqsQueue(final SqsService sqs) {
     return sqs.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
-  }
-
-  private void subscribeSnsTopics(final SnsService snsService, final SqsService sqsService) {
-
-    String queueSqsArn = sqsService.getQueueArn(this.sqsDocumentEventUrl);
-    this.snsDocumentEvent = snsService.createTopic(SNS_TOPIC).topicArn();
-    snsService.subscribe(this.snsDocumentEvent, "sqs", queueSqsArn);
   }
 
   /**
@@ -151,5 +149,12 @@ public class LocalStackExtension
    */
   public String getSqsDocumentEventUrl() {
     return this.sqsDocumentEventUrl;
+  }
+
+  private void subscribeSnsTopics(final SnsService snsService, final SqsService sqsService) {
+
+    String queueSqsArn = sqsService.getQueueArn(this.sqsDocumentEventUrl);
+    this.snsDocumentEvent = snsService.createTopic(SNS_TOPIC).topicArn();
+    snsService.subscribe(this.snsDocumentEvent, "sqs", queueSqsArn);
   }
 }

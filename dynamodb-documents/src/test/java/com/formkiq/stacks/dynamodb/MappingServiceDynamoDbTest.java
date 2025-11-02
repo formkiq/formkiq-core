@@ -39,6 +39,7 @@ import java.util.List;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
@@ -80,6 +81,15 @@ class MappingServiceDynamoDbTest implements DbKeys {
     attributeService = new AttributeServiceDynamodb(db);
   }
 
+  private Mapping createMapping() {
+    Mapping mapping = new Mapping().setName("test");
+    MappingAttribute a = new MappingAttribute().setAttributeKey("number")
+        .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT).setLabelTexts(List.of("PO"))
+        .setSourceType(MappingAttributeSourceType.CONTENT);
+    mapping.setAttributes(Collections.singletonList(a));
+    return mapping;
+  }
+
   /**
    * Delete mapping not exists.
    */
@@ -109,7 +119,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
       String documentId = ID.uuid();
 
       Mapping mapping = createMapping();
-      attributeService.addAttribute(siteId, "number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.DELETE, siteId, "number", null, null);
       service.saveMapping(siteId, documentId, mapping);
       assertNotNull(service.getMapping(siteId, documentId));
 
@@ -120,15 +130,6 @@ class MappingServiceDynamoDbTest implements DbKeys {
       assertTrue(deleted);
       assertNull(service.getMapping(siteId, documentId));
     }
-  }
-
-  private Mapping createMapping() {
-    Mapping mapping = new Mapping().setName("test");
-    MappingAttribute a = new MappingAttribute().setAttributeKey("number")
-        .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT).setLabelTexts(List.of("PO"))
-        .setSourceType(MappingAttributeSourceType.CONTENT);
-    mapping.setAttributes(Collections.singletonList(a));
-    return mapping;
   }
 
   /**
@@ -172,7 +173,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "number", null, null);
 
       // when
       for (int i = 0; i < count; i++) {
@@ -243,7 +244,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "number", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "number", null, null);
 
       // when
       Mapping mapping = createMapping();
@@ -274,7 +275,8 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "invoice", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
+          null);
 
       Mapping mapping = new Mapping().setName("test")
           .setAttributes(List.of(new MappingAttribute()
@@ -339,7 +341,8 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "invoice", null, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
+          null);
 
       Mapping mapping = new Mapping().setName("test").setAttributes(
           List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL)

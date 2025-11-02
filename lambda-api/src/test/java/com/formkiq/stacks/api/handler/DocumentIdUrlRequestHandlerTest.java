@@ -75,6 +75,40 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   /** {@link DocumentService}. */
   private DocumentService documentService;
 
+  private String addDocumentWithWatermarks(final String siteId) throws ApiException {
+    Watermark watermark1 = new Watermark().text("watermark1");
+    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+        new AddAttribute().key("wm1").dataType(AttributeDataType.WATERMARK).watermark(watermark1)),
+        siteId);
+
+    Watermark watermark2 = new Watermark().text("watermark2");
+    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+        new AddAttribute().key("wm2").dataType(AttributeDataType.WATERMARK).watermark(watermark2)),
+        siteId);
+
+    AddDocumentRequest req = new AddDocumentRequest().content("test content")
+        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1")))
+        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm2")));
+
+    return this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+  }
+
+  private void addS3File(final String siteId, final String documentId, final String contentType) {
+    getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId),
+        "ASD".getBytes(StandardCharsets.UTF_8), contentType);
+  }
+
+  private void assertS3Url(final GetDocumentUrlResponse resp, final String bucket,
+      final String siteId, final String documentId) {
+    assertNotNull(resp.getUrl());
+    assertTrue(resp.getUrl().contains(bucket));
+    if (siteId != null) {
+      assertTrue(resp.getUrl().contains("/" + siteId + "/" + documentId));
+    } else {
+      assertTrue(resp.getUrl().contains("/" + documentId));
+    }
+  }
+
   /**
    * Before.
    *
@@ -94,6 +128,39 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   private void createBucket(final String bucket) {
     if (!getS3().exists(bucket)) {
       getS3().createBucket(bucket);
+    }
+  }
+
+  private S3Service getS3() {
+    return getAwsServices().getExtension(S3Service.class);
+  }
+
+  /**
+   * /documents/{documentId}/url request missing s3 file.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetDocumentMissingS3File() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      try {
+        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -154,11 +221,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         assertS3Url(resp, BUCKET_NAME, siteId, documentId);
       }
     }
-  }
-
-  private void addS3File(final String siteId, final String documentId, final String contentType) {
-    getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId),
-        "ASD".getBytes(StandardCharsets.UTF_8), contentType);
   }
 
   /**
@@ -271,10 +333,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertEquals("Some data",
           this.http.get(resp.getUrl(), Optional.empty(), Optional.empty()).body());
     }
-  }
-
-  private S3Service getS3() {
-    return getAwsServices().getExtension(S3Service.class);
   }
 
   /**
@@ -511,64 +569,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
       assertEquals("https://www.google.com", resp.getUrl());
-    }
-  }
-
-  /**
-   * /documents/{documentId}/url request missing s3 file.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testGetDocumentMissingS3File() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, new ArrayList<>());
-
-      // when
-      try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  private String addDocumentWithWatermarks(final String siteId) throws ApiException {
-    Watermark watermark1 = new Watermark().text("watermark1");
-    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
-        new AddAttribute().key("wm1").dataType(AttributeDataType.WATERMARK).watermark(watermark1)),
-        siteId);
-
-    Watermark watermark2 = new Watermark().text("watermark2");
-    this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
-        new AddAttribute().key("wm2").dataType(AttributeDataType.WATERMARK).watermark(watermark2)),
-        siteId);
-
-    AddDocumentRequest req = new AddDocumentRequest().content("test content")
-        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1")))
-        .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm2")));
-
-    return this.documentsApi.addDocument(req, siteId, null).getDocumentId();
-  }
-
-  private void assertS3Url(final GetDocumentUrlResponse resp, final String bucket,
-      final String siteId, final String documentId) {
-    assertNotNull(resp.getUrl());
-    assertTrue(resp.getUrl().contains(bucket));
-    if (siteId != null) {
-      assertTrue(resp.getUrl().contains("/" + siteId + "/" + documentId));
-    } else {
-      assertTrue(resp.getUrl().contains("/" + documentId));
     }
   }
 }

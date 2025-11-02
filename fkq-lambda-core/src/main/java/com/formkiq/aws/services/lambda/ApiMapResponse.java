@@ -58,6 +58,15 @@ public class ApiMapResponse implements ApiResponse {
     this.map.put("next", nextToken);
   }
 
+  /**
+   * Get {@link Map}.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, Object> getMap() {
+    return this.map;
+  }
+
   @Override
   public String getNext() {
     return (String) this.map.get("next");
@@ -68,20 +77,6 @@ public class ApiMapResponse implements ApiResponse {
     return (String) this.map.get("previous");
   }
 
-  @Override
-  public String toString() {
-    return this.map.toString();
-  }
-
-  /**
-   * Get {@link Map}.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, Object> getMap() {
-    return this.map;
-  }
-
   /**
    * Set {@link Map}.
    * 
@@ -89,5 +84,10 @@ public class ApiMapResponse implements ApiResponse {
    */
   public void setMap(final Map<String, Object> m) {
     this.map = m;
+  }
+
+  @Override
+  public String toString() {
+    return this.map.toString();
   }
 }

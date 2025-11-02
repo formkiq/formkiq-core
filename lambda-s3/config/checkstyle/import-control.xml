@@ -4,17 +4,18 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.stacks">
-	
+
 	<subpackage name="lambda">
-	
+
 		<subpackage name="s3">
-		
+
 			<allow pkg="org.mockserver.mock.action" />
 			<allow pkg="org.mockserver.model" />
-		
+
 			<allow pkg="software.amazon.awssdk.auth.credentials" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
-			
+
+			<allow pkg="com.formkiq.plugins.useractivity" />
 			<allow pkg="com.formkiq.plugins.tagschema" />
 			<allow pkg="com.formkiq.stacks.lambda.s3" />
 			<allow pkg="com.formkiq.aws.dynamodb" />
@@ -41,20 +42,20 @@
 			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
 			<allow pkg="com.formkiq.stacks.common.formats" />
-						
+
 			<allow pkg="com.google.gson" />
-			
+
 			<allow pkg="edu.umd.cs.findbugs.annotations" />
-						
+
 			<allow pkg="java.io" />
 			<allow pkg="java.lang" />
 			<allow pkg="java.net" />
 			<allow pkg="java.nio.charset" />
 			<allow pkg="java.text" />
 			<allow pkg="java.time" />
-			
+
 			<allow pkg="java.util" />
-			
+
 			<allow pkg="software.amazon.awssdk.awscore.exception" />
 			<allow pkg="software.amazon.awssdk.core" />
 			<allow pkg="software.amazon.awssdk.regions" />
@@ -66,6 +67,12 @@
 
 			<subpackage name="actions">
 				<allow pkg="com.formkiq.strings" />
+
+				<subpackage name="resize">
+					<allow pkg="javax.imageio" />
+					<allow class="java.awt.image.BufferedImage" />
+					<allow class="net.coobird.thumbnailator.Thumbnails" />
+				</subpackage>
 			</subpackage>
 
 			<subpackage name="text">
@@ -75,18 +82,18 @@
 			<subpackage name="util">
 
 				<allow pkg="com.amazonaws.services.lambda.runtime" />
-				
+
 				<allow pkg="com.google.gson" />
 				<allow pkg="java.io" />
 				<allow pkg="java.util" />
-				
+
 				<allow pkg="software.amazon.awssdk.auth.credentials" />
 				<allow pkg="software.amazon.awssdk.core" />
 				<allow pkg="software.amazon.awssdk.regions" />
 				<allow pkg="software.amazon.awssdk.services.cloudformation" />
 				<allow pkg="software.amazon.awssdk.services.s3" />
 				<allow pkg="software.amazon.awssdk.utils" />
-				
+
 			</subpackage>
 
 			<subpackage name="awstest">
@@ -94,5 +101,5 @@
 			</subpackage>
 		</subpackage>
 	</subpackage>
-	
+
 </import-control>

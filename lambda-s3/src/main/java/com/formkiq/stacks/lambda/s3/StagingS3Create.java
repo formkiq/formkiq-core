@@ -78,8 +78,8 @@ import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -381,8 +381,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     try {
 
-      Map<String, String> index = folderIndexProcesor.getIndex(siteId, path);
-      documentId = index.getOrDefault("documentId", ID.uuid());
+      Map<String, Object> index = folderIndexProcesor.getIndex(siteId, path);
+      documentId = (String) index.getOrDefault("documentId", ID.uuid());
 
     } catch (IOException e) {
       documentId = ID.uuid();
@@ -411,6 +411,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     DocumentCompressor documentCompressor = new DocumentCompressor(serviceCache);
     documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documentIds);
+  }
+
+  /**
+   * Handle Document Event Callback.
+   * 
+   * @param s3Key {@link String}
+   */
+  private void handleEventCallBack(final String s3Key) {
+    String key = s3Key.replace("tempfiles/eventcallback/", "");
+    String siteId = SiteIdKeyGenerator.getSiteId(key);
+    String documentId = SiteIdKeyGenerator.getDocumentId(key);
+
+    notificationService.publishNextActionEvent(siteId, documentId);
   }
 
   @Override
@@ -607,19 +620,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (!objectCreated) {
       logger.trace("skipping event " + eventName);
     }
-  }
-
-  /**
-   * Handle Document Event Callback.
-   * 
-   * @param s3Key {@link String}
-   */
-  private void handleEventCallBack(final String s3Key) {
-    String key = s3Key.replace("tempfiles/eventcallback/", "");
-    String siteId = SiteIdKeyGenerator.getSiteId(key);
-    String documentId = SiteIdKeyGenerator.getDocumentId(key);
-
-    notificationService.publishNextActionEvent(siteId, documentId);
   }
 
   /**

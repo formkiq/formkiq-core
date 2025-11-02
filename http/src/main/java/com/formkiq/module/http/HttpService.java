@@ -87,6 +87,19 @@ public interface HttpService {
       Optional<Map<String, String>> parameters) throws IOException;
 
   /**
+   * Send HEAD request.
+   *
+   * @param url {@link String}
+   * @param headers {@link HttpHeaders}
+   * @param parameters {@link Optional} {@link Map}
+   * @return {@link HttpResponse} {@link String}
+   * @throws IOException IOException
+   */
+
+  HttpResponse<String> head(String url, Optional<HttpHeaders> headers,
+      Optional<Map<String, String>> parameters) throws IOException;
+
+  /**
    * Patch HTTP Request and return a {@link HttpResponse}.
    * 
    * @param url {@link String}

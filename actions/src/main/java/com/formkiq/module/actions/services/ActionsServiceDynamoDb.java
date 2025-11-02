@@ -53,6 +53,7 @@ import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.DocumentWorkflowRecord;
+import com.github.f4b6a3.ulid.Ulid;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -95,6 +96,13 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
+  }
+
+  private void addKeyIfNotNull(final Map<String, AttributeValueUpdate> updates,
+      final Map<String, AttributeValue> attrs, final String key) {
+    if (attrs.get(key) != null) {
+      updates.put(key, AttributeValueUpdate.builder().value(attrs.get(key)).build());
+    }
   }
 
   private void deleteAction(final String siteId, final Action action) {
@@ -207,20 +215,31 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   @Override
   public void insertBeforeAction(final String siteId, final String documentId,
-      final List<Action> actions, final Action currentAction, final Action insertedAction) {
+      final Action currentAction, final Action insertedAction) {
 
-    int pos = actions.indexOf(currentAction);
+    String index = previousIndex(currentAction.index());
+    insertedAction.index(index).documentId(documentId).insertedDate(new Date());
+    saveAction(siteId, insertedAction);
+  }
 
-    saveAction(siteId, documentId, insertedAction, pos);
+  private String previousIndex(final String index) {
+    Ulid ulid = Ulid.from(index);
 
-    for (int i = pos; i < actions.size(); i++) {
+    long msb = ulid.getMostSignificantBits();
+    long lsb = ulid.getLeastSignificantBits();
 
-      Action action = actions.get(i);
-      deleteAction(siteId, action);
-
-      pos++;
-      saveAction(siteId, documentId, action, pos);
+    if (lsb == 0) {
+      lsb = -1L;
+      msb -= 1;
+    } else {
+      lsb -= 1;
     }
+
+    if (msb < 0) {
+      throw new IllegalArgumentException("No smaller ULID exists");
+    }
+
+    return new Ulid(msb, lsb).toString();
   }
 
   /**
@@ -282,22 +301,6 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public void saveAction(final String siteId, final String documentId, final Action action,
-      final int index) {
-
-    action.documentId(documentId);
-    action.index("" + index);
-
-    if (action.insertedDate() == null) {
-      action.insertedDate(new Date());
-    }
-
-    Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
-    this.dbClient
-        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
-  }
-
-  @Override
   public void saveActions(final String siteId, final List<Action> actions) {
 
     List<Map<String, AttributeValue>> values = new ArrayList<>();
@@ -321,14 +324,12 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public List<Map<String, AttributeValue>> saveNewActions(final String siteId,
       final String documentId, final List<Action> actions) {
 
-    int idx = 0;
-
     List<Map<String, AttributeValue>> values = new ArrayList<>();
 
     for (Action action : notNull(actions)) {
 
       action.documentId(documentId);
-      action.index("" + idx);
+      action.indexUlid();
 
       if (action.insertedDate() == null) {
         action.insertedDate(new Date());
@@ -337,7 +338,6 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
 
       values.add(valueMap);
-      idx++;
     }
 
     if (!values.isEmpty()) {
@@ -371,14 +371,10 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
           AttributeValueUpdate.builder().value(fromS(df.format(new Date()))).build());
     }
 
-    if (action.message() != null) {
-      updates.put("message", AttributeValueUpdate.builder().value(attrs.get("message")).build());
-    }
-
-    if (action.completedDate() != null) {
-      updates.put("completedDate",
-          AttributeValueUpdate.builder().value(attrs.get("completedDate")).build());
-    }
+    addKeyIfNotNull(updates, attrs, "message");
+    addKeyIfNotNull(updates, attrs, "retryCount");
+    addKeyIfNotNull(updates, attrs, "maxRetries");
+    addKeyIfNotNull(updates, attrs, "completedDate");
 
     for (String index : Arrays.asList(GSI1, GSI2)) {
 

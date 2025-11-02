@@ -118,6 +118,56 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean acquireLock(final DynamoDbKey key, final long aquireLockTimeoutInMs,
+      final long lockExpirationInMs) {
+
+    boolean lock = false;
+    long expirationTime = Instant.now().getEpochSecond() + lockExpirationInMs / TS;
+
+    Map<String, AttributeValue> item = new HashMap<>(key.toMap());
+    item.put(SK, getLock(fromS(key.sk())));
+    item.put("ExpirationTime", AttributeValue.builder().n(Long.toString(expirationTime)).build());
+
+    long ttl = Instant.now().getEpochSecond() + TIME_TO_LIVE_IN_SECONDS;
+    item.put("TimeToLive", AttributeValue.builder().n(String.valueOf(ttl)).build());
+
+    Put.Builder put = Put.builder().tableName(tableName).item(item).conditionExpression(
+        "(attribute_not_exists(PK) and attribute_not_exists(SK)) OR ExpirationTime < :currentTime");
+
+    long startTime = System.currentTimeMillis();
+    long waitInterval = DEFAULT_BACKOFF_IN_MS;
+
+    while (System.currentTimeMillis() - startTime < aquireLockTimeoutInMs) {
+
+      try {
+
+        put.expressionAttributeValues(Map.of(":currentTime",
+            AttributeValue.builder().n(Long.toString(Instant.now().getEpochSecond())).build()));
+
+        TransactWriteItemsRequest tx = TransactWriteItemsRequest.builder()
+            .transactItems(TransactWriteItem.builder().put(put.build()).build()).build();
+
+        this.dbClient.transactWriteItems(tx);
+        lock = true;
+        break;
+
+      } catch (TransactionCanceledException e) {
+        // Lock is already held or transaction was canceled, wait and retry with exponential backoff
+        try {
+          TimeUnit.MILLISECONDS.sleep(waitInterval);
+        } catch (InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+
+        // Cap backoff at 1 second
+        waitInterval = Math.min(waitInterval * 2, MAX_BACKOFF_IN_MS);
+      }
+    }
+
+    return lock;
+  }
+
+  @Override
   public QueryResponse between(final QueryConfig config, final AttributeValue pk,
       final AttributeValue skStart, final AttributeValue skEnd,
       final Map<String, AttributeValue> startkey, final int limit) {
@@ -146,17 +196,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public boolean deleteItem(final Map<String, AttributeValue> key) {
-    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
-        .tableName(this.tableName).key(key).returnValues(ReturnValue.ALL_OLD).build());
-    return !response.attributes().isEmpty();
-  }
-
-  @Override
   public boolean deleteItem(final DynamoDbKey key) {
     Map<String, AttributeValue> sourceKey = Map.of(PK, fromS(key.pk()), SK, fromS(key.sk()));
     DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
         .tableName(this.tableName).key(sourceKey).returnValues(ReturnValue.ALL_OLD).build());
+    return !response.attributes().isEmpty();
+  }
+
+  @Override
+  public boolean deleteItem(final Map<String, AttributeValue> key) {
+    DeleteItemResponse response = this.dbClient.deleteItem(DeleteItemRequest.builder()
+        .tableName(this.tableName).key(key).returnValues(ReturnValue.ALL_OLD).build());
     return !response.attributes().isEmpty();
   }
 
@@ -258,14 +308,6 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public boolean exists(final DynamoDbKey key) {
-    GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(this.tableName)
-        .projectionExpression("PK").build();
-    GetItemResponse response = this.dbClient.getItem(r);
-    return !response.item().isEmpty();
-  }
-
-  @Override
   public Collection<DynamoDbKey> exists(final Collection<DynamoDbKey> keys) {
     BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK");
     List<Map<String, AttributeValue>> fetchKeys = keys.stream().map(DynamoDbKey::toMap).toList();
@@ -275,9 +317,24 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public boolean exists(final DynamoDbKey key) {
+    return exists(this.tableName, key);
+  }
+
+  @Override
   public boolean exists(final QueryRequest query) {
     QueryResponse response = this.dbClient.query(query);
     return !response.items().isEmpty();
+  }
+
+  @Override
+  public boolean exists(final String dynamodbTableName, final DynamoDbKey key) {
+
+    GetItemRequest r = GetItemRequest.builder().key(key.toMap()).tableName(dynamodbTableName)
+        .projectionExpression("PK").build();
+
+    GetItemResponse response = this.dbClient.getItem(r);
+    return !response.item().isEmpty();
   }
 
   @Override
@@ -301,14 +358,19 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public Map<String, AttributeValue> getByQuery(final QueryRequest query) {
-    Map<String, AttributeValue> attributes = Collections.emptyMap();
-    QueryResponse response = this.dbClient.query(query);
-    if (!response.items().isEmpty()) {
-      attributes = response.items().get(0);
-    }
+  public Collection<Map<String, AttributeValue>> get(final String dbTableName,
+      final Collection<DynamoDbKey> key) {
+    List<Map<String, AttributeValue>> list = key.stream().map(DynamoDbKey::toMap).toList();
 
-    return attributes;
+    ReadRequestBuilder request = new ReadRequestBuilder().append(dbTableName, list);
+    Map<String, List<Map<String, AttributeValue>>> stringListMap =
+        request.batchReadItems(this.dbClient, new BatchGetConfig());
+    return stringListMap.values().stream().flatMap(Collection::stream).toList();
+  }
+
+  @Override
+  public Map<String, AttributeValue> getAquiredLock(final DynamoDbKey key) {
+    return get(fromS(key.pk()), getLock(fromS(key.sk())));
   }
 
   @Override
@@ -345,8 +407,23 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     return list;
   }
 
+  @Override
+  public Map<String, AttributeValue> getByQuery(final QueryRequest query) {
+    Map<String, AttributeValue> attributes = Collections.emptyMap();
+    QueryResponse response = this.dbClient.query(query);
+    if (!response.items().isEmpty()) {
+      attributes = response.items().get(0);
+    }
+
+    return attributes;
+  }
+
   private String getKey(final Map<String, AttributeValue> attr) {
     return attr.get(PK).s() + "#" + attr.get(SK).s();
+  }
+
+  private AttributeValue getLock(final AttributeValue sk) {
+    return fromS(sk.s() + ".lock");
   }
 
   @Override
@@ -394,6 +471,28 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public void putInTransaction(final Collection<Map<String, AttributeValue>> attributes) {
+
+    TransactWriteItemsRequest.Builder transactionRequestBuilder =
+        TransactWriteItemsRequest.builder();
+
+    List<Put> puts =
+        attributes.stream().map(a -> Put.builder().tableName(tableName).item(a).build()).toList();
+
+    List<TransactWriteItem> writes =
+        puts.stream().map(p -> TransactWriteItem.builder().put(p).build()).toList();
+
+    TransactWriteItemsRequest transactionRequest =
+        transactionRequestBuilder.transactItems(writes).build();
+    this.dbClient.transactWriteItems(transactionRequest);
+  }
+
+  @Override
+  public void putInTransaction(final WriteRequestBuilder writeRequest) {
+    writeRequest.batchWriteItem(this.dbClient);
+  }
+
+  @Override
   public void putItem(final Map<String, AttributeValue> attributes) {
     putItem(this.tableName, attributes);
   }
@@ -406,11 +505,17 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public void putItems(final List<Map<String, AttributeValue>> attrs) {
+    putItems(this.tableName, attrs);
+  }
+
+  @Override
+  public void putItems(final String dynamoTableName,
+      final List<Map<String, AttributeValue>> attrs) {
 
     if (!attrs.isEmpty()) {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       for (Map<String, AttributeValue> attr : attrs) {
-        builder.append(this.tableName, attr);
+        builder.append(dynamoTableName, attr);
       }
       builder.batchWriteItem(this.dbClient);
     }
@@ -489,6 +594,13 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   public QueryResponse queryBeginsWith(final QueryConfig config, final AttributeValue pk,
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
+    return queryBeginsWith(this.tableName, config, pk, sk, exclusiveStartKey, limit);
+  }
+
+  @Override
+  public QueryResponse queryBeginsWith(final String dynamoDbtableName, final QueryConfig config,
+      final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
     String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk and begins_with(" + gsi + SK + ",:sk)";
@@ -501,7 +613,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
         sk != null ? Map.of(":pk", pk, ":sk", sk) : Map.of(":pk", pk);
 
     QueryRequest q =
-        QueryRequest.builder().tableName(this.tableName).keyConditionExpression(expression)
+        QueryRequest.builder().tableName(dynamoDbtableName).keyConditionExpression(expression)
             .expressionAttributeValues(values).scanIndexForward(config.isScanIndexForward())
             .expressionAttributeNames(config.expressionAttributeNames())
             .projectionExpression(config.projectionExpression()).indexName(config.indexName())
@@ -523,91 +635,6 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
             .exclusiveStartKey(exclusiveStartKey).limit(limit).build();
 
     return this.dbClient.query(q);
-  }
-
-  @Override
-  public Map<String, AttributeValue> updateItem(final AttributeValue pk, final AttributeValue sk,
-      final Map<String, AttributeValueUpdate> updateValues) {
-    Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
-
-    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
-        .attributeUpdates(updateValues).build()).attributes();
-  }
-
-  @Override
-  public UpdateItemResponse updateItem(final UpdateItemRequest request) {
-    return this.dbClient.updateItem(request);
-  }
-
-  @Override
-  public Map<String, AttributeValue> updateValues(final AttributeValue pk, final AttributeValue sk,
-      final Map<String, AttributeValue> updateValues) {
-
-    Map<String, AttributeValueUpdate> values = new HashMap<>();
-    updateValues.forEach(
-        (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
-
-    return updateItem(pk, sk, values);
-  }
-
-  @Override
-  public void updateItems(final String dbTableName, final Collection<DynamoDbKey> keys,
-      final Map<String, AttributeValueUpdate> updateValues) {
-    keys.forEach(k -> {
-      Map<String, AttributeValue> dbKey = Map.of(PK, fromS(k.pk()), SK, fromS(k.sk()));
-      this.dbClient.updateItem(UpdateItemRequest.builder().tableName(dbTableName).key(dbKey)
-          .attributeUpdates(updateValues).build());
-    });
-  }
-
-  @Override
-  public boolean acquireLock(final DynamoDbKey key, final long aquireLockTimeoutInMs,
-      final long lockExpirationInMs) {
-
-    boolean lock = false;
-    long expirationTime = Instant.now().getEpochSecond() + lockExpirationInMs / TS;
-
-    Map<String, AttributeValue> item = new HashMap<>(key.toMap());
-    item.put(SK, getLock(fromS(key.sk())));
-    item.put("ExpirationTime", AttributeValue.builder().n(Long.toString(expirationTime)).build());
-
-    long ttl = Instant.now().getEpochSecond() + TIME_TO_LIVE_IN_SECONDS;
-    item.put("TimeToLive", AttributeValue.builder().n(String.valueOf(ttl)).build());
-
-    Put.Builder put = Put.builder().tableName(tableName).item(item).conditionExpression(
-        "(attribute_not_exists(PK) and attribute_not_exists(SK)) OR ExpirationTime < :currentTime");
-
-    long startTime = System.currentTimeMillis();
-    long waitInterval = DEFAULT_BACKOFF_IN_MS;
-
-    while (System.currentTimeMillis() - startTime < aquireLockTimeoutInMs) {
-
-      try {
-
-        put.expressionAttributeValues(Map.of(":currentTime",
-            AttributeValue.builder().n(Long.toString(Instant.now().getEpochSecond())).build()));
-
-        TransactWriteItemsRequest tx = TransactWriteItemsRequest.builder()
-            .transactItems(TransactWriteItem.builder().put(put.build()).build()).build();
-
-        this.dbClient.transactWriteItems(tx);
-        lock = true;
-        break;
-
-      } catch (TransactionCanceledException e) {
-        // Lock is already held or transaction was canceled, wait and retry with exponential backoff
-        try {
-          TimeUnit.MILLISECONDS.sleep(waitInterval);
-        } catch (InterruptedException ex) {
-          throw new RuntimeException(ex);
-        }
-
-        // Cap backoff at 1 second
-        waitInterval = Math.min(waitInterval * 2, MAX_BACKOFF_IN_MS);
-      }
-    }
-
-    return lock;
   }
 
   @Override
@@ -633,33 +660,37 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void putInTransaction(final WriteRequestBuilder writeRequest) {
-    writeRequest.batchWriteItem(this.dbClient);
+  public Map<String, AttributeValue> updateItem(final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValueUpdate> updateValues) {
+    Map<String, AttributeValue> dbKey = Map.of(PK, pk, SK, sk);
+
+    return this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.tableName).key(dbKey)
+        .attributeUpdates(updateValues).build()).attributes();
   }
 
   @Override
-  public void putInTransaction(final Collection<Map<String, AttributeValue>> attributes) {
-
-    TransactWriteItemsRequest.Builder transactionRequestBuilder =
-        TransactWriteItemsRequest.builder();
-
-    List<Put> puts =
-        attributes.stream().map(a -> Put.builder().tableName(tableName).item(a).build()).toList();
-
-    List<TransactWriteItem> writes =
-        puts.stream().map(p -> TransactWriteItem.builder().put(p).build()).toList();
-
-    TransactWriteItemsRequest transactionRequest =
-        transactionRequestBuilder.transactItems(writes).build();
-    this.dbClient.transactWriteItems(transactionRequest);
+  public UpdateItemResponse updateItem(final UpdateItemRequest request) {
+    return this.dbClient.updateItem(request);
   }
 
   @Override
-  public Map<String, AttributeValue> getAquiredLock(final DynamoDbKey key) {
-    return get(fromS(key.pk()), getLock(fromS(key.sk())));
+  public void updateItems(final String dbTableName, final Collection<DynamoDbKey> keys,
+      final Map<String, AttributeValueUpdate> updateValues) {
+    keys.forEach(k -> {
+      Map<String, AttributeValue> dbKey = Map.of(PK, fromS(k.pk()), SK, fromS(k.sk()));
+      this.dbClient.updateItem(UpdateItemRequest.builder().tableName(dbTableName).key(dbKey)
+          .attributeUpdates(updateValues).build());
+    });
   }
 
-  private AttributeValue getLock(final AttributeValue sk) {
-    return fromS(sk.s() + ".lock");
+  @Override
+  public Map<String, AttributeValue> updateValues(final AttributeValue pk, final AttributeValue sk,
+      final Map<String, AttributeValue> updateValues) {
+
+    Map<String, AttributeValueUpdate> values = new HashMap<>();
+    updateValues.forEach(
+        (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
+
+    return updateItem(pk, sk, values);
   }
 }

@@ -65,13 +65,13 @@ public class Aws4SignerParamsBuilder {
   }
 
   /**
-   * Set Credentials.
+   * Set Region.
    * 
-   * @param cred {@link AwsCredentialsProvider}
+   * @param region {@link Region}
    * @return {@link Aws4SignerParamsBuilder}
    */
-  public Aws4SignerParamsBuilder setCredentials(final AwsCredentialsProvider cred) {
-    this.builder = this.builder.awsCredentials(cred.resolveCredentials());
+  public Aws4SignerParamsBuilder region(final Region region) {
+    this.builder = this.builder.signingRegion(region);
     return this;
   }
 
@@ -88,6 +88,17 @@ public class Aws4SignerParamsBuilder {
   /**
    * Set Credentials.
    * 
+   * @param cred {@link AwsCredentialsProvider}
+   * @return {@link Aws4SignerParamsBuilder}
+   */
+  public Aws4SignerParamsBuilder setCredentials(final AwsCredentialsProvider cred) {
+    this.builder = this.builder.awsCredentials(cred.resolveCredentials());
+    return this;
+  }
+
+  /**
+   * Set Credentials.
+   * 
    * @param profileName {@link String}
    * @return {@link Aws4SignerParamsBuilder}
    */
@@ -96,17 +107,6 @@ public class Aws4SignerParamsBuilder {
         ProfileCredentialsProvider.builder().profileName(profileName).build()) {
       return setCredentials(prov);
     }
-  }
-
-  /**
-   * Set Region.
-   * 
-   * @param region {@link Region}
-   * @return {@link Aws4SignerParamsBuilder}
-   */
-  public Aws4SignerParamsBuilder region(final Region region) {
-    this.builder = this.builder.signingRegion(region);
-    return this;
   }
 
   /**

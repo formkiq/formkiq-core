@@ -45,6 +45,8 @@ public class OcrRequest {
   private String ocrNumberOfPages;
   /** Parse Types. */
   private List<String> parseTypes;
+  /** {@link List} {@link AwsTextractQuery}. */
+  private List<AwsTextractQuery> textractQueries;
 
   /**
    * constructor.
@@ -72,6 +74,15 @@ public class OcrRequest {
   }
 
   /**
+   * Get {@link OcrOutputType}.
+   * 
+   * @return OcrOutputType
+   */
+  public OcrOutputType getOcrOutputType() {
+    return this.ocrOutputType;
+  }
+
+  /**
    * Get Parse Types.
    * 
    * @return {@link List} {@link String}
@@ -81,21 +92,21 @@ public class OcrRequest {
   }
 
   /**
+   * Get {@link List} {@link AwsTextractQuery}.
+   * 
+   * @return {@link List} {@link AwsTextractQuery}
+   */
+  public List<AwsTextractQuery> getTextractQueries() {
+    return this.textractQueries;
+  }
+
+  /**
    * Is AddPdfDetectedCharactersAsText.
    * 
    * @return boolean
    */
   public boolean isAddPdfDetectedCharactersAsText() {
     return this.addPdfDetectedCharactersAsText;
-  }
-
-  /**
-   * Get {@link OcrOutputType}.
-   * 
-   * @return OcrOutputType
-   */
-  public OcrOutputType getOcrOutputType() {
-    return this.ocrOutputType;
   }
 
   /**
@@ -119,6 +130,17 @@ public class OcrRequest {
   }
 
   /**
+   * Set Number of OCR Pages.
+   * 
+   * @param numberOfPages {@link String}
+   * @return {@link OcrRequest}
+   */
+  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
+    this.ocrNumberOfPages = numberOfPages;
+    return this;
+  }
+
+  /**
    * Set ocrExportToCsv.
    * 
    * @param outputType {@link OcrOutputType}
@@ -130,14 +152,12 @@ public class OcrRequest {
   }
 
   /**
-   * Set Number of OCR Pages.
+   * Set {@link List} {@link AwsTextractQuery}.
    * 
-   * @param numberOfPages {@link String}
-   * @return {@link OcrRequest}
+   * @param list {@link List} {@link AwsTextractQuery}
    */
-  public OcrRequest setOcrNumberOfPages(final String numberOfPages) {
-    this.ocrNumberOfPages = numberOfPages;
-    return this;
+  public void setOcrTextractQueries(final List<AwsTextractQuery> list) {
+    this.textractQueries = list;
   }
 
   /**

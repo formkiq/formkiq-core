@@ -25,24 +25,20 @@ package com.formkiq.stacks.lambda.s3;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
-import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.objects.MimeType;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
-import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
-import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
@@ -57,14 +53,12 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
-import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.http.HttpService;
@@ -94,40 +88,53 @@ import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
+import com.formkiq.stacks.lambda.s3.actions.HttpRetryException;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
+import com.formkiq.stacks.lambda.s3.actions.SetDataClassificationAction;
+import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
 import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbEntity;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbNewImage;
+import com.formkiq.stacks.lambda.s3.event.AwsEventRecord;
+import com.formkiq.stacks.lambda.s3.event.AwsEventSnsNotification;
+import com.formkiq.stacks.lambda.s3.event.DynamodbAttributeValue;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.module.actions.ActionStatus.PENDING;
+import static com.formkiq.module.actions.ActionStatus.WAITING_FOR_RETRY;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
-import static com.formkiq.module.events.document.DocumentEventType.CREATE;
-import static com.formkiq.module.events.document.DocumentEventType.DELETE;
-import static com.formkiq.module.events.document.DocumentEventType.SOFT_DELETE;
+import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 
 /** {@link RequestHandler} for handling Document Actions. */
 @Reflectable
-public class DocumentActionsProcessor implements RequestHandler<Map<String, Object>, Void>, DbKeys {
+public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>, DbKeys {
 
+  /** Max Retry Count. */
+  private static final int MAX_RETRY_COUNT = 5;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
 
@@ -225,16 +232,17 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
   }
 
   @Override
-  public Void handleRequest(final Map<String, Object> map, final Context context) {
+  public Void handleRequest(final AwsEvent event, final Context context) {
 
     Logger logger = serviceCache.getLogger();
 
     if (logger.isLogged(LogLevel.DEBUG)) {
-      String json = this.gson.toJson(map);
+      String json = this.gson.toJson(event);
       logger.debug(json);
     }
 
-    List<Map<String, Object>> records = (List<Map<String, Object>>) map.get("Records");
+    List<AwsEventRecord> records = event.records();
+
     try {
       processRecords(logger, records);
     } catch (IOException | InterruptedException e) {
@@ -283,73 +291,75 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
       final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
-    ActionStatus completeStatus = ActionStatus.COMPLETE;
-
     logAction(logger, "action start", siteId, documentId, action);
 
-    boolean updateComplete = false;
+    ProcessActionStatus actionStatus = performAction(logger, siteId, documentId, actions, action);
+
+    logAction(logger, "action complete", siteId, documentId, action);
+
+    updateComplete(logger, siteId, documentId, action, actionStatus);
+  }
+
+  private ProcessActionStatus performAction(final Logger logger, final String siteId,
+      final String documentId, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+    ProcessActionStatus actionStatus;
     switch (action.type()) {
-      case QUEUE -> {
-        completeStatus = ActionStatus.IN_QUEUE;
-        updateComplete = true;
-      }
+      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE);
 
       case DOCUMENTTAGGING -> {
         DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
-        dtAction.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = dtAction.run(logger, siteId, documentId, actions, action);
       }
 
-      case OCR -> new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case OCR -> actionStatus =
+          new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case FULLTEXT ->
-        new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
+      case FULLTEXT -> actionStatus =
+          new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
-      case ANTIVIRUS -> new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-          "/documents/" + documentId + "/antivirus", "");
+      case ANTIVIRUS, MALWARE_SCAN -> {
+        new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
+            "/documents/" + documentId + "/malwareScan", "");
+        actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
+      }
 
-      case WEBHOOK -> sendWebhook(logger, siteId, documentId, actions, action);
+      case WEBHOOK -> actionStatus = sendWebhook(siteId, documentId, action);
 
       case NOTIFICATION -> {
         DocumentAction da = new NotificationAction(siteId, serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case IDP -> {
         DocumentAction da = new IdpAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PUBLISH -> {
         DocumentAction da = new PublishAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case PDFEXPORT -> {
         DocumentAction da = new PdfExportAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
 
       case EVENTBRIDGE -> {
         DocumentAction da = new EventBridgeAction(serviceCache);
-        da.run(logger, siteId, documentId, actions, action);
-        updateComplete = true;
+        actionStatus = da.run(logger, siteId, documentId, actions, action);
       }
+
+      case RESIZE -> actionStatus =
+          new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
+
+      case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
+          .run(logger, siteId, documentId, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }
-
-    logAction(logger, "action complete", siteId, documentId, action);
-
-    if (updateComplete) {
-      updateComplete(logger, siteId, documentId, actions, action, completeStatus);
-    }
+    return actionStatus;
   }
 
   /**
@@ -371,8 +381,8 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
-      Optional<Action> o =
-          actions.stream().filter((new ActionStatusPredicate(ActionStatus.PENDING))).findFirst();
+      Optional<Action> o = actions.stream()
+          .filter(new ActionStatusPredicate(PENDING, WAITING_FOR_RETRY)).findFirst();
 
       if (running.isPresent()) {
 
@@ -390,16 +400,34 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
           processAction(logger, siteId, documentId, actions, action);
 
-        } catch (Exception e) {
-
-          String stacktrace = Strings.toString(e);
-          logger.error(e);
+        } catch (Throwable e) {
 
           action.status(ActionStatus.FAILED);
+
+          boolean isRetry = e instanceof HttpRetryException;
+          if (isRetry) {
+
+            Integer retryCount = action.retryCount();
+            action.status(WAITING_FOR_RETRY);
+
+            if (retryCount < 0) {
+              action.retryCount(1);
+              action.maxRetries(MAX_RETRY_COUNT);
+            } else if (retryCount < MAX_RETRY_COUNT) {
+              action.retryCount(action.retryCount() + 1);
+            } else {
+              action.status(ActionStatus.MAX_RETRIES_REACHED);
+              action.completedDate(new Date());
+            }
+
+          } else {
+            logger.error(e);
+          }
 
           if (!isEmpty(e.getMessage())) {
             action.message(e.getMessage());
           } else {
+            String stacktrace = Strings.toString(e);
             action.message(stacktrace);
           }
 
@@ -427,161 +455,88 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processRecords(final Logger logger, final List<Map<String, Object>> records)
+  private void processRecords(final Logger logger, final List<AwsEventRecord> records)
       throws IOException, InterruptedException {
 
-    for (Map<String, Object> e : Objects.notNull(records)) {
+    for (AwsEventRecord e : Objects.notNull(records)) {
 
-      if (e.containsKey("body")) {
+      if (e.body() != null) {
 
-        String body = e.get("body").toString();
+        AwsEventSnsNotification map = this.gson.fromJson(e.body(), AwsEventSnsNotification.class);
 
-        Map<String, Object> map = this.gson.fromJson(body, Map.class);
-        if (map.containsKey("Message")) {
-
+        if (map.message() != null) {
           processDocumentEvent(logger, map);
+        }
 
-        } else if (map.containsKey("dynamodb")) {
+      } else if (e.dynamodb() != null) {
+        processDynamodbStream(logger, e);
+      }
+    }
+  }
 
-          processDynamodbStream(logger, map);
+  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
+
+    String eventName = map.eventName();
+    AwsEventDynamodbEntity dynamodb = map.dynamodb();
+    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
+
+    if (newImage != null) {
+      String siteId = newImage.siteId().s();
+      String documentId = newImage.documentId().s();
+      Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
+
+      DetailTypeResolver resolver = new DetailTypeResolver();
+
+      for (List<Map<String, AttributeValue>> activity : activitiesByDoc) {
+
+        String detailType = resolver.apply(activity);
+        if (!detailType.equals(DEFAULT_DETAIL)) {
+
+          String pk = dynamodb.keys().pk().s();
+          String sk = dynamodb.keys().sk().s();
+          String s = String.format(
+              "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+                  + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
+              eventName, pk, sk, siteId, documentId, detailType);
+          logger.info(s);
+
+          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+              activity.stream().map(new AttributeValueToMap()).toList());
+
+          String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+          EventBridgeMessage msg =
+              new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+          EventBridgeService eventBridgeService =
+              serviceCache.getExtension(EventBridgeService.class);
+
+          String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+          eventBridgeService.putEvents(documentEventsBus, msg);
         }
       }
     }
   }
 
-  private void processDynamodbStream(final Logger logger, final Map<String, Object> map) {
+  private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
+      final AwsEventDynamodbNewImage newImage) {
 
-    String eventName = (String) map.get("eventName");
-    Map<String, Object> dynamodb = (Map<String, Object>) map.get("dynamodb");
-    Map<String, Object> keys = (Map<String, Object>) dynamodb.get("Keys");
-    Map<String, Object> newImage = (Map<String, Object>) dynamodb.get("NewImage");
-    final String pk = getS((Map<String, Object>) keys.get("PK"));
-    final String sk = getS((Map<String, Object>) keys.get("SK"));
-    String siteId = SiteIdKeyGenerator.getSiteId(pk);
-    String documentId = getS((Map<String, Object>) newImage.get("documentId"));
-    String type = getS((Map<String, Object>) newImage.get("type"));
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
 
-    String s = String.format(
-        "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-            + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-        eventName, pk, sk, siteId, documentId, type);
-    logger.info(s);
+    List<DynamoDbKey> keys = activityKeys.l().stream()
+        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+        .toList();
 
-    String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-    String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-    String detailType = getDetailType(eventName, type);
-    String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
+    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+    Collection<Map<String, AttributeValue>> activities =
+        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
 
-    EventBridgeMessage msg =
-        new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
-    EventBridgeService eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
-    eventBridgeService.putEvents(documentEventsBus, msg);
+    Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
+        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("documentId"))));
 
-    DocumentSyncService sync = serviceCache.getExtension(DocumentSyncService.class);
-    sync.update(pk, sk, DocumentSyncStatus.COMPLETE, new Date());
-
-    if ("Document Create Content".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(CREATE, siteId, documentId);
-      sendSnsMessage(event);
-    } else if ("Document Delete Metadata".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(DELETE, siteId, documentId);
-      sendSnsMessage(event);
-    } else if ("Document Soft Delete Metadata".equalsIgnoreCase(detailType)) {
-      DocumentEvent event = buildDocumentEvent(SOFT_DELETE, siteId, documentId);
-      sendSnsMessage(event);
-    }
+    return map.values();
   }
 
-  /**
-   * Either sends the Create Message to SNS.
-   *
-   * @param event {@link DocumentEvent}
-   */
-  private void sendSnsMessage(final DocumentEvent event) {
-
-    String contentType = event.contentType();
-    String s3bucket = event.s3bucket();
-    String key = event.s3key();
-
-    if ("application/json".equals(contentType)) {
-      String content = getContent(event);
-      event.content(content);
-    }
-
-    S3PresignerService s3PresignedService = serviceCache.getExtension(S3PresignerService.class);
-    PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
-    URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
-    event.url(url.toString());
-
-    EventService documentEventService = serviceCache.getExtension(EventService.class);
-    documentEventService.publish(serviceCache.getLogger(), event);
-  }
-
-  private String getContent(final DocumentEvent event) {
-
-    String content = null;
-
-    String s3bucket = event.s3bucket();
-    String key = event.s3key();
-    String contentType = event.contentType();
-    S3Service s3Service = serviceCache.getExtension(S3Service.class);
-    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
-
-    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
-        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
-      content = s3Service.getContentAsString(s3bucket, key, null);
-    }
-
-    return content;
-  }
-
-  /**
-   * Builds Document Event.
-   *
-   * @param eventType {@link String}
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @return {@link DocumentEvent}
-   */
-  private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
-      final String documentId) {
-
-    DocumentService service = serviceCache.getExtension(DocumentService.class);
-    DocumentItem doc = service.findDocument(siteId, documentId);
-    String userId = doc != null ? doc.getUserId() : null;
-    String contentType = doc != null ? doc.getContentType() : "";
-    String path = doc != null ? doc.getPath() : "";
-    String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String s3Bucket = serviceCache.environment("DOCUMENTS_S3_BUCKET");
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-
-    return new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
-        .type(eventType).userId(userId).contentType(contentType).path(path);
-  }
-
-  private String getDetailType(final String eventName, final String type) {
-
-    String detailType = "Unknown";
-    if ("insert".equalsIgnoreCase(eventName)) {
-      detailType = "Create";
-    }
-
-    DocumentSyncType syncType = DocumentSyncType.valueOf(type.toUpperCase());
-
-    return switch (syncType) {
-      case CONTENT -> "Document " + detailType + " Content";
-      case METADATA -> "Document " + detailType + " Metadata";
-      case DELETE -> "Document Delete Metadata";
-      case SOFT_DELETE -> "Document Soft Delete Metadata";
-    };
-  }
-
-  private String getS(final Map<String, Object> map) {
-    return (String) map.getOrDefault("S", null);
-  }
-
-  private void processDocumentEvent(final Logger logger, final Map<String, Object> map) {
-    DocumentEvent event = this.gson.fromJson(map.get("Message").toString(), DocumentEvent.class);
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
+    DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
 
     String s = String.format(
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
@@ -596,19 +551,18 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
   /**
    * Sends Webhook.
-   * 
-   * @param logger {@link Logger}
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
+   * @return {@link ProcessActionStatus}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void sendWebhook(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, InterruptedException {
+  private ProcessActionStatus sendWebhook(final String siteId, final String documentId,
+      final Action action) throws IOException, InterruptedException {
 
-    String url = action.parameters().get("url");
+    String url = (String) action.parameters().get("url");
 
     String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
 
@@ -627,7 +581,7 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
 
       if (statusCode >= statusOk && statusCode < statusRedirect) {
 
-        updateComplete(logger, siteId, documentId, actions, action, ActionStatus.COMPLETE);
+        return new ProcessActionStatus(ActionStatus.COMPLETE);
 
       } else {
         throw new IOException(url + " response status code " + statusCode);
@@ -644,25 +598,36 @@ public class DocumentActionsProcessor implements RequestHandler<Map<String, Obje
    * @param logger {@link Logger}
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param actions {@link List} {@link Action}
    * @param action {@link Action}
-   * @param completeStatus {@link ActionStatus}
+   * @param processStatus {@link ProcessActionStatus}
    */
   private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action, final ActionStatus completeStatus) {
+      final Action action, final ProcessActionStatus processStatus) {
 
-    logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
+    switch (processStatus.actionStatus()) {
+      case RUNNING -> {
+        // skip
+      }
+      case IN_QUEUE -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+        updateDocumentWorkflow(siteId, documentId, action);
+      }
+      case PENDING -> {
+        action.status(processStatus.actionStatus());
+        getActionsService().updateActionStatus(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
+      }
 
-    action.status(completeStatus);
-    getActionsService().updateActionStatus(siteId, documentId, action);
+      default -> {
+        ActionStatus completeStatus = processStatus.actionStatus();
+        logger.trace(String.format("updating status of %s to %s", documentId, completeStatus));
 
-    updateDocumentWorkflow(siteId, documentId, action);
+        action.status(completeStatus);
+        getActionsService().updateActionStatus(siteId, documentId, action);
 
-    if (!ActionType.QUEUE.equals(action.type())) {
-      boolean publishNextActionEvent =
-          getNotificationService().publishNextActionEvent(actions, siteId, documentId);
-      if (logger.isLogged(LogLevel.TRACE) && publishNextActionEvent) {
-        logger.trace(String.format("publishing next event for %s to %s", siteId, documentId));
+        updateDocumentWorkflow(siteId, documentId, action);
+        getNotificationService().publishNextActionEvent(siteId, documentId);
       }
     }
   }

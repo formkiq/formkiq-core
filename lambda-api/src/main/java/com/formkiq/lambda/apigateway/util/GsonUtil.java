@@ -39,9 +39,6 @@ public final class GsonUtil {
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).registerTypeAdapter(
           DocumentItem.class, new InterfaceSerializer<>(DocumentItemDynamoDb.class)).create();
 
-  /** private constructor. */
-  private GsonUtil() {}
-
   /**
    * Get Instance of {@link Gson}.
    *
@@ -50,4 +47,7 @@ public final class GsonUtil {
   public static Gson getInstance() {
     return GSON;
   }
+
+  /** private constructor. */
+  private GsonUtil() {}
 }

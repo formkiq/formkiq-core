@@ -32,14 +32,15 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.validation.ValidationBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -47,8 +48,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -94,7 +97,6 @@ public class DocumentsOcrRequestHandler
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse resp = new ApiMapResponse();
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
 
@@ -103,7 +105,8 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.delete(siteId, documentId);
 
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Deleted OCR for DocumentId '" + documentId + "'").build();
   }
 
   @Override
@@ -112,7 +115,7 @@ public class DocumentsOcrRequestHandler
 
     ApiResponseStatus status = SC_OK;
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 
@@ -156,12 +159,7 @@ public class DocumentsOcrRequestHandler
       status = SC_NOT_FOUND;
     }
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(status, resp);
-  }
-
-  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
-    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
+    return ApiRequestHandlerResponse.builder().status(status).body(map).build();
   }
 
   /**
@@ -230,24 +228,6 @@ public class DocumentsOcrRequestHandler
     return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
   }
 
-  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
-      final List<String> contents, final boolean textOnly, final boolean keyValue,
-      final boolean tables) {
-
-    if (textOnly) {
-      map.put("data", ocrService.toText(contents));
-    } else if (keyValue) {
-      map.put("keyValues", ocrService.toKeyValue(contents));
-    } else {
-      map.put("data", String.join("", contents));
-    }
-
-    if (tables) {
-      map.remove("data");
-      map.put("tables", ocrService.toTables(contents));
-    }
-  }
-
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
     boolean contentUrl = event.getQueryStringParameters() != null
         && event.getQueryStringParameters().containsKey("contentUrl");
@@ -269,6 +249,10 @@ public class DocumentsOcrRequestHandler
     }
 
     return keyOnly;
+  }
+
+  private boolean isOcrStatus(final Map<String, Object> map, final OcrScanStatus status) {
+    return status.name().equalsIgnoreCase(map.get("ocrStatus").toString());
   }
 
   private boolean isTables(final ApiGatewayRequestEvent event) {
@@ -299,11 +283,13 @@ public class DocumentsOcrRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 
-    OcrRequest request = fromBodyToObject(event, OcrRequest.class);
+    OcrRequest request = JsonToObject.fromJson(awsservice, event, OcrRequest.class);
+    validate(request);
+
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
@@ -311,8 +297,8 @@ public class DocumentsOcrRequestHandler
       throw new BadException("Maximum number of OCRs reached");
     }
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "OCR request submitted"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "OCR request submitted")
+        .build();
   }
 
   @Override
@@ -320,7 +306,7 @@ public class DocumentsOcrRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String siteId = authorization.getSiteId();
-    String documentId = event.getPathParameters().get("documentId");
+    String documentId = event.getPathParameter("documentId");
 
     verifyDocument(awsservice, siteId, documentId);
 
@@ -337,9 +323,40 @@ public class DocumentsOcrRequestHandler
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
     ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
 
-    ApiMapResponse resp =
-        new ApiMapResponse(Map.of("message", "Set OCR for documentId '" + documentId + "'"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "Set OCR for documentId '" + documentId + "'").build();
+  }
+
+  private void updateObject(final DocumentOcrService ocrService, final Map<String, Object> map,
+      final List<String> contents, final boolean textOnly, final boolean keyValue,
+      final boolean tables) {
+
+    if (textOnly) {
+      map.put("data", ocrService.toText(contents));
+    } else if (keyValue) {
+      map.put("keyValues", ocrService.toKeyValue(contents));
+    } else {
+      map.put("data", String.join("", contents));
+    }
+
+    if (tables) {
+      map.remove("data");
+      map.put("tables", ocrService.toTables(contents));
+    }
+  }
+
+  private void validate(final OcrRequest request) {
+    Optional<String> o =
+        notNull(request.getParseTypes()).stream().filter("queries"::equalsIgnoreCase).findFirst();
+    if (o.isPresent()) {
+
+      List<AwsTextractQuery> queries = notNull(request.getTextractQueries());
+      ValidationBuilder vb = new ValidationBuilder();
+      vb.isRequired(null, queries, "'TextractQueries' is required");
+
+      queries.forEach(q -> vb.isRequired("TextractQuery.text", q.text()));
+      vb.check();
+    }
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

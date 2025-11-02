@@ -4,8 +4,3 @@ description = "Strings utils"
 dependencies {
   testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
 }
-
-test {
-  failFast = true
-  useJUnitPlatform() 
-}

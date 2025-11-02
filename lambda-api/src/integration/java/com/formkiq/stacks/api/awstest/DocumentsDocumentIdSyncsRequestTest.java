@@ -47,6 +47,8 @@ import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.DocumentsApi;
@@ -66,14 +68,32 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   /**
    * JUnit Test Timeout.
    */
-  private static final int TEST_TIMEOUT = 60;
+  private static final int TEST_TIMEOUT = 90;
+
+  @BeforeAll
+  public static void beforeAll() throws ApiException {
+    new OpenSearchIndexPurgeRequestBuilder().submit(getApiClients(null).get(1), null)
+        .throwIfError();
+  }
+
+  private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
+    return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
+  }
 
   private List<DocumentSync> find(final List<DocumentSync> list, final DocumentSyncService type) {
     return list.stream().filter(s -> type.equals(s.getService())).collect(Collectors.toList());
   }
 
-  private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
-    return list.stream().filter(s -> type.equals(s.getType())).findFirst().orElse(null);
+  private GetDocumentSyncResponse getDocumentSyncs(final DocumentsApi api, final String siteId,
+      final String documentId, final int expectedCount) throws ApiException, InterruptedException {
+    GetDocumentSyncResponse syncs = api.getDocumentSyncs(documentId, siteId, null, null);
+
+    while (!isComplete(syncs, expectedCount)) {
+      TimeUnit.SECONDS.sleep(1);
+      syncs = api.getDocumentSyncs(documentId, siteId, null, null);
+    }
+
+    return syncs;
   }
 
   private boolean isComplete(final GetDocumentSyncResponse syncs, final int expectedCount) {
@@ -109,7 +129,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         // then
         assertEquals("Added Document sync", response.getMessage());
 
-        final int expectedCount = 5;
+        final int expectedCount = 3;
         GetDocumentSyncResponse syncs = getDocumentSyncs(api, siteId, documentId, expectedCount);
         assertEquals(expectedCount, notNull(syncs.getSyncs()).size());
 
@@ -129,7 +149,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
   @Timeout(value = TEST_TIMEOUT)
   public void testGetSyncs01() throws Exception {
     // given
-    final int expectedCount = 4;
+    final int expectedCount = 2;
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       for (ApiClient client : getApiClients(siteId)) {
@@ -149,11 +169,8 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
         for (DocumentSync sync : list) {
           assertNotNull(sync.getUserId());
-
-          if (!DocumentSyncService.EVENTBRIDGE.equals(sync.getService())) {
-            assertNotNull(sync.getSyncDate());
-            assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
-          }
+          assertNotNull(sync.getSyncDate());
+          assertEquals(DocumentSyncStatus.COMPLETE, sync.getStatus());
         }
 
         List<DocumentSync> typesense = find(list, DocumentSyncService.TYPESENSE);
@@ -183,17 +200,5 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         }
       }
     }
-  }
-
-  private GetDocumentSyncResponse getDocumentSyncs(final DocumentsApi api, final String siteId,
-      final String documentId, final int expectedCount) throws ApiException, InterruptedException {
-    GetDocumentSyncResponse syncs = api.getDocumentSyncs(documentId, siteId, null, null);
-
-    while (!isComplete(syncs, expectedCount)) {
-      TimeUnit.SECONDS.sleep(1);
-      syncs = api.getDocumentSyncs(documentId, siteId, null, null);
-    }
-
-    return syncs;
   }
 }

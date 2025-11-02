@@ -27,6 +27,7 @@ import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -35,6 +36,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
@@ -50,8 +53,11 @@ import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectLegalHoldRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
@@ -76,9 +82,6 @@ import java.util.Map;
  *
  */
 public class S3Service {
-
-  /** {@link S3ServiceInterceptor}. */
-  private final S3ServiceInterceptor interceptor;
 
   /**
    * URL Decode {@link String}.
@@ -110,6 +113,9 @@ public class S3Service {
   public static byte[] toByteArray(final InputStream is) throws IOException {
     return IoUtils.toByteArray(is);
   }
+
+  /** {@link S3ServiceInterceptor}. */
+  private final S3ServiceInterceptor interceptor;
 
   /** {@link S3Client}. */
   private final S3Client s3Client;
@@ -180,7 +186,18 @@ public class S3Service {
    * @param bucket {@link String}
    */
   public void createBucket(final String bucket) {
-    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+    createBucket(bucket, false);
+  }
+
+  /**
+   * Create S3 Bucket.
+   *
+   * @param bucket {@link String}
+   * @param enableObjectLock boolean
+   */
+  public void createBucket(final String bucket, final boolean enableObjectLock) {
+    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket)
+        .objectLockEnabledForBucket(enableObjectLock).build());
     this.s3Client.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
         .versioningConfiguration(
             VersioningConfiguration.builder().status(BucketVersioningStatus.ENABLED).build())
@@ -206,6 +223,18 @@ public class S3Service {
 
       isDone = !resp.isTruncated();
     }
+  }
+
+  /**
+   * Delete All S3 Object Tags.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   */
+  public void deleteAllObjectTags(final String bucket, final String key) {
+    DeleteObjectTaggingRequest req =
+        DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
+    this.s3Client.deleteObjectTagging(req);
   }
 
   /**
@@ -261,18 +290,6 @@ public class S3Service {
   }
 
   /**
-   * Delete All S3 Object Tags.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
-   */
-  public void deleteAllObjectTags(final String bucket, final String key) {
-    DeleteObjectTaggingRequest req =
-        DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
-    this.s3Client.deleteObjectTagging(req);
-  }
-
-  /**
    * Delete Object.
    * 
    * @param bucket {@link String}
@@ -283,6 +300,21 @@ public class S3Service {
     this.s3Client.deleteObject(
         DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
 
+  }
+
+  /**
+   * Whether Bucket exists.
+   * 
+   * @param bucket {@link String}
+   * @return boolean
+   */
+  public boolean exists(final String bucket) {
+    try {
+      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+      return true;
+    } catch (NoSuchBucketException e) {
+      return false;
+    }
   }
 
   /**
@@ -297,21 +329,6 @@ public class S3Service {
       this.s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
       return true;
     } catch (NoSuchKeyException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Whether Bucket exists.
-   * 
-   * @param bucket {@link String}
-   * @return boolean
-   */
-  public boolean exists(final String bucket) {
-    try {
-      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
-      return true;
-    } catch (NoSuchBucketException e) {
       return false;
     }
   }
@@ -398,8 +415,8 @@ public class S3Service {
   public S3ObjectMetadata getObjectMetadata(final String bucket, final String key,
       final String versionId) {
 
-    HeadObjectRequest hr =
-        HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
+    HeadObjectRequest hr = HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId)
+        .checksumMode(ChecksumMode.ENABLED).build();
     S3ObjectMetadata md = new S3ObjectMetadata();
 
     try {
@@ -451,6 +468,23 @@ public class S3Service {
   }
 
   /**
+   * Check if a specific S3 object version has Object Lock (retention or legal hold).
+   *
+   * @param bucket Bucket name
+   * @param s3Key Object key
+   * @param versionId Object version ID (required)
+   * @return true if the object has a lock (retention or legal hold ON)
+   */
+  public boolean isObjectLock(final String bucket, final String s3Key, final String versionId) {
+    GetObjectLegalHoldRequest getHoldReq =
+        GetObjectLegalHoldRequest.builder().bucket(bucket).key(s3Key).versionId(versionId).build();
+
+    GetObjectLegalHoldResponse holdResp = this.s3Client.getObjectLegalHold(getHoldReq);
+    return holdResp.legalHold() != null
+        && holdResp.legalHold().status() == ObjectLockLegalHoldStatus.ON;
+  }
+
+  /**
    * List S3 Objects.
    * 
    * @param bucket {@link String}
@@ -465,6 +499,22 @@ public class S3Service {
     }
 
     return this.s3Client.listObjects(listbuilder.build());
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param is {@link InputStream}
+   * @param contentType {@link String}
+   * @return {@link PutObjectResponse}
+   * @throws IOException IOException
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
+      final String contentType) throws IOException {
+    byte[] data = toByteArray(is);
+    return putObject(bucket, key, data, contentType);
   }
 
   /**
@@ -508,26 +558,28 @@ public class S3Service {
     PutObjectRequest request = build.build();
 
     if (this.interceptor != null) {
-      this.interceptor.putObjectEvent(this, bucket, key);
+      this.interceptor.putObjectEvent(this, bucket, key, null);
     }
 
     return this.s3Client.putObject(request, RequestBody.fromBytes(data));
   }
 
   /**
-   * Put Object in Bucket.
+   * Set Object Lock.
    * 
    * @param bucket {@link String}
    * @param key {@link String}
-   * @param is {@link InputStream}
-   * @param contentType {@link String}
-   * @return {@link PutObjectResponse}
-   * @throws IOException IOException
+   * @param versionId {@link String}
+   * @param lockOn boolean
    */
-  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
-      final String contentType) throws IOException {
-    byte[] data = toByteArray(is);
-    return putObject(bucket, key, data, contentType);
+  public void setObjectLock(final String bucket, final String key, final String versionId,
+      final boolean lockOn) {
+    ObjectLockLegalHold hold = ObjectLockLegalHold.builder()
+        .status(lockOn ? ObjectLockLegalHoldStatus.ON : ObjectLockLegalHoldStatus.OFF).build();
+    PutObjectLegalHoldRequest req = PutObjectLegalHoldRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).legalHold(hold).build();
+
+    this.s3Client.putObjectLegalHold(req);
   }
 
   /**

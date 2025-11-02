@@ -23,12 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamodbVersionRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -51,21 +48,6 @@ public interface DocumentVersionService {
   void deleteAllVersionIds(String siteId, String documentId);
 
   /**
-   * Get DynamoDB Documents Versions Table Name.
-   * 
-   * @return {@link String}
-   */
-  String getDocumentVersionsTableName();
-
-  /**
-   * Get S3 Version Id.
-   * 
-   * @param attributes {@link Map}
-   * @return {@link String}
-   */
-  String getVersionId(Map<String, AttributeValue> attributes);
-
-  /**
    * Get Version Record.
    *
    * @param siteId {@link String}
@@ -76,22 +58,11 @@ public interface DocumentVersionService {
   Map<String, AttributeValue> get(String siteId, String documentId, String versionKey);
 
   /**
-   * Initialize Service.
-   *
-   * @param map {@link Map}
-   * @param connection {@link DynamoDbConnectionBuilder}
+   * Get {@link DynamoDbService}.
+   * 
+   * @return {@link DynamoDbService}
    */
-  void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
-
-  /**
-   * Add Versioning {@link DynamodbVersionRecord} records.
-   *
-   * @param siteId {@link String}
-   * @param records {@link Collection} {@link DynamodbVersionRecord}
-   * @return List
-   */
-  List<Map<String, AttributeValue>> addRecords(String siteId,
-      Collection<? extends DynamodbVersionRecord<?>> records);
+  DynamoDbService getDb();
 
   /**
    * Get {@link DocumentItem} either current or versioned.
@@ -107,9 +78,25 @@ public interface DocumentVersionService {
       String versionKey, Map<String, AttributeValue> versionAttributes);
 
   /**
-   * Get {@link DynamoDbService}.
+   * Get DynamoDB Documents Versions Table Name.
    * 
-   * @return {@link DynamoDbService}
+   * @return {@link String}
    */
-  DynamoDbService getDb();
+  String getDocumentVersionsTableName();
+
+  /**
+   * Get S3 Version Id.
+   * 
+   * @param attributes {@link Map}
+   * @return {@link String}
+   */
+  String getVersionId(Map<String, AttributeValue> attributes);
+
+  /**
+   * Initialize Service.
+   *
+   * @param map {@link Map}
+   * @param connection {@link DynamoDbConnectionBuilder}
+   */
+  void initialize(Map<String, String> map, DynamoDbConnectionBuilder connection);
 }

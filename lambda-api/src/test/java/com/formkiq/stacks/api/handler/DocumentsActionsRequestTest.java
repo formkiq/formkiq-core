@@ -24,7 +24,14 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.client.model.DocumentActionStatus.FAILED;
+import static com.formkiq.client.model.DocumentActionStatus.FAILED_RETRY;
+import static com.formkiq.client.model.DocumentActionStatus.PENDING;
+import static com.formkiq.module.actions.ActionStatus.MAX_RETRIES_REACHED;
+import static com.formkiq.module.actions.ActionStatus.RUNNING;
+import static com.formkiq.module.actions.ActionStatus.WAITING_FOR_RETRY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -37,6 +44,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -47,7 +58,10 @@ import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
+import com.formkiq.client.model.TextractQuery;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -96,6 +110,18 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /** {@link ActionsService}. */
   private ActionsService service;
 
+  private void assertDocumentAction(final DocumentAction action, final DocumentActionType type,
+      final DocumentActionStatus status, final String message) {
+    assertEquals(type, action.getType());
+    assertEquals(status, action.getStatus());
+    if (message != null) {
+      assertEquals(message, action.getMessage());
+    } else {
+      assertNull(action.getMessage());
+    }
+
+  }
+
   /**
    * Before.
    *
@@ -116,6 +142,23 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     this.configService = awsServices.getExtension(ConfigService.class);
   }
 
+  private List<DocumentAction> getDocumentActions(final String siteId, final String documentId) {
+    return getDocumentActions(siteId, documentId, null);
+  }
+
+  private List<DocumentAction> getDocumentActions(final String siteId, final String documentId,
+      final String next) {
+    var resp = new GetDocumentActionsRequestBuilder(documentId).limit(null).next(next)
+        .submit(client, siteId);
+    assertFalse(resp.isError());
+    return notNull(resp.response().getActions());
+  }
+
+  private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null).getDocuments());
+  }
+
   /**
    * Save Document.
    * 
@@ -124,20 +167,314 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
    * @throws ValidationException ValidationException
    */
   private String saveDocument(final String siteId) throws ValidationException {
+    return saveDocument(siteId, null);
+  }
+
+  /**
+   * Save Document with path.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link String}
+   * @throws ValidationException ValidationException
+   */
+  private String saveDocument(final String siteId, final String path) throws ValidationException {
     String documentId = ID.uuid();
 
     DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    if (path != null) {
+      item.setPath(path);
+    }
+
     this.documentService.saveDocument(siteId, item, null);
     return documentId;
   }
 
   /**
-   * Get /documents/{documentId}/actions request.
+   * GET /documents?actionStatus request.
+   *
+   */
+  @Test
+  public void testActionStatus() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      var path = "mypath_" + ID.ulid();
+      var documentId = saveDocument(siteId, path);
+
+      for (var status : ActionStatus.values()) {
+        this.service.saveNewActions(siteId, documentId, List.of(new Action().userId("joe")
+            .status(status).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+      }
+
+      for (var status : ActionStatus.values()) {
+        // when
+        var resp =
+            new GetDocumentsRequestBuilder().actionStatus(status.name()).submit(client, siteId);
+
+        // then
+        if (ActionStatus.COMPLETE == status) {
+          var e = resp.exception();
+          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"message\":\"invalid actionStatus 'COMPLETE'\"}", e.getResponseBody());
+        } else {
+          assertFalse(resp.isError());
+          List<Document> docs = notNull(resp.response().getDocuments());
+          assertEquals(1, docs.size());
+          assertEquals(documentId, docs.get(0).getDocumentId());
+          assertEquals(path, docs.get(0).getPath());
+        }
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification.
+   *
+   */
+  @Test
+  public void testDataClassificationMissingPrompt() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(List.of(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.llmPromptEntityName\","
+                + "\"error\":\"action 'llmPromptEntityName' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification.
+   *
+   */
+  @Test
+  public void testDataClassificationPrompt() throws ApiException {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      EntityTypeRecord entityTypeRecord =
+          EntityTypeRecord.builder().documentId(ID.uuid()).namespace(EntityTypeNamespace.PRESET)
+              .name(PresetEntity.LLM_PROMPT.getName()).build(siteId);
+      db.putItem(entityTypeRecord.getAttributes());
+
+      EntityRecord entity = EntityRecord.builder().entityTypeId(entityTypeRecord.documentId())
+          .documentId(ID.uuid()).name("Myllm").build(siteId);
+      db.putItem(entity.getAttributes());
+
+      AddActionParameters param = new AddActionParameters().llmPromptEntityName("Myllm");
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
+          List.of(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
+
+      // when
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+
+      // then
+      assertEquals("Actions saved", response.getMessage());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Data classification does not exist.
+   *
+   */
+  @Test
+  public void testDataClassificationPromptDoesNotExist() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+
+      AddActionParameters param = new AddActionParameters().llmPromptEntityName("myllm");
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
+          List.of(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+            + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for Textract queries, missing ocrTextractQueries.
+   *
+   */
+  @Test
+  public void testDocumentActionsWithQueriesMissingOcrTextractQueries() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = saveDocument(siteId);
+      AddActionParameters param = new AddActionParameters().ocrParseTypes("QUERIES");
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections
+          .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.ocrTextractQueries\","
+                + "\"error\":\"action 'ocrTextractQueries' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+
+      // given
+      param.addOcrTextractQueriesItem(new TextractQuery());
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"parameters.ocrTextractQueries.text\","
+                + "\"error\":\"action 'ocrTextractQueries.text' parameter is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. Nothing failed
    *
    * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleGetDocumentActions01() throws Exception {
+  public void testHandleAddtDocumentActionsRetry01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      this.service.saveNewActions(siteId, documentId, List.of(new Action().userId("joe")
+          .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+      List<Document> failed = getFailedActionDocuments(siteId);
+      assertEquals(0, failed.size());
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Failed action not found\"}", e.getResponseBody());
+      }
+
+      // then
+      List<DocumentAction> actions = getDocumentActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
+      assertEquals("{test=this}", notNull(actions.get(0).getParameters()).toString());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. Failed
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      // when
+      this.service.saveNewActions(siteId, documentId,
+          List.of(new Action().userId("joe").status(ActionStatus.FAILED).message("some message")
+              .parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      List<Document> failed = getFailedActionDocuments(siteId);
+      assertEquals(1, failed.size());
+      assertEquals(documentId, failed.get(0).getDocumentId());
+
+      // then
+      List<DocumentAction> actions = getDocumentActions(siteId, documentId);
+      assertEquals(1, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR, FAILED, "some message");
+
+      // when
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      assertEquals("Actions retrying", retry.getMessage());
+
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+
+      actions = notNull(response.getActions());
+      assertEquals(2, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR, FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, PENDING, null);
+
+      // when - 2nd time
+      try {
+        this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Failed action not found\"}", e.getResponseBody());
+      }
+
+      // then
+      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      actions = notNull(response.getActions());
+      assertEquals(2, actions.size());
+      assertDocumentAction(actions.get(0), DocumentActionType.OCR, FAILED_RETRY, "some message");
+      assertDocumentAction(actions.get(1), DocumentActionType.OCR, PENDING, null);
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. multiple Failed
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry03() throws Exception {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -145,15 +482,111 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
 
       this.service.saveNewActions(siteId, documentId,
-          Collections.singletonList(new Action().userId("joe").status(ActionStatus.COMPLETE)
-              .parameters(Map.of("test", "this")).type(ActionType.OCR)));
+          Arrays.asList(new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.OCR),
+              new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.FULLTEXT)));
 
       // when
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+      AddDocumentActionsRetryResponse retry =
+          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
-      List<DocumentAction> actions = notNull(response.getActions());
+      assertEquals("Actions retrying", retry.getMessage());
+
+      List<DocumentAction> actions = getDocumentActions(siteId, documentId);
+
+      int i = 0;
+      final int expected = 3;
+
+      assertEquals(expected, actions.size());
+      assertDocumentAction(actions.get(i++), DocumentActionType.OCR, FAILED, null);
+      assertDocumentAction(actions.get(i++), DocumentActionType.FULLTEXT, FAILED_RETRY, null);
+      assertDocumentAction(actions.get(i), DocumentActionType.FULLTEXT, PENDING, null);
+
+      // when - 2nd time
+      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+      // then
+      actions = getDocumentActions(siteId, documentId);
+      assertEquals(expected + 1, actions.size());
+
+      i = 0;
+      assertDocumentAction(actions.get(i++), DocumentActionType.OCR, FAILED_RETRY, null);
+      assertDocumentAction(actions.get(i++), DocumentActionType.FULLTEXT, FAILED_RETRY, null);
+      assertDocumentAction(actions.get(i++), DocumentActionType.OCR, PENDING, null);
+      assertDocumentAction(actions.get(i), DocumentActionType.FULLTEXT, PENDING, null);
+
+      // then - limits
+      GetDocumentActionsResponse response =
+          this.documentActionsApi.getDocumentActions(documentId, siteId, "1", null, null);
+      actions = notNull(response.getActions());
+      assertEquals(1, actions.size());
+      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+
+      actions = getDocumentActions(siteId, documentId, response.getNext());
+      assertEquals(1, actions.size());
+      assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions/retry request. RUNNING / MAX RETRIES / RETRYING.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddtDocumentActionsRetry04() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      for (ActionStatus status : List.of(RUNNING, MAX_RETRIES_REACHED, WAITING_FOR_RETRY)) {
+        String documentId = saveDocument(siteId);
+        Action a0 = new Action().userId("joe").status(status).type(ActionType.OCR);
+        Action a1 =
+            new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.ANTIVIRUS);
+        Action a2 =
+            new Action().userId("joe").status(ActionStatus.PENDING).type(ActionType.MALWARE_SCAN);
+        List<Action> addActions = Arrays.asList(a0, a1, a2);
+
+        // when
+        this.service.saveNewActions(siteId, documentId, addActions);
+
+        AddDocumentActionsRetryResponse retry =
+            this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+
+        // then
+        assertEquals("Actions retrying", retry.getMessage());
+
+        List<DocumentAction> actions = getDocumentActions(siteId, documentId);
+        assertEquals(addActions.size() + 1, actions.size());
+
+        int i = 0;
+        assertDocumentAction(actions.get(i++), DocumentActionType.OCR, FAILED_RETRY, null);
+        assertDocumentAction(actions.get(i++), DocumentActionType.OCR, PENDING, null);
+        assertDocumentAction(actions.get(i++), DocumentActionType.ANTIVIRUS, PENDING, null);
+        assertDocumentAction(actions.get(i), DocumentActionType.MALWARE_SCAN, PENDING, null);
+      }
+    }
+  }
+
+  /**
+   * Get /documents/{documentId}/actions request.
+   *
+   */
+  @Test
+  public void testHandleGetDocumentActions01() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+
+      this.service.saveNewActions(siteId, documentId, List.of(new Action().userId("joe")
+          .status(ActionStatus.COMPLETE).parameters(Map.of("test", "this")).type(ActionType.OCR)));
+
+      // when
+      List<DocumentAction> actions = getDocumentActions(siteId, documentId);
       assertEquals(1, actions.size());
       assertEquals(DocumentActionType.OCR, actions.get(0).getType());
       assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
@@ -176,7 +609,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
 
       this.service.saveNewActions(siteId, documentId,
-          Collections.singletonList(new Action().userId("joe").status(ActionStatus.COMPLETE)
+          List.of(new Action().userId("joe").status(ActionStatus.COMPLETE)
               .parameters(Map.of("test", "this")).type(ActionType.FULLTEXT)));
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Arrays.asList(
@@ -219,19 +652,17 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions missing 'type'.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions02() throws Exception {
+  public void testHandlePostDocumentActions02() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      AddDocumentActionsRequest req =
-          new AddDocumentActionsRequest().actions(Collections.singletonList(
-              new AddAction().parameters(new AddActionParameters().ocrParseTypes("text"))));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
+          List.of(new AddAction().parameters(new AddActionParameters().ocrParseTypes("text"))));
 
       // when
       try {
@@ -267,8 +698,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
-          Collections.singletonList(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(List.of(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)));
 
       // when
       try {
@@ -297,8 +728,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // given - engine
       this.configService.save(siteId, new SiteConfiguration().setChatGptApiKey("ABC"));
 
-      req = new AddDocumentActionsRequest().actions(
-          Collections.singletonList(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)
+      req = new AddDocumentActionsRequest()
+          .actions(List.of(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)
               .parameters(new AddActionParameters().engine(EngineEnum.CHATGPT).tags("something"))));
 
       // when - correct parameters
@@ -317,20 +748,18 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions missing 'parameters' for notification.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions04() throws Exception {
+  public void testHandlePostDocumentActions04() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
 
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.NOTIFICATION)
-              .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
-                  .notificationToCc("test@formkiq.com"))));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(List.of(
+          new AddAction().type(DocumentActionType.NOTIFICATION).parameters(new AddActionParameters()
+              .notificationType(NotificationTypeEnum.EMAIL).notificationToCc("test@formkiq.com"))));
 
       // when
       try {
@@ -368,7 +797,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.configService.save(siteId, config);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.NOTIFICATION)
+          .actions(List.of(new AddAction().type(DocumentActionType.NOTIFICATION)
               .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
                   .notificationToCc("test@formkiq.com").notificationSubject("test subject")
                   .notificationText("some text"))));
@@ -390,10 +819,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues missing queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions06() throws Exception {
+  public void testHandlePostDocumentActions06() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -401,7 +829,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.QUEUE)));
+          .actions(List.of(new AddAction().type(DocumentActionType.QUEUE)));
 
       setBearerToken(siteId);
 
@@ -420,10 +848,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues invalid queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions07() throws Exception {
+  public void testHandlePostDocumentActions07() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -450,10 +877,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for Queues queueId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions08() throws Exception {
+  public void testHandlePostDocumentActions08() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -489,18 +915,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents/{documentId}/actions for IDP invalid / missing mappingId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePostDocumentActions09() throws Exception {
+  public void testHandlePostDocumentActions09() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = saveDocument(siteId);
 
       AddAction action = new AddAction().type(DocumentActionType.IDP);
-      AddDocumentActionsRequest req =
-          new AddDocumentActionsRequest().actions(Collections.singletonList(action));
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(List.of(action));
 
       setBearerToken(siteId);
 
@@ -562,7 +986,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           .addMapping(new AddMappingRequest().mapping(addMapping), siteId).getMappingId();
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
-          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.IDP)
+          .actions(List.of(new AddAction().type(DocumentActionType.IDP)
               .parameters(new AddActionParameters().mappingId(mappingId))));
 
       // when
@@ -579,179 +1003,45 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/{documentId}/actions/retry request. Nothing failed
+   * POST /documents/{documentId}/actions for Textract queries.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleAddtDocumentActionsRetry01() throws Exception {
+  public void testHandlePostDocumentActionsWithQueries() throws ApiException {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
 
-      this.service.saveNewActions(siteId, documentId,
-          Collections.singletonList(new Action().userId("joe").status(ActionStatus.COMPLETE)
-              .parameters(Map.of("test", "this")).type(ActionType.OCR)));
-      List<Document> failed = getFailedActionDocuments(siteId);
-      assertEquals(0, failed.size());
+      String documentId = saveDocument(siteId);
+      TextractQuery query =
+          new TextractQuery().alias("query").text("mytext").pages(List.of("1", "5"));
+      AddActionParameters param =
+          new AddActionParameters().ocrParseTypes("QUERIES").addOcrTextractQueriesItem(query);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections
+          .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
 
       // when
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+      AddDocumentActionsResponse response =
+          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
-      assertEquals("Actions retrying", retry.getMessage());
+      assertEquals("Actions saved", response.getMessage());
 
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-
-      List<DocumentAction> actions = notNull(response.getActions());
+      List<DocumentAction> actions = notNull(this.documentActionsApi
+          .getDocumentActions(documentId, siteId, null, null, null).getActions());
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
-      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
-      assertEquals("{test=this}", notNull(actions.get(0).getParameters()).toString());
-    }
-  }
+      DocumentAction action = actions.get(0);
+      Map<String, Object> params = notNull(action.getParameters());
+      assertEquals("QUERIES", params.get("ocrParseTypes"));
 
-  private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null).getDocuments());
-  }
-
-  /**
-   * POST /documents/{documentId}/actions/retry request. Failed
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleAddtDocumentActionsRetry02() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-
-      // when
-      this.service.saveNewActions(siteId, documentId,
-          Collections.singletonList(new Action().userId("joe").status(ActionStatus.FAILED)
-              .message("some message").parameters(Map.of("test", "this")).type(ActionType.OCR)));
-
-      List<Document> failed = getFailedActionDocuments(siteId);
-      assertEquals(1, failed.size());
-      assertEquals(documentId, failed.get(0).getDocumentId());
-
-      // then
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-      List<DocumentAction> actions = notNull(response.getActions());
-      assertEquals(1, actions.size());
-      assertDocumentAction(actions.get(0), DocumentActionType.OCR, DocumentActionStatus.FAILED,
-          "some message");
-
-      // when
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
-
-      // then
-      assertEquals("Actions retrying", retry.getMessage());
-
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-
-      actions = notNull(response.getActions());
-      assertEquals(2, actions.size());
-      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
-          DocumentActionStatus.FAILED_RETRY, "some message");
-      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
-          null);
-
-      // when - 2nd time
-      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
-
-      // then
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-      actions = notNull(response.getActions());
-      assertEquals(2, actions.size());
-      assertDocumentAction(actions.get(0), DocumentActionType.OCR,
-          DocumentActionStatus.FAILED_RETRY, "some message");
-      assertDocumentAction(actions.get(1), DocumentActionType.OCR, DocumentActionStatus.PENDING,
-          null);
-    }
-  }
-
-  private void assertDocumentAction(final DocumentAction action, final DocumentActionType type,
-      final DocumentActionStatus status, final String message) {
-    assertEquals(type, action.getType());
-    assertEquals(status, action.getStatus());
-    if (message != null) {
-      assertEquals(message, action.getMessage());
-    } else {
-      assertNull(action.getMessage());
-    }
-
-  }
-
-  /**
-   * POST /documents/{documentId}/actions/retry request. multiple Failed
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleAddtDocumentActionsRetry03() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-
-      this.service.saveNewActions(siteId, documentId,
-          Arrays.asList(new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.OCR),
-              new Action().userId("joe").status(ActionStatus.FAILED).type(ActionType.FULLTEXT)));
-
-      // when
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
-
-      // then
-      assertEquals("Actions retrying", retry.getMessage());
-
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-
-      int i = 0;
-      final int expected = 4;
-      List<DocumentAction> actions = notNull(response.getActions());
-      assertEquals(expected, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(i).getType());
-      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(i++).getStatus());
-
-      assertEquals(DocumentActionType.FULLTEXT, actions.get(i).getType());
-      assertEquals(DocumentActionStatus.FAILED_RETRY, actions.get(i++).getStatus());
-
-      assertEquals(DocumentActionType.OCR, actions.get(i).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions.get(i++).getStatus());
-
-      assertEquals(DocumentActionType.FULLTEXT, actions.get(i).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions.get(i).getStatus());
-
-      // when - 2nd time
-      this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
-
-      // then
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
-      actions = notNull(response.getActions());
-      assertEquals(expected, actions.size());
-
-      // then - limits
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, "1", null, null);
-      assertEquals(1, notNull(response.getActions()).size());
-      assertEquals(DocumentActionType.OCR, response.getActions().get(0).getType());
-
-      response = this.documentActionsApi.getDocumentActions(documentId, siteId, null, null,
-          response.getNext());
-      assertEquals(1, notNull(response.getActions()).size());
-      assertEquals(DocumentActionType.FULLTEXT, response.getActions().get(0).getType());
+      List<Map<String, Object>> queries =
+          (List<Map<String, Object>>) params.get("ocrTextractQueries");
+      assertEquals(1, queries.size());
+      assertEquals("mytext", queries.get(0).get("text"));
+      assertEquals("query", queries.get(0).get("alias"));
+      assertEquals("1,5", String.join(",", ((List<String>) queries.get(0).get("pages"))));
     }
   }
 }

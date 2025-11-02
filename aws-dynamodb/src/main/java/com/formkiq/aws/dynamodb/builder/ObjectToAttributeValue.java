@@ -1,0 +1,75 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.aws.dynamodb.builder;
+
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+/**
+ * Convert {@link Object} to {@link AttributeValue}.
+ */
+public class ObjectToAttributeValue implements Function<Object, AttributeValue> {
+  @Override
+  public AttributeValue apply(final Object obj) {
+    AttributeValue o;
+    if (obj == null) {
+      o = AttributeValue.fromNul(true);
+    } else if (obj instanceof Double d) {
+      o = AttributeValue.fromN(String.valueOf(d));
+    } else if (obj instanceof Long l) {
+      o = AttributeValue.fromN(String.valueOf(l));
+    } else if (obj instanceof String s) {
+      o = AttributeValue.fromS(s);
+    } else if (obj instanceof Map m) {
+      o = AttributeValue.fromM(convertMap(m));
+    } else if (obj instanceof Boolean b) {
+      o = AttributeValue.fromBool(b);
+    } else if (obj instanceof Collection<?> c) {
+      o = AttributeValue.fromL(c.stream().map(this).toList());
+    } else {
+      throw new IllegalArgumentException("Unsupported data type: " + obj.getClass().getName());
+    }
+
+    return o;
+  }
+
+  public Map<String, AttributeValue> convertMap(final Map<String, Object> map) {
+
+    Map<String, AttributeValue> result = null;
+
+    if (map != null) {
+      result = new HashMap<>();
+      for (Map.Entry<String, Object> e : map.entrySet()) {
+        AttributeValue a = apply(e.getValue());
+        result.put(e.getKey(), a);
+      }
+    }
+
+    return result;
+  }
+}

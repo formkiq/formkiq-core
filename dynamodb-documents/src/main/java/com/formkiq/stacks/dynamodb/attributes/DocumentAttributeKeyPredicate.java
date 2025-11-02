@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Predicate;

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -42,14 +43,12 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
-import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
-import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -65,12 +64,20 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidatorImpl;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeKeyPredicate;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordPredicate;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
+import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
+import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionValidate;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -117,10 +124,12 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.concat;
+import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
@@ -277,6 +286,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void addTags(final String siteId, final String documentId,
       final Collection<DocumentTag> tags, final String timeToLive) {
+    validateDocumentPath(siteId, documentId);
     addTags(siteId, Map.of(documentId, tags), timeToLive);
   }
 
@@ -379,8 +389,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<FolderIndexRecord> folders =
           this.folderIndexProcessor.createFolders(siteId, document.getPath(), document.getUserId());
 
+      FolderIndexRecord folder = last(folders);
       folderIndexRecord = this.folderIndexProcessor.addFileToFolder(siteId,
-          document.getDocumentId(), Objects.last(folders), document.getPath());
+          document.getDocumentId(), folder, document.getPath());
 
       String filename = Strings.getFilename(document.getPath());
       if (!filename.contains(folderIndexRecord.path())) {
@@ -434,11 +445,12 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
 
-
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
     if (documentRecord.containsKey("path")) {
-      deleteFolderIndex(siteId, documentRecord.get("path").s());
+      String path = DynamoDbTypes.toString(documentRecord.get("path"));
+      validateDocumentPath(siteId, path, Collections.emptyMap());
+      deleteFolderIndex(siteId, path);
     }
 
     Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
@@ -464,9 +476,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       }
 
       if (documentRecord != null) {
-        AttributeValueToMap transform = new AttributeValueToMap();
-        Map<String, Object> apply = transform.apply(documentRecord);
-        this.interceptor.deleteDocument(siteId, documentId, softDelete, apply);
+        AttributeValueToMap toMap = new AttributeValueToMap();
+
+        list.forEach(a -> {
+          if (a.containsKey("SK") && a.get("SK").s().startsWith("attr#")) {
+            this.interceptor.deleteDocumentAttribute(siteId, documentId, softDelete,
+                toMap.apply(a));
+          }
+        });
+
+        this.interceptor.deleteDocument(siteId, documentId, softDelete,
+            toMap.apply(documentRecord));
       }
     }
 
@@ -475,16 +495,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private boolean deleteDocumentSoft(final String siteId, final String documentId,
       final List<Map<String, AttributeValue>> list) {
-    boolean deleted =
-        this.dbService.moveItems(list, new DocumentDeleteMoveAttributeFunction(siteId, documentId));
-
-    if (deleted) {
-      DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-          DocumentSyncType.SOFT_DELETE, true);
-      saveDocumentSyncRecord(siteId, a);
-    }
-
-    return deleted;
+    return this.dbService.moveItems(list,
+        new DocumentDeleteMoveAttributeFunction(siteId, documentId));
   }
 
   private boolean deleteDocumentHard(final String siteId, final String documentId,
@@ -506,14 +518,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     // TODO merge deletes together
     final boolean deleted = this.dbService.deleteItems(listKeys);
     this.versionsService.deleteAllVersionIds(siteId, documentId);
-
-    DocumentSyncRecord a =
-        new DocumentSyncRecordBuilder().buildEventBridge(documentId, DocumentSyncType.DELETE, true);
-
-    long ttl = new TimeToLiveBuilder().withDaysFromNow(1).build();
-    a.setTimeToLive(ttl);
-
-    saveDocumentSyncRecord(siteId, a);
 
     return deleted;
   }
@@ -549,19 +553,25 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           return match;
         }).toList();
 
-    deleteDocumentAttributes(siteId, documentAttributes);
+    deleteDocumentAttributes(siteId, documentId, documentAttributes);
 
     return documentAttributes;
   }
 
-  private void deleteDocumentAttributes(final String siteId,
+  private void deleteDocumentAttributes(final String siteId, final String documentId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
     List<Map<String, AttributeValue>> keys = documentAttributes.stream()
         .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
     this.dbService.deleteItems(keys);
 
-    this.versionsService.addRecords(siteId, documentAttributes);
+    if (this.interceptor != null) {
+      AttributeValueToMap toMap = new AttributeValueToMap();
+      documentAttributes.forEach(a -> {
+        this.interceptor.deleteDocumentAttribute(siteId, documentId, false,
+            toMap.apply(a.getAttributes(siteId)));
+      });
+    }
   }
 
   @Override
@@ -640,12 +650,21 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!isEmpty(path)) {
 
       try {
-        Map<String, String> attr = this.folderIndexProcessor.getIndex(siteId, path);
+        List<FolderIndexRecord> folderIndexRecords =
+            this.folderIndexProcessor.getFolderIndexRecords(siteId, path);
+        FolderIndexRecord folder = new FindFolderIndexTopLevelFolder().apply(folderIndexRecords);
+        FolderIndexRecord file = last(folderIndexRecords);
 
-        if (attr.containsKey("documentId")) {
-          deleteItem(Map.of(PK, AttributeValue.builder().s(attr.get(PK)).build(), SK,
-              AttributeValue.builder().s(attr.get(SK)).build()));
+        if (folder != null) {
+          new FolderPermissionValidate(dbService, ApiPermission.DELETE).apply(siteId,
+              folder.path());
         }
+
+        if (file != null && "file".equals(file.type())) {
+          DynamoDbKey key = new DynamoDbKey(file.pk(siteId), file.sk(), null, null, null, null);
+          dbService.deleteItem(key);
+        }
+
       } catch (IOException e) {
         // ignore folder doesn't exist
       }
@@ -1457,13 +1476,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     boolean exists = false;
     try {
-      Map<String, String> map = this.folderIndexProcessor.getIndex(siteId, path);
+      Map<String, Object> map = this.folderIndexProcessor.getIndex(siteId, path);
 
       if ("folder".equals(map.get("type"))) {
         GetItemResponse response =
             this.dbClient.getItem(GetItemRequest.builder().tableName(this.documentTableName)
-                .key(Map.of(PK, AttributeValue.builder().s(map.get(PK)).build(), SK,
-                    AttributeValue.builder().s(map.get(SK)).build()))
+                .key(Map.of(PK, AttributeValue.builder().s((String) map.get(PK)).build(), SK,
+                    AttributeValue.builder().s((String) map.get(SK)).build()))
                 .build());
         exists = !response.item().isEmpty();
       }
@@ -1742,8 +1761,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           new DocumentRestoreMoveAttributeFunction(siteId, documentId));
 
       if (this.interceptor != null) {
-        Map<String, Object> apply = new AttributeValueToMap().apply(attr);
-        this.interceptor.restoreSoftDeletedDocument(siteId, documentId, apply);
+        AttributeValueToMap toMap = new AttributeValueToMap();
+
+        list.forEach(i -> {
+          if (i.containsKey("SK") && i.get("SK").s().startsWith("softdelete#attr#")) {
+            this.interceptor.restoreSoftDeletedDocumentAttribute(siteId, documentId,
+                toMap.apply(i));
+          }
+        });
+
+        this.interceptor.restoreSoftDeletedDocument(siteId, documentId, toMap.apply(attr));
       }
 
       String path = attr.get("path").s();
@@ -1844,12 +1871,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       throws ValidationException {
 
     updatePathFromDeepLink(document);
-    validate(document);
 
     boolean documentExists = exists(siteId, document.getDocumentId());
 
     Map<String, AttributeValue> previous =
         documentExists ? loadPreviousDocument(keys) : Collections.emptyMap();
+
+    validate(siteId, document, previous);
 
     Map<String, AttributeValue> documentValues = new HashMap<>(previous);
     Map<String, AttributeValue> current =
@@ -1865,17 +1893,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     WriteRequestBuilder writeBuilder =
         new WriteRequestBuilder().appends(this.documentTableName, tagValues);
 
-    Date now = new Date();
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document.getDocumentId(), attributes,
         AttributeValidationType.FULL, options.getValidationAccess());
 
     boolean isPathChanged = isPathChanged(siteId, document, previous, documentValues, writeBuilder);
 
     writeBuilder.appends(this.documentTableName,
-        tx.getSaves().stream().map(a -> a.getAttributes(siteId)).toList());
-
-    addDocumentSyncRecord(writeBuilder, siteId, document.getDocumentId(), documentExists, now,
-        options);
+        tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
 
     if (documentExists) {
       writeBuilder.append(this.documentTableName, documentValues);
@@ -1888,9 +1912,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       String documentId = document.getDocumentId();
 
       // delete old composite keys
-      deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+      deleteDocumentAttributes(siteId, documentId,
+          (Collection<DocumentAttributeRecord>) tx.deletes());
 
-      saveDocumentInterceptor(siteId, documentId, current, previous);
+      saveDocumentInterceptor(siteId, documentId, current, previous, tx);
 
       if (isPathChanged) {
         String path = previous.containsKey("path") ? previous.get("path").s() : null;
@@ -1946,11 +1971,42 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private void saveDocumentInterceptor(final String siteId, final String documentId,
-      final Map<String, AttributeValue> current, final Map<String, AttributeValue> previous) {
+      final Map<String, AttributeValue> current, final Map<String, AttributeValue> previous,
+      final DynamodbRecordTx tx) {
+
     if (this.interceptor != null) {
-      AttributeValueToMap attributeValueToMap = new AttributeValueToMap();
-      this.interceptor.saveDocument(siteId, documentId, attributeValueToMap.apply(current),
-          attributeValueToMap.apply(previous));
+
+      AttributeValueToMap toMap = new AttributeValueToMap();
+
+      Map<String, Map<String, Object>> prevValues = new DocumentAttributeRecordToMap(true)
+          .apply((Collection<DocumentAttributeRecord>) tx.previousValues()).stream()
+          .collect(Collectors.toMap(a -> (String) a.get("key"), Function.identity()));
+
+      this.interceptor.saveDocument(siteId, documentId, toMap.apply(current),
+          toMap.apply(previous));
+
+      List<Map<String, Object>> attrs =
+          notNull(tx.saves()).stream().map(a -> toMap.apply(a.getAttributes(siteId))).toList();
+
+      Set<Object> saveKeys = attrs.stream().map(a -> a.get("key")).collect(Collectors.toSet());
+
+      attrs.forEach(attr -> {
+        Map<String, Object> prev =
+            prevValues.getOrDefault((String) attr.get("key"), Collections.emptyMap());
+
+        if (!prev.isEmpty()) {
+          prev.put("documentId", documentId);
+        }
+
+        this.interceptor.saveDocumentAttribute(siteId, documentId, attr, prev);
+      });
+
+      List<Map<String, Object>> deleteAttrs =
+          notNull(tx.deletes()).stream().map(a -> toMap.apply(a.getAttributes(siteId)))
+              .filter(a -> !saveKeys.contains(a.get("key"))).toList();
+
+      deleteAttrs.forEach(
+          attr -> this.interceptor.deleteDocumentAttribute(siteId, documentId, false, attr));
     }
   }
 
@@ -1959,6 +2015,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes,
       final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
+
+    validateDocumentPath(siteId, documentId);
 
     DynamodbRecordTx tx =
         getSaveDocumentAttributesTx(siteId, documentId, attributes, validation, validationAccess);
@@ -1972,18 +2030,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (tx != null) {
 
       List<Map<String, AttributeValue>> list =
-          tx.getSaves().stream().map(k -> k.getAttributes(siteId)).toList();
+          tx.saves().stream().map(k -> k.getAttributes(siteId)).toList();
 
       WriteRequestBuilder builder = new WriteRequestBuilder();
       builder.appends(this.documentTableName, list);
 
-      SaveDocumentOptions options = new SaveDocumentOptions();
-      addDocumentSyncRecord(builder, siteId, documentId, true, new Date(), options);
-
       if (builder.batchWriteItem(this.dbClient)) {
         // delete old composite keys
-        deleteDocumentAttributes(siteId, (Collection<DocumentAttributeRecord>) tx.getDeletes());
+        deleteDocumentAttributes(siteId, documentId,
+            (Collection<DocumentAttributeRecord>) tx.deletes());
       }
+
+      saveDocumentInterceptor(siteId, documentId, Collections.emptyMap(), Collections.emptyMap(),
+          tx);
     }
   }
 
@@ -2038,27 +2097,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             .error("No attributes found to be saved, only found ones to delete")));
       }
 
-      tx = new DynamodbRecordTx(toSave, toBeDeleted);
+      tx = new DynamodbRecordTx(toSave, toBeDeleted, previousAllAttributes);
 
     } else {
-      tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList());
+      tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList(),
+          Collections.emptyList());
     }
 
     return tx;
-  }
-
-  private void addDocumentSyncRecord(final WriteRequestBuilder writeBuilder, final String siteId,
-      final String documentId, final boolean documentExists, final Date now,
-      final SaveDocumentOptions options) {
-
-    if (!options.isSkipDocumentEventBridge()) {
-      DocumentSyncType syncType = DocumentSyncType.METADATA;
-      DocumentSyncRecord a =
-          new DocumentSyncRecordBuilder().buildEventBridge(documentId, syncType, documentExists);
-      a.setInsertedDate(now);
-
-      writeBuilder.appends(this.documentSyncsTable, List.of(a.getAttributes(siteId)));
-    }
   }
 
   private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeletedByAttributes(
@@ -2356,11 +2402,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
-
-    DocumentSyncRecord a = new DocumentSyncRecordBuilder().buildEventBridge(documentId,
-        DocumentSyncType.CONTENT, false);
-
-    saveDocumentSyncRecord(siteId, a);
   }
 
   private void saveDocumentSyncRecord(final String siteId, final DocumentSyncRecord a) {
@@ -2386,30 +2427,62 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Validate {@link DocumentItem}.
    *
+   * @param siteId {@link String}
    * @param document {@link DocumentItem}
+   * @param previous {@link Map}
    */
-  private void validate(final DocumentItem document) throws ValidationException {
+  private void validate(final String siteId, final DocumentItem document,
+      final Map<String, AttributeValue> previous) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
+    validateDeepLinkPath(document, errors);
+    validateDocumentPath(document, errors);
+
+    validateDimension("width", document.getWidth(), errors);
+    validateDimension("height", document.getHeight(), errors);
+
+    validateDocumentPath(siteId, document.getPath(), previous);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+
+  private void validateDocumentPath(final String siteId, final String documentId) {
+    Map<String, AttributeValue> key = keysDocument(siteId, documentId);
+    QueryConfig config = new QueryConfig().projectionExpression("#path")
+        .expressionAttributeNames(Map.of("#path", "path"));
+    Map<String, AttributeValue> attributes = this.dbService.get(config, key.get(PK), key.get(SK));
+    validateDocumentPath(siteId, DynamoDbTypes.toString(attributes.get("path")),
+        Collections.emptyMap());
+  }
+
+  private void validateDocumentPath(final String siteId, final String path,
+      final Map<String, AttributeValue> previous) {
+    List<String> paths = Stream.of(path, DynamoDbTypes.toString(previous.get("path")))
+        .map(new FindFolderParentByPath()).toList();
+    paths.forEach(
+        p -> folderIndexProcessor.validateFolderPermissions(siteId, p, ApiPermission.WRITE));
+  }
+
+
+  private static void validateDocumentPath(final DocumentItem document,
+      final Collection<ValidationError> errors) {
+    if (document.getPath() != null && document.getPath().contains("//")) {
+      errors.add(new ValidationErrorImpl().key("path")
+          .error("invalid Path contains multiple '//' characters"));
+    }
+  }
+
+  private void validateDeepLinkPath(final DocumentItem document,
+      final Collection<ValidationError> errors) {
     if (!isEmpty(document.getDeepLinkPath())) {
 
       if (!Strings.isUrl(document.getDeepLinkPath())) {
         errors.add(new ValidationErrorImpl().key("deepLinkPath")
             .error("DeepLinkPath '" + document.getDeepLinkPath() + "' is not a valid URL"));
       }
-    }
-
-    if (document.getPath() != null && document.getPath().contains("//")) {
-      errors.add(new ValidationErrorImpl().key("path")
-          .error("invalid Path contains multiple '//' characters"));
-    }
-
-    validateDimension("width", document.getWidth(), errors);
-    validateDimension("height", document.getHeight(), errors);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
     }
   }
 
@@ -2494,7 +2567,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       if (errors.isEmpty()) {
         switch (validation.getValidationType()) {
           case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
-              siteId, documentId, documentAttributes, attributeRecordMap, validationAccess);
+              siteId, documentAttributes, attributeRecordMap, validationAccess);
           case PARTIAL ->
             errors = this.attributeValidator.validatePartialAttribute(schemaAttributes, siteId,
                 documentAttributes, attributeRecordMap, validationAccess);

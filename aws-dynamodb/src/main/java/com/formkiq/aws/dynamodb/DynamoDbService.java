@@ -42,6 +42,16 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 public interface DynamoDbService {
 
   /**
+   * Aquire Lock.
+   *
+   * @param key {@link DynamoDbKey}
+   * @param aquireLockTimeoutInMs long
+   * @param lockExpirationInMs long
+   * @return boolean
+   */
+  boolean acquireLock(DynamoDbKey key, long aquireLockTimeoutInMs, long lockExpirationInMs);
+
+  /**
    * Query Between values.
    *
    * @param config {@link QueryConfig}
@@ -67,18 +77,18 @@ public interface DynamoDbService {
   /**
    * Delete DynamoDb Record.
    *
-   * @param key {@link Map}
-   * @return boolean
-   */
-  boolean deleteItem(Map<String, AttributeValue> key);
-
-  /**
-   * Delete DynamoDb Record.
-   *
    * @param key {@link DynamoDbKey}
    * @return boolean
    */
   boolean deleteItem(DynamoDbKey key);
+
+  /**
+   * Delete DynamoDb Record.
+   *
+   * @param key {@link Map}
+   * @return boolean
+   */
+  boolean deleteItem(Map<String, AttributeValue> key);
 
   /**
    * Delete Items.
@@ -125,14 +135,6 @@ public interface DynamoDbService {
   boolean exists(AttributeValue pk, AttributeValue sk);
 
   /**
-   * Whether Database Record Exist.
-   *
-   * @param key {@link DynamoDbKey}
-   * @return boolean
-   */
-  boolean exists(DynamoDbKey key);
-
-  /**
    * Returns {@link DynamoDbKey} that exist.
    *
    * @param key {@link DynamoDbKey}
@@ -141,12 +143,29 @@ public interface DynamoDbService {
   Collection<DynamoDbKey> exists(Collection<DynamoDbKey> key);
 
   /**
+   * Whether Database Record Exist.
+   *
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean exists(DynamoDbKey key);
+
+  /**
    * Whether the {@link QueryRequest} returns a result.
    *
    * @param query {@link QueryRequest}
    * @return boolean
    */
   boolean exists(QueryRequest query);
+
+  /**
+   * Whether Database Record Exist.
+   *
+   * @param tableName {@link String}
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean exists(String tableName, DynamoDbKey key);
 
   /**
    * Gets DynamoDB Record.
@@ -176,12 +195,21 @@ public interface DynamoDbService {
   Map<String, AttributeValue> get(QueryConfig config, AttributeValue pk, AttributeValue sk);
 
   /**
-   * Get Single Result from a Query.
+   * Gets DynamoDB Records.
    *
-   * @param query {@link QueryRequest}
+   * @param tableName {@link String}
+   * @param key {@link DynamoDbKey}
+   * @return {@link Map}
+   */
+  Collection<Map<String, AttributeValue>> get(String tableName, Collection<DynamoDbKey> key);
+
+  /**
+   * Get Lock.
+   *
+   * @param key {@link DynamoDbKey}
    * @return Map
    */
-  Map<String, AttributeValue> getByQuery(QueryRequest query);
+  Map<String, AttributeValue> getAquiredLock(DynamoDbKey key);
 
   /**
    * Batch Get a number of Keys.
@@ -192,6 +220,14 @@ public interface DynamoDbService {
    */
   List<Map<String, AttributeValue>> getBatch(BatchGetConfig config,
       List<Map<String, AttributeValue>> keys);
+
+  /**
+   * Get Single Result from a Query.
+   *
+   * @param query {@link QueryRequest}
+   * @return Map
+   */
+  Map<String, AttributeValue> getByQuery(QueryRequest query);
 
   /**
    * Get Next Number.
@@ -218,6 +254,22 @@ public interface DynamoDbService {
   boolean moveItems(Collection<Map<String, AttributeValue>> attrs, MoveAttributeFunction func);
 
   /**
+   * Put {@link Collection} {@link AttributeValue} in Transaction.
+   *
+   * @param attributes {@link Collection}
+   */
+  void putInTransaction(Collection<Map<String, AttributeValue>> attributes);
+
+  /**
+   * Put in transaction.
+   *
+   * @param writeRequest {@link WriteRequestBuilder}
+   * @deprecated use oth putInTransactio method.
+   */
+  @Deprecated
+  void putInTransaction(WriteRequestBuilder writeRequest);
+
+  /**
    * Put DynamoDb Record.
    *
    * @param attr {@link Map} {@link AttributeValue}
@@ -238,6 +290,15 @@ public interface DynamoDbService {
    * @param attrs {@link List} {@link Map} {@link AttributeValue}
    */
   void putItems(List<Map<String, AttributeValue>> attrs);
+
+
+  /**
+   * Put DynamoDb Records.
+   *
+   * @param tableName {@link String}
+   * @param attrs {@link List} {@link Map} {@link AttributeValue}
+   */
+  void putItems(String tableName, List<Map<String, AttributeValue>> attrs);
 
   /**
    * Query DynamoDB Records.
@@ -278,7 +339,7 @@ public interface DynamoDbService {
 
   /**
    * Query DynamoDB records.
-   *
+   * 
    * @param q {@link QueryRequest}
    * @return QueryResponse
    */
@@ -307,6 +368,20 @@ public interface DynamoDbService {
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
+   * Query DynamoDB Records.
+   *
+   * @param tableName {@link String}
+   * @param config {@link QueryConfig}
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param exclusiveStartKey {@link Map}
+   * @param limit int
+   * @return {@link QueryResponse}
+   */
+  QueryResponse queryBeginsWith(String tableName, QueryConfig config, AttributeValue pk,
+      AttributeValue sk, Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
    * Query DynamoDB Index for Records.
    *
    * @param indexName {@link String}
@@ -317,6 +392,14 @@ public interface DynamoDbService {
    */
   QueryResponse queryIndex(String indexName, AttributeValue pk,
       Map<String, AttributeValue> exclusiveStartKey, int limit);
+
+  /**
+   * Release Lock.
+   *
+   * @param key {@link DynamoDbKey}
+   * @return boolean
+   */
+  boolean releaseLock(DynamoDbKey key);
 
   /**
    * Update DynamoDB Record.
@@ -338,17 +421,6 @@ public interface DynamoDbService {
   UpdateItemResponse updateItem(UpdateItemRequest request);
 
   /**
-   * Update DynamoDB Record.
-   *
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
-   * @param updateValues {@link Map}
-   * @return {@link Map}
-   */
-  Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
-      Map<String, AttributeValue> updateValues);
-
-  /**
    * Update DynamoDB Records.
    *
    * @param tableName {@link String}
@@ -359,44 +431,13 @@ public interface DynamoDbService {
       Map<String, AttributeValueUpdate> updateValues);
 
   /**
-   * Aquire Lock.
+   * Update DynamoDB Record.
    *
-   * @param key {@link DynamoDbKey}
-   * @param aquireLockTimeoutInMs long
-   * @param lockExpirationInMs long
-   * @return boolean
+   * @param pk {@link AttributeValue}
+   * @param sk {@link AttributeValue}
+   * @param updateValues {@link Map}
+   * @return {@link Map}
    */
-  boolean acquireLock(DynamoDbKey key, long aquireLockTimeoutInMs, long lockExpirationInMs);
-
-  /**
-   * Release Lock.
-   *
-   * @param key {@link DynamoDbKey}
-   * @return boolean
-   */
-  boolean releaseLock(DynamoDbKey key);
-
-  /**
-   * Put in transaction.
-   *
-   * @param writeRequest {@link WriteRequestBuilder}
-   * @deprecated use oth putInTransactio method.
-   */
-  @Deprecated
-  void putInTransaction(WriteRequestBuilder writeRequest);
-
-  /**
-   * Put {@link Collection} {@link AttributeValue} in Transaction.
-   *
-   * @param attributes {@link Collection}
-   */
-  void putInTransaction(Collection<Map<String, AttributeValue>> attributes);
-
-  /**
-   * Get Lock.
-   *
-   * @param key {@link DynamoDbKey}
-   * @return Map
-   */
-  Map<String, AttributeValue> getAquiredLock(DynamoDbKey key);
+  Map<String, AttributeValue> updateValues(AttributeValue pk, AttributeValue sk,
+      Map<String, AttributeValue> updateValues);
 }

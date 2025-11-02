@@ -2,10 +2,5 @@
 description = "Http"
 
 dependencies {
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.0'
-}
-
-test {
-  failFast = true
-  useJUnitPlatform() 
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 }

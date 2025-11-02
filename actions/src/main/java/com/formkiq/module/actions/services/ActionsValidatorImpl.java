@@ -24,25 +24,15 @@
 package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.model.MappingRecord;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.Queue;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 
@@ -65,121 +55,17 @@ public class ActionsValidatorImpl implements ActionsValidator {
     this.db = dbService;
   }
 
-  private Map<String, String> getParameters(final Action action) {
+  private Map<String, Object> getParameters(final Action action) {
     return action.parameters() != null ? action.parameters() : Collections.emptyMap();
   }
 
-  private boolean hasValue(final Map<String, String> parameters, final String key) {
-    return parameters != null && parameters.containsKey(key)
-        && !isEmpty(parameters.get(key).trim());
-  }
-
-  /**
-   * Validate Document Tagging.
-   * 
-   * @param chatGptApiKey {@link String}
-   * @param parameters {@link Map}
-   * @param errors {@link Collections} {@link ValidationError}
-   */
-  private void validateDocumentTagging(final String chatGptApiKey,
-      final Map<String, String> parameters, final Collection<ValidationError> errors) {
-
-    if (!parameters.containsKey("tags")) {
-      errors.add(new ValidationErrorImpl().key("parameters.tags")
-          .error("action 'tags' parameter is required"));
-    }
-
-    if (!parameters.containsKey("engine")) {
-      errors.add(new ValidationErrorImpl().key("parameters.engine")
-          .error("action 'engine' parameter is required"));
-    } else if (!"chatgpt".equals(parameters.getOrDefault("engine", ""))) {
-      errors.add(
-          new ValidationErrorImpl().key("parameters.engine").error("invalid 'engine' parameter"));
-    } else if (Strings.isEmpty(chatGptApiKey)) {
-      errors.add(new ValidationErrorImpl().error("chatgpt 'api key' is not configured"));
-    }
-  }
-
-  /**
-   * Validate Notification Email.
-   * 
-   * @param notificationEmail {@link String}
-   * @param action {@link Action}
-   * @param errors {@link Collection} {@link ValidationError}
-   */
-  private void validateNotificationEmail(final String notificationEmail, final Action action,
+  private void validateActionParameters(final String siteId, final Action action,
+      final String chatGptApiKey, final String notificationsEmail,
       final Collection<ValidationError> errors) {
 
-    if (isEmpty(notificationEmail)) {
-      errors.add(new ValidationErrorImpl().key("parameters.notificationEmail")
-          .error("notificationEmail is not configured"));
-    } else {
-
-      Map<String, String> parameters = getParameters(action);
-
-      for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
-          PARAMETER_NOTIFICATION_SUBJECT)) {
-        if (!hasValue(parameters, parameter)) {
-          errors.add(new ValidationErrorImpl().key("parameters." + parameter)
-              .error("action '" + parameter + "' parameter is required"));
-        }
-      }
-
-      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
-          && !hasValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
-            .error("action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '"
-                + PARAMETER_NOTIFICATION_TO_BCC + "' is required"));
-      }
-
-      if (!hasValue(parameters, PARAMETER_NOTIFICATION_TEXT)
-          && !hasValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
-            .error("action '" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
-                + "' is required"));
-      }
-    }
-  }
-
-  private void validateQueue(final String siteId, final Action action,
-      final Collection<ValidationError> errors) {
-
-    if (isEmpty(action.queueId())) {
-      errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' is required"));
-    } else {
-      Queue q = new Queue().documentId(action.queueId());
-      if (!this.db.exists(q.fromS(q.pk(siteId)), q.fromS(q.sk()))) {
-        errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' does not exist"));
-      }
-    }
-  }
-
-  private void validateIdp(final String siteId, final Action action,
-      final Collection<ValidationError> errors) {
-
-    Map<String, String> parameters = getParameters(action);
-
-    if (!hasValue(parameters, "mappingId")) {
-      errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
-
-    } else {
-      String mappingId = parameters.get("mappingId");
-      MappingRecord m = new MappingRecord().setDocumentId(mappingId);
-
-      if (!this.db.exists(m.fromS(m.pk(siteId)), m.fromS(m.sk()))) {
-        errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' does not exist"));
-      }
-    }
-  }
-
-  private void validateEventBridge(final Action action, final Collection<ValidationError> errors) {
-
-    Map<String, String> parameters = getParameters(action);
-
-    if (!hasValue(parameters, "eventBusName")) {
-      errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
-          .error("'eventBusName' parameter is required"));
-    }
+    Map<String, Object> parameters = getParameters(action);
+    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail,
+        errors);
   }
 
   @Override
@@ -217,26 +103,5 @@ public class ActionsValidatorImpl implements ActionsValidator {
     List<Collection<ValidationError>> errors = new ArrayList<>();
     actions.forEach(a -> errors.add(validation(siteId, a, chatGptApiKey, notificationsEmail)));
     return errors;
-  }
-
-  private void validateActionParameters(final String siteId, final Action action,
-      final String chatGptApiKey, final String notificationsEmail,
-      final Collection<ValidationError> errors) {
-
-    Map<String, String> parameters = getParameters(action);
-    if (ActionType.WEBHOOK.equals(action.type()) && !parameters.containsKey("url")) {
-      errors.add(new ValidationErrorImpl().key("parameters.url")
-          .error("action 'url' parameter is required"));
-    } else if (ActionType.DOCUMENTTAGGING.equals(action.type())) {
-      validateDocumentTagging(chatGptApiKey, parameters, errors);
-    } else if (ActionType.NOTIFICATION.equals(action.type())) {
-      validateNotificationEmail(notificationsEmail, action, errors);
-    } else if (ActionType.QUEUE.equals(action.type())) {
-      validateQueue(siteId, action, errors);
-    } else if (ActionType.IDP.equals(action.type())) {
-      validateIdp(siteId, action, errors);
-    } else if (ActionType.EVENTBRIDGE.equals(action.type())) {
-      validateEventBridge(action, errors);
-    }
   }
 }

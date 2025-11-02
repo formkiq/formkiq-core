@@ -48,32 +48,21 @@ public class SaveDocumentOptions {
   }
 
   /**
-   * Whether to skip document event bridge.
-   * 
-   * @return boolean
-   */
-  public boolean isSkipDocumentEventBridge() {
-    return this.skipDocumentEventBridge;
-  }
-
-  /**
-   * Set Skip Document Event Bridge Event.
-   * 
-   * @param skip boolean
-   * @return SaveDocumentOptions
-   */
-  public SaveDocumentOptions setSkipDocumentEventBridge(final boolean skip) {
-    this.skipDocumentEventBridge = skip;
-    return this;
-  }
-
-  /**
    * Is Validation Access.
    * 
    * @return boolean
    */
   public AttributeValidationAccess getValidationAccess() {
     return this.validationAccess;
+  }
+
+  /**
+   * Whether to skip document event bridge.
+   * 
+   * @return boolean
+   */
+  public boolean isSkipDocumentEventBridge() {
+    return this.skipDocumentEventBridge;
   }
 
   /**
@@ -93,6 +82,17 @@ public class SaveDocumentOptions {
    */
   public SaveDocumentOptions saveDocumentDate(final boolean save) {
     this.saveDocumentDate = save;
+    return this;
+  }
+
+  /**
+   * Set Skip Document Event Bridge Event.
+   * 
+   * @param skip boolean
+   * @return SaveDocumentOptions
+   */
+  public SaveDocumentOptions setSkipDocumentEventBridge(final boolean skip) {
+    this.skipDocumentEventBridge = skip;
     return this;
   }
 

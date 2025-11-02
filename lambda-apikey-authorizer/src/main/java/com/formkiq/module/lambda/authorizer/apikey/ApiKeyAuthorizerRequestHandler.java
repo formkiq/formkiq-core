@@ -23,22 +23,19 @@
  */
 package com.formkiq.module.lambda.authorizer.apikey;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2CustomAuthorizerEvent;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
@@ -46,19 +43,19 @@ import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.utils.IoUtils;
 
 /** {@link RequestHandler} for handling DynamoDb to Tesseract OCR Processor. */
 @Reflectable
-public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
+@ReflectableClass(className = APIGatewayV2CustomAuthorizerEvent.class)
+@ReflectableClass(className = APIGatewayV2CustomAuthorizerEvent.RequestContext.class)
+@ReflectableClass(className = APIGatewayV2CustomAuthorizerEvent.Http.class)
+public class ApiKeyAuthorizerRequestHandler
+    implements RequestHandler<APIGatewayV2CustomAuthorizerEvent, Map<String, Object>> {
 
   /** Max Api Key Length. */
   private static final int MAX_APIKEY_LENGTH = 100;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache awsServices;
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
   static {
     if (System.getenv().containsKey("AWS_REGION")) {
       awsServices = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
@@ -66,6 +63,9 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
           .addService(new DynamoDbAwsServiceRegistry()).build();
     }
   }
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
   /**
    * constructor.
@@ -86,24 +86,23 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     awsServices.register(ApiKeysService.class, new ApiKeysServiceExtension());
   }
 
-  private String getIdentitySource(final Map<String, Object> map) {
-    List<String> identitySource = (List<String>) map.get("identitySource");
+  private String getIdentitySource(final APIGatewayV2CustomAuthorizerEvent input) {
+    List<String> identitySource = input.getIdentitySource();
     return !identitySource.isEmpty() ? identitySource.get(0) : null;
   }
 
   @Override
-  public void handleRequest(final InputStream input, final OutputStream output,
-      final Context context) throws IOException {
+  public Map<String, Object> handleRequest(final APIGatewayV2CustomAuthorizerEvent input,
+      final Context context) {
 
     Logger logger = awsServices.getLogger();
     ApiKeysService apiKeys = awsServices.getExtension(ApiKeysService.class);
 
-    String json = IoUtils.toUtf8String(input);
-    logger.debug(json);
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      logger.debug(gson.toJson(input));
+    }
 
-    Map<String, Object> map = this.gson.fromJson(json, Map.class);
-
-    String apiKey = getIdentitySource(map);
+    String apiKey = getIdentitySource(input);
     apiKey = apiKey != null && apiKey.length() < MAX_APIKEY_LENGTH ? apiKey : null;
 
     ApiKey api = apiKeys.get(apiKey, false);
@@ -114,36 +113,45 @@ public class ApiKeyAuthorizerRequestHandler implements RequestStreamHandler {
     boolean isAuthorized = apiKey != null && apiKey.equals(api.apiKey());
 
     String apiKeyName = api.name();
-    String group = isAuthorized ? "[" + siteId + "]" : "[]";
+    String group = isAuthorized ? "[" + siteId + " API_KEY]" : "[API_KEY]";
     String permissions =
         api.permissions().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
 
-    log(logger, map, isAuthorized, group);
+    log(logger, input, isAuthorized, group);
 
-    Map<String, Object> response =
-        Map.of("isAuthorized", isAuthorized, "context", Map.of("apiKeyClaims", Map.of("permissions",
-            permissions, "cognito:groups", group, "cognito:username", apiKeyName)));
-
-    OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
-    writer.write(this.gson.toJson(response));
-    writer.close();
+    return Map.of("isAuthorized", isAuthorized, "context", Map.of("apiKeyClaims", Map
+        .of("permissions", permissions, "cognito:groups", group, "cognito:username", apiKeyName)));
   }
 
-  private void log(final Logger logger, final Map<String, Object> map, final boolean isAuthorized,
-      final String group) {
+  private void log(final Logger logger, final APIGatewayV2CustomAuthorizerEvent input,
+      final boolean isAuthorized, final String group) {
 
-    Map<String, Object> requestContext =
-        map.containsKey("requestContext") ? (Map<String, Object>) map.get("requestContext")
-            : Collections.emptyMap();
-    Map<String, String> http =
-        map.containsKey("http") ? (Map<String, String>) map.get("http") : Collections.emptyMap();
+    String requestId = "";
+    String sourceIp = "";
+    String time = "";
+    String method = "";
+    String routeKey = "";
+    String protocol = "";
+
+    APIGatewayV2CustomAuthorizerEvent.RequestContext requestContent = input.getRequestContext();
+    if (requestContent != null) {
+      requestId = requestContent.getRequestId();
+      time = requestContent.getTime().toString();
+      routeKey = requestContent.getRouteKey();
+
+      APIGatewayV2CustomAuthorizerEvent.Http http = requestContent.getHttp();
+      if (http != null) {
+        sourceIp = http.getSourceIp();
+        method = http.getMethod();
+        protocol = http.getProtocol();
+      }
+    }
 
     String s = String.format(
         "{\"requestId\": \"%s\",\"ip\": \"%s\",\"requestTime\": \"%s\",\"httpMethod\": \"%s\","
             + "\"routeKey\": \"%s\","
             + "\"protocol\": \"%s\",\"siteId\":\"%s\",\"isAuthorized\":\"%s\"}",
-        map.get("requestId"), http.get("sourceIp"), requestContext.get("time"), http.get("method"),
-        map.get("routeKey"), requestContext.get("protocol"), group, isAuthorized);
+        requestId, sourceIp, time, method, routeKey, protocol, group, isAuthorized);
 
     logger.info(s);
   }

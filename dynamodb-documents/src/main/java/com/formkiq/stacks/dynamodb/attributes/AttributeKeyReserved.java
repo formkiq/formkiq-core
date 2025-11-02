@@ -38,17 +38,18 @@ public enum AttributeKeyReserved {
   MALWARE_SCAN_RESULT("MalwareScanResult"),
   /** Relationships. */
   RELATIONSHIPS("Relationships"),
+  /** Checkout. */
+  CHECKOUT("Checkout"),
+  /** CheckoutForLegalHold. */
+  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold"),
+  /** Checkout. */
+  LOCKED_BY("LockedBy"),
+  /** Checkout. */
+  LOCKED_DATE("LockedDate"),
   /** Esignature Docusign Envelope id. */
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus");
-
-  /** Key Name. */
-  private final String key;
-
-  AttributeKeyReserved(final String reservedKey) {
-    this.key = reservedKey;
-  }
 
   /**
    * Find {@link AttributeKeyReserved}.
@@ -60,6 +61,13 @@ public enum AttributeKeyReserved {
     Optional<AttributeKeyReserved> a =
         Arrays.stream(values()).filter(v -> v.getKey().equalsIgnoreCase(key)).findFirst();
     return a.orElse(null);
+  }
+
+  /** Key Name. */
+  private final String key;
+
+  AttributeKeyReserved(final String reservedKey) {
+    this.key = reservedKey;
   }
 
   /**

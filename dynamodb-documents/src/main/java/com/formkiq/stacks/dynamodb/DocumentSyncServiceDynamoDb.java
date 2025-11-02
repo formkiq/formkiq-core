@@ -156,8 +156,6 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
               .error("unsupport type '" + type + "' for service '" + service + "'"));
         }
       }
-      case EVENTBRIDGE ->
-        saveSync(siteId, documentId, service, DocumentSyncStatus.PENDING, type, true);
       default -> errors
           .add(new ValidationErrorImpl().key("service").error("invalid service '" + service + "'"));
     }

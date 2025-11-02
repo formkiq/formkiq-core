@@ -64,26 +64,6 @@ public class ApiHttpRequest {
   }
 
   /**
-   * Get Headers {@link Map}.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, String> headers() {
-    return this.headers;
-  }
-
-  /**
-   * Set Headers.
-   *
-   * @param httpHeaders {@link Map}
-   * @return ApiHttpRequest
-   */
-  public ApiHttpRequest headers(final Map<String, String> httpHeaders) {
-    this.headers = httpHeaders;
-    return this;
-  }
-
-  /**
    * Get Http Body.
    * 
    * @return {@link String}
@@ -103,6 +83,12 @@ public class ApiHttpRequest {
     return this;
   }
 
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> getClaims() {
+    Map<String, Object> authorizer = (Map<String, Object>) this.requestContext.get("authorizer");
+    return (Map<String, Object>) authorizer.get("claims");
+  }
+
   /**
    * Set Http Group.
    *
@@ -114,10 +100,24 @@ public class ApiHttpRequest {
     return this;
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> getClaims() {
-    Map<String, Object> authorizer = (Map<String, Object>) this.requestContext.get("authorizer");
-    return (Map<String, Object>) authorizer.get("claims");
+  /**
+   * Get Headers {@link Map}.
+   * 
+   * @return {@link Map}
+   */
+  public Map<String, String> headers() {
+    return this.headers;
+  }
+
+  /**
+   * Set Headers.
+   *
+   * @param httpHeaders {@link Map}
+   * @return ApiHttpRequest
+   */
+  public ApiHttpRequest headers(final Map<String, String> httpHeaders) {
+    this.headers = httpHeaders;
+    return this;
   }
 
   /**
@@ -200,6 +200,11 @@ public class ApiHttpRequest {
     return this;
   }
 
+  public ApiHttpRequest permissions(final Map<String, List<String>> permissions) {
+    getClaims().put("permissionsMap", permissions);
+    return this;
+  }
+
   /**
    * Get Query Parameters.
    * 
@@ -257,11 +262,6 @@ public class ApiHttpRequest {
    */
   public ApiHttpRequest user(final String username) {
     getClaims().put("cognito:username", username);
-    return this;
-  }
-
-  public ApiHttpRequest permissions(final Map<String, List<String>> permissions) {
-    getClaims().put("permissionsMap", permissions);
     return this;
   }
 }

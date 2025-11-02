@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
-import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.EVENTBRIDGE;
 import static com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.FORMKIQ_CLI;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.stacks.lambda.s3.StagingS3Create.FORMKIQ_B64_EXT;
@@ -75,6 +74,7 @@ import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,7 +122,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
@@ -131,8 +131,8 @@ import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestUp
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -220,6 +220,9 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link StagingS3Create}. */
   private static StagingS3Create handler;
 
+  /** {@link LoggerRecorder}. */
+  private static LoggerRecorder logger;
+
   /**
    * After Class.
    *
@@ -292,22 +295,6 @@ public class StagingS3CreateTest implements DbKeys {
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build().setLogger(new LoggerRecorder());
     logger = (LoggerRecorder) awsServices.getLogger();
-  }
-
-  private static Map<String, String> getEnvironment() {
-    Map<String, String> env = new HashMap<>();
-    env.put("AWS_REGION", Region.US_EAST_1.id());
-    env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
-    env.put("LOG_LEVEL", "TRACE");
-    env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
-    env.put("SNS_CREATE_TOPIC", snsCreateTopic);
-    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
-    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
-    env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
-    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    return env;
   }
 
   /**
@@ -383,8 +370,21 @@ public class StagingS3CreateTest implements DbKeys {
     }
   }
 
-  /** {@link LoggerRecorder}. */
-  private static LoggerRecorder logger;
+  private static Map<String, String> getEnvironment() {
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", Region.US_EAST_1.id());
+    env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
+    env.put("LOG_LEVEL", "TRACE");
+    env.put("SNS_DELETE_TOPIC", snsDeleteTopic);
+    env.put("SNS_CREATE_TOPIC", snsCreateTopic);
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    return env;
+  }
 
   /**
    * Assert {@link DocumentTag} Equals.
@@ -525,6 +525,18 @@ public class StagingS3CreateTest implements DbKeys {
     return tags.stream().filter(s -> s.getKey().equals(key)).findFirst();
   }
 
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsQueueUrl);
+    }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
+    return response;
+  }
+
   /**
    * Handle {@link StagingS3Create} request.
    *
@@ -618,6 +630,43 @@ public class StagingS3CreateTest implements DbKeys {
         }
       }
     }
+  }
+
+  /**
+   * Add Webhook.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testAddWebhook01() throws Exception {
+    // given
+    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event5.json");
+
+    String key = "92779fb5-ee0e-4c72-85e9-84ad11a8b73c.fkb64";
+    String content = """
+        {
+            "path": "webhooks/20292ffc-9d4f-46e8-b65d-aaf32501e384",
+            "TimeToLive": "",
+            "documentId": "92779fb5-ee0e-4c72-85e9-84ad11a8b73c",
+            "contentType": "text/plain",
+            "userId": "webhook/paypal",
+            "content": "{\\"name\\":\\"John Smith\\"}"
+        }""";
+
+    s3.putObject(STAGING_BUCKET, key, content.getBytes(UTF_8), null, Map.of());
+
+    // when
+    handleRequest(map);
+
+    // then
+    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
+    assertEquals(0, staging.size());
+
+    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
+    assertEquals(1, docs.size());
+
+    assertNotNull(service.findDocument(null, "92779fb5-ee0e-4c72-85e9-84ad11a8b73c"));
   }
 
   /**
@@ -750,40 +799,42 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Add Webhook.
+   * Tests document event callback.
    *
    * @throws Exception Exception
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  void testAddWebhook01() throws Exception {
+  void testDocumentEventCallback() throws Exception {
     // given
-    Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event5.json");
+    for (String siteId : List.of(DEFAULT_SITE_ID, ID.uuid())) {
 
-    String key = "92779fb5-ee0e-4c72-85e9-84ad11a8b73c.fkb64";
-    String content = """
-        {
-            "path": "webhooks/20292ffc-9d4f-46e8-b65d-aaf32501e384",
-            "TimeToLive": "",
-            "documentId": "92779fb5-ee0e-4c72-85e9-84ad11a8b73c",
-            "contentType": "text/plain",
-            "userId": "webhook/paypal",
-            "content": "{\\"name\\":\\"John Smith\\"}"
-        }""";
+      String queueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+      String sqsQueueArn = sqsService.getQueueArn(queueUrl);
+      snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
 
-    s3.putObject(STAGING_BUCKET, key, content.getBytes(UTF_8), null, Map.of());
+      String documentId = ID.uuid();
+      String s3Key = "tempfiles/eventcallback/" + siteId + "/" + documentId;
+      URL url = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1), null,
+          null, Optional.empty(), Map.of());
+      new HttpServiceJdk11().put(url.toString(), Optional.empty(), Optional.empty(), "");
 
-    // when
-    handleRequest(map);
+      // when
+      Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json",
+          "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json", s3Key);
+      this.handleRequest(map);
 
-    // then
-    List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
-    assertEquals(0, staging.size());
-
-    List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
-    assertEquals(1, docs.size());
-
-    assertNotNull(service.findDocument(null, "92779fb5-ee0e-4c72-85e9-84ad11a8b73c"));
+      // then
+      assertTrue(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
+      ReceiveMessageResponse response = getReceiveMessageResponse(queueUrl);
+      assertEquals(1, response.messages().size());
+      Message msg = response.messages().get(0);
+      Map<String, Object> json = GSON.fromJson(msg.body(), Map.class);
+      json = GSON.fromJson((String) json.get("Message"), Map.class);
+      assertEquals(siteId, json.get("siteId"));
+      assertEquals(documentId, json.get("documentId"));
+      assertEquals("actions", json.get("type"));
+    }
   }
 
   /**
@@ -823,57 +874,6 @@ public class StagingS3CreateTest implements DbKeys {
     try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey)) {
       DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
     }
-  }
-
-  /**
-   * Tests document event callback.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  void testDocumentEventCallback() throws Exception {
-    // given
-    for (String siteId : List.of(DEFAULT_SITE_ID, ID.uuid())) {
-
-      String queueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
-      String sqsQueueArn = sqsService.getQueueArn(queueUrl);
-      snsService.subscribe(snsDocumentEvent, "sqs", sqsQueueArn);
-
-      String documentId = ID.uuid();
-      String s3Key = "tempfiles/eventcallback/" + siteId + "/" + documentId;
-      URL url = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1), null,
-          null, Optional.empty(), Map.of());
-      new HttpServiceJdk11().put(url.toString(), Optional.empty(), Optional.empty(), "");
-
-      // when
-      Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json",
-          "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json", s3Key);
-      this.handleRequest(map);
-
-      // then
-      assertTrue(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
-      ReceiveMessageResponse response = getReceiveMessageResponse(queueUrl);
-      assertEquals(1, response.messages().size());
-      Message msg = response.messages().get(0);
-      Map<String, Object> json = GSON.fromJson(msg.body(), Map.class);
-      json = GSON.fromJson((String) json.get("Message"), Map.class);
-      assertEquals(siteId, json.get("siteId"));
-      assertEquals(documentId, json.get("documentId"));
-      assertEquals("actions", json.get("type"));
-    }
-  }
-
-  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
-      throws InterruptedException {
-    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
-    while (response.messages().isEmpty()) {
-      TimeUnit.SECONDS.sleep(1);
-      response = sqsService.receiveMessages(sqsQueueUrl);
-    }
-
-    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
-    return response;
   }
 
   /**
@@ -1355,9 +1355,9 @@ public class StagingS3CreateTest implements DbKeys {
       }
 
       // then
-      Map<String, String> index = folderIndexProcesor.getIndex(siteId, path);
+      Map<String, Object> index = folderIndexProcesor.getIndex(siteId, path);
 
-      String documentId = index.get("documentId");
+      String documentId = (String) index.get("documentId");
       DocumentItem item = service.findDocument(siteId, documentId);
       assertNull(item.getContentLength());
       assertEquals("text/plain", item.getContentType());
@@ -1402,8 +1402,8 @@ public class StagingS3CreateTest implements DbKeys {
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
 
-      actionsService.saveAction(siteId, documentId,
-          new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE), 0);
+      actionsService.saveNewActions(siteId, documentId, List
+          .of(new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE)));
 
       TimeUnit.SECONDS.sleep(1);
 
@@ -1439,8 +1439,11 @@ public class StagingS3CreateTest implements DbKeys {
           "1234", "type", "USERDEFINED", "userId", userId));
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
-      assertEquals(1, actions.size());
-      assertEquals(ActionStatus.PENDING, actions.get(0).status());
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionType.FULLTEXT, actions.get(0).type());
+      assertEquals(ActionStatus.PENDING, actions.get(1).status());
+      assertEquals(ActionType.FULLTEXT, actions.get(1).type());
       assertPublishedSnsMessage();
     }
   }
@@ -1615,21 +1618,6 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Test invalid request.
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  void testInvalidRequest() {
-    // given
-    Map<String, Object> requestMap = new HashMap<>();
-
-    // when
-    handleRequest(requestMap);
-
-    // then
-  }
-
-  /**
    * Test Update .fkb64 file attributes.
    *
    * @throws IOException IOException
@@ -1641,8 +1629,8 @@ public class StagingS3CreateTest implements DbKeys {
     final int limit = 10;
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      attributeService.addAttribute(siteId, "security", AttributeDataType.STRING,
-          AttributeType.STANDARD);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "security",
+          AttributeDataType.STRING, AttributeType.STANDARD);
 
       String documentId = ID.uuid();
       String json =
@@ -1673,6 +1661,21 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(r.getBooleanValue());
       assertNull(r.getNumberValue());
     }
+  }
+
+  /**
+   * Test invalid request.
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testInvalidRequest() {
+    // given
+    Map<String, Object> requestMap = new HashMap<>();
+
+    // when
+    handleRequest(requestMap);
+
+    // then
   }
 
   /**
@@ -1840,7 +1843,7 @@ public class StagingS3CreateTest implements DbKeys {
     PaginationResults<DocumentSyncRecord> syncs =
         syncService.getSyncs(siteId, documentId, null, MAX_RESULTS);
 
-    final int expected = 4;
+    final int expected = 2;
     List<DocumentSyncRecord> results = syncs.getResults();
     assertEquals(expected, results.size());
 
@@ -1852,25 +1855,11 @@ public class StagingS3CreateTest implements DbKeys {
     assertNotNull(results.get(i++).getSyncDate());
 
     assertEquals(documentId, results.get(i).getDocumentId());
-    assertEquals(EVENTBRIDGE, results.get(i).getService());
-    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
-    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
-    assertEquals("updated Document Metadata", results.get(i).getMessage());
-    assertNull(results.get(i++).getSyncDate());
-
-    assertEquals(documentId, results.get(i).getDocumentId());
     assertEquals(FORMKIQ_CLI, results.get(i).getService());
     assertEquals(DocumentSyncStatus.COMPLETE, results.get(i).getStatus());
     assertEquals(DocumentSyncType.CONTENT, results.get(i).getType());
     assertEquals("added Document Content", results.get(i).getMessage());
-    assertNotNull(results.get(i++).getSyncDate());
-
-    assertEquals(documentId, results.get(i).getDocumentId());
-    assertEquals(EVENTBRIDGE, results.get(i).getService());
-    assertEquals(DocumentSyncStatus.PENDING, results.get(i).getStatus());
-    assertEquals(DocumentSyncType.METADATA, results.get(i).getType());
-    assertEquals("added Document Metadata", results.get(i).getMessage());
-    assertNull(results.get(i).getSyncDate());
+    assertNotNull(results.get(i).getSyncDate());
   }
 
   private void verifyS3Metadata(final String siteId, final DocumentItem item) {

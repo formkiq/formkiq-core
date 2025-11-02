@@ -3,7 +3,7 @@
 
 <import-control pkg="com.formkiq">
 	<subpackage name="server">
-		
+
 		<allow pkg="io.netty.bootstrap" />
 		<allow pkg="io.netty.buffer" />
 		<allow pkg="io.netty.channel" />
@@ -18,11 +18,11 @@
 		<allow pkg="java.net" />
 		<allow pkg="java.util" />
 		<allow pkg="java.security" />
-		
+
 		<allow pkg="io.minio" />
 		<allow pkg="io.minio.errors" />
 		<allow pkg="io.minio.messages" />
-						
+
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.formkiq.aws.services.lambda" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
@@ -33,16 +33,16 @@
 		<allow pkg="com.formkiq.module.lambda.typesense" />
 		<allow pkg="com.formkiq.stacks.lambda.s3" />
 		<allow pkg="com.formkiq.server.auth" />
-		
+
 		<allow pkg="org.apache.commons.cli" />
-		
+
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.aws.ssm" />
 		<allow pkg="com.formkiq.lambda.runtime.graalvm" />
 		<allow pkg="com.formkiq.plugins.tagschema" />
 		<allow pkg="com.formkiq.stacks.api" />
 		<allow pkg="com.google.gson" />
-		
+
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.regions" />
 		<allow pkg="software.amazon.awssdk.services.dynamodb" />

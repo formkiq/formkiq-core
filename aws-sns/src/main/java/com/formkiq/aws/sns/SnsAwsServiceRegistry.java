@@ -43,7 +43,6 @@ public class SnsAwsServiceRegistry implements AwsServiceRegistry {
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
         .setEndpointOverride(awsServiceEndpoints.get("sns"));
 
-    serviceCache.register(SnsConnectionBuilder.class,
-        new ClassServiceExtension<SnsConnectionBuilder>(sns));
+    serviceCache.register(SnsConnectionBuilder.class, new ClassServiceExtension<>(sns));
   }
 }

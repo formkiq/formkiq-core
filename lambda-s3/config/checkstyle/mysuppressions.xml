@@ -3,8 +3,10 @@
     "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-    <suppress files="\.*Test\.java" checks="ImportControl"/>
-    <suppress files="\.*DynamoDbExtension\.java" checks="ImportControl"/>
-    <suppress files="\.*DynamoDbTestServices\.java" checks="ImportControl"/>
+    <suppress files=".*[\\/]src[\\/]test[\\/]java[\\/].*" checks="(ImportControl|MagicNumber)"/>
+    <suppress files=".*[\\/]src[\\/]integration[\\/]java[\\/].*" checks="(ImportControl|MagicNumber)"/>
+	<suppress files="\.*DynamoDbExtension\.java"
+		checks="ImportControl" />
+	<suppress files="\.*DynamoDbTestServices\.java"
+		checks="ImportControl" />
 </suppressions>
-

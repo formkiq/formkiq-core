@@ -45,9 +45,10 @@ public interface DocumentAction {
    * @param documentId {@link String}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
+   * @return ProcessActionStatus
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  void run(Logger logger, String siteId, String documentId, List<Action> actions, Action action)
-      throws IOException, ValidationException;
+  ProcessActionStatus run(Logger logger, String siteId, String documentId, List<Action> actions,
+      Action action) throws IOException, ValidationException;
 }

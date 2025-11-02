@@ -35,7 +35,5 @@ public enum DocumentSyncServiceType {
   /** <a href="https://opensearch.org">...</a>. */
   OPENSEARCH,
   /** <a href="https://typesense.org">...</a>. */
-  TYPESENSE,
-  /** Amazon Event Bridge. */
-  EVENTBRIDGE
+  TYPESENSE
 }

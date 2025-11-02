@@ -23,10 +23,21 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.github.f4b6a3.ulid.UlidCreator;
+
 import java.util.UUID;
 
 /** Id Generator. */
 public class ID {
+
+  /**
+   * ULID Generator.
+   * 
+   * @return {@link String}
+   */
+  public static String ulid() {
+    return UlidCreator.getMonotonicUlid().toString();
+  }
 
   /**
    * UUID Generator.

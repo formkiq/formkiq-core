@@ -2,10 +2,5 @@
 description = "AWS X-Ray"
 
 dependencies {
-	api group: 'com.amazonaws', name: 'aws-xray-recorder-sdk-aws-sdk-v2', version: '2.18.2'
-}
-
-test {
-  failFast = true
-  useJUnitPlatform() 
+  api group: 'com.amazonaws', name: 'aws-xray-recorder-sdk-aws-sdk-v2', version: '2.18.2'
 }

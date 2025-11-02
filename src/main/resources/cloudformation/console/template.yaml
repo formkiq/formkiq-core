@@ -1,0 +1,367 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Console
+
+Parameters:
+
+  WAFWebACLId:
+    Type: String
+    Default: ""
+    Description: (Optional) ARN of the AWS WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
+
+  AdminEmail:
+    Type: String
+    Description: Administrator Email
+    AllowedPattern: ".+"
+
+  AppEnvironment:
+    Type: String
+    Description: The Document Stack Environment
+    AllowedPattern: ".+"
+
+  ConsoleVersion:
+    Type: String
+    Description: Version of FormKiQ console to deploy
+    Default: v4.0.14
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Type: String
+
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+
+  CertificateStackNameDomainName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name Domain Name
+    Default: "_"
+
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
+
+Conditions:
+  HasWAF:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: WAFWebACLId
+          - ""
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals:
+        - Ref: CertificateStackName
+        - ''
+
+  HasCertificateStackNameDomainName:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: CertificateStackNameDomainName
+          - '_'
+
+  IsNotGovCloud:
+    Fn::Equals:
+      - Ref: IsGovCloud
+      - 'false'
+
+Resources:
+
+  Console:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-console-${AWS::AccountId}"
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+        - Key: AppEnvironment
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+
+  ConsoleVersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console Version"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/console/version"
+      Type: String
+      Value:
+        Ref: ConsoleVersion
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/Console"
+      Type: String
+      Value:
+        Ref: Console
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket Arn"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleArn"
+      Type: String
+      Value:
+        Fn::GetAtt:
+        - Console
+        - Arn
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleDomainNameParameter:
+    Type: AWS::SSM::Parameter
+    DependsOn:
+    - Console
+    Properties:
+      Description: "Console S3 Bucket Domain Name"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleDomainName"
+      Type: String
+      Value:
+        Fn::GetAtt:
+        - Console
+        - DomainName
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleRegionalDomainNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Console S3 Bucket Regional Domain Name"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/s3/ConsoleRegionalDomainName"
+      Type: String
+      Value:
+        Fn::GetAtt:
+        - Console
+        - RegionalDomainName
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Condition: IsNotGovCloud
+    Properties:
+      DistributionConfig:
+        Comment:
+          Fn::Sub: "FormKiQ Console ${ConsoleVersion}"
+        Origins:
+        - DomainName:
+            Fn::GetAtt:
+            - Console
+            - RegionalDomainName
+          Id: s3origin
+          OriginPath:
+            Fn::Sub: "/${ConsoleVersion}"
+          OriginAccessControlId:
+            Fn::GetAtt:
+              - ConsoleOAC
+              - Id
+          S3OriginConfig:
+            OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          Compress: true
+          DefaultTTL: 600
+          MaxTTL: 600
+          MinTTL: 0
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: s3origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Aliases:
+          Fn::If:
+          - HasCertificateStackNameDomainName
+          - Fn::Split:
+              - ","
+              - Fn::ImportValue:
+                  Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          - Ref: "AWS::NoValue"
+        ViewerCertificate:
+          AcmCertificateArn:
+            Fn::If:
+            - HasCertificateStackNameDomainName
+            - Fn::ImportValue:
+                Fn::Sub: '${CertificateStackName}-ConsoleCertificateArn'
+            - Ref: "AWS::NoValue"
+          SslSupportMethod:
+            Fn::If:
+            - HasCertificateStackNameDomainName
+            - sni-only
+            - Ref: "AWS::NoValue"
+          MinimumProtocolVersion: TLSv1.2_2021
+          CloudFrontDefaultCertificate:
+            Fn::If:
+            - HasCertificateStackNameDomainName
+            - Ref: "AWS::NoValue"
+            - 'true'
+        Enabled: true
+        WebACLId:
+          Fn::If:
+            - HasWAF
+            - Ref: WAFWebACLId
+            - Ref: AWS::NoValue
+        HttpVersion: http2and3
+        CustomErrorResponses:
+        - ErrorCode: '403'
+          ResponsePagePath: "/index.html"
+          ResponseCode: '200'
+        - ErrorCode: '404'
+          ResponsePagePath: "/index.html"
+          ResponseCode: '200'
+      Tags:
+        - Key: Application
+          Value: "FormKiQ"
+        - Key: AppEnvironment
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+
+  ConsoleUrlParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotGovCloud
+    Properties:
+      Description: "The URL for the FormKiQ Console"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/console/Url"
+      Type: String
+      Value:
+        Fn::If:
+          - HasCertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Ref: CertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Fn::GetAtt:
+                    - CloudFrontDistribution
+                    - DomainName
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name:
+          Fn::Sub: "FormKiQ-Console-${AppEnvironment}-Oac"
+        Description: Access control for S3 origin
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  ConsoleBucketPolicy:
+    Condition: IsNotGovCloud
+    Type: "AWS::S3::BucketPolicy"
+    DependsOn:
+    - Console
+    Properties:
+      Bucket:
+        Ref: Console
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - Fn::Sub: "arn:aws:s3:::${Console}"
+              - Fn::Sub: "arn:aws:s3:::${Console}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          - Sid: AllowCloudFrontOACReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource:
+              Fn::Sub: 'arn:aws:s3:::${Console}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+
+Outputs:
+
+  ConsoleUrl:
+    Description: Console URL
+    Value:
+      Fn::If:
+      - HasCertificateStackNameDomainName
+      - Fn::Join:
+          - ""
+          -
+            - 'https://'
+            - Ref: CertificateStackNameDomainName
+      - Fn::If:
+        - IsNotGovCloud
+        - Fn::Join:
+            - ""
+            -
+              - 'https://'
+              - Fn::GetAtt:
+                - CloudFrontDistribution
+                - DomainName
+        - "none"
+
+  ConsoleBucket:
+    Value:
+      Ref: Console
+
+  ConsoleVersion:
+    Value:
+      Ref: ConsoleVersion
+
+  HostedZoneId:
+    Value:
+      Fn::If:
+      - HasCertificateStackName
+      - Fn::ImportValue:
+          Fn::Sub: '${CertificateStackName}-HostedZoneId'
+      - ""
+
+  CloudFrontDistributionDomainName:
+    Value:
+      Fn::If:
+      - IsNotGovCloud
+      - Fn::GetAtt:
+        - CloudFrontDistribution
+        - DomainName
+      - ""

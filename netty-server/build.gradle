@@ -1,74 +1,72 @@
 plugins {
-    id 'com.avast.gradle.docker-compose' version '0.17.12'
+  id 'com.avast.gradle.docker-compose' version '0.17.12'
 }
 
 description = "Netty Server"
 
 sourceSets {
-    integration {
-        java.srcDir "$projectDir/src/integration/java"
-        resources.srcDir "$projectDir/src/integration/resources"
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+    compileClasspath += main.output + test.output
+    runtimeClasspath += main.output + test.output
+  }
 }
 
 configurations {
-    integrationImplementation.extendsFrom testImplementation
-    integrationRuntime.extendsFrom testRuntime
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntime.extendsFrom testRuntime
 }
 
 dependencies {
-		
-	implementation project(':lambda-s3')
-	implementation project(':lambda-api')
-	implementation project(':lambda-typesense')
-	implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-	implementation group: 'commons-cli', name: 'commons-cli', version: '1.9.0'
-	implementation group: 'io.minio', name: 'minio', version: '8.5.17'
-	implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.25'
-	
-	testImplementation project(':fkq-test-utils')
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-	testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.20.6'
-}
 
-test {
-  failFast = true
-  useJUnitPlatform()  
+  implementation project(':lambda-s3')
+  implementation project(':lambda-api')
+  implementation project(':lambda-typesense')
+  implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
+  implementation group: 'commons-cli', name: 'commons-cli', version: '1.9.0'
+  implementation group: 'io.minio', name: 'minio', version: '8.5.17'
+  implementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.31.59'
+
+  testImplementation project(':fkq-test-utils')
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
 }
 
 task integrationTest(type: Test) {
-    testClassesDirs = sourceSets.integration.output.classesDirs
-    classpath = sourceSets.integration.runtimeClasspath
-    useJUnitPlatform()
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+  useJUnitPlatform()
 }
 
 task copyLibs(type: Copy) {
-    from configurations.runtimeClasspath
-    into "$buildDir/libs"
+  from configurations.runtimeClasspath
+  into "$buildDir/libs"
 }
 
 jar {
   manifest {
     attributes(
-      'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
-      'Main-Class': 'com.formkiq.server.HttpServer'
-    )
+        'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
+        'Main-Class': 'com.formkiq.server.HttpServer'
+        )
   }
 }
 
 jar.dependsOn(copyLibs)
 
 dockerCompose {
-    useComposeFiles = ["docker-compose.yml", "docker-compose-override.yml"] // Compose files
-    buildAdditionalArgs = ["--no-cache"] // Optional: additional build arguments
-    captureContainersOutput = true
+  useComposeFiles = [
+    "docker-compose.yml",
+    "docker-compose-override.yml"] // Compose files
+  buildAdditionalArgs = [
+    "--no-cache"] // Optional: additional build arguments
+  captureContainersOutput = true
 }
 
 tasks.named('jar') {
-    archiveBaseName.set('netty-server') // Set the desired name
-    archiveVersion.set('')               // Remove the version number
+  archiveBaseName.set('netty-server') // Set the desired name
+  archiveVersion.set('')               // Remove the version number
 }
 
 composeBuild.dependsOn(jar)

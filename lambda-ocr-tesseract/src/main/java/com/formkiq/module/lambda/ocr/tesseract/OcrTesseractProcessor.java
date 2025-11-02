@@ -50,8 +50,8 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.AbstractRestApiRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.LambdaInputRecord;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
@@ -65,6 +65,8 @@ import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.lambda.ocr.docx.DocFormatConverter;
 import com.formkiq.module.lambda.ocr.docx.DocxFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.PptxFormatConverter;
+import com.formkiq.module.lambda.ocr.docx.XlsxFormatConverter;
 import com.formkiq.module.lambda.ocr.handlers.ObjectExaminePdfHandler;
 import com.formkiq.module.lambda.ocr.handlers.ObjectExaminePdfIdHandler;
 import com.formkiq.module.lambda.ocr.pdf.PdfFormatConverter;
@@ -103,6 +105,15 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   /**
+   * Add Url Request Handler Mapping.
+   * 
+   * @param handler {@link ApiGatewayRequestHandler}
+   */
+  private static void addRequestHandler(final ApiGatewayRequestHandler handler) {
+    URL_MAP.put(handler.getRequestUrl(), handler);
+  }
+
+  /**
    * Initialize.
    * 
    * @param awsServiceCache {@link AwsServiceCache}
@@ -121,15 +132,6 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     addRequestHandler(new ObjectExaminePdfHandler());
     addRequestHandler(new ObjectExaminePdfIdHandler());
-  }
-
-  /**
-   * Add Url Request Handler Mapping.
-   * 
-   * @param handler {@link ApiGatewayRequestHandler}
-   */
-  private static void addRequestHandler(final ApiGatewayRequestHandler handler) {
-    URL_MAP.put(handler.getRequestUrl(), handler);
   }
 
   /** {@link List} {@link FormatConverter}. */
@@ -188,12 +190,20 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
    */
   protected List<FormatConverter> getDefaultConverters() {
     return Arrays.asList(new DocxFormatConverter(), new DocFormatConverter(),
-        new PdfFormatConverter(), new TesseractFormatConverter(new TesseractWrapperImpl()));
+        new XlsxFormatConverter(), new PptxFormatConverter(), new PdfFormatConverter(),
+        new TesseractFormatConverter(new TesseractWrapperImpl()));
+  }
+
+  private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {
+    List<String> parseTypes = Collections.emptyList();
+    if (sqsMessage.request() != null) {
+      parseTypes = notNull(sqsMessage.request().getParseTypes());
+    }
+    return parseTypes;
   }
 
   protected OcrSqsMessage getSqsMessage(final String body) {
-    OcrSqsMessage sqsMessage = this.gson.fromJson(body, OcrSqsMessage.class);
-    return sqsMessage;
+    return this.gson.fromJson(body, OcrSqsMessage.class);
   }
 
   @Override
@@ -203,10 +213,10 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
   @Override
   public void handleSqsRequest(final Logger logger, final AwsServiceCache awsServices,
-      final LambdaInputRecord record) throws IOException {
+      final SqsEventRecord record) {
 
     DocumentOcrService ocrService = serviceCache.getExtension(DocumentOcrService.class);
-    OcrSqsMessage sqsMessage = getSqsMessage(record.getBody());
+    OcrSqsMessage sqsMessage = getSqsMessage(record.body());
     processRecord(logger, awsServices, ocrService, sqsMessage);
   }
 
@@ -234,6 +244,18 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     }
 
     return file;
+  }
+
+  private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
+      final String siteId, final String documentId, final String jobId, final String contentType) {
+
+    List<String> parseTypes = getParserTypes(sqsMessage);
+
+    String s = String.format(
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
+            + "\"parseTypes\":\"%s\"}",
+        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
+    logger.info(s);
   }
 
   private void processRecord(final Logger logger, final AwsServiceCache awsServices,
@@ -286,7 +308,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         }
       }
 
-    } catch (IOException | RuntimeException e) {
+    } catch (Throwable e) {
 
       ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
 
@@ -304,25 +326,5 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         actionsService.updateActionStatus(siteId, documentId, action);
       });
     }
-  }
-
-  private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
-      final String siteId, final String documentId, final String jobId, final String contentType) {
-
-    List<String> parseTypes = getParserTypes(sqsMessage);
-
-    String s = String.format(
-        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
-            + "\"parseTypes\":\"%s\"}",
-        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
-    logger.info(s);
-  }
-
-  private List<String> getParserTypes(final OcrSqsMessage sqsMessage) {
-    List<String> parseTypes = Collections.emptyList();
-    if (sqsMessage.request() != null) {
-      parseTypes = notNull(sqsMessage.request().getParseTypes());
-    }
-    return parseTypes;
   }
 }

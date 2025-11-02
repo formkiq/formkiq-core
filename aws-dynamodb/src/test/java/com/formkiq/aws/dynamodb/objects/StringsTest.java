@@ -81,6 +81,7 @@ class StringsTest {
     assertEquals("something.pdf", Strings.getFilename("http://www.google.com/something.pdf"));
     assertEquals("else.txt", Strings.getFilename("s3://something/else.txt"));
     assertEquals("else.txt", Strings.getFilename("s3://else.txt"));
+    assertEquals("path2", Strings.getFilename("path1/path2/"));
   }
 
   @Test
@@ -101,20 +102,13 @@ class StringsTest {
   }
 
   @Test
-  void testIsEmptyOrHasValues01() {
-    assertTrue(Strings.isEmptyOrHasValues("asd", "asd"));
-    assertFalse(Strings.isEmptyOrHasValues("", "asd"));
-    assertFalse(Strings.isEmptyOrHasValues("asd", null));
-    assertTrue(Strings.isEmptyOrHasValues("", ""));
-    assertTrue(Strings.isEmptyOrHasValues("", null));
-    assertTrue(Strings.isEmptyOrHasValues(null, null, null));
-  }
-
-  @Test
-  void testTruncate01() {
-    assertEquals("a", Strings.truncate("a", 2));
-    assertEquals("ab", Strings.truncate("ab", 2));
-    assertEquals("ab", Strings.truncate("abc", 2));
+  void testIsEmpty01() {
+    assertTrue(Strings.isEmpty("asd", "asd"));
+    assertFalse(Strings.isEmpty("", "asd"));
+    assertFalse(Strings.isEmpty("asd", null));
+    assertTrue(Strings.isEmpty("", ""));
+    assertTrue(Strings.isEmpty("", null));
+    assertTrue(Strings.isEmpty(null, null, null));
   }
 
   @Test
@@ -122,5 +116,12 @@ class StringsTest {
     assertEquals("A", Strings.isNotNullOrEmptyElse("", "A"));
     assertEquals("A", Strings.isNotNullOrEmptyElse(null, "A"));
     assertEquals("B", Strings.isNotNullOrEmptyElse("B", "A"));
+  }
+
+  @Test
+  void testTruncate01() {
+    assertEquals("a", Strings.truncate("a", 2));
+    assertEquals("ab", Strings.truncate("ab", 2));
+    assertEquals("ab", Strings.truncate("abc", 2));
   }
 }

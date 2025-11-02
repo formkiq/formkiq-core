@@ -53,6 +53,12 @@ public class TokenGeneratorRegex implements TokenGenerator {
     this.stringFormatter = formatter;
   }
 
+  private Token createToken(final String text, final int start, final int end) {
+    String s = text.substring(start, end);
+    return new Token().setOriginal(s).setFormatted(stringFormatter.format(s)).setStart(start)
+        .setEnd(end);
+  }
+
   @Override
   public List<Token> generateTokens(final String text) {
 
@@ -73,11 +79,5 @@ public class TokenGeneratorRegex implements TokenGenerator {
     tokens.add(createToken(text, tokenIndex, text.length()));
 
     return tokens;
-  }
-
-  private Token createToken(final String text, final int start, final int end) {
-    String s = text.substring(start, end);
-    return new Token().setOriginal(s).setFormatted(stringFormatter.format(s)).setStart(start)
-        .setEnd(end);
   }
 }

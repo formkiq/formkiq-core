@@ -68,6 +68,11 @@ public class FkqSqsService implements SqsService {
   }
 
   @Override
+  public void clearQueue(final String queueUrl) {
+    this.service.clearQueue(queueUrl);
+  }
+
+  @Override
   public CreateQueueResponse createQueue(final CreateQueueRequest request) {
     return this.service.createQueue(request);
   }
@@ -115,10 +120,5 @@ public class FkqSqsService implements SqsService {
   @Override
   public SetQueueAttributesResponse setQueueAttributes(final SetQueueAttributesRequest request) {
     return this.service.setQueueAttributes(request);
-  }
-
-  @Override
-  public void clearQueue(final String queueUrl) {
-    this.service.clearQueue(queueUrl);
   }
 }

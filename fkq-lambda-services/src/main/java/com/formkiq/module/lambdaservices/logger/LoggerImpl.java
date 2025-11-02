@@ -36,94 +36,6 @@ public class LoggerImpl implements Logger {
   /** Pattern matching characters that must be escaped in JSON. */
   private static final Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\b\f\n\r\t]");
 
-  /** Current Log Level. */
-  private final LogLevel currentLogLevel;
-  /** {@link LogType}. */
-  private final LogType currentLogType;
-
-  /**
-   * constructor.
-   *
-   * @param logLevel {@link LogLevel}
-   * @param logType {@link LogType}
-   */
-  public LoggerImpl(final LogLevel logLevel, final LogType logType) {
-    this.currentLogLevel = logLevel;
-    this.currentLogType = logType;
-  }
-
-  public void log(final LogLevel level, final Exception e) {
-    if (isLogged(level)) {
-      if (LogType.JSON.equals(this.currentLogType)) {
-        System.out.printf("%s%n", exceptionToJson(level, e));
-      } else {
-        System.out.printf("%s%n", exceptionToString(e));
-      }
-    }
-  }
-
-  public void log(final LogLevel level, final String message) {
-    if (isLogged(level)) {
-      if (LogType.JSON.equals(this.currentLogType)) {
-        System.out.printf("%s%n", "{\"level\":\"" + level.name() + "\",\"message\":\""
-            + escapeDoubleQuotes(escapeJsonString(message)) + "\"}");
-      } else {
-        System.out.printf("%s%n", message);
-      }
-    }
-  }
-
-  /**
-   * Convert {@link Exception} to {@link String}.
-   *
-   * @param e {@link Exception}
-   * @return {@link String}
-   */
-  private String exceptionToString(final Exception e) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    e.printStackTrace(pw);
-    return sw.toString();
-  }
-
-  /**
-   * Converts an exception into a JSON string representation.
-   *
-   * @param logLevel {@link LogLevel}
-   * @param e The exception to convert.
-   * @return A JSON string representing the exception.
-   */
-  private String exceptionToJson(final LogLevel logLevel, final Exception e) {
-    StringBuilder json = new StringBuilder();
-    json.append("{");
-    json.append("\"level\":\"").append(logLevel.name()).append("\",");
-    json.append("\"type\":\"").append(e.getClass().getName()).append("\",");
-    json.append("\"message\":\"").append(escapeJsonString(e.getMessage())).append("\",");
-
-    // Add stack trace
-    json.append("\"stackTrace\":[");
-    StackTraceElement[] stackTrace = e.getStackTrace();
-    for (int i = 0; i < stackTrace.length; i++) {
-      json.append("\"").append(escapeJsonString(stackTrace[i].toString())).append("\"");
-      if (i < stackTrace.length - 1) {
-        json.append(",");
-      }
-    }
-    json.append("]");
-    json.append("}");
-    return json.toString();
-  }
-
-  /**
-   * Escapes all double-quote characters in the input string.
-   *
-   * @param input The string to escape.
-   * @return The string with double-quote characters escaped
-   */
-  private String escapeDoubleQuotes(final String input) {
-    return input != null ? input.replace("\"", "\\\"") : null;
-  }
-
   /**
    * Escapes characters in the input string so that it can be used as a JSON string literal.
    *
@@ -154,8 +66,97 @@ public class LoggerImpl implements Logger {
     return result.toString();
   }
 
+  /** Current Log Level. */
+  private final LogLevel currentLogLevel;
+
+  /** {@link LogType}. */
+  private final LogType currentLogType;
+
+  /**
+   * constructor.
+   *
+   * @param logLevel {@link LogLevel}
+   * @param logType {@link LogType}
+   */
+  public LoggerImpl(final LogLevel logLevel, final LogType logType) {
+    this.currentLogLevel = logLevel;
+    this.currentLogType = logType;
+  }
+
+  /**
+   * Escapes all double-quote characters in the input string.
+   *
+   * @param input The string to escape.
+   * @return The string with double-quote characters escaped
+   */
+  private String escapeDoubleQuotes(final String input) {
+    return input != null ? input.replace("\"", "\\\"") : null;
+  }
+
+  /**
+   * Converts an exception into a JSON string representation.
+   *
+   * @param logLevel {@link LogLevel}
+   * @param e The exception to convert.
+   * @return A JSON string representing the exception.
+   */
+  private String exceptionToJson(final LogLevel logLevel, final Throwable e) {
+    StringBuilder json = new StringBuilder();
+    json.append("{");
+    json.append("\"level\":\"").append(logLevel.name()).append("\",");
+    json.append("\"type\":\"").append(e.getClass().getName()).append("\",");
+    json.append("\"message\":\"").append(escapeJsonString(e.getMessage())).append("\",");
+
+    // Add stack trace
+    json.append("\"stackTrace\":[");
+    StackTraceElement[] stackTrace = e.getStackTrace();
+    for (int i = 0; i < stackTrace.length; i++) {
+      json.append("\"").append(escapeJsonString(stackTrace[i].toString())).append("\"");
+      if (i < stackTrace.length - 1) {
+        json.append(",");
+      }
+    }
+    json.append("]");
+    json.append("}");
+    return json.toString();
+  }
+
+  /**
+   * Convert {@link Exception} to {@link String}.
+   *
+   * @param e {@link Exception}
+   * @return {@link String}
+   */
+  private String exceptionToString(final Throwable e) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    e.printStackTrace(pw);
+    return sw.toString();
+  }
+
   @Override
   public LogLevel getCurrentLogLevel() {
     return this.currentLogLevel;
+  }
+
+  public void log(final LogLevel level, final String message) {
+    if (isLogged(level)) {
+      if (LogType.JSON.equals(this.currentLogType)) {
+        System.out.printf("%s%n", "{\"level\":\"" + level.name() + "\",\"message\":\""
+            + escapeDoubleQuotes(escapeJsonString(message)) + "\"}");
+      } else {
+        System.out.printf("%s%n", message);
+      }
+    }
+  }
+
+  public void log(final LogLevel level, final Throwable e) {
+    if (isLogged(level)) {
+      if (LogType.JSON.equals(this.currentLogType)) {
+        System.out.printf("%s%n", exceptionToJson(level, e));
+      } else {
+        System.out.printf("%s%n", exceptionToString(e));
+      }
+    }
   }
 }

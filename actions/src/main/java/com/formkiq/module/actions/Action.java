@@ -31,8 +31,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -63,7 +66,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   private Map<String, String> metadata;
   /** Action Parameters. */
   @Reflectable
-  private Map<String, String> parameters;
+  private Map<String, Object> parameters;
   /** QueueId. */
   @Reflectable
   private String queueId;
@@ -88,6 +91,12 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
   /** Workflow Step Id. */
   @Reflectable
   private String workflowStepId;
+  /** Retry Count. */
+  @Reflectable
+  private Integer retryCount;
+  /** Max Retries. */
+  @Reflectable
+  private Integer maxRetries;
 
   /**
    * constructor.
@@ -144,7 +153,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
             fromS(this.type.name()), "status", fromS(this.status.name()), "documentId",
             fromS(this.documentId), "userId", fromS(this.userId)));
 
-    addM(attrs, "parameters", this.parameters);
+    addMobject(attrs, "parameters", this.parameters);
     addM(attrs, "metadata", this.metadata);
 
     String pkGsi1 = pkGsi1(siteId);
@@ -177,6 +186,8 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
       attrs.put("startDate", AttributeValue.fromS(df.format(this.startDate)));
     }
 
+    addN(attrs, "retryCount", this.retryCount);
+    addN(attrs, "maxRetries", this.maxRetries);
     addS(attrs, "message", this.message);
     addS(attrs, "queueId", this.queueId);
     addS(attrs, "workflowId", this.workflowId);
@@ -213,7 +224,8 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
         .message(ss(attrs, "message")).queueId(ss(attrs, "queueId"))
         .workflowId(ss(attrs, "workflowId")).workflowLastStep(ss(attrs, "workflowLastStep"))
-        .workflowStepId(ss(attrs, "workflowStepId"));
+        .workflowStepId(ss(attrs, "workflowStepId")).retryCount(toInt(attrs, "retryCount"))
+        .maxRetries(toInt(attrs, "maxRetries"));
 
     if (attrs.containsKey("status")) {
       record.status(ActionStatus.valueOf(ss(attrs, "status")));
@@ -224,8 +236,9 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
     }
 
     if (attrs.containsKey("parameters")) {
-      record.parameters(attrs.get("parameters").m().entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
+      Map<String, AttributeValue> params = attrs.get("parameters").m();
+      Map<String, Object> map = new AttributeValueToMap().apply(params);
+      record.parameters(map);
     }
 
     if (attrs.containsKey("metadata")) {
@@ -257,12 +270,22 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
 
   /**
    * Set Index.
-   * 
+   *
    * @param idx int
    * @return {@link Action}
    */
   public Action index(final String idx) {
     this.index = idx;
+    return this;
+  }
+
+  /**
+   * Set Index to Ulid.
+   * 
+   * @return {@link Action}
+   */
+  public Action indexUlid() {
+    index(ID.ulid());
     return this;
   }
 
@@ -283,6 +306,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action insertedDate(final Date date) {
     this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Get Max Retries.
+   * 
+   * @return {@link Integer}
+   */
+  public Integer maxRetries() {
+    return maxRetries;
+  }
+
+  /**
+   * Set Max Retries.
+   * 
+   * @param count {@link Integer}
+   * @return {@link Action}
+   */
+  public Action maxRetries(final Integer count) {
+    this.maxRetries = count;
     return this;
   }
 
@@ -331,7 +374,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * 
    * @return {@link Map}
    */
-  public Map<String, String> parameters() {
+  public Map<String, Object> parameters() {
     return this.parameters;
   }
 
@@ -341,7 +384,7 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    * @param map {@link Map}
    * @return {@link Action}
    */
-  public Action parameters(final Map<String, String> map) {
+  public Action parameters(final Map<String, Object> map) {
     this.parameters = map;
     return this;
   }
@@ -393,6 +436,26 @@ public class Action implements DynamodbRecord<Action>, DbKeys {
    */
   public Action queueId(final String id) {
     this.queueId = id;
+    return this;
+  }
+
+  /**
+   * Get Retry Count.
+   * 
+   * @return {@link Integer}
+   */
+  public Integer retryCount() {
+    return retryCount;
+  }
+
+  /**
+   * Set retry Count.
+   * 
+   * @param count {@link Integer}
+   * @return {@link Action}
+   */
+  public Action retryCount(final Integer count) {
+    this.retryCount = count;
     return this;
   }
 

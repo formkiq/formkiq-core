@@ -73,12 +73,6 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 20;
 
-  private static void deleteGroup(final UserManagementApi userApi, final String groupName)
-      throws ApiException {
-    DeleteResponse deleteResponse = userApi.deleteGroup(groupName);
-    assertEquals("Group " + groupName + " deleted", deleteResponse.getMessage());
-  }
-
   private static void addGroup(final UserManagementApi userApi, final String groupName)
       throws ApiException {
     // given
@@ -105,170 +99,45 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("user '" + email + "' has been created", response.getMessage());
   }
 
-  /**
-   * Test GET /users.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testGetUsers01() throws Exception {
-
-    // given
-    List<ApiClient> clients = getApiClients(null);
-
-    for (ApiClient client : getAdminClients(clients)) {
-
-      UserManagementApi userApi = new UserManagementApi(client);
-
-      // when
-      GetUsersResponse response = userApi.getUsers(null, null);
-
-      // then
-      List<User> users = notNull(response.getUsers());
-      assertFalse(users.isEmpty());
-
-      User user = users.get(0);
-      assertNotNull(user.getUsername());
-      assertNotNull(user.getUserStatus());
-      assertNotNull(user.getEmail());
-      assertEquals(Boolean.TRUE, user.getEnabled());
-      assertNotNull(user.getInsertedDate());
-      assertNotNull(user.getLastModifiedDate());
-
-      assertNotNull(userApi.getUser(user.getUsername()));
-      assertNotNull(userApi.getUser(user.getEmail()));
-    }
-
-    // given
-    UserManagementApi userApi = new UserManagementApi(clients.get(2));
-
-    // when
-    try {
-      userApi.getUsers(null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
+  private static void deleteGroup(final UserManagementApi userApi, final String groupName)
+      throws ApiException {
+    DeleteResponse deleteResponse = userApi.deleteGroup(groupName);
+    assertEquals("Group " + groupName + " deleted", deleteResponse.getMessage());
   }
 
-  /**
-   * Test GET /users/{username}.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testGetUser01() throws Exception {
-    // given
-    List<ApiClient> clients = getApiClients(null);
-
-    for (ApiClient client : getAdminClients(clients)) {
-
-      UserManagementApi userApi = new UserManagementApi(client);
-      String username = ID.uuid();
-
-      // when
-      try {
-        userApi.getUser(username);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"username '" + username + "' not found\"}",
-            e.getResponseBody());
-      }
-    }
+  private static void disableUser(final UserManagementApi userApi, final String email)
+      throws ApiException {
+    SetResponse disable = userApi.setUserOperation(email, "disable");
+    assertEquals("user '" + email + "' has been disabled", disable.getMessage());
   }
 
-  /**
-   * Test GET /groups.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testGetGroups01() throws Exception {
-
-    // given
-    List<ApiClient> clients = getApiClients(null);
-
-    for (ApiClient client : clients) {
-
-      UserManagementApi userApi = new UserManagementApi(client);
-
-      // when
-      GetGroupsResponse response = userApi.getGroups("60", null);
-
-      // then
-      List<Group> groups = notNull(response.getGroups());
-      assertFalse(groups.isEmpty());
-
-      Optional<Group> o =
-          groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
-      assertFalse(o.isEmpty());
-
-      assertNotNull(o.get().getDescription());
-      assertNotNull(o.get().getInsertedDate());
-      assertNotNull(o.get().getLastModifiedDate());
-
-      Group group = userApi.getGroup(o.get().getName()).getGroup();
-      assertNotNull(group);
-      assertNotNull(group.getDescription());
-      assertNotNull(group.getInsertedDate());
-      assertNotNull(group.getLastModifiedDate());
-    }
+  private void addUserToGroup(final UserManagementApi userApi, final String email,
+      final String groupName) throws ApiException {
+    AddUserRequest req = new AddUserRequest().user(new AddUser().username(email));
+    AddResponse addResponse = userApi.addUserToGroup(groupName, req);
+    assertEquals("user '" + email + "' added to group '" + groupName + "'",
+        addResponse.getMessage());
   }
 
-  /**
-   * Test GET /groups/{groupName}/users.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testGetGroupUsers01() throws Exception {
+  private void deleteUser(final UserManagementApi userApi, final String email) throws ApiException {
+    DeleteResponse deleteResponse = userApi.deleteUsername(email);
+    assertEquals("user '" + email + "' has been deleted", deleteResponse.getMessage());
+  }
 
-    // given
-    String groupName = "Admins";
-    List<ApiClient> clients = getApiClients(null);
-
-    for (ApiClient client : getAdminClients(clients)) {
-
-      UserManagementApi userApi = new UserManagementApi(client);
-
-      // when
-      GetUsersInGroupResponse response = userApi.getUsersInGroup(groupName, null, null);
-
-      // then
-      List<User> users = notNull(response.getUsers());
-      assertFalse(users.isEmpty());
-
-      User user = users.get(0);
-
-      assertNotNull(user.getUsername());
-      assertNotNull(user.getEmail());
-      assertNotNull(user.getUserStatus());
-      assertNotNull(user.getInsertedDate());
-      assertNotNull(user.getLastModifiedDate());
-    }
-
-    // given
-    UserManagementApi userApi = new UserManagementApi(clients.get(2));
-
-    // when
-    try {
-      userApi.getUsersInGroup(groupName, null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
+  private void enableUser(final UserManagementApi userApi, final String email) throws ApiException {
+    SetResponse enable = userApi.setUserOperation(email, "enable");
+    assertEquals("user '" + email + "' has been enabled", enable.getMessage());
   }
 
   private List<ApiClient> getAdminClients(final List<ApiClient> clients) {
     return Arrays.asList(clients.get(0), clients.get(1));
+  }
+
+  private void removeUserFromGroup(final UserManagementApi userApi, final String email,
+      final String groupName) throws ApiException {
+    DeleteResponse deleteResponse = userApi.removeUsernameFromGroup(groupName, email);
+    assertEquals("user '" + email + "' removed from group '" + groupName + "'",
+        deleteResponse.getMessage());
   }
 
   /**
@@ -328,61 +197,6 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     }
   }
 
-  private void enableUser(final UserManagementApi userApi, final String email) throws ApiException {
-    SetResponse enable = userApi.setUserOperation(email, "enable");
-    assertEquals("user '" + email + "' has been enabled", enable.getMessage());
-  }
-
-  private static void disableUser(final UserManagementApi userApi, final String email)
-      throws ApiException {
-    SetResponse disable = userApi.setUserOperation(email, "disable");
-    assertEquals("user '" + email + "' has been disabled", disable.getMessage());
-  }
-
-  private void removeUserFromGroup(final UserManagementApi userApi, final String email,
-      final String groupName) throws ApiException {
-    DeleteResponse deleteResponse = userApi.removeUsernameFromGroup(groupName, email);
-    assertEquals("user '" + email + "' removed from group '" + groupName + "'",
-        deleteResponse.getMessage());
-  }
-
-  private void addUserToGroup(final UserManagementApi userApi, final String email,
-      final String groupName) throws ApiException {
-    AddUserRequest req = new AddUserRequest().user(new AddUser().username(email));
-    AddResponse addResponse = userApi.addUserToGroup(groupName, req);
-    assertEquals("user '" + email + "' added to group '" + groupName + "'",
-        addResponse.getMessage());
-  }
-
-  private void deleteUser(final UserManagementApi userApi, final String email) throws ApiException {
-    DeleteResponse deleteResponse = userApi.deleteUsername(email);
-    assertEquals("user '" + email + "' has been deleted", deleteResponse.getMessage());
-  }
-
-  /**
-   * Test 'authentication_only' cognito group.
-   *
-   */
-  @Test
-  public void testAuthenticationOnly() {
-    // given
-    String username = "noaccess1@formkiq.com";
-    addAndLoginCognito(username, List.of("authentication_only"));
-
-    ApiClient jwtClient = getApiClientForUser(username, USER_PASSWORD);
-
-    DocumentsApi api = new DocumentsApi(jwtClient);
-
-    // when
-    try {
-      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
-  }
-
   /**
    * Test POST /users.
    *
@@ -438,5 +252,191 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     assertEquals(birthDate, attr.getBirthdate());
     assertEquals("Smith", attr.getFamilyName());
     assertEquals("John", attr.getGivenName());
+  }
+
+  /**
+   * Test 'authentication_only' cognito group.
+   *
+   */
+  @Test
+  public void testAuthenticationOnly() {
+    // given
+    String username = "noaccess1@formkiq.com";
+    addAndLoginCognito(username, List.of("authentication_only"));
+
+    ApiClient jwtClient = getApiClientForUser(username, USER_PASSWORD);
+
+    DocumentsApi api = new DocumentsApi(jwtClient);
+
+    // when
+    try {
+      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  /**
+   * Test GET /groups/{groupName}/users.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetGroupUsers01() throws Exception {
+
+    // given
+    String groupName = "Admins";
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : getAdminClients(clients)) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+
+      // when
+      GetUsersInGroupResponse response = userApi.getUsersInGroup(groupName, null, null);
+
+      // then
+      List<User> users = notNull(response.getUsers());
+      assertFalse(users.isEmpty());
+
+      User user = users.get(0);
+
+      assertNotNull(user.getUsername());
+      assertNotNull(user.getEmail());
+      assertNotNull(user.getUserStatus());
+      assertNotNull(user.getInsertedDate());
+      assertNotNull(user.getLastModifiedDate());
+    }
+
+    // given
+    UserManagementApi userApi = new UserManagementApi(clients.get(2));
+
+    // when
+    try {
+      userApi.getUsersInGroup(groupName, null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
+  }
+
+  /**
+   * Test GET /groups.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetGroups01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : List.of(clients.get(0), clients.get(1))) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+
+      // when
+      GetGroupsResponse response = userApi.getGroups("60", null);
+
+      // then
+      List<Group> groups = notNull(response.getGroups());
+      assertFalse(groups.isEmpty());
+
+      Optional<Group> o =
+          groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
+      assertFalse(o.isEmpty());
+
+      assertNotNull(o.get().getDescription());
+      assertNotNull(o.get().getInsertedDate());
+      assertNotNull(o.get().getLastModifiedDate());
+
+      Group group = userApi.getGroup(o.get().getName()).getGroup();
+      assertNotNull(group);
+      assertNotNull(group.getDescription());
+      assertNotNull(group.getInsertedDate());
+      assertNotNull(group.getLastModifiedDate());
+    }
+  }
+
+  /**
+   * Test GET /users/{username}.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetUser01() throws Exception {
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : getAdminClients(clients)) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+      String username = ID.uuid();
+
+      // when
+      try {
+        userApi.getUser(username);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"username '" + username + "' not found\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Test GET /users.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetUsers01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : getAdminClients(clients)) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+
+      // when
+      GetUsersResponse response = userApi.getUsers(null, null);
+
+      // then
+      List<User> users = notNull(response.getUsers());
+      assertFalse(users.isEmpty());
+
+      User user = users.get(0);
+      assertNotNull(user.getUsername());
+      assertNotNull(user.getUserStatus());
+      assertNotNull(user.getEmail());
+      assertEquals(Boolean.TRUE, user.getEnabled());
+      assertNotNull(user.getInsertedDate());
+      assertNotNull(user.getLastModifiedDate());
+
+      assertNotNull(userApi.getUser(user.getUsername()));
+      assertNotNull(userApi.getUser(user.getEmail()));
+    }
+
+    // given
+    UserManagementApi userApi = new UserManagementApi(clients.get(2));
+
+    // when
+    try {
+      userApi.getUsers(null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+    }
   }
 }

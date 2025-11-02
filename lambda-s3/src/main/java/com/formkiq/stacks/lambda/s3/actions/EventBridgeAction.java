@@ -27,9 +27,11 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
@@ -59,10 +61,10 @@ public class EventBridgeAction implements DocumentAction {
   }
 
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
-    String eventBusName = action.parameters().get("eventBusName");
+    String eventBusName = (String) action.parameters().get("eventBusName");
 
     if (Strings.isEmpty(eventBusName)) {
       throw new IOException("'eventBusName' missing");
@@ -74,5 +76,6 @@ public class EventBridgeAction implements DocumentAction {
     EventBridgeMessage msg =
         new EventBridgeMessageBuilder().build(this.appEnvironment, detailType, detail);
     eventBridgeService.putEvents(eventBusName, msg);
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

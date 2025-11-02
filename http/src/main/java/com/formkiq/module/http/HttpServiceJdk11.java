@@ -36,6 +36,7 @@ import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -49,13 +50,14 @@ import java.util.stream.Collectors;
 public class HttpServiceJdk11 implements HttpService {
 
   /** {@link HttpClient}. */
-  private HttpClient client;
+  private final HttpClient client;
 
   /**
    * constructor.
    */
   public HttpServiceJdk11() {
-    this.client = HttpClient.newHttpClient();
+    final int timeout = 10;
+    this.client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(timeout)).build();
   }
 
   /**
@@ -82,12 +84,13 @@ public class HttpServiceJdk11 implements HttpService {
     String u = url;
 
     if (parameters.isPresent() && !parameters.get().isEmpty()) {
-      String q = parameters.get().entrySet().stream()
+      String q = parameters.get().entrySet().stream().filter(e -> e.getValue() != null)
           .map(s -> s.getKey() + "=" + encode(s.getValue())).collect(Collectors.joining("&"));
       u += "?" + q;
     }
 
-    Builder builder = HttpRequest.newBuilder().uri(toUri(u));
+    final int timeout = 30;
+    Builder builder = HttpRequest.newBuilder().timeout(Duration.ofSeconds(timeout)).uri(toUri(u));
 
     if (headers.isPresent()) {
       for (Map.Entry<String, String> e : headers.get().getAll().entrySet()) {
@@ -96,10 +99,6 @@ public class HttpServiceJdk11 implements HttpService {
     }
 
     return builder;
-  }
-
-  private String encode(final String s) {
-    return URLEncoder.encode(s, StandardCharsets.UTF_8);
   }
 
   @Override
@@ -111,6 +110,10 @@ public class HttpServiceJdk11 implements HttpService {
     } catch (InterruptedException e) {
       throw new IOException(e);
     }
+  }
+
+  private String encode(final String s) {
+    return URLEncoder.encode(s, StandardCharsets.UTF_8);
   }
 
   @Override
@@ -145,6 +148,18 @@ public class HttpServiceJdk11 implements HttpService {
     HttpRequest request = build(url, headers, parameters).GET().build();
     try {
       return this.client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public HttpResponse<String> head(final String url, final Optional<HttpHeaders> headers,
+      final Optional<Map<String, String>> parameters) throws IOException {
+    HttpRequest request =
+        build(url, headers, parameters).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+    try {
+      return this.client.send(request, HttpResponse.BodyHandlers.ofString());
     } catch (InterruptedException e) {
       throw new IOException(e);
     }

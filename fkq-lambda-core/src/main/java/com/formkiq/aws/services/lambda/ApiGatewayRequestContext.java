@@ -45,6 +45,8 @@ public class ApiGatewayRequestContext {
   private String requestId;
   /** Request Time. */
   private String requestTime;
+  /** Request Time Epoch. */
+  private Long requestTimeEpoch;
 
   /**
    * constructor.
@@ -106,6 +108,15 @@ public class ApiGatewayRequestContext {
   }
 
   /**
+   * Get Request Time Epoch.
+   * 
+   * @return Long
+   */
+  public Long getRequestTimeEpoch() {
+    return requestTimeEpoch;
+  }
+
+  /**
    * Set Authorizer.
    * 
    * @param map {@link Map}
@@ -157,5 +168,14 @@ public class ApiGatewayRequestContext {
    */
   public void setRequestTime(final String time) {
     this.requestTime = time;
+  }
+
+  /**
+   * Set Request Time Epoc.
+   * 
+   * @param epoch {@link Long}
+   */
+  public void setRequestTimeEpoch(final Long epoch) {
+    this.requestTimeEpoch = epoch;
   }
 }

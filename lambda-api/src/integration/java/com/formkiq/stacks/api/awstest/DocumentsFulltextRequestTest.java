@@ -34,6 +34,9 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
@@ -57,6 +60,11 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 60;
+
+  @BeforeAll
+  public static void beforeAll() throws ApiException {
+    new OpenSearchIndexPurgeRequestBuilder().submit(getApiClients(null).get(1), null);
+  }
 
   /**
    * Action Fulltext with PDF.

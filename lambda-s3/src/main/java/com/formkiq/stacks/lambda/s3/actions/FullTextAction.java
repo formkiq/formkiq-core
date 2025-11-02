@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
@@ -37,6 +36,7 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.DocumentContentFunction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -63,8 +63,6 @@ public class FullTextAction implements DocumentAction {
   private final DocumentService documentService;
   /** {@link DocumentContentFunction}. */
   private final DocumentContentFunction documentContentFunc;
-  /** {@link ActionsNotificationService}. */
-  private final ActionsNotificationService notificationService;
   /** {@link SendHttpRequest}. */
   private final SendHttpRequest http;
   /** {@link TypeSenseService}. */
@@ -85,15 +83,53 @@ public class FullTextAction implements DocumentAction {
     this.actionsService = serviceCache.getExtension(ActionsService.class);
     this.documentService = serviceCache.getExtension(DocumentService.class);
     this.documentContentFunc = new DocumentContentFunction(serviceCache);
-    this.notificationService = serviceCache.getExtension(ActionsNotificationService.class);
     this.typesense = serviceCache.getExtensionOrNull(TypeSenseService.class);
     this.moduleFulltext = serviceCache.hasModule("opensearch");
     this.moduleTypesense = serviceCache.hasModule("typesense");
     this.http = new SendHttpRequest(serviceCache);
   }
 
+  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String s = String.format(
+          "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
+              + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
+          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
+          item.getContentType());
+
+      logger.debug(s);
+    }
+  }
+
+  private int getCharacterMax(final Action action) {
+    Map<String, Object> parameters = notNull(action.parameters());
+    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
+  }
+
+  /**
+   * Get Content from {@link Action}.
+   *
+   * @param dcFunc {@link DocumentContentFunction}
+   * @param action {@link Action}
+   * @param contentUrls {@link List} {@link String}
+   * @return {@link String}
+   * @throws URISyntaxException URISyntaxException
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private String getContent(final DocumentContentFunction dcFunc, final Action action,
+      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
+
+    StringBuilder sb = dcFunc.getContentUrls(contentUrls);
+
+    int characterMax = getCharacterMax(action);
+
+    return characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
+        : sb.toString();
+  }
+
   @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException {
 
     ActionStatus status = ActionStatus.PENDING;
@@ -128,28 +164,13 @@ public class FullTextAction implements DocumentAction {
 
       Action ocrAction = new Action().userId("System").type(ActionType.OCR)
           .parameters(Map.of("ocrEngine", "tesseract"));
-      this.actionsService.insertBeforeAction(siteId, documentId, actions, action, ocrAction);
-
-      this.notificationService.publishNextActionEvent(siteId, documentId);
+      this.actionsService.insertBeforeAction(siteId, documentId, action, ocrAction);
 
     } else {
       throw new IOException("no OCR document found");
     }
 
-    action.status(status);
-    this.actionsService.updateActionStatus(siteId, documentId, action);
-  }
-
-  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      String s = String.format(
-          "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
-              + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
-          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
-          item.getContentType());
-
-      logger.debug(s);
-    }
+    return new ProcessActionStatus(status);
   }
 
   /**
@@ -227,32 +248,5 @@ public class FullTextAction implements DocumentAction {
     } catch (URISyntaxException | InterruptedException e) {
       throw new IOException(e);
     }
-  }
-
-  /**
-   * Get Content from {@link Action}.
-   *
-   * @param dcFunc {@link DocumentContentFunction}
-   * @param action {@link Action}
-   * @param contentUrls {@link List} {@link String}
-   * @return {@link String}
-   * @throws URISyntaxException URISyntaxException
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private String getContent(final DocumentContentFunction dcFunc, final Action action,
-      final List<String> contentUrls) throws URISyntaxException, IOException, InterruptedException {
-
-    StringBuilder sb = dcFunc.getContentUrls(contentUrls);
-
-    int characterMax = getCharacterMax(action);
-
-    return characterMax != -1 && sb.length() > characterMax ? sb.substring(0, characterMax)
-        : sb.toString();
-  }
-
-  private int getCharacterMax(final Action action) {
-    Map<String, String> parameters = notNull(action.parameters());
-    return parameters.containsKey("characterMax") ? -1 : DEFAULT_TYPESENSE_CHARACTER_MAX;
   }
 }

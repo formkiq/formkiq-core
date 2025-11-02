@@ -41,9 +41,15 @@ public class HttpResponseStatus {
   /** 404 Response Code. */
   private static final int STATUS_404 = 404;
   /** 409 Response Code. */
-  private static final int STATUS_409 = 409;
+  public static final int STATUS_409 = 409;
   /** 429 Response Code. */
-  private static final int STATUS_429 = 404;
+  public static final int STATUS_429 = 429;
+  /** 502 Response Code. */
+  public static final int STATUS_502 = 502;
+  /** 429 Response Code. */
+  public static final int STATUS_503 = 503;
+  /** 429 Response Code. */
+  public static final int STATUS_509 = 509;
 
   /**
    * Is 2XX Status Code.

@@ -2,72 +2,104 @@ description = "FormKiQ Core - Lambda S3 Graalvm"
 
 apply plugin: 'distribution'
 
-def getCmd() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "cmd" : "bash"
-}
-
-def getCmdParam() {
-    String os = System.getProperty("os.name").toLowerCase()
-    return os.contains("win") ? "/c" : "-c"
-}
-
 dependencies {
-    implementation project(':lambda-s3')
+  implementation project(':lambda-s3')
 }
-
-compileJava {
-    options.annotationProcessorPath += configurations.runtimeClasspath
-}
-
-nativeImage { 
-    outputFileName = "server"
-    dockerImage = "ghcr.io/graalvm/graalvm-ce:ol9-java17-22.3.3"
-    mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
-    enableHttp = true
-    enableHttps = true
-    enableStatic = true
-    systemProperty = ["java.net.preferIPv4Stack=true"]
-}
-
-test {
-  failFast = true
-  useJUnitPlatform()
-}
-
-task buildTemplate {
-	inputs.files("src/main/resources/cloudformation/template-sar.yaml")
-	outputs.files("${buildDir}/distributions/storage/template.yaml")
-
-	def randomtext = ('0'..'z').shuffled().take(10).join();
-	def sha256 = randomtext.digest('SHA-256')
-
-	doLast {
-	    
-		exec {
-			commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/template-sar.yaml > ${buildDir}/distributions/storage/template.yaml"
-		}
-	}
-}
-
-distZip.dependsOn buildTemplate, graalvmNativeImage
 
 tasks.distTar.enabled = false
 
 distZip {
-    archiveFileName = "storage/lambda-s3-graalvm.zip"
+  archiveFileName = "storage/lambda-s3-graalvm.zip"
 }
 
 distributions {
-    main {
-        contents {
-            from("runtime/") {
-            	include "bootstrap"
-            }
-            from ("${buildDir}/graalvm") {
-                include("server")
-            }
-            into '/'
-        }
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+      }
+      from ("${buildDir}/graalvm") {
+        include '**/**'
+      }
+      into '/'
     }
+  }
 }
+
+tasks.register('buildZip', Zip) {
+  archiveFileName = "lambda-s3-graalvm.zip"
+  destinationDirectory = layout.buildDirectory.dir('dist')
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+  from("${project.projectDir}/lib") {
+    include '**/**'
+  }
+  from("${project.projectDir}/runtime") {
+    include 'bootstrap'
+  }
+  from("build/graalvm") {
+    include '**/**'
+  }
+}
+
+tasks.register('copyRuntimeClasspath', Copy) {
+  description = 'Copies all runtime classpath dependencies to build/libs'
+  from({ configurations.runtimeClasspath })
+  into(layout.buildDirectory.dir('libs'))
+}
+
+jar.dependsOn(copyRuntimeClasspath)
+
+def graalvmZip = layout.buildDirectory.file('graalvm.zip')
+
+tasks.register('dockerBuild', Exec) {
+  description = 'Builds amazonlinux-graalvm:latest'
+  dependsOn(tasks.named('jar'))
+  workingDir = layout.projectDirectory.asFile
+  commandLine 'docker', 'build', '-t', 'amazonlinux-graalvm:latest', '.'
+}
+
+tasks.register('dockerCreate', Exec) {
+  description = 'Creates a temporary container named temp-container'
+  dependsOn(tasks.named('dockerBuild'))
+  commandLine 'docker', 'create', '--name', 'temp-container', 'amazonlinux-graalvm:latest'
+}
+
+tasks.register('dockerCp', Exec) {
+  description = 'Copies /graalvm.zip from temp-container to build dir'
+  dependsOn(tasks.named('dockerCreate'))
+
+  doFirst {
+    graalvmZip.get().asFile.parentFile.mkdirs()
+
+    commandLine 'docker', 'cp',
+        'temp-container:/graalvm.zip',
+        graalvmZip.get().asFile.absolutePath
+  }
+
+  outputs.file(graalvmZip)
+}
+
+tasks.register('dockerRm', Exec) {
+  description = 'Removes the temporary container'
+  mustRunAfter(tasks.named('dockerCp'))
+  ignoreExitValue = true
+  commandLine 'docker', 'rm', 'temp-container'
+}
+
+tasks.register('buildDockerAndCopyServer') {
+  description = 'Build image, create container, copy ZIP, remove container'
+  dependsOn(tasks.named('dockerCp'))
+  finalizedBy(tasks.named('dockerRm'))
+}
+
+tasks.register('unzipFile', Copy) {
+  from({
+    zipTree(layout.buildDirectory.file("graalvm.zip").get().asFile)
+  })
+  into(layout.buildDirectory.dir("graalvm"))
+}
+
+unzipFile.dependsOn buildDockerAndCopyServer
+buildZip.dependsOn unzipFile
+distZip.dependsOn buildZip

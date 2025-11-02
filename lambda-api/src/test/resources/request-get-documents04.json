@@ -1,110 +1,82 @@
 {
-    "version": "1.0",
-    "resource": "/documents",
-    "path": "/documents",
+  "version": "1.0",
+  "resource": "/documents",
+  "path": "/documents",
+  "httpMethod": "GET",
+  "headers": {
+    "Content-Length": "0",
+    "Host": "api-demo.tryformkiq.com",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36",
+    "X-Amzn-Trace-Id": "Root=1-5e87e8e4-a2b51ed4e80a8ba0511cec98",
+    "X-Forwarded-For": "50.72.149.55",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https",
+    "accept": "application/json, text/plain, */*",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6",
+    "authorization": "eyJraWQiOiJOT3JaTFwvam5BT2lvQWhFV1F6XC8rTTFFZHBNbm5DemdHTTZNRWRmYVozTkk9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI5NjJhZmFhMC0yZGU2LTRhMjgtYjZiYS02YzUzMzAzYWY0OWEiLCJjb2duaXRvOmdyb3VwcyI6WyJDb2duaXRvVXNlckdyb3VwLUV1NjJBZ3NFc1lkZiJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfcGNMTDZoYXBLIiwiY29nbml0bzp1c2VybmFtZSI6ImRlbW9AZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIl0sImF1ZCI6IjRkcG83NWtxZ2xyZTRrampwb2x1NmlnbDJjIiwiZXZlbnRfaWQiOiJlODIxY2ExMi1kYjE0LTQzMjktYWZiMS1iNGI4N2QzZTYzMzYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4NTk2Mjk5NiwiZXhwIjoxNTg1OTY2NTk2LCJpYXQiOjE1ODU5NjI5OTYsImVtYWlsIjoiZGVtb0Bmb3Jta2lxLmNvbSJ9.H7t-f4x4VovJvnwHlvoRLRUTcEN8y6vT0o73JiQmfskQLY_a50cdE3SNUgy8KoTygAszd0UuW7jhoDBAXZNEg0YhqUHdec0PKVKowqoqMONOTpZb-viRmXJDZ-NEy9hwUDh1IbcF1oZrVjEvfjE50rB5dgaIaY4wzzoAL3WUJ6v6djpHzZEnFZYEy7hV4lvRcBrECotgMElhWpep7330xvcAIlMdc052Kdiy_y8LX4FJe6FGKqIDDa3dlShZ31DqPt9c4MgaE3ELonLjL1WNw4gI6YmcnlDDUCJG5a3tWsfmw0WyqUj9x6MskOfbr1mLPD8nR4M5xJ-IU8aO-C2kwA",
+    "origin": "https://demo.tryformkiq.com",
+    "referer": "https://demo.tryformkiq.com/api",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site"
+  },
+  "multiValueHeaders": {
+    "Content-Length": ["0"],
+    "Host": ["api-demo.tryformkiq.com"],
+    "User-Agent": [
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36"
+    ],
+    "X-Amzn-Trace-Id": ["Root=1-5e87e8e4-a2b51ed4e80a8ba0511cec98"],
+    "X-Forwarded-For": ["50.72.149.55"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
+    "accept": ["application/json, text/plain, */*"],
+    "accept-encoding": ["gzip, deflate, br"],
+    "accept-language": ["en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6"],
+    "authorization": [
+      "eyJraWQiOiJOT3JaTFwvam5BT2lvQWhFV1F6XC8rTTFFZHBNbm5DemdHTTZNRWRmYVozTkk9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI5NjJhZmFhMC0yZGU2LTRhMjgtYjZiYS02YzUzMzAzYWY0OWEiLCJjb2duaXRvOmdyb3VwcyI6WyJDb2duaXRvVXNlckdyb3VwLUV1NjJBZ3NFc1lkZiJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfcGNMTDZoYXBLIiwiY29nbml0bzp1c2VybmFtZSI6ImRlbW9AZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIl0sImF1ZCI6IjRkcG83NWtxZ2xyZTRrampwb2x1NmlnbDJjIiwiZXZlbnRfaWQiOiJlODIxY2ExMi1kYjE0LTQzMjktYWZiMS1iNGI4N2QzZTYzMzYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4NTk2Mjk5NiwiZXhwIjoxNTg1OTY2NTk2LCJpYXQiOjE1ODU5NjI5OTYsImVtYWlsIjoiZGVtb0Bmb3Jta2lxLmNvbSJ9.H7t-f4x4VovJvnwHlvoRLRUTcEN8y6vT0o73JiQmfskQLY_a50cdE3SNUgy8KoTygAszd0UuW7jhoDBAXZNEg0YhqUHdec0PKVKowqoqMONOTpZb-viRmXJDZ-NEy9hwUDh1IbcF1oZrVjEvfjE50rB5dgaIaY4wzzoAL3WUJ6v6djpHzZEnFZYEy7hV4lvRcBrECotgMElhWpep7330xvcAIlMdc052Kdiy_y8LX4FJe6FGKqIDDa3dlShZ31DqPt9c4MgaE3ELonLjL1WNw4gI6YmcnlDDUCJG5a3tWsfmw0WyqUj9x6MskOfbr1mLPD8nR4M5xJ-IU8aO-C2kwA"
+    ],
+    "origin": ["https://demo.tryformkiq.com"],
+    "referer": ["https://demo.tryformkiq.com/api"],
+    "sec-fetch-dest": ["empty"],
+    "sec-fetch-mode": ["cors"],
+    "sec-fetch-site": ["same-site"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "requestContext": {
+    "accountId": "111111111111",
+    "apiId": "7rggg3jqbb",
+    "domainName": "api-demo.tryformkiq.com",
+    "domainPrefix": "api-demo",
+    "extendedRequestId": "KcFTxiAroAMESFA=",
     "httpMethod": "GET",
-    "headers": {
-        "Content-Length": "0",
-        "Host": "api-demo.tryformkiq.com",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36",
-        "X-Amzn-Trace-Id": "Root=1-5e87e8e4-a2b51ed4e80a8ba0511cec98",
-        "X-Forwarded-For": "50.72.149.55",
-        "X-Forwarded-Port": "443",
-        "X-Forwarded-Proto": "https",
-        "accept": "application/json, text/plain, */*",
-        "accept-encoding": "gzip, deflate, br",
-        "accept-language": "en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6",
-        "authorization": "eyJraWQiOiJOT3JaTFwvam5BT2lvQWhFV1F6XC8rTTFFZHBNbm5DemdHTTZNRWRmYVozTkk9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI5NjJhZmFhMC0yZGU2LTRhMjgtYjZiYS02YzUzMzAzYWY0OWEiLCJjb2duaXRvOmdyb3VwcyI6WyJDb2duaXRvVXNlckdyb3VwLUV1NjJBZ3NFc1lkZiJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfcGNMTDZoYXBLIiwiY29nbml0bzp1c2VybmFtZSI6ImRlbW9AZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIl0sImF1ZCI6IjRkcG83NWtxZ2xyZTRrampwb2x1NmlnbDJjIiwiZXZlbnRfaWQiOiJlODIxY2ExMi1kYjE0LTQzMjktYWZiMS1iNGI4N2QzZTYzMzYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4NTk2Mjk5NiwiZXhwIjoxNTg1OTY2NTk2LCJpYXQiOjE1ODU5NjI5OTYsImVtYWlsIjoiZGVtb0Bmb3Jta2lxLmNvbSJ9.H7t-f4x4VovJvnwHlvoRLRUTcEN8y6vT0o73JiQmfskQLY_a50cdE3SNUgy8KoTygAszd0UuW7jhoDBAXZNEg0YhqUHdec0PKVKowqoqMONOTpZb-viRmXJDZ-NEy9hwUDh1IbcF1oZrVjEvfjE50rB5dgaIaY4wzzoAL3WUJ6v6djpHzZEnFZYEy7hV4lvRcBrECotgMElhWpep7330xvcAIlMdc052Kdiy_y8LX4FJe6FGKqIDDa3dlShZ31DqPt9c4MgaE3ELonLjL1WNw4gI6YmcnlDDUCJG5a3tWsfmw0WyqUj9x6MskOfbr1mLPD8nR4M5xJ-IU8aO-C2kwA",
-        "origin": "https://demo.tryformkiq.com",
-        "referer": "https://demo.tryformkiq.com/api",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site"
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": "1111111111111111",
+      "cognitoIdentityId": null,
+      "caller": "AIDAI576HTOBFSGWZOWMC",
+      "sourceIp": "184.75.214.18",
+      "principalOrgId": null,
+      "accessKey": "AKIAJKVZ4QYZEOC5SDDA",
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": "arn:aws:iam::1111111111111111:user/mike",
+      "userAgent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
+      "user": "AIDAI576HTOBFSGWZOWMC"
     },
-    "multiValueHeaders": {
-        "Content-Length": [
-            "0"
-        ],
-        "Host": [
-            "api-demo.tryformkiq.com"
-        ],
-        "User-Agent": [
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Safari/537.36"
-        ],
-        "X-Amzn-Trace-Id": [
-            "Root=1-5e87e8e4-a2b51ed4e80a8ba0511cec98"
-        ],
-        "X-Forwarded-For": [
-            "50.72.149.55"
-        ],
-        "X-Forwarded-Port": [
-            "443"
-        ],
-        "X-Forwarded-Proto": [
-            "https"
-        ],
-        "accept": [
-            "application/json, text/plain, */*"
-        ],
-        "accept-encoding": [
-            "gzip, deflate, br"
-        ],
-        "accept-language": [
-            "en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6"
-        ],
-        "authorization": [
-            "eyJraWQiOiJOT3JaTFwvam5BT2lvQWhFV1F6XC8rTTFFZHBNbm5DemdHTTZNRWRmYVozTkk9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI5NjJhZmFhMC0yZGU2LTRhMjgtYjZiYS02YzUzMzAzYWY0OWEiLCJjb2duaXRvOmdyb3VwcyI6WyJDb2duaXRvVXNlckdyb3VwLUV1NjJBZ3NFc1lkZiJdLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzpwcmVmZXJyZWRfcm9sZSI6ImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIiwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tXC91cy1lYXN0LTFfcGNMTDZoYXBLIiwiY29nbml0bzp1c2VybmFtZSI6ImRlbW9AZm9ybWtpcS5jb20iLCJjb2duaXRvOnJvbGVzIjpbImFybjphd3M6aWFtOjo2MjI2NTM4NjUyNzc6cm9sZVwvZm9ybWtpcS1kb2NzdGFjay1kZW1vLURvY3VtZW4tQ29nbml0b1VzZXJHcm91cFJvbGUtSTVZU045VUNCVzZLIl0sImF1ZCI6IjRkcG83NWtxZ2xyZTRrampwb2x1NmlnbDJjIiwiZXZlbnRfaWQiOiJlODIxY2ExMi1kYjE0LTQzMjktYWZiMS1iNGI4N2QzZTYzMzYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTU4NTk2Mjk5NiwiZXhwIjoxNTg1OTY2NTk2LCJpYXQiOjE1ODU5NjI5OTYsImVtYWlsIjoiZGVtb0Bmb3Jta2lxLmNvbSJ9.H7t-f4x4VovJvnwHlvoRLRUTcEN8y6vT0o73JiQmfskQLY_a50cdE3SNUgy8KoTygAszd0UuW7jhoDBAXZNEg0YhqUHdec0PKVKowqoqMONOTpZb-viRmXJDZ-NEy9hwUDh1IbcF1oZrVjEvfjE50rB5dgaIaY4wzzoAL3WUJ6v6djpHzZEnFZYEy7hV4lvRcBrECotgMElhWpep7330xvcAIlMdc052Kdiy_y8LX4FJe6FGKqIDDa3dlShZ31DqPt9c4MgaE3ELonLjL1WNw4gI6YmcnlDDUCJG5a3tWsfmw0WyqUj9x6MskOfbr1mLPD8nR4M5xJ-IU8aO-C2kwA"
-        ],
-        "origin": [
-            "https://demo.tryformkiq.com"
-        ],
-        "referer": [
-            "https://demo.tryformkiq.com/api"
-        ],
-        "sec-fetch-dest": [
-            "empty"
-        ],
-        "sec-fetch-mode": [
-            "cors"
-        ],
-        "sec-fetch-site": [
-            "same-site"
-        ]
-    },
-    "queryStringParameters": null,
-    "multiValueQueryStringParameters": null,
-    "requestContext": {
-        "accountId": "111111111111",
-        "apiId": "7rggg3jqbb",
-        "domainName": "api-demo.tryformkiq.com",
-        "domainPrefix": "api-demo",
-        "extendedRequestId": "KcFTxiAroAMESFA=",
-        "httpMethod": "GET",
-        "identity": {
-            "cognitoIdentityPoolId": null,
-            "accountId": "1111111111111111",
-            "cognitoIdentityId": null,
-            "caller": "AIDAI576HTOBFSGWZOWMC",
-            "sourceIp": "184.75.214.18",
-            "principalOrgId": null,
-            "accessKey": "AKIAJKVZ4QYZEOC5SDDA",
-            "cognitoAuthenticationType": null,
-            "cognitoAuthenticationProvider": null,
-            "userArn": "arn:aws:iam::1111111111111111:user/mike",
-            "userAgent": "Apache-HttpClient/4.5.11 (Java/11.0.2)",
-            "user": "AIDAI576HTOBFSGWZOWMC"
-        },
-        "path": "/demo/documents",
-        "protocol": "HTTP/1.1",
-        "requestId": "KcFTxiAroAMESFA=",
-        "requestTime": "04/Apr/2020:01:54:44 +0000",
-        "requestTimeEpoch": 1585965284809,
-        "resourceId": "GET /documents",
-        "resourcePath": "/documents",
-        "stage": "demo"
-    },
-    "pathParameters": null,
-    "stageVariables": null,
-    "body": null,
-    "isBase64Encoded": false
+    "path": "/demo/documents",
+    "protocol": "HTTP/1.1",
+    "requestId": "KcFTxiAroAMESFA=",
+    "requestTime": "04/Apr/2020:01:54:44 +0000",
+    "requestTimeEpoch": 1585965284809,
+    "resourceId": "GET /documents",
+    "resourcePath": "/documents",
+    "stage": "demo"
+  },
+  "pathParameters": null,
+  "stageVariables": null,
+  "body": null,
+  "isBase64Encoded": false
 }

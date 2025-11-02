@@ -45,7 +45,6 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -91,7 +90,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "200.0");
 
       String documentId = verifyDocumentId(m);
@@ -122,7 +121,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "200.0");
 
       String documentId = verifyDocumentId(m);
@@ -149,7 +148,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
     verifyHeaders(m, "400.0");
   }
 
@@ -176,7 +175,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "400.0");
     }
   }
@@ -206,10 +205,10 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "200.0");
 
-      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
       String documentId = body.get("documentId").toString();
       assertNotNull(documentId);
 
@@ -378,7 +377,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "429.0");
     }
   }
@@ -408,7 +407,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "400.0");
       assertEquals("{\"message\":\"body isn't valid JSON\"}", m.get("body"));
     }
@@ -440,10 +439,10 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "200.0");
 
-      Map<String, Object> body = fromJson(m.get("body"), Map.class);
+      Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
       String documentId = body.get("documentId").toString();
       assertNotNull(documentId);
 
@@ -484,7 +483,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "200.0");
 
       String documentId = verifyDocumentId(m);
@@ -532,7 +531,7 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       verifyHeaders(m, "401.0");
     }
   }
@@ -556,18 +555,18 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
     return event;
   }
 
-  private String verifyDocumentId(final Map<String, String> m) {
-    Map<String, Object> body = fromJson(m.get("body"), Map.class);
+  private String verifyDocumentId(final Map<String, Object> m) {
+    Map<String, Object> body = fromJson((String) m.get("body"), Map.class);
     String documentId = body.get("documentId").toString();
     assertNotNull(documentId);
     return documentId;
   }
 
-  private void verifyHeaders(final Map<String, String> map, final String statusCode) {
+  private void verifyHeaders(final Map<String, Object> map, final String statusCode) {
     final int mapsize = 3;
     assertEquals(mapsize, map.size());
     assertEquals(statusCode, String.valueOf(map.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(map.get("headers")));
+    assertCorsHeaders((Map<String, Object>) map.get("headers"));
   }
 
   private void verifyS3File(final String webhookId, final String siteId, final String documentId,

@@ -113,6 +113,19 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
     addAndLoginCognito(FINANCE_EMAIL, Arrays.asList(FINANCE_GROUP));
   }
 
+  private CognitoIdentityService getAdminCognitoIdentityService() {
+
+    CognitoIdentityConnectionBuilder adminIdentityBuilder =
+        new CognitoIdentityConnectionBuilder(cognitoClientId, cognitoUserPoolId,
+            cognitoIdentitypool).setCredentials(getAwsprofile()).setRegion(getAwsregion());
+
+    return new CognitoIdentityService(adminIdentityBuilder);
+  }
+
+  private AuthenticationResultType login(final String username, final String password) {
+    return getCognito().login(username, password);
+  }
+
   /**
    * Test Having Admin add new user to group.
    */
@@ -146,15 +159,6 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
         .filter(f -> f.name().equals("email")).findFirst().get().value());
   }
 
-  private CognitoIdentityService getAdminCognitoIdentityService() {
-
-    CognitoIdentityConnectionBuilder adminIdentityBuilder =
-        new CognitoIdentityConnectionBuilder(cognitoClientId, cognitoUserPoolId,
-            cognitoIdentitypool).setCredentials(getAwsprofile()).setRegion(getAwsregion());
-
-    return new CognitoIdentityService(adminIdentityBuilder);
-  }
-
   /**
    * Tests hitting apirequesthandler.
    * 
@@ -175,6 +179,19 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
       // then
       assertTrue(documents.getDocuments().isEmpty());
+    }
+  }
+
+  /**
+   * Test Having User try and add itself to the admin group. Should fail.
+   */
+  @Test
+  public void testFinanceUserAddSelfToAdmin() {
+    try {
+      getAdminCognitoIdentityService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
+      fail();
+    } catch (NotAuthorizedException e) {
+      assertTrue(true);
     }
   }
 
@@ -225,6 +242,19 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
   }
 
   /**
+   * Test Having User try and add itself to the admin group. Should fail.
+   */
+  @Test
+  public void testReadonlyUserAddSelfToAdmin() {
+    try {
+      getAdminCognitoIdentityService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
+      fail();
+    } catch (NotAuthorizedException e) {
+      assertTrue(true);
+    }
+  }
+
+  /**
    * Test SSM Parameter Store.
    */
   @Test
@@ -257,35 +287,5 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
     } catch (NotAuthorizedException e) {
       assertTrue(true);
     }
-  }
-
-  /**
-   * Test Having User try and add itself to the admin group. Should fail.
-   */
-  @Test
-  public void testFinanceUserAddSelfToAdmin() {
-    try {
-      getAdminCognitoIdentityService().getCredentials(login(FINANCE_EMAIL, USER_PASSWORD));
-      fail();
-    } catch (NotAuthorizedException e) {
-      assertTrue(true);
-    }
-  }
-
-  /**
-   * Test Having User try and add itself to the admin group. Should fail.
-   */
-  @Test
-  public void testReadonlyUserAddSelfToAdmin() {
-    try {
-      getAdminCognitoIdentityService().getCredentials(login(READONLY_EMAIL, USER_PASSWORD));
-      fail();
-    } catch (NotAuthorizedException e) {
-      assertTrue(true);
-    }
-  }
-
-  private AuthenticationResultType login(final String username, final String password) {
-    return getCognito().login(username, password);
   }
 }

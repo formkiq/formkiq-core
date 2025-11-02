@@ -42,5 +42,9 @@ public enum ActionStatus {
   /** Running. */
   RUNNING,
   /** Skipped. */
-  SKIPPED;
+  SKIPPED,
+  /** Max Retry Reachd. */
+  MAX_RETRIES_REACHED,
+  /** Waiting for Retry. */
+  WAITING_FOR_RETRY
 }

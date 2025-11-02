@@ -36,7 +36,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.MapToAttributeValue;
+import com.formkiq.aws.dynamodb.builder.MapToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -86,53 +86,51 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     return transform(map);
   }
 
-  private SiteConfiguration transform(final Map<String, Object> map) {
-
-    SiteConfiguration config = new SiteConfiguration();
-    config.setChatGptApiKey(getString(map.get(CHATGPT_API_KEY)));
-    config.setGoogle(transformGoogle(map));
-    config.setMaxWebhooks(getString(map.get(MAX_WEBHOOKS)));
-    config.setMaxDocuments(getString(map.get(MAX_DOCUMENTS)));
-    config.setDocumentTimeToLive(getString(map.get(DOCUMENT_TIME_TO_LIVE)));
-    config.setDocusign(transformDocusign(map));
-    config.setMaxContentLengthBytes(getString(map.get(MAX_DOCUMENT_SIZE_BYTES)));
-    config.setNotificationEmail(getString(map.get(NOTIFICATION_EMAIL)));
-    config.setOcr(transformOcr(map));
-    config.setWebhookTimeToLive(getString(map.get(WEBHOOK_TIME_TO_LIVE)));
-    return config;
+  @Override
+  public long getIncrement(final String siteId, final String key) {
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
+    Map<String, AttributeValue> values = this.db.get(keys.get(PK), keys.get(SK));
+    return !values.isEmpty() ? Long.parseLong(values.get("Number").n()) : -1;
   }
 
-  private SiteConfigurationOcr transformOcr(final Map<String, Object> map) {
-    SiteConfigurationOcr ocr = new SiteConfigurationOcr();
-    ocr.setMaxTransactions(
-        map.containsKey("maxTransactions") ? ((Double) map.get("maxTransactions")).longValue()
-            : -1);
-    ocr.setMaxPagesPerTransaction(map.containsKey("maxPagesPerTransaction")
-        ? ((Double) map.get("maxPagesPerTransaction")).longValue()
-        : -1);
-    return ocr;
+  private Map<String, AttributeValue> getIncrementKey(final String siteId, final String key) {
+    String pk = "configvalues";
+    String sk = "key#" + key;
+    return keysGeneric(siteId, PK, pk, SK, sk);
   }
 
-  private SiteConfigurationDocusign transformDocusign(final Map<String, Object> map) {
-    SiteConfigurationDocusign docusign = new SiteConfigurationDocusign();
-    docusign.setUserId(getString(map.get(KEY_DOCUSIGN_USER_ID)));
-    docusign.setRsaPrivateKey(getString(map.get(KEY_DOCUSIGN_RSA_PRIVATE_KEY)));
-    docusign.setHmacSignature(getString(map.get(KEY_DOCUSIGN_HMAC_SIGNATURE)));
-    docusign.setIntegrationKey(getString(map.get(KEY_DOCUSIGN_INTEGRATION_KEY)));
+  @Override
+  public Map<String, Long> getIncrements(final String siteId) {
+    final int limit = 100;
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, "");
+    QueryConfig config = new QueryConfig();
+    QueryResponse response = this.db.queryBeginsWith(config, keys.get(PK), null, null, limit);
 
-    return docusign;
-  }
+    Map<String, Long> map = new HashMap<>();
+    response.items().forEach(i -> {
+      String key = i.get(SK).s();
+      key = key.substring(key.indexOf("#") + 1);
+      long number = Long.parseLong(i.get("Number").n());
+      map.put(key, number);
+    });
 
-  private SiteConfigurationGoogle transformGoogle(final Map<String, Object> map) {
-    SiteConfigurationGoogle google = new SiteConfigurationGoogle();
-    google.setWorkloadIdentityAudience(getString(map.get("googleWorkloadIdentityAudience")));
-    google.setWorkloadIdentityServiceAccount(
-        getString(map.get("googleWorkloadIdentityServiceAccount")));
-    return google;
+    return map;
   }
 
   private String getString(final Object o) {
     return o != null ? o.toString() : "";
+  }
+
+  @Override
+  public long increment(final String siteId, final String key) {
+    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
+    return this.db.getNextNumber(keys);
+  }
+
+  private void put(final Map<String, Object> map, final String mapKey, final String value) {
+    if (value != null) {
+      map.put(mapKey, value);
+    }
   }
 
   @Override
@@ -170,41 +168,49 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     return !map.isEmpty();
   }
 
-  @Override
-  public long increment(final String siteId, final String key) {
-    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
-    return this.db.getNextNumber(keys);
+  private SiteConfiguration transform(final Map<String, Object> map) {
+
+    SiteConfiguration config = new SiteConfiguration();
+    config.setChatGptApiKey(getString(map.get(CHATGPT_API_KEY)));
+    config.setGoogle(transformGoogle(map));
+    config.setMaxWebhooks(getString(map.get(MAX_WEBHOOKS)));
+    config.setMaxDocuments(getString(map.get(MAX_DOCUMENTS)));
+    config.setDocumentTimeToLive(getString(map.get(DOCUMENT_TIME_TO_LIVE)));
+    config.setDocusign(transformDocusign(map));
+    config.setMaxContentLengthBytes(getString(map.get(MAX_DOCUMENT_SIZE_BYTES)));
+    config.setNotificationEmail(getString(map.get(NOTIFICATION_EMAIL)));
+    config.setOcr(transformOcr(map));
+    config.setWebhookTimeToLive(getString(map.get(WEBHOOK_TIME_TO_LIVE)));
+    return config;
   }
 
-  private Map<String, AttributeValue> getIncrementKey(final String siteId, final String key) {
-    String pk = "configvalues";
-    String sk = "key#" + key;
-    return keysGeneric(siteId, PK, pk, SK, sk);
+  private SiteConfigurationDocusign transformDocusign(final Map<String, Object> map) {
+    SiteConfigurationDocusign docusign = new SiteConfigurationDocusign();
+    docusign.setUserId(getString(map.get(KEY_DOCUSIGN_USER_ID)));
+    docusign.setRsaPrivateKey(getString(map.get(KEY_DOCUSIGN_RSA_PRIVATE_KEY)));
+    docusign.setHmacSignature(getString(map.get(KEY_DOCUSIGN_HMAC_SIGNATURE)));
+    docusign.setIntegrationKey(getString(map.get(KEY_DOCUSIGN_INTEGRATION_KEY)));
+
+    return docusign;
   }
 
-  @Override
-  public long getIncrement(final String siteId, final String key) {
-    Map<String, AttributeValue> keys = getIncrementKey(siteId, key);
-    Map<String, AttributeValue> values = this.db.get(keys.get(PK), keys.get(SK));
-    return !values.isEmpty() ? Long.parseLong(values.get("Number").n()) : -1;
+  private SiteConfigurationGoogle transformGoogle(final Map<String, Object> map) {
+    SiteConfigurationGoogle google = new SiteConfigurationGoogle();
+    google.setWorkloadIdentityAudience(getString(map.get("googleWorkloadIdentityAudience")));
+    google.setWorkloadIdentityServiceAccount(
+        getString(map.get("googleWorkloadIdentityServiceAccount")));
+    return google;
   }
 
-  @Override
-  public Map<String, Long> getIncrements(final String siteId) {
-    final int limit = 100;
-    Map<String, AttributeValue> keys = getIncrementKey(siteId, "");
-    QueryConfig config = new QueryConfig();
-    QueryResponse response = this.db.queryBeginsWith(config, keys.get(PK), null, null, limit);
-
-    Map<String, Long> map = new HashMap<>();
-    response.items().forEach(i -> {
-      String key = i.get(SK).s();
-      key = key.substring(key.indexOf("#") + 1);
-      long number = Long.parseLong(i.get("Number").n());
-      map.put(key, number);
-    });
-
-    return map;
+  private SiteConfigurationOcr transformOcr(final Map<String, Object> map) {
+    SiteConfigurationOcr ocr = new SiteConfigurationOcr();
+    ocr.setMaxTransactions(
+        map.containsKey("maxTransactions") ? ((Double) map.get("maxTransactions")).longValue()
+            : -1);
+    ocr.setMaxPagesPerTransaction(map.containsKey("maxPagesPerTransaction")
+        ? ((Double) map.get("maxPagesPerTransaction")).longValue()
+        : -1);
+    return ocr;
   }
 
   private void updateDocusign(final SiteConfiguration config, final Map<String, Object> map) {
@@ -234,17 +240,6 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     }
   }
 
-  private void updateOcr(final SiteConfiguration config, final Map<String, Object> map) {
-    SiteConfigurationOcr ocr = config.getOcr();
-
-    if (ocr != null) {
-      long maxTransactions = ocr.getMaxTransactions();
-      long maxPagesPerTransaction = ocr.getMaxPagesPerTransaction();
-      map.put("maxTransactions", maxTransactions != 0 ? maxTransactions : -1);
-      map.put("maxPagesPerTransaction", maxPagesPerTransaction != 0 ? maxPagesPerTransaction : -1);
-    }
-  }
-
   private void updateGoogle(final SiteConfiguration config, final Map<String, Object> map) {
     SiteConfigurationGoogle google = config.getGoogle();
     if (google != null) {
@@ -262,9 +257,14 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     }
   }
 
-  private void put(final Map<String, Object> map, final String mapKey, final String value) {
-    if (value != null) {
-      map.put(mapKey, value);
+  private void updateOcr(final SiteConfiguration config, final Map<String, Object> map) {
+    SiteConfigurationOcr ocr = config.getOcr();
+
+    if (ocr != null) {
+      long maxTransactions = ocr.getMaxTransactions();
+      long maxPagesPerTransaction = ocr.getMaxPagesPerTransaction();
+      map.put("maxTransactions", maxTransactions != 0 ? maxTransactions : -1);
+      map.put("maxPagesPerTransaction", maxPagesPerTransaction != 0 ? maxPagesPerTransaction : -1);
     }
   }
 }

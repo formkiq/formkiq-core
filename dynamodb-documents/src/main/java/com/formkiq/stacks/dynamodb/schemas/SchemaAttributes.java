@@ -49,15 +49,6 @@ public class SchemaAttributes {
   }
 
   /**
-   * Get Composite Keys.
-   * 
-   * @return {@link List} {@link SchemaAttributesCompositeKey}
-   */
-  public List<SchemaAttributesCompositeKey> getCompositeKeys() {
-    return this.compositeKeys;
-  }
-
-  /**
    * Set Composite Keys.
    * 
    * @param schemaCompositeKeys {@link List} {@link SchemaAttributesCompositeKey}
@@ -70,23 +61,12 @@ public class SchemaAttributes {
   }
 
   /**
-   * Get {@link List} {@link SchemaAttributesRequired}.
+   * Get Composite Keys.
    * 
-   * @return {@link List} {@link SchemaAttributesRequired}
+   * @return {@link List} {@link SchemaAttributesCompositeKey}
    */
-  public List<SchemaAttributesRequired> getRequired() {
-    return this.required;
-  }
-
-  /**
-   * Set Required Schema Attributes.
-   * 
-   * @param schemaRequired {@link List} {@link SchemaAttributesRequired}
-   * @return {@link SchemaAttributes}
-   */
-  public SchemaAttributes required(final List<SchemaAttributesRequired> schemaRequired) {
-    this.required = schemaRequired;
-    return this;
+  public List<SchemaAttributesCompositeKey> getCompositeKeys() {
+    return this.compositeKeys;
   }
 
   /**
@@ -96,6 +76,24 @@ public class SchemaAttributes {
    */
   public List<SchemaAttributesOptional> getOptional() {
     return this.optional;
+  }
+
+  /**
+   * Get {@link List} {@link SchemaAttributesRequired}.
+   * 
+   * @return {@link List} {@link SchemaAttributesRequired}
+   */
+  public List<SchemaAttributesRequired> getRequired() {
+    return this.required;
+  }
+
+  /**
+   * Is Additional Attributes allowed.
+   * 
+   * @return boolean
+   */
+  public boolean isAllowAdditionalAttributes() {
+    return this.allowAdditionalAttributes;
   }
 
   /**
@@ -110,12 +108,14 @@ public class SchemaAttributes {
   }
 
   /**
-   * Is Additional Attributes allowed.
+   * Set Required Schema Attributes.
    * 
-   * @return boolean
+   * @param schemaRequired {@link List} {@link SchemaAttributesRequired}
+   * @return {@link SchemaAttributes}
    */
-  public boolean isAllowAdditionalAttributes() {
-    return this.allowAdditionalAttributes;
+  public SchemaAttributes required(final List<SchemaAttributesRequired> schemaRequired) {
+    this.required = schemaRequired;
+    return this;
   }
 
   /**

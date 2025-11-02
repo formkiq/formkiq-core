@@ -1,0 +1,380 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Core - Console Install
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Document Stack Environment
+
+  ConsoleVersion:
+    Type: String
+    Description: Version of FormKiQ console to deploy
+
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    Type: String
+
+  ConsoleBucket:
+    Type: String
+    Description: Console S3 Bucket
+
+  CognitoConfigBucket:
+    Type: String
+    Description: Cognito Config S3 Bucket
+
+  ApiUrl:
+    Type: String
+    Description: JWT API URL
+
+  IamApiUrl:
+    Type: String
+    Description: IAM API URL
+
+  KeyApiUrl:
+    Type: String
+    Description: Key API URL
+
+  AuthApiUrl:
+    Type: String
+    Description: Auth Api URL
+
+  Brand:
+    Type: String
+    Description: Console Installer Brand
+    Default: "formkiq"
+
+  DistributionBucket:
+    Type: String
+    Description: FormKiQ Distribution BucketName
+    Default: "formkiq-distribution-console"
+
+  AllowAdminCreateUserOnly:
+    Description: When true only Cognito Admin can create users, false users can register themselves
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoHostedUi:
+    Description: Amazon Cognito Hosted UI Url
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoUserPoolId:
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+    Type: String
+
+  UserAuthentication:
+    Description: How are the users authenticating
+    AllowedPattern: ".+"
+    Type: String
+    Default: "cognito"
+
+  CertificateStackName:
+    Type: String
+    Description: The name of the FormKiQ Certificate Stack Name
+    Default: ""
+
+  HostedZoneId:
+    Description: "Route53 Hosted Zone Id in which to add A record"
+    Type: String
+    Default: ""
+
+  CloudFrontDistributionDomainName:
+    Description: The cloudfront domain name of the resource
+    Type: String
+    Default: ""
+
+  IsGovCloud:
+    Description: Is Installation AWS Region gov cloud
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+Conditions:
+
+  IsEmptyOrUnderscore:
+    Fn::Or:
+      - Fn::Equals:
+          - Ref: HostedZoneId
+          - ""
+      - Fn::Equals:
+          - Ref: HostedZoneId
+          - "_"
+
+  HasCertificateStackName:
+    Fn::Not:
+      - Fn::Equals:
+        - Ref: CertificateStackName
+        - ''
+
+  HasHostedZoneId:
+    Fn::Not:
+      - Condition: IsEmptyOrUnderscore
+
+  IsNotGovCloud:
+    Fn::Equals:
+      - Ref: IsGovCloud
+      - 'false'
+
+  IsLogFormatJSON:
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
+Resources:
+
+  ConsoleInstallerParameter:
+    Condition: IsNotGovCloud
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for Console Installation"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/ConsoleInstaller"
+      Type: String
+      Value:
+        Ref: ConsoleInstaller
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
+  ConsoleInstaller:
+    Type: AWS::Serverless::Function
+    Condition: IsNotGovCloud
+    Properties:
+      Handler: com.formkiq.stacks.console.ConsoleInstallHandler
+      Description: Lambda function that Installs the FormKiQ Console
+      Runtime: java17
+      Timeout: 300
+      MemorySize: 512
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Role:
+        Fn::GetAtt:
+        - ConsoleInstallRole
+        - Arn
+      CodeUri: ./console-installer.zip
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+      Environment:
+        Variables:
+          CONSOLE_VERSION:
+            Fn::Sub: "${ConsoleVersion}"
+          DISTRIBUTION_BUCKET:
+            Fn::Sub: "${DistributionBucket}"
+          REGION:
+            Fn::Sub: "${AWS::Region}"
+          CONSOLE_BUCKET:
+            Fn::Sub: "${ConsoleBucket}"
+          COGNITO_CONFIG_BUCKET:
+            Fn::Sub: "${CognitoConfigBucket}"
+          API_URL:
+            Ref: ApiUrl
+          API_IAM_URL:
+            Ref: IamApiUrl
+          API_KEY_URL:
+            Ref: KeyApiUrl
+          API_AUTH_URL:
+            Ref: AuthApiUrl
+          BRAND:
+            Fn::Sub: "${Brand}"
+          ALLOW_ADMIN_CREATE_USER_ONLY:
+            Fn::Sub: "${AllowAdminCreateUserOnly}"
+          COGNITO_HOSTED_UI:
+            Ref: CognitoHostedUi
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
+          DOMAIN:
+            Ref: Domain
+          COGNITO_USER_POOL_CLIENT_ID:
+            Ref: CognitoUserPoolClientId
+          COGNITO_USER_POOL_ID:
+            Ref: CognitoUserPoolId
+      LoggingConfig:
+        LogGroup:
+          Ref: ConsoleInstallerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelApplication
+            - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelSystem
+            - Ref: AWS::NoValue
+
+  ConsoleInstallerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+
+  ConsoleInstallRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotGovCloud
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName:
+            Fn::Sub: "${AWS::StackName}-ConsoleInstallPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ssm:GetParameter
+              Resource:
+              - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              Resource:
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                  - Ref: ConsoleBucket
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                  - Ref: ConsoleBucket
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              Resource:
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                  - Ref: CognitoConfigBucket
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                  - Ref: CognitoConfigBucket
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              Resource:
+              - Fn::Join:
+                - ''
+                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                  - Ref: DistributionBucket
+                  - '/*'
+            - Effect: Allow
+              Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:ReEncrypt*'
+              - 'kms:GenerateDataKey*'
+              - 'kms:DescribeKey'
+              Resource: '*'
+
+  ConsoleInstallerRef:
+    Type: Custom::ConsoleInstallerRef
+    Condition: IsNotGovCloud
+    Properties:
+      Nonce:
+        Ref: ConsoleVersion
+      API_URL:
+        Ref: ApiUrl
+      API_IAM_URL:
+        Ref: IamApiUrl
+      API_KEY_URL:
+        Ref: KeyApiUrl
+      HttpApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - ''
+      IamApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - ''
+      ServiceToken:
+        Fn::GetAtt:
+        - ConsoleInstaller
+        - Arn
+
+  CloudFrontDistributionRecordSet:
+    Condition: HasHostedZoneId
+    Type: 'AWS::Route53::RecordSetGroup'
+    Properties:
+      HostedZoneId:
+        Ref: HostedZoneId
+      RecordSets:
+        - Name:
+            Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-ConsoleDomain'
+          Type: A
+          AliasTarget:
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName:
+              Ref: CloudFrontDistributionDomainName

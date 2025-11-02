@@ -1,0 +1,279 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - OCR
+    
+Parameters:
+    
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 2048
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 600
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Type: String
+
+  OcrQueueArn:
+    Description: The Ocr Queue Arn
+    Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
+Resources:
+
+  OcrProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+
+  TesseractLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: Lambda Layer containing Tesseract binary
+      ContentUri: ./layer-tesseract-5.3.9.zip
+
+  OcrProcessorApiInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - OcrProcessor
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: OcrProcessor
+      Principal: apigateway.amazonaws.com
+      
+  OcrProcessor:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - OcrLambdaRolePolicy
+    Properties:
+      Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
+      Description: Lambda function to convert document to Tesseract
+      Runtime: java17
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      Layers: 
+      - Ref: TesseractLayer
+      CodeUri: ./formkiq-module-lambda-ocr-tesseract.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+          ENABLE_AWS_X_RAY: true
+          FormKiQType:
+            Ref: FormKiQType
+          DOCUMENTS_TABLE: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          DOCUMENTS_S3_BUCKET: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+          STAGE_DOCUMENTS_S3_BUCKET:
+            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}'
+          OCR_S3_BUCKET:
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+          SNS_DOCUMENT_EVENT: 
+            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+      Role: 
+        Fn::GetAtt:
+        - OcrLambdaRole
+        - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: OcrProcessorLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
+      Tags:
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        Application: "FormKiQ"
+      Events:
+        OcrSQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Ref: OcrQueueArn
+            BatchSize: 1
+
+  OcrProcessorParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Lambda for processing records for OCR"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/lambda/OcrTesseractProcessor"
+      Type: String
+      Value:
+        Ref: OcrProcessor
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+          
+  OcrLambdaRolePolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: Ocr-lambdarole
+      Roles: 
+        - 
+          Ref: "OcrLambdaRole"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+              Fn::Join:
+              - ''
+              - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+                - "/*"
+          - Effect: Allow
+            Action:
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            Resource:
+              Ref: OcrQueueArn
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:UpdateItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            Resource:
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+          - Effect: Allow
+            Action:
+            - sns:Publish
+            Resource:
+            - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+
+            
+  OcrLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+
+Outputs:
+  OcrProcessor:
+    Value:
+      Ref: OcrProcessor
+  OcrProcessorArn:
+    Value:
+      Fn::GetAtt:
+        - OcrProcessor
+        - Arn

@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -33,6 +34,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.validation.ValidationException;
 
 import java.io.IOException;
@@ -66,22 +68,6 @@ public class PdfExportAction implements DocumentAction {
     this.sendHttpRequest = new SendHttpRequest(serviceCache);
   }
 
-  @Override
-  public void run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
-
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
-    String deepLink = item.getDeepLinkPath();
-
-    if (isValid(siteId, deepLink)) {
-
-      String url = String.format("/integrations/google/drive/documents/%s/export", documentId);
-      this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}");
-    } else {
-      throw new IllegalArgumentException("PdfExport only supports Google DeepLink");
-    }
-  }
-
   private boolean isValid(final String siteId, final String deepLink) {
     boolean valid = !Strings.isEmpty(deepLink) && deepLink.startsWith(GOOGLE_DOCS_PREFIX);
 
@@ -101,5 +87,23 @@ public class PdfExportAction implements DocumentAction {
     }
 
     return valid;
+  }
+
+  @Override
+  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
+      final List<Action> actions, final Action action) throws IOException, ValidationException {
+
+    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    String deepLink = item.getDeepLinkPath();
+
+    if (isValid(siteId, deepLink)) {
+
+      String url = String.format("/integrations/google/drive/documents/%s/export", documentId);
+      this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}");
+    } else {
+      throw new IllegalArgumentException("PdfExport only supports Google DeepLink");
+    }
+
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 }

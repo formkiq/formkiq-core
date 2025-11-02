@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -44,7 +44,46 @@ public class DocumentMapToDocument
   private static final List<String> FIELDS =
       Arrays.asList("documentId", "path", "content", "contentType", "deepLinkPath");
 
-  @SuppressWarnings("unchecked")
+  @Override
+  public Map<String, Object> apply(final Map<String, ? extends Object> data) {
+
+    Map<String, Object> document = new HashMap<>();
+
+    for (String field : FIELDS) {
+
+      Object ob = data.get(field);
+      String value = getValue(ob);
+
+      if (value != null) {
+        document.put(field, value);
+      }
+    }
+
+    List<String> metadata =
+        data.keySet().stream().filter(o -> o.startsWith(PREFIX_DOCUMENT_METADATA)).toList();
+
+    metadata.forEach(m -> {
+
+      Map<String, Object> obj = (Map<String, Object>) data.get(m);
+      String value = getValue(obj);
+      String key = m.replaceAll("md#", "metadata#");
+      document.put(key, value);
+    });
+
+    if (data.containsKey("metadata")) {
+      List<Map<String, String>> list = (List<Map<String, String>>) data.get("metadata");
+      for (Map<String, String> map : list) {
+        String key = map.get("key");
+        String value = map.get("value");
+        document.put("metadata#" + key, value != null ? value : "");
+      }
+    }
+
+    document.put("metadata#", "");
+
+    return document;
+  }
+
   private String getValue(final Object obj) {
     String value = null;
 
@@ -70,47 +109,5 @@ public class DocumentMapToDocument
     }
 
     return value;
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public Map<String, Object> apply(final Map<String, ? extends Object> data) {
-
-    Map<String, Object> document = new HashMap<>();
-
-    for (String field : FIELDS) {
-
-      Object ob = data.get(field);
-      String value = getValue(ob);
-
-      if (value != null) {
-        document.put(field, value);
-      }
-    }
-
-    List<String> metadata =
-        data.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
-            .map(e -> e.getKey()).collect(Collectors.toList());
-
-    metadata.forEach(m -> {
-
-      Map<String, Object> obj = (Map<String, Object>) data.get(m);
-      String value = getValue(obj);
-      String key = m.replaceAll("md#", "metadata#");
-      document.put(key, value);
-    });
-
-    if (data.containsKey("metadata")) {
-      List<Map<String, String>> list = (List<Map<String, String>>) data.get("metadata");
-      for (Map<String, String> map : list) {
-        String key = map.get("key");
-        String value = map.get("value");
-        document.put("metadata#" + key, value != null ? value : "");
-      }
-    }
-
-    document.put("metadata#", "");
-
-    return document;
   }
 }

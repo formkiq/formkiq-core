@@ -32,6 +32,11 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_429;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_502;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_503;
+import static com.formkiq.module.http.HttpResponseStatus.STATUS_509;
+
 /**
  * Send Http Request.
  */
@@ -51,17 +56,25 @@ public class SendHttpRequest {
     this.documentsIamUrl = serviceCache.environment("documentsIamUrl");
   }
 
+  private boolean isRetryStatus(final HttpResponse<String> response) {
+    return switch (response.statusCode()) {
+      case STATUS_429, STATUS_502, STATUS_503, STATUS_509 -> true;
+      default -> false;
+    };
+  }
+
   /**
    * Send Http Request.
-   * 
+   *
    * @param siteId {@link String}
    * @param method {@link String}
    * @param url {@link String}
    * @param payload {@link String}
+   * @return {@link HttpResponse}
    * @throws IOException IOException
    */
-  public void sendRequest(final String siteId, final String method, final String url,
-      final String payload) throws IOException {
+  public HttpResponse<String> sendRequest(final String siteId, final String method,
+      final String url, final String payload) throws IOException {
 
     String u = this.documentsIamUrl + url;
 
@@ -72,7 +85,9 @@ public class SendHttpRequest {
     }
 
     HttpResponse<String> response;
-    if ("put".equalsIgnoreCase(method)) {
+    if ("get".equalsIgnoreCase(method)) {
+      response = this.http.get(u, Optional.empty(), parameters, payload);
+    } else if ("put".equalsIgnoreCase(method)) {
       response = this.http.put(u, Optional.empty(), parameters, payload);
     } else if ("post".equalsIgnoreCase(method)) {
       response = this.http.post(u, Optional.empty(), parameters, payload);
@@ -82,8 +97,14 @@ public class SendHttpRequest {
       throw new UnsupportedOperationException("unsupported method '" + method + "'");
     }
 
-    if (!HttpResponseStatus.is2XX(response)) {
-      throw new IOException(url + " returned " + response.statusCode());
+    if (isRetryStatus(response)) {
+      throw new HttpRetryException(u, response);
     }
+
+    if (!HttpResponseStatus.is2XX(response)) {
+      throw new IOException(u + " returned " + response.statusCode() + ": " + response.body());
+    }
+
+    return response;
   }
 }

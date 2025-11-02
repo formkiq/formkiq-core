@@ -1,0 +1,318 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.webhooks;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.WebhooksService;
+import software.amazon.awssdk.utils.StringUtils;
+
+/** {@link ApiGatewayRequestHandler} for "/public/webhooks". */
+public class PublicWebhooksRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** Extension for FormKiQ config file. */
+  private static final String FORMKIQ_DOC_EXT = ".fkb64";
+  /** To Milliseconds. */
+  private static final long TO_MILLIS = 1000L;
+
+  private static boolean isContentTypeJson(final String contentType) {
+    return "application/json".equals(contentType);
+  }
+
+  private static boolean isJsonValid(final String json) {
+
+    try {
+      GSON.fromJson(json, Object.class);
+      return true;
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+
+  private DynamicObject buildDynamicObject(final AwsServiceCache awsservice, final String siteId,
+      final String webhookId, final DynamicObject hook, final String body,
+      final String contentType) {
+
+    DynamicObject item = new DynamicObject(new HashMap<>());
+
+    final String documentId = ID.uuid();
+
+    if (contentType != null) {
+      item.put("contentType", contentType);
+    }
+
+    item.put("content", body);
+    item.put("documentId", documentId);
+    item.put("userId", "webhook/" + hook.getOrDefault("path", "webhook"));
+    item.put("path", "webhooks/" + webhookId);
+
+    if (hook.containsKey("TimeToLive")) {
+      item.put("TimeToLive", hook.get("TimeToLive"));
+    } else {
+      ConfigService configService = awsservice.getExtension(ConfigService.class);
+      String ttl = configService.get(siteId).getDocumentTimeToLive();
+      if (ttl != null) {
+        item.put("TimeToLive", ttl);
+      }
+    }
+
+    if (siteId != null) {
+      item.put("siteId", siteId);
+    }
+    return item;
+  }
+
+  private ApiRequestHandlerResponse buildRedirect(final ApiGatewayRequestEvent event,
+      final String redirectUri, final String body) {
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(redirectUri);
+
+    Map<String, String> queryMap = decodeQueryString(body);
+
+    String responseFields = getParameter(event, "responseFields");
+    if (StringUtils.isNotBlank(responseFields)) {
+      String[] fields = responseFields.split(",");
+      for (int i = 0; i < fields.length; i++) {
+        String value = queryMap.get(fields[i]);
+        sb.append(i == 0 && !redirectUri.contains("?") ? "?" : "&");
+        sb.append(fields[i]).append("=").append(value);
+      }
+    }
+
+    return ApiRequestHandlerResponse.builder().status(MOVED_PERMANENTLY)
+        .header("Location", sb.toString()).build();
+  }
+
+  private ApiRequestHandlerResponse buildResponse(final ApiGatewayRequestEvent event,
+      final DynamicObject item) {
+
+    String body = item.getString("content");
+    String documentId = item.getString("documentId");
+    String contentType = item.getString("contentType");
+
+    ApiRequestHandlerResponse response =
+        ApiRequestHandlerResponse.builder().ok().body("documentId", documentId).build();
+
+    String redirectUri = getParameter(event, "redirect_uri");
+
+    if ("application/x-www-form-urlencoded".equals(contentType)
+        && StringUtils.isNotBlank(redirectUri)) {
+
+      response = buildRedirect(event, redirectUri, body);
+
+    } else if (StringUtils.isNotBlank(redirectUri)) {
+      response = ApiRequestHandlerResponse.builder().status(MOVED_PERMANENTLY)
+          .header("Location", redirectUri).build();
+    }
+
+    return response;
+  }
+
+  private void checkIsWebhookValid(final DynamicObject hook)
+      throws BadException, TooManyRequestsException, UnauthorizedException {
+    if (hook == null || isExpired(hook)) {
+      throw new BadException("invalid webhook url");
+    }
+
+    boolean isPrivate = isEnabled(hook, "private");
+    boolean isEnabled = isEnabled(hook, "true");
+
+    if (isPrivate && !isSupportPrivate()) {
+      throw new UnauthorizedException("webhook is private");
+    }
+
+    if (!isPrivate && !isEnabled) {
+      throw new TooManyRequestsException("webhook is disabled");
+    }
+  }
+
+  private Map<String, String> decodeQueryString(final String query) {
+    Map<String, String> params = new LinkedHashMap<>();
+    for (String param : query.split("&")) {
+      String[] keyValue = param.split("=", 2);
+      String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+      String value =
+          keyValue.length > 1 ? URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8) : "";
+      if (!key.isEmpty()) {
+        params.put(key, value);
+      }
+    }
+
+    return params;
+  }
+
+  private String getIdempotencyKey(final ApiGatewayRequestEvent event) {
+    return event.getHeaders().get("Idempotency-Key");
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/public/webhooks";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    boolean access = "true".equals(awsservice.environment("ENABLE_PUBLIC_URLS"));
+    return access ? Optional.of(Boolean.TRUE) : Optional.empty();
+  }
+
+  /**
+   * Is Webhook Enabled.
+   * 
+   * @param obj {@link DynamicObject}
+   * @param val {@link String}
+   * @return boolean
+   */
+  private boolean isEnabled(final DynamicObject obj, final String val) {
+    return obj.containsKey("enabled") && obj.getString("enabled").equals(val);
+  }
+
+  /**
+   * Is object expired.
+   * 
+   * @param obj {@link DynamicObject}
+   * @return boolean
+   */
+  private boolean isExpired(final DynamicObject obj) {
+
+    boolean expired = false;
+
+    if (obj.containsKey("TimeToLive")) {
+      long epoch = Long.parseLong(obj.getString("TimeToLive"));
+
+      ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+      ZonedDateTime date = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
+      expired = now.isAfter(date);
+    }
+
+    return expired;
+  }
+
+  private boolean isIdempotencyCached(final AwsServiceCache awsservice,
+      final ApiGatewayRequestEvent event, final String siteId, final DynamicObject item) {
+
+    boolean cached = false;
+    String idempotencyKey = getIdempotencyKey(event);
+
+    if (idempotencyKey != null) {
+
+      CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+      String key = SiteIdKeyGenerator.createDatabaseKey(siteId, "idkey#" + idempotencyKey);
+      String documentId = cacheService.read(key);
+
+      if (documentId != null) {
+        item.put("documentId", documentId);
+        cached = true;
+      } else {
+        cacheService.write(key, item.getString("documentId"), 2);
+      }
+    }
+
+    return cached;
+  }
+
+  protected boolean isSupportPrivate() {
+    return false;
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = getParameter(event, "siteId");
+    String webhookId = getPathParameter(event, "webhooks");
+
+    DynamicObject hook =
+        awsservice.getExtension(WebhooksService.class).findWebhook(siteId, webhookId);
+
+    checkIsWebhookValid(hook);
+
+    String body = event.getBodyAsString();
+
+    String contentType = getContentType(event);
+
+    if (isContentTypeJson(contentType) && !isJsonValid(body)) {
+      throw new BadException("body isn't valid JSON");
+    }
+
+    DynamicObject item = buildDynamicObject(awsservice, siteId, webhookId, hook, body, contentType);
+
+    if (!isIdempotencyCached(awsservice, event, siteId, item)) {
+      putObjectToStaging(awsservice, item, siteId);
+    }
+
+    return buildResponse(event, item);
+  }
+
+  /**
+   * Put Object to Staging Bucket.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param item {@link DynamicObject}
+   * @param siteId {@link String}
+   */
+  private void putObjectToStaging(final AwsServiceCache awsservice, final DynamicObject item,
+      final String siteId) {
+
+    String s = GSON.toJson(item);
+    byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+
+    String stages3bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
+    String key = createDatabaseKey(siteId, item.getString("documentId") + FORMKIQ_DOC_EXT);
+    awsservice.getLogger().trace("s3 putObject " + key + " into bucket " + stages3bucket);
+
+    S3Service s3 = awsservice.getExtension(S3Service.class);
+    s3.putObject(stages3bucket, key, bytes, "application/json");
+  }
+}

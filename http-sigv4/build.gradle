@@ -3,11 +3,6 @@ description = "Http Sigv4"
 
 dependencies {
   api project(':http')
-  implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.31.25'
-  api group: 'software.amazon.awssdk', name: 'auth', version: '2.31.25'
-}
-
-test {
-  failFast = true
-  useJUnitPlatform() 
+  implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.31.59'
+  api group: 'software.amazon.awssdk', name: 'auth', version: '2.31.59'
 }

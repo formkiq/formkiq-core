@@ -49,7 +49,6 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -67,12 +66,12 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      assertEquals("{\"message\":\"Deleted OCR for DocumentId '1'\"}", m.get("body"));
     }
   }
 
@@ -81,7 +80,6 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -94,12 +92,12 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 
@@ -108,7 +106,6 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -122,12 +119,12 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 
@@ -136,7 +133,6 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocumentOcr01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -149,12 +145,12 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
+      Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 }

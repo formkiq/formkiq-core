@@ -4,8 +4,8 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.validation">
-	
+
 	<allow pkg="java.util" />
 	<allow pkg="com.formkiq.graalvm.annotations" />
-	
+
 </import-control>

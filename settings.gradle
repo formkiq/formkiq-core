@@ -1,7 +1,23 @@
 /*
-pluginManagement {
-    includeBuild '../graalvm-native-plugin'
-}*/
+ pluginManagement {
+ includeBuild '../graalvm-native-plugin'
+ }*/
+
+plugins {
+  id("com.gradle.develocity") version("4.2.1")
+}
+
+develocity {
+  buildScan {
+    termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+    termsOfUseAgree.set("yes")
+    def publishScans = providers.environmentVariable("PUBLISH_SCANS")
+        .map { it.equalsIgnoreCase("true") }
+        .orElse(false)
+
+    publishing.onlyIf { publishScans.get() }
+  }
+}
 
 rootProject.name = 'formkiq-core'
 
@@ -24,7 +40,6 @@ include 'lambda-api-graalvm'
 include 'lambda-s3'
 include 'lambda-s3-graalvm'
 include 'lambda-typesense'
-include 'module-email-notify'
 include 'fkq-lambda-core'
 include 'fkq-test-utils'
 include 'aws-dynamodb'

@@ -21,62 +21,28 @@
     "X-Forwarded-Proto": "https"
   },
   "multiValueHeaders": {
-    "Accept-Encoding": [
-      "gzip,deflate"
-    ],
-    "CloudFront-Forwarded-Proto": [
-      "https"
-    ],
-    "CloudFront-Is-Desktop-Viewer": [
-      "true"
-    ],
-    "CloudFront-Is-Mobile-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-SmartTV-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-Tablet-Viewer": [
-      "false"
-    ],
-    "CloudFront-Viewer-Country": [
-      "CA"
-    ],
-    "Host": [
-      "a7zojw0l98.execute-api.us-east-1.amazonaws.com"
-    ],
-    "User-Agent": [
-      "Apache-HttpClient/4.5.6 (Java/1.8.0_121)"
-    ],
-    "Via": [
-      "1.1 3548a9f5c122b933c8723d4f2b818c3f.cloudfront.net (CloudFront)"
-    ],
-    "X-Amz-Cf-Id": [
-      "aEQV93dhnhY_gFykW_cwdgLLlw6PoDYoqkzX9nqJyIqfLOHgImw8wQ=="
-    ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-5c6b7741-20d6f8001eccea00150fae00"
-    ],
-    "X-API-KEY": [
-      "F76HxQwfr64vUYnvLBeqZ6RXito8c78CYgSO0Yq8"
-    ],
-    "X-Forwarded-For": [
-      "50.71.176.213, 70.132.37.77"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ]
+    "Accept-Encoding": ["gzip,deflate"],
+    "CloudFront-Forwarded-Proto": ["https"],
+    "CloudFront-Is-Desktop-Viewer": ["true"],
+    "CloudFront-Is-Mobile-Viewer": ["false"],
+    "CloudFront-Is-SmartTV-Viewer": ["false"],
+    "CloudFront-Is-Tablet-Viewer": ["false"],
+    "CloudFront-Viewer-Country": ["CA"],
+    "Host": ["a7zojw0l98.execute-api.us-east-1.amazonaws.com"],
+    "User-Agent": ["Apache-HttpClient/4.5.6 (Java/1.8.0_121)"],
+    "Via": ["1.1 3548a9f5c122b933c8723d4f2b818c3f.cloudfront.net (CloudFront)"],
+    "X-Amz-Cf-Id": ["aEQV93dhnhY_gFykW_cwdgLLlw6PoDYoqkzX9nqJyIqfLOHgImw8wQ=="],
+    "X-Amzn-Trace-Id": ["Root=1-5c6b7741-20d6f8001eccea00150fae00"],
+    "X-API-KEY": ["F76HxQwfr64vUYnvLBeqZ6RXito8c78CYgSO0Yq8"],
+    "X-Forwarded-For": ["50.71.176.213, 70.132.37.77"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
   },
   "queryStringParameters": {
     "previous": "{{prev}}"
   },
   "multiValueQueryStringParameters": {
-    "previous": [
-      "{{prev}}"
-    ]
+    "previous": ["{{prev}}"]
   },
   "pathParameters": null,
   "stageVariables": null,

@@ -23,9 +23,14 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.graalvm.annotations.Reflectable;
+import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * Api Gateway Request Event.
@@ -68,7 +73,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Add HTTP Header.
-   * 
+   *
    * @param key {@link String}
    * @param value {@link String}
    */
@@ -81,8 +86,21 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
-   * Get Request Body.
+   * Add Query Parameter.
    * 
+   * @param key {@link String}
+   * @param value {@link String}
+   */
+  public void addQueryParameter(final String key, final String value) {
+    Map<String, String> q =
+        queryStringParameters != null ? new HashMap<>(queryStringParameters) : new HashMap<>();
+    q.put(key, value);
+    this.queryStringParameters = q;
+  }
+
+  /**
+   * Get Request Body.
+   *
    * @return {@link String}
    */
   public String getBody() {
@@ -90,58 +108,48 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
-   * Get Request Headers.
+   * Get Body as bytes.
    * 
-   * @return {@link Map}
+   * @return byte[]
    */
-  public Map<String, String> getHeaders() {
-    return this.headers;
+  public byte[] getBodyAsBytes() {
+
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
+
+    byte[] data = body.getBytes(StandardCharsets.UTF_8);
+
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      data = Base64.getDecoder().decode(body);
+    }
+
+    return data;
   }
 
   /**
-   * Get Http Method.
-   * 
+   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
+   *
    * @return {@link String}
+   * @throws BadException BadException
    */
-  public String getHttpMethod() {
-    return this.httpMethod;
-  }
+  public String getBodyAsString() throws BadException {
 
-  /**
-   * Is Request Base64 Encoded.
-   * 
-   * @return {@link Boolean}
-   */
-  public Boolean getIsBase64Encoded() {
-    return this.isBase64Encoded;
-  }
+    if (body == null) {
+      throw new BadException("request body is required");
+    }
 
-  /**
-   * Get Request Path.
-   * 
-   * @return {@link String}
-   */
-  public String getPath() {
-    return this.path;
-  }
+    String result = body;
+    if (Boolean.TRUE.equals(isBase64Encoded)) {
+      byte[] bytes = Base64.getDecoder().decode(body);
+      result = new String(bytes, StandardCharsets.UTF_8);
+    }
 
-  /**
-   * Get Path Parameters.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, String> getPathParameters() {
-    return this.pathParameters;
-  }
+    if (StringUtils.isEmpty(result)) {
+      throw new BadException("request body is required");
+    }
 
-  /**
-   * Get Path Parameter.
-   * 
-   * @param key {@link String}
-   * @return String
-   */
-  public String getPathParameter(final String key) {
-    return this.pathParameters != null ? this.pathParameters.get(key) : null;
+    return result;
   }
 
   /**
@@ -155,18 +163,86 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Get Request Headers.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getHeaders() {
+    return this.headers;
+  }
+
+  /**
+   * Get Http Method.
+   *
+   * @return {@link String}
+   */
+  public String getHttpMethod() {
+    return this.httpMethod;
+  }
+
+  /**
+   * Is Request Base64 Encoded.
+   *
+   * @return {@link Boolean}
+   */
+  public Boolean getIsBase64Encoded() {
+    return this.isBase64Encoded;
+  }
+
+  /**
+   * Get Request Path.
+   *
+   * @return {@link String}
+   */
+  public String getPath() {
+    return this.path;
+  }
+
+  /**
+   * Get Path Parameter.
+   *
+   * @param key {@link String}
+   * @return String
+   */
+  public String getPathParameter(final String key) {
+    return this.pathParameters != null ? this.pathParameters.get(key) : null;
+  }
+
+  /**
+   * Get Path Parameters.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getPathParameters() {
+    return this.pathParameters;
+  }
+
+  /**
    * Get Query Parameter.
-   * 
+   *
    * @param key {@link String}
    * @return {@link String}
    */
   public String getQueryStringParameter(final String key) {
-    return getQueryStringParameters() != null ? getQueryStringParameters().get(key) : null;
+    return getQueryStringParameter(key, null);
+  }
+
+  /**
+   * Get Query Parameter.
+   *
+   * @param key {@link String}
+   * @param defaultValue {@link String}
+   * @return {@link String}
+   */
+  public String getQueryStringParameter(final String key, final String defaultValue) {
+    return getQueryStringParameters() != null
+        ? getQueryStringParameters().getOrDefault(key, defaultValue)
+        : defaultValue;
   }
 
   /**
    * Get Query String Parameters.
-   * 
+   *
    * @return {@link Map}
    */
   public Map<String, String> getQueryStringParameters() {
@@ -175,7 +251,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Context.
-   * 
+   *
    * @return {@link ApiGatewayRequestContext}
    */
   public ApiGatewayRequestContext getRequestContext() {
@@ -184,7 +260,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Get Request Resource.
-   * 
+   *
    * @return {@link String}
    */
   public String getResource() {
@@ -193,7 +269,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Body.
-   * 
+   *
    * @param requestBody {@link String}
    */
   public void setBody(final String requestBody) {
@@ -202,7 +278,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Headers.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setHeaders(final Map<String, String> map) {
@@ -211,7 +287,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Http Method.
-   * 
+   *
    * @param method {@link String}
    */
   public void setHttpMethod(final String method) {
@@ -220,7 +296,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Base64 Encoded.
-   * 
+   *
    * @param isBase64 {@link Boolean}
    */
   public void setIsBase64Encoded(final Boolean isBase64) {
@@ -229,7 +305,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Path.
-   * 
+   *
    * @param requestPath {@link String}
    */
   public void setPath(final String requestPath) {
@@ -238,7 +314,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Path Parameters.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setPathParameters(final Map<String, String> map) {
@@ -247,7 +323,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Query String Parameters.
-   * 
+   *
    * @param map {@link Map}
    */
   public void setQueryStringParameters(final Map<String, String> map) {
@@ -256,7 +332,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Request Context.
-   * 
+   *
    * @param context {@link ApiGatewayRequestContext}
    */
   public void setRequestContext(final ApiGatewayRequestContext context) {
@@ -265,7 +341,7 @@ public class ApiGatewayRequestEvent {
 
   /**
    * Set Resource.
-   * 
+   *
    * @param requestResource {@link String}
    */
   public void setResource(final String requestResource) {

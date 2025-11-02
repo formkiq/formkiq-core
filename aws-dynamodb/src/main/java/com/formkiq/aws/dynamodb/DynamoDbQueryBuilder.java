@@ -38,6 +38,16 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 public class DynamoDbQueryBuilder implements DbKeys {
   /** Default Max Results. */
   private static final int MAX_RESULTS = 10;
+
+  /**
+   * Create a new builder.
+   * 
+   * @return builder instance
+   */
+  public static DynamoDbQueryBuilder builder() {
+    return new DynamoDbQueryBuilder();
+  }
+
   /** Index Name. */
   private String indexName;
   /** Projection Expression. */
@@ -52,6 +62,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
   private Map<String, AttributeValue> startKey;
   /** Query limit. */
   private int limit = MAX_RESULTS;
+
   /** Scan Index Forward. */
   private Boolean scanIndexForward;
 
@@ -59,39 +70,6 @@ public class DynamoDbQueryBuilder implements DbKeys {
    * constructor.
    */
   private DynamoDbQueryBuilder() {}
-
-  /**
-   * Create a new builder.
-   *
-   * @return builder instance
-   */
-  public static DynamoDbQueryBuilder builder() {
-    return new DynamoDbQueryBuilder();
-  }
-
-  /**
-   * Sets the GSI index name to query; omit for primary index.
-   *
-   * @param dbIndexName GSI name
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder indexName(final String dbIndexName) {
-    this.indexName = dbIndexName;
-    return this;
-  }
-
-  /**
-   * Sets the GSI index name to query; omit for primary index.
-   *
-   * @param queryProjectionExpression {@link String}
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder projectionExpression(final String queryProjectionExpression) {
-    this.projectionExpression = queryProjectionExpression;
-    return this;
-  }
-
-
 
   private String addName(final String name) {
     String placeholder = "#" + name;
@@ -106,103 +84,6 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
-   * Adds an equality condition on PK.
-   *
-   * @param value partition key value
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder pk(final String value) {
-    String nameKey = addName(PK);
-    String valKey = addValue(PK, AttributeValue.builder().s(value).build());
-    keyConditions.add(nameKey + " = " + valKey);
-    return this;
-  }
-
-  /**
-   * Adds an equality condition on SK.
-   *
-   * @param value sort key value
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder eq(final String value) {
-    String nameKey = addName(SK);
-    String valKey = addValue(SK, AttributeValue.builder().s(value).build());
-    keyConditions.add(nameKey + " = " + valKey);
-    return this;
-  }
-
-  /**
-   * Adds a BETWEEN condition on SK.
-   *
-   * @param low lower bound
-   * @param high upper bound
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder betweenSK(final String low, final String high) {
-    String nameKey = addName(SK);
-    String lowKey = addValue("SK_low", AttributeValue.builder().s(low).build());
-    String highKey = addValue("SK_high", AttributeValue.builder().s(high).build());
-    keyConditions.add(nameKey + " BETWEEN " + lowKey + " AND " + highKey);
-    return this;
-  }
-
-  /**
-   * Set Start Key from Next token.
-   *
-   * @param nextToken {@link String}
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder nextToken(final String nextToken) {
-    startKey = new StringToMapAttributeValue().apply(nextToken);
-    return this;
-  }
-
-  /**
-   * Set Start Key from Next token.
-   *
-   * @param exclusiveStartKey {@link Map}
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder nextToken(final Map<String, AttributeValue> exclusiveStartKey) {
-    startKey = exclusiveStartKey;
-    return this;
-  }
-
-  /**
-   * Set Query results limit.
-   *
-   * @param resultsLimit int
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder limit(final int resultsLimit) {
-    this.limit = resultsLimit;
-    return this;
-  }
-
-  /**
-   * Set Start Key from Next token.
-   *
-   * @param resultsLimit {@link String}
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder limit(final String resultsLimit) {
-
-    if (resultsLimit != null) {
-      try {
-        this.limit = Integer.parseInt(resultsLimit);
-      } catch (NumberFormatException e) {
-        this.limit = MAX_RESULTS;
-      }
-    }
-
-    if (limit < 1) {
-      this.limit = MAX_RESULTS;
-    }
-
-    return this;
-  }
-
-  /**
    * Adds BEGINS_WITH condition on SK.
    *
    * @param value {@link String}
@@ -212,6 +93,21 @@ public class DynamoDbQueryBuilder implements DbKeys {
     String nameKey = addName(SK);
     String val = addValue("SK", AttributeValue.builder().s(value).build());
     keyConditions.add("begins_with(" + nameKey + "," + val + ")");
+    return this;
+  }
+
+  /**
+   * Adds a BETWEEN condition on SK.
+   * 
+   * @param low lower bound
+   * @param high upper bound
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder betweenSK(final String low, final String high) {
+    String nameKey = addName(SK);
+    String lowKey = addValue("SK_low", AttributeValue.builder().s(low).build());
+    String highKey = addValue("SK_high", AttributeValue.builder().s(high).build());
+    keyConditions.add(nameKey + " BETWEEN " + lowKey + " AND " + highKey);
     return this;
   }
 
@@ -239,6 +135,132 @@ public class DynamoDbQueryBuilder implements DbKeys {
     }
 
     return req.build();
+  }
+
+  /**
+   * Adds an equality condition on SK.
+   *
+   * @param value sort key value
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder eq(final String value) {
+    String nameKey = addName(SK);
+    String valKey = addValue(SK, AttributeValue.builder().s(value).build());
+    keyConditions.add(nameKey + " = " + valKey);
+    return this;
+  }
+
+  /**
+   * Sets the GSI index name to query; omit for primary index.
+   * 
+   * @param dbIndexName GSI name
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder indexName(final String dbIndexName) {
+    this.indexName = dbIndexName;
+    return this;
+  }
+
+  /**
+   * Sets the GSI index name to query; omit for primary index.
+   *
+   * @param dbIndexName GSI name
+   * @param key {@link DynamoDbKey}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder indexName(final String dbIndexName, final DynamoDbKey key) {
+    indexName(dbIndexName);
+
+    if (GSI1.equals(dbIndexName)) {
+      pk(key.gsi1Pk());
+    } else if (GSI2.equals(dbIndexName)) {
+      pk(key.gsi2Pk());
+    } else {
+      pk(key.pk());
+    }
+
+    return this;
+  }
+
+  /**
+   * Set Start Key from Next token.
+   *
+   * @param s {@link String}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder limit(final String s) {
+
+    if (s != null) {
+      try {
+        this.limit = Integer.parseInt(s);
+      } catch (NumberFormatException e) {
+        this.limit = MAX_RESULTS;
+      }
+    }
+
+    if (limit < 1) {
+      this.limit = MAX_RESULTS;
+    }
+
+    return this;
+  }
+
+  /**
+   * Set Query results limit.
+   *
+   * @param resultsLimit int
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder limit(final int resultsLimit) {
+    this.limit = resultsLimit;
+    return this;
+  }
+
+  /**
+   * Set Start Key from Next token.
+   * 
+   * @param exclusiveStartKey {@link Map}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder nextToken(final Map<String, AttributeValue> exclusiveStartKey) {
+    startKey = exclusiveStartKey;
+    return this;
+  }
+
+  /**
+   * Set Start Key from Next token.
+   *
+   * @param nextToken {@link String}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder nextToken(final String nextToken) {
+    startKey = new StringToMapAttributeValue().apply(nextToken);
+    return this;
+  }
+
+  /**
+   * Adds an equality condition on PK. <<<<<<< HEAD
+   *
+   * @param value partition key value
+   * 
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder pk(final String value) {
+    String nameKey = addName(PK);
+    String valKey = addValue(PK, AttributeValue.builder().s(value).build());
+    keyConditions.add(nameKey + " = " + valKey);
+    return this;
+  }
+
+  /**
+   * Sets the GSI index name to query; omit for primary index.
+   *
+   * @param queryProjectionExpression {@link String}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder projectionExpression(final String queryProjectionExpression) {
+    this.projectionExpression = queryProjectionExpression;
+    return this;
   }
 
   /**

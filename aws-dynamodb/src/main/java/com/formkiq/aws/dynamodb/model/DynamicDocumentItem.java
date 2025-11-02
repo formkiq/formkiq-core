@@ -81,16 +81,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
-  public String getWidth() {
-    return getString("width");
-  }
-
-  @Override
-  public String getHeight() {
-    return getString("height");
-  }
-
-  @Override
   public String getDocumentId() {
     return getString("documentId");
   }
@@ -100,6 +90,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
     List<DynamicObject> list = getList("documents");
     return list.stream().map(o -> new DynamicObjectToDocumentItem().apply(o))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public String getHeight() {
+    return getString("height");
   }
 
   @Override
@@ -160,6 +155,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getWidth() {
+    return getString("width");
+  }
+
+  @Override
   public void setBelongsToDocumentId(final String documentId) {
     put("belongsToDocumentId", documentId);
   }
@@ -190,16 +190,6 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
-  public void setWidth(final String width) {
-    put("width", width);
-  }
-
-  @Override
-  public void setHeight(final String height) {
-    put("height", height);
-  }
-
-  @Override
   public void setDocumentId(final String documentId) {
     put("documentId", documentId);
   }
@@ -208,6 +198,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   public void setDocuments(final List<DocumentItem> list) {
     put("documents", list);
 
+  }
+
+  @Override
+  public void setHeight(final String height) {
+    put("height", height);
   }
 
   @Override
@@ -255,5 +250,10 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setVersion(final String version) {
     put("version", version);
+  }
+
+  @Override
+  public void setWidth(final String width) {
+    put("width", width);
   }
 }

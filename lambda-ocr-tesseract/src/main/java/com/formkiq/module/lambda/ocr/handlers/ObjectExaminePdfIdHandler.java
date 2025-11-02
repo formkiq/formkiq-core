@@ -24,7 +24,7 @@
 package com.formkiq.module.lambda.ocr.handlers;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +37,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambda.ocr.pdf.PdfService;
@@ -53,6 +52,22 @@ public class ObjectExaminePdfIdHandler
   public static final String URL = "/objects/examine/{id}/pdf";
   /** {@link PdfService}. */
   private final PdfService service = new PdfServicePdfBox();
+
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String id = event.getPathParameter("id");
+
+    Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
+
+    if (fileinfo == null) {
+      throw new DocumentNotFoundException(id);
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body("fileinfo", fileinfo).build();
+  }
 
   private Map<String, Object> getFileInfo(final AwsServiceCache awsservice, final String siteId,
       final String id) throws IOException {
@@ -82,23 +97,5 @@ public class ObjectExaminePdfIdHandler
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-
-    String siteId = authorization.getSiteId();
-    String id = event.getPathParameters().get("id");
-
-    Map<String, Object> fileinfo = getFileInfo(awsservice, siteId, id);
-
-    if (fileinfo == null) {
-      throw new DocumentNotFoundException(id);
-    }
-
-    Map<String, Object> map = Map.of("fileinfo", fileinfo);
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
   }
 }

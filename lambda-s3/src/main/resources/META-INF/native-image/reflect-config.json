@@ -1,0 +1,73 @@
+[
+  {
+    "name": "java.security.SecureRandomParameters"
+  },
+  {
+    "name": "javax.imageio.spi.ImageReaderSpi"
+  },
+  {
+    "name": "javax.imageio.spi.ImageReaderWriterSpi",
+    "methods": [
+      { "name": "getFileSuffixes", "parameterTypes": [] },
+      { "name": "getFormatNames", "parameterTypes": [] },
+      { "name": "getMIMETypes", "parameterTypes": [] }
+    ]
+  },
+  {
+    "name": "javax.imageio.spi.ImageWriterSpi"
+  },
+  {
+    "name": "sun.java2d.loops.OpaqueCopyAnyToArgb",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.OpaqueCopyArgbToAny",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetDrawLineANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetDrawPathANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetDrawPolygonsANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetDrawRectANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetFillPathANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetFillRectANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.loops.SetFillSpansANY",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.java2d.marlin.DMarlinRenderingEngine",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "sun.security.provider.NativePRNG",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "<init>",
+        "parameterTypes": ["java.security.SecureRandomParameters"]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  }
+]

@@ -385,26 +385,6 @@ Resources:
       RouteTableId: 
         Ref: PrivateRouteTable
 
-  HttpsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security Group which allows HTTPS access
-      VpcId:
-        Ref: Vpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Application
-          Value: FormKiQ
-
   S3GatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Condition: IsEnableVpcEndpoints
@@ -615,13 +595,6 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PrivateSubnet3"
-  HttpsSecurityGroup:
-    Description: Security Group which allows HTTPS access
-    Value:
-      Ref: HttpsSecurityGroup
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}-HttpsSecurityGroup"
 
   PublicSubnets:
     Condition: HasPublic

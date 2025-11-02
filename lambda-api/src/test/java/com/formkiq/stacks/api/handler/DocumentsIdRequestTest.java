@@ -55,8 +55,6 @@ import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
-import com.formkiq.client.model.DocumentSync;
-import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
@@ -84,9 +82,94 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   /** Test Timeout. */
   private static final int TEST_TIMEOUT = 10;
 
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+  }
+
+  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest req)
+      throws ApiException {
+    GetDocumentUrlResponse response =
+        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+    assertNotNull(response.getDocumentId());
+    return response.getDocumentId();
+  }
+
   @BeforeEach
   void beforeEach() {
     clearSqsMessages();
+  }
+
+  private void createSiteSchema(final String siteId, final String attributeKey0,
+      final String attributeKey1) throws ApiException {
+
+    List<String> list = Arrays.asList("userId", "playerId", attributeKey0, attributeKey1);
+
+    for (String attributeKey : list) {
+      addAttribute(siteId, attributeKey);
+    }
+
+    AttributeSchemaCompositeKey compositeKey0 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList(attributeKey0, attributeKey1));
+
+    AttributeSchemaCompositeKey compositeKey1 =
+        new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList("userId", "playerId"));
+
+    AttributeSchemaCompositeKey compositeKey2 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList("userId", "playerId", attributeKey0, attributeKey1));
+
+    AttributeSchemaCompositeKey compositeKey3 = new AttributeSchemaCompositeKey()
+        .attributeKeys(Arrays.asList("userId", attributeKey0, attributeKey1));
+
+    SetSitesSchemaRequest sitesSchema =
+        new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
+            .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
+    this.schemasApi.setSitesSchema(siteId, sitesSchema);
+  }
+
+  private List<Document> getDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
+  }
+
+  private List<Document> getDocuments(final String siteId, final int expected)
+      throws ApiException, InterruptedException {
+    List<Document> documents = getDocuments(siteId);
+    while (documents.size() != expected) {
+      TimeUnit.SECONDS.sleep(1);
+      documents = getDocuments(siteId);
+    }
+
+    return documents;
+  }
+
+  private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null)
+        .getDocuments());
+  }
+
+  private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
+      final String content) throws IOException {
+
+    HttpService http = new HttpServiceJdk11();
+
+    HttpHeaders hds = new HttpHeaders();
+    headerMap.forEach((h, v) -> hds.add(h, v.toString()));
+
+    http.put(presignedUrl, Optional.of(hds), Optional.empty(), content);
+  }
+
+  private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
+      throws ApiException {
+    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+  }
+
+  private List<SearchResultDocument> searchDocumentAttribute(final String siteId,
+      final String attributeKey, final String limit) throws ApiException {
+    DocumentSearchRequest sreq = new DocumentSearchRequest().query(
+        new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
+    return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
   }
 
   /**
@@ -116,13 +199,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest req)
-      throws ApiException {
-    GetDocumentUrlResponse response =
-        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-    assertNotNull(response.getDocumentId());
-    return response.getDocumentId();
-  }
 
   /**
    * DELETE /documents/{documentId} deeplink document request.
@@ -270,182 +346,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private List<SearchResultDocument> searchDocumentAttribute(final String siteId,
-      final String attributeKey, final String limit) throws ApiException {
-    DocumentSearchRequest sreq = new DocumentSearchRequest().query(
-        new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
-    return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
-  }
-
-  private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
-  }
-
-  private List<Document> getDocuments(final String siteId, final int expected)
-      throws ApiException, InterruptedException {
-    List<Document> documents = getDocuments(siteId);
-    while (documents.size() != expected) {
-      TimeUnit.SECONDS.sleep(1);
-      documents = getDocuments(siteId);
-    }
-
-    return documents;
-  }
-
-  private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null)
-        .getDocuments());
-  }
-
-
-  /**
-   * PUT /documents/{documentId}/restore request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  @Timeout(TEST_TIMEOUT)
-  public void testHandleSetDocumentRestore01() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String path = ID.uuid() + ".txt";
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
-      String documentId = addDocumentUpload(siteId, req);
-
-      // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
-
-      // then
-      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
-      assertEquals(1, softDeletedDocuments.size());
-      assertEquals(path, softDeletedDocuments.get(0).getPath());
-
-      List<Document> documents = getDocuments(siteId, 0);
-      assertEquals(0, documents.size());
-
-      // when
-      SetDocumentRestoreResponse restore = this.documentsApi.setDocumentRestore(documentId, siteId);
-
-      // then
-      assertEquals("document restored", restore.getMessage());
-      softDeletedDocuments = getSoftDeletedDocuments(siteId);
-      assertEquals(0, softDeletedDocuments.size());
-      documents = getDocuments(siteId, 1);
-      assertEquals(1, documents.size());
-      assertEquals(path, documents.get(0).getPath());
-
-      List<DocumentSync> syncs =
-          notNull(this.documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
-      assertEquals(2, syncs.size());
-      assertEquals(DocumentSyncType.SOFT_DELETE, syncs.get(0).getType());
-      assertEquals(DocumentSyncType.METADATA, syncs.get(1).getType());
-    }
-  }
-
-  /**
-   * PUT /documents/{documentId}/restore request, document not found.
-   *
-   */
-  @Test
-  public void testHandleSetDocumentRestore02() {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String documentId = ID.uuid();
-
-      // when
-      try {
-        this.documentsApi.setDocumentRestore(documentId, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        final int code = 404;
-        assertEquals(code, e.getCode());
-        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * GET /documents/{documentId} request, deeplink.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleGetDocument01() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("s3://test.txt");
-      String documentId = addDocumentUpload(siteId, req);
-
-      // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-
-      // then
-      assertEquals("s3://test.txt", document.getDeepLinkPath());
-      assertEquals("test.txt", document.getPath());
-    }
-  }
-
-  /**
-   * GET /documents/{documentId} request, deeplink url.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleGetDocument02() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath(deepLink);
-      String documentId = addDocumentUpload(siteId, req);
-
-      // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-
-      // then
-      assertEquals(deepLink, document.getDeepLinkPath());
-      assertEquals("sdflhsdfjeiwrwr", document.getPath());
-    }
-  }
-
-
-  /**
-   * GET /documents/{documentId} request, deeplink url and path.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleGetDocument03() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
-      AddDocumentUploadRequest req =
-          new AddDocumentUploadRequest().deepLinkPath(deepLink).path("apath.txt");
-      String documentId = addDocumentUpload(siteId, req);
-
-      // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
-
-      // then
-      assertEquals(deepLink, document.getDeepLinkPath());
-      assertEquals("apath.txt", document.getPath());
-    }
-  }
 
   /**
    * POST /documents request, deeplink.
@@ -498,6 +398,146 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("s3://test.txt");
+      String documentId = addDocumentUpload(siteId, req);
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals("s3://test.txt", document.getDeepLinkPath());
+      assertEquals("test.txt", document.getPath());
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink url.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath(deepLink);
+      String documentId = addDocumentUpload(siteId, req);
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals(deepLink, document.getDeepLinkPath());
+      assertEquals("sdflhsdfjeiwrwr", document.getPath());
+    }
+  }
+
+  /**
+   * GET /documents/{documentId} request, deeplink url and path.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocument03() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
+      AddDocumentUploadRequest req =
+          new AddDocumentUploadRequest().deepLinkPath(deepLink).path("apath.txt");
+      String documentId = addDocumentUpload(siteId, req);
+
+      // when
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+
+      // then
+      assertEquals(deepLink, document.getDeepLinkPath());
+      assertEquals("apath.txt", document.getPath());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/restore request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testHandleSetDocumentRestore01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String path = ID.uuid() + ".txt";
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
+      String documentId = addDocumentUpload(siteId, req);
+
+      // when
+      this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+      assertEquals(path, softDeletedDocuments.get(0).getPath());
+
+      List<Document> documents = getDocuments(siteId, 0);
+      assertEquals(0, documents.size());
+
+      // when
+      SetDocumentRestoreResponse restore = this.documentsApi.setDocumentRestore(documentId, siteId);
+
+      // then
+      assertEquals("document restored", restore.getMessage());
+      softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+      documents = getDocuments(siteId, 1);
+      assertEquals(1, documents.size());
+      assertEquals(path, documents.get(0).getPath());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/restore request, document not found.
+   *
+   */
+  @Test
+  public void testHandleSetDocumentRestore02() {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+
+      // when
+      try {
+        this.documentsApi.setDocumentRestore(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        final int code = 404;
+        assertEquals(code, e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
       }
     }
@@ -662,11 +702,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
-  }
-
   /**
    * Update Document with invalid schema allowed value.
    */
@@ -755,33 +790,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(attributeKey1, attributes.get(2).getKey());
       assertEquals("privacy", attributes.get(2).getStringValue());
     }
-  }
-
-  private void createSiteSchema(final String siteId, final String attributeKey0,
-      final String attributeKey1) throws ApiException {
-
-    List<String> list = Arrays.asList("userId", "playerId", attributeKey0, attributeKey1);
-
-    for (String attributeKey : list) {
-      addAttribute(siteId, attributeKey);
-    }
-
-    AttributeSchemaCompositeKey compositeKey0 = new AttributeSchemaCompositeKey()
-        .attributeKeys(Arrays.asList(attributeKey0, attributeKey1));
-
-    AttributeSchemaCompositeKey compositeKey1 =
-        new AttributeSchemaCompositeKey().attributeKeys(Arrays.asList("userId", "playerId"));
-
-    AttributeSchemaCompositeKey compositeKey2 = new AttributeSchemaCompositeKey()
-        .attributeKeys(Arrays.asList("userId", "playerId", attributeKey0, attributeKey1));
-
-    AttributeSchemaCompositeKey compositeKey3 = new AttributeSchemaCompositeKey()
-        .attributeKeys(Arrays.asList("userId", attributeKey0, attributeKey1));
-
-    SetSitesSchemaRequest sitesSchema =
-        new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
-            .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
-    this.schemasApi.setSitesSchema(siteId, sitesSchema);
   }
 
   /**
@@ -1132,21 +1140,5 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, docs.size());
       assertEquals(path1, docs.get(0).getPath());
     }
-  }
-
-  private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
-      throws ApiException {
-    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
-  }
-
-  private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
-      final String content) throws IOException {
-
-    HttpService http = new HttpServiceJdk11();
-
-    HttpHeaders hds = new HttpHeaders();
-    headerMap.forEach((h, v) -> hds.add(h, v.toString()));
-
-    http.put(presignedUrl, Optional.of(hds), Optional.empty(), content);
   }
 }

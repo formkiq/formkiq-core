@@ -1,0 +1,171 @@
+{
+  "dependencies": [
+    {
+      "moduleName": "com.google.code.gson:gson",
+      "moduleUrl": "https://github.com/google/gson",
+      "moduleVersion": "2.13.1",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "com.google.errorprone:error_prone_annotations",
+      "moduleUrl": "https://errorprone.info/error_prone_annotations",
+      "moduleVersion": "2.38.0",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "org.reactivestreams:reactive-streams",
+      "moduleUrl": "http://www.reactive-streams.org/",
+      "moduleVersion": "1.0.4",
+      "moduleLicense": "MIT-0",
+      "moduleLicenseUrl": "https://spdx.org/licenses/MIT-0.html"
+    },
+    {
+      "moduleName": "org.slf4j:slf4j-api",
+      "moduleUrl": "http://www.slf4j.org",
+      "moduleVersion": "1.7.36",
+      "moduleLicense": "MIT License",
+      "moduleLicenseUrl": "https://opensource.org/licenses/MIT"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:annotations",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:auth",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:checksums",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:checksums-spi",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:endpoints-spi",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:http-auth",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:http-auth-aws",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:http-auth-aws-eventstream",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:http-auth-spi",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:http-client-spi",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:identity-spi",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:json-utils",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:metrics-spi",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:profiles",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:regions",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:retries",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:retries-spi",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:sdk-core",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:third-party-jackson-core",
+      "moduleUrl": "https://aws.amazon.com/sdkforjava",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.awssdk:utils",
+      "moduleVersion": "2.31.59",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "moduleName": "software.amazon.eventstream:eventstream",
+      "moduleUrl": "https://github.com/awslabs/aws-eventstream-java",
+      "moduleVersion": "1.0.1",
+      "moduleLicense": "Apache License, Version 2.0",
+      "moduleLicenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ]
+}

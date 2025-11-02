@@ -44,6 +44,30 @@ public class Objects {
   public static final String INT_ZERO_PAD_FORMAT = "%06d";
 
   /**
+   * Merge two {@link Collection} together.
+   *
+   * @param <T> Type of {@link Collection}
+   * @param t0 {@link Collection}
+   * @param t1 {@link Collection}
+   * @return {@link Collection}
+   */
+  public static <T> Collection<T> concat(final Collection<T> t0, final Collection<T> t1) {
+    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
+  }
+
+  /**
+   * Merge two {@link List} together.
+   *
+   * @param <T> Type of {@link List}
+   * @param t0 {@link List}
+   * @param t1 {@link List}
+   * @return {@link List}
+   */
+  public static <T> List<T> concat(final List<T> t0, final List<T> t1) {
+    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
+  }
+
+  /**
    * Format {@link Double}.
    * 
    * @param val {@link Double}
@@ -98,12 +122,23 @@ public class Objects {
   /**
    * Get Last Element of {@link List}.
    *
-   * @param <T> Type of Object.
+   * @param <T> Type of Object
    * @param list {@link List}
    * @return {@link Object}
    */
   public static <T> T last(final List<T> list) {
     return !notNull(list).isEmpty() ? list.get(list.size() - 1) : null;
+  }
+
+  /**
+   * Get Last Element of {@link List}.
+   *
+   * @param <T> Type of Object
+   * @param list {@link List}
+   * @return {@link Object}
+   */
+  public static <T> T last(final String[] list) {
+    return list == null || list.length == 0 ? null : (T) list[list.length - 1];
   }
 
   /**
@@ -170,29 +205,5 @@ public class Objects {
     if (obj == null) {
       throw ex;
     }
-  }
-
-  /**
-   * Merge two {@link List} together.
-   *
-   * @param <T> Type of {@link List}
-   * @param t0 {@link List}
-   * @param t1 {@link List}
-   * @return {@link List}
-   */
-  public static <T> List<T> concat(final List<T> t0, final List<T> t1) {
-    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
-  }
-
-  /**
-   * Merge two {@link Collection} together.
-   *
-   * @param <T> Type of {@link Collection}
-   * @param t0 {@link Collection}
-   * @param t1 {@link Collection}
-   * @return {@link Collection}
-   */
-  public static <T> Collection<T> concat(final Collection<T> t0, final Collection<T> t1) {
-    return Stream.concat(notNull(t0).stream(), notNull(t1).stream()).toList();
   }
 }

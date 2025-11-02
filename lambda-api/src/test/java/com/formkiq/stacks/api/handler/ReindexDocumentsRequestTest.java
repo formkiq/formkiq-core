@@ -59,6 +59,54 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(LocalStackExtension.class)
 public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
+  private void addAttribute(final String siteId, final String key) throws ApiException {
+    AddAttributeRequest req =
+        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(null));
+    this.attributesApi.addAttribute(req, siteId);
+  }
+
+  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
+      throws ApiException {
+    AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
+    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+  }
+
+  private void assertDocumentAttributes(final DocumentAttribute da,
+      final String expectedAttributeKey, final String expectedStringValue) {
+    assertEquals(expectedAttributeKey, da.getKey());
+    assertEquals(expectedStringValue, da.getStringValue());
+    assertNotNull(da.getInsertedDate());
+    assertNotNull(da.getUserId());
+  }
+
+  private AddDocumentAttribute createAttribute(final String attributeKey,
+      final String stringValue) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
+  }
+
+  private SetSchemaAttributes createSiteSchema(final List<String>[] compositeKeys) {
+    SetSchemaAttributes sa = new SetSchemaAttributes();
+
+    for (List<String> compositeKey : compositeKeys) {
+      sa.addCompositeKeysItem(new AttributeSchemaCompositeKey().attributeKeys(compositeKey));
+    }
+
+    return sa;
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId) throws ApiException {
+    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, "100", null)
+        .getAttributes());
+  }
+
+  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
+      throws ApiException {
+    SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
+    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
+  }
+
   /**
    * POST /reindex/documents/{documentId} missing target.
    *
@@ -272,53 +320,5 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
       assertDocumentAttributes(documentAttributes.get(0), "documentType", "other");
     }
-  }
-
-  private SetSchemaAttributes createSiteSchema(final List<String>[] compositeKeys) {
-    SetSchemaAttributes sa = new SetSchemaAttributes();
-
-    for (List<String> compositeKey : compositeKeys) {
-      sa.addCompositeKeysItem(new AttributeSchemaCompositeKey().attributeKeys(compositeKey));
-    }
-
-    return sa;
-  }
-
-  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
-      final String documentId) throws ApiException {
-    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, "100", null)
-        .getAttributes());
-  }
-
-  private void addAttribute(final String siteId, final String key) throws ApiException {
-    AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(null));
-    this.attributesApi.addAttribute(req, siteId);
-  }
-
-  private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
-      throws ApiException {
-    SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
-    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
-  }
-
-  private void assertDocumentAttributes(final DocumentAttribute da,
-      final String expectedAttributeKey, final String expectedStringValue) {
-    assertEquals(expectedAttributeKey, da.getKey());
-    assertEquals(expectedStringValue, da.getStringValue());
-    assertNotNull(da.getInsertedDate());
-    assertNotNull(da.getUserId());
-  }
-
-  private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
-      throws ApiException {
-    AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
-  }
-
-  private AddDocumentAttribute createAttribute(final String attributeKey,
-      final String stringValue) {
-    return new AddDocumentAttribute(
-        new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
   }
 }

@@ -54,8 +54,8 @@ public class DynamicObjectToAction implements Function<DynamicObject, Action> {
         .status(status != null ? ActionStatus.valueOf(status.toUpperCase()) : ActionStatus.PENDING);
 
     if (obj.containsKey("parameters")) {
-      Map<String, String> parameters = obj.getMap("parameters").entrySet().stream()
-          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toString()));
+      Map<String, Object> parameters = obj.getMap("parameters").entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
       action.parameters(parameters);
     }
 

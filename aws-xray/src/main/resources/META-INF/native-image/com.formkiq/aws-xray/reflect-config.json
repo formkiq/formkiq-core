@@ -13,13 +13,11 @@
     "methods": [
       {
         "name": "<init>",
-        "parameterTypes": [
-          "java.lang.String"
-        ]
+        "parameterTypes": ["java.lang.String"]
       }
     ]
   },
-    {
+  {
     "name": "java.util.HashSet",
     "queryAllDeclaredMethods": true,
     "queryAllDeclaredConstructors": true,

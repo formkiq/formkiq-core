@@ -44,6 +44,33 @@ import com.formkiq.client.model.UpdateDocumentFulltextRequest;
 public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTest {
 
   /**
+   * DELETE /documents/{documentId}/fulltext.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDeleteDocumentFulltext01() throws Exception {
+    String content = "some content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      setBearerToken(siteId);
+
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+      this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+
+      // when
+      DeleteFulltextResponse response =
+          this.advancedSearchApi.deleteDocumentFulltext(documentId, siteId);
+
+      // then
+      assertEquals("Deleted document '" + documentId + "'", response.getMessage());
+    }
+  }
+
+  /**
    * GET /documents/{documentId}/fulltext request. Document NOT found.
    *
    * @throws Exception an error has occurred
@@ -106,6 +133,41 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
+   * PATCH /documents/{documentId}/fulltext request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePatchDocumentFulltext02() throws Exception {
+    String content = "some content";
+    String content2 = "new content";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      setBearerToken(siteId);
+
+      SetDocumentFulltextRequest req =
+          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
+
+      SetDocumentFulltextResponse putResponse =
+          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+
+      UpdateDocumentFulltextRequest updateReq =
+          new UpdateDocumentFulltextRequest().content(content2).contentType("text/plain");
+
+      // when
+      this.advancedSearchApi.updateDocumentFulltext(documentId, siteId, updateReq);
+
+      // then
+      GetDocumentFulltextResponse documentFulltext =
+          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
+      assertEquals(content2, documentFulltext.getContent());
+      assertEquals("Add document to Typesense", putResponse.getMessage());
+    }
+  }
+
+  /**
    * PUT /documents/{documentId}/fulltext with tags request.
    *
    * @throws Exception an error has occurred
@@ -160,68 +222,6 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
         assertEquals("{\"message\":\"'contentUrls' are not supported by Typesense\"}",
             e.getResponseBody());
       }
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/fulltext.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandleDeleteDocumentFulltext01() throws Exception {
-    String content = "some content";
-
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String documentId = ID.uuid();
-      setBearerToken(siteId);
-
-      SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
-      this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
-
-      // when
-      DeleteFulltextResponse response =
-          this.advancedSearchApi.deleteDocumentFulltext(documentId, siteId);
-
-      // then
-      assertEquals("Deleted document '" + documentId + "'", response.getMessage());
-    }
-  }
-
-  /**
-   * PATCH /documents/{documentId}/fulltext request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePatchDocumentFulltext02() throws Exception {
-    String content = "some content";
-    String content2 = "new content";
-
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String documentId = ID.uuid();
-      setBearerToken(siteId);
-
-      SetDocumentFulltextRequest req =
-          new SetDocumentFulltextRequest().content(content).contentType("text/plain");
-
-      SetDocumentFulltextResponse putResponse =
-          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
-
-      UpdateDocumentFulltextRequest updateReq =
-          new UpdateDocumentFulltextRequest().content(content2).contentType("text/plain");
-
-      // when
-      this.advancedSearchApi.updateDocumentFulltext(documentId, siteId, updateReq);
-
-      // then
-      GetDocumentFulltextResponse documentFulltext =
-          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
-      assertEquals(content2, documentFulltext.getContent());
-      assertEquals("Add document to Typesense", putResponse.getMessage());
     }
   }
 }

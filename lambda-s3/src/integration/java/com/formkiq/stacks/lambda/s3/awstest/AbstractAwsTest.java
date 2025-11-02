@@ -177,15 +177,6 @@ public abstract class AbstractAwsTest {
   }
 
   /**
-   * Get Documents Bucket.
-   * 
-   * @return {@link String}
-   */
-  public static String getDocumentsbucketname() {
-    return documentsbucketname;
-  }
-
-  /**
    * Get {@link DocumentService}.
    * 
    * @return {@link DocumentService}
@@ -195,12 +186,12 @@ public abstract class AbstractAwsTest {
   }
 
   /**
-   * Get {@link EventBridgeService}.
+   * Get Documents Bucket.
    * 
-   * @return {@link EventBridgeService}
+   * @return {@link String}
    */
-  public static EventBridgeService getEventBridgeService() {
-    return eventBridgeService;
+  public static String getDocumentsbucketname() {
+    return documentsbucketname;
   }
 
   /**
@@ -210,6 +201,15 @@ public abstract class AbstractAwsTest {
    */
   public static String getEdition() {
     return edition;
+  }
+
+  /**
+   * Get {@link EventBridgeService}.
+   * 
+   * @return {@link EventBridgeService}
+   */
+  public static EventBridgeService getEventBridgeService() {
+    return eventBridgeService;
   }
 
   /**

@@ -33,13 +33,24 @@ import org.mockserver.model.HttpResponse;
  *
  */
 public class RequestRecordExpectationResponseCallback implements ExpectationResponseCallback {
+  /** Response Status Code. */
+  private final int statusCode;
+  /** Response Body. */
+  private final String body;
   /** {@link HttpRequest}. */
   private HttpRequest lastRequest;
 
   /**
    * constructor.
+   * 
+   * @param responseStatusCode int
+   * @param responseBody {@link String}
    */
-  public RequestRecordExpectationResponseCallback() {}
+  public RequestRecordExpectationResponseCallback(final int responseStatusCode,
+      final String responseBody) {
+    this.statusCode = responseStatusCode;
+    this.body = responseBody;
+  }
 
   /**
    * Get Last {@link HttpRequest}.
@@ -55,7 +66,7 @@ public class RequestRecordExpectationResponseCallback implements ExpectationResp
 
     this.lastRequest = httpRequest;
 
-    return org.mockserver.model.HttpResponse.response("{\"contentUrls\":[]}");
+    return new HttpResponse().withStatusCode(statusCode).withBody(this.body);
   }
 
   /**

@@ -37,6 +37,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.SetBearers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,8 +51,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** Unit Tests for request /sites/{siteId}/configuration. */
 public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
-  /** {@link ConfigService}. */
-  private ConfigService config;
   /** Test RSA Private Key. */
   private static final String RSA_PRIVATE_KEY = """
       -----BEGIN RSA PRIVATE KEY-----
@@ -83,6 +82,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       xm4Xo6+jDbifGOqFT4Ofeyc=
       -----END RSA PRIVATE KEY-----
            \s""";
+  /** {@link ConfigService}. */
+  private ConfigService config;
 
   /**
    * Before Each.
@@ -208,37 +209,43 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT /config default as Admin.
+   * Get /config for API_KEY SiteId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandlePutConfiguration01() throws Exception {
+  public void testHandleGetConfigurationApiKey() {
     // given
-    String siteId = DEFAULT_SITE_ID;
-    String group = "Admins";
-    setBearerToken(group);
-
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
-        .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
 
     // when
-    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    try {
+      this.systemApi.getConfiguration("API_KEY");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"'API_KEY' siteId is reserved\"}", e.getResponseBody());
+    }
+  }
 
-    // then
-    assertEquals("Config saved", configResponse.getMessage());
+  /**
+   * Get /config for Global SiteId.
+   *
+   */
+  @Test
+  public void testHandleGetConfigurationGlobal() {
+    // given
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
 
-    assertEquals("anot*******rkey", response.getChatGptApiKey());
-    assertEquals("1000000", response.getMaxContentLengthBytes());
-    assertEquals("1000", response.getMaxDocuments());
-    assertEquals("5", response.getMaxWebhooks());
-    assertEquals("", response.getNotificationEmail());
-    assertNotNull(response.getOcr());
-    assertEquals("-1", Objects.formatDouble(java.util.Objects
-        .requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
-    assertEquals("-1", Objects.formatDouble(
-        java.util.Objects.requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
+    // when
+    try {
+      this.systemApi.getConfiguration("global");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"'global' siteId is reserved\"}", e.getResponseBody());
+    }
   }
 
   /**
@@ -449,5 +456,39 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"missing required body parameters\"}", e.getResponseBody());
     }
+  }
+
+  /**
+   * PUT /config default as Admin.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutConfiguration01() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
+        .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
+
+    // when
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", configResponse.getMessage());
+
+    assertEquals("anot*******rkey", response.getChatGptApiKey());
+    assertEquals("1000000", response.getMaxContentLengthBytes());
+    assertEquals("1000", response.getMaxDocuments());
+    assertEquals("5", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+    assertNotNull(response.getOcr());
+    assertEquals("-1", Objects.formatDouble(java.util.Objects
+        .requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("-1", Objects.formatDouble(
+        java.util.Objects.requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
   }
 }

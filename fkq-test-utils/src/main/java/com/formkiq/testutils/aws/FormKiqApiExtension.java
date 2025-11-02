@@ -54,8 +54,6 @@ public class FormKiqApiExtension
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
-  /** {@link FormKiQApiExtensionConfig}. */
-  private final FormKiQApiExtensionConfig config;
 
   /**
    * Generate Random Port.
@@ -67,6 +65,9 @@ public class FormKiqApiExtension
     final int bottomPort = 5000;
     return NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
   }
+
+  /** {@link FormKiQApiExtensionConfig}. */
+  private final FormKiQApiExtensionConfig config;
 
   /** {@link AbstractFormKiqApiResponseCallback}. */
   private final AbstractFormKiqApiResponseCallback callback;
@@ -101,6 +102,11 @@ public class FormKiqApiExtension
     this.port = generatePort();
     this.callback = responseCallback;
     this.config = extensionConfig;
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    closeServer();
   }
 
   @Override
@@ -182,16 +188,20 @@ public class FormKiqApiExtension
   }
 
   /**
+   * Get {@link AbstractFormKiqApiResponseCallback}.
+   * 
+   * @return {@link AbstractFormKiqApiResponseCallback}
+   */
+  public AbstractFormKiqApiResponseCallback getCallback() {
+    return this.callback;
+  }
+
+  /**
    * Get Environment {@link Map}.
    * 
    * @return {@link Map}
    */
   public Map<String, String> getEnvironmentMap() {
     return this.environmentMap;
-  }
-
-  @Override
-  public void afterAll(final ExtensionContext context) {
-    closeServer();
   }
 }

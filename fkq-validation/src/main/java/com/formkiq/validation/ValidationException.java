@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 /** {@link Exception} that will return a 400 error. */
-public class ValidationException extends Exception {
+public class ValidationException extends RuntimeException {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307615320614370509L;

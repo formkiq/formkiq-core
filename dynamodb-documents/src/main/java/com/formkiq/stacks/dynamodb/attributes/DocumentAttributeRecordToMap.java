@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,6 +50,39 @@ public class DocumentAttributeRecordToMap
    */
   public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys) {
     this.uniqueKeys = uniqueAttributeKeys;
+  }
+
+  private void addNumberValues(final Map<String, Object> lastValues,
+      final DocumentAttributeRecord a) {
+    if (lastValues.containsKey("numberValue")) {
+
+      List<Double> s = new ArrayList<>();
+      s.add((Double) lastValues.get("numberValue"));
+      s.add(a.getNumberValue());
+
+      lastValues.remove("numberValue");
+      lastValues.put("numberValues", s);
+
+    } else if (lastValues.containsKey("numberValues")) {
+      ((List<Double>) lastValues.get("numberValues")).add(a.getNumberValue());
+    }
+  }
+
+  private void addStringValues(final Map<String, Object> lastValues,
+      final DocumentAttributeRecord a) {
+
+    if (lastValues.containsKey("stringValue")) {
+
+      List<String> s = new ArrayList<>();
+      s.add((String) lastValues.get("stringValue"));
+      s.add(a.getStringValue());
+
+      lastValues.remove("stringValue");
+      lastValues.put("stringValues", s);
+
+    } else if (lastValues.containsKey("stringValues")) {
+      ((List<String>) lastValues.get("stringValues")).add(a.getStringValue());
+    }
   }
 
   @Override
@@ -89,39 +123,6 @@ public class DocumentAttributeRecordToMap
     }
 
     return c;
-  }
-
-  private void addNumberValues(final Map<String, Object> lastValues,
-      final DocumentAttributeRecord a) {
-    if (lastValues.containsKey("numberValue")) {
-
-      List<Double> s = new ArrayList<>();
-      s.add((Double) lastValues.get("numberValue"));
-      s.add(a.getNumberValue());
-
-      lastValues.remove("numberValue");
-      lastValues.put("numberValues", s);
-
-    } else if (lastValues.containsKey("numberValues")) {
-      ((List<Double>) lastValues.get("numberValues")).add(a.getNumberValue());
-    }
-  }
-
-  private void addStringValues(final Map<String, Object> lastValues,
-      final DocumentAttributeRecord a) {
-
-    if (lastValues.containsKey("stringValue")) {
-
-      List<String> s = new ArrayList<>();
-      s.add((String) lastValues.get("stringValue"));
-      s.add(a.getStringValue());
-
-      lastValues.remove("stringValue");
-      lastValues.put("stringValues", s);
-
-    } else if (lastValues.containsKey("stringValues")) {
-      ((List<String>) lastValues.get("stringValues")).add(a.getStringValue());
-    }
   }
 
 }

@@ -44,12 +44,7 @@ public class LambdaContextRecorder implements Context {
   }
 
   @Override
-  public String getLogGroupName() {
-    throw new UnsupportedOperationException("Method is not implemented.");
-  }
-
-  @Override
-  public String getLogStreamName() {
+  public ClientContext getClientContext() {
     throw new UnsupportedOperationException("Method is not implemented.");
   }
 
@@ -64,23 +59,28 @@ public class LambdaContextRecorder implements Context {
   }
 
   @Override
-  public String getInvokedFunctionArn() {
-    throw new UnsupportedOperationException("Method is not implemented.");
-  }
-
-  @Override
   public CognitoIdentity getIdentity() {
     throw new UnsupportedOperationException("Method is not implemented.");
   }
 
   @Override
-  public ClientContext getClientContext() {
+  public String getInvokedFunctionArn() {
     throw new UnsupportedOperationException("Method is not implemented.");
   }
 
   @Override
-  public int getRemainingTimeInMillis() {
+  public String getLogGroupName() {
     throw new UnsupportedOperationException("Method is not implemented.");
+  }
+
+  @Override
+  public String getLogStreamName() {
+    throw new UnsupportedOperationException("Method is not implemented.");
+  }
+
+  @Override
+  public LambdaLogger getLogger() {
+    return this.loggerRecorder;
   }
 
   @Override
@@ -89,8 +89,8 @@ public class LambdaContextRecorder implements Context {
   }
 
   @Override
-  public LambdaLogger getLogger() {
-    return this.loggerRecorder;
+  public int getRemainingTimeInMillis() {
+    throw new UnsupportedOperationException("Method is not implemented.");
   }
 
 }

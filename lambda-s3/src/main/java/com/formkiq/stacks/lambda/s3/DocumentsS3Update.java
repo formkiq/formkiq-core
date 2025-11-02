@@ -24,15 +24,19 @@
 package com.formkiq.stacks.lambda.s3;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.CREATE;
+import static com.formkiq.module.events.document.DocumentEventType.DELETE;
 import static com.formkiq.module.events.document.DocumentEventType.UPDATE;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 import static com.formkiq.stacks.dynamodb.DocumentVersionService.S3VERSION_ATTRIBUTE;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,6 +47,7 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.cache.CacheService;
@@ -52,6 +57,8 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -70,6 +77,7 @@ import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSns;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.http.HttpService;
@@ -79,13 +87,14 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.plugins.useractivity.MapChangesFunction;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.s3.S3ServiceInterceptorExtension;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -227,7 +236,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
+  private final Gson gson = GsonUtil.getInstance();
 
   /** constructor. */
   public DocumentsS3Update() {
@@ -243,6 +252,35 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     this();
     initialize(awsServiceCache);
     serviceCache = awsServiceCache;
+  }
+
+  private void buildAttributes(final Map<String, AttributeValue> current,
+      final Map<String, Object> prev, final DocumentItem item, final S3ObjectMetadata resp,
+      final String contentType, final Long contentLength) {
+
+    if (!Strings.isEmpty(contentType)) {
+      current.put("contentType", AttributeValue.fromS(contentType));
+      prev.put("contentType", item.getContentType());
+    }
+
+    String checksum = resp.getChecksum();
+    current.put("checksum", AttributeValue.fromS(checksum));
+    prev.put("checksum", item.getChecksum());
+
+    if (resp.getChecksumType() != null) {
+      current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
+      prev.put("checksumType", item.getChecksumType());
+    }
+
+    if (contentLength != null) {
+      current.put("contentLength", AttributeValue.fromN("" + contentLength));
+      prev.put("contentLength", item.getContentLength());
+    }
+
+    if (resp.getVersionId() != null) {
+      current.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
+      prev.put(S3VERSION_ATTRIBUTE, item.getVersion());
+    }
   }
 
   /**
@@ -281,6 +319,53 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       throw new IOException(String.format("Unable to delete document %s from site %s in module %s",
           documentId, siteId, module));
     }
+  }
+
+  private Map<String, Object> convertToObjectMap(final Map<String, ChangeRecord> changes) {
+    return changes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+      ChangeRecord cr = entry.getValue();
+      Map<String, Object> innerMap = new HashMap<>();
+      innerMap.put("oldValue", cr.oldValue());
+      innerMap.put("newValue", cr.newValue());
+      return innerMap;
+    }));
+  }
+
+  private String findContentType(final DocumentItem item, final String contentType) {
+
+    MimeType mimeType = MimeType.fromContentType(contentType);
+    if (contentType != null && contentType.endsWith("/octet-stream")) {
+
+      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
+        mimeType = MimeType.fromContentType(item.getContentType());
+      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
+        mimeType = MimeType.findByPath(item.getPath());
+      }
+    }
+
+    return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
+  }
+
+  private DocumentItem findDocument(final String siteId, final String documentId) {
+    return service.findDocument(siteId, documentId);
+  }
+
+  private String getContent(final DocumentEvent event) {
+
+    String content = null;
+
+    String s3bucket = event.s3bucket();
+    String key = event.s3key();
+    String contentType = event.contentType();
+    S3Service s3Service = serviceCache.getExtension(S3Service.class);
+    S3ObjectMetadata resp = s3Service.getObjectMetadata(s3bucket, key, null);
+
+    if (MimeType.isPlainText(contentType) && resp.getContentLength() != null
+        && resp.getContentLength() < EventServiceSns.MAX_SNS_CONTENT_SIZE) {
+      content = s3Service.getContentAsString(s3bucket, key, null);
+    }
+
+    return content;
   }
 
   /**
@@ -500,7 +585,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-      service.deleteDocument(siteId, documentId, false);
+      DocumentItem item = service.findDocument(siteId, documentId);
+      if (item != null) {
+        service.deleteDocument(siteId, documentId, false);
+      }
+
+      DocumentEvent event =
+          new DocumentEvent().siteId(getSiteIdName(siteId)).documentId(documentId).type(DELETE);
+      sendSnsMessage(event);
     }
   }
 
@@ -545,12 +637,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         logger.trace("s3 file version id: " + resp.getVersionId());
       }
 
-      Map<String, AttributeValue> attributes = buildAttributes(resp, contentType, contentLength);
+      Map<String, AttributeValue> attributes = new HashMap<>();
+      Map<String, Object> prevAttributes = new HashMap<>();
+      buildAttributes(attributes, prevAttributes, item, resp, contentType, contentLength);
 
       // if the event and s3 version id match, then correct event to process
       if (s3VersionId == null || s3VersionId.equals(resp.getVersionId())) {
+
         service.updateDocument(siteId, documentId, attributes);
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key);
+
+        Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
+        Map<String, ChangeRecord> changeRecords =
+            new MapChangesFunction().apply(prevAttributes, currentMap);
+        Map<String, Object> changes = convertToObjectMap(changeRecords);
+
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, changes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);
@@ -560,6 +661,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
+
+      sendNextActionsSnsMessage(event);
       sendSnsMessage(event);
 
     } else {
@@ -567,56 +670,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
   }
 
-  private String findContentType(final DocumentItem item, final String contentType) {
-
-    MimeType mimeType = MimeType.fromContentType(contentType);
-    if (contentType != null && contentType.endsWith("/octet-stream")) {
-
-      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
-        mimeType = MimeType.fromContentType(item.getContentType());
-      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
-        mimeType = MimeType.findByPath(item.getPath());
-      }
-    }
-
-    return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
-  }
-
-  private static Map<String, AttributeValue> buildAttributes(final S3ObjectMetadata resp,
-      final String contentType, final Long contentLength) {
-    Map<String, AttributeValue> attributes = new HashMap<>();
-
-    if (!Strings.isEmpty(contentType)) {
-      attributes.put("contentType", AttributeValue.fromS(contentType));
-    }
-
-    String checksum = resp.getChecksum();
-    attributes.put("checksum", AttributeValue.fromS(checksum));
-
-    if (resp.getChecksumType() != null) {
-      attributes.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
-    }
-
-    if (contentLength != null) {
-      attributes.put("contentLength", AttributeValue.fromN("" + contentLength));
-    }
-
-    if (resp.getVersionId() != null) {
-      attributes.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-    }
-    return attributes;
-  }
-
-  private DocumentItem findDocument(final String siteId, final String documentId) {
-    return service.findDocument(siteId, documentId);
-  }
-
   /**
    * Either sends the Create Message to SNS.
    *
    * @param event {@link DocumentEvent}
    */
-  private void sendSnsMessage(final DocumentEvent event) {
+  private void sendNextActionsSnsMessage(final DocumentEvent event) {
 
     String eventType = event.type();
     String siteId = event.siteId();
@@ -626,5 +685,32 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       List<Action> actions = actionsService.getActions(siteId, documentId);
       notificationService.publishNextActionEvent(actions, siteId, documentId);
     }
+  }
+
+  /**
+   * Either sends the Create Message to SNS.
+   *
+   * @param event {@link DocumentEvent}
+   */
+  private void sendSnsMessage(final DocumentEvent event) {
+
+    String contentType = event.contentType();
+    String s3bucket = event.s3bucket();
+    String key = event.s3key();
+
+    if ("application/json".equals(contentType)) {
+      String content = getContent(event);
+      event.content(content);
+    }
+
+    if (s3bucket != null && key != null) {
+      S3PresignerService s3PresignedService = serviceCache.getExtension(S3PresignerService.class);
+      PresignGetUrlConfig config = new PresignGetUrlConfig().contentType(contentType);
+      URL url = s3PresignedService.presignGetUrl(s3bucket, key, Duration.ofDays(1), null, config);
+      event.url(url.toString());
+    }
+
+    EventService documentEventService = serviceCache.getExtension(EventService.class);
+    documentEventService.publish(serviceCache.getLogger(), event);
   }
 }

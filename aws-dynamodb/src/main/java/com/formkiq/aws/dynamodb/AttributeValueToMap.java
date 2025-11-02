@@ -26,6 +26,8 @@ package com.formkiq.aws.dynamodb;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -36,6 +38,25 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
  */
 public class AttributeValueToMap
     implements Function<Map<String, AttributeValue>, Map<String, Object>> {
+
+  /** {@link AttributeValueToMapConfig}. */
+  private final AttributeValueToMapConfig config;
+
+  /**
+   * Convert {@link AttributeValue} to {@link Map}.
+   */
+  public AttributeValueToMap() {
+    this(null);
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link Map}.
+   * 
+   * @param attributeValueToMapConfig {@link AttributeValueToMapConfig}
+   */
+  public AttributeValueToMap(final AttributeValueToMapConfig attributeValueToMapConfig) {
+    this.config = attributeValueToMapConfig;
+  }
 
   @Override
   public Map<String, Object> apply(final Map<String, AttributeValue> map) {
@@ -50,9 +71,37 @@ public class AttributeValueToMap
         Object obj = convert(e.getValue());
         result.put(key, obj);
       }
+
+      removeKeys(result);
+      renameKeys(result);
+      deleteKeys(result);
     }
 
     return result;
+  }
+
+  private void deleteKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      notNull(this.config.getDeleteKeys()).forEach(result::remove);
+    }
+  }
+
+  private void renameKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      this.config.getRenameKeys().forEach((k, v) -> result.put(v, result.get(k)));
+      this.config.getRenameKeys().forEach((k, v) -> result.remove(k));
+    }
+  }
+
+  private void removeKeys(final Map<String, Object> result) {
+    if (config != null && config.isRemoveDbKeys()) {
+      result.remove(DbKeys.PK);
+      result.remove(DbKeys.SK);
+      result.remove(DbKeys.GSI1_PK);
+      result.remove(DbKeys.GSI1_SK);
+      result.remove(DbKeys.GSI2_PK);
+      result.remove(DbKeys.GSI2_SK);
+    }
   }
 
   private Object convert(final AttributeValue val) {
@@ -63,6 +112,10 @@ public class AttributeValueToMap
       case N -> obj = Double.valueOf(val.n());
       case BOOL -> obj = val.bool();
       case L -> obj = val.l().stream().map(this::convert).toList();
+      case NUL -> obj = null;
+      case M -> obj = val.m().entrySet().stream()
+          .filter(e -> !AttributeValue.Type.NUL.equals(e.getValue().type()))
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> convert(e.getValue())));
       default -> throw new IllegalArgumentException(
           "Unsupported attribute value map conversion " + val.type());
     }

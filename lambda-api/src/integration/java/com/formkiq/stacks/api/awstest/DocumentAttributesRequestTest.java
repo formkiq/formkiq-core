@@ -67,7 +67,6 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddAttributeResponse;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
@@ -95,7 +94,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
   private void addAttribute(final AttributesApi attributeApi, final String siteId, final String key)
       throws ApiException {
-    AddAttributeResponse addAttrResponse = attributeApi
+    AddResponse addAttrResponse = attributeApi
         .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
     assertEquals("Attribute '" + key + "' created", addAttrResponse.getMessage());
   }
@@ -139,26 +138,6 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     assertTrue(notNull(attributes.get(0).getStringValues()).isEmpty());
   }
 
-  private void setDocumentAttributes(final DocumentAttributesApi api, final String siteId,
-      final String documentId, final String key) throws ApiException {
-    // given
-    SetDocumentAttributesRequest setReq =
-        new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
-            new AddDocumentAttributeStandard().key(key).stringValues(Arrays.asList("123", "abc"))));
-
-    // when
-    SetResponse setResponse = api.setDocumentAttributes(documentId, setReq, siteId);
-
-    // then
-    assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
-    List<DocumentAttribute> attributes =
-        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
-    assertEquals(1, attributes.size());
-    assertEquals(key, attributes.get(0).getKey());
-    assertNull(attributes.get(0).getStringValue());
-    assertEquals("123,abc", String.join(",", notNull(attributes.get(0).getStringValues())));
-  }
-
   private void setDocumentAttributeValues(final DocumentAttributesApi api, final String siteId,
       final String documentId, final String key, final List<String> values) throws ApiException {
 
@@ -180,61 +159,24 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("987,xyz", String.join(",", notNull(attributes.get(0).getStringValues())));
   }
 
-  /**
-   * GET,POST /documents/{documentId}/attributes and GET
-   * /documents/{documentId}/attributes/{attributeKey}.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testAddDocumentAttributes01() throws Exception {
+  private void setDocumentAttributes(final DocumentAttributesApi api, final String siteId,
+      final String documentId, final String key) throws ApiException {
     // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
+    SetDocumentAttributesRequest setReq =
+        new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key(key).stringValues(Arrays.asList("123", "abc"))));
 
-      List<ApiClient> apiClients = getApiClients(siteId);
+    // when
+    SetResponse setResponse = api.setDocumentAttributes(documentId, setReq, siteId);
 
-      final String key1 = "test_" + UUID.randomUUID();
-      final String key2 = "test2_" + UUID.randomUUID();
-      final String value = "val";
-
-      AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
-      addAttribute(attributeApi, siteId, key1);
-      addAttribute(attributeApi, siteId, key2);
-
-      for (ApiClient apiClient : apiClients) {
-
-        String documentId = createDocument(apiClient, siteId);
-
-        DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
-
-        AddDocumentAttributesRequest req = addAttributeToDocument(key1, value);
-
-        // when
-        AddResponse response = api.addDocumentAttributes(documentId, req, siteId);
-
-        // then
-        assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
-
-        List<DocumentAttribute> attributes =
-            notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
-        assertEquals(1, attributes.size());
-        assertEquals(key1, attributes.get(0).getKey());
-        assertEquals(value, attributes.get(0).getStringValue());
-
-        DocumentAttribute attribute =
-            api.getDocumentAttribute(documentId, key1, siteId).getAttribute();
-        assertNotNull(attribute);
-        assertEquals(value, attribute.getStringValue());
-
-        setDocumentAttributes(api, siteId, documentId, key2);
-
-        setDocumentAttributeValues(api, siteId, documentId, key2, Arrays.asList("987", "xyz"));
-
-        deleteDocumentAttributeValue(api, siteId, documentId, key2);
-        deleteDocumentAttribute(api, siteId, documentId, key2);
-      }
-    }
+    // then
+    assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
+    List<DocumentAttribute> attributes =
+        notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+    assertEquals(1, attributes.size());
+    assertEquals(key, attributes.get(0).getKey());
+    assertNull(attributes.get(0).getStringValue());
+    assertEquals("123,abc", String.join(",", notNull(attributes.get(0).getStringValues())));
   }
 
   /**
@@ -303,6 +245,63 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
     assertEquals("invoiceTotalAmount", documentAttributes.get(i++).getKey());
     assertEquals("invoiceVendorName", documentAttributes.get(i).getKey());
+  }
+
+  /**
+   * GET,POST /documents/{documentId}/attributes and GET
+   * /documents/{documentId}/attributes/{attributeKey}.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddDocumentAttributes01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      List<ApiClient> apiClients = getApiClients(siteId);
+
+      final String key1 = "test_" + UUID.randomUUID();
+      final String key2 = "test2_" + UUID.randomUUID();
+      final String value = "val";
+
+      AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
+      addAttribute(attributeApi, siteId, key1);
+      addAttribute(attributeApi, siteId, key2);
+
+      for (ApiClient apiClient : apiClients) {
+
+        String documentId = createDocument(apiClient, siteId);
+
+        DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
+
+        AddDocumentAttributesRequest req = addAttributeToDocument(key1, value);
+
+        // when
+        AddResponse response = api.addDocumentAttributes(documentId, req, siteId);
+
+        // then
+        assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
+
+        List<DocumentAttribute> attributes =
+            notNull(api.getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+        assertEquals(1, attributes.size());
+        assertEquals(key1, attributes.get(0).getKey());
+        assertEquals(value, attributes.get(0).getStringValue());
+
+        DocumentAttribute attribute =
+            api.getDocumentAttribute(documentId, key1, siteId).getAttribute();
+        assertNotNull(attribute);
+        assertEquals(value, attribute.getStringValue());
+
+        setDocumentAttributes(api, siteId, documentId, key2);
+
+        setDocumentAttributeValues(api, siteId, documentId, key2, Arrays.asList("987", "xyz"));
+
+        deleteDocumentAttributeValue(api, siteId, documentId, key2);
+        deleteDocumentAttribute(api, siteId, documentId, key2);
+      }
+    }
   }
 
   /**

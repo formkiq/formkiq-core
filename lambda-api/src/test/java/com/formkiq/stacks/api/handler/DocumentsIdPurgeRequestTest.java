@@ -49,10 +49,36 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /documents/{documentId}/purge. */
 public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
+
+  private GetDocumentUrlResponse addDocument(final String siteId) throws ApiException {
+    AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+    return this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+  }
+
+  private List<Document> getDocuments(final String siteId) throws ApiException {
+    return notNull(this.documentsApi
+        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
+  }
+
+  private List<S3Object> getS3Files(final String siteId, final String documentId) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    S3Service s3Service = getAwsServices().getExtension(S3Service.class);
+    return notNull(s3Service.listObjects(BUCKET_NAME, s3Key).contents());
+  }
+
+  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response)
+      throws IOException {
+    HttpService http = new HttpServiceJdk11();
+
+    HttpHeaders hds = new HttpHeaders();
+    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
+    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), "test content");
+  }
 
   /**
    * DELETE /documents/{documentId} request.
@@ -68,12 +94,10 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
       for (String token : Arrays.asList("Admins", siteId + "_govern")) {
         setBearerToken(token);
 
-        AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-        GetDocumentUrlResponse response =
-            this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
-
+        GetDocumentUrlResponse response = addDocument(siteId);
         String documentId = response.getDocumentId();
-        this.documentsApi.getDocument(documentId, siteId, null);
+        assertNotNull(documentId);
+
         HttpResponse<String> put = putS3Request(response);
         assertEquals(SC_OK.getStatusCode(), put.statusCode());
 
@@ -93,12 +117,6 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(0, s3Files.size());
       }
     }
-  }
-
-  private List<S3Object> getS3Files(final String siteId, final String documentId) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-    S3Service s3Service = getAwsServices().getExtension(S3Service.class);
-    return notNull(s3Service.listObjects(BUCKET_NAME, s3Key).contents());
   }
 
   /**
@@ -127,17 +145,38 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-  private HttpResponse<String> putS3Request(final GetDocumentUrlResponse response)
-      throws IOException {
-    HttpService http = new HttpServiceJdk11();
+  /**
+   * DELETE /documents/{documentId} request when Metadata, S3 is missing.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete03() throws Exception {
 
-    HttpHeaders hds = new HttpHeaders();
-    notNull(response.getHeaders()).forEach((h, v) -> hds.add(h, v.toString()));
-    return http.put(response.getUrl(), Optional.of(hds), Optional.empty(), "test content");
-  }
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-  private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, null, null, null, null, null, null).getDocuments());
+      for (String token : Arrays.asList("Admins", siteId + "_govern")) {
+        setBearerToken(token);
+
+        String documentId = addDocument(siteId).getDocumentId();
+        assertNotNull(documentId);
+
+        List<S3Object> s3Files = getS3Files(siteId, documentId);
+        assertEquals(0, s3Files.size());
+
+        // when
+        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId);
+
+        // then
+        assertEquals("'" + documentId + "' object deleted all versions",
+            deleteResponse.getMessage());
+        List<Document> documents = getDocuments(siteId);
+        assertEquals(0, documents.size());
+
+        s3Files = getS3Files(siteId, documentId);
+        assertEquals(0, s3Files.size());
+      }
+    }
   }
 }

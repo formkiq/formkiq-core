@@ -50,6 +50,15 @@ public class SiteConfigurationOcr {
   }
 
   /**
+   * Get Max Transactions.
+   * 
+   * @return long
+   */
+  public long getMaxTransactions() {
+    return this.maxTransactions;
+  }
+
+  /**
    * Set Max Pages Per Transaction.
    *
    * @param maxPages long
@@ -58,15 +67,6 @@ public class SiteConfigurationOcr {
   public SiteConfigurationOcr setMaxPagesPerTransaction(final long maxPages) {
     this.maxPagesPerTransaction = maxPages;
     return this;
-  }
-
-  /**
-   * Get Max Transactions.
-   * 
-   * @return long
-   */
-  public long getMaxTransactions() {
-    return this.maxTransactions;
   }
 
   /**

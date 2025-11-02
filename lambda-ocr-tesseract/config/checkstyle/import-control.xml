@@ -4,11 +4,11 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="lambda">
-	
+
 		<subpackage name="ocr">
-		
+
 			<subpackage name="handlers">
 				<allow pkg="com.formkiq.aws.dynamodb" />
 				<allow pkg="com.formkiq.aws.services.lambda" />
@@ -24,13 +24,15 @@
 				<allow pkg="com.formkiq.module.lambdaservices" />
 				<allow pkg="software.amazon.awssdk.services.s3.model" />
 			</subpackage>
-				
+
 			<subpackage name="docx">
 				<allow pkg="java.io" />
 				<allow pkg="com.formkiq.aws.dynamodb.objects" />
 				<allow pkg="org.apache.poi.hwpf" />
 				<allow pkg="org.apache.poi.hwpf.extractor" />
-				
+				<allow pkg="org.apache.poi.extractor" />
+				<allow pkg="org.apache.poi.ooxml.extractor" />
+
 				<allow pkg="org.apache.poi.openxml4j.exceptions" />
 				<allow pkg="org.apache.poi.openxml4j.opc" />
 				<allow pkg="org.apache.poi.xwpf.extractor" />
@@ -38,26 +40,26 @@
 
 				<allow pkg="com.formkiq.module.lambdaservices" />
 				<allow pkg="com.formkiq.module.ocr" />
-				
+
 			</subpackage>
-			
+
 			<subpackage name="pdf">
 				<allow pkg="java.io" />
 				<allow pkg="java.util" />
-				
+
 				<allow pkg="com.formkiq.aws.dynamodb.objects" />
-				
+
 				<allow pkg="org.apache.pdfbox" />
 				<allow pkg="org.apache.pdfbox.cos" />
 				<allow pkg="org.apache.pdfbox.pdmodel" />
 				<allow pkg="org.apache.pdfbox.text" />
-				
+
 				<allow pkg="com.formkiq.module.lambdaservices" />
 				<allow pkg="com.formkiq.module.ocr" />
 			</subpackage>
-			
+
 			<subpackage name="tesseract">
-				
+
 				<allow pkg="java.awt.image" />
 				<allow pkg="javax.imageio" />
 				<allow pkg="javax.imageio.stream" />
@@ -65,7 +67,7 @@
 
 				<allow pkg="com.formkiq.aws.services.lambda" />
 				<allow pkg="com.formkiq.module.lambda.ocr.handlers" />
-								
+
 				<allow pkg="com.formkiq.module.events" />
 				<allow pkg="java.io" />
 				<allow pkg="java.nio.charset" />
@@ -92,10 +94,10 @@
 				<allow pkg="software.amazon.awssdk.regions" />
 				<allow pkg="software.amazon.awssdk.utils" />
 				<allow pkg="software.amazon.awssdk.services.s3.model" />
-				
+
 			</subpackage>
-			
+
 		</subpackage>
 	</subpackage>
-	
+
 </import-control>

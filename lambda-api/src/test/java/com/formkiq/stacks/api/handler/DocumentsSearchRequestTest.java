@@ -60,9 +60,9 @@ import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.client.model.Watermark;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.FolderIndexRecord;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -97,6 +97,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor indexProcessor;
 
+  /** JUnit Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+
   /**
    * Before All.
    */
@@ -106,9 +109,6 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
     indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE);
   }
-
-  /** JUnit Test Timeout. */
-  private static final int TEST_TIMEOUT = 10;
 
   private void addAttribute(final String siteId) throws ApiException {
     addAttribute(siteId, "category");
@@ -681,11 +681,9 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     GetDocumentSyncResponse syncResponse =
         this.documentsApi.getDocumentSyncs(documentId, null, null, null);
     assertNotNull(syncResponse.getSyncs());
-    assertEquals(2, syncResponse.getSyncs().size());
+    assertEquals(1, syncResponse.getSyncs().size());
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
     assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().get(0).getService());
-    assertEquals(DocumentSyncStatus.PENDING, syncResponse.getSyncs().get(1).getStatus());
-    assertEquals(DocumentSyncService.EVENTBRIDGE, syncResponse.getSyncs().get(1).getService());
 
     GetDocumentFulltextResponse getResponse = null;
     while (getResponse == null) {

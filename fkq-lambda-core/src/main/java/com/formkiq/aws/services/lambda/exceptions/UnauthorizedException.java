@@ -23,7 +23,7 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
-/** {@link Exception} that will return a 403 error. */
+/** {@link Exception} that will return a 401 error. */
 public class UnauthorizedException extends Exception {
 
   /** serialVersionUID. */

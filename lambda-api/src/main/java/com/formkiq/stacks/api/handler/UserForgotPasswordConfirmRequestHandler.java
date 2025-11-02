@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -38,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/forgotPasswordConfirm". */
@@ -47,6 +45,17 @@ public class UserForgotPasswordConfirmRequestHandler
 
   /** {@link UserForgotPasswordConfirmRequestHandler} URL. */
   public static final String URL = "/forgotPasswordConfirm";
+
+  @Override
+  public String getRequestUrl() {
+    return URL;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    return Optional.of(true);
+  }
 
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
@@ -63,8 +72,7 @@ public class UserForgotPasswordConfirmRequestHandler
     String password = (String) map.get("password");
     service.forgotPasswordConfirm(username, code, password);
 
-    ApiMapResponse resp = new ApiMapResponse(Map.of("message", "Password set"));
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Password set").build();
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {
@@ -76,16 +84,5 @@ public class UserForgotPasswordConfirmRequestHandler
       throw new ValidationException(
           List.of(new ValidationErrorImpl().error("'username', 'code', 'password' are required")));
     }
-  }
-
-  @Override
-  public String getRequestUrl() {
-    return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(true);
   }
 }

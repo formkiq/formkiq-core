@@ -27,16 +27,12 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
-import com.formkiq.client.model.DocumentSync;
-import com.formkiq.client.model.DocumentSyncStatus;
-import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
@@ -56,7 +52,6 @@ import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
-import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
@@ -76,7 +71,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder.MESSAGE_ADDED_METADATA;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,25 +125,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("application/pdf", site.getContentType());
       assertNotNull(site.getPath());
       assertNotNull(site.getDocumentId());
-
-      assertDocumentEventBridge(documentsApi, null, responseNoSiteId.getDocumentId());
-      assertDocumentEventBridge(documentsApi, siteId, responseSiteId.getDocumentId());
     }
-  }
-
-  private void assertDocumentEventBridge(final DocumentsApi documentsApi, final String siteId,
-      final String documentId) throws ApiException {
-    List<DocumentSync> syncs =
-        notNull(documentsApi.getDocumentSyncs(documentId, siteId, null, null).getSyncs());
-    assertEquals(1, syncs.size());
-    DocumentSync sync = syncs.get(0);
-    assertEquals(DocumentSyncService.EVENTBRIDGE, sync.getService());
-    assertNull(sync.getSyncDate());
-    assertNotNull(sync.getInsertedDate());
-    assertEquals(DocumentSyncType.METADATA, sync.getType());
-    assertEquals(MESSAGE_ADDED_METADATA, sync.getMessage());
-    assertEquals("joesmith", sync.getUserId());
-    assertEquals(DocumentSyncStatus.PENDING, sync.getStatus());
   }
 
   /**
@@ -196,10 +172,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertNull(response.getUploadUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals("https://google.com", document.getDeepLinkPath());
+      assertNull(document.getLastModifiedDate());
+      assertNull(document.getContentLength());
     }
   }
 
@@ -228,6 +207,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNotNull(response.getUploadUrl());
+      assertNotNull(response.getDocumentId());
 
       List<AddChildDocumentResponse> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
@@ -235,6 +215,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       String documentId = response.getDocumentId();
       String childDocumentId = documents.get(0).getDocumentId();
+      assertNotNull(childDocumentId);
 
       List<ChildDocument> documents1 =
           notNull(this.documentsApi.getDocument(documentId, siteId, null).getDocuments());
@@ -284,6 +265,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertNotNull(document);
@@ -334,6 +316,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
@@ -512,6 +495,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         // then
         assertNull(response.getUploadUrl());
         String documentId = response.getDocumentId();
+        assertNotNull(documentId);
 
         GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals(e.getValue(), doc.getContentType());
@@ -523,6 +507,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
 
         // then
+        assertNotNull(documentId);
         doc = this.documentsApi.getDocument(documentId, siteId, null);
         assertEquals("application/pdf", doc.getContentType());
       }
@@ -584,6 +569,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNull(response.getUploadUrl());
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -618,46 +604,6 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(
             "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
             e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Save new File with valid SHA-256.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  public void testPost15() throws ApiException {
-    // given
-    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
-
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      for (String checksum : Arrays.asList(null, reqChecksum)) {
-        setBearerToken(siteId);
-
-        String content = "dummy data";
-
-        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
-            .checksum(checksum).checksumType(ChecksumType.SHA256);
-
-        // when
-        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
-
-        // then
-        assertNotNull(response.getDocumentId());
-        assertEquals(siteId, response.getSiteId());
-
-        GetDocumentResponse site =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
-        assertEquals("text/plain", site.getContentType());
-        assertEquals(ChecksumType.SHA256, site.getChecksumType());
-        assertEquals(reqChecksum, site.getChecksum());
-        assertNotNull(site.getPath());
-        assertNotNull(site.getDocumentId());
-        assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
       }
     }
   }
@@ -761,6 +707,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
 
       // then
+      assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
 
@@ -857,6 +804,79 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostChecksum() throws ApiException {
+    // given
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA256, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 but missing checksum type.
+   *
+   */
+  @Test
+  public void testPostChecksumMissingType() {
+    // given
+    final String checksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String content = "dummy data";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content).contentType("text/plain").checksum(checksum);
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"checksumType\","
+                + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
@@ -874,6 +894,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       try {
@@ -906,6 +927,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       AwsServiceCache awsServices = getAwsServices();
       awsServices.register(S3Service.class, new S3ServiceExtension());

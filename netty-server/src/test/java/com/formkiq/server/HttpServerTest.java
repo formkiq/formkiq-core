@@ -194,7 +194,6 @@ public class HttpServerTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testLoginOk() throws Exception {
@@ -219,11 +218,31 @@ public class HttpServerTest {
   }
 
   /**
+   * Test Options.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIME)
+  void testOptions() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request =
+        HttpRequest.newBuilder().method("OPTIONS", BodyPublishers.ofByteArray(new byte[] {}))
+            .uri(new URI(BASE_URL + "/version")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    assertEquals("*", response.headers().firstValue("access-control-allow-headers").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-origin").get());
+  }
+
+  /**
    * Test /sites.
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testSites() throws Exception {
@@ -267,7 +286,6 @@ public class HttpServerTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   @Timeout(value = TEST_TIME)
   void testVersions() throws Exception {
@@ -284,26 +302,5 @@ public class HttpServerTest {
     assertEquals("core", results.get("type"));
     assertEquals("typesense",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
-  }
-
-  /**
-   * Test Options.
-   * 
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIME)
-  void testOptions() throws Exception {
-    HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request =
-        HttpRequest.newBuilder().method("OPTIONS", BodyPublishers.ofByteArray(new byte[] {}))
-            .uri(new URI(BASE_URL + "/version")).build();
-
-    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-    assertEquals("*", response.headers().firstValue("access-control-allow-headers").get());
-    assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
-    assertEquals("*", response.headers().firstValue("access-control-allow-origin").get());
   }
 }

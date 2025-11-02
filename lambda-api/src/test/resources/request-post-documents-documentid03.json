@@ -1,95 +1,63 @@
 {
-    "resource": "/documents",
-    "path": "/documents",
+  "resource": "/documents",
+  "path": "/documents",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept-Encoding": "gzip,deflate",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-Country": "CA",
+    "Host": "aq6bxbtjx3.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "Apache-HttpClient/4.5.6 (Java/1.8.0_121)",
+    "Via": "1.1 0cbd8799a17a2d96a24ab9504cb8ff1f.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "v2P6JGlsSN8PMzTvXSTEkvH7m13KZCg7BX5xY6J5ssuwWqz0YhINXw==",
+    "X-Amzn-Trace-Id": "Root=1-5c413b80-a476f0c69b6c1601745a09e9",
+    "X-API-KEY": "g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC",
+    "X-Forwarded-For": "50.71.176.213, 54.182.238.67",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept-Encoding": ["gzip,deflate"],
+    "CloudFront-Forwarded-Proto": ["https"],
+    "CloudFront-Is-Desktop-Viewer": ["true"],
+    "CloudFront-Is-Mobile-Viewer": ["false"],
+    "CloudFront-Is-SmartTV-Viewer": ["false"],
+    "CloudFront-Is-Tablet-Viewer": ["false"],
+    "CloudFront-Viewer-Country": ["CA"],
+    "Host": ["aq6bxbtjx3.execute-api.us-east-1.amazonaws.com"],
+    "User-Agent": ["Apache-HttpClient/4.5.6 (Java/1.8.0_121)"],
+    "Via": ["1.1 0cbd8799a17a2d96a24ab9504cb8ff1f.cloudfront.net (CloudFront)"],
+    "X-Amz-Cf-Id": ["v2P6JGlsSN8PMzTvXSTEkvH7m13KZCg7BX5xY6J5ssuwWqz0YhINXw=="],
+    "X-Amzn-Trace-Id": ["Root=1-5c413b80-a476f0c69b6c1601745a09e9"],
+    "X-API-KEY": ["g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC"],
+    "X-Forwarded-For": ["50.71.176.213, 54.182.238.67"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+    "documentId": "test.txt"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "d7tn6n",
+    "resourcePath": "/documents",
     "httpMethod": "POST",
-    "headers": {
-        "Accept-Encoding": "gzip,deflate",
-        "CloudFront-Forwarded-Proto": "https",
-        "CloudFront-Is-Desktop-Viewer": "true",
-        "CloudFront-Is-Mobile-Viewer": "false",
-        "CloudFront-Is-SmartTV-Viewer": "false",
-        "CloudFront-Is-Tablet-Viewer": "false",
-        "CloudFront-Viewer-Country": "CA",
-        "Host": "aq6bxbtjx3.execute-api.us-east-1.amazonaws.com",
-        "User-Agent": "Apache-HttpClient/4.5.6 (Java/1.8.0_121)",
-        "Via": "1.1 0cbd8799a17a2d96a24ab9504cb8ff1f.cloudfront.net (CloudFront)",
-        "X-Amz-Cf-Id": "v2P6JGlsSN8PMzTvXSTEkvH7m13KZCg7BX5xY6J5ssuwWqz0YhINXw==",
-        "X-Amzn-Trace-Id": "Root=1-5c413b80-a476f0c69b6c1601745a09e9",
-        "X-API-KEY": "g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC",
-        "X-Forwarded-For": "50.71.176.213, 54.182.238.67",
-        "X-Forwarded-Port": "443",
-        "X-Forwarded-Proto": "https"
-    },
-    "multiValueHeaders": {
-        "Accept-Encoding": [
-            "gzip,deflate"
-        ],
-        "CloudFront-Forwarded-Proto": [
-            "https"
-        ],
-        "CloudFront-Is-Desktop-Viewer": [
-            "true"
-        ],
-        "CloudFront-Is-Mobile-Viewer": [
-            "false"
-        ],
-        "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-        ],
-        "CloudFront-Is-Tablet-Viewer": [
-            "false"
-        ],
-        "CloudFront-Viewer-Country": [
-            "CA"
-        ],
-        "Host": [
-            "aq6bxbtjx3.execute-api.us-east-1.amazonaws.com"
-        ],
-        "User-Agent": [
-            "Apache-HttpClient/4.5.6 (Java/1.8.0_121)"
-        ],
-        "Via": [
-            "1.1 0cbd8799a17a2d96a24ab9504cb8ff1f.cloudfront.net (CloudFront)"
-        ],
-        "X-Amz-Cf-Id": [
-            "v2P6JGlsSN8PMzTvXSTEkvH7m13KZCg7BX5xY6J5ssuwWqz0YhINXw=="
-        ],
-        "X-Amzn-Trace-Id": [
-            "Root=1-5c413b80-a476f0c69b6c1601745a09e9"
-        ],
-        "X-API-KEY": [
-            "g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC"
-        ],
-        "X-Forwarded-For": [
-            "50.71.176.213, 54.182.238.67"
-        ],
-        "X-Forwarded-Port": [
-            "443"
-        ],
-        "X-Forwarded-Proto": [
-            "https"
-        ]
-    },
-    "queryStringParameters": null,
-    "multiValueQueryStringParameters": null,
-    "pathParameters": {
-        "documentId": "test.txt"
-    },
-    "stageVariables": null,
-    "requestContext": {
-        "resourceId": "d7tn6n",
-        "resourcePath": "/documents",
-        "httpMethod": "POST",
-        "extendedRequestId": "TrY8IHCSIAMFQoA=",
-        "requestTime": "18/Jan/2019:02:35:44 +0000",
-        "path": "/prod//documents/test.txt",
-        "accountId": "228203493010",
-        "protocol": "HTTP/1.1",
-        "stage": "prod",
-        "domainPrefix": "aq6bxbtjx3",
-        "requestTimeEpoch": 1547778944814,
-        "requestId": "c1780de4-1ac9-11e9-8567-4b3ea7fa7662",
-        "authorizer": {
+    "extendedRequestId": "TrY8IHCSIAMFQoA=",
+    "requestTime": "18/Jan/2019:02:35:44 +0000",
+    "path": "/prod//documents/test.txt",
+    "accountId": "228203493010",
+    "protocol": "HTTP/1.1",
+    "stage": "prod",
+    "domainPrefix": "aq6bxbtjx3",
+    "requestTimeEpoch": 1547778944814,
+    "requestId": "c1780de4-1ac9-11e9-8567-4b3ea7fa7662",
+    "authorizer": {
       "claims": {
         "sub": "6aaaba31-ac0e-459f-bb2f-cebbf4c9eeba",
         "aud": "23cakansoqhfk3mpuvg3bdsd26",
@@ -105,25 +73,25 @@
         "email": "7b87c0e2-5f20-403b-bcc6-d35cb491d3b7@formkiq.com"
       }
     },
-        "identity": {
-            "cognitoIdentityPoolId": null,
-            "cognitoIdentityId": null,
-            "apiKey": "g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC",
-            "cognitoAuthenticationType": null,
-            "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
-            "apiKeyId": "mjm8v3p977",
-            "userAgent": "Apache-HttpClient/4.5.6 (Java/1.8.0_121)",
-            "accountId": null,
-            "caller": null,
-            "sourceIp": "50.71.176.213",
-            "accessKey": null,
-            "cognitoAuthenticationProvider": null,
-            "user": null,
-            "cognito:groups": "[Admins]"
-        },
-        "domainName": "aq6bxbtjx3.execute-api.us-east-1.amazonaws.com",
-        "apiId": "aq6bxbtjx3"
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "apiKey": "g6iKOKGnZk3mv2Wa0SgjI5f6vh9zFcnr1QtZnRsC",
+      "cognitoAuthenticationType": null,
+      "userArn": "arn:aws:sts::111111111111:assumed-role/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK/formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
+      "apiKeyId": "mjm8v3p977",
+      "userAgent": "Apache-HttpClient/4.5.6 (Java/1.8.0_121)",
+      "accountId": null,
+      "caller": null,
+      "sourceIp": "50.71.176.213",
+      "accessKey": null,
+      "cognitoAuthenticationProvider": null,
+      "user": null,
+      "cognito:groups": "[Admins]"
     },
-    "body": null,
-    "isBase64Encoded": false
+    "domainName": "aq6bxbtjx3.execute-api.us-east-1.amazonaws.com",
+    "apiId": "aq6bxbtjx3"
+  },
+  "body": null,
+  "isBase64Encoded": false
 }

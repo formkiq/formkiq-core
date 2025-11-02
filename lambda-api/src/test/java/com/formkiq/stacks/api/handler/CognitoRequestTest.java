@@ -38,52 +38,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
   /**
-   * POST /groups only allowed by admin.
-   *
-   */
-  @Test
-  public void testAddGroups01() {
-    // given
-    AddGroupRequest req = new AddGroupRequest().group(new AddGroup().name("test"));
-
-    setBearerToken("security");
-
-    // when
-    try {
-      this.userManagementApi.addGroup(req);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals(
-          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
-    }
-  }
-
-  /**
-   * GET /groups/{groupName}/users only allowed by admin.
-   *
-   */
-  @Test
-  public void testGetGroupUsers01() {
-    // given
-    setBearerToken("security");
-
-    // when
-    try {
-      this.userManagementApi.getUsersInGroup("test", null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals(
-          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
-    }
-  }
-
-  /**
    * POST /groups/{groupName}/users only allowed by admin.
    *
    */
@@ -107,39 +61,19 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /groups/{groupName}/users/{username} only allowed by admin.
+   * POST /groups only allowed by admin.
    *
    */
   @Test
-  public void testDeleteUserFromGroup01() {
+  public void testAddGroups01() {
     // given
+    AddGroupRequest req = new AddGroupRequest().group(new AddGroup().name("test"));
+
     setBearerToken("security");
 
     // when
     try {
-      this.userManagementApi.removeUsernameFromGroup("group", "test");
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals(
-          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
-    }
-  }
-
-  /**
-   * GET /users only allowed by admin.
-   *
-   */
-  @Test
-  public void testGetUsers01() {
-    // given
-    setBearerToken("security");
-
-    // when
-    try {
-      this.userManagementApi.getUsers(null, null);
+      this.userManagementApi.addGroup(req);
       fail();
     } catch (ApiException e) {
       // then
@@ -175,17 +109,17 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * GET /users/{username} only allowed by admin.
+   * DELETE /groups/{groupName} only allowed by admin.
    *
    */
   @Test
-  public void testGetUser01() {
+  public void testDeleteGroup01() {
     // given
     setBearerToken("security");
 
     // when
     try {
-      this.userManagementApi.getUser("test");
+      this.userManagementApi.deleteGroup("test");
       fail();
     } catch (ApiException e) {
       // then
@@ -219,17 +153,83 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * GET /users/{username}/groups only allowed by admin.
+   * DELETE /groups/{groupName}/users/{username} only allowed by admin.
    *
    */
   @Test
-  public void testUsersGroups01() {
+  public void testDeleteUserFromGroup01() {
     // given
     setBearerToken("security");
 
     // when
     try {
-      this.userManagementApi.getListOfUserGroups("test", null, null);
+      this.userManagementApi.removeUsernameFromGroup("group", "test");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * GET /groups/{groupName}/users only allowed by admin.
+   *
+   */
+  @Test
+  public void testGetGroupUsers01() {
+    // given
+    setBearerToken("security");
+
+    // when
+    try {
+      this.userManagementApi.getUsersInGroup("test", null, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * GET /users/{username} only allowed by admin.
+   *
+   */
+  @Test
+  public void testGetUser01() {
+    // given
+    setBearerToken("security");
+
+    // when
+    try {
+      this.userManagementApi.getUser("test");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * GET /users only allowed by admin.
+   *
+   */
+  @Test
+  public void testGetUsers01() {
+    // given
+    setBearerToken("security");
+
+    // when
+    try {
+      this.userManagementApi.getUsers(null, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -263,17 +263,17 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * DELETE /groups/{groupName} only allowed by admin.
+   * GET /users/{username}/groups only allowed by admin.
    *
    */
   @Test
-  public void testDeleteGroup01() {
+  public void testUsersGroups01() {
     // given
     setBearerToken("security");
 
     // when
     try {
-      this.userManagementApi.deleteGroup("test");
+      this.userManagementApi.getListOfUserGroups("test", null, null);
       fail();
     } catch (ApiException e) {
       // then

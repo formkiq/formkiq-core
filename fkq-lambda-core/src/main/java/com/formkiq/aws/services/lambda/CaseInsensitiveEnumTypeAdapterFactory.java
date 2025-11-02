@@ -53,21 +53,21 @@ public class CaseInsensitiveEnumTypeAdapterFactory implements TypeAdapterFactory
 
     return new TypeAdapter<>() {
       @Override
-      public void write(final JsonWriter out, final T value) throws IOException {
-        if (value == null) {
-          out.nullValue();
-        } else {
-          out.value(toUpperCase(value));
-        }
-      }
-
-      @Override
       public T read(final JsonReader reader) throws IOException {
         if (reader.peek() == JsonToken.NULL) {
           reader.nextNull();
           return null;
         }
         return lowercaseToConstant.get(toUpperCase(reader.nextString()));
+      }
+
+      @Override
+      public void write(final JsonWriter out, final T value) throws IOException {
+        if (value == null) {
+          out.nullValue();
+        } else {
+          out.value(toUpperCase(value));
+        }
       }
     };
   }

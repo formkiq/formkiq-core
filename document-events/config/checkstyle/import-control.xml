@@ -4,9 +4,9 @@
     "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
 
 <import-control pkg="com.formkiq.module">
-	
+
 	<subpackage name="events">
-	
+
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.module.events.document" />
@@ -15,15 +15,15 @@
 		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.services.sns.model" />
-			
-		<subpackage name="document">	
+
+		<subpackage name="document">
 			<allow pkg="com.formkiq.graalvm.annotations" />
 		</subpackage>
 
-		<subpackage name="folder">	
+		<subpackage name="folder">
 			<allow pkg="com.formkiq.graalvm.annotations" />
 		</subpackage>
-		
+
 	</subpackage>
-	
+
 </import-control>

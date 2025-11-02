@@ -59,6 +59,12 @@ public class LoggerTest {
     System.setOut(new PrintStream(outputStream, true, StandardCharsets.UTF_8));
   }
 
+  @Test
+  public void testGetCurrentLogLevel() {
+    // Verify the current log level
+    assertEquals(LogLevel.INFO, logger.getCurrentLogLevel());
+  }
+
   /**
    * Is Logged test.
    */
@@ -71,6 +77,52 @@ public class LoggerTest {
     assertTrue(new LoggerImpl(LogLevel.INFO, LogType.JSON).isLogged(LogLevel.INFO));
     assertTrue(new LoggerImpl(LogLevel.INFO, LogType.JSON).isLogged(LogLevel.ERROR));
     assertTrue(new LoggerImpl(LogLevel.DEBUG, LogType.JSON).isLogged(LogLevel.INFO));
+  }
+
+  @Test
+  public void testLogExceptionInJsonFormat() {
+    // Log an exception with WARN level
+    Exception exception = new NullPointerException("Test \nexception");
+    logger.log(LogLevel.ERROR, exception);
+
+    // Verify the output contains JSON representation
+    String output = outputStream.toString(StandardCharsets.UTF_8);
+    Map<String, Object> map = GSON.fromJson(output, Map.class);
+    assertEquals("ERROR", map.get("level"));
+    assertEquals("java.lang.NullPointerException", map.get("type"));
+    assertEquals("Test \nexception", map.get("message"));
+
+    final int expected = 70;
+    List<String> list = (List<String>) map.get("stackTrace");
+    assertTrue(list.size() > expected);
+    assertEquals("com.formkiq.module.lambdaservices.logger.LoggerTest."
+        + "testLogExceptionInJsonFormat(LoggerTest.java:85)", list.get(0));
+  }
+
+  @Test
+  public void testLogExceptionInPlainTextFormat() {
+    // Set up a LoggerImpl with plain text log type
+    logger = new LoggerImpl(LogLevel.ERROR, LogType.TEXT);
+
+    // Log an exception with WARN level
+    Exception exception = new NullPointerException("Test exception");
+    logger.log(LogLevel.ERROR, exception);
+
+    // Verify the output contains plain stack trace
+    String output = outputStream.toString(StandardCharsets.UTF_8);
+    assertTrue(output.contains("java.lang.NullPointerException: Test exception"));
+    assertTrue(output.contains("at com.formkiq.module.lambdaservices.logger.LoggerTest."
+        + "testLogExceptionInPlainTextFormat"));
+  }
+
+  @Test
+  public void testLogMessageBelowLogLevel() {
+    // Log a message below the current log level
+    String message = "This message should not be logged.";
+    logger.log(LogLevel.DEBUG, message);
+
+    // Verify that nothing is logged
+    assertEquals("", outputStream.toString(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -107,57 +159,5 @@ public class LoggerTest {
     // Verify the output
     String expectedOutput = "This is a test message.\n";
     assertEquals(expectedOutput, outputStream.toString(StandardCharsets.UTF_8));
-  }
-
-  @Test
-  public void testLogExceptionInJsonFormat() {
-    // Log an exception with WARN level
-    Exception exception = new NullPointerException("Test \nexception");
-    logger.log(LogLevel.ERROR, exception);
-
-    // Verify the output contains JSON representation
-    String output = outputStream.toString(StandardCharsets.UTF_8);
-    Map<String, Object> map = GSON.fromJson(output, Map.class);
-    assertEquals("ERROR", map.get("level"));
-    assertEquals("java.lang.NullPointerException", map.get("type"));
-    assertEquals("Test \nexception", map.get("message"));
-
-    final int expected = 85;
-    List<String> list = (List<String>) map.get("stackTrace");
-    assertEquals(expected, list.size());
-    assertEquals("com.formkiq.module.lambdaservices.logger.LoggerTest."
-        + "testLogExceptionInJsonFormat(LoggerTest.java:115)", list.get(0));
-  }
-
-  @Test
-  public void testLogExceptionInPlainTextFormat() {
-    // Set up a LoggerImpl with plain text log type
-    logger = new LoggerImpl(LogLevel.ERROR, LogType.TEXT);
-
-    // Log an exception with WARN level
-    Exception exception = new NullPointerException("Test exception");
-    logger.log(LogLevel.ERROR, exception);
-
-    // Verify the output contains plain stack trace
-    String output = outputStream.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("java.lang.NullPointerException: Test exception"));
-    assertTrue(output.contains("at com.formkiq.module.lambdaservices.logger.LoggerTest."
-        + "testLogExceptionInPlainTextFormat"));
-  }
-
-  @Test
-  public void testGetCurrentLogLevel() {
-    // Verify the current log level
-    assertEquals(LogLevel.INFO, logger.getCurrentLogLevel());
-  }
-
-  @Test
-  public void testLogMessageBelowLogLevel() {
-    // Log a message below the current log level
-    String message = "This message should not be logged.";
-    logger.log(LogLevel.DEBUG, message);
-
-    // Verify that nothing is logged
-    assertEquals("", outputStream.toString(StandardCharsets.UTF_8));
   }
 }

@@ -37,5 +37,9 @@ public enum MappingAttributeSourceType {
   /** Source Type Metadata. */
   METADATA,
   /** Manual. */
-  MANUAL
+  MANUAL,
+  /** Data Classification. */
+  DATA_CLASSIFICATION,
+  /** Malware Scan. */
+  MALWARE_SCAN
 }

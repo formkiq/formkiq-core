@@ -68,8 +68,6 @@ public class ConsoleInstallHandlerTest {
   private static S3Service s3;
   /** {@link S3ConnectionBuilder}. */
   private static S3ConnectionBuilder s3Connection;
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Before Class.
@@ -101,6 +99,9 @@ public class ConsoleInstallHandlerTest {
     connection = new HttpUrlConnectionRecorder(new URL("http://localhost"));
 
   }
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
 
   /** {@link LambdaContextRecorder}. */
   private final LambdaContextRecorder context = new LambdaContextRecorder();
@@ -297,16 +298,6 @@ public class ConsoleInstallHandlerTest {
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
   }
 
-  private void verifyCognitoConfig() {
-    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
-        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message", null).isObjectExists());
-    assertTrue(s3
-        .getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message", null)
-        .isObjectExists());
-    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
-        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message", null).isObjectExists());
-  }
-
   /**
    * Test Handle Request 'DELETE'.
    *
@@ -431,6 +422,16 @@ public class ConsoleInstallHandlerTest {
 
     // then
     assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
+  }
+
+  private void verifyCognitoConfig() {
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
+        "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message", null).isObjectExists());
+    assertTrue(s3
+        .getObjectMetadata(CONSOLE_BUCKET, "formkiq/cognito/dev/CustomMessage_SignUp/Message", null)
+        .isObjectExists());
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
+        "formkiq/cognito/dev/CustomMessage_ForgotPassword/Message", null).isObjectExists());
   }
 
   /**

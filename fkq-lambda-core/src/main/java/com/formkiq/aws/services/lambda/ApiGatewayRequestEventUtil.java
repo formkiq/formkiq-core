@@ -28,20 +28,20 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import software.amazon.awssdk.utils.StringUtils;
 
 /**
  * 
@@ -55,31 +55,6 @@ public interface ApiGatewayRequestEventUtil {
 
   /** {@link Gson}. */
   Gson GSON = GsonUtil.getInstance();
-
-  /**
-   * Get {@link ApiGatewayRequestEvent} body as {@link String}.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   * @throws BadException BadException
-   */
-  static String getBodyAsString(final ApiGatewayRequestEvent event) throws BadException {
-    String body = event.getBody();
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
-      byte[] bytes = Base64.getDecoder().decode(body);
-      body = new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    if (StringUtils.isEmpty(body)) {
-      throw new BadException("request body is required");
-    }
-
-    return body;
-  }
 
   /**
    * Create Pagination.
@@ -127,10 +102,9 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link DynamicObject}
    * @throws BadException BadException
-   * @throws IOException IOException
    */
   default DynamicObject fromBodyToDynamicObject(final ApiGatewayRequestEvent event)
-      throws BadException, IOException {
+      throws BadException {
     return new DynamicObject(fromBodyToObject(event, Map.class));
   }
 
@@ -154,27 +128,14 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}
    * @param classOfT {@link Class}
    * @return T
-   * @throws BadException BadException
-   * @throws IOException IOException
+   * @deprecated Use JsonToObject.fromJson(awsservice, event, classOfT)
    */
-  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT)
-      throws BadException, IOException {
-
-    String body = event.getBody();
-    if (body == null) {
-      throw new BadException("request body is required");
-    }
-
-    byte[] data = event.getBody().getBytes(StandardCharsets.UTF_8);
-
-    if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
-      data = Base64.getDecoder().decode(body);
-    }
-
-    try (Reader reader =
-        new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8)) {
+  @Deprecated
+  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
+    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
+        StandardCharsets.UTF_8)) {
       return GSON.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException e) {
+    } catch (JsonSyntaxException | IOException e) {
       throw new BadException("invalid JSON body");
     }
   }
@@ -268,7 +229,6 @@ public interface ApiGatewayRequestEventUtil {
     return pagination;
   }
 
-
   /**
    * Get Query Parameter.
    *
@@ -282,6 +242,7 @@ public interface ApiGatewayRequestEventUtil {
     return value != null ? value.trim() : null;
   }
 
+
   /**
    * Get Path Parameter.
    *
@@ -293,6 +254,23 @@ public interface ApiGatewayRequestEventUtil {
     Map<String, String> q = event.getPathParameters();
     String value = q != null ? q.getOrDefault(key, null) : null;
     return value != null ? value.trim() : null;
+  }
+
+  /**
+   * Get SiteId as a Path Parameter.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return String
+   * @throws UnauthorizedException UnauthorizedException
+   */
+  default String getPathParameterSiteId(final ApiGatewayRequestEvent event)
+      throws UnauthorizedException {
+    String siteId = event.getPathParameters().get("siteId");
+    Optional<ReservedSiteId> reserved = ReservedSiteId.fromString(siteId);
+    if (reserved.isPresent()) {
+      throw new UnauthorizedException("'" + siteId + "' siteId is reserved");
+    }
+    return siteId;
   }
 
   /**

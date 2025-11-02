@@ -47,17 +47,6 @@ public class Strings {
   /** Scheme Authority. */
   private static final String SCHEME_AUTHORITY = "://";
 
-  /**
-   * Return text or elseText if the text is empty.
-   * 
-   * @param text {@link String}
-   * @param elseText {@link String}
-   * @return {@link String}
-   */
-  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
-    return !isEmpty(text) ? text : elseText;
-  }
-
   private static String findMatch(final Collection<String> resourceUrls,
       final List<String[]> resourceSplits, final String path) {
 
@@ -153,18 +142,15 @@ public class Strings {
 
     } else {
 
-      int pos = name.lastIndexOf("/");
+      int pos = name.lastIndexOf("/", name.length() - 2);
       name = pos > -1 ? name.substring(pos + 1) : name;
     }
 
-    return name;
-  }
+    if (name.endsWith("/")) {
+      name = name.substring(0, name.length() - 1);
+    }
 
-  public static boolean isUrl(final String s) {
-    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
-    Pattern pattern = Pattern.compile(regex);
-    Matcher matcher = pattern.matcher(s);
-    return matcher.matches();
+    return name;
   }
 
   private static String getUri(final String path) {
@@ -189,6 +175,37 @@ public class Strings {
    */
   public static boolean isEmpty(final CharSequence cs) {
     return cs == null || cs.isEmpty();
+  }
+
+  /**
+   * XOR {@link String} {@link List}.
+   *
+   * @param strs {@link Collection} {@link String}
+   * @return boolean
+   */
+  public static boolean isEmpty(final String... strs) {
+
+    int len = strs.length;
+    long countEmpty = Arrays.stream(strs).filter(Strings::isEmpty).count();
+    return len == countEmpty || countEmpty == 0;
+  }
+
+  /**
+   * Return text or elseText if the text is empty.
+   * 
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String isNotNullOrEmptyElse(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
+  }
+
+  public static boolean isUrl(final String s) {
+    String regex = "^[a-zA-Z][a-zA-Z0-9]+" + SCHEME_AUTHORITY + "[a-zA-Z0-9]+.*$";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(s);
+    return matcher.matches();
   }
 
   /**
@@ -242,24 +259,11 @@ public class Strings {
    * @param e {@link Exception}
    * @return {@link String}
    */
-  public static String toString(final Exception e) {
+  public static String toString(final Throwable e) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
     return sw.toString();
-  }
-
-  /**
-   * XOR {@link String} {@link List}.
-   * 
-   * @param strs {@link Collection} {@link String}
-   * @return boolean
-   */
-  public static boolean isEmptyOrHasValues(final String... strs) {
-
-    int len = strs.length;
-    long countEmpty = Arrays.stream(strs).filter(s -> isEmpty(s)).count();
-    return len == countEmpty || countEmpty == 0;
   }
 
   /**

@@ -200,18 +200,83 @@ public class CognitoIdentityProviderService {
   }
 
   /**
-   * Change User Password.
+   * Add Cognito User to Cognito Group.
    * 
-   * @param accessToken {@link String}
-   * @param previousPassword {@link String}
-   * @param proposedPassword {@link String}
-   * @return ChangePasswordResponse
+   * @param email {@link String}
+   * @param groupname {@link String}
    */
-  public ChangePasswordResponse setChangePassword(final String accessToken,
-      final String previousPassword, final String proposedPassword) {
-    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
-        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
-    return this.cognitoProvider.changePassword(request);
+  public void addUserToGroup(final String email, final String groupname) {
+
+    AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
+        .groupName(groupname).userPoolId(this.userPoolId).username(email).build();
+
+    this.cognitoProvider.adminAddUserToGroup(addUserToGroupRequest);
+  }
+
+  /**
+   * Confirm User Signup.
+   * 
+   * @param username {@link String}
+   * @return {@link AdminConfirmSignUpResponse}
+   */
+  public AdminConfirmSignUpResponse confirmSignUp(final String username) {
+    AdminConfirmSignUpRequest req =
+        AdminConfirmSignUpRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    return this.cognitoProvider.adminConfirmSignUp(req);
+  }
+
+  /**
+   * Delete Group.
+   * 
+   * @param groupName {@link String}
+   */
+  public void deleteGroup(final String groupName) {
+    DeleteGroupRequest req =
+        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
+    this.cognitoProvider.deleteGroup(req);
+  }
+
+  public void deleteUser(final String username) {
+    AdminDeleteUserRequest req =
+        AdminDeleteUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminDeleteUser(req);
+  }
+
+  /**
+   * Disable Username.
+   * 
+   * @param username {@link String}
+   */
+  public void disableUser(final String username) {
+    AdminDisableUserRequest req =
+        AdminDisableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminDisableUser(req);
+  }
+
+  /**
+   * Enable Username.
+   * 
+   * @param username {@link String}
+   */
+  public void enableUser(final String username) {
+    AdminEnableUserRequest req =
+        AdminEnableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminEnableUser(req);
+  }
+
+  /**
+   * Finds User by Email.
+   *
+   * @param email {@link String}
+   * @return {@link ListUsersResponse}
+   */
+  public ListUsersResponse findUserByEmail(final String email) {
+
+    final String emailQuery = "email=\"" + email + "\"";
+    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
+        .attributesToGet("email").filter(emailQuery).build();
+
+    return this.cognitoProvider.listUsers(usersRequest);
   }
 
   /**
@@ -240,73 +305,6 @@ public class CognitoIdentityProviderService {
         ConfirmForgotPasswordRequest.builder().clientId(this.clientId).username(username)
             .confirmationCode(code).password(password).build();
     return this.cognitoProvider.confirmForgotPassword(request);
-  }
-
-  /**
-   * Add Cognito User to Cognito Group.
-   * 
-   * @param email {@link String}
-   * @param groupname {@link String}
-   */
-  public void addUserToGroup(final String email, final String groupname) {
-
-    AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
-        .groupName(groupname).userPoolId(this.userPoolId).username(email).build();
-
-    this.cognitoProvider.adminAddUserToGroup(addUserToGroupRequest);
-  }
-
-  /**
-   * Remove Cognito User from Cognito Group.
-   *
-   * @param username {@link String}
-   * @param groupname {@link String}
-   */
-  public void removeUserFromGroup(final String username, final String groupname) {
-
-    AdminRemoveUserFromGroupRequest removeUserFromGroupRequest = AdminRemoveUserFromGroupRequest
-        .builder().groupName(groupname).userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminRemoveUserFromGroup(removeUserFromGroupRequest);
-  }
-
-  /**
-   * Confirm User Signup.
-   * 
-   * @param username {@link String}
-   * @return {@link AdminConfirmSignUpResponse}
-   */
-  public AdminConfirmSignUpResponse confirmSignUp(final String username) {
-    AdminConfirmSignUpRequest req =
-        AdminConfirmSignUpRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    return this.cognitoProvider.adminConfirmSignUp(req);
-  }
-
-  /**
-   * Finds User by Email.
-   *
-   * @param email {@link String}
-   * @return {@link ListUsersResponse}
-   */
-  public ListUsersResponse findUserByEmail(final String email) {
-
-    final String emailQuery = "email=\"" + email + "\"";
-    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
-        .attributesToGet("email").filter(emailQuery).build();
-
-    return this.cognitoProvider.listUsers(usersRequest);
-  }
-
-  /**
-   * List Users.
-   *
-   * @param paginationToken {@link String}
-   * @param limit {@link Integer}
-   * @return {@link ListUsersResponse}
-   */
-  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
-    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
-        .paginationToken(paginationToken).limit(limit).build();
-    return this.cognitoProvider.listUsers(usersRequest);
   }
 
   /**
@@ -344,6 +342,21 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Login User.
+   * 
+   * @param username {@link String}
+   * @param password {@link String}
+   * @return InitiateAuthResponse
+   */
+  public InitiateAuthResponse initiateAuth(final String username, final String password) {
+    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
+    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
+    InitiateAuthRequest req =
+        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
+    return this.cognitoProvider.initiateAuth(req);
+  }
+
+  /**
    * Does Cognito User Exist.
    * 
    * @param email {@link String}
@@ -378,6 +391,19 @@ public class CognitoIdentityProviderService {
     AdminListGroupsForUserRequest req = AdminListGroupsForUserRequest.builder()
         .userPoolId(this.userPoolId).username(username).nextToken(token).limit(limit).build();
     return this.cognitoProvider.adminListGroupsForUser(req);
+  }
+
+  /**
+   * List Users.
+   *
+   * @param paginationToken {@link String}
+   * @param limit {@link Integer}
+   * @return {@link ListUsersResponse}
+   */
+  public ListUsersResponse listUsers(final String paginationToken, final Integer limit) {
+    ListUsersRequest usersRequest = ListUsersRequest.builder().userPoolId(this.userPoolId)
+        .paginationToken(paginationToken).limit(limit).build();
+    return this.cognitoProvider.listUsers(usersRequest);
   }
 
   /**
@@ -427,21 +453,6 @@ public class CognitoIdentityProviderService {
   }
 
   /**
-   * Login User.
-   * 
-   * @param username {@link String}
-   * @param password {@link String}
-   * @return InitiateAuthResponse
-   */
-  public InitiateAuthResponse initiateAuth(final String username, final String password) {
-    AuthFlowType authFlow = AuthFlowType.USER_PASSWORD_AUTH;
-    Map<String, String> authMap = Map.of("USERNAME", username, "PASSWORD", password);
-    InitiateAuthRequest req =
-        InitiateAuthRequest.builder().authFlow(authFlow).authParameters(authMap).build();
-    return this.cognitoProvider.initiateAuth(req);
-  }
-
-  /**
    * Login User in NEW_PASSWORD_REQUIRED status.
    * 
    * @param email {@link String}
@@ -480,6 +491,45 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Remove Cognito User from Cognito Group.
+   *
+   * @param username {@link String}
+   * @param groupname {@link String}
+   */
+  public void removeUserFromGroup(final String username, final String groupname) {
+
+    AdminRemoveUserFromGroupRequest removeUserFromGroupRequest = AdminRemoveUserFromGroupRequest
+        .builder().groupName(groupname).userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminRemoveUserFromGroup(removeUserFromGroupRequest);
+  }
+
+  /**
+   * Reset Password for Username.
+   * 
+   * @param username {@link String}
+   */
+  public void resetUserPassword(final String username) {
+    AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
+        .userPoolId(this.userPoolId).username(username).build();
+    this.cognitoProvider.adminResetUserPassword(req);
+  }
+
+  /**
+   * Change User Password.
+   * 
+   * @param accessToken {@link String}
+   * @param previousPassword {@link String}
+   * @param proposedPassword {@link String}
+   * @return ChangePasswordResponse
+   */
+  public ChangePasswordResponse setChangePassword(final String accessToken,
+      final String previousPassword, final String proposedPassword) {
+    ChangePasswordRequest request = ChangePasswordRequest.builder().accessToken(accessToken)
+        .previousPassword(previousPassword).proposedPassword(proposedPassword).build();
+    return this.cognitoProvider.changePassword(request);
+  }
+
+  /**
    * Sets User Password.
    * 
    * @param username {@link String}
@@ -506,55 +556,5 @@ public class CognitoIdentityProviderService {
       final Collection<AttributeType> userAttributes) {
     return this.cognitoProvider.adminUpdateUserAttributes(AdminUpdateUserAttributesRequest.builder()
         .userPoolId(this.userPoolId).username(username).userAttributes(userAttributes).build());
-  }
-
-  public void deleteUser(final String username) {
-    AdminDeleteUserRequest req =
-        AdminDeleteUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDeleteUser(req);
-  }
-
-  /**
-   * Disable Username.
-   * 
-   * @param username {@link String}
-   */
-  public void disableUser(final String username) {
-    AdminDisableUserRequest req =
-        AdminDisableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminDisableUser(req);
-  }
-
-  /**
-   * Enable Username.
-   * 
-   * @param username {@link String}
-   */
-  public void enableUser(final String username) {
-    AdminEnableUserRequest req =
-        AdminEnableUserRequest.builder().userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminEnableUser(req);
-  }
-
-  /**
-   * Reset Password for Username.
-   * 
-   * @param username {@link String}
-   */
-  public void resetUserPassword(final String username) {
-    AdminResetUserPasswordRequest req = AdminResetUserPasswordRequest.builder()
-        .userPoolId(this.userPoolId).username(username).build();
-    this.cognitoProvider.adminResetUserPassword(req);
-  }
-
-  /**
-   * Delete Group.
-   * 
-   * @param groupName {@link String}
-   */
-  public void deleteGroup(final String groupName) {
-    DeleteGroupRequest req =
-        DeleteGroupRequest.builder().userPoolId(this.userPoolId).groupName(groupName).build();
-    this.cognitoProvider.deleteGroup(req);
   }
 }

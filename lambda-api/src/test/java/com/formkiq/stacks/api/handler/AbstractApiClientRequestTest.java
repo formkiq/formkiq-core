@@ -36,6 +36,7 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
+import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
@@ -72,7 +73,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
-import com.formkiq.testutils.aws.JwtTokenEncoder;
+import com.formkiq.testutils.api.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
@@ -112,6 +113,16 @@ public abstract class AbstractApiClientRequestTest {
   /** Time out. */
   private static final int TIMEOUT = 30000;
 
+  private static boolean isMatch(final List<Map<String, Object>> msgs, final String eventType,
+      final String documentId) {
+    return msgs.stream().anyMatch(m -> isMatch(m, eventType, documentId));
+  }
+
+  private static boolean isMatch(final Map<String, Object> m, final String eventType,
+      final String documentId) {
+    return eventType.equals(m.get("type")) && documentId.equals(m.get("documentId"));
+  }
+
   /** {@link ApiClient}. */
   protected ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
@@ -146,8 +157,30 @@ public abstract class AbstractApiClientRequestTest {
   protected CustomIndexApi indexApi = new CustomIndexApi(this.client);
   /** {@link WebhooksApi}. */
   protected WebhooksApi webhooksApi = new WebhooksApi(this.client);
+
+  /** {@link EntityApi}. */
+  protected EntityApi entityApi = new EntityApi(this.client);
+
   /** Sqs Messages. */
   private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
+
+  /**
+   * Clear Sqs Messages.
+   *
+   */
+  public void clearSqsMessages() {
+
+    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
+
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(SqsService.class, new SqsServiceExtension());
+    SqsService sqsService = awsServices.getExtension(SqsService.class);
+
+    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+    for (Message msg : msgs) {
+      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
+    }
+  }
 
   /**
    * Convert JSON to Object.
@@ -159,6 +192,29 @@ public abstract class AbstractApiClientRequestTest {
    */
   protected <T> T fromJson(final String json, final Class<T> clazz) {
     return GsonUtil.getInstance().fromJson(json, clazz);
+  }
+
+  /**
+   * Get {@link AwsServiceCache}.
+   * 
+   * @return {@link AwsServiceCache}
+   */
+  public AwsServiceCache getAwsServices() {
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    AwsServiceCache services = new AwsServiceCacheBuilder(server.getEnvironmentMap(),
+        TestServices.getEndpointMap(), credentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
+        .addService(new SsmAwsServiceRegistry()).addService(new SqsAwsServiceRegistry()).build();
+
+    services.register(S3Service.class, new S3ServiceExtension());
+    services.register(SsmService.class, new SsmServiceExtension());
+    services.register(WebhooksService.class, new WebhooksServiceExtension());
+    services.register(ConfigService.class, new ConfigServiceExtension());
+
+    return services;
   }
 
   /**
@@ -190,39 +246,6 @@ public abstract class AbstractApiClientRequestTest {
     }
 
     return sqsMessages.stream().filter(m -> isMatch(m, eventType, documentId)).findAny().get();
-  }
-
-  private boolean isMatch(final List<Map<String, Object>> msgs, final String eventType,
-      final String documentId) {
-    return msgs.stream().anyMatch(m -> isMatch(m, eventType, documentId));
-  }
-
-  private static boolean isMatch(final Map<String, Object> m, final String eventType,
-      final String documentId) {
-    return eventType.equals(m.get("type")) && documentId.equals(m.get("documentId"));
-  }
-
-  private Map<String, Object> transform(final Message msg) {
-    Map<String, Object> map = fromJson(msg.body(), Map.class);
-    return fromJson((String) map.get("Message"), Map.class);
-  }
-
-  /**
-   * Clear Sqs Messages.
-   *
-   */
-  public void clearSqsMessages() {
-
-    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
-
-    AwsServiceCache awsServices = getAwsServices();
-    awsServices.register(SqsService.class, new SqsServiceExtension());
-    SqsService sqsService = awsServices.getExtension(SqsService.class);
-
-    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    for (Message msg : msgs) {
-      sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());
-    }
   }
 
   /**
@@ -273,26 +296,8 @@ public abstract class AbstractApiClientRequestTest {
     this.client.addDefaultHeader("Authorization", jwt);
   }
 
-  /**
-   * Get {@link AwsServiceCache}.
-   * 
-   * @return {@link AwsServiceCache}
-   */
-  public AwsServiceCache getAwsServices() {
-
-    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
-    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
-
-    AwsServiceCache services = new AwsServiceCacheBuilder(server.getEnvironmentMap(),
-        TestServices.getEndpointMap(), credentialsProvider)
-        .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
-        .addService(new SsmAwsServiceRegistry()).addService(new SqsAwsServiceRegistry()).build();
-
-    services.register(S3Service.class, new S3ServiceExtension());
-    services.register(SsmService.class, new SsmServiceExtension());
-    services.register(WebhooksService.class, new WebhooksServiceExtension());
-    services.register(ConfigService.class, new ConfigServiceExtension());
-
-    return services;
+  private Map<String, Object> transform(final Message msg) {
+    Map<String, Object> map = fromJson(msg.body(), Map.class);
+    return fromJson((String) map.get("Message"), Map.class);
   }
 }

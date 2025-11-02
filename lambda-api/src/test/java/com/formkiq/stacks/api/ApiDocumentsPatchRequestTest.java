@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,6 @@ import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -60,6 +58,60 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(LocalStackExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
+
+  /**
+   * Asserts 200 response.
+   *
+   * @param siteId {@link String}
+   * @param response {@link String}.
+   */
+  private void assert200Response(final String siteId, final String response) {
+
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("200.0", String.valueOf(m.get("statusCode")));
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+
+    assertCorsHeaders(headers);
+
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+    assertNotNull(resp.get("documentId"));
+
+    if (siteId != null) {
+      assertEquals(siteId, resp.get("siteId"));
+    }
+
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+
+    assertNotNull(UUID.fromString((String) resp.get("documentId")));
+  }
+
+  /**
+   * Asserts 404 response.
+   *
+   * @param response {@link String}.
+   */
+  private void assert404Response(final String response) {
+
+    Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("404.0", String.valueOf(m.get("statusCode")));
+
+    Map<String, Object> headers = (Map<String, Object>) m.get("headers");
+    assertCorsHeaders(headers);
+
+    Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+
+    assertNotNull(resp.get("message"));
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+  }
 
   /**
    * PATCH /documents/{documentId} request.
@@ -72,11 +124,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    */
   private ApiGatewayRequestEvent patchDocumentsRequest(final String siteId, final String documentId,
       final String group, final String body) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("PATCH")
-        .resource("/documents/{documentId}").path("/documents/" + documentId).group(group)
-        .user("joesmith").pathParameters(Map.of("documentId", documentId))
+    return new ApiGatewayRequestEventBuilder().method("PATCH").resource("/documents/{documentId}")
+        .path("/documents/" + documentId).group(group).user("joesmith")
+        .pathParameters(Map.of("documentId", documentId))
         .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
-    return event;
   }
 
   /**
@@ -108,9 +159,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       DocumentItem document = getDocumentService().findDocument(siteId, documentId);
       assertEquals("application/pdf", document.getContentType());
       assertEquals("/documents/test2.txt", document.getPath());
-
-      // assertTrue(
-      // getLogger().containsString("setting userId: joesmith " + "contentType: application/pdf"));
     }
   }
 
@@ -152,7 +200,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       item.setPath("test.txt");
-      item.setContentLength(Long.valueOf(contentLength));
+      item.setContentLength(contentLength);
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       TimeUnit.SECONDS.sleep(1);
@@ -178,7 +226,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -223,12 +270,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
           siteId != null ? siteId : DEFAULT_SITE_ID, body);
 
-      // ApiGatewayRequestEvent event =
-      // toRequestEvent("/request-patch-documents-documentid01.json");
-      // addParameter(event, "siteId", siteId);
-      // setPathParameter(event, "documentId", documentId);
       event.setBody("{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}");
-      // event.setIsBase64Encoded(Boolean.FALSE);
 
       // when
       String response = handleRequest(event);
@@ -238,20 +280,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       List<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, 2).getResults();
-      // assertEquals(1, tags.size());
-      //
-      // assertEquals("", tags.get(0).getKey());
-      // assertEquals("", tags.get(0).getType());
-      // assertEquals("", tags.get(0).getValue());
-
-      // S3Service s3 = getS3();
-      // String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-
-      // String json = s3.getContentAsString(STAGE_BUCKET_NAME, s3key, null);
-      // Map<String, Object> map = fromJson(json, Map.class);
-      // assertEquals(documentId, map.get("documentId"));
-
-      // List<Map<String, String>> tags = (List<Map<String, String>>) map.get("tags");
       assertEquals(1, tags.size());
 
       assertEquals("USERDEFINED", tags.get(0).getType().name());
@@ -290,13 +318,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assert200Response(siteId, response);
 
       DocumentItem item = getDocumentService().findDocument(siteId, documentId);
-      // String s3key = createDatabaseKey(siteId, documentId + FORMKIQ_DOC_EXT);
-
-      // String json = getS3().getContentAsString(STAGE_BUCKET_NAME, s3key, null);
-      // Map<String, Object> map = fromJson(json, Map.class);
-
-      // List<Map<String, Object>> metadata = (List<Map<String, Object>>) map.get("metadata");
       Collection<DocumentMetadata> metadata = item.getMetadata();
+
       assertEquals(2, metadata.size());
 
       DocumentMetadata o =
@@ -306,7 +329,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       o = metadata.stream().filter(m -> m.getKey().equals("playerId")).findFirst().get();
       assertEquals("playerId", o.getKey());
-      assertEquals("111,222", o.getValues().stream().collect(Collectors.joining(",")));
+      assertEquals("111,222", String.join(",", o.getValues()));
     }
   }
 
@@ -315,7 +338,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments07() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -356,7 +378,6 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePatchDocuments08() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -382,64 +403,5 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
           "{\"errors\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"error\":\"unallowed tag key\"}]}",
           String.valueOf(m.get("body")));
     }
-  }
-
-  /**
-   * Asserts 200 response.
-   *
-   * @param siteId {@link String}
-   * @param response {@link String}.
-   * @throws IOException IOException
-   */
-  @SuppressWarnings("unchecked")
-  private void assert200Response(final String siteId, final String response) throws IOException {
-
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    assertNotNull(resp.get("documentId"));
-
-    if (siteId != null) {
-      assertEquals(siteId, resp.get("siteId"));
-    }
-
-    assertNull(resp.get("next"));
-    assertNull(resp.get("previous"));
-
-    // String key = siteId != null ? siteId + "/" + resp.get("documentId") + ".fkb64"
-    // : resp.get("documentId") + ".fkb64";
-
-    // assertTrue(
-    // getLogger().containsString("s3 putObject " + key + " into bucket " + STAGE_BUCKET_NAME));
-    assertNotNull(UUID.fromString(resp.getString("documentId")));
-  }
-
-  /**
-   * Asserts 404 response.
-   *
-   * @param response {@link String}.
-   * @throws IOException IOException
-   */
-  @SuppressWarnings("unchecked")
-  private void assert404Response(final String response) throws IOException {
-
-    Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("404.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-    ApiResponseError resp = GsonUtil.getInstance().fromJson(m.get("body"), ApiResponseError.class);
-
-    assertNotNull(resp.getMessage());
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
   }
 }

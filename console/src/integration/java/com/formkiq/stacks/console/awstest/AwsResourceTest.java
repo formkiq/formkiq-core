@@ -148,7 +148,7 @@ public class AwsResourceTest {
         try (Page page = browser.newPage()) {
           page.navigate(url);
 
-          page.waitForSelector("input:has-text(\"Sign In\")");
+          page.waitForSelector("text=Sign In");
 
           assertEquals("Sign In", page.title());
 
@@ -166,7 +166,8 @@ public class AwsResourceTest {
             page.fill("[placeholder=\"me@mycompany.com\"]", USER);
             page.click("[placeholder=\"******\"]");
             page.fill("[placeholder=\"******\"]", PASSWORD);
-            page.waitForNavigation(() -> page.locator("input:has-text(\"Sign In\")").click());
+
+            page.locator("button:has-text(\"Sign In\")").click();
 
             page.waitForSelector("button:has-text(\"New\")");
             page.waitForSelector("text=Documents & Folders");
@@ -197,7 +198,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v3.8.2",
+    assertEquals("v4.0.14",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-console-"));

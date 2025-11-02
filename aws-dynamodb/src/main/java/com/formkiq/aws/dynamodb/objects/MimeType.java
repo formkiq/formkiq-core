@@ -33,6 +33,8 @@ public enum MimeType {
 
   /** image/bmp. */
   MIME_BMP("image/bmp", "bmp"),
+  /** image/heic. */
+  MIME_HEIC("image/heic", "heic"),
   /** application/msword. */
   MIME_DOC("application/msword", "doc"),
   /** application/vnd.openxmlformats-officedocument.wordprocessingml.document. */
@@ -87,6 +89,17 @@ public enum MimeType {
   MIME_UNKNOWN("UNKNOWN", ""),
   /** image/webp. */
   MIME_WEBP("image/webp", "webp");
+
+  /**
+   * Find {@link MimeType} by Path.
+   * 
+   * @param path {@link String}
+   * @return MimeType
+   */
+  public static MimeType findByPath(final String path) {
+    String ext = Strings.getExtension(path);
+    return MimeType.fromExtension(ext);
+  }
 
   /**
    * Find {@link MimeType} from Content-Type.
@@ -146,6 +159,7 @@ public enum MimeType {
 
   /** Content Type. */
   private final String contentType;
+
   /** Extension. */
   private final String extension;
 
@@ -159,17 +173,6 @@ public enum MimeType {
 
     this.contentType = type;
     this.extension = ext;
-  }
-
-  /**
-   * Find {@link MimeType} by Path.
-   * 
-   * @param path {@link String}
-   * @return MimeType
-   */
-  public static MimeType findByPath(final String path) {
-    String ext = Strings.getExtension(path);
-    return MimeType.fromExtension(ext);
   }
 
   /**

@@ -1,0 +1,76 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.entity;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
+
+/**
+ * {@link ApiRequestHandlerInterceptor} for /entities request handler.
+ */
+public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterceptor {
+
+  /** {@link AwsServiceCache}. */
+  private final AwsServiceCache awsservice;
+
+  /**
+   * constructor.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   */
+  public EntityRequestHandlerInterceptor(final AwsServiceCache awsServiceCache) {
+    this.awsservice = awsServiceCache;
+  }
+
+  @Override
+  public ApiRequestHandlerResponse afterProcessRequest(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final ApiRequestHandlerResponse response) {
+    return response;
+  }
+
+  @Override
+  public void beforeProcessRequest(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) {
+
+    String entityTypeId = event != null ? event.getPathParameter("entityTypeId") : null;
+
+    if (entityTypeId != null) {
+
+      EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
+      if (namespace == null && isUuid(entityTypeId)) {
+        event.addQueryParameter("namespace", EntityTypeNamespace.CUSTOM.name());
+      }
+
+      String siteId = authorization.getSiteId();
+      entityTypeId = new EntityTypeIdTransformer(awsservice).apply(siteId, event);
+      event.getPathParameters().put("entityTypeId", entityTypeId);
+    }
+  }
+}

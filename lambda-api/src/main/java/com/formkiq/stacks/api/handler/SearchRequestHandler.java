@@ -35,12 +35,13 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
@@ -64,7 +65,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -112,8 +112,10 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getPermissions().contains(ApiPermission.READ);
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
+      throws UnauthorizedException {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
     return Optional.of(access);
   }
 
@@ -151,8 +153,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    QueryRequest q = fromBodyToObject(event, QueryRequest.class);
-
+    QueryRequest q = JsonToObject.fromJson(awsservice, event, QueryRequest.class);
     validatePost(q);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
@@ -196,8 +197,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
 
-    ApiMapResponse resp = new ApiMapResponse(map);
-    return new ApiRequestHandlerResponse(SC_OK, resp);
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   /**
@@ -226,7 +226,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
       if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
           || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
-        throw new BadException("Fulltext search is not Enabled");
+        throw new BadException("Typesense Fulltext search is not Enabled");
       }
 
       Region region = Region.of(awsservice.environment("AWS_REGION"));

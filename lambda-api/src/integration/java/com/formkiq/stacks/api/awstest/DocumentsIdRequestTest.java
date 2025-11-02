@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
@@ -66,92 +67,6 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
   private static final int TEST_TIMEOUT = 120;
-
-  /**
-   * PUT /documents/{documentId}/restore request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testHandleSetDocumentRestore01() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiClient client = getApiClients(siteId).get(0);
-
-      DocumentsApi api = new DocumentsApi(client);
-      AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
-
-      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
-
-      String documentId = response.getDocumentId();
-
-      // when
-      api.deleteDocument(documentId, siteId, Boolean.TRUE);
-
-      // then
-      List<Document> softDeletedDocuments =
-          notNull(api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, "100")
-              .getDocuments());
-      assertFalse(softDeletedDocuments.isEmpty());
-
-      try {
-        api.getDocument(documentId, siteId, null);
-        fail();
-      } catch (ApiException e) {
-        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
-      }
-
-      try {
-        while (true) {
-          sapi.getDocumentFulltext(documentId, siteId, null);
-          TimeUnit.SECONDS.sleep(1);
-        }
-      } catch (ApiException e) {
-        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
-      }
-
-      // when
-      SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId);
-
-      // then
-      assertEquals("document restored", restore.getMessage());
-      assertNotNull(api.getDocument(documentId, siteId, null));
-    }
-  }
-
-  /**
-   * GET /documents/{documentId}/url deepLinkPath request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testHandleGetDocumentUrl01() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      for (ApiClient client : getApiClients(siteId)) {
-
-        DocumentsApi api = new DocumentsApi(client);
-
-        String deepLink = "https://www.google.com/sample.pdf";
-        AddDocumentRequest req =
-            new AddDocumentRequest().deepLinkPath(deepLink).contentType("application/pdf");
-        String documentId = api.addDocument(req, siteId, null).getDocumentId();
-
-        // when
-        GetDocumentResponse document = waitForDocument(client, siteId, documentId);
-
-        // then
-        assertEquals(deepLink, document.getDeepLinkPath());
-        assertTrue(Objects.requireNonNull(document.getPath()).contains("sample"));
-        assertEquals("application/pdf", document.getContentType());
-      }
-    }
-  }
 
   /**
    * Save new File and update content.
@@ -223,6 +138,96 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         waitForDocumentContent(client, siteId, documentId, newContent);
 
       }
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/url deepLinkPath request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testHandleGetDocumentUrl01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      for (ApiClient client : getApiClients(siteId)) {
+
+        DocumentsApi api = new DocumentsApi(client);
+
+        String deepLink = "https://www.google.com/sample.pdf";
+        AddDocumentRequest req =
+            new AddDocumentRequest().deepLinkPath(deepLink).contentType("application/pdf");
+        String documentId = api.addDocument(req, siteId, null).getDocumentId();
+
+        // when
+        GetDocumentResponse document = waitForDocument(client, siteId, documentId);
+
+        // then
+        assertEquals(deepLink, document.getDeepLinkPath());
+        assertTrue(Objects.requireNonNull(document.getPath()).contains("sample"));
+        assertEquals("application/pdf", document.getContentType());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/restore request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testHandleSetDocumentRestore01() throws Exception {
+    // given
+    ApiClient client = getApiClients(null).get(0);
+    new OpenSearchIndexPurgeRequestBuilder().submit(client, null);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      client = getApiClients(siteId).get(0);
+
+      DocumentsApi api = new DocumentsApi(client);
+      AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
+
+      AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
+      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+
+      String documentId = response.getDocumentId();
+
+      // when
+      api.deleteDocument(documentId, siteId, Boolean.TRUE);
+
+      // then
+      List<Document> softDeletedDocuments =
+          notNull(api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, "100")
+              .getDocuments());
+      assertFalse(softDeletedDocuments.isEmpty());
+
+      try {
+        api.getDocument(documentId, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
+      }
+
+      while (true) {
+        try {
+          sapi.getDocumentFulltext(documentId, siteId, null);
+          TimeUnit.SECONDS.sleep(1);
+        } catch (ApiException e) {
+          if (e.getCode() == SC_NOT_FOUND.getStatusCode()) {
+            break;
+          }
+        }
+      }
+
+      // when
+      SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId);
+
+      // then
+      assertEquals("document restored", restore.getMessage());
+      assertNotNull(api.getDocument(documentId, siteId, null));
     }
   }
 }

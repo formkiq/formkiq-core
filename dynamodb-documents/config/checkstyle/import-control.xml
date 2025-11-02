@@ -7,6 +7,7 @@
 
 	<subpackage name="dynamodb">
 
+		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.core.client.config" />
 		<allow pkg="software.amazon.awssdk.regions" />
@@ -14,7 +15,8 @@
 		<allow pkg="software.amazon.awssdk.utils" />
 		<allow pkg="com.amazonaws.util" />
 		<allow pkg="com.amazonaws.xray" />
-		
+
+		<allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
@@ -23,7 +25,7 @@
 		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
-		
+
 		<allow pkg="com.formkiq.module.events" />
 		<allow pkg="com.formkiq.module.events.folder" />
 
@@ -44,7 +46,7 @@
 			<allow pkg="software.amazon.awssdk.services.dynamodb" />
 			<allow pkg="java.io" />
 		</subpackage>
-		
+
 		<subpackage name="schemas">
 			<allow pkg="com.google.gson" />
 		</subpackage>
@@ -55,6 +57,7 @@
 
 		<subpackage name="s3">
 			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="com.formkiq.plugins.useractivity" />
 			<allow pkg="software.amazon.awssdk.services.s3.model" />
 		</subpackage>
 
@@ -69,12 +72,12 @@
 			<allow pkg="java.util" />
 		</subpackage>
 	</subpackage>
-	
+
 	<subpackage name="util">
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />
 		<allow pkg="java.util" />
 		<allow pkg="software.amazon.awssdk.utils" />
 	</subpackage>
-		
+
 </import-control>

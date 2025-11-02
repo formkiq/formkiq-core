@@ -59,66 +59,6 @@ public class ClassificationRecord implements DynamodbRecord<ClassificationRecord
    */
   public ClassificationRecord() {}
 
-  /**
-   * Get Inserted Date.
-   * 
-   * @return {@link Date}
-   */
-  public Date getInsertedDate() {
-    return this.insertedDate;
-  }
-
-  /**
-   * Set Inserted Date.
-   * 
-   * @param date {@link Date}
-   * @return {@link ClassificationRecord}
-   */
-  public ClassificationRecord setInsertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  /**
-   * Get User Id.
-   * 
-   * @return {@link String}
-   */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set User.
-   * 
-   * @param user {@link String}
-   * @return {@link ClassificationRecord}
-   */
-  public ClassificationRecord setUserId(final String user) {
-    this.userId = user;
-    return this;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return String
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set Document Id.
-   * 
-   * @param classificationId {@link String}
-   * @return ClassificationRecord
-   */
-  public ClassificationRecord setDocumentId(final String classificationId) {
-    this.documentId = classificationId;
-    return this;
-  }
-
   @Override
   public Map<String, AttributeValue> getAttributes(final String siteId) {
 
@@ -137,6 +77,15 @@ public class ClassificationRecord implements DynamodbRecord<ClassificationRecord
     return Map.of("name", fromS(this.name), "documentId", fromS(this.documentId), "schema",
         fromS(this.schema), "userId", fromS(this.userId), "inserteddate",
         AttributeValue.fromS(df.format(this.insertedDate)));
+  }
+
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
   }
 
   @Override
@@ -162,6 +111,42 @@ public class ClassificationRecord implements DynamodbRecord<ClassificationRecord
     return record;
   }
 
+  /**
+   * Get Inserted Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Get Name.
+   *
+   * @return {@link String}
+   */
+  public String getName() {
+    return this.name;
+  }
+
+  /**
+   * Get Schema.
+   *
+   * @return {@link String}
+   */
+  public String getSchema() {
+    return this.schema;
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @return {@link String}
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
   @Override
   public String pk(final String siteId) {
 
@@ -181,6 +166,61 @@ public class ClassificationRecord implements DynamodbRecord<ClassificationRecord
     return null;
   }
 
+  /**
+   * Set Document Id.
+   * 
+   * @param classificationId {@link String}
+   * @return ClassificationRecord
+   */
+  public ClassificationRecord setDocumentId(final String classificationId) {
+    this.documentId = classificationId;
+    return this;
+  }
+
+  /**
+   * Set Inserted Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link ClassificationRecord}
+   */
+  public ClassificationRecord setInsertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Set Name.
+   *
+   * @param classificationName {@link String}
+   * @return {@link ClassificationRecord}
+   */
+  public ClassificationRecord setName(final String classificationName) {
+    this.name = classificationName;
+    return this;
+  }
+
+  /**
+   * Set Schema.
+   *
+   * @param siteSchema {@link String}
+   * @return {@link ClassificationRecord}
+   */
+  public ClassificationRecord setSchema(final String siteSchema) {
+    this.schema = siteSchema;
+    return this;
+  }
+
+  /**
+   * Set User.
+   * 
+   * @param user {@link String}
+   * @return {@link ClassificationRecord}
+   */
+  public ClassificationRecord setUserId(final String user) {
+    this.userId = user;
+    return this;
+  }
+
   @Override
   public String sk() {
     return "class#document";
@@ -197,45 +237,5 @@ public class ClassificationRecord implements DynamodbRecord<ClassificationRecord
   @Override
   public String skGsi2() {
     return null;
-  }
-
-  /**
-   * Get Name.
-   *
-   * @return {@link String}
-   */
-  public String getName() {
-    return this.name;
-  }
-
-  /**
-   * Set Name.
-   *
-   * @param classificationName {@link String}
-   * @return {@link ClassificationRecord}
-   */
-  public ClassificationRecord setName(final String classificationName) {
-    this.name = classificationName;
-    return this;
-  }
-
-  /**
-   * Get Schema.
-   *
-   * @return {@link String}
-   */
-  public String getSchema() {
-    return this.schema;
-  }
-
-  /**
-   * Set Schema.
-   *
-   * @param siteSchema {@link String}
-   * @return {@link ClassificationRecord}
-   */
-  public ClassificationRecord setSchema(final String siteSchema) {
-    this.schema = siteSchema;
-    return this;
   }
 }

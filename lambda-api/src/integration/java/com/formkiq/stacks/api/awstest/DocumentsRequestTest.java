@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
+import static com.formkiq.testutils.aws.FkqDocumentService.uploadDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
@@ -43,8 +44,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -61,10 +64,13 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.GetAttributeResponse;
+import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
@@ -380,6 +386,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     String documentId = response.getDocumentId();
+    assertNotNull(documentId);
     waitForDocumentContent(client, siteId, documentId);
 
     // given
@@ -423,34 +430,6 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * Wait For Document Content.
-   *
-   * @param client {@link ApiClient}
-   * @param documentId {@link String}
-   * @throws InterruptedException InterruptedException
-   */
-  private void waitForDocumentLength(final ApiClient client, final String documentId)
-      throws InterruptedException {
-
-    DocumentsApi api = new DocumentsApi(client);
-
-    while (true) {
-
-      try {
-        GetDocumentResponse response = api.getDocument(documentId, null, null);
-        if (response.getContentLength() != null) {
-          return;
-        }
-
-      } catch (ApiException e) {
-        // ignore error
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
-  }
-
-  /**
    * Save new File.
    * 
    * @throws Exception Exception
@@ -469,7 +448,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // then
       String documentId = response.getDocumentId();
-      waitForDocumentLength(client, documentId);
+      assertNotNull(documentId);
+      waitForDocumentLength(client, null, documentId);
 
       GetDocumentResponse document = api.getDocument(documentId, null, null);
       assertEquals("9", java.util.Objects.requireNonNull(document.getContentLength()).toString());
@@ -706,12 +686,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         content = "this is a test";
 
         // when
-        HttpResponse<String> httpresp =
-            this.http.send(
-                HttpRequest.newBuilder(new URI(response.getUploadUrl()))
-                    .header("Content-Type", MimeType.MIME_HTML.getContentType())
-                    .method("PUT", BodyPublishers.ofString(content)).build(),
-                BodyHandlers.ofString());
+        var httpresp = this.http.send(HttpRequest.newBuilder(new URI(response.getUploadUrl()))
+            .header("Content-Type", MimeType.MIME_HTML.getContentType())
+            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
 
         // then
         String documentId = response.getDocumentId();
@@ -747,6 +724,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // given
         documentId = response.getDocuments().get(0).getDocumentId();
+        assertNotNull(documentId);
 
         // when
         GetDocumentResponse document = api.getDocument(documentId, null, null);
@@ -896,6 +874,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // given
         String documentId = response.getDocumentId();
+        assertNotNull(documentId);
 
         // when - fetch document
         waitForDocumentContent(client, siteId, documentId, content);
@@ -903,13 +882,16 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         // then
         GetDocumentResponse document = api.getDocument(documentId, siteId, null);
         assertNotNull(document);
-        assertNotNull(document.getMetadata());
-        assertEquals(2, document.getMetadata().size());
-        assertEquals("playerId", document.getMetadata().get(0).getKey());
-        assertEquals("11,22", String.join(",",
-            java.util.Objects.requireNonNull(document.getMetadata().get(0).getValues())));
-        assertEquals("person", document.getMetadata().get(1).getKey());
-        assertEquals("category", document.getMetadata().get(1).getValue());
+
+        List<DocumentMetadata> metadata =
+            notNull(document.getMetadata()).stream().filter(a -> a.getKey() != null)
+                .sorted(Comparator.comparing(DocumentMetadata::getKey)).toList();
+        assertEquals(2, metadata.size());
+        assertEquals("person", metadata.get(0).getKey());
+        assertEquals("category", metadata.get(0).getValue());
+        assertEquals("playerId", metadata.get(1).getKey());
+        assertEquals("11,22",
+            String.join(",", java.util.Objects.requireNonNull(metadata.get(1).getValues())));
       }
     }
   }
@@ -980,6 +962,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         String documentId = api.addDocument(req, siteId, null).getDocumentId();
+        assertNotNull(documentId);
 
         // then
         DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
@@ -1027,8 +1010,54 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // then
     String documentId = response.getDocumentId();
+    assertNotNull(documentId);
     assertEquals("mysite", api.getDocument(documentId, "mysite", null).getSiteId());
     assertEquals("mysite", api.getDocument(documentId, null, null).getSiteId());
+  }
+
+  /**
+   * Upload new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testPost14()
+      throws ApiException, IOException, URISyntaxException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (ApiClient client : getApiClients(siteId)) {
+
+        DocumentsApi api = new DocumentsApi(client);
+
+        String content = "dummy data";
+        String checksum = DigestUtils.sha256Hex(content);
+
+        AddDocumentUploadRequest req =
+            new AddDocumentUploadRequest().checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+
+        // then
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+        assertNotNull(response.getUrl());
+        assertEquals(2, notNull(response.getHeaders()).size());
+
+        // when
+        uploadDocumentContent(response.getUrl(), content.getBytes(StandardCharsets.UTF_8),
+            "text/plain", response.getHeaders());
+
+        // then
+        waitForDocumentLength(client, siteId, documentId);
+        GetDocumentResponse site = api.getDocument(documentId, siteId, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA256, site.getChecksumType());
+        assertEquals(checksum, site.getChecksum());
+      }
+    }
   }
 
   /**
@@ -1050,6 +1079,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").path(path)
           .content(content).addActionsItem(new AddAction().type(DocumentActionType.PUBLISH));
       String documentId = api.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // then
       waitForDocumentContent(client, siteId, documentId, content);
@@ -1068,6 +1098,35 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       GetAttributeResponse attribute =
           attributesApi.getAttribute(AttributeKeyReserved.PUBLICATION.getKey(), siteId);
       assertNotNull(attribute);
+    }
+  }
+
+  /**
+   * Wait For Document Content.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @throws InterruptedException InterruptedException
+   */
+  private void waitForDocumentLength(final ApiClient client, final String siteId,
+      final String documentId) throws InterruptedException {
+
+    DocumentsApi api = new DocumentsApi(client);
+
+    while (true) {
+
+      try {
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        if (response.getContentLength() != null) {
+          return;
+        }
+
+      } catch (ApiException e) {
+        // ignore error
+      }
+
+      TimeUnit.SECONDS.sleep(1);
     }
   }
 }

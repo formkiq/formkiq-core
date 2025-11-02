@@ -77,6 +77,15 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
     return Map.of("keys", AttributeValue.fromL(this.keys.stream().map(this::fromS).toList()));
   }
 
+  /**
+   * Get Document Id.
+   * 
+   * @return String
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
   @Override
   public SchemaCompositeKeyRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
@@ -128,6 +137,17 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
     return null;
   }
 
+  /**
+   * Set DocumentId.
+   * 
+   * @param id {@link String}
+   * @return SiteSchemaCompositeKeyRecord
+   */
+  public SchemaCompositeKeyRecord setDocumentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
   @Override
   public String sk() {
     return SK + ID.uuid();
@@ -147,25 +167,5 @@ public class SchemaCompositeKeyRecord implements DynamodbRecord<SchemaCompositeK
   @Override
   public String skGsi2() {
     return null;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return String
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set DocumentId.
-   * 
-   * @param id {@link String}
-   * @return SiteSchemaCompositeKeyRecord
-   */
-  public SchemaCompositeKeyRecord setDocumentId(final String id) {
-    this.documentId = id;
-    return this;
   }
 }

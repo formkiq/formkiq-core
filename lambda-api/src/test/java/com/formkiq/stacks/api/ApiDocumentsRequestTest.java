@@ -34,7 +34,6 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiResponseError;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionType;
@@ -60,7 +59,6 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -89,17 +87,15 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    * 
    * @param prefix {@link String}
    * @param testdatacount int
-   * @throws Exception Exception
    */
-  private void createTestData(final String prefix, final int testdatacount) throws Exception {
+  private void createTestData(final String prefix, final int testdatacount) {
     String userId = "jsmith";
     final int min10 = 10;
     LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
 
-    final int max = testdatacount;
-    for (int i = 0; i < max; i++) {
+    for (int i = 0; i < testdatacount; i++) {
 
-      nowLocalDate = nowLocalDate.plus(1, ChronoUnit.MINUTES);
+      nowLocalDate = nowLocalDate.plusMinutes(1);
       Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
       getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
           new ArrayList<>());
@@ -112,11 +108,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    * @param next {@link String}
    * @throws IOException IOException
    */
-  @SuppressWarnings("unchecked")
   private void expectNextPage(final String next) throws IOException {
     // given
     try (InputStream in = toStream("/request-get-documents-next.json")) {
-      String input = IoUtils.toUtf8String(in).replaceAll("\\{\\{next\\}\\}", next);
+      String input = IoUtils.toUtf8String(in).replaceAll("\\{\\{next}}", next);
       final InputStream instream2 =
           new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
       ByteArrayOutputStream outstream = new ByteArrayOutputStream();
@@ -125,7 +120,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       getHandler().handleRequest(instream2, outstream, getMockContext());
 
       // then
-      String response = new String(outstream.toByteArray(), "UTF-8");
+      String response = outstream.toString(StandardCharsets.UTF_8);
 
       Map<String, String> m = fromJson(response, Map.class);
       DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
@@ -145,11 +140,25 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
   }
 
   /**
+   * POST /documents request.
+   * 
+   * @param siteId {@link String}
+   * @param group {@link String}
+   * @param body {@link String}
+   * @return {@link ApiGatewayRequestEvent}
+   */
+  private ApiGatewayRequestEvent postDocumentsRequest(final String siteId, final String group,
+      final String body) {
+    return new ApiGatewayRequestEventBuilder().method("post").resource("/documents")
+        .path("/documents").group(group).user("joesmith")
+        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
+  }
+
+  /**
    * DELETE /documents request.
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -170,12 +179,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
       assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key, null).isObjectExists());
       assertNull(getDocumentService().findDocument(siteId, documentId));
@@ -187,7 +196,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -218,7 +226,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleDeleteDocument03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -233,12 +240,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
   }
 
@@ -247,7 +254,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -257,7 +263,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(Long.valueOf(contentLength));
+      item.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
@@ -268,13 +274,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -292,7 +298,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments02() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -310,15 +315,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
         getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(outstream.toByteArray(), "UTF-8");
-        Map<String, String> m = fromJson(response, Map.class);
+        String response = outstream.toString(StandardCharsets.UTF_8);
+        Map<String, Object> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
         assertEquals(mapsize, m.size());
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        assertCorsHeaders((Map<String, Object>) m.get("headers"));
+        DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
         List<DynamicObject> documents = resp.getList("documents");
         assertEquals(DocumentService.MAX_RESULTS, documents.size());
@@ -335,7 +339,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments03() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -353,15 +356,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
         getHandler().handleRequest(instream, outstream, getMockContext());
 
         // then
-        String response = new String(outstream.toByteArray(), "UTF-8");
-        Map<String, String> m = fromJson(response, Map.class);
+        String response = outstream.toString(StandardCharsets.UTF_8);
+        Map<String, Object> m = fromJson(response, Map.class);
 
         final int mapsize = 3;
         assertEquals(mapsize, m.size());
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        assertEquals(getHeaders(),
-            "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-        DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+        assertCorsHeaders((Map<String, Object>) m.get("headers"));
+        DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
         List<DynamicObject> documents = resp.getList("documents");
         assertEquals(DocumentService.MAX_RESULTS, documents.size());
@@ -376,7 +378,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments04() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -395,13 +396,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
@@ -413,7 +414,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments05() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -432,13 +432,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -450,7 +450,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments06() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -473,13 +472,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -491,7 +490,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments07() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -508,10 +506,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId0 = ID.uuid();
       String documentId1 = ID.uuid();
       DocumentItemDynamoDb item0 = new DocumentItemDynamoDb(documentId0, date0, username);
-      item0.setContentLength(Long.valueOf(contentLength));
+      item0.setContentLength(contentLength);
 
       DocumentItemDynamoDb item1 = new DocumentItemDynamoDb(documentId1, date1, username);
-      item1.setContentLength(Long.valueOf(contentLength));
+      item1.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-yesterday.json");
       addParameter(event, "siteId", siteId);
@@ -524,11 +522,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       final int mapsize = 3;
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -544,7 +542,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments08() throws Exception {
     // given
@@ -558,14 +555,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
@@ -573,7 +570,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments09() throws Exception {
     // given
@@ -586,14 +582,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    ApiResponseError resp = fromJson(m.get("body"), ApiResponseError.class);
-    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.getMessage());
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    Map<String, Object> resp = fromJson((String) m.get("body"), Map.class);
+    assertEquals("fkq access denied to siteId (" + siteId + ")", resp.get("message"));
   }
 
   /**
@@ -601,27 +597,25 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments10() throws Exception {
     // given
-    String siteId = null;
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
-    addParameter(event, "siteId", siteId);
+    addParameter(event, "siteId", null);
     setCognitoGroup(event, "Finance");
 
     // when
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     List<DynamicObject> documents = resp.getList("documents");
     assertEquals(0, documents.size());
@@ -632,26 +626,23 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments11() throws Exception {
     // given
-    String siteId = DEFAULT_SITE_ID;
-
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents03.json");
-    addParameter(event, "siteId", siteId);
+    addParameter(event, "siteId", DEFAULT_SITE_ID);
     setCognitoGroup(event, "Finance Bleh");
 
     // when
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
     assertEquals("{\"message\":\"fkq access denied to siteId (default)\"}", m.get("body"));
   }
 
@@ -660,7 +651,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments12() throws Exception {
     // given
@@ -674,13 +664,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     String response = handleRequest(event);
 
     // then
-    Map<String, String> m = fromJson(response, Map.class);
+    Map<String, Object> m = fromJson(response, Map.class);
 
     final int mapsize = 3;
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     List<DynamicObject> documents = resp.getList("documents");
     assertEquals(0, documents.size());
@@ -691,7 +681,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments13() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -703,13 +692,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(0, documents.size());
@@ -721,7 +710,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments14() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -734,7 +722,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(Long.valueOf(contentLength));
+      item.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
@@ -745,13 +733,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
       final int mapsize = 3;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
@@ -765,7 +753,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments15() throws Exception {
 
@@ -778,7 +765,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(Long.valueOf(contentLength));
+      item.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
@@ -800,9 +787,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
       assertEquals(documentId, documents.get(0).get("documentId"));
-      assertNull(documents.get(0).get("insertedDate"));
-      assertNull(documents.get(0).get("lastModifiedDate"));
-      assertNull(documents.get(0).get("userId"));
+      assertNotNull(documents.get(0).get("insertedDate"));
+      assertNotNull(documents.get(0).get("lastModifiedDate"));
+      assertNotNull(documents.get(0).get("userId"));
     }
   }
 
@@ -811,7 +798,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleGetDocuments16() throws Exception {
 
@@ -822,7 +808,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(Long.valueOf(contentLength));
+      item.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
@@ -844,7 +830,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleOptionsDocuments01() throws Exception {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -864,30 +849,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      Map<String, String> m = fromJson(response, Map.class);
+      Map<String, Object> m = fromJson(response, Map.class);
 
-      final int mapsize = 3;
+      final int mapsize = 2;
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
     }
-  }
-
-  /**
-   * POST /documents request.
-   * 
-   * @param siteId {@link String}
-   * @param group {@link String}
-   * @param body {@link String}
-   * @return {@link ApiGatewayRequestEvent}
-   */
-  private ApiGatewayRequestEvent postDocumentsRequest(final String siteId, final String group,
-      final String body) {
-    ApiGatewayRequestEvent event = new ApiGatewayRequestEventBuilder().method("post")
-        .resource("/documents").path("/documents").group(group).user("joesmith")
-        .queryParameters(siteId != null ? Map.of("siteId", siteId) : null).body(body).build();
-
-    return event;
   }
 
   /**
@@ -895,7 +863,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandlePostDocuments01() throws Exception {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
@@ -926,6 +893,502 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       String content = getS3().getContentAsString(BUCKET_NAME, key, null);
       assertEquals("this is a test", content);
+    }
+  }
+
+  /**
+   * POST /documents request Base64 body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid02.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("201.0", String.valueOf(m.get("statusCode")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+      assertNotNull(resp.get("documentId"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+
+      String key = siteId != null ? siteId + "/" + resp.get("documentId")
+          : resp.get("documentId").toString();
+
+      assertNotNull(getDocumentService().findDocument(siteId, resp.getString("documentId")));
+      assertNotNull(UUID.fromString(resp.getString("documentId")));
+
+      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
+      String content = getS3().getContentAsString(BUCKET_NAME, key, null);
+      assertEquals("dGhpcyBpcyBhIHRlc3Q=", content);
+    }
+  }
+
+  /**
+   * POST /documents request NO body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments03() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid03.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"request body is required\"}", String.valueOf(m.get("body")));
+    }
+  }
+
+  /**
+   * POST /documents request Invalid JSON body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments04() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid04.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+      assertNull(resp.get("documentId"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+    }
+  }
+
+  /**
+   * POST /documents request Invalid JSON body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments05() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid05.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+
+      final int mapsize = 3;
+      assertEquals(mapsize, m.size());
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+      assertNull(resp.get("documentId"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+    }
+  }
+
+  /**
+   * POST /documents request Invalid body.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments06() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid06.json");
+      addParameter(event, "siteId", siteId);
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      Map<String, Object> m = fromJson(response, Map.class);
+      assertCorsHeaders((Map<String, Object>) m.get("headers"));
+      assertEquals("400.0", String.valueOf(m.get("statusCode")));
+      assertEquals("{\"message\":\"invalid JSON body\"}", String.valueOf(m.get("body")));
+    }
+  }
+
+  /**
+   * POST /documents without Group but has siteId set.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments07() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid07.json");
+    addParameter(event, "siteId", "demo");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
+    assertEquals("{\"message\":\"fkq access denied to siteId (demo)\"}",
+        String.valueOf(m.get("body")));
+  }
+
+  /**
+   * POST /documents with default & default_read role.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments08() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents01.json");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("201.0", String.valueOf(m.get("statusCode")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+    DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
+
+    String documentId = resp.get("documentId").toString();
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
+
+    assertNotNull(UUID.fromString(documentId));
+    assertNotNull(getDocumentService().findDocument(null, documentId));
+
+    assertTrue(getS3().getObjectMetadata(BUCKET_NAME, documentId, null).isObjectExists());
+  }
+
+  /**
+   * POST /documents with default_read role.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments09() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents02.json");
+
+    // when
+    String response = handleRequest(event);
+
+    // then
+    Map<String, Object> m = fromJson(response, Map.class);
+
+    final int mapsize = 3;
+    assertEquals(mapsize, m.size());
+    assertEquals("401.0", String.valueOf(m.get("statusCode")));
+    assertCorsHeaders((Map<String, Object>) m.get("headers"));
+  }
+
+  /**
+   * POST /documents with sub documents.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments10() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String username = UUID.randomUUID() + "@formkiq.com";
+
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents03.json", siteId, username, "Admins");
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNotNull(body.getString("uploadUrl"));
+
+      List<DynamicObject> documents = body.getList("documents");
+      final int count = 3;
+      assertEquals(count, documents.size());
+
+      int i = 0;
+      assertNull(documents.get(i).getString("uploadUrl"));
+      assertNotNull(documents.get(i++).getString("documentId"));
+      assertNotNull(documents.get(i).getString("uploadUrl"));
+      assertNotNull(documents.get(i++).getString("documentId"));
+      assertNotNull(documents.get(i).getString("uploadUrl"));
+      assertNotNull(documents.get(i).getString("documentId"));
+
+      String documentId = documents.get(0).getString("documentId");
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
+    }
+  }
+
+  /**
+   * POST /documents with sub documents.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments11() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String username = UUID.randomUUID() + "@formkiq.com";
+
+      // when
+      DynamicObject obj =
+          handleRequest("/request-post-documents04.json", siteId, username, "Admins");
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNotNull(body.getString("uploadUrl"));
+
+      List<DynamicObject> documents = body.getList("documents");
+      assertEquals(1, documents.size());
+
+      assertNull(documents.get(0).getString("uploadUrl"));
+      assertNotNull(documents.get(0).getString("documentId"));
+
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documents.get(0).getString("documentId"));
+      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
+
+      assertNotNull(getDocumentService().findDocument(siteId, body.getString("documentId")));
+      assertNotNull(
+          getDocumentService().findDocument(siteId, documents.get(0).getString("documentId")));
+    }
+  }
+
+  /**
+   * POST /documents gutenburg content-type with IAM Role.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments12() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+
+      // when
+      DynamicObject obj = handleRequest("/request-post-documents05.json", siteId, null, null);
+
+      // then
+      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNotNull(body.getString("documentId"));
+      assertNull(body.getString("uploadUrl"));
+
+      assertEquals("[]", body.getList("documents").toString());
+
+      String documentId = body.getString("documentId");
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      assertNotNull(getDocumentService().findDocument(siteId, documentId));
+
+      assertEquals("application/octet-stream",
+          getS3().getObjectMetadata(BUCKET_NAME, key, null).getContentType());
+    }
+  }
+
+  /**
+   * POST /documents to create index "folder".
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments15() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      String body = "{\"path\":\"something/bleh/\"}";
+
+      ApiGatewayRequestEvent event =
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
+
+      // when
+      DynamicObject obj = handleRequestDynamic(event);
+
+      // then
+      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("201.0", obj.getString("statusCode"));
+
+      assertNull(o.getString("documentId"));
+      assertEquals("folder created", o.getString("message"));
+
+      DocumentSearchService search = getAwsServices().getExtension(DocumentSearchService.class);
+
+      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
+      assertEquals(1, results.getResults().size());
+      assertEquals("something", results.getResults().get(0).get("path"));
+
+      q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
+      results = search.search(siteId, q, null, null, 2);
+      assertEquals(1, results.getResults().size());
+      assertEquals("bleh", results.getResults().get(0).get("path"));
+
+      // given
+      // when
+      String response = handleRequest(event);
+      obj = new DynamicObject(fromJson(response, Map.class));
+
+      // then
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{\"errors\":[{\"key\":\"folder\",\"error\":\"already exists\"}]}",
+          obj.getString("body"));
+    }
+  }
+
+  /**
+   * POST /documents too many metadata.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments16() throws Exception {
+    // given
+    final int count = 30;
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},"
+          + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
+      ApiGatewayRequestEvent event =
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
+
+      // when
+
+      Map<String, Object> data = fromJson(event.getBody(), Map.class);
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+        metadata.add(Map.of("key", "ad_" + i, "value", "some"));
+      }
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
+      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{errors=[{key=metadata, error=maximum number is 25}]}", o.toString());
+    }
+  }
+
+  /**
+   * POST /documents too large meta data.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments17() throws Exception {
+    // given
+    final int count = 1001;
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      String filled = StringUtils.repeat("*", count);
+
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},"
+          + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
+
+      ApiGatewayRequestEvent event =
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
+
+      Map<String, Object> data = fromJson(event.getBody(), Map.class);
+      List<Map<String, Object>> metadata = new ArrayList<>();
+      metadata.add(Map.of("key", "ad1", "value", filled));
+      metadata.add(Map.of("key", "ad2", "values", List.of(filled)));
+
+      data.put("metadata", metadata);
+      event.setBody(GsonUtil.getInstance().toJson(data));
+
+      // when
+      String response = handleRequest(event);
+
+      // then
+      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
+      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{errors=[{key=ad1, error=value cannot exceed 1000}, "
+          + "{key=ad2, error=value cannot exceed 1000}]}", o.toString());
+    }
+  }
+
+  /**
+   * POST /documents invalid tag.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocuments18() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
+          + "\"tags\":[{\"key\":\"CLAMAV_SCAN_STATUS\",\"value\":\"john\"}]}";
+
+      ApiGatewayRequestEvent event =
+          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
+
+      // when
+      DynamicObject obj = handleRequestDynamic(event);
+
+      // then
+      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
+
+      assertHeaders(obj.getMap("headers"));
+      assertEquals("400.0", obj.getString("statusCode"));
+      assertEquals("{errors=[{key=CLAMAV_SCAN_STATUS, error=unallowed tag key}]}", o.toString());
     }
   }
 
@@ -1016,513 +1479,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals("400.0", obj.getString("statusCode"));
       assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
           obj.getString("body"));
-    }
-  }
-
-  /**
-   * POST /documents request Base64 body.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments02() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid02.json");
-      addParameter(event, "siteId", siteId);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("201.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-      assertNotNull(resp.get("documentId"));
-      assertNull(resp.get("next"));
-      assertNull(resp.get("previous"));
-
-      String key = siteId != null ? siteId + "/" + resp.get("documentId")
-          : resp.get("documentId").toString();
-
-      assertNotNull(getDocumentService().findDocument(siteId, resp.getString("documentId")));
-      assertNotNull(UUID.fromString(resp.getString("documentId")));
-
-      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
-      String content = getS3().getContentAsString(BUCKET_NAME, key, null);
-      assertEquals("dGhpcyBpcyBhIHRlc3Q=", content);
-    }
-  }
-
-  /**
-   * POST /documents request NO body.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments03() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid03.json");
-      addParameter(event, "siteId", siteId);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"request body is required\\\"}\",\"statusCode\":400}";
-
-      assertEquals(expected, response);
-    }
-  }
-
-  /**
-   * POST /documents request Invalid JSON body.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments04() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid04.json");
-      addParameter(event, "siteId", siteId);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-      assertNull(resp.get("documentId"));
-      assertNull(resp.get("next"));
-      assertNull(resp.get("previous"));
-    }
-  }
-
-  /**
-   * POST /documents request Invalid JSON body.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments05() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid05.json");
-      addParameter(event, "siteId", siteId);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      Map<String, String> m = fromJson(response, Map.class);
-
-      final int mapsize = 3;
-      assertEquals(mapsize, m.size());
-      assertEquals("400.0", String.valueOf(m.get("statusCode")));
-      assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-      DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-      assertNull(resp.get("documentId"));
-      assertNull(resp.get("next"));
-      assertNull(resp.get("previous"));
-    }
-  }
-
-  /**
-   * POST /documents request Invalid body.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments06() throws Exception {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid06.json");
-      addParameter(event, "siteId", siteId);
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      String expected = "{" + getHeaders() + ",\"body\":\""
-          + "{\\\"message\\\":\\\"invalid JSON body\\\"}\",\"statusCode\":400}";
-
-      assertEquals(expected, response);
-    }
-  }
-
-  /**
-   * POST /documents without Group but has siteId set.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testHandlePostDocuments07() throws Exception {
-    // given
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-documentid07.json");
-    addParameter(event, "siteId", "demo");
-
-    // when
-    String response = handleRequest(event);
-
-    // then
-    String expected = "{" + getHeaders() + ",\"body\":\""
-        + "{\\\"message\\\":\\\"fkq access denied to siteId (demo)\\\"}\",\"statusCode\":401}";
-
-    assertEquals(expected, response);
-  }
-
-  /**
-   * POST /documents with default & default_read role.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments08() throws Exception {
-    // given
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents01.json");
-
-    // when
-    String response = handleRequest(event);
-
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("201.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-    DynamicObject resp = new DynamicObject(fromJson(m.get("body"), Map.class));
-
-    String documentId = resp.get("documentId").toString();
-    assertNull(resp.get("next"));
-    assertNull(resp.get("previous"));
-
-    assertNotNull(UUID.fromString(documentId));
-    assertNotNull(getDocumentService().findDocument(null, documentId));
-
-    assertTrue(getS3().getObjectMetadata(BUCKET_NAME, documentId, null).isObjectExists());
-  }
-
-  /**
-   * POST /documents with default_read role.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments09() throws Exception {
-    // given
-    ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents02.json");
-
-    // when
-    String response = handleRequest(event);
-
-    // then
-    Map<String, String> m = fromJson(response, Map.class);
-
-    final int mapsize = 3;
-    assertEquals(mapsize, m.size());
-    assertEquals("401.0", String.valueOf(m.get("statusCode")));
-    assertEquals(getHeaders(), "\"headers\":" + GsonUtil.getInstance().toJson(m.get("headers")));
-  }
-
-  /**
-   * POST /documents with sub documents.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments10() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String username = UUID.randomUUID() + "@formkiq.com";
-
-      // when
-      DynamicObject obj =
-          handleRequest("/request-post-documents03.json", siteId, username, "Admins");
-
-      // then
-      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("201.0", obj.getString("statusCode"));
-
-      assertNotNull(body.getString("documentId"));
-      assertNotNull(body.getString("uploadUrl"));
-
-      List<DynamicObject> documents = body.getList("documents");
-      final int count = 3;
-      assertEquals(count, documents.size());
-
-      int i = 0;
-      assertNull(documents.get(i).getString("uploadUrl"));
-      assertNotNull(documents.get(i++).getString("documentId"));
-      assertNotNull(documents.get(i).getString("uploadUrl"));
-      assertNotNull(documents.get(i++).getString("documentId"));
-      assertNotNull(documents.get(i).getString("uploadUrl"));
-      assertNotNull(documents.get(i++).getString("documentId"));
-
-      String documentId = documents.get(0).getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
-    }
-  }
-
-  /**
-   * POST /documents with sub documents.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments11() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String username = UUID.randomUUID() + "@formkiq.com";
-
-      // when
-      DynamicObject obj =
-          handleRequest("/request-post-documents04.json", siteId, username, "Admins");
-
-      // then
-      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("201.0", obj.getString("statusCode"));
-
-      assertNotNull(body.getString("documentId"));
-      assertNotNull(body.getString("uploadUrl"));
-
-      List<DynamicObject> documents = body.getList("documents");
-      assertEquals(1, documents.size());
-
-      assertNull(documents.get(0).getString("uploadUrl"));
-      assertNotNull(documents.get(0).getString("documentId"));
-
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documents.get(0).getString("documentId"));
-      assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
-
-      assertNotNull(getDocumentService().findDocument(siteId, body.getString("documentId")));
-      assertNotNull(
-          getDocumentService().findDocument(siteId, documents.get(0).getString("documentId")));
-    }
-  }
-
-  /**
-   * POST /documents gutenburg content-type with IAM Role.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments12() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-
-      // when
-      DynamicObject obj = handleRequest("/request-post-documents05.json", siteId, null, null);
-
-      // then
-      DynamicObject body = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("201.0", obj.getString("statusCode"));
-
-      assertNotNull(body.getString("documentId"));
-      assertNull(body.getString("uploadUrl"));
-
-      assertEquals("[]", body.getList("documents").toString());
-
-      String documentId = body.getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      assertNotNull(getDocumentService().findDocument(siteId, documentId));
-
-      assertEquals("application/octet-stream",
-          getS3().getObjectMetadata(BUCKET_NAME, key, null).getContentType());
-    }
-  }
-
-  /**
-   * POST /documents to create index "folder".
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments15() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      String body = "{\"path\":\"something/bleh/\"}";
-
-      ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
-
-      // when
-      DynamicObject obj = handleRequestDynamic(event);
-
-      // then
-      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("201.0", obj.getString("statusCode"));
-
-      assertNull(o.getString("documentId"));
-      assertEquals("folder created", o.getString("message"));
-
-      DocumentSearchService search = getAwsServices().getExtension(DocumentSearchService.class);
-
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
-      assertEquals(1, results.getResults().size());
-      assertEquals("something", results.getResults().get(0).get("path"));
-
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
-      results = search.search(siteId, q, null, null, 2);
-      assertEquals(1, results.getResults().size());
-      assertEquals("bleh", results.getResults().get(0).get("path"));
-
-      // given
-      // when
-      String response = handleRequest(event);
-      obj = new DynamicObject(fromJson(response, Map.class));
-
-      // then
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"folder\",\"error\":\"already exists\"}]}",
-          obj.getString("body"));
-    }
-  }
-
-  /**
-   * POST /documents too many metadata.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments16() throws Exception {
-    // given
-    final int count = 30;
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},"
-          + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
-      ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
-
-      // when
-
-      Map<String, Object> data = fromJson(event.getBody(), Map.class);
-      List<Map<String, Object>> metadata = new ArrayList<>();
-      for (int i = 0; i < count; i++) {
-        metadata.add(Map.of("key", "ad_" + i, "value", "some"));
-      }
-      data.put("metadata", metadata);
-      event.setBody(GsonUtil.getInstance().toJson(data));
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
-      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{errors=[{key=metadata, error=maximum number is 25}]}", o.toString());
-    }
-  }
-
-  /**
-   * POST /documents too large meta data.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments17() throws Exception {
-    // given
-    final int count = 1001;
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      String filled = StringUtils.repeat("*", count);
-
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"tags\":[{\"key\":\"firstname\",\"value\":\"john\"},"
-          + "{\"key\":\"lastname\",\"value\":\"smith\"}]}";
-
-      ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
-
-      Map<String, Object> data = fromJson(event.getBody(), Map.class);
-      List<Map<String, Object>> metadata = new ArrayList<>();
-      metadata.add(Map.of("key", "ad1", "value", filled));
-      metadata.add(Map.of("key", "ad2", "values", Arrays.asList(filled)));
-
-      data.put("metadata", metadata);
-      event.setBody(GsonUtil.getInstance().toJson(data));
-
-      // when
-      String response = handleRequest(event);
-
-      // then
-      DynamicObject obj = new DynamicObject(fromJson(response, Map.class));
-      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{errors=[{key=ad1, error=value cannot exceed 1000}, "
-          + "{key=ad2, error=value cannot exceed 1000}]}", o.toString());
-    }
-  }
-
-  /**
-   * POST /documents invalid tag.
-   *
-   * @throws Exception an error has occurred
-   */
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testHandlePostDocuments18() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      String body = "{\"content\": \"dGhpcyBpcyBhIHRlc3Q=\",\"path\": \"/file/test.txt\","
-          + "\"tags\":[{\"key\":\"CLAMAV_SCAN_STATUS\",\"value\":\"john\"}]}";
-
-      ApiGatewayRequestEvent event =
-          postDocumentsRequest(siteId, siteId != null ? siteId : DEFAULT_SITE_ID, body);
-
-      // when
-      DynamicObject obj = handleRequestDynamic(event);
-
-      // then
-      DynamicObject o = new DynamicObject(fromJson(obj.getString("body"), Map.class));
-
-      assertHeaders(obj.getMap("headers"));
-      assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{errors=[{key=CLAMAV_SCAN_STATUS, error=unallowed tag key}]}", o.toString());
     }
   }
 }

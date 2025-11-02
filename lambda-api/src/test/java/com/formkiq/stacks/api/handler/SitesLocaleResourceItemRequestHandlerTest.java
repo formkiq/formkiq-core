@@ -46,7 +46,7 @@ import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetAttributeAllowedValuesResponse;
 import com.formkiq.client.model.GetLocaleResourceItemResponse;
 import com.formkiq.client.model.GetSitesSchemaResponse;
-import com.formkiq.client.model.Locale;
+import com.formkiq.client.model.LocaleInfo;
 import com.formkiq.client.model.LocaleResourceType;
 import com.formkiq.client.model.ResourceItem;
 import com.formkiq.client.model.SetLocaleResourceItemRequest;
@@ -84,6 +84,84 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
     assertEquals(itemKey, item.getItemKey());
   }
 
+  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
+    AddAttributeRequest attrReq =
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
+    attributesApi.addAttribute(attrReq, siteId);
+  }
+
+  private void addLocaleClassificationResourceItem(final String siteId,
+      final String classificationId, final String attributeKey, final String locale)
+      throws ApiException {
+
+    AddLocaleResourceClassificationItem item = new AddLocaleResourceClassificationItem()
+        .itemType(LocaleResourceType.CLASSIFICATION).attributeKey(attributeKey).allowedValue("222")
+        .localizedValue("localVal").classificationId(classificationId);
+    AddLocaleResourceItemRequest req =
+        new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+    this.systemApi.addLocaleResourceItem(siteId, locale, req);
+  }
+
+  private AddLocaleResourceItemResponse addLocaleSchemaResourceItem(final String siteId,
+      final String attributeKey, final String allowedValue, final String localizedValue,
+      final String locale) throws ApiException {
+
+    AddLocaleResourceSchemaItem item =
+        new AddLocaleResourceSchemaItem().itemType(LocaleResourceType.SCHEMA)
+            .attributeKey(attributeKey).allowedValue(allowedValue).localizedValue(localizedValue);
+    AddLocaleResourceItemRequest req =
+        new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+    return this.systemApi.addLocaleResourceItem(siteId, locale, req);
+  }
+
+  private String setClassification(final String siteId, final String attributeKey,
+      final List<String> allowedValues, final boolean required) throws ApiException {
+
+    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
+
+    if (required) {
+      schemaAttributes.addRequiredItem(
+          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
+    } else {
+      schemaAttributes.addOptionalItem(
+          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
+    }
+
+    AddClassificationRequest classification = new AddClassificationRequest()
+        .classification(new AddClassification().name("myClass").attributes(schemaAttributes));
+    return this.schemasApi.addClassification(siteId, classification).getClassificationId();
+  }
+
+  private String setClassification(final String siteId, final String attributeKey,
+      final String allowedValue) throws ApiException {
+    return setClassification(siteId, attributeKey, List.of(allowedValue), true);
+  }
+
+  private void setSiteSchema(final String siteId, final String attributeKey,
+      final List<String> allowedValues, final boolean required) throws ApiException {
+
+    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
+
+    if (required) {
+      schemaAttributes.addRequiredItem(
+          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
+    } else {
+      schemaAttributes.addOptionalItem(
+          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
+    }
+
+    SetSitesSchemaRequest siteSchema =
+        new SetSitesSchemaRequest().name("test").attributes(schemaAttributes);
+    this.schemasApi.setSitesSchema(siteId, siteSchema);
+  }
+
+  private void setSiteSchema(final String siteId, final String attributeKey,
+      final String allowedValue) throws ApiException {
+    setSiteSchema(siteId, attributeKey, List.of(allowedValue), true);
+  }
+
   /**
    * Post /sites/{siteId}/locales.
    *
@@ -100,7 +178,8 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
 
       // then
-      List<Locale> locales = notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
+      List<LocaleInfo> locales =
+          notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
       assertEquals(1, locales.size());
       assertEquals("en", locales.get(0).getLocale());
 
@@ -111,30 +190,6 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       assertEquals("deleted locale 'en'", deleteResponse.getMessage());
       locales = notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
       assertEquals(0, locales.size());
-    }
-  }
-
-  /**
-   * DELETE /sites/{siteId}/locales.
-   *
-   */
-  @Test
-  public void testDeleteLocale01() {
-    // given
-    String locale = "en";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(siteId);
-
-      // when
-      try {
-        this.systemApi.deleteLocale(siteId, locale);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"locale\"," + "\"error\":\"Locale 'en' not found\"}]}",
-            e.getResponseBody());
-      }
     }
   }
 
@@ -319,58 +374,6 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
     }
   }
 
-  private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
-    AddAttributeRequest attrReq =
-        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
-    attributesApi.addAttribute(attrReq, siteId);
-  }
-
-  private void setSiteSchema(final String siteId, final String attributeKey,
-      final String allowedValue) throws ApiException {
-    setSiteSchema(siteId, attributeKey, List.of(allowedValue), true);
-  }
-
-  private void setSiteSchema(final String siteId, final String attributeKey,
-      final List<String> allowedValues, final boolean required) throws ApiException {
-
-    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
-
-    if (required) {
-      schemaAttributes.addRequiredItem(
-          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
-    } else {
-      schemaAttributes.addOptionalItem(
-          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
-    }
-
-    SetSitesSchemaRequest siteSchema =
-        new SetSitesSchemaRequest().name("test").attributes(schemaAttributes);
-    this.schemasApi.setSitesSchema(siteId, siteSchema);
-  }
-
-  private String setClassification(final String siteId, final String attributeKey,
-      final String allowedValue) throws ApiException {
-    return setClassification(siteId, attributeKey, List.of(allowedValue), true);
-  }
-
-  private String setClassification(final String siteId, final String attributeKey,
-      final List<String> allowedValues, final boolean required) throws ApiException {
-
-    SetSchemaAttributes schemaAttributes = new SetSchemaAttributes();
-
-    if (required) {
-      schemaAttributes.addRequiredItem(
-          new AddAttributeSchemaRequired().attributeKey(attributeKey).allowedValues(allowedValues));
-    } else {
-      schemaAttributes.addOptionalItem(
-          new AddAttributeSchemaOptional().attributeKey(attributeKey).allowedValues(allowedValues));
-    }
-
-    AddClassificationRequest classification = new AddClassificationRequest()
-        .classification(new AddClassification().name("myClass").attributes(schemaAttributes));
-    return this.schemasApi.addClassification(siteId, classification).getClassificationId();
-  }
-
   /**
    * Post /sites/{siteId}/locales/{locale}/resourceItems with Schema attribute.
    *
@@ -402,32 +405,6 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       assertResourceSchema(i.getResourceItem(), LocaleResourceType.SCHEMA, attributeKey,
           allowedValue, "SCHEMA##myAbc##129380");
     }
-  }
-
-  private AddLocaleResourceItemResponse addLocaleSchemaResourceItem(final String siteId,
-      final String attributeKey, final String allowedValue, final String localizedValue,
-      final String locale) throws ApiException {
-
-    AddLocaleResourceSchemaItem item =
-        new AddLocaleResourceSchemaItem().itemType(LocaleResourceType.SCHEMA)
-            .attributeKey(attributeKey).allowedValue(allowedValue).localizedValue(localizedValue);
-    AddLocaleResourceItemRequest req =
-        new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-
-    return this.systemApi.addLocaleResourceItem(siteId, locale, req);
-  }
-
-  private void addLocaleClassificationResourceItem(final String siteId,
-      final String classificationId, final String attributeKey, final String locale)
-      throws ApiException {
-
-    AddLocaleResourceClassificationItem item = new AddLocaleResourceClassificationItem()
-        .itemType(LocaleResourceType.CLASSIFICATION).attributeKey(attributeKey).allowedValue("222")
-        .localizedValue("localVal").classificationId(classificationId);
-    AddLocaleResourceItemRequest req =
-        new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-
-    this.systemApi.addLocaleResourceItem(siteId, locale, req);
   }
 
   /**
@@ -546,72 +523,26 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   }
 
   /**
-   * PUT /sites/{siteId}/locales/{locale}/resourceItems, not exists.
+   * DELETE /sites/{siteId}/locales.
    *
    */
   @Test
-  public void testPutLocale01() throws ApiException {
+  public void testDeleteLocale01() {
     // given
     String locale = "en";
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
-
-      this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
-
-      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
-          .interfaceKey("mykey").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
-      SetLocaleResourceItemRequest req =
-          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
 
       // when
       try {
-        this.systemApi.setLocaleResourceItem(siteId, locale, "asdad", req);
+        this.systemApi.deleteLocale(siteId, locale);
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"itemKey 'asdad' not found\"}", e.getResponseBody());
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"locale\"," + "\"error\":\"Locale 'en' not found\"}]}",
+            e.getResponseBody());
       }
-    }
-  }
-
-  /**
-   * PUT /sites/{siteId}/locales/{locale}/resourceItems.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testPutLocale02() throws Exception {
-    // given
-    String locale = "en";
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(siteId);
-
-      this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
-
-      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
-          .interfaceKey("mykey2").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
-      AddLocaleResourceItemRequest addReq =
-          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-
-      AddLocaleResourceItemResponse response =
-          this.systemApi.addLocaleResourceItem(siteId, locale, addReq);
-
-      SetLocaleResourceItemRequest setReq =
-          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
-      item.setLocalizedValue("ccc");
-
-      // when
-      SetResponse setResponse =
-          this.systemApi.setLocaleResourceItem(siteId, locale, response.getItemKey(), setReq);
-
-      // then
-      assertEquals("set item 'INTERFACE##mykey2' successfully", setResponse.getMessage());
-      GetLocaleResourceItemResponse lri =
-          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
-      assertNotNull(lri);
-      assertNotNull(lri.getResourceItem());
-      assertResourceInterface(lri.getResourceItem(), "mykey2", "ccc", "INTERFACE##mykey2");
     }
   }
 
@@ -636,6 +567,118 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"ItemKey 'abc' not found\"}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Get Classification required attribute with locale.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testGetClassification01() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey = "myattr";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
+
+      addAttribute(siteId, attributeKey);
+      String classificationId =
+          setClassification(siteId, attributeKey, List.of("1111", "222", "333"), true);
+      addLocaleClassificationResourceItem(siteId, classificationId, attributeKey, locale);
+
+      // when
+      final Classification c0 =
+          this.schemasApi.getClassification(siteId, classificationId, locale).getClassification();
+      final Classification c1 =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      // then
+      assertNotNull(c0);
+      assertNotNull(c0.getAttributes());
+
+      List<AttributeSchemaRequired> required = notNull(c0.getAttributes().getRequired());
+      assertEquals(1, required.size());
+      AttributeSchemaRequired attr0 = required.get(0);
+      assertEquals(attributeKey, attr0.getAttributeKey());
+      assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
+      assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
+
+      assertNotNull(c1);
+      assertNotNull(c1.getAttributes());
+      AttributeSchemaRequired attr1 = notNull(c1.getAttributes().getRequired()).get(0);
+      assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
+
+      // when
+      GetAttributeAllowedValuesResponse resp0 = this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, locale);
+      GetAttributeAllowedValuesResponse resp1 = this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null);
+
+      // then
+      assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
+      assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
+      assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
+    }
+  }
+
+  /**
+   * Get Classification optional attribute with locale.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testGetClassification02() throws ApiException {
+    // given
+    String locale = "en";
+    String attributeKey = "myattr";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
+
+      addAttribute(siteId, attributeKey);
+      String classificationId =
+          setClassification(siteId, attributeKey, List.of("1111", "222", "333"), false);
+      addLocaleClassificationResourceItem(siteId, classificationId, attributeKey, locale);
+
+      // when
+      final Classification c0 =
+          this.schemasApi.getClassification(siteId, classificationId, locale).getClassification();
+      final Classification c1 =
+          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+
+      // then
+      assertNotNull(c0);
+      assertNotNull(c0.getAttributes());
+
+      List<AttributeSchemaOptional> optional = notNull(c0.getAttributes().getOptional());
+      assertEquals(1, optional.size());
+      AttributeSchemaOptional attr0 = optional.get(0);
+      assertEquals(attributeKey, attr0.getAttributeKey());
+      assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
+      assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
+
+      assertNotNull(c1);
+      assertNotNull(c1.getAttributes());
+      AttributeSchemaOptional attr1 = notNull(c1.getAttributes().getOptional()).get(0);
+      assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
+
+      // when
+      GetAttributeAllowedValuesResponse resp0 = this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, locale);
+      GetAttributeAllowedValuesResponse resp1 = this.schemasApi
+          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null);
+
+      // then
+      assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
+      assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
+      assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
     }
   }
 
@@ -758,114 +801,72 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   }
 
   /**
-   * Get Classification required attribute with locale.
+   * PUT /sites/{siteId}/locales/{locale}/resourceItems, not exists.
    *
-   * @throws ApiException ApiException
    */
   @Test
-  void testGetClassification01() throws ApiException {
+  public void testPutLocale01() throws ApiException {
     // given
     String locale = "en";
-    String attributeKey = "myattr";
-
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
       this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
 
-      addAttribute(siteId, attributeKey);
-      String classificationId =
-          setClassification(siteId, attributeKey, List.of("1111", "222", "333"), true);
-      addLocaleClassificationResourceItem(siteId, classificationId, attributeKey, locale);
+      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+          .interfaceKey("mykey").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
+      SetLocaleResourceItemRequest req =
+          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
 
       // when
-      final Classification c0 =
-          this.schemasApi.getClassification(siteId, classificationId, locale).getClassification();
-      final Classification c1 =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
-
-      // then
-      assertNotNull(c0);
-      assertNotNull(c0.getAttributes());
-
-      List<AttributeSchemaRequired> required = notNull(c0.getAttributes().getRequired());
-      assertEquals(1, required.size());
-      AttributeSchemaRequired attr0 = required.get(0);
-      assertEquals(attributeKey, attr0.getAttributeKey());
-      assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
-
-      assertNotNull(c1);
-      assertNotNull(c1.getAttributes());
-      AttributeSchemaRequired attr1 = notNull(c1.getAttributes().getRequired()).get(0);
-      assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
-
-      // when
-      GetAttributeAllowedValuesResponse resp0 = this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, locale);
-      GetAttributeAllowedValuesResponse resp1 = this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null);
-
-      // then
-      assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
-      assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
+      try {
+        this.systemApi.setLocaleResourceItem(siteId, locale, "asdad", req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"itemKey 'asdad' not found\"}", e.getResponseBody());
+      }
     }
   }
 
   /**
-   * Get Classification optional attribute with locale.
+   * PUT /sites/{siteId}/locales/{locale}/resourceItems.
    *
-   * @throws ApiException ApiException
+   * @throws Exception an error has occurred
    */
   @Test
-  void testGetClassification02() throws ApiException {
+  public void testPutLocale02() throws Exception {
     // given
     String locale = "en";
-    String attributeKey = "myattr";
-
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
       this.systemApi.addLocale(siteId, new AddLocaleRequest().locale(locale));
 
-      addAttribute(siteId, attributeKey);
-      String classificationId =
-          setClassification(siteId, attributeKey, List.of("1111", "222", "333"), false);
-      addLocaleClassificationResourceItem(siteId, classificationId, attributeKey, locale);
+      AddLocaleResourceInterfaceItem item = new AddLocaleResourceInterfaceItem()
+          .interfaceKey("mykey2").itemType(LocaleResourceType.INTERFACE).localizedValue("bbb");
+      AddLocaleResourceItemRequest addReq =
+          new AddLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+
+      AddLocaleResourceItemResponse response =
+          this.systemApi.addLocaleResourceItem(siteId, locale, addReq);
+
+      SetLocaleResourceItemRequest setReq =
+          new SetLocaleResourceItemRequest().resourceItem(new AddResourceItem(item));
+      item.setLocalizedValue("ccc");
 
       // when
-      final Classification c0 =
-          this.schemasApi.getClassification(siteId, classificationId, locale).getClassification();
-      final Classification c1 =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+      SetResponse setResponse =
+          this.systemApi.setLocaleResourceItem(siteId, locale, response.getItemKey(), setReq);
 
       // then
-      assertNotNull(c0);
-      assertNotNull(c0.getAttributes());
-
-      List<AttributeSchemaOptional> optional = notNull(c0.getAttributes().getOptional());
-      assertEquals(1, optional.size());
-      AttributeSchemaOptional attr0 = optional.get(0);
-      assertEquals(attributeKey, attr0.getAttributeKey());
-      assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
-
-      assertNotNull(c1);
-      assertNotNull(c1.getAttributes());
-      AttributeSchemaOptional attr1 = notNull(c1.getAttributes().getOptional()).get(0);
-      assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
-
-      // when
-      GetAttributeAllowedValuesResponse resp0 = this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, locale);
-      GetAttributeAllowedValuesResponse resp1 = this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null);
-
-      // then
-      assertEquals(1, notNull(resp0.getLocalizedAllowedValues()).size());
-      assertEquals("localVal", resp0.getLocalizedAllowedValues().get("222"));
-      assertEquals(0, notNull(resp1.getLocalizedAllowedValues()).size());
+      assertEquals("set item 'INTERFACE##mykey2' successfully", setResponse.getMessage());
+      GetLocaleResourceItemResponse lri =
+          this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
+      assertNotNull(lri);
+      assertNotNull(lri.getResourceItem());
+      assertResourceInterface(lri.getResourceItem(), "mykey2", "ccc", "INTERFACE##mykey2");
     }
   }
 }

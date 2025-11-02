@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "resource": "/entityTypes",
+  "path": "/entityTypes",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Length": "75",
+    "Content-Type": "text/plain",
+    "Host": "fsdfsfsdfsdfsd.execute-api.us-east-2.amazonaws.com",
+    "User-Agent": "PostmanRuntime/7.44.1",
+    "X-Amzn-Trace-Id": "Root=1-686723e0-1bf3a4e94135f0e61a404f5a",
+    "X-Forwarded-For": "2.7.1.11",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https",
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
+    "authorization": "AWS4-HMAC-SHA256 Credential=LFJSLDFJDLSFJLKDSFSDF/20250704/us-east-2/execute-api/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=HDLADLKAJSDLJASD",
+    "x-amz-content-sha256": "d4f2776f204ace3679b5b72d2444f2d7e2689a00f7a7754989dfcfa1af191d36",
+    "x-amz-date": "20250704T004416Z"
+  },
+  "multiValueHeaders": {
+    "Content-Length": ["75"],
+    "Content-Type": ["text/plain"],
+    "Host": ["fsdfsfsdfsdfsd.execute-api.us-east-2.amazonaws.com"],
+    "User-Agent": ["PostmanRuntime/7.44.1"],
+    "X-Amzn-Trace-Id": ["Root=1-686723e0-1bf3a4e94135f0e61a404f5a"],
+    "X-Forwarded-For": ["2.7.1.11"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
+    "accept": ["*/*"],
+    "accept-encoding": ["gzip, deflate, br"],
+    "authorization": [
+      "AWS4-HMAC-SHA256 Credential=LFJSLDFJDLSFJLKDSFSDF/20250704/us-east-2/execute-api/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=HDLADLKAJSDLJASD"
+    ],
+    "x-amz-content-sha256": [
+      "d4f2776f204ace3679b5b72d2444f2d7e2689a00f7a7754989dfcfa1af191d36"
+    ],
+    "x-amz-date": ["20250704T004416Z"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "requestContext": {
+    "accountId": "1111111111111",
+    "apiId": "fsdfsfsdfsdfsd",
+    "domainName": "fsdfsfsdfsdfsd.execute-api.us-east-2.amazonaws.com",
+    "domainPrefix": "fsdfsfsdfsdfsd",
+    "extendedRequestId": "NKKLIiDbCYcEP4Q=",
+    "httpMethod": "POST",
+    "identity": {
+      "accessKey": "LFJSLDFJDLSFJLKDSFSDF",
+      "accountId": "1111111111111",
+      "caller": "AIDAXPCS4ZCZQ7BHGBJYS",
+      "cognitoAmr": null,
+      "cognitoAuthenticationProvider": null,
+      "cognitoAuthenticationType": null,
+      "cognitoIdentityId": null,
+      "cognitoIdentityPoolId": null,
+      "principalOrgId": "aws:PrincipalOrgID",
+      "sourceIp": "2.7.1.11",
+      "user": "AIDAXPCS4ZCZQ7BHGBJYS",
+      "userAgent": "PostmanRuntime/7.44.1",
+      "userArn": "arn:aws:iam::1111111111111:user/dev"
+    },
+    "path": "/entityTypes",
+    "protocol": "HTTP/1.1",
+    "requestId": "NKKLIiDbCYcEP4Q=",
+    "requestTime": "04/Jul/2025:00:44:16 +0000",
+    "requestTimeEpoch": 1751589856468,
+    "resourceId": "POST /entityTypes",
+    "resourcePath": "/entityTypes",
+    "stage": "$default"
+  },
+  "pathParameters": null,
+  "stageVariables": null,
+  "body": "{\n  \"entityType\": {\n    \"namespace\": \"CUSTOM\",\n    \"name\": \"customer\"\n  }\n}",
+  "isBase64Encoded": false
+}

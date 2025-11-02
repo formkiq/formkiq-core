@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 
 import java.util.Collection;
 
@@ -58,12 +58,21 @@ public class DocumentAttributeRecordListBuilder {
   }
 
   /**
-   * Set Composite Keys To Be Deleted.
-   * 
-   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * Get New Attributes.
+   *
+   * @return {@link Collection} {@link DocumentAttributeRecord}
    */
-  public void setCompositeKeysToBeDeleted(final Collection<DocumentAttributeRecord> attributes) {
-    this.compositeKeysToBeDeleted = attributes;
+  public Collection<DocumentAttributeRecord> getNewAttributes() {
+    return this.newAttributes;
+  }
+
+  /**
+   * Get Previous Attributes.
+   *
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  public Collection<DocumentAttributeRecord> getPreviousAttributes() {
+    return this.previousAttributes;
   }
 
   /**
@@ -76,18 +85,6 @@ public class DocumentAttributeRecordListBuilder {
   }
 
   /**
-   * Set Previous Composite Keys.
-   *
-   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
-   * @return {@link DocumentAttributeRecordListBuilder}
-   */
-  public DocumentAttributeRecordListBuilder setPreviousCompositeKeys(
-      final Collection<DocumentAttributeRecord> attributes) {
-    this.previousCompositeKeys = attributes;
-    return this;
-  }
-
-  /**
    * Get {@link DocumentAttributeRecord} that will be deleted.
    *
    * @return {@link Collection} {@link DocumentAttributeRecord}
@@ -97,24 +94,24 @@ public class DocumentAttributeRecordListBuilder {
   }
 
   /**
-   * Set To Be Deleted Attributes.
+   * Set Composite Keys To Be Deleted.
+   * 
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   */
+  public void setCompositeKeysToBeDeleted(final Collection<DocumentAttributeRecord> attributes) {
+    this.compositeKeysToBeDeleted = attributes;
+  }
+
+  /**
+   * Set New Attributes.
    *
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link DocumentAttributeRecordListBuilder}
    */
-  public DocumentAttributeRecordListBuilder setToBeDeletedAttributes(
+  public DocumentAttributeRecordListBuilder setNewAttributes(
       final Collection<DocumentAttributeRecord> attributes) {
-    this.toBeDeletedAttributes = attributes;
+    this.newAttributes = attributes;
     return this;
-  }
-
-  /**
-   * Get Previous Attributes.
-   *
-   * @return {@link Collection} {@link DocumentAttributeRecord}
-   */
-  public Collection<DocumentAttributeRecord> getPreviousAttributes() {
-    return this.previousAttributes;
   }
 
   /**
@@ -130,23 +127,26 @@ public class DocumentAttributeRecordListBuilder {
   }
 
   /**
-   * Get New Attributes.
-   *
-   * @return {@link Collection} {@link DocumentAttributeRecord}
-   */
-  public Collection<DocumentAttributeRecord> getNewAttributes() {
-    return this.newAttributes;
-  }
-
-  /**
-   * Set New Attributes.
+   * Set Previous Composite Keys.
    *
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link DocumentAttributeRecordListBuilder}
    */
-  public DocumentAttributeRecordListBuilder setNewAttributes(
+  public DocumentAttributeRecordListBuilder setPreviousCompositeKeys(
       final Collection<DocumentAttributeRecord> attributes) {
-    this.newAttributes = attributes;
+    this.previousCompositeKeys = attributes;
+    return this;
+  }
+
+  /**
+   * Set To Be Deleted Attributes.
+   *
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * @return {@link DocumentAttributeRecordListBuilder}
+   */
+  public DocumentAttributeRecordListBuilder setToBeDeletedAttributes(
+      final Collection<DocumentAttributeRecord> attributes) {
+    this.toBeDeletedAttributes = attributes;
     return this;
   }
 }

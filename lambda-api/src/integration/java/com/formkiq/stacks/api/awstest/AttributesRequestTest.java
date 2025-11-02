@@ -29,7 +29,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.AddAttributeResponse;
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
@@ -119,7 +119,7 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         AddAttribute attribute = new AddAttribute().key(key);
 
         // when
-        AddAttributeResponse response =
+        AddResponse response =
             attributesApi.addAttribute(new AddAttributeRequest().attribute(attribute), siteId);
 
         // then
@@ -156,8 +156,10 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       List<ApiClient> apiClients = getApiClients(siteId);
+      final int expectedSize = 3;
+      assertEquals(expectedSize, apiClients.size());
 
-      for (ApiClient apiClient : apiClients) {
+      for (ApiClient apiClient : List.of(apiClients.get(0), apiClients.get(1))) {
         AttributesApi attributesApi = new AttributesApi(apiClient);
 
         String key = "category_" + UUID.randomUUID();
@@ -165,7 +167,7 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
             new AddAttribute().key(key).type(AttributeType.OPA).dataType(AttributeDataType.NUMBER);
 
         // when
-        AddAttributeResponse response =
+        AddResponse response =
             attributesApi.addAttribute(new AddAttributeRequest().attribute(attribute), siteId);
 
         // then
@@ -183,11 +185,30 @@ public class AttributesRequestTest extends AbstractAwsIntegrationTest {
         // then
         assertEquals("Attribute '" + key + "' deleted", deleteResponse.getMessage());
         try {
-          attributesApi.getAttribute(key, siteId).getAttribute();
+          attributesApi.getAttribute(key, siteId);
         } catch (ApiException e) {
           assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
           assertEquals("{\"message\":\"Attribute " + key + " not found\"}", e.getResponseBody());
         }
+      }
+
+      // given
+      AttributesApi attributesApi = new AttributesApi(apiClients.get(2));
+
+      String key = "category_" + UUID.randomUUID();
+      AddAttribute attribute =
+          new AddAttribute().key(key).type(AttributeType.OPA).dataType(AttributeDataType.NUMBER);
+
+      // when
+      try {
+        attributesApi.addAttribute(new AddAttributeRequest().attribute(attribute), siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"" + key + "\",\"error\":\"Access denied to attribute\"}]}",
+            e.getResponseBody());
       }
     }
   }

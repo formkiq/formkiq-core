@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.awstest;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
@@ -35,24 +36,37 @@ import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.GetDocumentActionsResponse;
+import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import com.formkiq.testutils.aws.LambdaContextRecorder;
 import com.nimbusds.jose.util.StandardCharset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
 import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.io.File;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import software.amazon.awssdk.utils.IoUtils;
+
+
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
@@ -75,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * GET, POST /documents/{documentId}/actions tests.
  *
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
   /** JUnit Test Timeout. */
@@ -83,8 +98,28 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   private static String actionsEventBus;
   /** Actions Event Queue. */
   private static String actionsEventQueue;
-  /** {@link FileGenerator}. */
-  private final FileGenerator fileGenerator = new FileGenerator();
+
+  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
+
+    List<Message> receiveMessages;
+
+    do {
+      receiveMessages = getSqs().receiveMessages(queueUrl).messages();
+      if (receiveMessages.isEmpty()) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+
+    } while (receiveMessages.isEmpty());
+
+    Gson gson = new GsonBuilder().create();
+    String body = receiveMessages.iterator().next().body();
+    Map<String, Object> map = gson.fromJson(body, Map.class);
+    assertTrue(map.containsKey("detail"));
+    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
+    assertTrue(detail.containsKey("document"));
+
+    getSqs().clearQueue(queueUrl);
+  }
 
   @BeforeAll
   public static void setup() {
@@ -95,6 +130,9 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
     getSqs().clearQueue(actionsEventQueue);
   }
+
+  /** {@link FileGenerator}. */
+  private final FileGenerator fileGenerator = new FileGenerator();
 
   /**
    * POST /documents/{documentId}.
@@ -158,26 +196,49 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     assertEventBridgeMessage(actionsEventQueue);
   }
 
-  private static void assertEventBridgeMessage(final String queueUrl) throws InterruptedException {
+  /**
+   * POST /documents/{documentId}/actions with resize.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddDocumentActions03() throws Exception {
+    // given
+    List<ApiClient> clients = getApiClients(null);
+    ApiClient client = clients.get(0);
 
-    List<Message> receiveMessages;
+    try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/input.gif")) {
+      assertNotNull(is);
+      byte[] data = IoUtils.toByteArray(is);
 
-    do {
-      receiveMessages = getSqs().receiveMessages(queueUrl).messages();
-      if (receiveMessages.isEmpty()) {
-        TimeUnit.SECONDS.sleep(1);
-      }
+      List<AddAction> actions = List.of(new AddAction().type(DocumentActionType.RESIZE)
+          .parameters(new AddActionParameters().width("100").height("auto")));
+      List<AddDocumentTag> tags = Collections.emptyList();
 
-    } while (receiveMessages.isEmpty());
+      // when
+      String documentId = addDocument(client, null, "input.gif", data,
+          MimeType.MIME_GIF.getContentType(), actions, tags);
 
-    Gson gson = new GsonBuilder().create();
-    String body = receiveMessages.iterator().next().body();
-    Map<String, Object> map = gson.fromJson(body, Map.class);
-    assertTrue(map.containsKey("detail"));
-    Map<String, Object> detail = (Map<String, Object>) map.get("detail");
-    assertTrue(detail.containsKey("documents"));
+      // then
+      waitForActionsComplete(client, null, documentId);
 
-    getSqs().clearQueue(queueUrl);
+      DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
+      List<DocumentAttribute> documentAttributes = notNull(documentAttributesApi
+          .getDocumentAttributes(documentId, null, null, null).getAttributes());
+      assertEquals(1, documentAttributes.size());
+      DocumentAttribute documentAttribute = documentAttributes.get(0);
+      assertEquals("Relationships", documentAttribute.getKey());
+      assertEquals(AttributeValueType.STRING, documentAttribute.getValueType());
+      assertNotNull(documentAttribute.getStringValue());
+      assertTrue(documentAttribute.getStringValue().startsWith("RENDITION#"));
+
+      String renditionDocId = documentAttribute.getStringValue().substring("RENDITION#".length());
+      DocumentsApi api = new DocumentsApi(client);
+      GetDocumentResponse item = api.getDocument(renditionDocId, null, null);
+      assertEquals("100", item.getWidth());
+      assertEquals("56", item.getHeight());
+    }
   }
 
   /**

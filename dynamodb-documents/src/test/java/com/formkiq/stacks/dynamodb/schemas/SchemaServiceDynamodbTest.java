@@ -32,6 +32,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationError;
@@ -65,6 +66,11 @@ public class SchemaServiceDynamodbTest {
   /** {@link DynamoDbService}. */
   private static DynamoDbService db;
 
+  private static void addAttribute(final String siteId, final String attributeKey) {
+    attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.STRING, AttributeType.STANDARD);
+  }
+
   /**
    * Before Test.
    *
@@ -78,11 +84,17 @@ public class SchemaServiceDynamodbTest {
     attributeService = new AttributeServiceDynamodb(db);
   }
 
-  private static Collection<ValidationError> setSitesSchema(final String siteId,
-      final SchemaAttributes schemaAttributes) {
-    String name = "somesetschema";
-    Schema schema = new Schema().name(name).attributes(schemaAttributes);
-    return service.setSitesSchema(siteId, name, schema);
+  private static SchemaAttributesOptional createCategoryOptional(final List<String> allowedValues) {
+    return new SchemaAttributesOptional().attributeKey("category").allowedValues(allowedValues);
+  }
+
+  private static SchemaAttributesRequired createCategoryRequired(final List<String> allowedValues) {
+    return new SchemaAttributesRequired().attributeKey("category").allowedValues(allowedValues);
+  }
+
+  private static SchemaAttributesRequired createDocTypeRequired() {
+    return new SchemaAttributesRequired().attributeKey("docType")
+        .allowedValues(List.of("invoice", "receipt"));
   }
 
   private static ClassificationRecord setClassification(final String siteId,
@@ -92,22 +104,124 @@ public class SchemaServiceDynamodbTest {
     return service.setClassification(siteId, classificationId, name, schema, "joe");
   }
 
-  private static SchemaAttributesRequired createDocTypeRequired() {
-    return new SchemaAttributesRequired().attributeKey("docType")
-        .allowedValues(List.of("invoice", "receipt"));
+  private static Collection<ValidationError> setSitesSchema(final String siteId,
+      final SchemaAttributes schemaAttributes) {
+    String name = "somesetschema";
+    Schema schema = new Schema().name(name).attributes(schemaAttributes);
+    return service.setSitesSchema(siteId, name, schema);
   }
 
-  private static SchemaAttributesRequired createCategoryRequired(final List<String> allowedValues) {
-    return new SchemaAttributesRequired().attributeKey("category").allowedValues(allowedValues);
+  /**
+   * Get Allowed values across site schema and multiple classifications.
+   */
+  @Test
+  void testGetAttributeAllowedValues01() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      addAttribute(siteId, "category");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
+
+      SchemaAttributesRequired require1 = createCategoryRequired(List.of("A", "Z"));
+      setClassification(siteId, null, "doc1", new SchemaAttributes().required(List.of(require1)));
+
+      SchemaAttributesRequired require2 = createCategoryRequired(List.of("AA", "BB", "CC", "Z"));
+      setClassification(siteId, null, "doc2", new SchemaAttributes().required(List.of(require2)));
+
+      // when
+      List<String> allowedValues = service.getAttributeAllowedValues(siteId, "category");
+
+      // then
+      final int expected = 6;
+      assertEquals(expected, allowedValues.size());
+      assertEquals("A,AA,BB,CC,Y,Z", String.join(",", allowedValues));
+    }
   }
 
-  private static SchemaAttributesOptional createCategoryOptional(final List<String> allowedValues) {
-    return new SchemaAttributesOptional().attributeKey("category").allowedValues(allowedValues);
+  /**
+   * Set Classification.
+   */
+  @Test
+  public void testSetClassification01() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      addAttribute(siteId, "category");
+      addAttribute(siteId, "docType");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      SchemaAttributesRequired require1 = createDocTypeRequired();
+
+      SchemaAttributesCompositeKey compositeKey =
+          new SchemaAttributesCompositeKey().attributeKeys(List.of("category", "docType"));
+      SchemaAttributes schemaAttributes = new SchemaAttributes()
+          .required(List.of(require0, require1)).compositeKeys(List.of(compositeKey));
+
+      // when
+      ClassificationRecord classification =
+          setClassification(siteId, null, "doc", schemaAttributes);
+
+      // then
+      final String classificationId = classification.getDocumentId();
+      Schema sitesSchema = service.getSchema(classification);
+      assertNotNull(sitesSchema);
+
+      SchemaCompositeKeyRecord compositeKeyRecord =
+          service.getCompositeKey(siteId, List.of("docType", "category"));
+      assertNotNull(compositeKeyRecord);
+      assertNull(service.getCompositeKey(siteId, List.of("docType", "category123")));
+
+      List<String> allowedValues =
+          service.getClassificationAttributeAllowedValues(siteId, classificationId, "category");
+      assertEquals(2, allowedValues.size());
+      assertEquals("Y,Z", String.join(",", allowedValues));
+
+      // given
+      require0.allowedValues(List.of("1", "2", "3"));
+
+      // when
+      setClassification(siteId, classificationId, "doc", schemaAttributes);
+
+      // then
+      allowedValues =
+          service.getClassificationAttributeAllowedValues(siteId, classificationId, "category");
+
+      final int expected = 3;
+      assertEquals(expected, allowedValues.size());
+      assertEquals("1,2,3", String.join(",", allowedValues));
+
+      allowedValues = service.getAttributeAllowedValues(siteId, "category");
+      assertEquals(expected, allowedValues.size());
+      assertEquals("1,2,3", String.join(",", allowedValues));
+    }
   }
 
-  private static void addAttribute(final String siteId, final String attributeKey) {
-    attributeService.addAttribute(siteId, attributeKey, AttributeDataType.STRING,
-        AttributeType.STANDARD);
+  /**
+   * Get Allowed values across site schema and classification.
+   */
+  @Test
+  void testSetClassification02() throws ValidationException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      addAttribute(siteId, "category");
+
+      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
+      setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
+
+      SchemaAttributesRequired require1 = createCategoryRequired(List.of("A", "Z"));
+      ClassificationRecord classification = setClassification(siteId, null, "doc",
+          new SchemaAttributes().required(List.of(require1)));
+
+      // when
+      List<String> allowedValues = service.getClassificationAttributeAllowedValues(siteId,
+          classification.getDocumentId(), "category");
+
+      // then
+      final int expected = 3;
+      assertEquals(expected, allowedValues.size());
+      assertEquals("A,Y,Z", String.join(",", allowedValues));
+    }
   }
 
   /**
@@ -245,115 +359,33 @@ public class SchemaServiceDynamodbTest {
   }
 
   /**
-   * Set Classification.
+   * Delete Sites schema.
    */
   @Test
-  public void testSetClassification01() throws ValidationException {
+  void testSitesClassificationDelete01() throws ValidationException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       addAttribute(siteId, "category");
-      addAttribute(siteId, "docType");
 
       SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
-      SchemaAttributesRequired require1 = createDocTypeRequired();
+      SchemaAttributes schemaAttributes = new SchemaAttributes().required(List.of(require0));
 
-      SchemaAttributesCompositeKey compositeKey =
-          new SchemaAttributesCompositeKey().attributeKeys(List.of("category", "docType"));
-      SchemaAttributes schemaAttributes = new SchemaAttributes()
-          .required(List.of(require0, require1)).compositeKeys(List.of(compositeKey));
-
-      // when
       ClassificationRecord classification =
           setClassification(siteId, null, "doc", schemaAttributes);
 
-      // then
-      final String classificationId = classification.getDocumentId();
-      Schema sitesSchema = service.getSchema(classification);
-      assertNotNull(sitesSchema);
-
-      SchemaCompositeKeyRecord compositeKeyRecord =
-          service.getCompositeKey(siteId, List.of("docType", "category"));
-      assertNotNull(compositeKeyRecord);
-      assertNull(service.getCompositeKey(siteId, List.of("docType", "category123")));
-
-      List<String> allowedValues =
-          service.getClassificationAttributeAllowedValues(siteId, classificationId, "category");
-      assertEquals(2, allowedValues.size());
-      assertEquals("Y,Z", String.join(",", allowedValues));
-
-      // given
-      require0.allowedValues(List.of("1", "2", "3"));
-
       // when
-      setClassification(siteId, classificationId, "doc", schemaAttributes);
+      boolean deleted = service.deleteClassification(siteId, classification.getDocumentId());
 
       // then
-      allowedValues =
-          service.getClassificationAttributeAllowedValues(siteId, classificationId, "category");
+      assertTrue(deleted);
 
-      final int expected = 3;
-      assertEquals(expected, allowedValues.size());
-      assertEquals("1,2,3", String.join(",", allowedValues));
-
-      allowedValues = service.getAttributeAllowedValues(siteId, "category");
-      assertEquals(expected, allowedValues.size());
-      assertEquals("1,2,3", String.join(",", allowedValues));
-    }
-  }
-
-  /**
-   * Get Allowed values across site schema and classification.
-   */
-  @Test
-  void testSetClassification02() throws ValidationException {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      addAttribute(siteId, "category");
-
-      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
-      setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
-
-      SchemaAttributesRequired require1 = createCategoryRequired(List.of("A", "Z"));
-      ClassificationRecord classification = setClassification(siteId, null, "doc",
-          new SchemaAttributes().required(List.of(require1)));
-
-      // when
-      List<String> allowedValues = service.getClassificationAttributeAllowedValues(siteId,
-          classification.getDocumentId(), "category");
-
-      // then
-      final int expected = 3;
-      assertEquals(expected, allowedValues.size());
-      assertEquals("A,Y,Z", String.join(",", allowedValues));
-    }
-  }
-
-  /**
-   * Get Allowed values across site schema and multiple classifications.
-   */
-  @Test
-  void testGetAttributeAllowedValues01() throws ValidationException {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      addAttribute(siteId, "category");
-
-      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
-      setSitesSchema(siteId, new SchemaAttributes().required(List.of(require0)));
-
-      SchemaAttributesRequired require1 = createCategoryRequired(List.of("A", "Z"));
-      setClassification(siteId, null, "doc1", new SchemaAttributes().required(List.of(require1)));
-
-      SchemaAttributesRequired require2 = createCategoryRequired(List.of("AA", "BB", "CC", "Z"));
-      setClassification(siteId, null, "doc2", new SchemaAttributes().required(List.of(require2)));
-
-      // when
-      List<String> allowedValues = service.getAttributeAllowedValues(siteId, "category");
-
-      // then
-      final int expected = 6;
-      assertEquals(expected, allowedValues.size());
-      assertEquals("A,AA,BB,CC,Y,Z", String.join(",", allowedValues));
+      QueryConfig config = new QueryConfig();
+      ClassificationRecord r =
+          new ClassificationRecord().setDocumentId(classification.getDocumentId());
+      AttributeValue pk = r.fromS(r.pk(siteId));
+      QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
+      assertEquals(0, response.items().size());
     }
   }
 
@@ -383,37 +415,6 @@ public class SchemaServiceDynamodbTest {
       AttributeValue pk = r.fromS(r.pk(siteId));
       QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
       assertEquals(1, response.items().size());
-    }
-  }
-
-  /**
-   * Delete Sites schema.
-   */
-  @Test
-  void testSitesClassificationDelete01() throws ValidationException {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      addAttribute(siteId, "category");
-
-      SchemaAttributesRequired require0 = createCategoryRequired(List.of("Z", "Y"));
-      SchemaAttributes schemaAttributes = new SchemaAttributes().required(List.of(require0));
-
-      ClassificationRecord classification =
-          setClassification(siteId, null, "doc", schemaAttributes);
-
-      // when
-      boolean deleted = service.deleteClassification(siteId, classification.getDocumentId());
-
-      // then
-      assertTrue(deleted);
-
-      QueryConfig config = new QueryConfig();
-      ClassificationRecord r =
-          new ClassificationRecord().setDocumentId(classification.getDocumentId());
-      AttributeValue pk = r.fromS(r.pk(siteId));
-      QueryResponse response = db.queryBeginsWith(config, pk, null, null, LIMIT);
-      assertEquals(0, response.items().size());
     }
   }
 }
