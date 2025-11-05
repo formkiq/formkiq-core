@@ -96,14 +96,14 @@ public class DocumentsUploadRequestHandler
    * @param request {@link AddDocumentRequest}
    * @param tags {@link List} {@link DocumentTag}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @return {@link ApiRequestHandlerResponse}
+   * @return {@link ApiRequestHandlerResponse.Builder}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
-  private ApiRequestHandlerResponse buildPresignedResponse(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request, final List<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> documentAttributes)
+  private ApiRequestHandlerResponse.Builder buildPresignedResponse(
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
+      final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest request,
+      final List<DocumentTag> tags, final Collection<DocumentAttributeRecord> documentAttributes)
       throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
@@ -137,7 +137,7 @@ public class DocumentsUploadRequestHandler
       notificationService.publishNextActionEvent(siteId, documentId);
     }
 
-    return ApiRequestHandlerResponse.builder().ok().body(map).build();
+    return ApiRequestHandlerResponse.builder().created().body(map);
   }
 
   /**
@@ -214,7 +214,7 @@ public class DocumentsUploadRequestHandler
     validateMaxDocuments(awsservice, config, siteId);
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
-        siteId, item, new ArrayList<>(), null);
+        siteId, item, new ArrayList<>(), null).ok().build();
 
     if (!Strings.isEmpty(config.getMaxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
@@ -295,7 +295,7 @@ public class DocumentsUploadRequestHandler
     validatePost(awsservice, config, siteId, request);
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
-        siteId, request, tags, documentAttributes);
+        siteId, request, tags, documentAttributes).build();
 
     if (!isEmpty(config.getMaxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
