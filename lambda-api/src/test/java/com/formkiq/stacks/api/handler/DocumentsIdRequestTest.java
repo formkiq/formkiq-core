@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,9 +60,15 @@ import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.module.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -484,6 +491,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   @Timeout(TEST_TIMEOUT)
   public void testHandleSetDocumentRestore01() throws Exception {
 
+    ActionsService as =
+        new ActionsServiceDynamoDb(DynamoDbTestServices.getDynamoDbConnection(), DOCUMENTS_TABLE);
+
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
@@ -491,6 +501,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String path = ID.uuid() + ".txt";
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
       String documentId = addDocumentUpload(siteId, req);
+
+      Action action = new Action().documentId(documentId).type(ActionType.OCR)
+          .status(ActionStatus.RUNNING).userId("joe");
+      as.saveNewActions(siteId, documentId, List.of(action));
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);

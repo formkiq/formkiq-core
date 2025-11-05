@@ -76,8 +76,8 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
       }
 
       if (a.containsKey(GSI2_PK)) {
-        a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));
-        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI2_PK, AttributeValue.fromS(a.get(GSI2_PK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI2_SK, AttributeValue.fromS(a.get(GSI2_SK).s().replaceAll(SOFT_DELETE, "")));
       }
     }
 
