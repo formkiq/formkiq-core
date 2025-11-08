@@ -81,6 +81,7 @@
 
 			<subpackage name="handler">
 
+                <allow pkg="com.formkiq.module.httpsigv4" />
 				<allow pkg="com.formkiq.aws.services.lambda" />
 				<allow pkg="com.formkiq.module.typesense" />
 				<allow pkg="com.formkiq.module.http" />

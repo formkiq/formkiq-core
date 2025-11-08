@@ -21,25 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.base64;
+package com.formkiq.urls;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Unit Test for converting {@link String} to and from {@link String} using Base 64.
+ * Parsed URL components.
  */
-public class StringToBase64Test {
-  private void assertExpectedString(final String s, final String base64Encoded) {
-    String base64 = new StringToBase64Encoder().apply(s);
-    assertEquals(base64, base64Encoded);
-    assertEquals(s, new StringToBase64Decoder().apply(base64));
-  }
-
-  @Test
-  void testApply01() {
-    assertExpectedString("my text", "bXkgdGV4dA");
-    assertExpectedString("%234546%24_%23%7E%23test", "JTIzNDU0NiUyNF8lMjMlN0UlMjN0ZXN0");
-  }
+public record UrlParts(String scheme, String host, Integer port, List<String> pathSegments,
+    Map<String, List<String>> queryParameters) {
 }
