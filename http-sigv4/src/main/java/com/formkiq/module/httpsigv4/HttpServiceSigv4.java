@@ -47,8 +47,6 @@ import java.util.concurrent.Executor;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.signer.Aws4Signer;
-import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
@@ -288,17 +286,8 @@ public final class HttpServiceSigv4 implements HttpService {
    * @return {@link SdkHttpFullRequest}
    */
   private SdkHttpFullRequest sign(final SdkHttpFullRequest.Builder request) {
-
-    SdkHttpFullRequest req = request.build();
-
-    Aws4SignerParams params = Aws4SignerParams.builder().signingName(signingName)
-        .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
-
-    Aws4Signer signer = Aws4Signer.create();
-
-    req = signer.sign(req, params);
-
-    return req;
+    return new SignSdkHttpFullRequest(signingName, this.signingRegion, this.signingCredentials)
+        .apply(request);
   }
 
   /**

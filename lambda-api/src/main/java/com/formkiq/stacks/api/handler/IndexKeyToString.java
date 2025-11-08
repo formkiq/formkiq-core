@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.dynamodb.base64.StringToBase66Decoder;
+import com.formkiq.aws.dynamodb.base64.StringToBase64Decoder;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 
 import java.util.function.Function;
@@ -37,7 +37,7 @@ public class IndexKeyToString implements Function<String, String> {
     String s = indexKey;
     if (indexKey != null && !indexKey.contains("/")) {
       try {
-        s = new StringToBase66Decoder().apply(indexKey);
+        s = new StringToBase64Decoder().apply(indexKey);
       } catch (IllegalArgumentException e) {
         throw new NotFoundException("invalid indexKey '" + indexKey + "'");
       }
