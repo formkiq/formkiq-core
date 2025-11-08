@@ -63,7 +63,7 @@ public class SignUrl implements Function<String, String> {
       SdkHttpFullRequest.Builder requestBuilder =
           SdkHttpFullRequest.builder().uri(new URI(url)).method(SdkHttpMethod.GET);
       SdkHttpFullRequest req =
-          new SignSdkHttpFullRequest(signingName, signingRegion, signingCredentials)
+          new PresignSdkHttpFullRequest(signingName, signingRegion, signingCredentials)
               .apply(requestBuilder);
       return HttpRequest.newBuilder().uri(req.getUri()).build().uri().toString();
 

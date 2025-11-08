@@ -25,7 +25,7 @@ package com.formkiq.module.httpsigv4;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
-import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
+import software.amazon.awssdk.auth.signer.params.Aws4PresignerParams;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.regions.Region;
 
@@ -34,7 +34,7 @@ import java.util.function.Function;
 /**
  * {@link Function} to sign SdkHttpFullRequest.Builder.
  */
-public class SignSdkHttpFullRequest
+public class PresignSdkHttpFullRequest
     implements Function<SdkHttpFullRequest.Builder, SdkHttpFullRequest> {
 
   /** Signing Name. */
@@ -46,12 +46,12 @@ public class SignSdkHttpFullRequest
 
   /**
    * constructor.
-   * 
+   *
    * @param serviceName {@link String}
    * @param region {@link Region}
    * @param credentials {@link AwsCredentials}
    */
-  public SignSdkHttpFullRequest(final String serviceName, final Region region,
+  public PresignSdkHttpFullRequest(final String serviceName, final Region region,
       final AwsCredentials credentials) {
     this.signingName = serviceName;
     this.signingRegion = region;
@@ -63,10 +63,11 @@ public class SignSdkHttpFullRequest
 
     SdkHttpFullRequest req = builder.build();
 
-    Aws4SignerParams params = Aws4SignerParams.builder().signingName(this.signingName)
+    Aws4PresignerParams params = Aws4PresignerParams.builder().signingName(this.signingName)
         .signingRegion(this.signingRegion).awsCredentials(this.signingCredentials).build();
 
     Aws4Signer signer = Aws4Signer.create();
-    return signer.sign(req, params);
+
+    return signer.presign(req, params);
   }
 }

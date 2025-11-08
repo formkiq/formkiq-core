@@ -119,6 +119,11 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     String base64 = parts.queryParameters().get("url").get(0);
     String s = new StringToBase64Decoder().apply(base64);
     assertS3Url(s, siteId, documentId);
+
+    assertNotNull(parts.queryParameters().get("X-Amz-Signature").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-Algorithm").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-Date").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-SignedHeaders").get(0));
   }
 
   /**
