@@ -30,7 +30,6 @@ import software.amazon.awssdk.regions.Region;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpRequest;
 import java.util.function.Function;
 
 /**
@@ -65,7 +64,8 @@ public class SignUrl implements Function<String, String> {
       SdkHttpFullRequest req =
           new PresignSdkHttpFullRequest(signingName, signingRegion, signingCredentials)
               .apply(requestBuilder);
-      return HttpRequest.newBuilder().uri(req.getUri()).build().uri().toString();
+
+      return new SdkHttpRequestToUrl().apply(req);
 
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
