@@ -25,6 +25,8 @@ package com.formkiq.module.httpsigv4;
 
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
@@ -33,11 +35,22 @@ import java.util.function.Function;
  */
 public final class SdkHttpRequestToUrl implements Function<SdkHttpFullRequest, String> {
 
+  /** Http Port. */
+  private static final int HTTP_PORT = 80;
+
+  /** Https Port. */
+  private static final int HTTPS_PORT = 443;
+
+  private static String getEncode(final String s) {
+    return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20").replace("*", "%2A")
+        .replace("%7E", "~");
+  }
+
   @Override
   public String apply(final SdkHttpFullRequest r) {
     var sb = new StringBuilder().append(r.protocol()).append("://").append(r.host());
 
-    if (r.port() > 0) {
+    if (r.port() > 0 && !isHttps(r.protocol(), r.port()) && !isHttp(r.protocol(), r.port())) {
       sb.append(':').append(r.port());
     }
 
@@ -50,12 +63,20 @@ public final class SdkHttpRequestToUrl implements Function<SdkHttpFullRequest, S
       var join = new StringJoiner("&");
       qp.forEach((k, vs) -> {
         for (String v : vs) {
-          join.add(k + "=" + (v == null ? "" : v));
+          join.add(k + "=" + (v == null ? "" : getEncode(v)));
         }
       });
       sb.append('?').append(join);
     }
 
     return sb.toString();
+  }
+
+  private boolean isHttp(final String protocol, final int port) {
+    return "http".equalsIgnoreCase(protocol) && port == HTTP_PORT;
+  }
+
+  private boolean isHttps(final String protocol, final int port) {
+    return "https".equalsIgnoreCase(protocol) && port == HTTPS_PORT;
   }
 }
