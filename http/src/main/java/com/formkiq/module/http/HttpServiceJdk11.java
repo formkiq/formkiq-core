@@ -70,6 +70,15 @@ public class HttpServiceJdk11 implements HttpService {
   }
 
   /**
+   * constructor.
+   * 
+   * @param httpClient {@link HttpClient}
+   */
+  public HttpServiceJdk11(final HttpClient httpClient) {
+    this.client = httpClient;
+  }
+
+  /**
    * Build {@link Builder}.
    * 
    * @param url {@link String}
