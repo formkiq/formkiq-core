@@ -41,6 +41,7 @@ import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.AttributeSchemaOptional;
 import com.formkiq.client.model.AttributeSchemaRequired;
+import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.Classification;
 import com.formkiq.client.model.ClassificationSummary;
@@ -57,6 +58,10 @@ import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.jetbrains.annotations.NotNull;
@@ -852,6 +857,47 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("invoiceNumber", documentAttributes.get(i++).getKey());
       assertEquals("invoiceTotalAmount", documentAttributes.get(i++).getKey());
       assertEquals("invoiceVendorName", documentAttributes.get(i).getKey());
+    }
+  }
+
+  /**
+   * Add document attribute when an existing GOVERNANCE attribute exists and user is NOT govern /
+   * admin.
+   */
+  @Test
+  void testAddDocumentAttributeWithExistingGovernance() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+
+      // given
+      addAttribute(siteId, "invoiceNumber");
+      new AddAttributeRequestBuilder()
+          .keyAsNumber("retentionPeriodInDays", AttributeType.GOVERNANCE).submit(client, siteId)
+          .throwIfError();
+
+      SetSchemaAttributes sa =
+          createSchemaAttributes(List.of("retentionPeriodInDays"), List.of("invoiceNumber"));
+      addClassification(siteId, sa);
+
+      String documentId = new AddDocumentRequestBuilder().content()
+          .addAttribute("retentionPeriodInDays", new BigDecimal(1)).submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      setBearerToken(siteId);
+
+      // when
+      new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
+          .addAttribute("invoiceNumber", "1234").submit(client, siteId).throwIfError();
+
+      // then
+      var results =
+          new GetDocumentAttributesRequestBuilder(documentId).submit(client, siteId).throwIfError();
+      List<DocumentAttribute> documentAttributes = notNull(results.response().getAttributes());
+      assertEquals(2, documentAttributes.size());
+      assertEquals("invoiceNumber", documentAttributes.get(0).getKey());
+      assertEquals("retentionPeriodInDays", documentAttributes.get(1).getKey());
     }
   }
 
