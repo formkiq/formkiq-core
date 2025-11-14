@@ -79,8 +79,20 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
    * @return AddDocumentRequestBuilder
    */
   public AddAttributeRequestBuilder keyAsNumber(final String attributeKey) {
-    this.request.setAttribute(new AddAttribute().key(attributeKey)
-        .dataType(AttributeDataType.NUMBER).type(AttributeType.STANDARD));
+    return keyAsNumber(attributeKey, AttributeType.STANDARD);
+  }
+
+  /**
+   * Set Number Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @param type {@link AttributeType}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsNumber(final String attributeKey,
+      final AttributeType type) {
+    this.request.setAttribute(
+        new AddAttribute().key(attributeKey).dataType(AttributeDataType.NUMBER).type(type));
     return this;
   }
 

@@ -30,6 +30,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+		<subpackage name="schemas">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
 		<subpackage name="documents">
 			<allow pkg="java.math" />
 			<allow pkg="com.formkiq.testutils.api" />
