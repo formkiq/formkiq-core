@@ -680,7 +680,7 @@ Resources:
               Service:
                 - apigateway.amazonaws.com
             Action: 'sts:AssumeRole'
-      Path: /
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
       
@@ -710,7 +710,7 @@ Resources:
                 - ec2.amazonaws.com
                 - lambda.amazonaws.com
             Action: 'sts:AssumeRole'
-      Path: /
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 

@@ -266,7 +266,7 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: /
+      Path: /service-role/
       Policies:
         -
           PolicyName:
