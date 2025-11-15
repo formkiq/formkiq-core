@@ -162,7 +162,7 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: /
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
