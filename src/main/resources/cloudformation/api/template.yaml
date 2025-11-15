@@ -714,43 +714,6 @@ Resources:
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
 
-  ApiGatewayInvokeGroup:
-    Type: AWS::IAM::Group
-    Properties:
-      Path: "/formkiq/"
-      ManagedPolicyArns:
-      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
-
-  ApiGatewayInvokeGroupParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "API Gateway Group that allows invoking of endpoints"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroup"
-      Type: String
-      Value: 
-        Ref: ApiGatewayInvokeGroup
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-
-  ApiGatewayInvokeGroupArnParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "API Gateway Group Arn that allows invoking of endpoints"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/iam/ApiGatewayInvokeGroupArn"
-      Type: String
-      Value: 
-        Fn::GetAtt:
-        - ApiGatewayInvokeGroup
-        - Arn
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-    
   ApiGatewayInvokeRoleParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -817,16 +780,6 @@ Outputs:
       Fn::GetAtt:
       - ApiGatewayInvokeRole
       - Arn
-  ApiGatewayInvokeGroup:
-    Description: "API Gateway Group that allows invoking of endpoints"
-    Value: 
-      Ref: ApiGatewayInvokeGroup
-  ApiGatewayInvokeGroupArn:
-    Description: "API Gateway Group ARN that allows invoking of endpoints"
-    Value: 
-      Fn::GetAtt:
-      - ApiGatewayInvokeGroup
-      - Arn    
   DocumentsApiRequests:
     Description: "FormKiQ Api Request Handler"
     Value:
