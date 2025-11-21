@@ -102,7 +102,9 @@ public interface ApiGatewayRequestEventUtil {
    * @param event {@link ApiGatewayRequestEvent}
    * @return {@link DynamicObject}
    * @throws BadException BadException
+   * @deprecated Use JsonToObject.fromJson instead
    */
+  @Deprecated
   default DynamicObject fromBodyToDynamicObject(final ApiGatewayRequestEvent event)
       throws BadException {
     return new DynamicObject(fromBodyToObject(event, Map.class));
@@ -115,7 +117,9 @@ public interface ApiGatewayRequestEventUtil {
    * @return {@link Map}
    * @throws BadException BadException
    * @throws IOException IOException
+   * @deprecated Use JsonToObject.fromJson instead
    */
+  @Deprecated
   default Map<String, Object> fromBodyToMap(final ApiGatewayRequestEvent event)
       throws BadException, IOException {
     return fromBodyToObject(event, Map.class);

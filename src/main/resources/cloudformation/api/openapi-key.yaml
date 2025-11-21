@@ -12149,16 +12149,23 @@ Resources:
                 name:
                   type: "string"
                   description: "Name of API Key"
-                permissions:
+                groups:
                   type: "array"
-                  description: "List of permissions"
+                  description: "Optional list of groups to add as custom claims to API Key"
                   items:
                     type: "string"
-                    enum:
-                      - READ
-                      - WRITE
-                      - DELETE
-                      - GOVERN
+                permissions:
+                  type: "array"              
+                  items:
+                    $ref: "#/components/schemas/ApiKeyPermission"
+            ApiKeyPermission:
+              type: string
+              description: List of API permissions (defaults to READ / WRITE / DELETE)
+              enum:
+                - READ
+                - WRITE
+                - DELETE
+                - GOVERN
             AddApiKeyResponse:
               type: object
               properties:
@@ -12463,15 +12470,14 @@ Resources:
                   type: "string"
                   description: "Inserted Timestamp"
                 permissions:
+                  type: "array"              
+                  items:
+                    $ref: "#/components/schemas/ApiKeyPermission"
+                groups:
                   type: "array"
-                  description: "List of permissions"
+                  description: "List of groups to add as custom claims to API Key"
                   items:
                     type: "string"
-                    enum:
-                      - READ
-                      - WRITE
-                      - DELETE
-                      - GOVERN
             GetConfigurationResponse:
               type: object
               properties:

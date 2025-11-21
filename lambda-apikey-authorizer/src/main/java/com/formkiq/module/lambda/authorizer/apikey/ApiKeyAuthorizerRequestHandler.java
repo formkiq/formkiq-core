@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.lambda.authorizer.apikey;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,17 @@ public class ApiKeyAuthorizerRequestHandler
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry()).build();
     }
+  }
+
+  private static ApiKey createEmptyKey() {
+    return ApiKey.builder().name("").apiKey("").groups(Collections.emptyList())
+        .permissions(Collections.emptyList()).build("");
+  }
+
+  private static String createGroup(final boolean isAuthorized, final String siteId,
+      final Collection<String> groups) {
+    String s = !groups.isEmpty() ? " " + String.join(" ", groups) : "";
+    return isAuthorized ? "[" + siteId + s + " API_KEY]" : "[API_KEY]";
   }
 
   /** {@link Gson}. */
@@ -106,14 +118,13 @@ public class ApiKeyAuthorizerRequestHandler
     apiKey = apiKey != null && apiKey.length() < MAX_APIKEY_LENGTH ? apiKey : null;
 
     ApiKey api = apiKeys.get(apiKey, false);
-    api = api != null ? api
-        : new ApiKey().name("").apiKey("").siteId("").permissions(Collections.emptyList());
+    api = api != null ? api : createEmptyKey();
 
     String siteId = api.siteId();
     boolean isAuthorized = apiKey != null && apiKey.equals(api.apiKey());
 
     String apiKeyName = api.name();
-    String group = isAuthorized ? "[" + siteId + " API_KEY]" : "[API_KEY]";
+    String group = createGroup(isAuthorized, siteId, api.groups());
     String permissions =
         api.permissions().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
 

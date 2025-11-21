@@ -38,6 +38,7 @@ import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ApiKey;
+import com.formkiq.client.model.ApiKeyPermission;
 import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.client.model.Site;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,6 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
@@ -103,7 +103,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       SystemManagementApi api = new SystemManagementApi(apiClient);
 
       AddApiKeyRequest req =
-          new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(PermissionsEnum.GOVERN);
+          new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(ApiKeyPermission.GOVERN);
 
       // when
       AddApiKeyResponse response = api.addApiKey(siteId, req);
@@ -133,7 +133,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     AuthenticationResultType token = getAdminToken();
 
     com.formkiq.client.model.AddApiKeyRequest req = new com.formkiq.client.model.AddApiKeyRequest()
-        .name(name).addPermissionsItem(PermissionsEnum.READ);
+        .name(name).addPermissionsItem(ApiKeyPermission.READ);
 
     for (String siteId : List.of(DEFAULT_SITE_ID)) {
 
@@ -155,7 +155,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
       // given
       req = new com.formkiq.client.model.AddApiKeyRequest().name(name)
-          .addPermissionsItem(PermissionsEnum.WRITE);
+          .addPermissionsItem(ApiKeyPermission.WRITE);
       apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
 
       // when
@@ -195,6 +195,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         // then
         GetApiKeysResponse apiKeys = api.getApiKeys(siteId, null, null);
         assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
+        assertNotNull(response.getApiKey());
 
         api.deleteApiKey(siteId, response.getApiKey());
       }

@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.client.model.ApiKeyPermission;
 import com.formkiq.testutils.api.ApiClientBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.s3.S3Service;
@@ -40,7 +41,6 @@ import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
-import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -195,8 +195,8 @@ public abstract class AbstractAwsIntegrationTest {
 
       SystemManagementApi api = new SystemManagementApi(client);
 
-      List<PermissionsEnum> permissions =
-          Arrays.asList(PermissionsEnum.READ, PermissionsEnum.DELETE, PermissionsEnum.WRITE);
+      List<ApiKeyPermission> permissions =
+          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.DELETE, ApiKeyPermission.WRITE);
       AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
       String apiKey = api.addApiKey(site, req).getApiKey();
 

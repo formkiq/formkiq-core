@@ -75,8 +75,8 @@ public class ApiKeysServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      String apiKey0 = this.service.createApiKey(siteId, "test1", permissions, userId);
-      String apiKey1 = this.service.createApiKey(siteId, "test2", permissions, userId);
+      String apiKey0 = this.service.createApiKey(siteId, "test1", permissions, List.of());
+      String apiKey1 = this.service.createApiKey(siteId, "test2", permissions, List.of());
 
       // then
       assertNotEquals(apiKey0, apiKey1);
@@ -119,7 +119,7 @@ public class ApiKeysServiceDynamoDbTest {
 
       for (int i = start; i < start + max; i++) {
         // when
-        this.service.createApiKey(siteId, "test_" + i, permissions, userId);
+        this.service.createApiKey(siteId, "test_" + i, permissions, List.of());
       }
 
       // then

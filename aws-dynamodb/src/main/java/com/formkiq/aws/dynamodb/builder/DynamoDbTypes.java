@@ -117,4 +117,15 @@ public interface DynamoDbTypes {
   static String toString(final AttributeValue attributeValue) {
     return attributeValue != null ? attributeValue.s() : null;
   }
+
+  /**
+   * Convert {@link AttributeValue} to {@link java.util.Collection} {@link String}.
+   *
+   * @param attributeValue {@link AttributeValue}
+   * @return String
+   */
+  static List<String> toStrings(final AttributeValue attributeValue) {
+    return attributeValue != null ? attributeValue.l().stream().map(AttributeValue::s).toList()
+        : null;
+  }
 }

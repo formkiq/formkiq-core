@@ -23,14 +23,12 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.AdminRequestHandler;
@@ -38,13 +36,13 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys". */
@@ -69,7 +67,10 @@ public class ConfigurationApiKeysRequestHandler
     String siteId = getPathParameterSiteId(event);
     Pagination<ApiKey> list = apiKeysService.list(siteId, nextToken, limit);
 
-    Map<String, Object> map = Map.of("apiKeys", list.getResults());
+    AttributeValueToMapConfig config =
+        AttributeValueToMapConfig.builder().removeDbKeys(true).build();
+    Map<String, Object> map = Map.of("apiKeys", list.getResults().stream()
+        .map(a -> new AttributeValueToMap(config).apply(a.getAttributes())).toList());
     return ApiRequestHandlerResponse.builder().ok().body(map).next(list.getNextToken()).build();
   }
 
@@ -85,23 +86,16 @@ public class ConfigurationApiKeysRequestHandler
     String siteId = getPathParameterSiteId(event);
 
     ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
-    DynamicObject body = fromBodyToDynamicObject(event);
-    validate(body);
+    AddApiKeyRequest req = JsonToObject.fromJson(awsservice, event, AddApiKeyRequest.class);
+    validate(req);
 
-    String name = body.get("name").toString();
-    Collection<ApiKeyPermission> permissions;
-
-    List<String> permissionList = body.getStringList("permissions");
-    if (!Objects.isEmpty(permissionList)) {
-      permissions = permissionList.stream().map(p -> ApiKeyPermission.valueOf(p.toUpperCase()))
-          .collect(Collectors.toList());
-    } else {
+    Collection<ApiKeyPermission> permissions = req.permissions();
+    if (Objects.isEmpty(permissions)) {
       permissions =
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
     }
 
-    String userId = authorization.getUsername();
-    String apiKey = apiKeysService.createApiKey(siteId, name, permissions, userId);
+    String apiKey = apiKeysService.createApiKey(siteId, req.name(), permissions, req.groups());
 
     return ApiRequestHandlerResponse.builder().ok().body("apiKey", apiKey).build();
   }
@@ -109,19 +103,13 @@ public class ConfigurationApiKeysRequestHandler
   /**
    * Validate.
    *
-   * @param body {@link Map}
+   * @param req {@link AddApiKeyRequest}
    * @throws ValidationException ValidationException
    */
-  private void validate(final Map<String, Object> body) throws ValidationException {
+  private void validate(final AddApiKeyRequest req) throws ValidationException {
 
-    Collection<ValidationError> errors = new ArrayList<>();
-
-    if (!body.containsKey("name")) {
-      errors.add(new ValidationErrorImpl().key("name").error("is required"));
-    }
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("name", req.name());
+    vb.check();
   }
 }

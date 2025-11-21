@@ -23,290 +23,253 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromL;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.graalvm.annotations.Reflectable;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-/**
- * 
- * {@link DynamodbRecord} for API Key.
- *
- */
-@Reflectable
-public class ApiKey implements DynamodbRecord<ApiKey>, DbKeys {
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-  /** Api Key Length. */
+/**
+ * Record representing an API key, including its DynamoDB key structure, metadata, permissions, and
+ * serialization helpers.
+ */
+public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name, String userId,
+    Date insertedDate, List<ApiKeyPermission> permissions, Collection<String> groups) {
+
+  /**
+   * Expected full length of generated API keys.
+   */
   static final int API_KEY_LENGTH = 51;
-  /** Mask Value, must be even number. */
+
+  /**
+   * Number of characters from the beginning of the API key to reveal when masking. Must be even.
+   */
   private static final int MASK = 8;
 
-  /** API Key of record. */
-  @Reflectable
-  private String apiKey;
-  /** Record inserted date. */
-  @Reflectable
-  private Date insertedDate;
-  /** Name of Api Key. */
-  @Reflectable
-  private String name;
-  /** Type of Permission. */
-  @Reflectable
-  private Collection<ApiKeyPermission> permissions;
-  /** SiteId for ApiKey. */
-  @Reflectable
-  private String siteId;
-  /** Creator of record. */
-  @Reflectable
-  private String userId;
-
   /**
-   * Get Api Key.
-   * 
-   * @return {@link String}
+   * Canonical constructor enforcing required fields and defensive copies.
+   *
+   * @param key DynamoDB key associated with this API key record
+   * @param apiKey raw API key string
+   * @param name name of the API key
+   * @param userId creating user id (optional)
+   * @param insertedDate date of insertion (non-null)
+   * @param permissions list of permissions (optional)
    */
-  public String apiKey() {
-    return this.apiKey;
+  public ApiKey {
+    Objects.requireNonNull(key, "key must not be null");
+    Objects.requireNonNull(apiKey, "apiKey must not be null");
+    Objects.requireNonNull(name, "name must not be null");
+    Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+
+    permissions = permissions == null ? List.of() : List.copyOf(permissions);
+    groups = groups == null ? List.of() : List.copyOf(groups);
+
+    insertedDate = new Date(insertedDate.getTime());
   }
 
   /**
-   * Set Api Key.
-   * 
-   * @param key {@link String}
-   * @return {@link ApiKey}
+   * Creates an ApiKey instance from a DynamoDB attribute map.
+   *
+   * @param attributes DynamoDB attribute map
+   * @return populated ApiKey record
+   * @throws NullPointerException if attributes is null
    */
-  public ApiKey apiKey(final String key) {
-    this.apiKey = key;
-    return this;
+  public static ApiKey fromAttributeMap(final Map<String, AttributeValue> attributes) {
+    Objects.requireNonNull(attributes, "attributes must not be null");
+
+    DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
+
+    String apiKey = DynamoDbTypes.toString(attributes.get("apiKey"));
+    String siteId = DynamoDbTypes.toString(attributes.get("siteId"));
+    String name = DynamoDbTypes.toString(attributes.get("name"));
+    String userId = DynamoDbTypes.toString(attributes.get("userId"));
+    Collection<String> groups = DynamoDbTypes.toStrings(attributes.get("groups"));
+    Date insertedDate = DynamoDbTypes.toDate(attributes.get("inserteddate"));
+
+    List<ApiKeyPermission> permissions = attributes.containsKey("permissions")
+        ? attributes.get("permissions").l().stream().map(AttributeValue::s)
+            .map(ApiKeyPermission::valueOf).toList()
+        : List.of();
+
+    return new ApiKey(key, siteId, apiKey, name, userId, insertedDate, permissions, groups);
   }
 
-  @Override
-  public Map<String, AttributeValue> getAttributes(final String siteIdParam) {
+  /**
+   * Converts this record into a DynamoDB attribute map suitable for storage.
+   *
+   * @return map of attribute names to AttributeValue
+   */
+  public Map<String, AttributeValue> getAttributes() {
+    DynamoDbAttributeMapBuilder map = key.getAttributesBuilder().withString("apiKey", apiKey)
+        .withStrings("groups", groups).withString("name", name).withString("userId", userId)
+        .withString("siteId", siteId).withDate("inserteddate", insertedDate);
 
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
-    Map<String, AttributeValue> map = new HashMap<>();
-    map.put(DbKeys.PK, AttributeValue.fromS(pk(siteIdParam)));
-    map.put(DbKeys.SK, AttributeValue.fromS(sk()));
-    map.put("apiKey", AttributeValue.fromS(this.apiKey));
-    map.put("name", AttributeValue.fromS(this.name));
-    map.put("userId", AttributeValue.fromS(this.userId));
-    map.put("siteId", AttributeValue.fromS(this.siteId));
-    map.put("permissions",
-        fromL(this.permissions.stream().map(p -> fromS(p.name())).collect(Collectors.toList())));
-
-    map.put(GSI1_PK, AttributeValue.fromS(pkGsi1(siteIdParam)));
-    map.put(GSI1_SK, AttributeValue.fromS(skGsi1()));
-
-    map.put(GSI2_PK, AttributeValue.fromS(pkGsi2(siteIdParam)));
-    map.put(GSI2_SK, AttributeValue.fromS(skGsi2()));
-
-    if (this.insertedDate != null) {
-      map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+    if (!permissions.isEmpty()) {
+      map.withAttributeValue("permissions",
+          fromL(permissions.stream().map(p -> fromS(p.name())).collect(Collectors.toList())));
     }
 
-    return map;
+    return map.build();
   }
 
-  @Override
-  public Map<String, AttributeValue> getDataAttributes() {
-    return null;
+  /**
+   * Static helper that masks an API key.
+   *
+   * @param keyValue raw API key
+   * @return masked API key representation
+   */
+  public static String mask(final String keyValue) {
+    return keyValue != null && keyValue.length() == API_KEY_LENGTH ? keyValue.subSequence(0, MASK)
+        + "****************" + keyValue.substring(keyValue.length() - MASK / 2) : keyValue;
   }
 
-  @Override
-  public ApiKey getFromAttributes(final String siteIdParam,
-      final Map<String, AttributeValue> attrs) {
+  /**
+   * Creates a builder for constructing {@link ApiKey} records.
+   *
+   * @return new Builder instance
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
 
-    ApiKey record = new ApiKey().apiKey(ss(attrs, "apiKey")).name(ss(attrs, "name"))
-        .userId(ss(attrs, "userId")).permissions(toPermissions(attrs)).siteId(ss(attrs, "siteId"));
+  /**
+   * Builder for {@link ApiKey}, allowing fluent construction and key computation.
+   */
+  public static class Builder implements DynamoDbEntityBuilder<ApiKey> {
 
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+    /** Raw API key value. */
+    private String apiKey;
 
-    if (attrs.containsKey("inserteddate")) {
-      try {
-        record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
-      } catch (ParseException e) {
-        e.printStackTrace();
-        throw new IllegalArgumentException("invalid 'inserteddate'");
-      }
+    /** Name for the API key. */
+    private String name;
+
+    /** User who created the API key. */
+    private String userId;
+
+    /** Time the record was inserted. */
+    private Date insertedDate = new Date();
+
+    /** Permission list associated with this API key. */
+    private Collection<ApiKeyPermission> permissions = List.of();
+    /** Groups associated with this API key. */
+    private Collection<String> groups = List.of();
+
+    /**
+     * Sets the raw API key.
+     *
+     * @param key API key value
+     * @return this builder instance
+     */
+    public Builder apiKey(final String key) {
+      this.apiKey = key;
+      return this;
     }
 
-    return record;
-  }
+    /**
+     * Builds a populated {@link ApiKey} record using the provided siteId.
+     *
+     * @param siteId site identifier used when constructing the DynamoDB key
+     * @return new ApiKey record
+     */
+    @Override
+    public ApiKey build(final String siteId) {
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
-  /**
-   * Get Inserted Date.
-   * 
-   * @return {@link Date}
-   */
-  public Date insertedDate() {
-    return this.insertedDate;
-  }
+      DynamoDbKey key = buildKey(siteId);
+      List<ApiKeyPermission> perms = permissions == null ? List.of() : List.copyOf(permissions);
+      List<String> g = groups == null ? List.of() : List.copyOf(groups);
 
-  /**
-   * Set Inserted Date.
-   * 
-   * @param date {@link Date}
-   * @return {@link ApiKey}
-   */
-  public ApiKey insertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  /**
-   * Mask API Key.
-   * 
-   * @return {@link String}
-   */
-  public String mask() {
-    return this.apiKey != null && this.apiKey.length() == API_KEY_LENGTH
-        ? this.apiKey.subSequence(0, MASK) + "****************"
-            + this.apiKey.substring(this.apiKey.length() - MASK / 2)
-        : this.apiKey;
-  }
-
-  /**
-   * Get Api Key Name.
-   * 
-   * @return {@link String}
-   */
-  public String name() {
-    return this.name;
-  }
-
-  /**
-   * Set Api Key Name.
-   * 
-   * @param apiKeyName {@link String}
-   * @return {@link ApiKey}
-   */
-  public ApiKey name(final String apiKeyName) {
-    this.name = apiKeyName;
-    return this;
-  }
-
-  /**
-   * Get Api Key Permissions.
-   * 
-   * @return {@link Collection} {@link ApiKeyPermission}
-   */
-  public Collection<ApiKeyPermission> permissions() {
-    return this.permissions;
-  }
-
-  /**
-   * Set Api Key Permissions.
-   * 
-   * @param apiKeyPermissions {@link Collection} {@link ApiKeyPermission}
-   * @return {@link ApiKey}
-   */
-  public ApiKey permissions(final Collection<ApiKeyPermission> apiKeyPermissions) {
-    this.permissions = apiKeyPermissions;
-    return this;
-  }
-
-  @Override
-  public String pk(final String siteIdParam) {
-    return "apikeys" + TAG_DELIMINATOR;
-  }
-
-  @Override
-  public String pkGsi1(final String siteIdParam) {
-    return createDatabaseKey(siteIdParam, pk(null));
-  }
-
-  @Override
-  public String pkGsi2(final String siteIdParam) {
-    return createDatabaseKey(siteIdParam, pk(null));
-  }
-
-  /**
-   * Get SiteId.
-   * 
-   * @return {@link String}
-   */
-  public String siteId() {
-    return this.siteId;
-  }
-
-  /**
-   * Set SiteId.
-   * 
-   * @param siteIdParam {@link String}
-   * @return {@link ApiKey}
-   */
-  public ApiKey siteId(final String siteIdParam) {
-    this.siteId = !isEmpty(siteIdParam) ? siteIdParam : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    return this;
-  }
-
-  @Override
-  public String sk() {
-    if (this.apiKey == null) {
-      throw new IllegalArgumentException("'apiKey' is required");
-    }
-    return "apikey" + TAG_DELIMINATOR + this.apiKey;
-  }
-
-  @Override
-  public String skGsi1() {
-    return "apikey" + TAG_DELIMINATOR + this.name + TAG_DELIMINATOR + this.apiKey;
-  }
-
-  @Override
-  public String skGsi2() {
-    return "apikey" + TAG_DELIMINATOR + mask();
-  }
-
-  /**
-   * To Permissions.
-   * 
-   * @param attrs {@link Map} {@link AttributeValue}
-   * @return {@link Collection} {@link ApiKeyPermission}
-   */
-  private Collection<ApiKeyPermission> toPermissions(final Map<String, AttributeValue> attrs) {
-
-    Collection<ApiKeyPermission> list = Collections.emptyList();
-
-    if (attrs.containsKey("permissions")) {
-      list = attrs.get("permissions").l().stream().map(p -> ApiKeyPermission.valueOf(p.s()))
-          .collect(Collectors.toList());
+      return new ApiKey(key, getSiteIdName(siteId), apiKey, name, userId, insertedDate, perms, g);
     }
 
-    return list;
-  }
+    /**
+     * Computes the DynamoDB key for this API key.
+     *
+     * @param siteId site identifier
+     * @return constructed DynamoDbKey
+     */
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+      Objects.requireNonNull(apiKey, "apiKey must not be null");
+      Objects.requireNonNull(name, "name must not be null");
 
-  /**
-   * Get Created by user.
-   * 
-   * @return {@link String}
-   */
-  public String userId() {
-    return this.userId;
-  }
+      String pk = "apikeys#";
+      String sk = "apikey#" + apiKey;
+      String gsi1Pk = "apikeys#";
+      String gsi1Sk = "apikey#" + name + "#" + apiKey;
+      String gsi2Pk = "apikeys#";
+      String gsi2Sk = "apikey#" + mask(apiKey);
 
-  /**
-   * Set Create by User.
-   * 
-   * @param createdBy {@link String}
-   * @return {@link ApiKey}
-   */
-  public ApiKey userId(final String createdBy) {
-    this.userId = createdBy;
-    return this;
+      return DynamoDbKey.builder().pk(null, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
+    }
+
+    /**
+     * Sets the list of permissions granted to this API key.
+     *
+     * @param apiKeyGroups list of Groups values
+     * @return this builder instance
+     */
+    public Builder groups(final Collection<String> apiKeyGroups) {
+      this.groups = apiKeyGroups;
+      return this;
+    }
+
+    /**
+     * Sets the insertion timestamp.
+     *
+     * @param date timestamp of record creation
+     * @return this builder instance
+     */
+    public Builder insertedDate(final Date date) {
+      this.insertedDate = date == null ? null : new Date(date.getTime());
+      return this;
+    }
+
+    /**
+     * Sets the display name of the API key.
+     *
+     * @param apiKeyName name of the API key
+     * @return this builder instance
+     */
+    public Builder name(final String apiKeyName) {
+      this.name = apiKeyName;
+      return this;
+    }
+
+    /**
+     * Sets the list of permissions granted to this API key.
+     *
+     * @param apiKeyPermissions list of ApiKeyPermission values
+     * @return this builder instance
+     */
+    public Builder permissions(final Collection<ApiKeyPermission> apiKeyPermissions) {
+      this.permissions = apiKeyPermissions;
+      return this;
+    }
+
+    /**
+     * Sets the user who created the API key.
+     *
+     * @param user user id
+     * @return this builder instance
+     */
+    public Builder userId(final String user) {
+      this.userId = user;
+      return this;
+    }
   }
 }
