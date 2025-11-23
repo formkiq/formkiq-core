@@ -84,7 +84,7 @@ public class DocumentsRestrictionsMaxContentLengthTest {
   public void testIsViolated01() {
     // given
     String siteId = ID.uuid();
-    SiteConfiguration config = new SiteConfiguration();
+    SiteConfiguration config = SiteConfiguration.builder().build(siteId);
     DocumentItem item = new DocumentItemDynamoDb();
 
     // when
@@ -103,7 +103,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     String siteId = ID.uuid();
 
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("10");
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
     DocumentItem item = new DocumentItemDynamoDb();
 
@@ -126,7 +127,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     DocumentItem item = new DocumentItemDynamoDb();
     item.setContentLength(contentLength);
 
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("10");
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
 
     // when
@@ -146,7 +148,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     Long contentLength = Long.valueOf("15");
     String siteId = ID.uuid();
 
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("10");
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
     DocumentItem item = new DocumentItemDynamoDb();
     item.setContentLength(contentLength);
@@ -168,7 +171,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     String siteId = ID.uuid();
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("10");
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
 
     DocumentItem item = new DocumentItemDynamoDb();

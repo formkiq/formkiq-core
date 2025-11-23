@@ -49,6 +49,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -174,7 +175,7 @@ public class DocumentsUploadRequestHandler
         ? Long.valueOf(query.get("contentLength"))
         : null;
 
-    if (!Strings.isEmpty(siteConfiguration.getMaxContentLengthBytes())) {
+    if (!Strings.isEmpty(siteConfiguration.maxContentLengthBytes())) {
 
       if (contentLength == null) {
         throw new BadException(
@@ -186,7 +187,7 @@ public class DocumentsUploadRequestHandler
         if (this.restrictionMaxContentLength.isViolated(awsservice, siteConfiguration, siteId,
             item)) {
           throw new BadException("'contentLength' cannot exceed "
-              + siteConfiguration.getMaxContentLengthBytes() + " bytes");
+              + siteConfiguration.maxContentLengthBytes() + " bytes");
         }
       }
     }
@@ -211,12 +212,14 @@ public class DocumentsUploadRequestHandler
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get(siteId);
 
-    validateMaxDocuments(awsservice, config, siteId);
+    ValidationBuilder vb = new ValidationBuilder();
+    validateMaxDocuments(vb, awsservice, config, siteId);
+    vb.check();
 
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
         siteId, item, new ArrayList<>(), null).ok().build();
 
-    if (!Strings.isEmpty(config.getMaxDocuments())) {
+    if (!Strings.isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
@@ -297,7 +300,7 @@ public class DocumentsUploadRequestHandler
     ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
         siteId, request, tags, documentAttributes).build();
 
-    if (!isEmpty(config.getMaxDocuments())) {
+    if (!isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
     }
 
@@ -350,23 +353,24 @@ public class DocumentsUploadRequestHandler
     }
   }
 
-  private void validateMaxDocuments(final AwsServiceCache awsservice,
+  private void validateMaxDocuments(final ValidationBuilder vb, final AwsServiceCache awsservice,
       final SiteConfiguration config, final String siteId) throws BadException {
 
     if (this.restrictionMaxDocuments.isViolated(awsservice, config, siteId, null)) {
-      throw new BadException("Max Number of Documents reached");
+      vb.addError(null, "Max Number of Documents reached");
     }
   }
 
   private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
       final String siteId, final AddDocumentRequest item) throws BadException, ValidationException {
 
+    ValidationBuilder vb = new ValidationBuilder();
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
+    vb.addErrors(errors);
+    this.documentValidator.validateContentType(config, item.getContentType(), vb);
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    validateMaxDocuments(vb, awsservice, config, siteId);
 
-    validateMaxDocuments(awsservice, config, siteId);
+    vb.check();
   }
 }

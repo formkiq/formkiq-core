@@ -108,6 +108,10 @@ public interface DynamoDbTypes {
     return av.l().stream().map(l -> new AttributeValueToMap(null).apply(l.m())).toList();
   }
 
+  static Long toLong(AttributeValue attributeValue) {
+    return attributeValue != null ? Long.valueOf(attributeValue.n()) : null;
+  }
+
   /**
    * Convert {@link AttributeValue} to {@link String}.
    *

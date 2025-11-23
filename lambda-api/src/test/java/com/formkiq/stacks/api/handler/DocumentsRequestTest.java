@@ -61,6 +61,11 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -804,6 +809,68 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save new File with and without allow type.
+   *
+   */
+  @Test
+  public void testPostAllowlist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addAllowContentType("application/json")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      String documentId = response.response().getDocumentId();
+      assertNotNull(documentId);
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      var addResponse =
+          new AddDocumentUploadRequestBuilder().contentType("text/plain").submit(client, siteId);
+
+      // then
+      assertNotNull(addResponse.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, addResponse.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          addResponse.exception().getResponseBody());
+    }
+  }
+
+  /**
    * Save new File with valid SHA-256.
    *
    * @throws ApiException ApiException
@@ -873,6 +940,56 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Save new File with and without deny type.
+   *
+   */
+  @Test
+  public void testPostDenylist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addDenyContentType("text/plain")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      String documentId = response.response().getDocumentId();
+      assertNotNull(documentId);
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
     }
   }
 

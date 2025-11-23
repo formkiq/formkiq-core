@@ -11985,6 +11985,8 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications"
+                document:
+                  $ref: "#/components/schemas/DocumentConfig"
                 ocr:
                   $ref: "#/components/schemas/OcrConfig"
                 google:
@@ -12496,6 +12498,8 @@ Resources:
                 notificationEmail:
                   type: "string"
                   description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
+                document:
+                  $ref: "#/components/schemas/DocumentConfig"
                 ocr:
                   $ref: "#/components/schemas/OcrConfig"
                 google:
@@ -12527,6 +12531,33 @@ Resources:
                 ocrTransactionCount:
                   type: "number"
                   description: "The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)"
+
+            DocumentConfig:
+              type: "object"
+              properties:
+                contentTypes:
+                  $ref: "#/components/schemas/DocumentConfigContentTypes"
+
+            DocumentConfigContentTypes:
+              type: object
+              properties:
+                allowlist:
+                  type: array
+                  items:
+                    type: string
+                    description: Allowed MIME types
+                  example:
+                    - application/pdf
+                    - image/png
+                    - image/jpeg
+                denylist:
+                  type: array
+                  items:
+                    type: string
+                    description: Disallowed MIME types
+                  example:
+                    - application/x-msdownload
+                    - application/x-sh
 
             OcrConfig:
               type: "object"

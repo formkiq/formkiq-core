@@ -427,7 +427,8 @@ public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
       String name = ID.uuid();
 
       ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-      SiteConfiguration siteConfig = new SiteConfiguration().setDocumentTimeToLive("1000");
+      SiteConfiguration siteConfig =
+          SiteConfiguration.builder().documentTimeToLive("1000").build(siteId);
       configService.save(siteId, siteConfig);
 
       String id = getWebhooksService().saveWebhook(siteId, name, "joe", null, "true");

@@ -98,7 +98,7 @@ public class PublicWebhooksRequestHandler
       item.put("TimeToLive", hook.get("TimeToLive"));
     } else {
       ConfigService configService = awsservice.getExtension(ConfigService.class);
-      String ttl = configService.get(siteId).getDocumentTimeToLive();
+      String ttl = configService.get(siteId).documentTimeToLive();
       if (ttl != null) {
         item.put("TimeToLive", ttl);
       }

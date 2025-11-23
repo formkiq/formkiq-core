@@ -46,7 +46,7 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
       final String siteId, final DocumentItem item) {
 
     boolean isViolated = false;
-    String maxDocuments = config.getMaxDocuments();
+    String maxDocuments = config.maxDocuments();
 
     if (!Strings.isEmpty(maxDocuments)) {
 

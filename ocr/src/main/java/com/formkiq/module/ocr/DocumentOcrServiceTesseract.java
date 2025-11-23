@@ -270,23 +270,23 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     boolean invalid = false;
 
     SiteConfiguration config = configService.get(siteId);
-    SiteConfigurationOcr ocr = config.getOcr();
+    SiteConfigurationOcr ocr = config.ocr();
 
     if (ocr != null) {
 
-      if (ocr.getMaxTransactions() > 0) {
+      if (ocr.maxTransactions() > 0) {
 
         long count = configService.getIncrement(siteId, CONFIG_OCR_COUNT);
-        if (count >= ocr.getMaxTransactions()) {
+        if (count >= ocr.maxTransactions()) {
           invalid = true;
         } else {
           configService.increment(siteId, CONFIG_OCR_COUNT);
         }
       }
 
-      if (ocr.getMaxPagesPerTransaction() > 0
-          && (getOcrNumberOfPages(request) > ocr.getMaxPagesPerTransaction())) {
-        request.setOcrNumberOfPages("" + ocr.getMaxPagesPerTransaction());
+      if (ocr.maxPagesPerTransaction() > 0
+          && (getOcrNumberOfPages(request) > ocr.maxPagesPerTransaction())) {
+        request.setOcrNumberOfPages("" + ocr.maxPagesPerTransaction());
       }
     }
 

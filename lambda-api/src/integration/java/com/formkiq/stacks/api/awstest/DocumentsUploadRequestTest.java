@@ -176,7 +176,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet02() throws Exception {
     // given
     String siteId = UUID.randomUUID().toString();
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    SiteConfiguration config = SiteConfiguration.builder().maxContentLengthBytes("5").build(siteId);
     configService.save(siteId, config);
 
     for (ApiClient client : getApiClients(siteId)) {
@@ -205,7 +205,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet03() throws Exception {
     // given
     final int contentLength = 100;
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("5");
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("5").build(SITEID0);
     configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
@@ -233,7 +234,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet04() throws Exception {
     // given
     final int contentLength = 5;
-    SiteConfiguration config = new SiteConfiguration().setMaxContentLengthBytes("" + contentLength);
+    SiteConfiguration config =
+        SiteConfiguration.builder().maxContentLengthBytes("5").build(SITEID0);
     configService.save(SITEID0, config);
 
     for (ApiClient client : getApiClients(SITEID0)) {
@@ -259,7 +261,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     String siteId = ID.uuid();
-    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    SiteConfiguration config = SiteConfiguration.builder().maxContentLengthBytes("1").build(siteId);
     configService.save(siteId, config);
     TimeUnit.SECONDS.sleep(1);
 

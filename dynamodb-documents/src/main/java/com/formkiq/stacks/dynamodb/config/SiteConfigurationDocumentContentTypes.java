@@ -25,10 +25,8 @@ package com.formkiq.stacks.dynamodb.config;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * Site Configuration Docusign.
- */
+import java.util.List;
+
 @Reflectable
-public record SiteConfigurationDocusign(String userId, String integrationKey, String rsaPrivateKey,
-    String hmacSignature) {
+public record SiteConfigurationDocumentContentTypes(List<String> allowlist, List<String> denylist) {
 }

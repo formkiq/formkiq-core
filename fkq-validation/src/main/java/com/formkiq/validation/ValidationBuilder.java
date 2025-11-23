@@ -165,6 +165,22 @@ public class ValidationBuilder {
   }
 
   /**
+   * At list 1 value in the {@link List} must be not null.
+   * 
+   * @param key {@link String}
+   * @param values {@link List} {@link Object}
+   * @param errorMessage {@link String}
+   */
+  public void isRequired(final String key, final List<Object> values, final String errorMessage) {
+
+    long presentCount = values.stream().filter(Objects::nonNull).count();
+
+    if (presentCount == 0) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+  }
+
+  /**
    * Validate Field is required.
    *
    * @param key {@link String}

@@ -51,8 +51,8 @@ public interface ApiValidator {
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     ActionsValidator validator = new ActionsValidatorImpl(db);
 
-    List<Collection<ValidationError>> errors = validator.validation(siteId, actions,
-        config.getChatGptApiKey(), config.getNotificationEmail());
+    List<Collection<ValidationError>> errors =
+        validator.validation(siteId, actions, config.chatGptApiKey(), config.notificationEmail());
 
     Optional<Collection<ValidationError>> firstError =
         errors.stream().filter(e -> !e.isEmpty()).findFirst();

@@ -623,7 +623,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testPost06() throws Exception {
     // given
-    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    SiteConfiguration config = SiteConfiguration.builder().maxDocuments("1").build(SITEID1);
     configService.save(SITEID1, config);
 
     ApiClient c = getApiClients(SITEID1).get(0);

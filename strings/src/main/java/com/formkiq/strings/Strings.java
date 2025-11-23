@@ -233,6 +233,17 @@ public class Strings {
   }
 
   /**
+   * Return text or elseText if the text is empty.
+   *
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String getNotNullOrDefault(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
+  }
+
+  /**
    * Returns a list containing the elements in list1 but not in list2.
    *
    * @param <T> Type of {@link List}

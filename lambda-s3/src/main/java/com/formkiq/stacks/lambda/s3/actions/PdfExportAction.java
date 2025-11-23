@@ -72,14 +72,14 @@ public class PdfExportAction implements DocumentAction {
     boolean valid = !Strings.isEmpty(deepLink) && deepLink.startsWith(GOOGLE_DOCS_PREFIX);
 
     SiteConfiguration obj = configService.get(siteId);
-    SiteConfigurationGoogle google = obj.getGoogle();
+    SiteConfigurationGoogle google = obj.google();
 
     String googleWorkloadIdentityAudience = null;
     String googleWorkloadIdentityServiceAccount = null;
 
     if (google != null) {
-      googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
-      googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+      googleWorkloadIdentityAudience = google.workloadIdentityAudience();
+      googleWorkloadIdentityServiceAccount = google.workloadIdentityServiceAccount();
     }
 
     if (isEmpty(googleWorkloadIdentityAudience) || isEmpty(googleWorkloadIdentityServiceAccount)) {

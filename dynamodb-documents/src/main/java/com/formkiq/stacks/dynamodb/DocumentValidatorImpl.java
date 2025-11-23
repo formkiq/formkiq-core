@@ -25,10 +25,16 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentContentTypes;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * 
@@ -68,5 +74,23 @@ public class DocumentValidatorImpl implements DocumentValidator {
     }
 
     return errors;
+  }
+
+  @Override
+  public void validateContentType(final SiteConfiguration config, final String contentType,
+      final ValidationBuilder vb) {
+
+    if (config != null && config.document() != null) {
+
+      SiteConfigurationDocumentContentTypes contentTypes = config.document().contentTypes();
+      List<String> allowlist = notNull(contentTypes.allowlist());
+      List<String> denylist = notNull(contentTypes.denylist());
+
+      if (!allowlist.isEmpty() && !allowlist.contains(contentType)) {
+        vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
+      } else if (!denylist.isEmpty() && denylist.contains(contentType)) {
+        vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
+      }
+    }
   }
 }

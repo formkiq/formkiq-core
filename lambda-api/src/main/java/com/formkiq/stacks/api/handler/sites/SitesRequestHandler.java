@@ -70,15 +70,15 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       Map<String, Object> config = new HashMap<>();
       obj.put("config", config);
 
-      config.put("maxContentLengthBytes", siteConfig.getMaxContentLengthBytes());
-      config.put("maxDocuments", siteConfig.getMaxDocuments());
-      config.put("maxWebhooks", siteConfig.getMaxWebhooks());
+      config.put("maxContentLengthBytes", siteConfig.maxContentLengthBytes());
+      config.put("maxDocuments", siteConfig.maxDocuments());
+      config.put("maxWebhooks", siteConfig.maxWebhooks());
 
-      SiteConfigurationOcr ocr = siteConfig.getOcr();
+      SiteConfigurationOcr ocr = siteConfig.ocr();
       if (ocr != null) {
         Map<String, Object> o = new HashMap<>();
-        o.put("maxTransactions", ocr.getMaxTransactions());
-        o.put("maxPagesPerTransaction", ocr.getMaxPagesPerTransaction());
+        o.put("maxTransactions", ocr.maxTransactions());
+        o.put("maxPagesPerTransaction", ocr.maxPagesPerTransaction());
         config.put("ocr", o);
       }
 

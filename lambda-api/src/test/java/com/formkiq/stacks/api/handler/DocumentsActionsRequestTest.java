@@ -726,7 +726,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, actions.size());
 
       // given - engine
-      this.configService.save(siteId, new SiteConfiguration().setChatGptApiKey("ABC"));
+      SiteConfiguration conf = SiteConfiguration.builder().chatGptApiKey("ABC").build(siteId);
+      this.configService.save(siteId, conf);
 
       req = new AddDocumentActionsRequest()
           .actions(List.of(new AddAction().type(DocumentActionType.DOCUMENTTAGGING)
@@ -792,8 +793,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken("Admins");
       String documentId = saveDocument(siteId);
-      SiteConfiguration config = new SiteConfiguration().setNotificationEmail("test@formkiq.com");
-
+      SiteConfiguration config =
+          SiteConfiguration.builder().notificationEmail("test@formkiq.com").build(siteId);
       this.configService.save(siteId, config);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
@@ -889,8 +890,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.db.putItem(new Queue().documentId(queueId).name("test").getAttributes(siteId));
 
       String documentId = saveDocument(siteId);
-      SiteConfiguration config = new SiteConfiguration().setNotificationEmail("test@formkiq.com");
-
+      SiteConfiguration config =
+          SiteConfiguration.builder().notificationEmail("test@formkiq.com").build(siteId);
       this.configService.save(siteId, config);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(Collections

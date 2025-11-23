@@ -27,6 +27,8 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentConfig;
+import com.formkiq.client.model.DocumentConfigContentTypes;
 import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -105,8 +108,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // given
     String siteId = DEFAULT_SITE_ID;
     String group = "Admins";
-    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
 
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(siteId);
     this.config.save(siteId, siteConfig);
 
     setBearerToken(group);
@@ -135,7 +139,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // given
     String siteId = DEFAULT_SITE_ID;
 
-    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(siteId);
     this.config.save(siteId, siteConfig);
 
     String group = "Admins";
@@ -165,7 +170,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    SiteConfiguration siteConfig = new SiteConfiguration().setChatGptApiKey("somevalue");
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(null);
     this.config.save(null, siteConfig);
 
     // when
@@ -191,10 +197,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     String group = "Admins";
     setBearerToken(group);
 
-    SiteConfiguration siteConfig0 = new SiteConfiguration().setChatGptApiKey("somevalue");
+    SiteConfiguration siteConfig0 =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(null);
     this.config.save(null, siteConfig0);
 
-    SiteConfiguration siteConfig1 = new SiteConfiguration().setChatGptApiKey("anothervalue");
+    SiteConfiguration siteConfig1 =
+        SiteConfiguration.builder().chatGptApiKey("anothervalue").build(siteId);
     this.config.save(siteId, siteConfig1);
 
     // when
@@ -454,7 +462,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"missing required body parameters\"}", e.getResponseBody());
+      assertEquals("{\"errors\":[{\"error\":\"missing required body parameters\"}]}",
+          e.getResponseBody());
     }
   }
 
@@ -490,5 +499,112 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
     assertEquals("-1", Objects.formatDouble(
         java.util.Objects.requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
+  }
+
+  /**
+   * PATCH contenttype only without allow or deny.
+   *
+   */
+  @Test
+  public void testPatchContentType() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"document.contentTypes\","
+          + "\"error\":\"Only set either 'allowlist' or 'denylist'\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH content type allow and deny.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowAndDeny() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()
+            .addAllowlistItem("text/plain").addDenylistItem("text/plain")));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"document.contentTypes\","
+          + "\"error\":\"Only set either 'allowlist' or 'denylist'\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH content type allowed.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowed() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocumentConfig doc = configuration.getDocument();
+    assertNotNull(doc);
+    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
+    assertNotNull(contentTypes);
+    assertEquals("text/plain", String.join(",", notNull(contentTypes.getAllowlist())));
+    assertEquals("", String.join(",", notNull(contentTypes.getDenylist())));
+  }
+
+  /**
+   * PATCH content type deny.
+   *
+   */
+  @Test
+  public void testPatchContentTypeDeny() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addDenylistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocumentConfig doc = configuration.getDocument();
+    assertNotNull(doc);
+    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
+    assertNotNull(contentTypes);
+    assertEquals("", String.join(",", notNull(contentTypes.getAllowlist())));
+    assertEquals("text/plain", String.join(",", notNull(contentTypes.getDenylist())));
   }
 }

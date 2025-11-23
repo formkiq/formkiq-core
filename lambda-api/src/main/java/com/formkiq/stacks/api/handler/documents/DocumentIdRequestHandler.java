@@ -71,9 +71,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}". */
@@ -226,12 +225,12 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
             .apply(request);
 
-    validatePatch(awsservice, siteId, documentId, item, request);
+    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
+    validatePatch(awsservice, config, siteId, documentId, item, request);
 
     awsservice.getLogger()
         .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
-    SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
     List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
         config, siteId, request, true);
 
@@ -270,15 +269,16 @@ public class DocumentIdRequestHandler
    * Validate Patch Request.
    *
    * @param awsservice {@link AwsServiceCache}
+   * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param doc {@link DocumentItem}
    * @param request {@link AddDocumentRequest}
    * @throws Exception Exception
    */
-  private void validatePatch(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final DocumentItem doc, final AddDocumentRequest request)
-      throws Exception {
+  private void validatePatch(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final String documentId, final DocumentItem doc,
+      final AddDocumentRequest request) throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
     DocumentItem item = docService.findDocument(siteId, documentId);
@@ -291,17 +291,18 @@ public class DocumentIdRequestHandler
     }
 
     Collection<ValidationError> errors = this.documentValidator.validate(metadata);
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.addErrors(errors);
+
+    this.documentValidator.validateContentType(config, request.getContentType(), vb);
 
     boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.getDeepLinkPath());
     boolean emptyContent = isEmpty(request.getContent());
 
     if (!emptyDeepLink && !emptyContent) {
-      errors
-          .add(new ValidationErrorImpl().error("both 'content', and 'deepLinkPath' cannot be set"));
+      vb.addError(null, "both 'content', and 'deepLinkPath' cannot be set");
     }
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    vb.check();
   }
 }

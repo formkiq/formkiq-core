@@ -23,13 +23,16 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.strings.Strings.getNotNullOrDefault;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -37,7 +40,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
@@ -48,12 +50,15 @@ import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocument;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentContentTypes;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocusign;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -97,23 +102,37 @@ public class ConfigurationRequestHandler
     ConfigService configService = awsservice.getExtension(ConfigService.class);
 
     SiteConfiguration obj = configService.get(siteId);
-    obj.setChatGptApiKey(mask(obj.getChatGptApiKey(), CHAT_GPT_MASK));
+    String chatApiKey = mask(obj.chatGptApiKey(), CHAT_GPT_MASK);
 
-    // hide from API
-    obj.setDocumentTimeToLive(null);
-    obj.setWebhookTimeToLive(null);
-
-    SiteConfigurationDocusign docusign = obj.getDocusign();
+    SiteConfigurationDocusign docusign = obj.docusign();
     if (docusign != null) {
-      docusign.setHmacSignature(mask(docusign.getHmacSignature(), HMAC_SIG_KEY_MASK));
-      docusign.setRsaPrivateKey(mask(docusign.getRsaPrivateKey(), RSA_PRIVATE_KEY_MASK));
+      docusign = new SiteConfigurationDocusign(docusign.userId(), docusign.integrationKey(),
+          mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
+          mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK));
     }
 
-    Gson gson = GsonUtil.getInstance();
+    obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
+        getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
+        getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
+        getNotNullOrDefault(obj.notificationEmail(), ""),
+        Objects.getNotNullOrDefault(obj.document(), new SiteConfigurationDocument(null)),
+        Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
+        Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)), Objects
+            .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
+        null, null);
+
+    Gson gson = new GsonBuilder().serializeNulls().create();
     String json = gson.toJson(obj);
     Map<String, Object> map = gson.fromJson(json, Map.class);
 
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
+  }
+
+  private List<Object> getConfigValues(final SiteConfiguration config) {
+    return Arrays.asList(config.chatGptApiKey(), config.maxContentLengthBytes(),
+        config.maxDocuments(), config.maxWebhooks(), config.notificationEmail(), config.document(),
+        config.ocr(), config.google(), config.docusign(), config.documentTimeToLive(),
+        config.webhookTimeToLive());
   }
 
   @Override
@@ -159,11 +178,11 @@ public class ConfigurationRequestHandler
 
     String siteId = getPathParameterSiteId(event);
     SiteConfiguration config = JsonToObject.fromJson(awsservice, event, SiteConfiguration.class);
+    config = SiteConfiguration.builder().configuration(config).build(siteId);
     validate(awsservice, config);
 
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     if (configService.save(siteId, config)) {
-
       return ApiRequestHandlerResponse.builder().ok().body("message", "Config saved").build();
     }
 
@@ -173,9 +192,10 @@ public class ConfigurationRequestHandler
   private void validate(final AwsServiceCache awsservice, final SiteConfiguration config)
       throws ValidationException {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired(null, getConfigValues(config), "missing required body parameters");
 
-    String notificationEmail = config.getNotificationEmail();
+    String notificationEmail = config.notificationEmail();
     if (notificationEmail != null) {
 
       initSes(awsservice);
@@ -185,53 +205,66 @@ public class ConfigurationRequestHandler
           .filter(i -> i.equals(notificationEmail)).findFirst();
 
       if (o.isEmpty()) {
-        errors.add(new ValidationErrorImpl().key("notificationEmail")
-            .error("'notificationEmail' is not setup in AWS SES"));
+        vb.addError("notificationEmail", "'notificationEmail' is not setup in AWS SES");
       }
     }
 
-    validateGoogle(config, errors);
-    validateDocusign(config, errors);
+    validateGoogle(config, vb);
+    validateDocument(config, vb);
+    validateDocusign(config, vb);
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
+    vb.check();
+  }
+
+  private void validateDocument(final SiteConfiguration config, final ValidationBuilder vb) {
+
+    SiteConfigurationDocument document = config.document();
+
+    if (document != null) {
+
+      SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
+      if (contentTypes != null) {
+        boolean hasAllowlist = !notNull(contentTypes.allowlist()).isEmpty();
+        boolean hasDenylist = !notNull(contentTypes.denylist()).isEmpty();
+
+        if (hasAllowlist == hasDenylist) {
+          vb.addError("document.contentTypes", "Only set either 'allowlist' or 'denylist'");
+        }
+      }
     }
   }
 
-  private void validateDocusign(final SiteConfiguration config,
-      final Collection<ValidationError> errors) {
+  private void validateDocusign(final SiteConfiguration config, final ValidationBuilder vb) {
 
-    SiteConfigurationDocusign docusign = config.getDocusign();
+    SiteConfigurationDocusign docusign = config.docusign();
 
     if (docusign != null) {
-      String docusignUserId = docusign.getUserId();
-      String docusignIntegrationKey = docusign.getIntegrationKey();
-      String docusignRsaPrivateKey = docusign.getRsaPrivateKey();
+      String docusignUserId = docusign.userId();
+      String docusignIntegrationKey = docusign.integrationKey();
+      String docusignRsaPrivateKey = docusign.rsaPrivateKey();
 
       if (!Strings.isEmpty(docusignUserId, docusignIntegrationKey, docusignRsaPrivateKey)) {
-        errors.add(new ValidationErrorImpl().key("docusign")
-            .error("all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
-                + "are required for docusign setup"));
+        vb.addError("docusign",
+            "all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
+                + "are required for docusign setup");
       } else if (docusignRsaPrivateKey != null && !isValidRsaPrivateKey(docusignRsaPrivateKey)) {
-        errors.add(new ValidationErrorImpl().key("docusignRsaPrivateKey")
-            .error("invalid RSA Private Key"));
+        vb.addError("docusignRsaPrivateKey", "invalid RSA Private Key");
       }
     }
   }
 
-  private void validateGoogle(final SiteConfiguration config,
-      final Collection<ValidationError> errors) {
+  private void validateGoogle(final SiteConfiguration config, final ValidationBuilder vb) {
 
-    SiteConfigurationGoogle google = config.getGoogle();
+    SiteConfigurationGoogle google = config.google();
 
     if (google != null) {
-      String googleWorkloadIdentityAudience = google.getWorkloadIdentityAudience();
-      String googleWorkloadIdentityServiceAccount = google.getWorkloadIdentityServiceAccount();
+      String googleWorkloadIdentityAudience = google.workloadIdentityAudience();
+      String googleWorkloadIdentityServiceAccount = google.workloadIdentityServiceAccount();
 
       if (!Strings.isEmpty(googleWorkloadIdentityAudience, googleWorkloadIdentityServiceAccount)) {
-        errors.add(new ValidationErrorImpl().key("google")
-            .error("all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
-                + "are required for google setup"));
+        vb.addError("google",
+            "all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
+                + "are required for google setup");
       }
     }
   }

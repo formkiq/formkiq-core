@@ -110,6 +110,18 @@ public class Objects {
   }
 
   /**
+   * Returns the {@link Object} or default value.
+   * 
+   * @param o {@link java.util.Objects}
+   * @param defaultValue {@link Object}
+   * @param <T> Type of Object
+   * @return {@link Object}
+   */
+  public static <T> T getNotNullOrDefault(final T o, final T defaultValue) {
+    return o != null ? o : defaultValue;
+  }
+
+  /**
    * Is {@link Collection} empty.
    * 
    * @param c {@link Collection}

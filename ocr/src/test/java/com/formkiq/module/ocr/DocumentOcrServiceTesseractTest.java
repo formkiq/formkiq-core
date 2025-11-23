@@ -118,8 +118,9 @@ public class DocumentOcrServiceTesseractTest {
       final long maxPagesPerTransaction) {
 
     final String userId = "joe";
-    configService.save(siteId, new SiteConfiguration().setOcr(new SiteConfigurationOcr()
-        .setMaxTransactions(1).setMaxPagesPerTransaction(maxPagesPerTransaction)));
+    SiteConfiguration config = SiteConfiguration.builder()
+        .ocr(new SiteConfigurationOcr(maxPagesPerTransaction, 1)).build(siteId);
+    configService.save(siteId, config);
 
     String documentId = ID.uuid();
     OcrRequest request = new OcrRequest().setOcrNumberOfPages(numberOfPages);
@@ -138,8 +139,9 @@ public class DocumentOcrServiceTesseractTest {
     final String userId = "joe";
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      configService.save(siteId, new SiteConfiguration()
-          .setOcr(new SiteConfigurationOcr().setMaxTransactions(1).setMaxPagesPerTransaction(2)));
+      SiteConfiguration config =
+          SiteConfiguration.builder().ocr(new SiteConfigurationOcr(2, 1)).build(siteId);
+      configService.save(siteId, config);
 
       assertEquals(-1, configService.getIncrement(siteId, CONFIG_OCR_COUNT));
 

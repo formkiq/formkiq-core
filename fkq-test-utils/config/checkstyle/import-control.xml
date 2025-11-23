@@ -72,6 +72,7 @@
 	</subpackage>
 
 	<subpackage name="aws">
+        <allow pkg="org.junit.jupiter.api" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.formkiq.aws.cognito" />
 		<allow pkg="com.formkiq.aws.dynamodb" />

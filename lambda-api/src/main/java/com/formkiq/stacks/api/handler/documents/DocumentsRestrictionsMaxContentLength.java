@@ -46,9 +46,9 @@ public class DocumentsRestrictionsMaxContentLength implements DocumentsRestricti
 
     boolean violated = false;
 
-    if (!Strings.isEmpty(config.getMaxContentLengthBytes())) {
+    if (!Strings.isEmpty(config.maxContentLengthBytes())) {
 
-      long maxContentLength = Long.parseLong(config.getMaxContentLengthBytes());
+      long maxContentLength = Long.parseLong(config.maxContentLengthBytes());
       if (item.getContentLength() == null || item.getContentLength() == 0
           || item.getContentLength() > maxContentLength) {
         violated = true;

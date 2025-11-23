@@ -265,7 +265,7 @@ public class DocumentTaggingAction implements DocumentAction {
       final Action action) throws IOException {
 
     SiteConfiguration configs = this.configsService.get(siteId);
-    String chatGptApiKey = configs.getChatGptApiKey();
+    String chatGptApiKey = configs.chatGptApiKey();
 
     if (isEmpty(chatGptApiKey)) {
       throw new IOException(String.format("missing config '%s'", CHATGPT_API_KEY));
