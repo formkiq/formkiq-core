@@ -48,6 +48,7 @@ import com.formkiq.aws.ses.SesConnectionBuilder;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocument;
@@ -58,7 +59,6 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -121,7 +121,7 @@ public class ConfigurationRequestHandler
             .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
         null, null);
 
-    Gson gson = new GsonBuilder().serializeNulls().create();
+    Gson gson = GsonUtil.getInstance();
     String json = gson.toJson(obj);
     Map<String, Object> map = gson.fromJson(json, Map.class);
 
