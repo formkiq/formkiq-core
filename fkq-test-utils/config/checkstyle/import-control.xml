@@ -65,6 +65,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="workflows">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
         <subpackage name="systemmanagement">
             <allow pkg="com.formkiq.testutils.api" />
         </subpackage>
