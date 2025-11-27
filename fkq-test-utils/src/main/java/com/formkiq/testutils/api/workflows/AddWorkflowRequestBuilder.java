@@ -30,6 +30,7 @@ import com.formkiq.client.model.AddWorkflowRequest;
 import com.formkiq.client.model.AddWorkflowResponse;
 import com.formkiq.client.model.AddWorkflowStep;
 import com.formkiq.client.model.AddWorkflowStepDecision;
+import com.formkiq.client.model.AddWorkflowStepQueue;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.WorkflowStatus;
 import com.formkiq.client.model.WorkflowStepDecisionType;
@@ -98,6 +99,21 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
       final WorkflowStepDecisionType type, final String nextStepId) {
     AddWorkflowStep step = getWorkflowStep(stepId);
     step.addDecisionsItem(new AddWorkflowStepDecision().type(type).nextStepId(nextStepId));
+    return this;
+  }
+
+  /**
+   * Add Queue.
+   * 
+   * @param stepId {@link String}
+   * @param queueId {@link String}
+   * @param approvalGroup {@link String}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addQueue(final String stepId, final String queueId,
+      final String approvalGroup) {
+    AddWorkflowStep step = getWorkflowStep(stepId);
+    step.queue(new AddWorkflowStepQueue().addApprovalGroupsItem(approvalGroup).queueId(queueId));
     return this;
   }
 
