@@ -207,7 +207,9 @@ public class DocumentIdUrlRequestHandler
 
     URL url;
 
-    if (isDeepLink(item)) {
+    String deepLinkPath = item.getDeepLinkPath() != null ? item.getDeepLinkPath() : "";
+
+    if (isDeepLink(deepLinkPath)) {
       url = new URL(item.getDeepLinkPath());
     } else {
 
@@ -215,7 +217,7 @@ public class DocumentIdUrlRequestHandler
       String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
       String s3Key = createS3Key(siteId, documentId);
 
-      Matcher matcher = S3_PATTERN.matcher(item.getDeepLinkPath());
+      Matcher matcher = S3_PATTERN.matcher(deepLinkPath);
       if (matcher.matches()) {
         s3Bucket = matcher.group(1);
         s3Key = matcher.group(2);
@@ -321,7 +323,7 @@ public class DocumentIdUrlRequestHandler
     return isBypassWatermark;
   }
 
-  private boolean isDeepLink(final DocumentItem item) {
-    return !isEmpty(item.getDeepLinkPath()) && !item.getDeepLinkPath().startsWith(S3_PREFIX);
+  private boolean isDeepLink(final String deepLinkPath) {
+    return !isEmpty(deepLinkPath) && !deepLinkPath.startsWith(S3_PREFIX);
   }
 }
