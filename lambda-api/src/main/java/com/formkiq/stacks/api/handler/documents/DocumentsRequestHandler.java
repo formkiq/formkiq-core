@@ -24,26 +24,28 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 import java.nio.charset.StandardCharsets;
-import java.time.ZonedDateTime;
-import java.time.zone.ZoneRulesException;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
+import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -89,6 +91,7 @@ public class DocumentsRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
+    ApiRequestHandlerResponse response = null;
     ActionStatus actionStatus = getActionStatus(event);
 
     String siteId = authorization.getSiteId();
@@ -110,14 +113,14 @@ public class DocumentsRequestHandler
 
     } else {
 
-      current = getDocuments(event, awsservice, siteId, map);
+      response = getDocuments(event, awsservice, siteId);
     }
 
     if (current != null) {
       map.put("next", current.hasNext() ? current.getNext() : null);
     }
 
-    return ApiRequestHandlerResponse.builder().ok().body(map).build();
+    return response != null ? response : ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   private ActionStatus getActionStatus(final ApiGatewayRequestEvent event) throws BadException {
@@ -173,41 +176,40 @@ public class DocumentsRequestHandler
     return current;
   }
 
-  private ApiPagination getDocuments(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
-      throws BadException {
+  private ApiRequestHandlerResponse getDocuments(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws BadException {
 
     Logger logger = awsservice.getLogger();
-    CacheService cacheService = awsservice.getExtension(CacheService.class);
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
+    int limit = getLimit(logger, event);
 
-    ApiPagination pagination = getPagination(cacheService, event);
+    Date date = getQueryDate(event);
 
-    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = event.getQueryStringParameter("next");
+    QueryResult result =
+        new GetAllDocumentsQuery(date, true).query(db, documentsTable, siteId, nextToken, limit);
 
-    String tz = getParameter(event, "tz");
-    String dateString = getParameter(event, "date");
+    AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
+        .addValues(Map.of("siteId", getSiteIdName(siteId))).build();
+    List<Map<String, Object>> docs =
+        result.items().stream().map(new AttributeValueToMap(config)).toList();
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    return ApiRequestHandlerResponse.builder().ok().body("documents", docs)
+        .next(result.toNextToken()).build();
+  }
 
-    ZonedDateTime date = transformToDate(awsservice, documentService, dateString, tz);
-    logger.trace("search for document using date: " + date);
+  private Date getQueryDate(final ApiGatewayRequestEvent event) {
 
-    final PaginationResults<DocumentItem> results =
-        documentService.findDocumentsByDate(siteId, date, ptoken, limit);
+    Date date = null;
+    String dateString = event.getQueryStringParameter("date");
+    if (!isEmpty(dateString)) {
+      String tz = event.getQueryStringParameter("tz", "UTC");
+      ZoneId zoneId = DateUtil.toZoneId(tz);
+      date = DateUtil.toDateFromString(dateString, zoneId);
+    }
 
-    ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
-
-    List<DocumentItem> documents = subList(results.getResults(), limit);
-
-    List<DynamicDocumentItem> items = documents.stream()
-        .map(m -> new DocumentItemToDynamicDocumentItem().apply(m)).collect(Collectors.toList());
-    items.forEach(i -> i.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID));
-
-    map.put("documents", items);
-    map.put("previous", current.getPrevious());
-    return current;
+    return date;
   }
 
   @Override
@@ -327,48 +329,6 @@ public class DocumentsRequestHandler
     hashMap.remove("headers");
     hashMap.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     return ApiRequestHandlerResponse.builder().created().body(hashMap).build();
-  }
-
-  /**
-   * Transform {@link String} to {@link ZonedDateTime}.
-   *
-   * @param awsservice {@link AwsServiceCache}
-   * @param documentService {@link DocumentService}
-   * @param dateString {@link String}
-   * @param tz {@link String}
-   * @return {@link Date}
-   * @throws BadException BadException
-   */
-  private ZonedDateTime transformToDate(final AwsServiceCache awsservice,
-      final DocumentService documentService, final String dateString, final String tz)
-      throws BadException {
-
-    ZonedDateTime date;
-    Logger logger = awsservice.getLogger();
-
-    if (dateString != null) {
-      try {
-
-        date = DateUtil.toDateTimeFromString(dateString, tz);
-        logger.trace("searching using date parameter: " + dateString + " and tz " + tz);
-
-      } catch (ZoneRulesException e) {
-        throw new BadException("Invalid date string: " + dateString);
-      }
-    } else {
-
-      date = documentService.findMostDocumentDate();
-
-      if (date == null) {
-        date = ZonedDateTime.now();
-        logger.trace("searching using default date: " + date);
-
-      } else {
-        logger.trace("searching using Most Recent Document Date: " + date);
-      }
-    }
-
-    return date;
   }
 
   /**

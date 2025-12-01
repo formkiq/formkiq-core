@@ -202,6 +202,17 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
     }
 
     /**
+     * Previous Token.
+     *
+     * @param previousToken {@link String}
+     * @return Builder
+     */
+    public Builder previous(final String previousToken) {
+      this.body.put("previous", previousToken);
+      return this;
+    }
+
+    /**
      * Next Token.
      * 
      * @param nextToken {@link String}

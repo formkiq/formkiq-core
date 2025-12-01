@@ -23,26 +23,21 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import java.util.List;
-import java.util.Map;
-
-import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /**
- * Represents the result of a DynamoDB query, including the list of items and the key to start the
- * next page of results.
+ * DynamoDb Operation Builder.
+ *
  */
-public record QueryResult(List<Map<String, AttributeValue>> items,
-    Map<String, AttributeValue> lastEvaluatedKey) {
+public interface DynamoDbClientOperation {
 
   /**
-   * Convert Last Evelauate Key to {@link String}.
-   * 
-   * @return {@link String}
+   * Runs a DynamoDb Operation.
+   *
+   * @param dbClient {@link DynamoDbClient}
+   * @param tableName DynamoDb Table Name.
+   * @param siteId Site Identifier
+   * @param params {@link Object}
    */
-  public String toNextToken() {
-    return lastEvaluatedKey != null ? new MapAttributeValueToString().apply(lastEvaluatedKey)
-        : null;
-  }
+  void execute(DynamoDbClient dbClient, String tableName, String siteId, Object... params);
 }

@@ -72,12 +72,19 @@ public class AttributeValueToMap
         result.put(key, obj);
       }
 
+      addValues(result);
       removeKeys(result);
       renameKeys(result);
       deleteKeys(result);
     }
 
     return result;
+  }
+
+  private void addValues(final Map<String, Object> result) {
+    if (this.config != null) {
+      result.putAll(notNull(this.config.getAddValues()));
+    }
   }
 
   private void deleteKeys(final Map<String, Object> result) {

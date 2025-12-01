@@ -217,6 +217,19 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
+   * Add an <= condition on SK.
+   * 
+   * @param value sort key value
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder lte(final String value) {
+    String nameKey = addName(SK);
+    String valKey = addValue(SK, AttributeValue.builder().s(value).build());
+    keyConditions.add(nameKey + " <= " + valKey);
+    return this;
+  }
+
+  /**
    * Set Start Key from Next token.
    * 
    * @param exclusiveStartKey {@link Map}

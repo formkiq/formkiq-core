@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -49,6 +50,7 @@ import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
@@ -57,6 +59,7 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -70,15 +73,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,6 +102,188 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   @BeforeEach
   void beforeEach() {
     clearSqsMessages();
+  }
+
+  /**
+   * Create MAX_RESULTS + 2 Documents test data.
+   *
+   * @param prefix {@link String}
+   * @param testdatacount int
+   */
+  private void createTestData(final String prefix, final int testdatacount) {
+    String userId = "jsmith";
+    final int min10 = 10;
+    LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
+
+    for (int i = 0; i < testdatacount; i++) {
+
+      nowLocalDate = nowLocalDate.plusMinutes(1);
+      Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
+      getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
+          new ArrayList<>());
+    }
+  }
+
+  private DocumentService getDocumentService() {
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DocumentService.class, new DocumentServiceExtension());
+    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    return awsServices.getExtension(DocumentService.class);
+  }
+
+  /**
+   * Get /documents request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNotNull(documents.get(0).getInsertedDate());
+      assertNotNull(documents.get(0).getLastModifiedDate());
+      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
+      assertNotNull(documents.get(0).getUserId());
+      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
+    }
+  }
+
+  /**
+   * Get /documents request with next parameter.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      createTestData(siteId, DocumentService.MAX_RESULTS + 2);
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertNull(resp.getPrevious());
+      assertFalse(isEmpty(resp.getNext()));
+
+      // when
+      resp = documentsApi.getDocuments(siteId, null, null, null, null, null, resp.getNext(), null,
+          null);
+
+      // then
+      assertTrue(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+
+      documents = notNull(resp.getDocuments());
+      assertEquals(2, documents.size());
+
+      assertEquals("doc_1", documents.get(0).getDocumentId());
+      assertNotNull(documents.get(0).getSiteId());
+
+      assertEquals("doc_0", documents.get(1).getDocumentId());
+      assertNotNull(documents.get(1).getSiteId());
+    }
+  }
+
+  /**
+   * Get /documents request with Limit=MAX_RESULTS.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments03() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      createTestData(siteId, DocumentService.MAX_RESULTS);
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertFalse(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz. Date after
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments04() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
+          null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments05() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = DateUtil.toDateFromString("2019-08-15", "0500");
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
+          null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+    }
   }
 
   /**

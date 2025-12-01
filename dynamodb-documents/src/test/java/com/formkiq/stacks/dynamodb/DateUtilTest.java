@@ -113,7 +113,7 @@ public class DateUtilTest {
     date = DateUtil.toDateFromString("2020-01-28", "");
     assertEquals("2020-01-28T00:00:00", this.df.format(date));
 
-    date = DateUtil.toDateFromString("2020-01-28", null);
+    date = DateUtil.toDateFromString("2020-01-28", (String) null);
     assertEquals("2020-01-28T00:00:00", this.df.format(date));
   }
 

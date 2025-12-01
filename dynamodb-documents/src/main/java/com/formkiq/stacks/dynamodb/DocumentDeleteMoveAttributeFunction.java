@@ -65,6 +65,11 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
       a.put(PK, sdKeys.get(PK));
       a.put(SK, AttributeValue.fromS(SOFT_DELETE + sk + "#" + this.documentId));
 
+      if (a.containsKey(GSI1_PK)) {
+        a.put(GSI1_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI1_PK).s()));
+        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s()));
+      }
+
     } else {
 
       a.put(PK, AttributeValue.fromS(SOFT_DELETE + pk));
