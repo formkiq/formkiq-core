@@ -134,7 +134,7 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         assertEquals(expectedCount, notNull(syncs.getSyncs()).size());
 
         List<Document> docs = notNull(api.getDocuments(siteId, null, "FULLTEXT_METADATA_FAILED",
-            null, null, null, null, null, null).getDocuments());
+            null, null, null, null, null, null, null).getDocuments());
         assertEquals(0, docs.size());
       }
     }

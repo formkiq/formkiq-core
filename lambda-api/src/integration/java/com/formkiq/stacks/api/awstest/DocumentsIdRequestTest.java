@@ -199,8 +199,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       api.deleteDocument(documentId, siteId, Boolean.TRUE);
 
       // then
-      List<Document> softDeletedDocuments =
-          notNull(api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, "100")
+      List<Document> softDeletedDocuments = notNull(
+          api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null, "100")
               .getDocuments());
       assertFalse(softDeletedDocuments.isEmpty());
 

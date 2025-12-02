@@ -186,9 +186,11 @@ public class DocumentsRequestHandler
 
     Date date = getQueryDate(event);
 
+    boolean documentIdProjection =
+        "DOCUMENT_ID_ONLY".equalsIgnoreCase(event.getQueryStringParameter("projection"));
     String nextToken = event.getQueryStringParameter("next");
-    QueryResult result =
-        new GetAllDocumentsQuery(date, true).query(db, documentsTable, siteId, nextToken, limit);
+    QueryResult result = new GetAllDocumentsQuery(date, !documentIdProjection).query(db,
+        documentsTable, siteId, nextToken, limit);
 
     AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
         .addValues(Map.of("siteId", getSiteIdName(siteId))).build();

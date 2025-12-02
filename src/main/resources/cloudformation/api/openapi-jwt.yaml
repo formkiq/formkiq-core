@@ -1659,6 +1659,13 @@ Resources:
                   description: "Previous page of results token"
                   schema:
                     type: "string"
+                - name: "projection"
+                  in: "query"
+                  description: "Specify a restricted document projection. Use 'DOCUMENT_ID_ONLY' to return only the documentId attribute."
+                  schema:
+                    type: "string"
+                    enum:
+                      - DOCUMENT_ID_ONLY
                 - $ref: '#/components/parameters/limitParam'
               responses:
                 '200':

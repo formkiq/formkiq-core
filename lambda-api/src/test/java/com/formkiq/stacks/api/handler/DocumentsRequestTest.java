@@ -152,7 +152,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -179,7 +180,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       createTestData(siteId, DocumentService.MAX_RESULTS + 2);
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -189,7 +191,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       resp = documentsApi.getDocuments(siteId, null, null, null, null, null, resp.getNext(), null,
-          null);
+          null, null);
 
       // then
       assertTrue(isEmpty(resp.getNext()));
@@ -220,7 +222,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       createTestData(siteId, DocumentService.MAX_RESULTS);
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null);
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -250,7 +253,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
-          null, null);
+          null, null, null);
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -278,11 +281,46 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
-          null, null);
+          null, null, null);
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(1, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request with ID only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsIdOnly() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null,
+          "DOCUMENT_ID_ONLY", null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNull(documents.get(0).getInsertedDate());
+      assertNull(documents.get(0).getLastModifiedDate());
+      assertNull(documents.get(0).getUserId());
+      assertNull(documents.get(0).getContentLength());
     }
   }
 

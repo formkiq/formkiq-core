@@ -156,7 +156,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
   private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
-        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null).getDocuments());
+        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null, null)
+        .getDocuments());
   }
 
   /**
