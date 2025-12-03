@@ -586,4 +586,12 @@ public interface DocumentService {
    * @param attributes {@link Map}
    */
   void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
+
+  /**
+   * Validate Document can be deleted, throws Validation Exception if cannot be deleted.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   */
+  void validateDocumentMustRetain(String siteId, String documentId);
 }

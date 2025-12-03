@@ -2559,6 +2559,41 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /documents/{documentId}/retention/mustRetain:
+            put:
+              operationId: SetDocumentMustRetain
+              summary: Set or update the must-retain retention flag for a document
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              description: |
+                Updates whether a document must be retained based on records management or legal-hold policies. When mustRetain is true, the document cannot be deleted until the retention condition is cleared.
+              tags:
+              - Documents
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/SetDocumentMustRetainRequest'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/SetResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/compress:
             post:
               operationId: CompressDocuments
@@ -8186,6 +8221,14 @@
                   description: List of tags
                   items:
                     $ref: '#/components/schemas/DocumentTag'
+            SetDocumentMustRetainRequest:
+              type: object
+              required:
+              - mustRetain
+              properties:
+                mustRetain:
+                  type: boolean
+                  description: Whether the document must be retained and protected from deletion.
             SetDocumentVersionRequest:
               type: object
               properties:
@@ -13748,3 +13791,112 @@
           - '*'
           allowHeaders:
           - '*'
+  ApiKeyAuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+      - Key: AppEnvironment
+        Value:
+          Ref: AppEnvironment
+      - Key: Application
+        Value: FormKiQ
+  ApiKeyAuthorizer:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ApiKeyAuthorizerRole
+    Properties:
+      Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
+      Description: Lambda function that processes ApiKey Authorizer
+      Runtime: provided.al2023
+      Timeout:
+        Fn::Sub: ${LambdaTimeout}
+      MemorySize:
+        Fn::Sub: ${LambdaMemory}
+      CodeUri: ./formkiq-module-lambda-authorizer-apikey.zip
+      Tracing: Active
+      AutoPublishCodeSha256: f2f7d13e6442fcf50f2f646cb9e78f15503bf088c0101b72c3279668054ceab3
+      Environment:
+        Variables:
+          APP_ENVIRONMENT:
+            Fn::Sub: ${AppEnvironment}
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+          ENABLE_AWS_X_RAY: true
+          DOCUMENTS_TABLE:
+            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}'
+          FORMKIQ_TYPE:
+            Ref: FormKiQType
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiKeyAuthorizerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
+      Role:
+        Fn::GetAtt:
+        - ApiKeyAuthorizerRole
+        - Arn
+      Tags:
+        Application: FormKiQ
+        AppEnvironment:
+          Fn::Sub: ${AppEnvironment}
+  ApiKeyAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - ApiKeyAuthorizer
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: ApiKeyAuthorizer
+      Principal: apigateway.amazonaws.com
+  ApiKeyAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+      - Key: Application
+        Value: FormKiQ
+      - Key: AppEnvironment
+        Value:
+          Fn::Sub: ${AppEnvironment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+      - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+      - PolicyName: apikeylambdarole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:Get*
+            - dynamodb:Query
+            Resource:
+            - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}

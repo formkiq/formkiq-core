@@ -47,7 +47,10 @@ import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.Attribute;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.Document;
@@ -55,7 +58,10 @@ import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetAttributeResponse;
 import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.SetDocumentMustRetainRequest;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -99,6 +105,24 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   /** Test Timeout. */
   private static final int TEST_TIMEOUT = 10;
 
+  private void assertDocumentDeleteDenied(final String siteId, final String documentId) {
+    try {
+      documentsApi.deleteDocument(documentId, siteId, null);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"Document has MustRetain attribute\"}", e.getResponseBody());
+    }
+
+    try {
+      documentsApi.purgeDocument(documentId, siteId);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"Document has MustRetain attribute\"}", e.getResponseBody());
+    }
+  }
+
   @BeforeEach
   void beforeEach() {
     clearSqsMessages();
@@ -122,6 +146,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
           new ArrayList<>());
     }
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId) throws ApiException {
+    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
+        .getAttributes());
   }
 
   private DocumentService getDocumentService() {
@@ -1310,6 +1340,117 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         // then
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Put Must Retain missing on document.
+   *
+   */
+  @Test
+  void testPutMustRetainMissing() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+      String documentId = ID.uuid();
+
+      SetDocumentMustRetainRequest mustRetain = new SetDocumentMustRetainRequest();
+
+      // when
+      try {
+        this.documentsApi.setDocumentMustRetain(documentId, mustRetain, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"mustRetain\","
+            + "\"error\":\"Must Retain attribute is required\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Put Must Retain on document.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPutMustRetainOnDocument() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+
+      // when
+      var addResp = new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
+
+      // then
+      String documentId = addResp.response().getDocumentId();
+      assertNotNull(documentId);
+
+      // given
+      SetDocumentMustRetainRequest mustRetain =
+          new SetDocumentMustRetainRequest().mustRetain(Boolean.TRUE);
+
+      // when
+      SetResponse response =
+          this.documentsApi.setDocumentMustRetain(documentId, mustRetain, siteId);
+
+      // then
+      assertDocumentDeleteDenied(siteId, documentId);
+
+      assertEquals("Must Retain attribute set on document", response.getMessage());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, documentAttributes.size());
+      assertEquals("MustRetain", documentAttributes.get(0).getKey());
+      assertEquals(Boolean.TRUE, documentAttributes.get(0).getBooleanValue());
+
+      GetAttributeResponse attrResponse = this.attributesApi.getAttribute("MustRetain", siteId);
+      Attribute attr = attrResponse.getAttribute();
+      assertNotNull(attr);
+      assertEquals("MustRetain", attr.getKey());
+      assertEquals(AttributeDataType.BOOLEAN, attr.getDataType());
+      assertEquals(AttributeType.GOVERNANCE, attr.getType());
+
+      // given
+      mustRetain = new SetDocumentMustRetainRequest().mustRetain(Boolean.FALSE);
+
+      // when
+      response = this.documentsApi.setDocumentMustRetain(documentId, mustRetain, siteId);
+
+      // then
+      assertEquals("Must Retain attribute removed from document", response.getMessage());
+      assertEquals(0, getDocumentAttributes(siteId, documentId).size());
+    }
+  }
+
+  /**
+   * Save Put Must Retain on document not govern or admin.
+   *
+   */
+  @Test
+  void testPutMustRetainOnDocumentNotAllowed() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      SetDocumentMustRetainRequest mustRetain =
+          new SetDocumentMustRetainRequest().mustRetain(Boolean.TRUE);
+
+      // when
+      try {
+        this.documentsApi.setDocumentMustRetain(documentId, mustRetain, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"message\":\"fkq access denied (groups: " + siteId + " (DELETE,READ,WRITE))\"}",
             e.getResponseBody());
       }
     }

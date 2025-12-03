@@ -7,6 +7,7 @@
 
 	<subpackage name="dynamodb">
 
+        <allow pkg="com.formkiq.urls" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
 		<allow pkg="software.amazon.awssdk.core.client.config" />

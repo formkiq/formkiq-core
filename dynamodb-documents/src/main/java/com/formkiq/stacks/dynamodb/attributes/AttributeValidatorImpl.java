@@ -191,8 +191,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
           if (reserved != null) {
 
-            attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.STRING,
-                AttributeType.STANDARD, true);
+            if (AttributeKeyReserved.MUST_RETAIN.equals(reserved)) {
+
+              attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.BOOLEAN,
+                  AttributeType.GOVERNANCE, true);
+
+            } else {
+              attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.STRING,
+                  AttributeType.STANDARD, true);
+            }
 
             savedReservedKeys.add(da.getKey());
 

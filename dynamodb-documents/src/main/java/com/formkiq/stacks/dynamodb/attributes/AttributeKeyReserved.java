@@ -49,7 +49,9 @@ public enum AttributeKeyReserved {
   /** Esignature Docusign Envelope id. */
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */
-  ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus");
+  ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
+  /** Must Retain. */
+  MUST_RETAIN("MustRetain");
 
   /**
    * Find {@link AttributeKeyReserved}.
