@@ -29,8 +29,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Request payload for updating the must-retain state of a document.
  *
  * @param mustRetain Whether the document must be retained.
- * @param reason Optional reason or policy reference explaining why retention is required.
  */
 @Reflectable
-public record SetMustRetainRequest(Boolean mustRetain, String reason) {
+public record SetMustRetainRequest(Boolean mustRetain) {
 }
