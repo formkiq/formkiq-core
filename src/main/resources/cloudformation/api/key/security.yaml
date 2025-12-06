@@ -1,0 +1,13 @@
+ApiAuthorization:
+  type: apiKey
+  name: Authorization
+  in: header
+  x-amazon-apigateway-authtype: Custom API Key
+  x-amazon-apigateway-authorizer:
+    identitySource: $request.header.Authorization
+    authorizerUri:
+      Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiKeyAuthorizer.Arn}/invocations
+    authorizerResultTtlInSeconds: 300
+    authorizerPayloadFormatVersion: "2.0"
+    enableSimpleResponses: true
+    type: request
