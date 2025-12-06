@@ -1,7 +1,13 @@
 openapi: "3.0.1"
 info:
   title:
-    Fn::Sub: FormKiQ API IAM
+{{- $base := (ds "path" "title.yaml").title }}
+{{- $overrideRaw := env.Getenv "OPENAPI_TITLE" }}
+{{- $title := $base }}
+{{- if ne $overrideRaw "" }}
+{{-   $title = dict "Fn::Sub" $overrideRaw }}
+{{- end }}
+{{ strings.TrimSpace ($title | data.ToYAML) | indent 4 }}
   contact:
     name: FormKiQ
     url: https://formkiq.com
@@ -14,26 +20,8 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   description: |-
-    FormKiQ API: Document Management Platform API using IAM Authentication
-
-    You can find out more about FormKiQ at [https://formkiq.com](http://formkiq.com).
-
-    ## Introduction
-
-    FormKiQ is an API-first (head-less), battle-tested document management API. The FormKiQ API provides all the API endpoints to build your Perfect Document Management Platform.
-
-    FormKiQ API was built on top of [OpenAPI specification](https://www.openapis.org), so it is easy to use the API spec file with any application that supports the OpenAPI specification.
-
-    Open API OAuth Specification - https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/openapi/openapi-jwt.yaml
-
-    Open API IAM Specification - https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/openapi/openapi-iam.yaml
-
-    ## Authentication
-    FormKiQ offers three forms of authentication:
-      - OAuth(JWT)
-      - AWS IAM
-      - API Key
-  version: "1.19.0"
+{{ (ds "path" "desc.yaml").description | indent 4 }}
+  version: "{{ getenv "PROJECT_VERSION" }}"
 tags:
   - name: documents
     description: API for the add, updating and fetching of documents
@@ -13681,12 +13669,7 @@ components:
           type: "string"
           description: "The view URL to be navigated to complete DocuSign signing"
   securitySchemes:
-    ApiAuthorization:
-      in: header
-      name: Authorization
-      type: apiKey
-      x-amazon-apigateway-authtype: awsSigv4
-
+{{ (ds "path" "security.yaml") | data.ToYAML | indent 4 }}
   x-amazon-apigateway-integrations:
     lambdaApi200:
       uri:

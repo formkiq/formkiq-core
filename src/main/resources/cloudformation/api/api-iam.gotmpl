@@ -1,0 +1,40 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ IAM API
+    
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The FormKiQ Environment
+
+  DocumentsApiRequestsArn:
+    Description: Lambda to invoke
+    Type: String
+
+  OcrApiRequestsArn:
+    Description: Lambda to invoke for Object examine endpoints
+    Type: String
+
+Resources:
+
+  DocumentsIamApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      FailOnWarnings: "true"
+      Body:
+{{ tmpl.Exec "openapi" . | indent 8 " " }}
+
+Outputs:
+  DocumentsIamApi:
+    Description: IAM API
+    Value:
+      Ref: DocumentsIamApi
+  DocumentsIamApiUrl:
+    Description: "The endpoint url for the IAM API"
+    Value:
+      Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"

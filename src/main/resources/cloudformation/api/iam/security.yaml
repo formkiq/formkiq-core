@@ -1,0 +1,5 @@
+ApiAuthorization:
+  type: apiKey
+  name: Authorization
+  in: header
+  x-amazon-apigateway-authtype: awsSigv4

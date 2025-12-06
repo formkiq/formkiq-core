@@ -1,0 +1,199 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ Key API
+    
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The FormKiQ Environment
+
+  DocumentsApiRequestsArn:
+    Description: Lambda to invoke
+    Type: String
+
+  OcrApiRequestsArn:
+    Description: Lambda to invoke for Object examine endpoints
+    Type: String
+    
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Type: String
+    
+  LambdaMemory:
+    Type: Number
+    Description: The amount of memory used by lambda function (MB)
+    Default: 1024
+    MinValue: 128
+    MaxValue: 3008
+  
+  LambdaTimeout:
+    Type: String
+    Description: The maximum amount of seconds lambda function will run for (seconds)
+    Default: 60
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
+Resources:
+
+  DocumentsKeyApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      FailOnWarnings: "true"
+      Body:
+{{ tmpl.Exec "openapi" . | indent 8 " " }}
+
+  #@overlay/match missing_ok=True
+  ApiKeyAuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+
+  #@overlay/match missing_ok=True
+  ApiKeyAuthorizer:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ApiKeyAuthorizerRole
+    Properties:
+      Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
+      Description: Lambda function that processes ApiKey Authorizer
+      Runtime: provided.al2023
+      Timeout: 
+        Fn::Sub: "${LambdaTimeout}"
+      MemorySize: 
+        Fn::Sub: "${LambdaMemory}"
+      CodeUri: ./formkiq-module-lambda-authorizer-apikey.zip
+      Tracing: Active
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          APP_ENVIRONMENT: 
+            Fn::Sub: "${AppEnvironment}"
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+          ENABLE_AWS_X_RAY: true
+          DOCUMENTS_TABLE: 
+            Fn::Sub: {{ `"{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"` }}
+          FORMKIQ_TYPE: 
+            Ref: FormKiQType
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiKeyAuthorizerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
+      Role: 
+        Fn::GetAtt:
+        - ApiKeyAuthorizerRole
+        - Arn
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+
+  #@overlay/match missing_ok=True
+  ApiKeyAuthorizerInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - ApiKeyAuthorizer
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: ApiKeyAuthorizer
+      Principal: apigateway.amazonaws.com
+
+  #@overlay/match missing_ok=True
+  ApiKeyAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      Policies:
+        -
+          PolicyName: apikeylambdarole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:Get*
+              - dynamodb:Query
+              Resource: 
+              - Fn::Sub: {{ `"arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"` }}
+
+Outputs:
+  DocumentsKeyApi:
+    Description: Key API
+    Value:
+      Ref: DocumentsKeyApi
+  DocumentsKeyApiUrl:
+    Description: "The endpoint url for the Key API"
+    Value:
+      Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"
