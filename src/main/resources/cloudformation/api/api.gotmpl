@@ -1,0 +1,48 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ HTTP API
+    
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The FormKiQ Environment
+
+  DocumentsApiRequestsArn:
+    Description: Lambda to invoke
+    Type: String
+
+  OcrApiRequestsArn:
+    Description: Lambda to invoke for Object examine endpoints
+    Type: String
+    
+  CognitoUserPool:
+    Type: String
+    Description: The Cognito User Pool Id
+
+  CognitoUserPoolClient:
+    Type: String
+    Description: The Cognito User Pool Client Id
+
+Resources:
+
+  DocumentsHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      FailOnWarnings: "true"
+      Body:
+{{ tmpl.Exec "openapi" . | indent 8 " " }}
+
+Outputs:
+  DocumentsHttpApi:
+    Description: HTTP API
+    Value:
+      Ref: DocumentsHttpApi
+  DocumentsHttpApiUrl:
+    Description: "The endpoint url for the HTTP API"
+    Value:
+      Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
