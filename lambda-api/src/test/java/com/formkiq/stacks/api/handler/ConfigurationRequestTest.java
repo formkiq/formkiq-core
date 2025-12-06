@@ -44,11 +44,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/configuration. */
@@ -468,6 +470,38 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PATCH partial docusign request.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration10() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().maxDocuments("100000")
+        .docusign(new DocusignConfig().userId("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e")
+            .integrationKey("{integrationKey}").hmacSignature(null)
+            .rsaPrivateKey("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEowIB*******vWOAMrFWnb\\n"
+                + "-----END RSA PRIVATE KEY-----\""));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocusignConfig docusign = c.getDocusign();
+    assertNotNull(docusign);
+    assertEquals("{integrationKey}", docusign.getIntegrationKey());
+    assertNull(docusign.getHmacSignature());
+    assertEquals("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e", docusign.getUserId());
+    assertEquals("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEow*******OAMrFWnb"
+        + "\\n-----END RSA PRIVATE KEY-----\"", docusign.getRsaPrivateKey());
+  }
+
+  /**
    * PUT /config default as Admin.
    *
    * @throws Exception an error has occurred
@@ -506,7 +540,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testPatchContentType() throws ApiException {
+  public void testPatchContentType() {
     // given
     String group = "Admins";
     setBearerToken(group);
@@ -531,7 +565,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testPatchContentTypeAllowAndDeny() throws ApiException {
+  public void testPatchContentTypeAllowAndDeny() {
     // given
     String group = "Admins";
     setBearerToken(group);
@@ -564,6 +598,35 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
         .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocumentConfig doc = configuration.getDocument();
+    assertNotNull(doc);
+    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
+    assertNotNull(contentTypes);
+    assertEquals("text/plain", String.join(",", notNull(contentTypes.getAllowlist())));
+    assertEquals("", String.join(",", notNull(contentTypes.getDenylist())));
+  }
+
+  /**
+   * PATCH content type allowed with empty deny list.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowedAndEmptyDeny() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().document(new DocumentConfig().contentTypes(
+            new DocumentConfigContentTypes().denylist(List.of()).addAllowlistItem("text/plain")));
 
     // when
     UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);

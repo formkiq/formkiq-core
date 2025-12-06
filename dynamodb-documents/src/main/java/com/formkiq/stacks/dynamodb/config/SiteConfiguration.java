@@ -37,6 +37,7 @@ import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
+import static com.formkiq.strings.Strings.trim;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
@@ -189,10 +190,10 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     }
 
     if (docusign != null) {
-      map.withString(KEY_DOCUSIGN_USER_ID, docusign.userId().trim())
-          .withString(KEY_DOCUSIGN_INTEGRATION_KEY, docusign.integrationKey().trim())
-          .withString(KEY_DOCUSIGN_RSA_PRIVATE_KEY, docusign.rsaPrivateKey().trim())
-          .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, docusign.hmacSignature().trim());
+      map.withString(KEY_DOCUSIGN_USER_ID, trim(docusign.userId()))
+          .withString(KEY_DOCUSIGN_INTEGRATION_KEY, trim(docusign.integrationKey()))
+          .withString(KEY_DOCUSIGN_RSA_PRIVATE_KEY, trim(docusign.rsaPrivateKey()))
+          .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, trim(docusign.hmacSignature()));
     }
 
     return map.build();
