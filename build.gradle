@@ -84,22 +84,19 @@ ytt {
     }
 
     api {
-      from("src/main/resources/cloudformation/api/api.yaml",
-          "src/main/resources/cloudformation/api/openapi-jwt.yaml")
+      from("src/main/resources/cloudformation/api/api.yaml")
       into("api/api.yaml")
       hash "sha256"
     }
 
     apiIam {
-      from("src/main/resources/cloudformation/api/api-iam.yaml",
-          "src/main/resources/cloudformation/api/openapi-iam.yaml")
+      from("src/main/resources/cloudformation/api/api-iam.yaml")
       into("api/api-iam.yaml")
       hash "sha256"
     }
 
     apiApikey {
-      from("src/main/resources/cloudformation/api/api-apikey.yaml",
-          "src/main/resources/cloudformation/api/openapi-key.yaml")
+      from("src/main/resources/cloudformation/api/api-apikey.yaml")
       into("api/api-apikey.yaml")
       hash "sha256"
     }
@@ -272,3 +269,74 @@ tasks.register("buildOpenApi") {
 }
 
 buildOpenApi.dependsOn 'yttRenderAll'
+
+def apiCfTemplate = "src/main/resources/cloudformation/api/openapi-cf.gotmpl"
+def apiTemplate = "src/main/resources/cloudformation/api/openapi.gotmpl"
+def apiDir   = file("src/main/resources/cloudformation/api")
+def openapiOutDir = "$projectDir/docs/openapi"
+
+def variants = [
+  Jwt: [ dirName: "jwt", title:"FormKiQ API JWT", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-jwt.yaml"],
+  JwtCf: [ dirName: "jwt", file:"src/main/resources/cloudformation/api/api.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api.yaml"],
+  Iam: [ dirName: "iam", title:"FormKiQ API IAM", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-iam.yaml"],
+  IamCf: [ dirName: "iam", file:"src/main/resources/cloudformation/api/api-iam.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api-iam.yaml"],
+  Key: [ dirName: "key", title:"FormKiQ API KEY", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-key.yaml"],
+  KeyCf: [ dirName: "key", file:"src/main/resources/cloudformation/api/api-apikey.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api-apikey.yaml"],
+]
+
+variants.each { suffix, cfg ->
+  tasks.register("generateOpenApi${suffix}", Exec) {
+    group = "openapi"
+    description = "Generate ${suffix} OpenAPI spec using gomplate"
+
+    def pathDir = new File(apiDir, cfg.dirName)
+
+    inputs.file new File(cfg.file)
+    inputs.dir pathDir
+    outputs.file new File(cfg.outputFile)
+
+    environment "PROJECT_VERSION", project.version.toString()
+
+    if (cfg.title) {
+      environment "OPENAPI_TITLE", cfg.title
+    }
+
+    def cmd = [
+      "gomplate",
+      "-f",
+      cfg.file,
+      "-d",
+      "path=${pathDir.absolutePath}${File.separator}",
+      "-o",
+      cfg.outputFile
+    ]
+
+    if (cfg.template) {
+      cmd += [
+        "-t",
+        "openapi=${cfg.template}"
+      ]
+    }
+
+    commandLine cmd
+  }
+}
+
+tasks.register("generateOpenApiSpecs") {
+  group = "openapi"
+  description = "Generate all OpenAPI specs using gomplate"
+  dependsOn variants.keySet().collect { "generateOpenApi${it}" }
+}
+
+def yttDeps = [
+  "yttRender_apiIam"    : "generateOpenApiIamCf",
+  "yttRender_apiApikey" : "generateOpenApiKeyCf",
+  "yttRender_api"       : "generateOpenApiJwtCf",
+]
+
+tasks.withType(com.formkiq.gradle.AbstractYttRenderTask).configureEach { t ->
+  def genTaskName = yttDeps[t.name]
+  if (genTaskName != null) {
+    t.dependsOn(tasks.named(genTaskName))
+  }
+}
