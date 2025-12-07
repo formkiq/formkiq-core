@@ -73,7 +73,6 @@ import com.formkiq.stacks.api.handler.documents.DocumentIdContentRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentIdPurgeRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentIdRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentIdRestoreRequestHandler;
-import com.formkiq.stacks.api.handler.documents.DocumentIdRetentionMustRetainRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentIdUrlRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentTagRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentTagValueRequestHandler;
@@ -284,7 +283,6 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentIdPurgeRequestHandler());
     addRequestHandler(new DocumentIdRestoreRequestHandler());
     addRequestHandler(new DocumentsCompressRequestHandler());
-    addRequestHandler(new DocumentIdRetentionMustRetainRequestHandler());
     addRequestHandler(new IndicesFolderMoveRequestHandler());
     addRequestHandler(new IndicesRequestHandler());
     addRequestHandler(new IndicesSearchRequestHandler());

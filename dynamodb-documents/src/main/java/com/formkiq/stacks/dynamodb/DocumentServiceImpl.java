@@ -71,7 +71,6 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAt
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
-import com.formkiq.stacks.dynamodb.documents.query.FindAttributesForDocumentsGet;
 import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
 import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
@@ -83,9 +82,6 @@ import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
-import com.formkiq.urls.HttpStatus;
-import com.formkiq.validation.ResponseStatusValidationError;
-import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -449,8 +445,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
 
-    validateDocumentMustRetain(siteId, documentId);
-
     Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
 
     if (documentRecord.containsKey("path")) {
@@ -497,20 +491,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return deleted;
-  }
-
-  @Override
-  public void validateDocumentMustRetain(final String siteId, final String documentId) {
-    Collection<Map<String, AttributeValue>> attrs = new FindAttributesForDocumentsGet()
-        .documentIds(List.of(documentId)).eq(AttributeKeyReserved.MUST_RETAIN.getKey(), true)
-        .find(dbService, dbService.getTableName(), siteId);
-
-    if (!attrs.isEmpty()) {
-      ValidationBuilder vb = new ValidationBuilder();
-      vb.addErrors(List.of(new ResponseStatusValidationError(HttpStatus.CONFLICT,
-          "Document has MustRetain attribute")));
-      vb.check();
-    }
   }
 
   private boolean deleteDocumentSoft(final String siteId, final String documentId,

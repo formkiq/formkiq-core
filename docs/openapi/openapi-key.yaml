@@ -2559,41 +2559,6 @@
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-          /documents/{documentId}/retention/mustRetain:
-            put:
-              operationId: SetDocumentMustRetain
-              summary: Set or update the must-retain retention flag for a document
-              parameters:
-              - $ref: '#/components/parameters/siteIdParam'
-              - $ref: '#/components/parameters/documentIdParam'
-              description: |
-                Updates whether a document must be retained based on records management or legal-hold policies. When mustRetain is true, the document cannot be deleted until the retention condition is cleared.
-              tags:
-              - Documents
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/SetDocumentMustRetainRequest'
-              responses:
-                "200":
-                  description: 200 OK
-                  headers:
-                    Access-Control-Allow-Origin:
-                      $ref: '#/components/headers/AccessControlAllowOrigin'
-                    Access-Control-Allow-Methods:
-                      $ref: '#/components/headers/AccessControlAllowMethods'
-                    Access-Control-Allow-Headers:
-                      $ref: '#/components/headers/AccessControlAllowHeaders'
-                  content:
-                    application/json:
-                      schema:
-                        $ref: '#/components/schemas/SetResponse'
-              security:
-              - ApiAuthorization: []
-              x-amazon-apigateway-integration:
-                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /documents/compress:
             post:
               operationId: CompressDocuments
@@ -8221,14 +8186,6 @@
                   description: List of tags
                   items:
                     $ref: '#/components/schemas/DocumentTag'
-            SetDocumentMustRetainRequest:
-              type: object
-              required:
-              - mustRetain
-              properties:
-                mustRetain:
-                  type: boolean
-                  description: Whether the document must be retained and protected from deletion.
             SetDocumentVersionRequest:
               type: object
               properties:
@@ -13816,7 +13773,7 @@
         Fn::Sub: ${LambdaMemory}
       CodeUri: ./formkiq-module-lambda-authorizer-apikey.zip
       Tracing: Active
-      AutoPublishCodeSha256: f2f7d13e6442fcf50f2f646cb9e78f15503bf088c0101b72c3279668054ceab3
+      AutoPublishCodeSha256: 4c5b6313f587452993ba20cb41d35a2f5789859ae8eead0cafdd329bd40c9af7
       Environment:
         Variables:
           APP_ENVIRONMENT:
