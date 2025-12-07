@@ -33,6 +33,13 @@ jobs:
           chmod +x "$HOME/.local/bin/ytt"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           ytt --version
+
+          GOMPLATE_VERSION="v4.3.3"
+          curl -L -o "$HOME/.local/bin/gomplate" \
+            https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64
+          chmod +x "$HOME/.local/bin/gomplate"
+          gomplate --version
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
