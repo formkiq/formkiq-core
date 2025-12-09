@@ -214,6 +214,7 @@ public class ConfigurationRequestHandler
     validateDocusign(config, vb);
 
     vb.check();
+
   }
 
   private void validateDocument(final SiteConfiguration config, final ValidationBuilder vb) {
@@ -224,10 +225,10 @@ public class ConfigurationRequestHandler
 
       SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
       if (contentTypes != null) {
+
         boolean hasAllowlist = !notNull(contentTypes.allowlist()).isEmpty();
         boolean hasDenylist = !notNull(contentTypes.denylist()).isEmpty();
-
-        if (hasAllowlist == hasDenylist) {
+        if (hasAllowlist && hasDenylist) {
           vb.addError("document.contentTypes", "Only set either 'allowlist' or 'denylist'");
         }
       }

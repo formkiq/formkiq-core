@@ -90,6 +90,22 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   /** {@link ConfigService}. */
   private ConfigService config;
 
+  private GetConfigurationResponse assertContentTypeAllowed(
+      final UpdateConfigurationResponse response, final String contentType, final String expected)
+      throws ApiException {
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocumentConfig doc = configuration.getDocument();
+    assertNotNull(doc);
+    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
+    assertNotNull(contentTypes);
+    assertEquals(contentType, String.join(",", notNull(contentTypes.getAllowlist())));
+    assertEquals(expected, String.join(",", notNull(contentTypes.getDenylist())));
+
+    return configuration;
+  }
+
   /**
    * Before Each.
    */
@@ -536,28 +552,33 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PATCH contenttype only without allow or deny.
+   * PATCH remove contenttype only allow or deny.
    *
    */
   @Test
-  public void testPatchContentType() {
+  public void testPatchContentType() throws ApiException {
     // given
     String group = "Admins";
     setBearerToken(group);
 
-    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+
+    // given
+    req = new UpdateConfigurationRequest()
         .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()));
 
     // when
-    try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-      assertEquals("{\"errors\":[{\"key\":\"document.contentTypes\","
-          + "\"error\":\"Only set either 'allowlist' or 'denylist'\"}]}", e.getResponseBody());
-    }
+    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "", "");
   }
 
   /**
@@ -603,15 +624,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
 
     // then
-    assertEquals("Config saved", response.getMessage());
-
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
-    DocumentConfig doc = configuration.getDocument();
-    assertNotNull(doc);
-    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
-    assertNotNull(contentTypes);
-    assertEquals("text/plain", String.join(",", notNull(contentTypes.getAllowlist())));
-    assertEquals("", String.join(",", notNull(contentTypes.getDenylist())));
+    assertContentTypeAllowed(response, "text/plain", "");
   }
 
   /**
@@ -632,15 +645,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
 
     // then
-    assertEquals("Config saved", response.getMessage());
-
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
-    DocumentConfig doc = configuration.getDocument();
-    assertNotNull(doc);
-    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
-    assertNotNull(contentTypes);
-    assertEquals("text/plain", String.join(",", notNull(contentTypes.getAllowlist())));
-    assertEquals("", String.join(",", notNull(contentTypes.getDenylist())));
+    assertContentTypeAllowed(response, "text/plain", "");
   }
 
   /**
@@ -660,14 +665,36 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
 
     // then
-    assertEquals("Config saved", response.getMessage());
+    assertContentTypeAllowed(response, "", "text/plain");
+  }
 
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
-    DocumentConfig doc = configuration.getDocument();
-    assertNotNull(doc);
-    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
-    assertNotNull(contentTypes);
-    assertEquals("", String.join(",", notNull(contentTypes.getAllowlist())));
-    assertEquals("text/plain", String.join(",", notNull(contentTypes.getDenylist())));
+  /**
+   * PATCH update other config and ensure contenttype only allow is still there.
+   *
+   */
+  @Test
+  public void testPatchContentTypeWithOtherConfig() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+
+    // given
+    req = new UpdateConfigurationRequest().maxDocuments("1");
+
+    // when
+    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    GetConfigurationResponse configResponse = assertContentTypeAllowed(response, "text/plain", "");
+    assertEquals("1", configResponse.getMaxDocuments());
   }
 }
