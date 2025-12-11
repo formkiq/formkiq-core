@@ -36,20 +36,22 @@ import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
 
 /**
- * {@link CustomDynamoDbAttributeBuilder} for {@link DynamoDbKey}.
+ * {@link CustomDynamoDbAttributeBuilder} for {@link DynamoDbShardKey}.
  */
-public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuilder {
+public class DynamoDbShardKeyAttributeBuilder implements CustomDynamoDbAttributeBuilder {
 
   @Override
   public <T> T decode(final String name, final Map<String, AttributeValue> attrs) {
 
-    Collection<DynamoDbKey> keys = null;
+    Collection<DynamoDbShardKey> keys = null;
     AttributeValue av = attrs.get(name);
 
     if (av != null) {
-      keys = av.l().stream()
-          .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-          .toList();
+      keys = av.l().stream().map(a -> {
+        Map<String, AttributeValue> m = a.m();
+        DynamoDbKey key = new DynamoDbKey(m.get(PK).s(), m.get(SK).s(), null, null, null, null);
+        return new DynamoDbShardKey.Builder().key(key).build();
+      }).toList();
     }
 
     return (T) keys;
@@ -58,13 +60,12 @@ public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuild
   @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
-    AttributeValueToMap toMap = new AttributeValueToMap();
-
     List<Map<String, Object>> list = new ArrayList<>();
+    AttributeValueToMap toMap = new AttributeValueToMap();
 
     if (value instanceof Collection<?> c) {
       c.forEach(val -> {
-        if (val instanceof DynamoDbKey key) {
+        if (val instanceof DynamoDbShardKey key) {
           list.add(toMap.apply(key.toMap()));
         }
       });

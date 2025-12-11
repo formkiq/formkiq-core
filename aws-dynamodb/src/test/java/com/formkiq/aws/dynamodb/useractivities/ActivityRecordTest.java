@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.useractivities;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import org.junit.jupiter.api.Test;
@@ -54,13 +55,14 @@ public class ActivityRecordTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = ID.uuid();
-      ActivityRecord.Builder builder =
-          ActivityRecord.builder().resource("documents").documentId(documentId).userId(USER_ID);
+      ActivityRecord.Builder builder = ActivityRecord.builder(null, null).resource("documents")
+          .documentId(documentId).userId(USER_ID);
 
       // when
-      DynamoDbKey key = builder.buildKey(siteId);
+      DynamoDbShardKey shardKey = builder.buildKey(siteId);
 
       // then
+      DynamoDbKey key = shardKey.key();
       assertKeyEquals(siteId, "doc#" + documentId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
       assertTrue(key.sk().contains("#" + documentId + "#"));
@@ -83,13 +85,15 @@ public class ActivityRecordTest {
       String entityId = ID.uuid();
       String entityTypeId = ID.uuid();
 
-      ActivityRecord.Builder builder = ActivityRecord.builder().resource("entities")
+      ActivityRecord.Builder builder = ActivityRecord.builder(null, null).resource("entities")
           .entityId(entityId).entityTypeId(entityTypeId).userId(USER_ID);
 
       // when
-      DynamoDbKey key = builder.buildKey(siteId);
+      DynamoDbShardKey shardKey = builder.buildKey(siteId);
 
       // then
+      DynamoDbKey key = shardKey.key();
+
       assertKeyEquals(siteId, "entity#" + entityTypeId + "#" + entityId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
       assertTrue(key.sk().contains("#" + entityId + "#"));
@@ -111,13 +115,15 @@ public class ActivityRecordTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String entityTypeId = ID.uuid();
-      ActivityRecord.Builder builder = ActivityRecord.builder().resource("entityTypes")
+      ActivityRecord.Builder builder = ActivityRecord.builder(null, null).resource("entityTypes")
           .entityTypeId(entityTypeId).userId(USER_ID);
 
       // when
-      DynamoDbKey key = builder.buildKey(siteId);
+      DynamoDbShardKey shardKey = builder.buildKey(siteId);
 
       // then
+      DynamoDbKey key = shardKey.key();
+
       assertKeyEquals(siteId, "entityType#" + entityTypeId, key.pk());
       assertTrue(key.sk().startsWith("activity#"));
       assertTrue(key.sk().contains("#" + entityTypeId + "#"));

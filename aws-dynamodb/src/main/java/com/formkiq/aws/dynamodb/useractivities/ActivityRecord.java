@@ -23,10 +23,11 @@
  */
 package com.formkiq.aws.dynamodb.useractivities;
 
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbShardEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -40,10 +41,13 @@ import java.util.Objects;
 /**
  * Record representing a activity with its DynamoDB key structure and metadata.
  */
-public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType type,
+public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivityType type,
     UserActivityStatus status, String sourceIpAddress, String source, String userId,
     String entityTypeId, String entityId, String documentId, String attributeKey, String message,
     Date insertedDate, String versionPk, String versionSk, Map<String, Object> changes) {
+
+  /** Number of Shards - total of 4 shards, 0,1,2,3. */
+  public static final int SHARD_COUNT = 3;
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -77,16 +81,18 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
   /**
    * Creates a new {@link Builder} for {@link ActivityRecord}.
    *
+   * @param gsi1Shard {@link String}
+   * @param gsi2Shard {@link String}
    * @return a Builder instance
    */
-  public static Builder builder() {
-    return new Builder();
+  public static Builder builder(final String gsi1Shard, final String gsi2Shard) {
+    return new Builder(gsi1Shard, gsi2Shard);
   }
 
   /**
    * Fluent builder for {@link ActivityRecord}.
    */
-  public static class Builder implements DynamoDbEntityBuilder<ActivityRecord> {
+  public static class Builder implements DynamoDbShardEntityBuilder<ActivityRecord> {
     /** Activity Record Type. */
     private UserActivityType type;
     /** Activity Record Resource. */
@@ -117,6 +123,21 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
     private String versionPk;
     /** Document Version Pk. */
     private String versionSk;
+    /** Pk GSI1 Shard. */
+    private final String pkGsi1Shard;
+    /** Pk GSI1 Shard. */
+    private final String pkGsi2Shard;
+
+    /**
+     * constructor.
+     * 
+     * @param gsi1Shard {@link String}
+     * @param gsi2Shard {@link String}
+     */
+    public Builder(final String gsi1Shard, final String gsi2Shard) {
+      pkGsi1Shard = gsi1Shard != null ? gsi1Shard : DynamoDbShardKey.getShardKey(SHARD_COUNT);
+      pkGsi2Shard = gsi2Shard != null ? gsi2Shard : DynamoDbShardKey.getShardKey(SHARD_COUNT);
+    }
 
     /**
      * Sets the Attribute Key.
@@ -142,14 +163,14 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
       Objects.requireNonNull(status, "status must not be null");
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
-      DynamoDbKey key = buildKey(siteId);
+      DynamoDbShardKey key = buildKey(siteId);
 
       return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
           entityTypeId, entityId, documentId, attributeKey, message, insertedDate, versionPk,
           versionSk, changes);
     }
 
-    private DynamoDbKey buildDocumentsKey(final String siteId) {
+    private DynamoDbShardKey buildDocumentsKey(final String siteId) {
 
       Objects.requireNonNull(documentId, "documentId must not be null");
       Objects.requireNonNull(userId, "userId must not be null");
@@ -160,11 +181,14 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
 
       String gsi2Pk = getGsi2Pk();
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
-          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+      DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk)
+          .gsi1Sk(sk).gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+
+      return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
+          .build();
     }
 
-    private DynamoDbKey buildEntitiesKey(final String siteId) {
+    private DynamoDbShardKey buildEntitiesKey(final String siteId) {
 
       Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
       Objects.requireNonNull(entityId, "entityId must not be null");
@@ -176,11 +200,13 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
 
       String gsi2Pk = getGsi2Pk();
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
-          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+      DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk)
+          .gsi1Sk(sk).gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+      return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
+          .build();
     }
 
-    private DynamoDbKey buildEntityTypesKey(final String siteId) {
+    private DynamoDbShardKey buildEntityTypesKey(final String siteId) {
 
       Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
       Objects.requireNonNull(userId, "userId must not be null");
@@ -191,12 +217,14 @@ public record ActivityRecord(DynamoDbKey key, String resource, UserActivityType 
 
       String gsi2Pk = getGsi2Pk();
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
-          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+      DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk)
+          .gsi1Sk(sk).gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+      return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
+          .build();
     }
 
     @Override
-    public DynamoDbKey buildKey(final String siteId) {
+    public DynamoDbShardKey buildKey(final String siteId) {
       return switch (resource) {
         case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
         case "entities" -> buildEntitiesKey(siteId);

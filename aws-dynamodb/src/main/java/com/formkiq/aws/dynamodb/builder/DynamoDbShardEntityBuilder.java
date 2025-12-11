@@ -21,27 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.base64;
+package com.formkiq.aws.dynamodb.builder;
 
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+public interface DynamoDbShardEntityBuilder<T> {
 
-/**
- * {@link Function} to convert Pagination {@link String} next token to a DynamoDb StartKey.
- */
-public class MapAttributeValueToString implements Function<Map<String, AttributeValue>, String> {
-  @Override
-  public String apply(final Map<String, AttributeValue> map) {
+  /**
+   * Builds the {@link T}, computing the DynamoDbKey.
+   *
+   * @param siteId {@link String}
+   * @return a new T
+   */
+  T build(String siteId);
 
-    if (map == null) {
-      return null;
-    }
-
-    Map<String, String> m =
-        map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
-    return new MapToBase64().apply(m);
-  }
+  /**
+   * Build {@link DynamoDbShardKey}.
+   * 
+   * @param siteId {@link String}
+   * @return DynamoDbKey
+   */
+  DynamoDbShardKey buildKey(String siteId);
 }

@@ -21,27 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.base64;
+package com.formkiq.aws.dynamodb;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 /**
- * {@link Function} to convert Pagination {@link String} next token to a DynamoDb StartKey.
+ * Comparator for sorting a {@link java.util.List} {@link Map} {@link AttributeValue} by a specific
+ * AttributeValue key.
+ *
+ * If scanIndexForward == true, sorts ascending. If scanIndexForward == false, sorts descending.
  */
-public class MapAttributeValueToString implements Function<Map<String, AttributeValue>, String> {
+public class AttributeValueComparator
+    implements Comparator<Map<String, AttributeValue>>, Serializable {
+
+  /** Field Key. */
+  private final String key;
+  /** Scan Index Forward. */
+  private final boolean scanForward;
+
+  public AttributeValueComparator(final String fieldKey, final boolean scanIndexForward) {
+    this.key = Objects.requireNonNull(fieldKey, "fieldKey cannot be null");
+    this.scanForward = scanIndexForward;
+  }
+
   @Override
-  public String apply(final Map<String, AttributeValue> map) {
+  public int compare(final Map<String, AttributeValue> a, final Map<String, AttributeValue> b) {
 
-    if (map == null) {
-      return null;
-    }
+    Comparator<Map<String, AttributeValue>> base =
+        Comparator.comparing(this::getString, Comparator.nullsFirst(String::compareTo));
 
-    Map<String, String> m =
-        map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
-    return new MapToBase64().apply(m);
+    return scanForward ? base.compare(a, b) : base.reversed().compare(a, b);
+  }
+
+  private String getString(final Map<String, AttributeValue> m) {
+    AttributeValue v = m.get(key);
+    return v == null ? null : v.s();
   }
 }

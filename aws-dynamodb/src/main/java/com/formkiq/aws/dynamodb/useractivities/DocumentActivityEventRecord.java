@@ -24,7 +24,8 @@
 package com.formkiq.aws.dynamodb.useractivities;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbKeyAttributeBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
+import com.formkiq.aws.dynamodb.DynamoDbShardKeyAttributeBuilder;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -42,7 +43,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
  * Record representing an Document Activity Event, with its DynamoDB key structure and metadata.
  */
 public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String documentId,
-    Date insertedDate, Collection<DynamoDbKey> activityKeys) {
+    Date insertedDate, Collection<DynamoDbShardKey> activityKeys) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -68,8 +69,8 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
-    Collection<DynamoDbKey> activityKeys =
-        DynamoDbTypes.toCustom("activityKeys", attributes, new DynamoDbKeyAttributeBuilder());
+    Collection<DynamoDbShardKey> activityKeys =
+        DynamoDbTypes.toCustom("activityKeys", attributes, new DynamoDbShardKeyAttributeBuilder());
     return new DocumentActivityEventRecord(key, DynamoDbTypes.toString(attributes.get("siteId")),
         DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")), activityKeys);
@@ -84,7 +85,7 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString("documentId", documentId)
         .withString("siteId", siteId).withTimeToLiveInDays(1).withDate("inserteddate", insertedDate)
-        .withCustom("activityKeys", activityKeys, new DynamoDbKeyAttributeBuilder()).build();
+        .withCustom("activityKeys", activityKeys, new DynamoDbShardKeyAttributeBuilder()).build();
   }
 
   /**
@@ -103,15 +104,15 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     /** Document Id. */
     private String documentId;
     /** Activity Keys. */
-    private Collection<DynamoDbKey> activityKeys;
+    private Collection<DynamoDbShardKey> activityKeys;
 
     /**
      * Sets the activity {@link DynamoDbKey}.
      *
-     * @param documentActivityKeys {@link Collection} {@link DynamoDbKey}
+     * @param documentActivityKeys {@link Collection} {@link DynamoDbShardKey}
      * @return this Builder
      */
-    public Builder activityKeys(final Collection<DynamoDbKey> documentActivityKeys) {
+    public Builder activityKeys(final Collection<DynamoDbShardKey> documentActivityKeys) {
       this.activityKeys = documentActivityKeys;
       return this;
     }
