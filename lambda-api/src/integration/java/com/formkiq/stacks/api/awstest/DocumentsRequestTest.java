@@ -644,7 +644,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"error\":\"Max Number of Documents reached\"}]}",
+            e.getResponseBody());
       }
     }
   }

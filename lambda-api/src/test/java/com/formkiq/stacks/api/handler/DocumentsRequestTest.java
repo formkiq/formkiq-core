@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -201,10 +202,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(2, documents.size());
 
       assertEquals("doc_1", documents.get(0).getDocumentId());
-      assertNotNull(documents.get(0).getSiteId());
+      assertNull(documents.get(0).getSiteId());
 
       assertEquals("doc_0", documents.get(1).getDocumentId());
-      assertNotNull(documents.get(1).getSiteId());
+      assertNull(documents.get(1).getSiteId());
     }
   }
 
@@ -286,6 +287,47 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(1, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request when document has metadata / streamTriggeredDate.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments06() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DynamicDocumentItem item =
+          new DynamicDocumentItem(Map.of("documentId", documentId, "userId", username));
+      var metadata = new com.formkiq.aws.dynamodb.model.DocumentMetadata();
+      metadata.setKey("asd");
+      metadata.setValue("123");
+      item.setMetadata(List.of(metadata));
+      item.setContentLength(contentLength);
+      item.put("streamTriggeredDate", "123");
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNotNull(documents.get(0).getInsertedDate());
+      assertNotNull(documents.get(0).getLastModifiedDate());
+      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
+      assertNotNull(documents.get(0).getUserId());
+      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
     }
   }
 

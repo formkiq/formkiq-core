@@ -24,7 +24,6 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -37,8 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.AttributeValueToMap;
-import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -68,6 +65,7 @@ import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
@@ -188,14 +186,14 @@ public class DocumentsRequestHandler
 
     boolean documentIdProjection =
         "DOCUMENT_ID_ONLY".equalsIgnoreCase(event.getQueryStringParameter("projection"));
+
     String nextToken = event.getQueryStringParameter("next");
     QueryResult result = new GetAllDocumentsQuery(date, !documentIdProjection).query(db,
         documentsTable, siteId, nextToken, limit);
 
-    AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
-        .addValues(Map.of("siteId", getSiteIdName(siteId))).build();
-    List<Map<String, Object>> docs =
-        result.items().stream().map(new AttributeValueToMap(config)).toList();
+    AttributeValueToDocumentItem toDocument = new AttributeValueToDocumentItem();
+    List<DocumentItem> docs = result.items().stream().map(toDocument::apply).toList();
+
 
     return ApiRequestHandlerResponse.builder().ok().body("documents", docs)
         .next(result.toNextToken()).build();
