@@ -47,7 +47,7 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
     Date insertedDate, String versionPk, String versionSk, Map<String, Object> changes) {
 
   /** Number of Shards - total of 4 shards, 0,1,2,3. */
-  public static final int SHARD_COUNT = 3;
+  public static final int SHARD_COUNT = 7;
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
