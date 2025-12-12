@@ -1,12 +1,7 @@
 openapi: "3.0.1"
 info:
   title:
-{{- $base := (ds "path" "title.yaml").title }}
-{{- $overrideRaw := env.Getenv "OPENAPI_TITLE" }}
-{{- $title := $base }}
-{{- if ne $overrideRaw "" }}
-{{-   $title = dict "Fn::Sub" $overrideRaw }}
-{{- end }}
+{{- $title := (ds "path" "title.yaml").title }}
 {{ strings.TrimSpace ($title | data.ToYAML) | indent 4 }}
   contact:
     name: FormKiQ
