@@ -1,7 +1,7 @@
 openapi: "3.0.1"
 info:
   title:
-    Fn::Sub: FormKiQ API KEY
+    FormKiQ API KEY
   contact:
     name: FormKiQ
     url: https://formkiq.com
