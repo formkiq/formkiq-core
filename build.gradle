@@ -84,19 +84,19 @@ ytt {
     }
 
     api {
-      from("src/main/resources/cloudformation/api/api.yaml")
+      from("build/cloudformation/api/api.yaml")
       into("api/api.yaml")
       hash "sha256"
     }
 
     apiIam {
-      from("src/main/resources/cloudformation/api/api-iam.yaml")
+      from("build/cloudformation/api/api-iam.yaml")
       into("api/api-iam.yaml")
       hash "sha256"
     }
 
     apiApikey {
-      from("src/main/resources/cloudformation/api/api-apikey.yaml")
+      from("build/cloudformation/api/api-apikey.yaml")
       into("api/api-apikey.yaml")
       hash "sha256"
     }
@@ -223,83 +223,32 @@ openApiGenerate {
   modelPackage.set("com.formkiq.springboot.model")
 }
 
-tasks.register("buildOpenApi") {
-  def fileMappings = [
-    (file("build/ytt/api/api.yaml"))        : "openapi-jwt.yaml",
-    (file("build/ytt/api/api-iam.yaml"))    : "openapi-iam.yaml",
-    (file("build/ytt/api/api-apikey.yaml")) : "openapi-key.yaml"
-  ]
-
-  def destDir = layout.buildDirectory.dir("../docs/openapi")
-
-  inputs.files(fileMappings.keySet())
-  outputs.dir(destDir)
-
-  doLast {
-    def outDir = destDir.get().asFile
-    outDir.mkdirs()
-
-    fileMappings.each { File src, String outName ->
-      if (!src.exists()) {
-        logger.warn("⚠️  Skipping missing file: ${src}")
-        return
-      }
-
-      def lines = src.readLines()
-      def startIdx = lines.findIndexOf { it.trim().startsWith("openapi:") }
-      def endIdx   = lines.findIndexOf { it.trim().startsWith("Outputs:") }
-
-      if (startIdx < 0) {
-        logger.warn("⚠️  No 'openapi:' found in ${src}; skipping.")
-        return
-      }
-      if (endIdx < 0 || endIdx <= startIdx) {
-        endIdx = lines.size() // take until EOF if no 'Outputs:'
-      }
-
-      def extracted = lines.subList(startIdx, endIdx)
-      def outFile = new File(outDir, outName)
-
-      outFile.parentFile.mkdirs()
-      outFile.text = extracted.join(System.lineSeparator()) + System.lineSeparator()
-
-      logger.lifecycle("✅ Extracted ${src.name} → ${outFile}")
-    }
-  }
-}
-
-buildOpenApi.dependsOn 'yttRenderAll'
-
-def apiCfTemplate = "src/main/resources/cloudformation/api/openapi-cf.gotmpl"
 def apiTemplate = "src/main/resources/cloudformation/api/openapi.gotmpl"
-def apiDir   = file("src/main/resources/cloudformation/api")
 def openapiOutDir = "$projectDir/docs/openapi"
 
 def variants = [
-  Jwt: [ dirName: "jwt", title:"FormKiQ API JWT", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-jwt.yaml"],
-  JwtCf: [ dirName: "jwt", file:"src/main/resources/cloudformation/api/api.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api.yaml"],
-  Iam: [ dirName: "iam", title:"FormKiQ API IAM", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-iam.yaml"],
-  IamCf: [ dirName: "iam", file:"src/main/resources/cloudformation/api/api-iam.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api-iam.yaml"],
-  Key: [ dirName: "key", title:"FormKiQ API KEY", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-key.yaml"],
-  KeyCf: [ dirName: "key", file:"src/main/resources/cloudformation/api/api-apikey.gotmpl", template: apiTemplate, outputFile:"src/main/resources/cloudformation/api/api-apikey.yaml"],
+  Jwt: [ dirName: "jwt/docs", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-jwt.yaml"],
+  JwtCf: [ dirName: "jwt/api", file:"src/main/resources/cloudformation/api/api.gotmpl", template: apiTemplate, outputFile:"build/cloudformation/api/api.yaml"],
+  Iam: [ dirName: "iam/docs", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-iam.yaml"],
+  IamCf: [ dirName: "iam/api", file:"src/main/resources/cloudformation/api/api-iam.gotmpl", template: apiTemplate, outputFile:"build/cloudformation/api/api-iam.yaml"],
+  Key: [ dirName: "key/docs", file:apiTemplate, outputFile:"$projectDir/docs/openapi/openapi-key.yaml"],
+  KeyCf: [ dirName: "key/api", file:"src/main/resources/cloudformation/api/api-apikey.gotmpl", template: apiTemplate, outputFile:"build/cloudformation/api/api-apikey.yaml"],
 ]
 
 variants.each { suffix, cfg ->
   tasks.register("generateOpenApi${suffix}", Exec) {
+    dependsOn tasks.named('copyGomplateResources')
+
     group = "openapi"
     description = "Generate ${suffix} OpenAPI spec using gomplate"
 
-    def pathDir = new File(apiDir, cfg.dirName)
+    def pathDir = new File("$buildDir/gomplate", cfg.dirName)
 
     inputs.file new File(cfg.file)
     inputs.dir pathDir
     outputs.file new File(cfg.outputFile)
 
     environment "PROJECT_VERSION", project.version.toString()
-
-    if (cfg.title) {
-      environment "OPENAPI_TITLE", cfg.title
-    }
 
     def cmd = [
       "gomplate",
@@ -328,6 +277,8 @@ tasks.register("generateOpenApiSpecs") {
   dependsOn variants.keySet().collect { "generateOpenApi${it}" }
 }
 
+generateOpenApiSpecs.dependsOn 'copyGomplateResources'
+
 def yttDeps = [
   "yttRender_apiIam"    : "generateOpenApiIamCf",
   "yttRender_apiApikey" : "generateOpenApiKeyCf",
@@ -338,5 +289,54 @@ tasks.withType(com.formkiq.gradle.AbstractYttRenderTask).configureEach { t ->
   def genTaskName = yttDeps[t.name]
   if (genTaskName != null) {
     t.dependsOn(tasks.named(genTaskName))
+  }
+}
+
+tasks.register('copyGomplateResources', Copy) {
+  description = 'Copy gomplate resources'
+  group = 'build'
+
+  into("$buildDir/gomplate")
+
+  from('src/main/resources/cloudformation/api/jwt') {
+    into('jwt/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+
+  from('src/main/resources/cloudformation/api/jwt') {
+    into('jwt/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
+  }
+
+  from('src/main/resources/cloudformation/api/iam') {
+    into('iam/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+
+  from('src/main/resources/cloudformation/api/iam') {
+    into('iam/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
+  }
+
+  from('src/main/resources/cloudformation/api/key') {
+    into('key/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+
+  from('src/main/resources/cloudformation/api/key') {
+    into('key/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
   }
 }
