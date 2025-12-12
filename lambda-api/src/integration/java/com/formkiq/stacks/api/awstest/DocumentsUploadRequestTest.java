@@ -261,7 +261,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     String siteId = ID.uuid();
-    SiteConfiguration config = SiteConfiguration.builder().maxContentLengthBytes("1").build(siteId);
+    SiteConfiguration config = SiteConfiguration.builder().maxDocuments("1").build(siteId);
     configService.save(siteId, config);
     TimeUnit.SECONDS.sleep(1);
 
@@ -282,7 +282,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       } catch (ApiException e) {
         // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"error\":\"Max Number of Documents reached\"}]}",
+            e.getResponseBody());
       }
     }
   }
