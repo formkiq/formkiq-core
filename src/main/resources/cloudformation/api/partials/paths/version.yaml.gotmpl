@@ -1,0 +1,19 @@
+{{- define "paths.version" -}}
+/version:
+  get:
+    operationId: GetVersion
+    summary: Get FormKiQ version
+    description: Return the version of FormKiQ
+    tags:
+      - System Management
+    responses:
+      '200':
+        description: "200 OK"
+{{ tmpl.Exec "cors.responseHeaders" . | indent 8 }}
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GetVersionResponse"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 4 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 4 }}
+{{- end -}}
