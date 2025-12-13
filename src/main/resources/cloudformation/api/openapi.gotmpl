@@ -121,10 +121,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetVersionResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites:
     get:
       operationId: GetSites
@@ -146,10 +144,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetSitesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddSite
       description: Add Site
@@ -176,8 +172,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /sites/{siteId}:
@@ -203,10 +198,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UpdateResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/groups:
     get:
       operationId: GetSiteGroups
@@ -224,10 +217,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetSiteGroupsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/groups/{groupName}:
     get:
       operationId: GetSiteGroup
@@ -246,10 +237,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetSiteGroupResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteSiteGroup
       description: Deletes Site Group and permissions
@@ -262,10 +251,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/groups/{groupName}/permissions:
     put:
       operationId: SetSiteGroupPermissions
@@ -290,10 +277,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/SetResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/opensearch/index:
     get:
       operationId: GetOpenSearchIndex
@@ -314,8 +299,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchIndexResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     put:
@@ -340,8 +324,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/SetOpenSearchIndexResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     delete:
@@ -355,8 +338,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/global/opensearch/indices:
@@ -374,8 +356,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/global/opensearch/indices/{indexName}:
@@ -390,8 +371,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/opensearch/indices:
@@ -411,8 +391,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     put:
@@ -437,8 +416,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/SetResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/global/opensearch/snapshotRepositories:
@@ -456,8 +434,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/opensearch/snapshotRepository:
@@ -477,8 +454,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     delete:
@@ -492,8 +468,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/opensearch/snapshots:
@@ -513,8 +488,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchSnapshotResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/opensearch/snapshots/{snapshotName}:
@@ -535,8 +509,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpenSearchSnapshotResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     post:
@@ -556,8 +529,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/AddResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     delete:
@@ -572,8 +544,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/opensearch/snapshots/{snapshotName}/restore:
@@ -594,8 +565,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/AddResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     delete:
@@ -610,8 +580,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /sites/{siteId}/schema/document:
@@ -632,10 +601,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetSitesSchemaResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetSitesSchema
       description: Sets Sites schema
@@ -664,10 +631,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/schema/document/attributes/{key}/allowedValues:
     get:
       operationId: GetSitesSchemaAttributeAllowedValues
@@ -688,10 +653,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetAttributeAllowedValuesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/classifications:
     get:
       operationId: GetSitesClassifications
@@ -711,10 +674,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetClassificationsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddClassification
       description: Add Classification
@@ -743,10 +704,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/classifications/{classificationId}:
     get:
       operationId: GetClassification
@@ -766,10 +725,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetClassificationResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteClassification
       description: Delete Classification
@@ -787,10 +744,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetClassification
       description: Sets Classification
@@ -820,10 +775,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/classifications/{classificationId}/attributes/{key}/allowedValues:
     get:
       operationId: GetClassificationAttributeAllowedValues
@@ -845,10 +798,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetAttributeAllowedValuesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/configuration:
     get:
       operationId: GetConfiguration
@@ -866,10 +817,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetConfigurationResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateConfiguration
       description: Update the System Management configuration
@@ -898,10 +847,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/apiKeys:
     get:
       operationId: GetApiKeys
@@ -921,10 +868,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetApiKeysResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddApiKey
       description: Adds a new API Key
@@ -951,10 +896,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddApiKeyResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/apiKeys/{apiKey}:
     delete:
       operationId: DeleteApiKey
@@ -973,10 +916,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteApiKeyResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/opa/accessPolicies:
     get:
       operationId: GetOpaAccessPolicies
@@ -992,10 +933,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpaAccessPoliciesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/opa/accessPolicy:
     get:
       operationId: GetOpaAccessPolicy
@@ -1013,10 +952,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpaAccessPolicyResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/opa/accessPolicy/policyItems:
     get:
       operationId: GetOpaAccessPolicyItems
@@ -1034,10 +971,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetOpaAccessPolicyItemsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetOpaAccessPolicyItems
       description: |-
@@ -1067,8 +1002,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     delete:
@@ -1087,10 +1021,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/locales:
     get:
       operationId: GetLocales
@@ -1110,10 +1042,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetLocalesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddLocale
       description: Adds a new locale to the specified site
@@ -1136,10 +1066,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/locales/{locale}:
     delete:
       operationId: DeleteLocale
@@ -1158,10 +1086,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/locales/{locale}/resourceItems:
     get:
       operationId: GetLocaleResourceItems
@@ -1182,10 +1108,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetLocaleResourceItemsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddLocaleResourceItem
       description: Adds a new localized resource item for a given locale
@@ -1234,10 +1158,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddLocaleResourceItemResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /sites/{siteId}/locales/{locale}/resourceItems/{itemKey}:
     get:
       operationId: GetLocaleResourceItem
@@ -1257,10 +1179,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetLocaleResourceItemResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetLocaleResourceItem
       description: Set a new Locale Resource Item
@@ -1285,10 +1205,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteLocaleResourceItem
       summary: Delete Local Resource Item
@@ -1307,10 +1225,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents:
     get:
       operationId: GetDocuments
@@ -1370,10 +1286,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetDocumentsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocument
       description: |-
@@ -1449,8 +1363,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /documents/{documentId}:
@@ -1472,10 +1385,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateDocument
       summary: Update document
@@ -1527,10 +1438,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteDocument
       summary: Delete document
@@ -1557,10 +1466,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/purge:
     delete:
       operationId: PurgeDocument
@@ -1575,10 +1482,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/content:
     get:
       operationId: GetDocumentContent
@@ -1610,10 +1515,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentContentResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/attributes:
     get:
       operationId: GetDocumentAttributes
@@ -1634,10 +1537,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentAttributesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentAttributes
       summary: Add attribute to document
@@ -1657,8 +1558,7 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/201CorsAddResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     put:
@@ -1683,10 +1583,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsSetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/attributes/{attributeKey}:
     get:
       operationId: GetDocumentAttribute
@@ -1706,10 +1604,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentAttributeResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetDocumentAttributeValue
       summary: Set document's attributes value
@@ -1729,10 +1625,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsSetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteDocumentAttribute
       summary: Delete document attribute
@@ -1746,10 +1640,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/attributes/{attributeKey}/{attributeValue}:
     delete:
       operationId: DeleteDocumentAttributeAndValue
@@ -1765,10 +1657,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/tags:
     get:
       operationId: GetDocumentTags
@@ -1795,10 +1685,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentTagsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentTags
       summary: Add tag to document
@@ -1834,8 +1722,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     patch:
@@ -1871,10 +1758,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetDocumentTags
       summary: Set document's tags
@@ -1908,10 +1793,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/tags/{tagKey}:
     get:
       operationId: GetDocumentTag
@@ -1932,10 +1815,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentTagResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetDocumentTag
       summary: Update document tag value(s)
@@ -1955,10 +1836,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteDocumentTag
       summary: Delete document tag
@@ -1972,10 +1851,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/tags/{tagKey}/{tagValue}:
     delete:
       operationId: DeleteDocumentTagAndValue
@@ -1992,10 +1869,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/tags:
     patch:
       operationId: UpdateMatchingDocumentTags
@@ -2019,10 +1894,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UpdateMatchingDocumentTagsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/url:
     get:
       operationId: GetDocumentUrl
@@ -2056,10 +1929,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/upload:
     get:
       operationId: GetDocumentUpload
@@ -2087,10 +1958,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentUpload
       summary: Add large document
@@ -2129,8 +1998,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /documents/{documentId}/upload:
@@ -2156,10 +2024,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/restore:
     put:
       operationId: SetDocumentRestore
@@ -2178,10 +2044,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetDocumentRestoreResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/compress:
     post:
       operationId: CompressDocuments
@@ -2206,8 +2070,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentsCompressResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /attributes:
@@ -2229,10 +2092,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetAttributesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddAttribute
       description: |-
@@ -2262,8 +2123,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /attributes/{key}:
@@ -2284,10 +2144,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetAttributeResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateAttribute
       description: |-
@@ -2318,10 +2176,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteAttribute
       description: |-
@@ -2341,10 +2197,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /attributes/{key}/allowedValues:
     get:
       operationId: GetAttributeAllowedValues
@@ -2364,10 +2218,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetAttributeAllowedValuesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /search:
     post:
       operationId: DocumentSearch
@@ -2456,8 +2308,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentSearchResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
   /searchFulltext:
@@ -2491,8 +2342,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /queryFulltext:
@@ -2522,8 +2372,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QueryFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /documents/{documentId}/actions:
@@ -2547,10 +2396,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentActionsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentActions
       summary: Add document action
@@ -2612,10 +2459,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/actions/retry:
     post:
       operationId: AddDocumentRetryAction
@@ -2641,10 +2486,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/ocr:
     get:
       operationId: GetDocumentOcr
@@ -2670,8 +2513,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentOcrResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
     post:
@@ -2700,8 +2542,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentOcrResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
     put:
@@ -2730,8 +2571,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentOcrResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
     delete:
@@ -2749,8 +2589,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrLambdaApi200"
   /documents/{documentId}/versions:
@@ -2774,10 +2613,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentVersionsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetDocumentVersion
       summary: Set version of document
@@ -2807,10 +2644,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/versions/{versionKey}:
     delete:
       operationId: DeleteDocumentVersion
@@ -2826,10 +2661,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/checkout:
     put:
       operationId: SetDocumentCheckout
@@ -2849,10 +2682,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/legalHold:
     put:
       operationId: SetDocumentCheckoutLegalHold
@@ -2872,10 +2703,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteDocumentCheckoutLegalHold
       summary: Delete document legal hold checkout
@@ -2889,10 +2718,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /folders:
     get:
       operationId: GetFolderDocuments
@@ -2915,8 +2742,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetFoldersResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
     post:
@@ -2942,8 +2768,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddFolderResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /folders/{indexKey}:
@@ -2965,10 +2790,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteFolderResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /folders/{indexKey}/permissions:
     get:
       operationId: GetFolderPermissions
@@ -2987,8 +2810,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetFolderPermissionsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
   /folders/permissions:
@@ -3018,10 +2840,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /shares:
     get:
       operationId: GetUserShares
@@ -3041,10 +2861,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetUserSharesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /shares/folders/{indexKey}:
     post:
       operationId: AddFolderShare
@@ -3075,8 +2893,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /shares/{shareKey}:
@@ -3096,10 +2913,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteShareResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /workflows:
     get:
       operationId: GetWorkflows
@@ -3120,10 +2935,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetWorkflowsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddWorkflow
       summary: Add workflow
@@ -3153,8 +2966,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /workflows/{workflowId}:
@@ -3175,10 +2987,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetWorkflowResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteWorkflow
       summary: Delete workflow
@@ -3196,10 +3006,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/DeleteWorkflowResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetWorkflow
       summary: Set workflow
@@ -3230,10 +3038,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateWorkflow
       summary: Update workflow
@@ -3264,10 +3070,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /workflows/{workflowId}/documents:
     get:
       operationId: GetWorkflowDocuments
@@ -3288,8 +3092,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetWorkflowDocumentsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
   /queues:
@@ -3311,10 +3114,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetQueuesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddQueue
       summary: Add queue
@@ -3344,8 +3145,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /queues/{queueId}:
@@ -3366,10 +3166,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetQueueResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteQueue
       summary: Delete queue
@@ -3387,10 +3185,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/DeleteQueueResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /queues/{queueId}/documents:
     get:
       operationId: GetWorkflowQueueDocuments
@@ -3411,8 +3207,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetWorkflowQueueDocumentsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
   /documents/{documentId}/workflows:
@@ -3440,10 +3235,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentWorkflow
       summary: Add document workflow
@@ -3474,8 +3267,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /documents/{documentId}/workflows/{workflowId}:
@@ -3504,10 +3296,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/workflow/{workflowId}/decisions:
     post:
       operationId: AddDocumentWorkflowDecisions
@@ -3540,8 +3330,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /documents/{documentId}/antivirus:
@@ -3572,8 +3361,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"
   /documents/{documentId}/malwareScan:
@@ -3603,8 +3391,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"
     put:
@@ -3631,8 +3418,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200"
   /documents/{documentId}/fulltext:
@@ -3654,8 +3440,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     delete:
@@ -3675,8 +3460,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     put:
@@ -3702,8 +3486,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetDocumentFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     post:
@@ -3729,8 +3512,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
     patch:
@@ -3756,8 +3538,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateDocumentFulltextResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /documents/{documentId}/fulltext/tags/{tagKey}:
@@ -3775,8 +3556,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
@@ -3795,8 +3575,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
   /documents/{documentId}/syncs:
@@ -3819,10 +3598,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentSyncResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddDocumentSync
       summary: Add document sync to service
@@ -3846,10 +3623,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/dataClassification:
     get:
       operationId: GetDocumentDataClassification
@@ -3870,8 +3645,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentDataClassificationResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
     put:
@@ -3897,8 +3671,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetDocumentDataClassificationResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
   /userActivities:
@@ -3926,10 +3699,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetUserActivitesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/userActivities:
     get:
       operationId: GetDocumentUserActivities
@@ -3950,10 +3721,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetUserActivitesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /activities:
     get:
       operationId: GetResourceActivities
@@ -3986,10 +3755,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetActivitesResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /public/documents:
     post:
       operationId: PublicAddDocument
@@ -4044,8 +3811,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentId'
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /private/webhooks/{webhooks+}:
     post:
       operationId: AddWebhookDocument
@@ -4070,10 +3836,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentId'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /webhooks:
     get:
       operationId: GetWebhooks
@@ -4093,10 +3857,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetWebhooksResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddWebhook
       summary: Add webhook
@@ -4119,8 +3881,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddWebhookResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /webhooks/{webhookId}:
@@ -4141,10 +3902,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetWebhookResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteWebhook
       summary: Delete webhook
@@ -4157,10 +3916,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateWebhook
       summary: Update webhook
@@ -4179,10 +3936,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsUpdateResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /webhooks/{webhookId}/tags:
     get:
       operationId: GetWebhookTags
@@ -4201,10 +3956,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetWebhookTagsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddWebhookTag
       summary: Add webhook tag
@@ -4231,8 +3984,7 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/200Cors'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /indices/{indexType}/move:
@@ -4264,10 +4016,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /indices/{indexType}/{indexKey}:
     delete:
       operationId: DeleteIndex
@@ -4295,10 +4045,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /indices/search:
     post:
       operationId: IndexSearch
@@ -4335,10 +4083,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /esignature/docusign/{documentId}/envelopes:
     post:
       operationId: AddDocusignEnvelopes
@@ -4369,8 +4115,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
   /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
@@ -4404,8 +4149,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
   /esignature/docusign/events:
@@ -4443,10 +4187,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetGroupsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddGroup
       description: Add a new group
@@ -4467,10 +4209,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/AddResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /groups/{groupName}:
     get:
       operationId: GetGroup
@@ -4488,10 +4228,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetGroupResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteGroup
       summary: Delete Group
@@ -4508,10 +4246,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /groups/{groupName}/users:
     get:
       operationId: GetUsersInGroup
@@ -4531,10 +4267,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetUsersInGroupResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddUserToGroup
       description: Adds a user to a group
@@ -4557,10 +4291,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/AddResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /groups/{groupName}/users/{username}:
     delete:
       operationId: RemoveUsernameFromGroup
@@ -4579,10 +4311,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /users:
     get:
       operationId: GetUsers
@@ -4601,10 +4331,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetUsersResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddUser
       description: Adds a user
@@ -4625,10 +4353,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/AddResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /users/{username}:
     get:
       operationId: GetUser
@@ -4646,10 +4372,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetUserResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteUsername
       summary: Delete Username
@@ -4666,10 +4390,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /users/{username}/groups:
     get:
       operationId: GetListOfUserGroups
@@ -4689,10 +4411,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetUserGroupsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /users/{username}/{userOperation}:
     put:
       operationId: SetUserOperation
@@ -4711,10 +4431,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/SetResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /cases:
     get:
       operationId: GetCases
@@ -4738,8 +4456,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCasesResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     post:
@@ -4764,8 +4481,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddCaseResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}:
@@ -4786,8 +4502,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     patch:
@@ -4813,8 +4528,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateCaseResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     delete:
@@ -4834,8 +4548,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/documents:
@@ -4862,8 +4575,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseDocumentsResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/documents/{documentId}:
@@ -4885,8 +4597,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseDocumentResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/tasks/{taskId}:
@@ -4908,8 +4619,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseTaskResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     patch:
@@ -4936,8 +4646,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateTaskResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     delete:
@@ -4958,8 +4667,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseTaskResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/tasks/{taskId}/documents:
@@ -4987,8 +4695,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseDocumentsResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/tasks/{taskId}/documents/{documentId}:
@@ -5011,8 +4718,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseTaskDocumentResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/nigos/{nigoId}:
@@ -5034,8 +4740,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseNigoResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     patch:
@@ -5062,8 +4767,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateNigoResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     delete:
@@ -5084,8 +4788,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseNigoResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/nigos/{nigoId}/documents:
@@ -5113,8 +4816,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseDocumentsResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/nigos/{nigoId}/documents/{documentId}:
@@ -5137,8 +4839,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteCaseNigoDocumentResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/tasks:
@@ -5165,8 +4866,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseTasksResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     post:
@@ -5192,8 +4892,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddTaskResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /cases/{caseId}/nigos:
@@ -5220,8 +4919,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetCaseNigosResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
     post:
@@ -5247,8 +4945,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddNigoResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
   /mappings:
@@ -5270,10 +4967,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetMappingsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddMapping
       description: |-
@@ -5303,8 +4998,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /mappings/{mappingId}:
@@ -5325,10 +5019,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetMappingResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
       operationId: SetMapping
       description: |-
@@ -5359,8 +5051,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     delete:
@@ -5380,10 +5071,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /rulesets:
     get:
       operationId: GetRulesets
@@ -5407,10 +5096,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetRulesetsResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddRuleset
       description: |-
@@ -5440,8 +5127,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /rulesets/{rulesetId}:
@@ -5462,10 +5148,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetRulesetResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateRuleset
       description: |-
@@ -5496,8 +5180,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     delete:
@@ -5517,10 +5200,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteRulesetResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /rulesets/{rulesetId}/rules:
     get:
       operationId: GetRules
@@ -5541,10 +5222,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetRulesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddRule
       description: |-
@@ -5575,8 +5254,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /rulesets/{rulesetId}/rules/{ruleId}:
@@ -5598,10 +5276,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetRuleResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateRule
       description: |-
@@ -5633,8 +5309,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
     delete:
@@ -5655,10 +5330,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteRuleResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /objects/examine/pdf:
     get:
       operationId: GetExaminePdfUrl
@@ -5677,8 +5350,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetExaminePdfUrlResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200"
   /objects/examine/{id}/pdf:
@@ -5702,8 +5374,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetExaminePdfResponse"
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200"
   /publications/{documentId}:
@@ -5723,10 +5394,8 @@ paths:
             Location:
               schema:
                 type: "string"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeletePublishedDocumentContent
       summary: Delete published document's contents
@@ -5739,10 +5408,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/generate:
     post:
       operationId: AddDocumentGenerate
@@ -5778,8 +5445,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/documentGenerationLambdaApi201"
   /integrations/google/drive/documents/{documentId}/export:
@@ -5813,8 +5479,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/googleLambdaApi201"
   /reindex/documents/{documentId}:
@@ -5850,8 +5515,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /entityTypes:
@@ -5874,10 +5538,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetEntityTypesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddEntityType
       description: |-
@@ -5907,8 +5569,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /entityTypes/{entityTypeId}:
@@ -5930,10 +5591,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetEntityTypeResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteEntityType
       description: Deletes Entity Type
@@ -5946,10 +5605,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /entities/{entityTypeId}:
     get:
       operationId: GetEntities
@@ -5971,10 +5628,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetEntitiesResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     post:
       operationId: AddEntity
       description: |-
@@ -6006,8 +5661,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /entities/{entityTypeId}/{entityId}:
@@ -6030,10 +5684,8 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/GetEntityResponse"
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     patch:
       operationId: UpdateEntity
       description: |-
@@ -6066,10 +5718,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
       operationId: DeleteEntity
       description: Deletes Entity
@@ -6083,10 +5733,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-        - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
+{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
 components:
   headers:
     AccessControlAllowOrigin:
