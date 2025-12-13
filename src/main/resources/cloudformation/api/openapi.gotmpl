@@ -106,23 +106,7 @@ servers:
     description: Local development server
 paths:
 
-  /version:
-    get:
-      operationId: GetVersion
-      summary: Get FormKiQ version
-      description: Return the version of FormKiQ
-      tags:
-        - System Management
-      responses:
-        '200':
-          description: "200 OK"
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/GetVersionResponse"
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
+{{ tmpl.Exec "paths.version" . | indent 2 }}
   /sites:
     get:
       operationId: GetSites
@@ -10358,23 +10342,7 @@ components:
         content:
           type: "string"
           description: "Document content"
-    GetVersionResponse:
-      type: object
-      properties:
-        version:
-          type: string
-          description: "FormKiQ version"
-        type:
-          type: string
-          description: "FormKiQ type"
-        appEnvironment:
-          type: string
-          description: "FormKiQ App Environment"
-        modules:
-          type: array
-          description: "List of installed modules"
-          items:
-            type: "string"
+{{ tmpl.Exec "schemas.getVersionResponse" . | indent 4 }}
     UpdateConfigurationRequest:
       type: "object"
       properties:

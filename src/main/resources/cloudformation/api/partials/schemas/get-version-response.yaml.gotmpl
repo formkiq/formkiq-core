@@ -1,0 +1,19 @@
+{{- define "schemas.getVersionResponse" -}}
+GetVersionResponse:
+  type: object
+  properties:
+    version:
+      type: string
+      description: "FormKiQ version"
+    type:
+      type: string
+      description: "FormKiQ type"
+    appEnvironment:
+      type: string
+      description: "FormKiQ App Environment"
+    modules:
+      type: array
+      description: "List of installed modules"
+      items:
+        type: "string"
+{{- end -}}

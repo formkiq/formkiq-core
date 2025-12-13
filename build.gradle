@@ -259,7 +259,11 @@ variants.each { suffix, cfg ->
       "-o",
       cfg.outputFile,
       "-t",
-      "src/main/resources/cloudformation/api/partials"
+      "src/main/resources/cloudformation/api/partials/",
+      "-t",
+      "src/main/resources/cloudformation/api/partials/paths",
+      "-t",
+      "src/main/resources/cloudformation/api/partials/schemas"
     ]
 
     if (cfg.template) {
