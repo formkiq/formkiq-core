@@ -257,7 +257,8 @@ variants.each { suffix, cfg ->
       "-d",
       "path=${pathDir.absolutePath}${File.separator}",
       "-o",
-      cfg.outputFile
+      cfg.outputFile,
+      "-t", "src/main/resources/cloudformation/api/partials"
     ]
 
     if (cfg.template) {

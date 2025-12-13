@@ -1,0 +1,9 @@
+{{- define "cors.responseHeaders" -}}
+headers:
+  Access-Control-Allow-Origin:
+    $ref: '#/components/headers/AccessControlAllowOrigin'
+  Access-Control-Allow-Methods:
+    $ref: '#/components/headers/AccessControlAllowMethods'
+  Access-Control-Allow-Headers:
+    $ref: '#/components/headers/AccessControlAllowHeaders'
+{{- end -}}
