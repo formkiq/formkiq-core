@@ -116,13 +116,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -147,13 +141,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -177,13 +165,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -216,13 +198,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -243,13 +219,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -271,13 +241,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -321,13 +285,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -351,13 +309,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -383,13 +335,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -423,13 +369,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -466,13 +406,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -498,13 +432,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -523,13 +451,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -550,13 +472,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -592,13 +508,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -620,13 +530,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -647,13 +551,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -691,13 +589,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -735,13 +627,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -767,13 +653,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -803,13 +683,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -832,13 +706,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -864,13 +732,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -899,13 +761,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -926,13 +782,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -959,13 +809,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -996,13 +840,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1023,13 +861,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1055,13 +887,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1090,13 +916,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1126,13 +946,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1154,13 +968,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1179,13 +987,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1206,13 +1008,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1233,13 +1029,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1266,13 +1056,7 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1298,13 +1082,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1327,13 +1105,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1359,13 +1131,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1387,13 +1153,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1417,13 +1177,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1475,13 +1229,7 @@ paths:
       responses:
         '200':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1504,13 +1252,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1538,13 +1280,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1566,13 +1302,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1635,13 +1365,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1714,13 +1438,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1749,13 +1467,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1804,13 +1516,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -1897,13 +1603,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
             Location:
               $ref: '#/components/headers/Location'
           content:
@@ -1929,13 +1629,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2007,13 +1701,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2102,13 +1790,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2147,13 +1829,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2251,13 +1927,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2344,13 +2014,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2387,13 +2051,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2424,13 +2082,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2472,13 +2124,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2505,13 +2151,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2533,13 +2173,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2567,13 +2201,7 @@ paths:
       responses:
         "201":
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2596,13 +2224,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2629,13 +2251,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2663,13 +2279,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2697,13 +2307,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2755,13 +2359,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2853,13 +2451,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2888,13 +2480,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2931,13 +2517,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -2962,13 +2542,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3027,13 +2601,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3062,13 +2630,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3103,13 +2665,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3139,13 +2695,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3175,13 +2725,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3225,13 +2769,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3258,13 +2796,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3312,13 +2844,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3341,13 +2867,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3390,13 +2910,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3423,13 +2937,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3452,13 +2960,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3480,13 +2982,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3517,13 +3013,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3546,13 +3036,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3580,13 +3064,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3613,13 +3091,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3643,13 +3115,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3675,26 +3141,14 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddWorkflowResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3716,13 +3170,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3743,13 +3191,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3776,26 +3218,14 @@ paths:
       responses:
         '200':
           description: 20) OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetWorkflowResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3822,26 +3252,14 @@ paths:
       responses:
         '200':
           description: 20) OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateWorkflowResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3865,13 +3283,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3894,13 +3306,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3926,26 +3332,14 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddQueueResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3967,13 +3361,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -3994,13 +3382,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4024,13 +3406,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4052,26 +3428,14 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentWorkflowsResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4098,26 +3462,14 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentWorkflowResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4140,26 +3492,14 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDocumentWorkflowResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4188,26 +3528,14 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentWorkflowDecisionsResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4239,13 +3567,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4269,26 +3591,14 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetMalwareScanResponse'
         '400':
           description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4316,13 +3626,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4345,13 +3649,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4372,13 +3670,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4405,13 +3697,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4438,13 +3724,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4471,13 +3751,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4540,13 +3814,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4573,13 +3841,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4603,13 +3865,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4636,13 +3892,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4671,13 +3921,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4701,13 +3945,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4743,13 +3981,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4781,13 +4013,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4813,13 +4039,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4845,13 +4065,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4874,13 +4088,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4906,13 +4114,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -4934,13 +4136,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5000,13 +4196,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5063,13 +4253,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5100,13 +4284,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5146,13 +4324,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5186,13 +4358,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5227,13 +4393,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5258,13 +4418,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5284,13 +4438,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5314,13 +4462,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5341,13 +4483,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5367,13 +4503,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5396,13 +4526,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5428,13 +4552,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5456,13 +4574,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5484,13 +4596,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5514,13 +4620,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5541,13 +4641,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5567,13 +4661,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5596,13 +4684,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5624,13 +4706,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5657,13 +4733,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5689,13 +4759,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5717,13 +4781,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5750,13 +4808,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5777,13 +4829,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5811,13 +4857,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5840,13 +4880,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5869,13 +4903,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5903,13 +4931,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5931,13 +4953,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5966,13 +4982,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -5996,13 +5006,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6025,13 +5029,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6059,13 +5057,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6087,13 +5079,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6122,13 +5108,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6152,13 +5132,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6186,13 +5160,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6219,13 +5187,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6253,13 +5215,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6286,13 +5242,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6315,13 +5265,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6348,13 +5292,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6382,13 +5320,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6416,13 +5348,7 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6449,13 +5375,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6482,13 +5402,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6515,13 +5429,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6549,13 +5457,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6583,13 +5485,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6616,13 +5512,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6646,13 +5536,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6680,13 +5564,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6715,13 +5593,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6750,13 +5622,7 @@ paths:
       responses:
         '200':
           description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6784,13 +5650,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6812,13 +5672,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6843,13 +5697,7 @@ paths:
       responses:
         '201':
           description: "201 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6919,13 +5767,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -6960,13 +5802,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7003,13 +5839,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7039,13 +5869,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7072,13 +5896,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7107,13 +5925,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7154,13 +5966,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7189,13 +5995,7 @@ paths:
       responses:
         '201':
           description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7225,13 +6025,7 @@ paths:
       responses:
         '200':
           description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
@@ -7261,13 +6055,7 @@ paths:
       responses:
         '200':
           description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
+{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
           content:
             application/json:
               schema:
