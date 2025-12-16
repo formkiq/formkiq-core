@@ -55,6 +55,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name
+
 Conditions:
   IsLogFormatJSON: 
     Fn::Equals:
