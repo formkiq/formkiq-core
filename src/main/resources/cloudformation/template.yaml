@@ -350,6 +350,10 @@ Resources:
     Properties:
       Location: cognito/template.yaml
       Parameters:
+        AppEnvironment:
+          Ref: AppEnvironment
+        VpcStackName:
+          Ref: VpcStackName
         EnableDeletionProtection:
           Ref: EnableDeletionProtection
         UserPoolName: 
@@ -389,7 +393,7 @@ Resources:
     Properties:
       Location: ./ssm-template.yaml
       Parameters:
-        AppEnvironment: 
+        AppEnvironment:
           Ref: AppEnvironment
         CognitoUserPool: 
           Fn::GetAtt: 

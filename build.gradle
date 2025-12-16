@@ -17,7 +17,7 @@ allprojects {
 
   version = '1.18.1'
 
-  ext.awsCognitoVersion = '1.6.4'
+  ext.awsCognitoVersion = '1.6.5'
   group = 'com.formkiq.stacks'
 
   configurations.all {

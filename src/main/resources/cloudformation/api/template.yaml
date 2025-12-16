@@ -293,8 +293,10 @@ Resources:
           Fn::GetAtt: 
           - Ocr
           - Outputs.OcrProcessorArn
+        VpcStackName:
+          Ref: VpcStackName
 
-#!  AuthApi:
+          #!  AuthApi:
 #!    Type: AWS::Serverless::Application
 #!    Properties:
 #!      Location: ./api-auth.yaml
@@ -754,6 +756,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        VpcStackName:
+          Ref: VpcStackName
         FormKiQType:
           Ref: FormKiQType
         LogRetentionInDays:

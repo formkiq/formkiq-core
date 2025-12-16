@@ -12,6 +12,10 @@ Parameters:
     Description: The Application Environment
     AllowedPattern: ".+"
 
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name
+
   LambdaMemory:
     Type: Number
     Description: The amount of memory used by lambda function (MB)
