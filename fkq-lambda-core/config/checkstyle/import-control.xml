@@ -15,6 +15,7 @@
 
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 
+        <allow pkg="com.formkiq.urls" />
 		<allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.s3" />
