@@ -78,7 +78,8 @@ Serverless on AWS: Lambda + API Gateway + S3 + DynamoDB + OpenSearch, with optio
 - Other languages via [OpenAPI Generator](https://github.com/OpenAPITools/openapi-generator) using the published spec.
 
 ## Client Tutorials
-- **[Python Tutorial](https://docs.formkiq.com/docs/tutorials/Python/documents-api)** — documents API walkthrough.
+- **[Python SDK Tutorial](https://docs.formkiq.com/docs/tutorials/using-python-client-sdk)** — Python SDK Document API walkthrough
+- **[TypeScript SDK Tutorial](https://docs.formkiq.com/docs/tutorials/using-typescript-client-sdk)** — TypeScript SDK Document API walkthrough
 
 ## Resources & support
 - Docs: [Complete Documentation](https://docs.formkiq.com), [API Reference](https://docs.formkiq.com/docs/category/api-reference), [Tutorials](https://docs.formkiq.com/docs/category/tutorials), [How-To Guides](https://docs.formkiq.com/docs/category/how-to)
