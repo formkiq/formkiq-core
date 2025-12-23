@@ -11,20 +11,22 @@ dependencies {
   implementation project(':aws-dynamodb')
   implementation project(':fkq-lambda-services')
 
-  implementation group: 'software.amazon.awssdk', name: 'sso', version: '2.31.59'
-  implementation group: 'software.amazon.awssdk', name: 'ssooidc', version: '2.31.59'
+  implementation group: 'software.amazon.awssdk', name: 'sso', version: '2.40.14'
+  implementation group: 'software.amazon.awssdk', name: 'ssooidc', version: '2.40.14'
 
   implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.3.0'
   api("com.formkiq:client:1.18.1") {
     changing = true
   }
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
-  implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-  implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
-  implementation group: 'org.testcontainers', name: 'localstack', version: '1.21.1'
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
+  implementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.1'
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+
+  implementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.4'
+  implementation group: 'org.testcontainers', name: 'localstack', version: '1.21.4'
   api group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
-  implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.6'
-  implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.6'
-  implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.12.6'
-  implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.14.0'
+  implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.13.0'
+  implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.13.0'
+  implementation group: 'io.jsonwebtoken', name: 'jjwt-gson', version: '0.13.0'
+  implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.14.1'
 }
