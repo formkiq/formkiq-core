@@ -3,8 +3,8 @@ description = "AWS EventBridge"
 
 dependencies {
 
-  api 'software.amazon.awssdk:eventbridge:2.31.59'
-  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.31.59'
+  api 'software.amazon.awssdk:eventbridge:2.40.14'
+  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.40.14'
   //implementation project(':aws-xray')
   implementation project(':fkq-lambda-services')
 
@@ -13,5 +13,6 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.1'
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
 }
