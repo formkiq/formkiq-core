@@ -216,6 +216,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
           sapi.getDocumentFulltext(documentId, siteId, null);
           TimeUnit.SECONDS.sleep(1);
         } catch (ApiException e) {
+          TimeUnit.SECONDS.sleep(1);
           if (e.getCode() == SC_NOT_FOUND.getStatusCode()) {
             break;
           }

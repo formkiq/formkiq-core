@@ -33,4 +33,4 @@ COPY --from=builder /graalvm.zip /graalvm.zip
 RUN ls -lah /graalvm.zip
 
 # Default command
-CMD ["sh"]
+CMD ["sh", "-c", "cp /graalvm.zip /output/graalvm.zip"]
