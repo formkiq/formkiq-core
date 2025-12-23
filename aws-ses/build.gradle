@@ -2,12 +2,13 @@
 description = "AWS SES"
 
 dependencies {
-  api group: 'software.amazon.awssdk', name: 'ses', version: '2.31.59'
-  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.31.59'
+  api group: 'software.amazon.awssdk', name: 'ses', version: '2.40.14'
+  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.40.14'
   implementation project(':fkq-lambda-services')
   //implementation project(':aws-xray')
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.1'
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
 
   configurations.all {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'

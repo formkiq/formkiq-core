@@ -32,8 +32,9 @@ dependencies {
   testImplementation project(':aws-ssm')
   testImplementation project(':aws-sns')
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-  testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.1'
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
 }
 
 // -------------------------------
@@ -45,7 +46,6 @@ tasks.register('integrationTest', Test) {
   group = "verification"
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
-  useJUnitPlatform()
 }
 
 // Disable jar for this module (matches your original intent)
