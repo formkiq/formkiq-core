@@ -1,6 +1,6 @@
 /*
  pluginManagement {
- includeBuild '../graalvm-native-plugin'
+ includeBuild '../java-base-plugin'
  }*/
 
 plugins {

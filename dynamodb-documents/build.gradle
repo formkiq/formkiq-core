@@ -5,19 +5,20 @@ sourceSets {
   integration {
     java.srcDir "$projectDir/src/integration/java"
     resources.srcDir "$projectDir/src/integration/resources"
-    compileClasspath += main.output + test.output
-    runtimeClasspath += main.output + test.output
+
+    compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    runtimeClasspath += output + compileClasspath
   }
 }
 
 configurations {
   integrationImplementation.extendsFrom testImplementation
-  integrationRuntime.extendsFrom testRuntime
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.1'
+  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.2'
 
   implementation project(':strings')
   implementation project(':aws-s3')
@@ -26,17 +27,21 @@ dependencies {
   implementation project(':fkq-validation')
   implementation project(':fkq-lambda-services')
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
+  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
 
   testImplementation project(':aws-ssm')
   testImplementation project(':fkq-test-utils')
   testImplementation 'org.slf4j:slf4j-api:2.0.17'
-  testImplementation group: 'com.google.guava', name: 'guava', version: '33.4.8-jre'
+  testImplementation group: 'com.google.guava', name: 'guava', version: '33.5.0-jre'
   testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'5.11.4'
-  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '1.21.1'
-  testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.1'
+  testImplementation platform("org.junit:junit-bom:6.0.1")
+  testImplementation "org.junit.jupiter:junit-jupiter"
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+
+  testImplementation platform("org.testcontainers:testcontainers-bom:2.0.3")
+  testImplementation "org.testcontainers:testcontainers"
+  testImplementation "org.testcontainers:testcontainers-junit-jupiter"
 
   configurations.all {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'
@@ -59,8 +64,7 @@ task createZip(type: Zip) {
 createZip.dependsOn check
 build.dependsOn createZip
 
-task integrationTest(type: Test) {
+tasks.register("integrationTest", Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
-  useJUnitPlatform()
 }
