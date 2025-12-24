@@ -13,6 +13,7 @@
 		<allow pkg="java.net.http" />
 		<allow pkg="java.nio.charset" />
 
+        <allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.module.http" />
 		<allow pkg="com.formkiq.module.httpsigv4" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
