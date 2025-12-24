@@ -15,7 +15,7 @@ dependencies {
   implementation group: 'software.amazon.awssdk', name: 'ssooidc', version: '2.40.14'
 
   implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.4.0'
-  api("com.formkiq:client:1.18.1-SNAPSHOT") {
+  api("com.formkiq:client:1.18.1") {
     changing = true
   }
   implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
