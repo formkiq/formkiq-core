@@ -65,8 +65,6 @@ public final class TestServices {
   public static final Region AWS_REGION = Region.US_EAST_1;
   /** {@link String}. */
   public static final String BUCKET_NAME = "testbucket";
-  /** ACCESS_POINT_S3_BUCKET. */
-  public static final String ACCESS_POINT_S3_BUCKET = "accesspointtestbucket";
   /** Default LocalStack Port. */
   private static final int DEFAULT_LOCALSTACK_PORT = 4566;
   /** App Environment. */

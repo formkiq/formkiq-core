@@ -26,6 +26,8 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -49,6 +51,7 @@ import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
@@ -57,23 +60,35 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,6 +103,267 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   @BeforeEach
   void beforeEach() {
     clearSqsMessages();
+  }
+
+  /**
+   * Create MAX_RESULTS + 2 Documents test data.
+   *
+   * @param prefix {@link String}
+   * @param testdatacount int
+   */
+  private void createTestData(final String prefix, final int testdatacount) {
+    String userId = "jsmith";
+    final int min10 = 10;
+    LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
+
+    for (int i = 0; i < testdatacount; i++) {
+
+      nowLocalDate = nowLocalDate.plusMinutes(1);
+      Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
+      getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
+          new ArrayList<>());
+    }
+  }
+
+  private DocumentService getDocumentService() {
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DocumentService.class, new DocumentServiceExtension());
+    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    return awsServices.getExtension(DocumentService.class);
+  }
+
+  /**
+   * Get /documents request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNotNull(documents.get(0).getInsertedDate());
+      assertNotNull(documents.get(0).getLastModifiedDate());
+      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
+      assertNotNull(documents.get(0).getUserId());
+      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
+    }
+  }
+
+  /**
+   * Get /documents request with next parameter.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      createTestData(siteId, DocumentService.MAX_RESULTS + 2);
+
+      // when
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertNull(resp.getPrevious());
+      assertFalse(isEmpty(resp.getNext()));
+
+      // when
+      resp = documentsApi.getDocuments(siteId, null, null, null, null, null, resp.getNext(), null,
+          null, null);
+
+      // then
+      assertTrue(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+
+      documents = notNull(resp.getDocuments());
+      assertEquals(2, documents.size());
+
+      assertEquals("doc_1", documents.get(0).getDocumentId());
+      assertNull(documents.get(0).getSiteId());
+
+      assertEquals("doc_0", documents.get(1).getDocumentId());
+      assertNull(documents.get(1).getSiteId());
+    }
+  }
+
+  /**
+   * Get /documents request with Limit=MAX_RESULTS.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments03() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      createTestData(siteId, DocumentService.MAX_RESULTS);
+
+      // when
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertFalse(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz. Date after
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments04() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
+          null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments05() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = DateUtil.toDateFromString("2019-08-15", "0500");
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
+          null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request when document has metadata / streamTriggeredDate.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments06() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DynamicDocumentItem item =
+          new DynamicDocumentItem(Map.of("documentId", documentId, "userId", username));
+      var metadata = new com.formkiq.aws.dynamodb.model.DocumentMetadata();
+      metadata.setKey("asd");
+      metadata.setValue("123");
+      item.setMetadata(List.of(metadata));
+      item.setContentLength(contentLength);
+      item.put("streamTriggeredDate", "123");
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp =
+          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNotNull(documents.get(0).getInsertedDate());
+      assertNotNull(documents.get(0).getLastModifiedDate());
+      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
+      assertNotNull(documents.get(0).getUserId());
+      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
+    }
+  }
+
+  /**
+   * Get /documents request with ID only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsIdOnly() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null,
+          "DOCUMENT_ID_ONLY", null);
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.get(0).getDocumentId());
+      assertNull(documents.get(0).getInsertedDate());
+      assertNull(documents.get(0).getLastModifiedDate());
+      assertNull(documents.get(0).getUserId());
+      assertNull(documents.get(0).getContentLength());
+    }
   }
 
   /**
@@ -804,6 +1080,68 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save new File with and without allow type.
+   *
+   */
+  @Test
+  public void testPostAllowlist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addAllowContentType("application/json")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      String documentId = response.response().getDocumentId();
+      assertNotNull(documentId);
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      var addResponse =
+          new AddDocumentUploadRequestBuilder().contentType("text/plain").submit(client, siteId);
+
+      // then
+      assertNotNull(addResponse.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, addResponse.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          addResponse.exception().getResponseBody());
+    }
+  }
+
+  /**
    * Save new File with valid SHA-256.
    *
    * @throws ApiException ApiException
@@ -873,6 +1211,56 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Save new File with and without deny type.
+   *
+   */
+  @Test
+  public void testPostDenylist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addDenyContentType("text/plain")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      String documentId = response.response().getDocumentId();
+      assertNotNull(documentId);
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
     }
   }
 

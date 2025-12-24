@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.model.ApiKeyPermission;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.ApiKey;
@@ -48,6 +49,35 @@ import com.formkiq.client.invoker.ApiException;
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
 
   /**
+   * POST /sites/{siteId}/apiKeys with groups.
+   *
+   */
+  @Test
+  public void testAddApiKeyWithGroups() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      AddApiKeyRequest req = new AddApiKeyRequest().name("test key")
+          .groups(List.of("test1", "test2")).permissions(List.of(ApiKeyPermission.READ));
+
+      // when
+      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+
+      // then
+      assertNotNull(response.getApiKey());
+
+      GetApiKeysResponse keys = this.systemApi.getApiKeys(siteId, null, null);
+      List<ApiKey> apiKeys = notNull(keys.getApiKeys());
+      assertEquals(1, apiKeys.size());
+      assertEquals("test key", apiKeys.get(0).getName());
+      assertEquals("READ", notNull(apiKeys.get(0).getPermissions()).stream().map(Enum::name)
+          .collect(Collectors.joining(",")));
+      assertEquals("test1,test2", String.join(",", notNull(apiKeys.get(0).getGroups())));
+    }
+  }
+
+  /**
    * Delete /sites/{siteId}/apiKeys default as User.
    *
    */
@@ -56,10 +86,10 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
-      // when
       setBearerToken(siteId);
 
       try {
+        // when
         this.systemApi.deleteApiKey("ABC", siteId);
         fail();
       } catch (ApiException e) {
@@ -172,8 +202,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       setBearerToken(group);
 
       String apiKeyName = "test key";
-      AddApiKeyRequest req = new AddApiKeyRequest().name(apiKeyName)
-          .addPermissionsItem(AddApiKeyRequest.PermissionsEnum.GOVERN);
+      AddApiKeyRequest req =
+          new AddApiKeyRequest().name(apiKeyName).addPermissionsItem(ApiKeyPermission.GOVERN);
 
       // when
       AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);

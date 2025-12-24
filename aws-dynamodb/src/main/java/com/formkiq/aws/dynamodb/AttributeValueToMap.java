@@ -30,6 +30,13 @@ import java.util.stream.Collectors;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_PK;
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2_SK;
+import static com.formkiq.aws.dynamodb.DbKeys.PK;
+import static com.formkiq.aws.dynamodb.DbKeys.SHARD;
+import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
@@ -72,12 +79,19 @@ public class AttributeValueToMap
         result.put(key, obj);
       }
 
+      addValues(result);
       removeKeys(result);
       renameKeys(result);
       deleteKeys(result);
     }
 
     return result;
+  }
+
+  private void addValues(final Map<String, Object> result) {
+    if (this.config != null) {
+      result.putAll(notNull(this.config.getAddValues()));
+    }
   }
 
   private void deleteKeys(final Map<String, Object> result) {
@@ -95,12 +109,15 @@ public class AttributeValueToMap
 
   private void removeKeys(final Map<String, Object> result) {
     if (config != null && config.isRemoveDbKeys()) {
-      result.remove(DbKeys.PK);
-      result.remove(DbKeys.SK);
-      result.remove(DbKeys.GSI1_PK);
-      result.remove(DbKeys.GSI1_SK);
-      result.remove(DbKeys.GSI2_PK);
-      result.remove(DbKeys.GSI2_SK);
+      result.remove(PK);
+      result.remove(PK + SHARD);
+      result.remove(SK);
+      result.remove(GSI1_PK);
+      result.remove(GSI1_PK + SHARD);
+      result.remove(GSI1_SK);
+      result.remove(GSI2_PK);
+      result.remove(GSI2_PK + SHARD);
+      result.remove(GSI2_SK);
     }
   }
 

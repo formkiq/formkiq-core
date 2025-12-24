@@ -58,12 +58,14 @@ public class DynamoDbKeyAttributeBuilder implements CustomDynamoDbAttributeBuild
   @Override
   public Map<String, AttributeValue> encode(final String name, final Object value) {
 
+    AttributeValueToMap toMap = new AttributeValueToMap();
+
     List<Map<String, Object>> list = new ArrayList<>();
 
     if (value instanceof Collection<?> c) {
       c.forEach(val -> {
         if (val instanceof DynamoDbKey key) {
-          list.add(Map.of(PK, key.pk(), SK, key.sk()));
+          list.add(toMap.apply(key.toMap()));
         }
       });
     }

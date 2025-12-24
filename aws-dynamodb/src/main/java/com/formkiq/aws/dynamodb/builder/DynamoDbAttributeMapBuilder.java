@@ -224,6 +224,22 @@ public class DynamoDbAttributeMapBuilder {
   }
 
   /**
+   * Adds a Strings attribute if the value is non-null.
+   *
+   * @param name the attribute name
+   * @param values {@link Collection} {@link String} value
+   * @return this builder
+   */
+  public DynamoDbAttributeMapBuilder withStrings(final String name,
+      final Collection<String> values) {
+    if (values != null) {
+      attributes.put(name,
+          AttributeValue.builder().l(values.stream().map(AttributeValue::fromS).toList()).build());
+    }
+    return this;
+  }
+
+  /**
    * Set a Time to Live in days.
    *
    * @param days long

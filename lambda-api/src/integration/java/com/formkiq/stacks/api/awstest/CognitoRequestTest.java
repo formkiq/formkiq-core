@@ -270,7 +270,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null, null);
+      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then

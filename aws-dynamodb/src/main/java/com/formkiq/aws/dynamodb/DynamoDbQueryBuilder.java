@@ -28,8 +28,12 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 /**
  * Builder for DynamoDB QueryRequest, supporting primary and GSI queries with key conditions (eq,
@@ -81,6 +85,14 @@ public class DynamoDbQueryBuilder implements DbKeys {
     String placeholder = ":" + name;
     expressionAttributeValues.put(placeholder, value);
     return placeholder;
+  }
+
+  private void applyShardSuffix(final Map<String, AttributeValue> map, final String key,
+      final String shard) {
+    String val = DynamoDbTypes.toString(map.get(key));
+    if (!isEmpty(val)) {
+      map.put(key, fromS(DynamoDbShardKey.addShardSuffix(val, shard)));
+    }
   }
 
   /**
@@ -213,6 +225,40 @@ public class DynamoDbQueryBuilder implements DbKeys {
    */
   public DynamoDbQueryBuilder limit(final int resultsLimit) {
     this.limit = resultsLimit;
+    return this;
+  }
+
+  /**
+   * Add an <= condition on SK.
+   * 
+   * @param value sort key value
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder lte(final String value) {
+    String nameKey = addName(SK);
+    String valKey = addValue(SK, AttributeValue.builder().s(value).build());
+    keyConditions.add(nameKey + " <= " + valKey);
+    return this;
+  }
+
+
+  /**
+   * Set Start Key from Next token.
+   *
+   * @param skey {@link DynamoDbShardKey}
+   * @param nextToken {@link String}
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder nextToken(final DynamoDbShardKey skey, final String nextToken) {
+
+    startKey = new StringToMapAttributeValue().apply(nextToken);
+
+    if (startKey != null) {
+      applyShardSuffix(this.startKey, PK, skey.pkShard());
+      applyShardSuffix(this.startKey, GSI1_PK, skey.pkGsi1Shard());
+      applyShardSuffix(this.startKey, GSI2_PK, skey.pkGsi2Shard());
+    }
+
     return this;
   }
 

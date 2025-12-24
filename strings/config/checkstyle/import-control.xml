@@ -14,4 +14,10 @@
         <allow pkg="java.util" />
     </subpackage>
 
+    <subpackage name="urls">
+        <allow pkg="java.net" />
+        <allow pkg="java.nio.charset" />
+        <allow pkg="java.util" />
+    </subpackage>
+
 </import-control>

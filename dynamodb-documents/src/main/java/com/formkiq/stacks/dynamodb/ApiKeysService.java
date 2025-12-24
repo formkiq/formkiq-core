@@ -41,11 +41,11 @@ public interface ApiKeysService {
    * @param siteId {@link String}
    * @param name {@link String}
    * @param permissions {@link Collection} {@link ApiKeyPermission}
-   * @param userId {@link String}
+   * @param groups {@link Collection} {@link String}
    * @return {@link String}
    */
   String createApiKey(String siteId, String name, Collection<ApiKeyPermission> permissions,
-      String userId);
+      Collection<String> groups);
 
   /**
    * Delete Api Key.

@@ -87,7 +87,7 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
             Action: 'sts:AssumeRole'
-      Path: "/"
+      Path: /service-role/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
         - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'

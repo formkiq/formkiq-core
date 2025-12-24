@@ -49,6 +49,9 @@ public interface DbKeys {
   /** Sort Key of Table. */
   String SK = "SK";
 
+  /** Shard Key. */
+  String SHARD = "shard";
+
   /** Composite Tag Key Deliminator. */
   String TAG_DELIMINATOR = "#";
 

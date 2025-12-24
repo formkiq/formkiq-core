@@ -92,8 +92,8 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
       actions.forEach(a -> a.userId(authorization.getUsername()));
 
       for (Action action : actions) {
-        errors.addAll(this.actionsValidator.validation(siteId, action, config.getChatGptApiKey(),
-            config.getNotificationEmail()));
+        errors.addAll(this.actionsValidator.validation(siteId, action, config.chatGptApiKey(),
+            config.notificationEmail()));
       }
     }
   }

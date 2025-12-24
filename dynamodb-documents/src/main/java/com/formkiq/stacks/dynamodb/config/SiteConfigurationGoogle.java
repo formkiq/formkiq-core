@@ -29,54 +29,6 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Site Configuration Google.
  */
 @Reflectable
-public class SiteConfigurationGoogle {
-  /** workloadIdentityAudience. */
-  private String workloadIdentityAudience;
-  /** workloadIdentityServiceAccount. */
-  private String workloadIdentityServiceAccount;
-
-  /**
-   * constructor.
-   */
-  public SiteConfigurationGoogle() {}
-
-  /**
-   * Get WorkloadIdentityAudience.
-   * 
-   * @return String
-   */
-  public String getWorkloadIdentityAudience() {
-    return this.workloadIdentityAudience;
-  }
-
-  /**
-   * Get WorkloadIdentityServiceAccount.
-   * 
-   * @return String
-   */
-  public String getWorkloadIdentityServiceAccount() {
-    return this.workloadIdentityServiceAccount;
-  }
-
-  /**
-   * Set WorkloadIdentityAudience.
-   *
-   * @param identityAudience {@link String}
-   * @return SiteConfigurationGoogle
-   */
-  public SiteConfigurationGoogle setWorkloadIdentityAudience(final String identityAudience) {
-    this.workloadIdentityAudience = identityAudience;
-    return this;
-  }
-
-  /**
-   * Set WorkloadIdentityServiceAccount.
-   *
-   * @param serviceAccount {@link String}
-   * @return SiteConfigurationGoogle
-   */
-  public SiteConfigurationGoogle setWorkloadIdentityServiceAccount(final String serviceAccount) {
-    this.workloadIdentityServiceAccount = serviceAccount;
-    return this;
-  }
+public record SiteConfigurationGoogle(String workloadIdentityAudience,
+    String workloadIdentityServiceAccount) {
 }

@@ -93,7 +93,7 @@ public class WebhooksRequestHandler
     String ttl = o.getString("ttl");
 
     if (ttl == null) {
-      ttl = config.getWebhookTimeToLive();
+      ttl = config.webhookTimeToLive();
     }
 
     if (!isEmpty(ttl)) {
@@ -119,7 +119,7 @@ public class WebhooksRequestHandler
 
     boolean over = false;
 
-    String maxString = config.getMaxWebhooks();
+    String maxString = config.maxWebhooks();
 
     if (!isEmpty(maxString)) {
 

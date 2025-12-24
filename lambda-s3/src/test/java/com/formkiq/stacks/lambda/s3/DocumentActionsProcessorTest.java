@@ -682,8 +682,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -779,8 +778,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -852,8 +850,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -923,8 +920,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -990,8 +986,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -1063,8 +1058,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setChatGptApiKey("asd");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
@@ -2621,9 +2615,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction02() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
-          .setWorkloadIdentityServiceAccount("123"));
+      SiteConfigurationGoogle google = new SiteConfigurationGoogle("abc", "123");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().google(google).build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = createDocument2(siteId, "text/plain");
@@ -2652,9 +2645,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction03() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SiteConfiguration siteConfig = new SiteConfiguration();
-      siteConfig.setGoogle(new SiteConfigurationGoogle().setWorkloadIdentityAudience("abc")
-          .setWorkloadIdentityServiceAccount("123"));
+      SiteConfigurationGoogle google = new SiteConfigurationGoogle("abc", "123");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().google(google).build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();

@@ -68,7 +68,7 @@ public class NotificationAction implements DocumentAction {
 
     ConfigService configService = serviceCache.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get(siteId);
-    this.source = config.getNotificationEmail();
+    this.source = config.notificationEmail();
   }
 
   @Override

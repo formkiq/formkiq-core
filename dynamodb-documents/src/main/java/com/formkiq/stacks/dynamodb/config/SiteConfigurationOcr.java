@@ -29,54 +29,5 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Site Configuration Ocr.
  */
 @Reflectable
-public class SiteConfigurationOcr {
-  /** Max Pages per transaction. */
-  private long maxPagesPerTransaction;
-  /** Max Ocr transactions. */
-  private long maxTransactions;
-
-  /**
-   * constructor.
-   */
-  public SiteConfigurationOcr() {}
-
-  /**
-   * Get Max Pages Per Transaction.
-   * 
-   * @return long
-   */
-  public long getMaxPagesPerTransaction() {
-    return this.maxPagesPerTransaction;
-  }
-
-  /**
-   * Get Max Transactions.
-   * 
-   * @return long
-   */
-  public long getMaxTransactions() {
-    return this.maxTransactions;
-  }
-
-  /**
-   * Set Max Pages Per Transaction.
-   *
-   * @param maxPages long
-   * @return SiteConfigurationOcr
-   */
-  public SiteConfigurationOcr setMaxPagesPerTransaction(final long maxPages) {
-    this.maxPagesPerTransaction = maxPages;
-    return this;
-  }
-
-  /**
-   * Set Max Transactions.
-   *
-   * @param maxTx long
-   * @return SiteConfigurationOcr
-   */
-  public SiteConfigurationOcr setMaxTransactions(final long maxTx) {
-    this.maxTransactions = maxTx;
-    return this;
-  }
+public record SiteConfigurationOcr(long maxPagesPerTransaction, long maxTransactions) {
 }

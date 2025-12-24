@@ -32,7 +32,7 @@
               - OAuth(JWT)
               - AWS IAM
               - API Key
-          version: 1.18.0
+          version: 1.18.1
         tags:
         - name: documents
           description: API for the add, updating and fetching of documents
@@ -1640,6 +1640,13 @@
                 description: Previous page of results token
                 schema:
                   type: string
+              - name: projection
+                in: query
+                description: Specify a restricted document projection. Use 'DOCUMENT_ID_ONLY' to return only the documentId attribute.
+                schema:
+                  type: string
+                  enum:
+                  - DOCUMENT_ID_ONLY
               - $ref: '#/components/parameters/limitParam'
               responses:
                 "200":
@@ -9258,6 +9265,10 @@
             DocumentFulltextResponse:
               type: object
               properties:
+                totalCount:
+                  type: integer
+                  description: |
+                    Total number of documents that matched the search query. When the number of matches exceeds 10,000, this value will be reported as 10,000+ unless the search request explicitly enables exact total hit tracking.
                 documents:
                   type: array
                   description: List of search result documents
@@ -11815,6 +11826,8 @@
                 notificationEmail:
                   type: string
                   description: Email address to use for notifications
+                document:
+                  $ref: '#/components/schemas/DocumentConfig'
                 ocr:
                   $ref: '#/components/schemas/OcrConfig'
                 google:
@@ -11979,16 +11992,23 @@
                 name:
                   type: string
                   description: Name of API Key
-                permissions:
+                groups:
                   type: array
-                  description: List of permissions
+                  description: Optional list of groups to add as custom claims to API Key
                   items:
                     type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
-                    - GOVERN
+                permissions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ApiKeyPermission'
+            ApiKeyPermission:
+              type: string
+              description: List of API permissions (defaults to READ / WRITE / DELETE)
+              enum:
+              - READ
+              - WRITE
+              - DELETE
+              - GOVERN
             AddApiKeyResponse:
               type: object
               properties:
@@ -12290,14 +12310,13 @@
                   description: Inserted Timestamp
                 permissions:
                   type: array
-                  description: List of permissions
+                  items:
+                    $ref: '#/components/schemas/ApiKeyPermission'
+                groups:
+                  type: array
+                  description: List of groups to add as custom claims to API Key
                   items:
                     type: string
-                    enum:
-                    - READ
-                    - WRITE
-                    - DELETE
-                    - GOVERN
             GetConfigurationResponse:
               type: object
               properties:
@@ -12316,6 +12335,8 @@
                 notificationEmail:
                   type: string
                   description: Email address to use for notifications (Must be verified identity created in AWS SES)
+                document:
+                  $ref: '#/components/schemas/DocumentConfig'
                 ocr:
                   $ref: '#/components/schemas/OcrConfig'
                 google:
@@ -12345,6 +12366,31 @@
                 ocrTransactionCount:
                   type: number
                   description: The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)
+            DocumentConfig:
+              type: object
+              properties:
+                contentTypes:
+                  $ref: '#/components/schemas/DocumentConfigContentTypes'
+            DocumentConfigContentTypes:
+              type: object
+              properties:
+                allowlist:
+                  type: array
+                  items:
+                    type: string
+                    description: Allowed MIME types
+                  example:
+                  - application/pdf
+                  - image/png
+                  - image/jpeg
+                denylist:
+                  type: array
+                  items:
+                    type: string
+                    description: Disallowed MIME types
+                  example:
+                  - application/x-msdownload
+                  - application/x-sh
             OcrConfig:
               type: object
               properties:
@@ -13702,3 +13748,112 @@
           - '*'
           allowHeaders:
           - '*'
+  ApiKeyAuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+      - Key: AppEnvironment
+        Value:
+          Ref: AppEnvironment
+      - Key: Application
+        Value: FormKiQ
+  ApiKeyAuthorizer:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ApiKeyAuthorizerRole
+    Properties:
+      Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
+      Description: Lambda function that processes ApiKey Authorizer
+      Runtime: provided.al2023
+      Timeout:
+        Fn::Sub: ${LambdaTimeout}
+      MemorySize:
+        Fn::Sub: ${LambdaMemory}
+      CodeUri: ./formkiq-module-lambda-authorizer-apikey.zip
+      Tracing: Active
+      AutoPublishCodeSha256: 4c5b6313f587452993ba20cb41d35a2f5789859ae8eead0cafdd329bd40c9af7
+      Environment:
+        Variables:
+          APP_ENVIRONMENT:
+            Fn::Sub: ${AppEnvironment}
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+          ENABLE_AWS_X_RAY: true
+          DOCUMENTS_TABLE:
+            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}'
+          FORMKIQ_TYPE:
+            Ref: FormKiQType
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiKeyAuthorizerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
+      Role:
+        Fn::GetAtt:
+        - ApiKeyAuthorizerRole
+        - Arn
+      Tags:
+        Application: FormKiQ
+        AppEnvironment:
+          Fn::Sub: ${AppEnvironment}
+  ApiKeyAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - ApiKeyAuthorizer
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: ApiKeyAuthorizer
+      Principal: apigateway.amazonaws.com
+  ApiKeyAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+      - Key: Application
+        Value: FormKiQ
+      - Key: AppEnvironment
+        Value:
+          Fn::Sub: ${AppEnvironment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+      - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+      - PolicyName: apikeylambdarole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:Get*
+            - dynamodb:Query
+            Resource:
+            - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}

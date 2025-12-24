@@ -30,7 +30,7 @@ import java.util.function.Function;
 /**
  * Convert {@link String} to Base 64 {@link String}.
  */
-public class StringToBase66Decoder implements Function<String, String> {
+public class StringToBase64Decoder implements Function<String, String> {
   @Override
   public String apply(final String s) {
     byte[] decode = Base64.getDecoder().decode(s);

@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static com.formkiq.testutils.aws.TestServices.ACCESS_POINT_S3_BUCKET;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +42,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.StringToBase64Decoder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -59,6 +59,8 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.urls.UrlParser;
+import com.formkiq.urls.UrlParts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.module.http.HttpService;
@@ -98,15 +100,30 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         "ASD".getBytes(StandardCharsets.UTF_8), contentType);
   }
 
-  private void assertS3Url(final GetDocumentUrlResponse resp, final String bucket,
-      final String siteId, final String documentId) {
-    assertNotNull(resp.getUrl());
-    assertTrue(resp.getUrl().contains(bucket));
+  private void assertS3Url(final GetDocumentUrlResponse resp, final String siteId,
+      final String documentId) {
+    assertS3Url(resp.getUrl(), siteId, documentId);
+  }
+
+  private void assertS3Url(final String url, final String siteId, final String documentId) {
+    assertNotNull(url);
+    assertTrue(url.contains(com.formkiq.testutils.aws.TestServices.BUCKET_NAME));
     if (siteId != null) {
-      assertTrue(resp.getUrl().contains("/" + siteId + "/" + documentId));
+      assertTrue(url.contains("/" + siteId + "/" + documentId));
     } else {
-      assertTrue(resp.getUrl().contains("/" + documentId));
+      assertTrue(url.contains("/" + documentId));
     }
+  }
+
+  private void assertS3Url(final UrlParts parts, final String siteId, final String documentId) {
+    String base64 = parts.queryParameters().get("url").get(0);
+    String s = new StringToBase64Decoder().apply(base64);
+    assertS3Url(s, siteId, documentId);
+
+    assertNotNull(parts.queryParameters().get("X-Amz-Signature").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-Algorithm").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-Date").get(0));
+    assertNotNull(parts.queryParameters().get("X-Amz-SignedHeaders").get(0));
   }
 
   /**
@@ -121,8 +138,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     awsServices.register(DocumentService.class, new DocumentServiceExtension());
 
     this.documentService = awsServices.getExtension(DocumentService.class);
-
-    createBucket(ACCESS_POINT_S3_BUCKET);
   }
 
   private void createBucket(final String bucket) {
@@ -138,10 +153,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   /**
    * /documents/{documentId}/url request missing s3 file.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testGetDocumentMissingS3File() throws Exception {
+  public void testGetDocumentMissingS3File() {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
@@ -218,7 +232,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
         assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
 
-        assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+        assertS3Url(resp, siteId, documentId);
       }
     }
   }
@@ -254,7 +268,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertTrue(resp.getUrl().contains("X-Amz-Expires=28800"));
       assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
 
-      assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+      assertS3Url(resp, siteId, documentId);
     }
   }
 
@@ -372,13 +386,15 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   @Test
   public void testHandleGetDocumentContent06() throws Exception {
     // given
+    String watermarkFunctionUrl =
+        "https://3u7ocozmmheiodztsnuy72zswa0mzlsu.lambda-url.us-east-2.on.aws/";
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
-      server.getEnvironmentMap().put("ACCESS_POINT_S3_BUCKET", ACCESS_POINT_S3_BUCKET);
+      server.getEnvironmentMap().put("WATERMARK_FUNCTION_URL", watermarkFunctionUrl);
 
       String documentId = addDocumentWithWatermarks(siteId);
-      getS3().putObject(ACCESS_POINT_S3_BUCKET, createS3Key(siteId, documentId),
+      getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId),
           "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
@@ -388,7 +404,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // then
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
-      assertS3Url(resp, ACCESS_POINT_S3_BUCKET, siteId, documentId);
+      assertTrue(resp.getUrl().startsWith(watermarkFunctionUrl));
+      UrlParts parts = new UrlParser().apply(resp.getUrl());
+      assertS3Url(parts, siteId, documentId);
     }
 
     // given
@@ -396,7 +414,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     setBearerToken(new String[] {siteId, "admins"});
 
     String documentId = addDocumentWithWatermarks(siteId);
-    getS3().putObject(ACCESS_POINT_S3_BUCKET, createS3Key(siteId, documentId),
+    getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId),
         "ASD".getBytes(StandardCharsets.UTF_8), null);
 
     // when
@@ -406,7 +424,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     // then
     assertNotNull(resp);
     assertNotNull(resp.getUrl());
-    assertS3Url(resp, ACCESS_POINT_S3_BUCKET, siteId, documentId);
+    assertTrue(resp.getUrl().startsWith(watermarkFunctionUrl));
+    UrlParts parts = new UrlParser().apply(resp.getUrl());
+    assertS3Url(parts, siteId, documentId);
   }
 
   /**
@@ -420,7 +440,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
-      server.getEnvironmentMap().remove("ACCESS_POINT_S3_BUCKET");
+      server.getEnvironmentMap().remove("WATERMARK_FUNCTION_URL");
 
       String documentId = addDocumentWithWatermarks(siteId);
 
@@ -431,7 +451,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // then
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
-      assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+      assertS3Url(resp, siteId, documentId);
     }
 
     // given
@@ -447,7 +467,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     // then
     assertNotNull(resp);
     assertNotNull(resp.getUrl());
-    assertS3Url(resp, BUCKET_NAME, siteId, documentId);
+    assertS3Url(resp, siteId, documentId);
   }
 
   /**
@@ -473,7 +493,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         // then
         assertNotNull(resp);
         assertNotNull(resp.getUrl());
-        assertS3Url(resp, BUCKET_NAME, DEFAULT_SITE_ID.equals(siteId) ? null : siteId, documentId);
+        assertS3Url(resp, DEFAULT_SITE_ID.equals(siteId) ? null : siteId, documentId);
       }
     }
   }

@@ -242,7 +242,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       GetDocumentsResponse response =
-          api.getDocuments(null, null, null, null, date, null, null, null, null);
+          api.getDocuments(null, null, null, null, date, null, null, null, null, null);
 
       // then
       assertNotNull(response.getDocuments());
@@ -266,14 +266,14 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, null, null, null, null, null);
+        api.getDocuments(null, null, null, null, null, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(siteId, null, null, null, null, null, null, null, null);
+      api.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -300,14 +300,14 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
     try {
-      api.getDocuments(siteId, null, null, null, date, null, null, null, null);
+      api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
     } catch (ApiException e) {
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
@@ -331,9 +331,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
     GetDocumentsResponse responseSiteId =
-        api.getDocuments(siteId, null, null, null, date, null, null, null, null);
+        api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
@@ -356,9 +356,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     GetDocumentsResponse results0 =
-        api.getDocuments(null, null, null, null, date, null, null, null, null);
+        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
     GetDocumentsResponse results1 =
-        api.getDocuments(GROUP_FINANCE, null, null, null, date, null, null, null, null);
+        api.getDocuments(GROUP_FINANCE, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(results0.getDocuments());
@@ -623,7 +623,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testPost06() throws Exception {
     // given
-    SiteConfiguration config = new SiteConfiguration().setMaxDocuments("1");
+    SiteConfiguration config = SiteConfiguration.builder().maxDocuments("1").build(SITEID1);
     configService.save(SITEID1, config);
 
     ApiClient c = getApiClients(SITEID1).get(0);
@@ -644,7 +644,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"error\":\"Max Number of Documents reached\"}]}",
+            e.getResponseBody());
       }
     }
   }

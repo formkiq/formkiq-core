@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
@@ -45,6 +46,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
  * @param gsi2Pk the partition key for GSI2
  * @param gsi2Sk the sort key for GSI2
  */
+@Reflectable
 public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, String gsi2Pk,
     String gsi2Sk) {
 

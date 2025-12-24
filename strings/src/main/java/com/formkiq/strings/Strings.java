@@ -39,6 +39,16 @@ public class Strings {
   private static final int THREE = 3;
 
   /**
+   * Trim {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String trim(final String s) {
+    return s != null ? s.trim() : null;
+  }
+
+  /**
    * Is {@link String} empty.
    *
    * @param cs {@link CharSequence}
@@ -230,6 +240,17 @@ public class Strings {
     }
 
     return null;
+  }
+
+  /**
+   * Return text or elseText if the text is empty.
+   *
+   * @param text {@link String}
+   * @param elseText {@link String}
+   * @return {@link String}
+   */
+  public static String getNotNullOrDefault(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
   }
 
   /**

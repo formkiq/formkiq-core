@@ -55,6 +55,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  VpcStackName:
+    Type: String
+    Description: FormKiQ VPC Stack Name
+
 Conditions:
   IsLogFormatJSON: 
     Fn::Equals:
@@ -162,7 +166,7 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: /
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:

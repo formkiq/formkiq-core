@@ -65,11 +65,11 @@ public class DocumentIdPurgeRequestHandler
 
     try {
 
+      boolean deleted = service.deleteDocument(siteId, documentId, false);
+
       S3Service s3Service = awsservice.getExtension(S3Service.class);
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
       int deletedTotal = s3Service.deleteAllVersionsOfFile(documentBucket, s3Key);
-
-      boolean deleted = service.deleteDocument(siteId, documentId, false);
 
       if (deletedTotal == 0 && !deleted) {
         throw new NotFoundException("Document " + documentId + " not found.");

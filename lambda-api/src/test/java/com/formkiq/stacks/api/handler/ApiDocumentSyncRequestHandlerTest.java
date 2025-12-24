@@ -397,9 +397,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
         DocumentSyncType.METADATA);
 
-    List<Document> docs = notNull(this.documentsApi
-        .getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null)
-        .getDocuments());
+    List<Document> docs = notNull(this.documentsApi.getDocuments(null, null,
+        "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null, null).getDocuments());
     assertEquals(1, docs.size());
     assertEquals(documentId, docs.get(0).getDocumentId());
 
@@ -419,9 +418,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
         DocumentSyncType.METADATA);
 
-    docs = notNull(this.documentsApi
-        .getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null)
-        .getDocuments());
+    docs = notNull(this.documentsApi.getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null,
+        null, null, null, null, null, null).getDocuments());
     assertEquals(0, docs.size());
   }
 

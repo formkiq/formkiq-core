@@ -100,7 +100,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"error\":\"Max Number of Documents reached\"}]}",
+            e.getResponseBody());
       }
     }
   }
@@ -405,7 +406,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Max Number of Documents reached\"}", e.getResponseBody());
+        assertEquals("{\"errors\":[{\"error\":\"Max Number of Documents reached\"}]}",
+            e.getResponseBody());
       }
     }
   }

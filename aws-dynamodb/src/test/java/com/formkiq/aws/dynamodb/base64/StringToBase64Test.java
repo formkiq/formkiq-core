@@ -34,7 +34,7 @@ public class StringToBase64Test {
   private void assertExpectedString(final String s, final String base64Encoded) {
     String base64 = new StringToBase64Encoder().apply(s);
     assertEquals(base64, base64Encoded);
-    assertEquals(s, new StringToBase66Decoder().apply(base64));
+    assertEquals(s, new StringToBase64Decoder().apply(base64));
   }
 
   @Test

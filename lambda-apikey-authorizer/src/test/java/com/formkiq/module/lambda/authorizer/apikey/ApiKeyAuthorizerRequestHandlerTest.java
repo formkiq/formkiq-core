@@ -101,7 +101,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
    *
    */
   @Test
-  void testHandleRequest01() {
+  void testInvalidApiKey() {
     // given
     String apiKey = ID.uuid();
 
@@ -120,11 +120,57 @@ class ApiKeyAuthorizerRequestHandlerTest {
   }
 
   /**
+   * Test Invalid very long API Key.
+   *
+   */
+  @Test
+  void testInvalidVeryLongApiKey() {
+    // given
+    final int len = 2000;
+    String apiKey = Strings.generateRandomString(len);
+
+    APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
+
+    // when
+    Map<String, Object> map = processor.handleRequest(is, this.context);
+
+    // then
+    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals("[API_KEY]", claims.get("cognito:groups"));
+    assertEquals("", claims.get("cognito:username"));
+    assertEquals("", claims.get("permissions"));
+  }
+
+  /**
+   * Test missing API Key.
+   *
+   */
+  @Test
+  void testMissingApiKey() {
+    // given
+    APIGatewayV2CustomAuthorizerEvent is = getInput(null);
+
+    // when
+    Map<String, Object> map = processor.handleRequest(is, this.context);
+
+    // then
+    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+
+    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals("[API_KEY]", claims.get("cognito:groups"));
+    assertEquals("", claims.get("cognito:username"));
+    assertEquals("", claims.get("permissions"));
+  }
+
+  /**
    * Test VALID API Key.
    *
    */
   @Test
-  void testHandleRequest02() {
+  void testValidApiKey() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -132,7 +178,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
       String apiKey = apiKeysService.createApiKey(siteId, name,
           Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
-          "joe");
+          List.of());
 
       APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
@@ -157,48 +203,39 @@ class ApiKeyAuthorizerRequestHandlerTest {
   }
 
   /**
-   * Test missing API Key.
+   * Test VALID API Key with groups.
    *
    */
   @Test
-  void testHandleRequest03() {
+  void testValidApiKeyWithGroups() {
     // given
-    APIGatewayV2CustomAuthorizerEvent is = getInput(null);
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-    // when
-    Map<String, Object> map = processor.handleRequest(is, this.context);
+      String name = ID.uuid();
 
-    // then
-    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
+      String apiKey = apiKeysService.createApiKey(siteId, name,
+          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
+          List.of("test1", "test2"));
 
-    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals("[API_KEY]", claims.get("cognito:groups"));
-    assertEquals("", claims.get("cognito:username"));
-    assertEquals("", claims.get("permissions"));
-  }
+      APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
-  /**
-   * Test Invalid very long API Key.
-   *
-   */
-  @Test
-  void testHandleRequest04() {
-    // given
-    final int len = 2000;
-    String apiKey = Strings.generateRandomString(len);
+      // when
+      Map<String, Object> map = processor.handleRequest(is, this.context);
 
-    APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
+      // then
+      assertEquals(Boolean.TRUE, map.get("isAuthorized"));
 
-    // when
-    Map<String, Object> map = processor.handleRequest(is, this.context);
+      Map<String, Object> ctx = (Map<String, Object>) map.get("context");
+      Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
 
-    // then
-    assertEquals(Boolean.FALSE, map.get("isAuthorized"));
-    Map<String, Object> ctx = (Map<String, Object>) map.get("context");
-    Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals("[API_KEY]", claims.get("cognito:groups"));
-    assertEquals("", claims.get("cognito:username"));
-    assertEquals("", claims.get("permissions"));
+      if (siteId != null) {
+        assertEquals("[" + siteId + " test1 test2 API_KEY]", claims.get("cognito:groups"));
+      } else {
+        assertEquals("[default test1 test2 API_KEY]", claims.get("cognito:groups"));
+      }
+
+      assertEquals(name, claims.get("cognito:username"));
+      assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
+    }
   }
 }

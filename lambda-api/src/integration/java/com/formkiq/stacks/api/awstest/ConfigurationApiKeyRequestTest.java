@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddApiKeyRequest;
@@ -38,7 +39,9 @@ import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ApiKey;
+import com.formkiq.client.model.ApiKeyPermission;
 import com.formkiq.client.model.GetApiKeysResponse;
+import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.Site;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +51,6 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddApiKeyRequest.PermissionsEnum;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
@@ -66,16 +68,31 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
   /** Cognito FINANCE User Email. */
   private static final String FINANCE_EMAIL = "testfinance912345@formkiq.com";
+
+  private static String getSortedRoles(final GetSitesResponse sitesResponse) {
+    return String.join(",",
+        notNull(Objects.requireNonNull(sitesResponse.getRoles()).stream().sorted().toList()));
+  }
+
   /** {@link ApiClient}. */
   private ApiClient jwtApiClient = null;
-
   /** {@link SystemManagementApi}. */
   private SystemManagementApi jwtSystemApi = null;
+
   /** {@link ApiClient}. */
   private ApiClient keyApiClient = null;
 
   /** {@link DocumentsApi}. */
   private DocumentsApi keyDocumentsApi = null;
+
+  private AddApiKeyResponse addApiKey(final String siteId, final ApiKeyPermission permission,
+      final List<String> groups) throws ApiException {
+    ApiClient apiClient = getApiClients(siteId).get(0);
+    SystemManagementApi api = new SystemManagementApi(apiClient);
+    AddApiKeyRequest req =
+        new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(permission).groups(groups);
+    return api.addApiKey(siteId, req);
+  }
 
   /**
    * Before Each.
@@ -96,26 +113,55 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testAddApiKey01() throws Exception {
+  public void testAddApiKeyGovern() throws Exception {
     // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      ApiClient apiClient = getApiClients(siteId).get(0);
-      SystemManagementApi api = new SystemManagementApi(apiClient);
-
-      AddApiKeyRequest req =
-          new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(PermissionsEnum.GOVERN);
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, "aa" + ID.uuid())) {
 
       // when
-      AddApiKeyResponse response = api.addApiKey(siteId, req);
+      AddApiKeyResponse response = addApiKey(siteId, ApiKeyPermission.GOVERN, List.of());
 
       // then
       ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
-      api = new SystemManagementApi(apiClientWithToken);
-      List<Site> sites = notNull(api.getSites(null).getSites());
+      SystemManagementApi api = new SystemManagementApi(apiClientWithToken);
+      GetSitesResponse sitesResponse = api.getSites(null);
+      List<Site> sites = notNull(sitesResponse.getSites());
       assertEquals(1, sites.size());
       assertEquals(siteId, sites.get(0).getSiteId());
       assertEquals("GOVERN", String.join(",",
           notNull(sites.get(0).getPermissions()).stream().map(Enum::name).toList()));
+      assertEquals("API_KEY," + siteId, getSortedRoles(sitesResponse));
+    }
+  }
+
+  /**
+   * Test Add API key witb groups.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddApiKeyWithGroups() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, "aa" + ID.uuid())) {
+
+      // when
+      AddApiKeyResponse response =
+          addApiKey(siteId, ApiKeyPermission.READ, List.of("test1", "test2"));
+
+      // then
+      ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
+      SystemManagementApi api = new SystemManagementApi(apiClientWithToken);
+      GetSitesResponse sitesResponse = api.getSites(null);
+      List<Site> sites = notNull(sitesResponse.getSites());
+      assertEquals(3, sites.size());
+
+      Site site = sites.stream().filter(s -> siteId.equals(s.getSiteId())).findFirst().orElse(null);
+      assertNotNull(site);
+
+      assertEquals(siteId, site.getSiteId());
+      assertEquals("READ",
+          String.join(",", notNull(site.getPermissions()).stream().map(Enum::name).toList()));
+      assertEquals("API_KEY," + siteId + ",test1,test2", getSortedRoles(sitesResponse));
     }
   }
 
@@ -132,8 +178,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
     AuthenticationResultType token = getAdminToken();
 
-    com.formkiq.client.model.AddApiKeyRequest req = new com.formkiq.client.model.AddApiKeyRequest()
-        .name(name).addPermissionsItem(PermissionsEnum.READ);
+    AddApiKeyRequest req =
+        new AddApiKeyRequest().name(name).addPermissionsItem(ApiKeyPermission.READ);
 
     for (String siteId : List.of(DEFAULT_SITE_ID)) {
 
@@ -154,8 +200,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       }
 
       // given
-      req = new com.formkiq.client.model.AddApiKeyRequest().name(name)
-          .addPermissionsItem(PermissionsEnum.WRITE);
+      req = new AddApiKeyRequest().name(name).addPermissionsItem(ApiKeyPermission.WRITE);
       apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
 
       // when
@@ -195,6 +240,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
         // then
         GetApiKeysResponse apiKeys = api.getApiKeys(siteId, null, null);
         assertFalse(notNull(apiKeys.getApiKeys()).isEmpty());
+        assertNotNull(response.getApiKey());
 
         api.deleteApiKey(siteId, response.getApiKey());
       }

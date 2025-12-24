@@ -88,7 +88,7 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
   public ApiHttpResponse<GetDocumentsResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentsApi(apiClient).getDocuments(siteId, actionStatus,
-        syncStatus, deleted, null, null, next, null, null));
+        syncStatus, deleted, null, null, next, null, null, null));
   }
 
   /**

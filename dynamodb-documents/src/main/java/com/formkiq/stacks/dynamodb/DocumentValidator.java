@@ -26,6 +26,8 @@ package com.formkiq.stacks.dynamodb;
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -42,4 +44,13 @@ public interface DocumentValidator {
    * @return {@link Collection} {@link ValidationError}
    */
   Collection<ValidationError> validate(Collection<DocumentMetadata> metadata);
+
+  /**
+   * Validate {@link SiteConfiguration} against Document Content-Type.
+   * 
+   * @param config {@link SiteConfiguration}
+   * @param contentType {@link String}
+   * @param vb {@link ValidationBuilder}
+   */
+  void validateContentType(SiteConfiguration config, String contentType, ValidationBuilder vb);
 }

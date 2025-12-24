@@ -175,7 +175,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
       // when
       GetDocumentsResponse documents =
-          api.getDocuments(null, null, null, null, "2010-01-01", "+0500", null, null, null);
+          api.getDocuments(null, null, null, null, "2010-01-01", "+0500", null, null, null, null);
 
       // then
       assertTrue(documents.getDocuments().isEmpty());
@@ -221,8 +221,8 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
         // when
         while (list.isEmpty()) {
-          GetDocumentsResponse documents =
-              api.getDocuments(siteId, null, null, null, df.format(lastHour), tz, null, null, null);
+          GetDocumentsResponse documents = api.getDocuments(siteId, null, null, null,
+              df.format(lastHour), tz, null, null, null, null);
 
           // then
           list = documents.getDocuments();

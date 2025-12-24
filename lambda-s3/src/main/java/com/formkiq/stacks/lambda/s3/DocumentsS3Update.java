@@ -451,7 +451,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     String cacheKey = "s3PresignedUrl#" + s3Bucket + "#" + s3Key;
     String username = cacheService.read(cacheKey);
-    if (!isEmpty(username)) {
+    if (isEmpty(username)) {
       username = "System";
     }
 

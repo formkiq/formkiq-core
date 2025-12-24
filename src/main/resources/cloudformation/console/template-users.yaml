@@ -204,7 +204,7 @@ Resources:
                 - lambda.amazonaws.com
             Action:
               - "sts:AssumeRole"
-      Path: "/"
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       Policies:
@@ -285,7 +285,7 @@ Resources:
               ForAnyValue:StringLike:
                 cognito-identity.amazonaws.com:amr:
                 - "authenticated"
-      Path: "/"
+      Path: /service-role/
       Policies:
         - PolicyName:
             Fn::Sub: "${AWS::StackName}-CognitoNoAccessRole"

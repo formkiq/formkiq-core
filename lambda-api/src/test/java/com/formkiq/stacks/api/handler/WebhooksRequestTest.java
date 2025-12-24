@@ -209,6 +209,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(result.getSiteId(), siteId != null ? siteId : DEFAULT_SITE_ID);
       String webhookId = result.getWebhookId();
+      assertNotNull(webhookId);
 
       WebhooksService webhookService = getAwsServices().getExtension(WebhooksService.class);
       DynamicObject obj = webhookService.findWebhook(siteId, webhookId);
@@ -353,7 +354,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
 
         setBearerToken(siteId);
-        SiteConfiguration config = new SiteConfiguration().setMaxWebhooks(maxWebHooks);
+        SiteConfiguration config =
+            SiteConfiguration.builder().maxWebhooks(maxWebHooks).build(siteId);
 
         if (!"0".equals(maxWebHooks)) {
           configService.save(siteId, config);
@@ -391,7 +393,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     String ttl = "87400";
 
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-    SiteConfiguration config = new SiteConfiguration().setWebhookTimeToLive(ttl);
+    SiteConfiguration config = SiteConfiguration.builder().webhookTimeToLive(ttl).build(null);
     configService.save(null, config);
 
     // when
@@ -401,7 +403,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     // then
     GetWebhooksResponse webhooks = this.webhooksApi.getWebhooks(null, null, null);
 
-    assertEquals(result.getSiteId(), DEFAULT_SITE_ID);
+    assertEquals(DEFAULT_SITE_ID, result.getSiteId());
     assertNotNull(result.getWebhookId());
     String webhookId = result.getWebhookId();
 
@@ -418,7 +420,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
 
     // given
     ttl = "-87400";
-    config.setDocumentTimeToLive(ttl);
+    config = SiteConfiguration.builder().webhookTimeToLive(ttl).build(null);
     configService.save(null, config);
 
     // when

@@ -24,19 +24,23 @@
 package com.formkiq.stacks.dynamodb;
 
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-import java.security.SecureRandom;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -47,24 +51,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
  *
  */
 public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
-
-  /**
-   * Generate Random String.
-   * 
-   * @param len int
-   * @return {@link String}
-   */
-  private static String generateRandomString(final int len) {
-    final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
-    SecureRandom random = new SecureRandom();
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < len; i++) {
-      int randomIndex = random.nextInt(chars.length());
-      sb.append(chars.charAt(randomIndex));
-    }
-
-    return sb.toString();
-  }
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
@@ -86,14 +72,15 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   @Override
   public String createApiKey(final String siteId, final String name,
-      final Collection<ApiKeyPermission> permissions, final String userId) {
+      final Collection<ApiKeyPermission> permissions, final Collection<String> groups) {
 
-    String apiKey = generateRandomString(ApiKey.API_KEY_LENGTH);
+    String apiKey = Strings.generateRandomString(ApiKey.API_KEY_LENGTH);
+    String userId = ApiAuthorization.getAuthorization().getUsername();
 
-    ApiKey key = new ApiKey().apiKey(apiKey).name(name).insertedDate(new Date()).userId(userId)
-        .permissions(permissions).siteId(siteId);
+    ApiKey key = ApiKey.builder().apiKey(apiKey).name(name).userId(userId).insertedDate(new Date())
+        .permissions(permissions).groups(groups).build(siteId);
 
-    this.db.putItem(key.getAttributes(siteId));
+    this.db.putItem(key.getAttributes());
     return apiKey;
   }
 
@@ -101,12 +88,12 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   public boolean deleteApiKey(final String siteId, final String apiKey) {
 
     boolean deleted = false;
-    ApiKey key = new ApiKey().apiKey(apiKey);
+    DynamoDbKey key = ApiKey.builder().apiKey(apiKey).name("").buildKey(siteId);
 
     QueryConfig config = new QueryConfig().indexName(GSI2);
 
     QueryResponse response =
-        this.db.queryBeginsWith(config, fromS(key.pkGsi2(siteId)), fromS(key.skGsi2()), null, 2);
+        this.db.queryBeginsWith(config, fromS(key.gsi2Pk()), fromS(key.gsi2Sk()), null, 2);
 
     if (!response.items().isEmpty()) {
       Map<String, AttributeValue> map = response.items().get(0);
@@ -119,20 +106,18 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   @Override
   public ApiKey get(final String apiKey, final boolean masked) {
 
-    String k = apiKey != null ? apiKey : "";
-    ApiKey key = new ApiKey().apiKey(k);
+    ApiKey key = null;
+    DynamoDbKey k = ApiKey.builder().apiKey(apiKey != null ? apiKey : "").name("").buildKey(null);
 
-    Map<String, AttributeValue> map = this.db.get(fromS(key.pk(null)), fromS(key.sk()));
+    Map<String, AttributeValue> map = this.db.get(fromS(k.pk()), fromS(k.sk()));
 
     if (!map.isEmpty()) {
-      key = new ApiKey().getFromAttributes(null, map);
+      key = ApiKey.fromAttributeMap(map);
 
       if (masked) {
-        key.apiKey(mask(key.apiKey()));
+        key = new ApiKey(key.key(), key.siteId(), mask(key.apiKey()), key.name(), key.userId(),
+            key.insertedDate(), key.permissions(), key.groups());
       }
-
-    } else {
-      key = null;
     }
 
     return key;
@@ -141,10 +126,10 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   @Override
   public Pagination<ApiKey> list(final String siteId, final String nextToken, final int limit) {
 
-    ApiKey apiKey = new ApiKey().siteId(siteId);
+    DynamoDbKey key = ApiKey.builder().apiKey("").name("").buildKey(siteId);
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
 
-    AttributeValue pk = fromS(apiKey.pkGsi1(siteId));
+    AttributeValue pk = fromS(key.gsi1Pk());
     AttributeValue sk = fromS("apikey" + TAG_DELIMINATOR);
 
     Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
@@ -155,7 +140,8 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
     BatchGetConfig batchConfig = new BatchGetConfig();
     List<ApiKey> apiKeys = this.db.getBatch(batchConfig, attrs).stream()
-        .map(a -> new ApiKey().getFromAttributes(siteId, a)).map(a -> a.apiKey(mask(a.apiKey())))
+        .map(ApiKey::fromAttributeMap).map(a -> new ApiKey(a.key(), a.siteId(), mask(a.apiKey()),
+            a.name(), a.userId(), a.insertedDate(), a.permissions(), a.groups()))
         .collect(Collectors.toList());
 
     return new Pagination<>(apiKeys, response.lastEvaluatedKey());
@@ -163,6 +149,6 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   @Override
   public String mask(final String apiKey) {
-    return new ApiKey().apiKey(apiKey).mask();
+    return ApiKey.mask(apiKey);
   }
 }

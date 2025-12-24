@@ -31,12 +31,17 @@ import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
 import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.validation.ResponseStatusValidationError;
 import com.formkiq.validation.UnAuthorizedValidationError;
+import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.core.exception.SdkException;
 
+import java.net.SocketTimeoutException;
 import java.time.DateTimeException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
@@ -50,6 +55,8 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_RED
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.strings.Strings.isEmpty;
+import static com.formkiq.urls.HttpStatus.BAD_GATEWAY;
+import static com.formkiq.urls.HttpStatus.GATEWAY_TIMEOUT;
 
 /**
  * Immutable HTTP‐style response holder.
@@ -202,6 +209,17 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
     }
 
     /**
+     * Previous Token.
+     *
+     * @param previousToken {@link String}
+     * @return Builder
+     */
+    public Builder previous(final String previousToken) {
+      this.body.put("previous", previousToken);
+      return this;
+    }
+
+    /**
      * Next Token.
      * 
      * @param nextToken {@link String}
@@ -225,25 +243,19 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
       if (exception instanceof ConflictException) {
         this.statusCode = SC_METHOD_CONFLICT.getStatusCode();
+      } else if (exception instanceof SocketTimeoutException) {
+        this.statusCode = GATEWAY_TIMEOUT;
+      } else if (exception instanceof SdkException) {
+        this.statusCode = BAD_GATEWAY;
       } else if (exception instanceof TooManyRequestsException) {
         this.statusCode = SC_TOO_MANY_REQUESTS.getStatusCode();
       } else if (exception instanceof ValidationException e) {
-
-        if (e.errors().stream().anyMatch(ee -> ee instanceof UnAuthorizedValidationError)) {
-          this.statusCode = SC_UNAUTHORIZED.getStatusCode();
-        } else {
-          this.body.remove("message");
-          this.statusCode = SC_BAD_REQUEST.getStatusCode();
-          this.body.put("errors", e.errors());
-        }
-
+        handleValidationException(e);
       } else if (isBadRequestException(exception)) {
         this.statusCode = SC_BAD_REQUEST.getStatusCode();
       } else if (exception instanceof ForbiddenException e) {
         this.statusCode = SC_UNAUTHORIZED.getStatusCode();
-        if (!isEmpty(e.getDebug())) {
-          logger.trace(e.getDebug());
-        }
+        debug(logger, e);
       } else if (exception instanceof UnauthorizedException) {
         this.statusCode = SC_UNAUTHORIZED.getStatusCode();
       } else if (exception instanceof NotImplementedException) {
@@ -254,6 +266,31 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
       }
 
       return this;
+    }
+
+    private static void debug(final Logger logger, final ForbiddenException e) {
+      if (!isEmpty(e.getDebug())) {
+        logger.trace(e.getDebug());
+      }
+    }
+
+    private void handleValidationException(final ValidationException e) {
+      if (e.errors().stream().anyMatch(ee -> ee instanceof UnAuthorizedValidationError)) {
+        this.statusCode = SC_UNAUTHORIZED.getStatusCode();
+      } else {
+
+        Optional<ValidationError> o =
+            e.errors().stream().filter(ee -> ee instanceof ResponseStatusValidationError).findAny();
+
+        if (o.isPresent()) {
+          this.statusCode = ((ResponseStatusValidationError) o.get()).getStatus();
+          this.body.put("message", o.get().error());
+        } else {
+          this.body.remove("message");
+          this.statusCode = SC_BAD_REQUEST.getStatusCode();
+          this.body.put("errors", e.errors());
+        }
+      }
     }
 
     private String buildErrorMessage(final Exception e) {

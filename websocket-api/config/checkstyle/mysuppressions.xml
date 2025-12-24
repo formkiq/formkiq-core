@@ -3,9 +3,8 @@
     "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-	<suppress files=".*[\\/]src[\\/](test)[\\/]"
-		checks="ImportControl" />
-	<suppress files=".*[\\/]src[\\/](integration)[\\/]"
-		checks="ImportControl" />
-	<suppress files="\.*Test\.java" checks="ImportControl" />
+    <suppress files=".*[\\/]src[\\/]test[\\/].*" checks="ImportControl"/>
+    <suppress files=".*[\\/]src[\\/]test[\\/].*" checks="MagicNumber"/>
+    <suppress files=".*[\\/]src[\\/]integration[\\/].*" checks="ImportControl"/>
+    <suppress files=".*[\\/]src[\\/]integration[\\/].*" checks="MagicNumber"/>
 </suppressions>

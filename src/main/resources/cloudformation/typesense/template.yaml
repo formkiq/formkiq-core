@@ -268,7 +268,7 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: /
+      Path: /service-role/
       ManagedPolicyArns:
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"

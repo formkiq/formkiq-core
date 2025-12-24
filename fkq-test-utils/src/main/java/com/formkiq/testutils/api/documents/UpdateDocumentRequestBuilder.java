@@ -48,12 +48,15 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   /** {@link UpdateDocumentRequest}. */
   private final UpdateDocumentRequest request;
   /** Document Id. */
-  private String id;
+  private final String id;
 
   /**
    * constructor.
+   * 
+   * @param documentId {@link String}
    */
-  public UpdateDocumentRequestBuilder() {
+  public UpdateDocumentRequestBuilder(final String documentId) {
+    this.id = documentId;
     this.request = new UpdateDocumentRequest();
   }
 
@@ -175,17 +178,6 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
    */
   public UpdateDocumentRequestBuilder path(final String path) {
     this.request.setPath(path);
-    return this;
-  }
-
-  /**
-   * Set Document Id.
-   *
-   * @param documentId {@link String}
-   * @return UpdateDocumentRequestBuilder
-   */
-  public UpdateDocumentRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
     return this;
   }
 

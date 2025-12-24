@@ -271,9 +271,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
     String maxContentLengthBytes = "2783034";
     SiteConfiguration config =
-        new SiteConfiguration().setMaxContentLengthBytes(maxContentLengthBytes);
+        SiteConfiguration.builder().maxContentLengthBytes(maxContentLengthBytes).build(null);
     this.configService.save(null, config);
-    // new DynamicObject(Map.of(ConfigService.MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -310,7 +309,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
 
     String maxContentLengthBytes = "2783034";
     SiteConfiguration config =
-        new SiteConfiguration().setMaxContentLengthBytes(maxContentLengthBytes);
+        SiteConfiguration.builder().maxContentLengthBytes(maxContentLengthBytes).build(null);
     this.configService.save(null, config);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {

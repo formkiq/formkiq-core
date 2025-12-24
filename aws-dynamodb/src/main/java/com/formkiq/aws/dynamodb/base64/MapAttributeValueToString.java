@@ -35,6 +35,11 @@ import java.util.stream.Collectors;
 public class MapAttributeValueToString implements Function<Map<String, AttributeValue>, String> {
   @Override
   public String apply(final Map<String, AttributeValue> map) {
+
+    if (map == null) {
+      return null;
+    }
+
     Map<String, String> m =
         map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
     return new MapToBase64().apply(m);

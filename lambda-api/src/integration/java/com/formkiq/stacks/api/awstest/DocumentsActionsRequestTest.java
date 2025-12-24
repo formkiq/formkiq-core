@@ -288,13 +288,13 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     DocumentsApi docApi = new DocumentsApi(client);
 
     GetDocumentsResponse documents =
-        docApi.getDocuments(null, "FAILED", null, null, null, null, null, null, "100");
+        docApi.getDocuments(null, "FAILED", null, null, null, null, null, null, null, "100");
     Optional<Document> o = notNull(documents.getDocuments()).stream()
         .filter(d -> documentId.equals(d.getDocumentId())).findAny();
     assertFalse(o.isEmpty());
 
     documents =
-        docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, null, "100");
+        docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, null, null, "100");
     o = notNull(documents.getDocuments()).stream().filter(d -> documentId.equals(d.getDocumentId()))
         .findAny();
     assertFalse(o.isEmpty());

@@ -30,6 +30,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+		<subpackage name="schemas">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
 		<subpackage name="documents">
 			<allow pkg="java.math" />
 			<allow pkg="com.formkiq.testutils.api" />
@@ -61,6 +65,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="workflows">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
         <subpackage name="systemmanagement">
             <allow pkg="com.formkiq.testutils.api" />
         </subpackage>
@@ -68,6 +76,7 @@
 	</subpackage>
 
 	<subpackage name="aws">
+        <allow pkg="org.junit.jupiter.api" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.formkiq.aws.cognito" />
 		<allow pkg="com.formkiq.aws.dynamodb" />

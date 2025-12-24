@@ -108,6 +108,10 @@ public interface DynamoDbTypes {
     return av.l().stream().map(l -> new AttributeValueToMap(null).apply(l.m())).toList();
   }
 
+  static Long toLong(AttributeValue attributeValue) {
+    return attributeValue != null ? Long.valueOf(attributeValue.n()) : null;
+  }
+
   /**
    * Convert {@link AttributeValue} to {@link String}.
    *
@@ -116,5 +120,16 @@ public interface DynamoDbTypes {
    */
   static String toString(final AttributeValue attributeValue) {
     return attributeValue != null ? attributeValue.s() : null;
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link java.util.Collection} {@link String}.
+   *
+   * @param attributeValue {@link AttributeValue}
+   * @return String
+   */
+  static List<String> toStrings(final AttributeValue attributeValue) {
+    return attributeValue != null ? attributeValue.l().stream().map(AttributeValue::s).toList()
+        : null;
   }
 }

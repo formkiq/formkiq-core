@@ -40,6 +40,8 @@ public class AttributeValueToMapConfig {
     private final Map<String, String> renameKeys = new HashMap<>();
     /** Delete Keys. */
     private final Set<String> deleteKeys = new HashSet<>();
+    /** Add Values. */
+    private Map<String, Object> addValues = null;
 
     /**
      * Sets the output field name for the DynamoDB "documentId" attribute.
@@ -50,6 +52,11 @@ public class AttributeValueToMapConfig {
      */
     public Builder addRenameKeys(final String fromKey, final String toKey) {
       this.renameKeys.put(fromKey, toKey);
+      return this;
+    }
+
+    public Builder addValues(final Map<String, Object> values) {
+      this.addValues = values;
       return this;
     }
 
@@ -103,10 +110,23 @@ public class AttributeValueToMapConfig {
   /** Delete Keys. */
   private final Set<String> deleteKeys;
 
+  /** Delete Keys. */
+  private final Map<String, Object> addValues;
+
   private AttributeValueToMapConfig(final Builder builder) {
     this.removeDbKeys = builder.removeDbKeys;
     this.renameKeys = builder.renameKeys;
     this.deleteKeys = builder.deleteKeys;
+    this.addValues = builder.addValues;
+  }
+
+  /**
+   * Get Add Values.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, Object> getAddValues() {
+    return this.addValues;
   }
 
   /**
