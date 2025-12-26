@@ -1648,6 +1648,13 @@ paths:
           description: "Previous page of results token"
           schema:
             type: "string"
+        - name: "projection"
+          in: "query"
+          description: "Specify a restricted document projection. Use 'DOCUMENT_ID_ONLY' to return only the documentId attribute."
+          schema:
+            type: "string"
+            enum:
+              - DOCUMENT_ID_ONLY
         - $ref: '#/components/parameters/limitParam'
       responses:
         '200':
@@ -11974,6 +11981,8 @@ components:
         notificationEmail:
           type: "string"
           description: "Email address to use for notifications"
+        document:
+          $ref: "#/components/schemas/DocumentConfig"
         ocr:
           $ref: "#/components/schemas/OcrConfig"
         google:
@@ -12138,11 +12147,18 @@ components:
         name:
           type: "string"
           description: "Name of API Key"
-        permissions:
+        groups:
           type: "array"
-          description: "List of permissions"
+          description: "Optional list of groups to add as custom claims to API Key"
           items:
             type: "string"
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ApiKeyPermission"
+    ApiKeyPermission:
+      type: string
+      description: List of API permissions (defaults to READ / WRITE / DELETE)
             enum:
               - READ
               - WRITE
@@ -12461,6 +12477,11 @@ components:
               - WRITE
               - DELETE
               - GOVERN
+        groups:
+          type: "array"
+          description: "List of groups to add as custom claims to API Key"
+          items:
+            type: "string"
     GetConfigurationResponse:
       type: object
       properties:
@@ -12479,6 +12500,8 @@ components:
         notificationEmail:
           type: "string"
           description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
+        document:
+          $ref: "#/components/schemas/DocumentConfig"
         ocr:
           $ref: "#/components/schemas/OcrConfig"
         google:
@@ -12510,6 +12533,33 @@ components:
         ocrTransactionCount:
           type: "number"
           description: "The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)"
+
+    DocumentConfig:
+      type: "object"
+      properties:
+        contentTypes:
+          $ref: "#/components/schemas/DocumentConfigContentTypes"
+
+    DocumentConfigContentTypes:
+      type: object
+      properties:
+        allowlist:
+          type: array
+          items:
+            type: string
+            description: Allowed MIME types
+          example:
+            - application/pdf
+            - image/png
+            - image/jpeg
+        denylist:
+          type: array
+          items:
+            type: string
+            description: Disallowed MIME types
+          example:
+            - application/x-msdownload
+            - application/x-sh
 
     OcrConfig:
       type: "object"
