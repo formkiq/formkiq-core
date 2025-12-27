@@ -46,17 +46,18 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute01() {
     // given
-    SearchAttributeCriteria attribute = new SearchAttributeCriteria().key("category").eq("person");
+    SearchAttributeCriteria attribute =
+        new SearchAttributeCriteria("category", null, "person", null, null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute));
 
     // then
-    assertEquals("category", sac.getKey());
-    assertEquals("person", sac.getEq());
-    assertNull(sac.getRange());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category", sac.key());
+    assertEquals("person", sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -66,17 +67,17 @@ public class SearchAttributesToCriteriaTest {
   void testAttribute02() {
     // given
     SearchAttributeCriteria attribute =
-        new SearchAttributeCriteria().key("category").beginsWith("o");
+        new SearchAttributeCriteria("category", "o", null, null, null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute));
 
     // then
-    assertEquals("category", sac.getKey());
-    assertEquals("", sac.getEq());
-    assertNull(sac.getRange());
-    assertEquals("o", sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category", sac.key());
+    assertEquals("", sac.eq());
+    assertNull(sac.range());
+    assertEquals("o", sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -85,20 +86,20 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute03() {
     // given
-    SearchAttributeCriteria attribute = new SearchAttributeCriteria().key("category")
-        .range(new SearchTagCriteriaRange().type("string").start("A").end("B"));
+    SearchAttributeCriteria attribute = new SearchAttributeCriteria("category", null, null, null,
+        new SearchTagCriteriaRange("A", "B", "string"));
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute));
 
     // then
-    assertEquals("category", sac.getKey());
-    assertNull(sac.getEq());
-    assertEquals("string", sac.getRange().getType());
-    assertEquals("A", sac.getRange().getStart());
-    assertEquals("B", sac.getRange().getEnd());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category", sac.key());
+    assertNull(sac.eq());
+    assertEquals("string", sac.range().type());
+    assertEquals("A", sac.range().start());
+    assertEquals("B", sac.range().end());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -107,20 +108,20 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute04() {
     // given
-    SearchAttributeCriteria attribute = new SearchAttributeCriteria().key("category")
-        .range(new SearchTagCriteriaRange().type("number").start("20100101").end("20100131"));
+    SearchAttributeCriteria attribute = new SearchAttributeCriteria("category", null, null, null,
+        new SearchTagCriteriaRange("20100101", "20100131", "number"));
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute));
 
     // then
-    assertEquals("category", sac.getKey());
-    assertNull(sac.getEq());
-    assertEquals("number", sac.getRange().getType());
-    assertEquals("000000020100101.0000", sac.getRange().getStart());
-    assertEquals("000000020100131.0000", sac.getRange().getEnd());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category", sac.key());
+    assertNull(sac.eq());
+    assertEquals("number", sac.range().type());
+    assertEquals("000000020100101.0000", sac.range().start());
+    assertEquals("000000020100131.0000", sac.range().end());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -130,17 +131,17 @@ public class SearchAttributesToCriteriaTest {
   void testAttribute05() {
     // given
     SearchAttributeCriteria attribute =
-        new SearchAttributeCriteria().key("category").eqOr(List.of("A", "B", "C"));
+        new SearchAttributeCriteria("category", null, null, List.of("A", "B", "C"), null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute));
 
     // then
-    assertEquals("category", sac.getKey());
-    assertNull(sac.getEq());
-    assertNull(sac.getRange());
-    assertNull(sac.getBeginsWith());
-    assertEquals("A,B,C", String.join(",", sac.getEqOr()));
+    assertEquals("category", sac.key());
+    assertNull(sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
+    assertEquals("A,B,C", String.join(",", sac.eqOr()));
   }
 
   /**
@@ -149,18 +150,20 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute06() {
     // given
-    SearchAttributeCriteria attribute0 = new SearchAttributeCriteria().key("category").eq("person");
-    SearchAttributeCriteria attribute1 = new SearchAttributeCriteria().key("userId").eq("111");
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, "person", null, null);
+    SearchAttributeCriteria attribute1 =
+        new SearchAttributeCriteria("userId", null, "111", null, null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category::userId", sac.getKey());
-    assertEquals("person::111", sac.getEq());
-    assertNull(sac.getRange());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category::userId", sac.key());
+    assertEquals("person::111", sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -169,19 +172,20 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute07() {
     // given
-    SearchAttributeCriteria attribute0 = new SearchAttributeCriteria().key("category").eq("o");
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, "o", null, null);
     SearchAttributeCriteria attribute1 =
-        new SearchAttributeCriteria().key("player").beginsWith("111");
+        new SearchAttributeCriteria("player", "111", null, null, null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category::player", sac.getKey());
-    assertNull(sac.getEq());
-    assertNull(sac.getRange());
-    assertEquals("o::111", sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category::player", sac.key());
+    assertNull(sac.eq());
+    assertNull(sac.range());
+    assertEquals("o::111", sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -190,21 +194,23 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute08() {
     // given
-    SearchAttributeCriteria attribute0 = new SearchAttributeCriteria().key("category").eq("person");
-    SearchTagCriteriaRange range = new SearchTagCriteriaRange().type("string").start("A").end("B");
-    SearchAttributeCriteria attribute1 = new SearchAttributeCriteria().key("player").range(range);
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, "person", null, null);
+    SearchTagCriteriaRange range = new SearchTagCriteriaRange("A", "B", "string");
+    SearchAttributeCriteria attribute1 =
+        new SearchAttributeCriteria("player", null, null, null, range);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category::player", sac.getKey());
-    assertNull(sac.getEq());
-    assertEquals("string", sac.getRange().getType());
-    assertEquals("person::A", sac.getRange().getStart());
-    assertEquals("person::B", sac.getRange().getEnd());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category::player", sac.key());
+    assertNull(sac.eq());
+    assertEquals("string", sac.range().type());
+    assertEquals("person::A", sac.range().start());
+    assertEquals("person::B", sac.range().end());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -213,21 +219,22 @@ public class SearchAttributesToCriteriaTest {
   @Test
   void testAttribute09() {
     // given
-    SearchAttributeCriteria attribute0 = new SearchAttributeCriteria().key("category").eq("person");
-    SearchAttributeCriteria attribute1 = new SearchAttributeCriteria().key("player")
-        .range(new SearchTagCriteriaRange().type("number").start("20100101").end("20100131"));
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, "person", null, null);
+    SearchAttributeCriteria attribute1 = new SearchAttributeCriteria("player", null, null, null,
+        new SearchTagCriteriaRange("20100101", "20100131", "number"));
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category::player", sac.getKey());
-    assertNull(sac.getEq());
-    assertEquals("number", sac.getRange().getType());
-    assertEquals("person::000000020100101.0000", sac.getRange().getStart());
-    assertEquals("person::000000020100131.0000", sac.getRange().getEnd());
-    assertNull(sac.getBeginsWith());
-    assertNull(sac.getEqOr());
+    assertEquals("category::player", sac.key());
+    assertNull(sac.eq());
+    assertEquals("number", sac.range().type());
+    assertEquals("person::000000020100101.0000", sac.range().start());
+    assertEquals("person::000000020100131.0000", sac.range().end());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
   }
 
   /**
@@ -237,22 +244,22 @@ public class SearchAttributesToCriteriaTest {
   void testAttribute10() {
     // given
     SearchAttributeCriteria attribute0 =
-        new SearchAttributeCriteria().key("category").eqOr(List.of("A", "B", "C"));
+        new SearchAttributeCriteria("category", null, null, List.of("A", "B", "C"), null);
     SearchAttributeCriteria attribute1 =
-        new SearchAttributeCriteria().key("player").eqOr(List.of("111", "222"));
+        new SearchAttributeCriteria("player", null, null, List.of("111", "222"), null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
 
     // then
-    assertEquals("category::player", sac.getKey());
-    assertNull(sac.getEq());
-    assertNull(sac.getRange());
-    assertNull(sac.getBeginsWith());
+    assertEquals("category::player", sac.key());
+    assertNull(sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
 
     final int expected = 6;
-    assertEquals(expected, sac.getEqOr().size());
-    assertEquals("A::111,A::222,B::111,B::222,C::111,C::222", String.join(",", sac.getEqOr()));
+    assertEquals(expected, sac.eqOr().size());
+    assertEquals("A::111,A::222,B::111,B::222,C::111,C::222", String.join(",", sac.eqOr()));
   }
 
   /**
@@ -262,26 +269,26 @@ public class SearchAttributesToCriteriaTest {
   void testAttribute11() {
     // given
     SearchAttributeCriteria attribute0 =
-        new SearchAttributeCriteria().key("category").eqOr(List.of("A", "B", "C"));
+        new SearchAttributeCriteria("category", null, null, List.of("A", "B", "C"), null);
     SearchAttributeCriteria attribute1 =
-        new SearchAttributeCriteria().key("player").eqOr(List.of("111", "222"));
+        new SearchAttributeCriteria("player", null, null, List.of("111", "222"), null);
     SearchAttributeCriteria attribute2 =
-        new SearchAttributeCriteria().key("user").eqOr(List.of("55", "66"));
+        new SearchAttributeCriteria("user", null, null, List.of("55", "66"), null);
 
     // when
     SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1, attribute2));
 
     // then
-    assertEquals("category::player::user", sac.getKey());
-    assertNull(sac.getEq());
-    assertNull(sac.getRange());
-    assertNull(sac.getBeginsWith());
+    assertEquals("category::player::user", sac.key());
+    assertNull(sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
 
     final int expected = 12;
-    assertEquals(expected, sac.getEqOr().size());
+    assertEquals(expected, sac.eqOr().size());
     assertEquals(
         "A::111::55,A::111::66,A::222::55,A::222::66,B::111::55,B::111::66,"
             + "B::222::55,B::222::66,C::111::55,C::111::66,C::222::55,C::222::66",
-        String.join(",", sac.getEqOr()));
+        String.join(",", sac.eqOr()));
   }
 }

@@ -23,12 +23,11 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationException;
 
 /**
@@ -43,12 +42,12 @@ public interface DocumentSearchService {
    * 
    * @param siteId {@link String}
    * @param indexKey {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DynamicDocumentItem}
    */
-  PaginationResults<DynamicDocumentItem> findInFolder(String siteId, String indexKey,
-      PaginationMapToken token, int maxresults);
+  Pagination<DynamicDocumentItem> findInFolder(String siteId, String indexKey, String nextToken,
+      int maxresults);
 
   /**
    * Search for Documents.
@@ -56,13 +55,13 @@ public interface DocumentSearchService {
    * @param siteId Optional Grouping siteId
    * @param search {@link SearchQuery}
    * @param searchResponseFields {@link SearchResponseFields}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DynamicDocumentItem}
    * @throws ValidationException ValidationException
    */
-  PaginationResults<DynamicDocumentItem> search(String siteId, SearchQuery search,
-      SearchResponseFields searchResponseFields, PaginationMapToken token, int maxresults)
+  Pagination<DynamicDocumentItem> search(String siteId, SearchQuery search,
+      SearchResponseFields searchResponseFields, String nextToken, int maxresults)
       throws ValidationException;
 
   /**
@@ -70,10 +69,10 @@ public interface DocumentSearchService {
    *
    * @param siteId Optional Grouping siteId
    * @param criteria {@link SearchTagCriteria}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link String}
+   * @return {@link Pagination} {@link String}
    */
-  PaginationResults<String> searchForDocumentIds(String siteId, SearchTagCriteria criteria,
-      PaginationMapToken token, int maxresults);
+  Pagination<String> searchForDocumentIds(String siteId, SearchTagCriteria criteria,
+      String nextToken, int maxresults);
 }

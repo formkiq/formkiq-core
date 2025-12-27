@@ -278,6 +278,41 @@ public class Strings {
     return pos > 0 ? new SplitResult(s.substring(0, pos), s.substring(pos + 1)) : null;
   }
 
+  /**
+   * Left-pad a string to a minimum length using the given pad character.
+   *
+   * Examples: leftPad("5", 2, '0') -> "05" leftPad("12", 2, '0') -> "12" leftPad("", 3, '_') ->
+   * "___"
+   *
+   * @param value input string (null treated as empty)
+   * @param minLength minimum desired length
+   * @param padChar character used for padding
+   * @return padded string
+   */
+  public static String leftPad(final String value, final int minLength, final char padChar) {
+
+    // Normalize value once
+    final String v = (value == null) ? "" : value;
+
+    // If no padding is required (or invalid minLength), return normalized value
+    if (minLength <= v.length()) {
+      return v;
+    }
+
+    final char[] padded = new char[minLength];
+    final int padCount = minLength - v.length();
+
+    // Fill left padding
+    for (int i = 0; i < padCount; i++) {
+      padded[i] = padChar;
+    }
+
+    // Copy original value to the right
+    v.getChars(0, v.length(), padded, padCount);
+
+    return new String(padded);
+  }
+
   public record SplitResult(String before, String after) {
   }
 }

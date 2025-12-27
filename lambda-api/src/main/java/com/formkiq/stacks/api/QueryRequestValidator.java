@@ -43,28 +43,32 @@ import software.amazon.awssdk.utils.StringUtils;
 public class QueryRequestValidator {
 
   private boolean isAttributesEmpty(final QueryRequest q) {
-    return q.query().getAttribute() == null && notNull(q.query().getAttributes()).isEmpty();
+    return q.query().attribute() == null && notNull(q.query().attributes()).isEmpty();
   }
 
   private boolean isEmptyRequest(final QueryRequest q) {
     return q == null || q.query() == null;
   }
 
+  private boolean isFilenameEmpty(final QueryRequest q) {
+    return q.query().filename() == null || isEmpty(q.query().filename().beginsWith());
+  }
+
   private boolean isMetaDataEmpty(final QueryRequest q) {
-    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q);
+    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q) && isFilenameEmpty(q);
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
-    return isMetaDataEmpty(q) && isEmpty(q.query().getText())
-        && Objects.isEmpty(q.query().getDocumentIds());
+    return isMetaDataEmpty(q) && isEmpty(q.query().text())
+        && Objects.isEmpty(q.query().documentIds());
   }
 
   private boolean isQueryMetaDataEmpty(final QueryRequest q) {
-    return q.query().getMeta() == null;
+    return q.query().meta() == null;
   }
 
   private boolean isTagsEmpty(final QueryRequest q) {
-    return q.query().getTag() == null && notNull(q.query().getTags()).isEmpty();
+    return q.query().tag() == null && notNull(q.query().tags()).isEmpty();
   }
 
   private void validateMultiTags(final List<SearchTagCriteria> tags,
@@ -79,11 +83,11 @@ public class QueryRequestValidator {
 
     if (tag != null && tag.range() != null) {
 
-      if (StringUtils.isEmpty(tag.range().getStart())) {
+      if (StringUtils.isEmpty(tag.range().start())) {
         errors.add(new ValidationErrorImpl().key("range/start").error("range start is required"));
       }
 
-      if (StringUtils.isEmpty(tag.range().getEnd())) {
+      if (StringUtils.isEmpty(tag.range().end())) {
         errors.add(new ValidationErrorImpl().key("range/end").error("range end is required"));
       }
     }
@@ -116,7 +120,7 @@ public class QueryRequestValidator {
       boolean isTagsEmpty = isTagsEmpty(q);
       boolean isAttributesEmpty = isAttributesEmpty(q);
       boolean isMetaEmpty = isQueryMetaDataEmpty(q);
-      boolean hasText = !isEmpty(q.query().getText());
+      boolean hasText = !isEmpty(q.query().text());
 
       if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {
         errors.add(new ValidationErrorImpl()
@@ -135,9 +139,9 @@ public class QueryRequestValidator {
         }
       }
 
-      List<SearchTagCriteria> tags = notNull(q.query().getTags());
+      List<SearchTagCriteria> tags = notNull(q.query().tags());
 
-      validateTag(q.query().getTag(), errors);
+      validateTag(q.query().tag(), errors);
       tags.forEach(tag -> validateTag(tag, errors));
       validateMultiTags(tags, errors);
     }

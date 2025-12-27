@@ -67,6 +67,9 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
@@ -75,6 +78,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,7 +88,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.PaginationResult;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -135,6 +138,13 @@ public class DocumentServiceImplTest implements DbKeys {
 
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+  private void assertLastEvaluationKey(final Map<String, AttributeValue> map, final String gsi1Pk,
+      final String gsi1Sk) {
+    assertEquals("document", DynamoDbTypes.toString(map.get(SK)));
+    assertEquals(gsi1Pk, DynamoDbTypes.toString(map.get(GSI1_PK)));
+    assertEquals(gsi1Sk, DynamoDbTypes.toString(map.get(GSI1_SK)));
+  }
 
   /**
    * Before Test.
@@ -252,9 +262,9 @@ public class DocumentServiceImplTest implements DbKeys {
       service.addTags(siteId, documentId, tags, null);
 
       // then
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(2, results.getResults().size());
       assertEquals("status", results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
@@ -266,12 +276,12 @@ public class DocumentServiceImplTest implements DbKeys {
 
       assertEquals(tagValue, service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
-      SearchTagCriteria s = new SearchTagCriteria(tagKey);
-      SearchQuery q = new SearchQuery().tag(s);
+      SearchTagCriteria s = new SearchTagCriteria(tagKey, null, null, null, null);
+      SearchQuery q = new SearchQuery(null, null, null, null, s, null, null, null, null);
 
-      PaginationResults<DynamicDocumentItem> list =
+      Pagination<DynamicDocumentItem> list =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
-      assertNull(list.getToken());
+      assertNull(list.getNextToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
       assertEquals(tagKey, list.getResults().get(0).getMap("matchedTag").get("key"));
@@ -304,9 +314,9 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item, tags);
 
       // then
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey, results.getResults().get(0).getKey());
       assertEquals(DocumentTagType.USERDEFINED, results.getResults().get(0).getType());
@@ -314,12 +324,12 @@ public class DocumentServiceImplTest implements DbKeys {
 
       assertEquals("", service.findDocumentTag(siteId, documentId, tagKey).getValue());
 
-      SearchTagCriteria s = new SearchTagCriteria(tagKey);
-      SearchQuery q = new SearchQuery().tag(s);
+      SearchTagCriteria s = new SearchTagCriteria(tagKey, null, null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(s).build();
 
-      PaginationResults<DynamicDocumentItem> list =
+      Pagination<DynamicDocumentItem> list =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
-      assertNull(list.getToken());
+      assertNull(list.getNextToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
       assertEquals("tag", list.getResults().get(0).getMap("matchedTag").get("key"));
@@ -373,9 +383,9 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       final int count = 2;
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(count, results.getResults().size());
 
       assertEquals(tagKey, results.getResults().get(0).getKey());
@@ -390,12 +400,12 @@ public class DocumentServiceImplTest implements DbKeys {
 
       assertEquals(tagValues, service.findDocumentTag(siteId, documentId, tagKey).getValues());
 
-      SearchTagCriteria s = new SearchTagCriteria(tagKey);
-      SearchQuery q = new SearchQuery().tag(s);
+      SearchTagCriteria s = new SearchTagCriteria(tagKey, null, null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(s).build();
 
-      PaginationResults<DynamicDocumentItem> list =
+      Pagination<DynamicDocumentItem> list =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
-      assertNull(list.getToken());
+      assertNull(list.getNextToken());
       assertEquals(1, list.getResults().size());
       assertEquals(documentId, list.getResults().get(0).getDocumentId());
       assertEquals(tagKey, list.getResults().get(0).getMap("matchedTag").get("key"));
@@ -432,15 +442,16 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       for (String documentId : tagMap.keySet()) {
-        PaginationResults<DocumentTag> results =
+        Pagination<DocumentTag> results =
             service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
         assertEquals(1, results.getResults().size());
         assertEquals(tagKey, results.getResults().get(0).getKey());
         assertEquals("person", results.getResults().get(0).getValue());
       }
 
-      SearchQuery query = new SearchQuery().meta(new SearchMetaCriteria().indexType("tags"));
-      PaginationResults<DynamicDocumentItem> results =
+      SearchQuery query = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, null, null, "tags", null)).build();
+      Pagination<DynamicDocumentItem> results =
           searchService.search(siteId, query, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey, results.getResults().get(0).get("value"));
@@ -468,7 +479,7 @@ public class DocumentServiceImplTest implements DbKeys {
       service.addTags(siteId, documentId, tags1, null);
 
       // then
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       assertEquals("category", results.getResults().get(0).getKey());
@@ -499,7 +510,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
         service.saveDocument(siteId, item, List.of(tag));
 
-        PaginationResults<DocumentTag> results =
+        Pagination<DocumentTag> results =
             service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
         assertEquals(1, results.getResults().size());
 
@@ -512,12 +523,14 @@ public class DocumentServiceImplTest implements DbKeys {
         results = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
         assertEquals(0, results.getResults().size());
 
-        SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-        PaginationResults<DynamicDocumentItem> folders =
+        SearchQuery q = new SearchQueryBuilder()
+            .meta(new SearchMetaCriteria(null, "", null, null, null)).build();
+        Pagination<DynamicDocumentItem> folders =
             searchService.search(siteId, q, null, null, MAX_RESULTS);
         assertEquals(1, folders.getResults().size());
 
-        q = new SearchQuery().meta(new SearchMetaCriteria().folder("a"));
+        q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "a", null, null, null))
+            .build();
         folders = searchService.search(siteId, q, null, null, MAX_RESULTS);
 
         assertEquals(0, folders.getResults().size());
@@ -787,11 +800,11 @@ public class DocumentServiceImplTest implements DbKeys {
       String documentId = createTestData(siteId).get(0).getDocumentId();
 
       // when
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
 
       // then
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(1, results.getResults().size());
 
       assertEquals("status", results.getResults().get(0).getKey());
@@ -809,7 +822,7 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       results = service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
 
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(0, results.getResults().size());
     }
   }
@@ -924,7 +937,7 @@ public class DocumentServiceImplTest implements DbKeys {
       ZonedDateTime date = DateUtil.toDateTimeFromString("2020-01-29T18:00:00", "-600");
 
       // when
-      PaginationResults<DocumentItem> results =
+      Pagination<DocumentItem> results =
           service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
@@ -936,7 +949,7 @@ public class DocumentServiceImplTest implements DbKeys {
               .toList();
 
       assertArrayEquals(expected.toArray(new String[0]), resultDates.toArray(new String[0]));
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
     }
   }
 
@@ -957,8 +970,7 @@ public class DocumentServiceImplTest implements DbKeys {
       ZonedDateTime date = DateUtil.toDateTimeFromString("2020-01-29T18:00:00", "-600");
 
       // when
-      PaginationResults<DocumentItem> results =
-          service.findDocumentsByDate(siteId, date, null, max);
+      Pagination<DocumentItem> results = service.findDocumentsByDate(siteId, date, null, max);
 
       // then
       assertEquals(max, results.getResults().size());
@@ -971,26 +983,22 @@ public class DocumentServiceImplTest implements DbKeys {
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
 
       String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
-      if (siteId == null) {
-        assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#" + documentId
-                + ", SK=document, PK="));
-      } else {
-        assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-30, GSI1SK=2020-01-30T02:20:00+0000#"
-                + documentId + ", SK=document, PK="));
-      }
+      Map<String, AttributeValue> map =
+          new StringToMapAttributeValue().apply(results.getNextToken());
+
+      String gsi1Pk = siteId != null ? siteId + "/docts#2020-01-30" : "docts#2020-01-30";
+      assertLastEvaluationKey(map, gsi1Pk, "2020-01-30T02:20:00+0000#" + documentId);
 
       // given
       final List<String> expected1 = Arrays.asList("2020-01-30T05:20Z[UTC]",
           "2020-01-30T11:45Z[UTC]", "2020-01-30T13:22Z[UTC]");
 
       // when - get next page
-      results = service.findDocumentsByDate(siteId, date, results.getToken(), max);
+      results = service.findDocumentsByDate(siteId, date, results.getNextToken(), max);
 
       // then
       assertEquals(max, results.getResults().size());
-      assertNotNull(results.getToken());
+      assertNotNull(results.getNextToken());
       resultDates =
           results
               .getResults().stream().map(r -> ZonedDateTime
@@ -1019,7 +1027,7 @@ public class DocumentServiceImplTest implements DbKeys {
       ZonedDateTime date = DateUtil.toDateTimeFromString("2020-01-30T12:00:00", "-600");
 
       // when
-      PaginationResults<DocumentItem> results =
+      Pagination<DocumentItem> results =
           service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
@@ -1033,21 +1041,17 @@ public class DocumentServiceImplTest implements DbKeys {
 
       String documentId = results.getResults().get(results.getResults().size() - 1).getDocumentId();
 
-      if (siteId == null) {
-        assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#" + documentId
-                + ", SK=document, PK="));
-      } else {
-        assertTrue(results.getToken().toString()
-            .startsWith("{GSI1PK=" + siteId + "/docts#2020-01-31, GSI1SK=2020-01-31T10:00:00+0000#"
-                + documentId + ", SK=document, PK="));
-      }
+      Map<String, AttributeValue> map =
+          new StringToMapAttributeValue().apply(results.getNextToken());
+
+      String gsi1Pk = siteId != null ? siteId + "/docts#2020-01-31" : "docts#2020-01-31";
+      assertLastEvaluationKey(map, gsi1Pk, "2020-01-31T10:00:00+0000#" + documentId);
 
       // given
       List<String> expected1 = List.of("2020-01-31T11:00Z[UTC]");
 
       // when
-      results = service.findDocumentsByDate(siteId, date, results.getToken(), MAX_RESULTS);
+      results = service.findDocumentsByDate(siteId, date, results.getNextToken(), MAX_RESULTS);
 
       // then
       assertEquals(expected1.size(), results.getResults().size());
@@ -1058,7 +1062,7 @@ public class DocumentServiceImplTest implements DbKeys {
               .toList();
 
       assertArrayEquals(expected1.toArray(new String[0]), resultDates.toArray(new String[0]));
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
     }
   }
 
@@ -1080,7 +1084,7 @@ public class DocumentServiceImplTest implements DbKeys {
       ZonedDateTime date = DateUtil.toDateTimeFromString("2020-01-30T14:00:00", "-600");
 
       // when
-      PaginationResults<DocumentItem> results =
+      Pagination<DocumentItem> results =
           service.findDocumentsByDate(siteId, date, null, MAX_RESULTS);
 
       // then
@@ -1093,7 +1097,7 @@ public class DocumentServiceImplTest implements DbKeys {
               .toList();
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
 
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
     }
   }
 
@@ -1111,8 +1115,7 @@ public class DocumentServiceImplTest implements DbKeys {
     assertNotNull(date);
 
     // when
-    PaginationResults<DocumentItem> results =
-        service.findDocumentsByDate(null, date, null, MAX_RESULTS);
+    Pagination<DocumentItem> results = service.findDocumentsByDate(null, date, null, MAX_RESULTS);
 
     // then
     assertEquals(1, results.getResults().size());
@@ -1280,8 +1283,7 @@ public class DocumentServiceImplTest implements DbKeys {
         service.savePreset(siteId, presetId, type, null, List.of(tag));
 
         // when
-        PaginationResults<PresetTag> results =
-            service.findPresetTags(siteId, presetId, null, MAX_RESULTS);
+        Pagination<PresetTag> results = service.findPresetTags(siteId, presetId, null, MAX_RESULTS);
         Optional<PresetTag> ptag = service.findPresetTag(siteId, presetId, tag.getKey());
 
         // then
@@ -1334,15 +1336,14 @@ public class DocumentServiceImplTest implements DbKeys {
         }
 
         // when
-        PaginationResults<Preset> p0 =
-            service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
+        Pagination<Preset> p0 = service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
 
         // then
         assertEquals(MAX_RESULTS, p0.getResults().size());
-        assertNotNull(p0.getToken());
+        assertNotNull(p0.getNextToken());
 
         // when
-        PaginationResults<Preset> p1 =
+        Pagination<Preset> p1 =
             service.findPresets(siteId, preset.getId(), type, preset.getName(), null, MAX_RESULTS);
 
         // then
@@ -1354,7 +1355,7 @@ public class DocumentServiceImplTest implements DbKeys {
         assertNull(p1.getResults().get(0).getUserId());
 
         // when
-        p0 = service.findPresets(siteId, null, type, null, p0.getToken(), MAX_RESULTS);
+        p0 = service.findPresets(siteId, null, type, null, p0.getNextToken(), MAX_RESULTS);
 
         // then
         assertEquals(ids.size() - MAX_RESULTS, p0.getResults().size());
@@ -1369,8 +1370,7 @@ public class DocumentServiceImplTest implements DbKeys {
       } finally {
         ids.forEach(id -> service.deletePreset(siteId, id));
 
-        PaginationResults<Preset> p0 =
-            service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
+        Pagination<Preset> p0 = service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
         assertEquals(0, p0.getResults().size());
       }
     }
@@ -1396,7 +1396,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // when
       Optional<DocumentFormat> format = service.findDocumentFormat(siteId, documentId, contentType);
-      PaginationResults<DocumentFormat> formats =
+      Pagination<DocumentFormat> formats =
           service.findDocumentFormats(siteId, documentId, null, MAX_RESULTS);
 
       // then
@@ -1436,8 +1436,7 @@ public class DocumentServiceImplTest implements DbKeys {
       // when
       Optional<DocumentFormat> format =
           service.findDocumentFormat(siteId, documentId, contentTypes.get(0));
-      PaginationResults<DocumentFormat> formats =
-          service.findDocumentFormats(siteId, documentId, null, 1);
+      Pagination<DocumentFormat> formats = service.findDocumentFormats(siteId, documentId, null, 1);
 
       // then
       assertTrue(format.isPresent());
@@ -1455,7 +1454,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(userId, formats.getResults().get(0).getUserId());
 
       // when
-      formats = service.findDocumentFormats(siteId, documentId, formats.getToken(), 1);
+      formats = service.findDocumentFormats(siteId, documentId, formats.getNextToken(), 1);
 
       // then
       assertEquals(1, formats.getResults().size());
@@ -1765,7 +1764,7 @@ public class DocumentServiceImplTest implements DbKeys {
           item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
       assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -1801,7 +1800,7 @@ public class DocumentServiceImplTest implements DbKeys {
         item = service.findDocument(siteId, item.getDocumentId());
         assertNotNull(item);
 
-        PaginationResults<DocumentTag> tags =
+        Pagination<DocumentTag> tags =
             service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
         assertEquals(1, tags.getResults().size());
         assertEquals("category", tags.getResults().get(0).getKey());
@@ -2021,7 +2020,7 @@ public class DocumentServiceImplTest implements DbKeys {
           item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
       assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS * MAX_RESULTS);
       assertEquals(MAX_RESULTS * MAX_RESULTS, tags.getResults().size());
     }
@@ -2069,7 +2068,7 @@ public class DocumentServiceImplTest implements DbKeys {
           item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
       assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(2, tags.getResults().size());
       assertEquals("path", tags.getResults().get(0).getKey());
@@ -2109,7 +2108,7 @@ public class DocumentServiceImplTest implements DbKeys {
           item.getLastModifiedDate().toInstant().atZone(timeZone).toLocalDate();
       assertEquals(year, lastModifiedDate.get(ChronoField.YEAR_OF_ERA));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -2167,10 +2166,11 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item, null);
 
       // when
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      SearchQuery q =
+          new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
 
       // then
-      PaginationResults<DynamicDocumentItem> folders =
+      Pagination<DynamicDocumentItem> folders =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       assertEquals(1, folders.getResults().size());
@@ -2190,7 +2190,7 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item, null);
 
       // when
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
 
       // then
       folders = searchService.search(siteId, q, null, null, MAX_RESULTS);
@@ -2220,10 +2220,11 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // when
       service.addFolderIndex(siteId, item.getPath(), item.getUserId());
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      SearchQuery q =
+          new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
 
       // then
-      PaginationResults<DynamicDocumentItem> folders =
+      Pagination<DynamicDocumentItem> folders =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, folders.getResults().size());
       DynamicDocumentItem result = folders.getResults().get(0);
@@ -2242,7 +2243,7 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item, null);
 
       // when
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
 
       // then
       folders = searchService.search(siteId, q, null, null, MAX_RESULTS);
@@ -2283,18 +2284,18 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item1, null);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-      SearchQuery q = new SearchQuery().meta(smc);
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
 
-      PaginationResults<DynamicDocumentItem> items =
+      Pagination<DynamicDocumentItem> items =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, items.getResults().size());
       DynamicDocumentItem result = items.getResults().get(0);
       assertEquals("a", result.get("path"));
       assertEquals(item0Date, result.getLastModifiedDate());
 
-      smc = new SearchMetaCriteria().folder("a");
-      q = new SearchQuery().meta(smc);
+      smc = new SearchMetaCriteria(null, "a", null, null, null);
+      q = new SearchQueryBuilder().meta(smc).build();
       items = searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       assertEquals(1, items.getResults().size());
@@ -2302,8 +2303,8 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("b", result.get("path"));
       assertNotEquals(item0Date, result.getLastModifiedDate());
 
-      smc = new SearchMetaCriteria().folder("a/b");
-      q = new SearchQuery().meta(smc);
+      smc = new SearchMetaCriteria(null, "a/b", null, null, null);
+      q = new SearchQueryBuilder().meta(smc).build();
       items = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(2, items.getResults().size());
       assertEquals("a/b/test (" + items.getResults().get(0).get("documentId") + ").txt",
@@ -2331,17 +2332,17 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocument(siteId, item0, null);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-      SearchQuery q = new SearchQuery().meta(smc);
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
 
-      PaginationResults<DynamicDocumentItem> items =
+      Pagination<DynamicDocumentItem> items =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, items.getResults().size());
       DynamicDocumentItem result = items.getResults().get(0);
       assertEquals("a", result.get("path"));
 
-      smc = new SearchMetaCriteria().folder("a");
-      q = new SearchQuery().meta(smc);
+      smc = new SearchMetaCriteria(null, "a", null, null, null);
+      q = new SearchQueryBuilder().meta(smc).build();
       items = searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, items.getResults().size());
       result = items.getResults().get(0);

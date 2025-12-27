@@ -50,9 +50,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +65,6 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
@@ -495,24 +496,26 @@ class FolderIndexProcessorTest implements DbKeys {
       index.moveIndex(siteId, source, destination, userId);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-      SearchQuery q = new SearchQuery().meta(smc);
-      PaginationResults<DynamicDocumentItem> results =
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
+      Pagination<DynamicDocumentItem> results =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(2, list.size());
       assertEquals("a", list.get(0).get("path"));
       assertEquals("something", list.get(1).get("path"));
 
-      smc.folder("a");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "a", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
       assertEquals("b", list.get(0).get("path"));
       // final String bDocumentId = list.get(0).get("documentId").toString();
 
-      smc.folder("a/b");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "a/b", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
 
@@ -521,8 +524,9 @@ class FolderIndexProcessorTest implements DbKeys {
       // it's possible to update all the documents in the same folder but TBD at a later date.
       assertEquals("/something/else/test.txt", list.get(0).get("path"));
 
-      smc.folder("something");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "something", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
     }
@@ -555,21 +559,22 @@ class FolderIndexProcessorTest implements DbKeys {
       index.moveIndex(siteId, source, destination, userId);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-      SearchQuery q = new SearchQuery().meta(smc);
-      PaginationResults<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, null, MAX_RESULTS);
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+          new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
       assertEquals("directory1", results.getResults().get(0).get("path"));
       assertEquals("directory2", results.getResults().get(1).get("path"));
 
-      smc.folder("directory1");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "directory1", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       assertEquals(0, results.getResults().size());
 
-      smc.folder("directory2");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "directory2", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem doc2 = results.getResults().get(0);
       assertEquals("directory2/test.pdf", doc2.get("path"));
@@ -614,10 +619,9 @@ class FolderIndexProcessorTest implements DbKeys {
         index.moveIndex(siteId, source0, destination, userId);
 
         // then
-        SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-        SearchQuery q = new SearchQuery().meta(smc);
-        PaginationResults<DynamicDocumentItem> results =
-            searchService.search(siteId, q, null, null, MAX_RESULTS);
+        SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+        Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+            new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
         assertEquals(2, results.getResults().size());
         DynamicDocumentItem doc = results.getResults().get(0);
@@ -625,8 +629,9 @@ class FolderIndexProcessorTest implements DbKeys {
         DynamicDocumentItem dir2 = results.getResults().get(1);
         assertEquals("test.pdf", dir2.get("path"));
 
-        smc.folder("directory1");
-        results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+        smc = new SearchMetaCriteria(null, "directory1", null, null, null);
+        results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null,
+            null, MAX_RESULTS);
 
         assertEquals(1, results.getResults().size());
         doc = results.getResults().get(0);
@@ -672,21 +677,22 @@ class FolderIndexProcessorTest implements DbKeys {
       index.moveIndex(siteId, source0, destination, userId);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria().folder("");
-      SearchQuery q = new SearchQuery().meta(smc);
-      PaginationResults<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, null, MAX_RESULTS);
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+          new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
       assertEquals("d1", results.getResults().get(0).get("path"));
       assertEquals("d2", results.getResults().get(1).get("path"));
 
-      smc.folder("d1");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "d1", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       assertEquals(0, results.getResults().size());
 
-      smc.folder("d2");
-      results = searchService.search(siteId, q, null, null, MAX_RESULTS);
+      smc = new SearchMetaCriteria(null, "d2", null, null, null);
+      results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
+          MAX_RESULTS);
       assertEquals(2, results.getResults().size());
       DynamicDocumentItem doc1 = results.getResults().get(0);
       assertEquals("d2/test1.pdf", doc1.get("path"));
@@ -720,16 +726,18 @@ class FolderIndexProcessorTest implements DbKeys {
     assertTrue("".equals(parentDocumentId) || isUuid(parentDocumentId));
 
     if (hasDates) {
-      final int expected = 11;
+      final int expected = 14;
       assertEquals(expected, map.getAttributes(siteId).size());
       assertNotNull(map.insertedDate());
       assertNotNull(map.lastModifiedDate());
       assertNotNull(map.pkGsi1(siteId));
       assertNotNull(map.skGsi1());
+      assertNotNull(map.pkGsi2(siteId));
+      assertNotNull(map.skGsi2());
       assertEquals("joe", map.userId());
       assertEquals("folder", map.type());
     } else {
-      final int expected = 6;
+      final int expected = 9;
       assertEquals(expected, map.getAttributes(siteId).size());
       assertNull(map.insertedDate());
       assertNull(map.lastModifiedDate());
