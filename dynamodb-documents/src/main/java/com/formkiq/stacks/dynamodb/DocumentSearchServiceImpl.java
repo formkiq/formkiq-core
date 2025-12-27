@@ -613,30 +613,11 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     if (meta != null) {
 
-      if (meta.path() != null) {
-
-        try {
-          Map<String, Object> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
-          String documentId = (String) map.get("documentId");
-
-          DocumentItem item = this.docService.findDocument(siteId, documentId);
-
-          DynamicDocumentItem result = new DocumentItemToDynamicDocumentItem().apply(item);
-          results = new Pagination<>(Collections.singletonList(result));
-
-        } catch (IOException e) {
-          results = new Pagination<>(Collections.emptyList());
-        }
-
-      } else {
-        meta = updateFolderMetaData(meta);
-        String path = meta.eq();
-        results = searchByMeta(siteId, meta, nextToken, limit, path);
-      }
+      results = searchMeta(meta, siteId, nextToken, limit);
 
     } else if (query.filename() != null) {
 
-      QueryResult result = new GetFolderFilesByName(query.filename().beginsWith()).query(db,
+      QueryResult result = new GetFolderFilesByName(false, query.filename().beginsWith()).query(db,
           db.getTableName(), siteId, nextToken, limit);
 
       List<String> documentIds =
@@ -647,6 +628,19 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       var items = docService.findDocuments(siteId, documentIds).stream().map(transform).toList();
 
       results = new Pagination<>(items, result.lastEvaluatedKey());
+
+    } else if (query.folder() != null) {
+
+      QueryResult result = new GetFolderFilesByName(true, query.folder().beginsWith()).query(db,
+          db.getTableName(), siteId, nextToken, limit);
+
+      AttributeValueToDocumentItem toItem = new AttributeValueToDocumentItem();
+      List<DocumentItem> items = result.items().stream().map(toItem::apply).toList();
+
+      DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
+      List<DynamicDocumentItem> list = items.stream().map(transform).toList();
+      list.forEach(item -> item.put("folder", true));
+      results = new Pagination<>(list, result.lastEvaluatedKey());
 
     } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
 
@@ -678,6 +672,35 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     addResponseFields(siteId, results.getResults(), searchResponseFields);
+    return results;
+  }
+
+  private Pagination<DynamicDocumentItem> searchMeta(final SearchMetaCriteria meta,
+      final String siteId, final String nextToken, final int limit) {
+
+    Pagination<DynamicDocumentItem> results;
+    if (meta.path() != null) {
+
+      try {
+        Map<String, Object> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
+        String documentId = (String) map.get("documentId");
+
+        DocumentItem item = this.docService.findDocument(siteId, documentId);
+
+        DynamicDocumentItem result = new DocumentItemToDynamicDocumentItem().apply(item);
+        results = new Pagination<>(Collections.singletonList(result));
+
+      } catch (IOException e) {
+        results = new Pagination<>(Collections.emptyList());
+      }
+
+    } else {
+
+      SearchMetaCriteria updatedMeta = updateFolderMetaData(meta);
+      String path = updatedMeta.eq();
+      results = searchByMeta(siteId, updatedMeta, nextToken, limit, path);
+    }
+
     return results;
   }
 
