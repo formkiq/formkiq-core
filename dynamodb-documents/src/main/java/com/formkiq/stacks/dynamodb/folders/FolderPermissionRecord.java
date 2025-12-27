@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toCustom;
-import static com.formkiq.stacks.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
+import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
 
 /**
  * Record representing an entity, with its DynamoDB key structure and metadata.

@@ -26,7 +26,12 @@ package com.formkiq.aws.dynamodb;
 import java.util.Map;
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Pagination Token for Results. */
+/**
+ * Pagination Token for Results.
+ * 
+ * @deprecated use {@link String} nextToken
+ */
+@Deprecated
 @Reflectable
 public class PaginationMapToken {
 

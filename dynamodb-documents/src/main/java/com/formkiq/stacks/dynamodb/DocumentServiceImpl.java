@@ -43,6 +43,7 @@ import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
@@ -70,12 +71,13 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
 import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import com.formkiq.stacks.dynamodb.folders.FolderPermissionValidate;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -602,19 +604,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void deleteDocumentFormats(final String siteId, final String documentId) {
 
-    PaginationMapToken startkey = null;
+    String nextToken = null;
 
     do {
-      PaginationResults<DocumentFormat> pr =
-          findDocumentFormats(siteId, documentId, startkey, MAX_RESULTS);
+      Pagination<DocumentFormat> pr =
+          findDocumentFormats(siteId, documentId, nextToken, MAX_RESULTS);
 
       for (DocumentFormat format : pr.getResults()) {
         deleteDocumentFormat(siteId, documentId, format.getContentType());
       }
 
-      startkey = pr.getToken();
+      nextToken = pr.getNextToken();
 
-    } while (startkey != null);
+    } while (nextToken != null);
   }
 
   @Override
@@ -625,19 +627,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void deleteDocumentTags(final String siteId, final String documentId) {
 
-    PaginationMapToken startkey = null;
+    String nextToken = null;
 
     do {
-      PaginationResults<DocumentTag> pr =
-          findDocumentTags(siteId, documentId, startkey, MAX_RESULTS);
+      Pagination<DocumentTag> pr = findDocumentTags(siteId, documentId, nextToken, MAX_RESULTS);
 
       for (DocumentTag tag : pr.getResults()) {
         deleteDocumentTag(siteId, documentId, tag.getKey());
       }
 
-      startkey = pr.getToken();
+      nextToken = pr.getNextToken();
 
-    } while (startkey != null);
+    } while (nextToken != null);
   }
 
   /**
@@ -694,18 +695,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void deletePresets(final String siteId, final String type) {
-    PaginationMapToken startkey = null;
+    String nextToken = null;
 
     do {
-      PaginationResults<Preset> pr = findPresets(siteId, null, type, null, startkey, MAX_RESULTS);
+      Pagination<Preset> pr = findPresets(siteId, null, type, null, nextToken, MAX_RESULTS);
 
       for (Preset p : pr.getResults()) {
         deletePreset(siteId, p.getId());
       }
 
-      startkey = pr.getToken();
+      nextToken = pr.getNextToken();
 
-    } while (startkey != null);
+    } while (nextToken != null);
 
   }
 
@@ -716,18 +717,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void deletePresetTags(final String siteId, final String id) {
-    PaginationMapToken startkey = null;
+    String nextToken = null;
 
     do {
-      PaginationResults<PresetTag> pr = findPresetTags(siteId, id, startkey, MAX_RESULTS);
+      Pagination<PresetTag> pr = findPresetTags(siteId, id, nextToken, MAX_RESULTS);
 
       for (PresetTag tag : pr.getResults()) {
         deletePresetTag(siteId, id, tag.getKey());
       }
 
-      startkey = pr.getToken();
+      nextToken = pr.getNextToken();
 
-    } while (startkey != null);
+    } while (nextToken != null);
 
   }
 
@@ -785,16 +786,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param pk {@link String}
    * @param sk {@link String}
    * @param indexName {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param scanIndexForward {@link Boolean}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DocumentFormat}
+   * @return {@link Pagination} {@link DocumentFormat}
    */
-  private PaginationResults<Map<String, AttributeValue>> find(final String pk, final String sk,
-      final String indexName, final PaginationMapToken token, final Boolean scanIndexForward,
+  private Pagination<Map<String, AttributeValue>> find(final String pk, final String sk,
+      final String indexName, final String nextToken, final Boolean scanIndexForward,
       final int maxresults) {
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
     Map<String, AttributeValue> values = queryKeys(keysGeneric(pk, sk));
 
     String indexPrefix = indexName != null ? indexName : "";
@@ -807,7 +808,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         .scanIndexForward(scanIndexForward).limit(maxresults).exclusiveStartKey(startkey).build();
 
     QueryResponse result = this.dbClient.query(q);
-    return new PaginationResults<>(result.items(), new QueryResponseToPagination().apply(result));
+    return new Pagination<>(result.items(), result.lastEvaluatedKey());
   }
 
   /**
@@ -815,15 +816,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param <T> Type of object
    * @param keys {@link Map} {@link AttributeValue}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @param func {@link Function}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
    */
-  private <T> PaginationResults<T> findAndTransform(final Map<String, AttributeValue> keys,
-      final PaginationMapToken token, final int maxresults,
+  private <T> Pagination<T> findAndTransform(final Map<String, AttributeValue> keys,
+      final String nextToken, final int maxresults,
       final Function<Map<String, AttributeValue>, T> func) {
-    return findAndTransform(PK, SK, keys, token, maxresults, func);
+    return findAndTransform(PK, SK, keys, nextToken, maxresults, func);
   }
 
   /**
@@ -833,24 +834,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param pkKey {@link String}
    * @param skKey {@link String}
    * @param keys {@link Map} {@link AttributeValue}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @param func {@link Function}
    * @return {@link Optional} {@link Map} {@link AttributeValue}
    */
-  private <T> PaginationResults<T> findAndTransform(final String pkKey, final String skKey,
-      final Map<String, AttributeValue> keys, final PaginationMapToken token, final int maxresults,
+  private <T> Pagination<T> findAndTransform(final String pkKey, final String skKey,
+      final Map<String, AttributeValue> keys, final String nextToken, final int maxresults,
       final Function<Map<String, AttributeValue>, T> func) {
     String pk = keys.get(pkKey).s();
     String sk = keys.containsKey(skKey) ? keys.get(skKey).s() : null;
     String indexName = getIndexName(pkKey);
 
-    PaginationResults<Map<String, AttributeValue>> results =
-        find(pk, sk, indexName, token, null, maxresults);
+    Pagination<Map<String, AttributeValue>> results =
+        find(pk, sk, indexName, nextToken, null, maxresults);
 
     List<T> list = results.getResults().stream().map(func).collect(Collectors.toList());
 
-    return new PaginationResults<>(list, results.getToken());
+    return new Pagination<>(list, results.getNextToken());
   }
 
   private Map<String, AttributeValue> getDocumentRecord(final String siteId,
@@ -979,10 +980,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentFormat> findDocumentFormats(final String siteId,
-      final String documentId, final PaginationMapToken token, final int maxresults) {
+  public Pagination<DocumentFormat> findDocumentFormats(final String siteId,
+      final String documentId, final String nextToken, final int maxresults) {
     Map<String, AttributeValue> keys = keysDocumentFormats(siteId, documentId, null);
-    return findAndTransform(keys, token, maxresults, new AttributeValueToDocumentFormat());
+    return findAndTransform(keys, nextToken, maxresults, new AttributeValueToDocumentFormat());
   }
 
   @Override
@@ -1016,23 +1017,22 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentItem> findDocumentsByDate(final String siteId,
-      final ZonedDateTime date, final PaginationMapToken token, final int maxresults) {
+  public Pagination<DocumentItem> findDocumentsByDate(final String siteId, final ZonedDateTime date,
+      final String token, final int maxresults) {
 
     List<Map<String, String>> searchMap = generateSearchCriteria(siteId, date, token);
 
-    PaginationResults<DocumentItem> results =
+    Pagination<DocumentItem> results =
         findDocumentsBySearchMap(siteId, searchMap, token, maxresults);
 
     // if number of results == maxresult, check to see if next page has at least 1 record.
     if (results.getResults().size() == maxresults) {
-      PaginationMapToken nextToken = results.getToken();
+      String nextToken = results.getNextToken();
       searchMap = generateSearchCriteria(siteId, date, nextToken);
-      PaginationResults<DocumentItem> next =
-          findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
+      Pagination<DocumentItem> next = findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
 
       if (next.getResults().isEmpty()) {
-        results = new PaginationResults<>(results.getResults(), null);
+        results = new Pagination<>(results.getResults());
       }
     }
 
@@ -1044,28 +1044,26 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param siteId DynamoDB PK siteId
    * @param searchMap {@link List}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults}
+   * @return {@link Pagination}
    */
-  private PaginationResults<DocumentItem> findDocumentsBySearchMap(final String siteId,
-      final List<Map<String, String>> searchMap, final PaginationMapToken token,
-      final int maxresults) {
+  private Pagination<DocumentItem> findDocumentsBySearchMap(final String siteId,
+      final List<Map<String, String>> searchMap, final String nextToken, final int maxresults) {
 
     int max = maxresults;
-    PaginationMapToken itemsToken = null;
-    PaginationMapToken qtoken = token;
+    String itemsToken = null;
+    String qtoken = nextToken;
     List<DocumentItem> items = new ArrayList<>();
 
     for (Map<String, String> map : searchMap) {
       String pk = map.get("pk");
       String skMin = map.get("skMin");
       String skMax = map.get("skMax");
-      PaginationResults<DocumentItem> results =
-          queryDocuments(siteId, pk, skMin, skMax, qtoken, max);
+      Pagination<DocumentItem> results = queryDocuments(siteId, pk, skMin, skMax, qtoken, max);
 
       items.addAll(results.getResults());
-      itemsToken = results.getToken();
+      itemsToken = results.getNextToken();
       max = max - results.getResults().size();
 
       if (max < 1) {
@@ -1075,7 +1073,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       qtoken = null;
     }
 
-    return new PaginationResults<>(items, itemsToken);
+    return new Pagination<>(items, itemsToken);
   }
 
   @Override
@@ -1162,13 +1160,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentTag> findDocumentTags(final String siteId,
-      final String documentId, final PaginationMapToken token, final int limit) {
+  public Pagination<DocumentTag> findDocumentTags(final String siteId, final String documentId,
+      final String nextToken, final int limit) {
 
     Map<String, AttributeValue> keys = keysDocumentTag(siteId, documentId, null);
 
-    PaginationResults<DocumentTag> tags =
-        findAndTransform(keys, token, limit, new AttributeValueToDocumentTag(siteId));
+    Pagination<DocumentTag> tags =
+        findAndTransform(keys, nextToken, limit, new AttributeValueToDocumentTag(siteId));
 
     // filter duplicates
     DocumentTag prev = null;
@@ -1187,7 +1185,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public ZonedDateTime findMostDocumentDate() {
     ZonedDateTime date = null;
-    PaginationResults<Map<String, AttributeValue>> result =
+    Pagination<Map<String, AttributeValue>> result =
         find(PREFIX_DOCUMENT_DATE, null, null, null, Boolean.FALSE, 1);
 
     if (!result.getResults().isEmpty()) {
@@ -1208,10 +1206,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<Preset> findPresets(final String siteId, final String id,
-      final String type, final String name, final PaginationMapToken token, final int maxresults) {
+  public Pagination<Preset> findPresets(final String siteId, final String id, final String type,
+      final String name, final String nextToken, final int maxresults) {
     Map<String, AttributeValue> keys = keysPresetGsi2(siteId, id, type, name);
-    return findAndTransform(GSI2_PK, GSI2_SK, keys, token, maxresults,
+    return findAndTransform(GSI2_PK, GSI2_SK, keys, nextToken, maxresults,
         new AttributeValueToPreset());
   }
 
@@ -1226,10 +1224,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<PresetTag> findPresetTags(final String siteId, final String id,
-      final PaginationMapToken token, final int maxresults) {
+  public Pagination<PresetTag> findPresetTags(final String siteId, final String id,
+      final String nextToken, final int maxresults) {
     Map<String, AttributeValue> keys = keysPresetTag(siteId, id, null);
-    return findAndTransform(keys, token, maxresults, new AttributeValueToPresetTag());
+    return findAndTransform(keys, nextToken, maxresults, new AttributeValueToPresetTag());
   }
 
   @Override
@@ -1268,18 +1266,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param siteId DynamoDB PK siteId
    * @param date {@link ZonedDateTime}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @return {@link List} {@link String}
    */
   private List<Map<String, String>> generateSearchCriteria(final String siteId,
-      final ZonedDateTime date, final PaginationMapToken token) {
+      final ZonedDateTime date, final String nextToken) {
 
     List<Map<String, String>> list = new ArrayList<>();
 
     LocalDateTime startDate = LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.UTC);
     LocalDateTime endDate = startDate.plusDays(1);
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     String pk1 = PREFIX_DOCUMENT_DATE_TS + startDate.format(this.yyyymmddFormatter);
     String pk2 = PREFIX_DOCUMENT_DATE_TS + endDate.format(this.yyyymmddFormatter);
@@ -1599,19 +1597,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param pk {@link String}
    * @param skMin {@link String}
    * @param skMax {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults}
+   * @return {@link Pagination}
    */
-  private PaginationResults<DocumentItem> queryDocuments(final String siteId, final String pk,
-      final String skMin, final String skMax, final PaginationMapToken token,
-      final int maxresults) {
+  private Pagination<DocumentItem> queryDocuments(final String siteId, final String pk,
+      final String skMin, final String skMax, final String nextToken, final int maxresults) {
 
     String expr = GSI1_PK + " = :pk";
     Map<String, AttributeValue> values = new HashMap<>();
     values.put(":pk", AttributeValue.builder().s(createDatabaseKey(siteId, pk)).build());
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     if (skMax != null) {
       values.put(":sk1", AttributeValue.builder().s(skMin).build());
@@ -1640,7 +1637,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       list = findDocuments(siteId, documentIds);
     }
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(result));
+    return new Pagination<>(list, result.lastEvaluatedKey());
   }
 
   /**

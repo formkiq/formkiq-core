@@ -23,8 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -43,6 +41,7 @@ import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -76,19 +75,20 @@ public class DocumentTagsRequestHandler
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
 
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = event.getQueryStringParameter("next");
+    // PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
-    PaginationResults<DocumentTag> results =
-        documentService.findDocumentTags(siteId, documentId, ptoken, limit);
+    Pagination<DocumentTag> results =
+        documentService.findDocumentTags(siteId, documentId, nextToken, limit);
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
     List<DocumentTag> tags = subList(results.getResults(), limit);
 
     List<ApiDocumentTagItemResponse> list = tags.stream().map(t -> {

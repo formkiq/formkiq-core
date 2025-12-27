@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.formkiq.aws.dynamodb.DbKeys.GSI2;
 import static com.formkiq.aws.dynamodb.objects.Objects.isEmpty;
 
 /**
@@ -123,8 +124,9 @@ public interface DynamoDbShardQuery {
 
     List<Map<String, AttributeValue>> list = stream.toList();
 
-    Map<String, AttributeValue> lastEvaluatedKey = calculateLastEvaluatedKey(queryRequest, list);
-
-    return new QueryResult(list, lastEvaluatedKey);
+    QueryResult.Builder rb = QueryResult.builder();
+    rb.items(list, limit);
+    rb.lastEvaluatedKeyLastItem(GSI2, true);
+    return rb.build();
   }
 }
