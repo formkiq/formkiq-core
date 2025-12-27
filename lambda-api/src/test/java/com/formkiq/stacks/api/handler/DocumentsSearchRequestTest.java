@@ -43,6 +43,7 @@ import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchFilename;
+import com.formkiq.client.model.DocumentSearchFolder;
 import com.formkiq.client.model.DocumentSearchMatchTag;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchMeta.IndexTypeEnum;
@@ -262,6 +263,89 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       assertEquals("mypath_10,mypath_11,mypath_12,mypath_13,mypath_14",
           documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
       assertNull(response.getNext());
+    }
+  }
+
+  /**
+   * Search for folder with paging.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testFolderSearchWithPaging() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      for (int i = 0; i < 15; i++) {
+        String path = "myfold_" + String.format("%02d", i) + "/test.txt";
+        new AddDocumentRequestBuilder().content().path(path).submit(client, siteId).throwIfError();
+      }
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().folder(new DocumentSearchFolder().beginsWith("my")));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(10, documents.size());
+      assertEquals(
+          "myfold_00,myfold_01,myfold_02,myfold_03,myfold_04,myfold_05,myfold_06,"
+              + "myfold_07,myfold_08,myfold_09",
+          documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
+      assertNotNull(response.getNext());
+
+      // when
+      response = this.searchApi.documentSearch(dsq, siteId, null, response.getNext(), null);
+
+      // then
+      documents = notNull(response.getDocuments());
+      assertEquals(5, documents.size());
+      assertEquals("myfold_10,myfold_11,myfold_12,myfold_13,myfold_14",
+          documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
+      assertNull(response.getNext());
+    }
+  }
+
+  /**
+   * Search for folder.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testFoldernameSearch() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      new AddDocumentRequestBuilder().content().path("myfile").submit(client, siteId)
+          .throwIfError();
+      new AddDocumentRequestBuilder().content().path("dir1/dir2/mysomefile").submit(client, siteId)
+          .throwIfError();
+      new AddDocumentRequestBuilder().content().path("test/dir.txt").submit(client, siteId)
+          .throwIfError();
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().folder(new DocumentSearchFolder().beginsWith("dir")));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(2, documents.size());
+
+      assertEquals("dir1", documents.get(0).getPath());
+      assertEquals(Boolean.TRUE, documents.get(0).getFolder());
+
+      assertEquals("dir2", documents.get(1).getPath());
+      assertEquals(Boolean.TRUE, documents.get(1).getFolder());
     }
   }
 

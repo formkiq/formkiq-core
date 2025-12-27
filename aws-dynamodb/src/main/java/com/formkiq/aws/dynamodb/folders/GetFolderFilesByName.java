@@ -37,6 +37,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
+import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
+
 /**
  * {@link DynamoDbShardQuery} for finding filenames in folders.
  */
@@ -44,14 +47,18 @@ public class GetFolderFilesByName implements DynamoDbShardQuery {
 
   /** Begins With {@link String}. */
   private final String begins;
+  /** Is Folder Search. */
+  private final boolean folderSearch;
 
   /**
    * constructor.
-   * 
+   *
+   * @param isFolderSearch Is folder search
    * @param beginsWith {@link String}
    */
-  public GetFolderFilesByName(final String beginsWith) {
+  public GetFolderFilesByName(final boolean isFolderSearch, final String beginsWith) {
     this.begins = beginsWith;
+    this.folderSearch = isFolderSearch;
   }
 
   @Override
@@ -70,9 +77,11 @@ public class GetFolderFilesByName implements DynamoDbShardQuery {
         .toList();
 
     for (DynamoDbShardKey skey : shardKeys) {
-      QueryRequest request = DynamoDbQueryBuilder.builder().indexName(DbKeys.GSI2, skey.key())
-          .beginsWith("fi#" + begins).scanIndexForward(true).nextToken(skey, nextToken).limit(limit)
-          .build(tableName);
+
+      String s = folderSearch ? INDEX_FOLDER_SK + begins : INDEX_FILE_SK + begins;
+      QueryRequest request =
+          DynamoDbQueryBuilder.builder().indexName(DbKeys.GSI2, skey.key()).beginsWith(s)
+              .scanIndexForward(true).nextToken(skey, nextToken).limit(limit).build(tableName);
       requests.add(request);
     }
 
