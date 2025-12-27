@@ -24,16 +24,17 @@
 package com.formkiq.stacks.lambda.s3.awstest;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.AfterAll;
@@ -313,9 +314,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     getS3Service().putObject(getStagingdocumentsbucketname(), key + ".fkb64", json, contentType);
 
     // then
-    SearchQuery query = new SearchQuery().tag(new SearchTagCriteria().key(mycategory).eq(myvalue));
+    SearchQuery query = new SearchQueryBuilder()
+        .tag(new SearchTagCriteria(mycategory, null, myvalue, null, null)).build();
 
-    PaginationResults<DynamicDocumentItem> results;
+    Pagination<DynamicDocumentItem> results;
 
     do {
       results = getSearchService().search(null, query, null, null, MAX_RESULTS);
@@ -444,11 +446,11 @@ public class AwsResourceTest extends AbstractAwsTest {
     getS3Service().putObject(getStagingdocumentsbucketname(), siteId + "/" + path,
         txt1.getBytes(StandardCharsets.UTF_8), contentType);
 
-    SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().path(path));
+    SearchQuery q =
+        new SearchQueryBuilder().meta(new SearchMetaCriteria(null, null, null, null, path)).build();
 
     // then
-    PaginationResults<DynamicDocumentItem> result =
-        new PaginationResults<>(Collections.emptyList(), null);
+    Pagination<DynamicDocumentItem> result = new Pagination<>(Collections.emptyList());
 
     while (result.getResults().size() != 1) {
       result = getSearchService().search(siteId, q, null, null, DocumentService.MAX_RESULTS);
@@ -476,7 +478,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(txt2,
         getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
     assertSnsMessage(documentSnsQueue, "create");
-    PaginationResults<DocumentTag> list =
+    Pagination<DocumentTag> list =
         getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
     assertEquals("[status]",
         list.getResults().stream().map(DocumentTag::getKey).toList().toString());

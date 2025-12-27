@@ -27,129 +27,13 @@ import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Searches for {@link DocumentItem} Meta Data. */
 @Reflectable
-public class SearchMetaCriteria {
+public record SearchMetaCriteria(@Reflectable String eq,
+    /*
+     * Folder Key.
+     *
+     * @deprecated replaced with indexType = 'folder'
+     */
+    @Deprecated String folder,
 
-  /** Search Tag Value Equals. */
-  @Reflectable
-  private String eq;
-  /**
-   * Folder Key.
-   * 
-   * @deprecated replaced with indexType = 'folder'
-   */
-  @Deprecated
-  @Reflectable
-  private String folder;
-  /** Begins With Filter. */
-  @Reflectable
-  private String indexFilterBeginsWith;
-  /** Index Key. */
-  @Reflectable
-  private String indexType;
-  /** Document Path. */
-  @Reflectable
-  private String path;
-
-  /** constructor. */
-  public SearchMetaCriteria() {}
-
-  /**
-   * Get EQ {@link String}.
-   *
-   * @return {@link String}
-   */
-  public String eq() {
-    return this.eq;
-  }
-
-  /**
-   * Set EQ String.
-   *
-   * @param s {@link String}
-   * @return {@link SearchMetaCriteria}
-   */
-  public SearchMetaCriteria eq(final String s) {
-    this.eq = s;
-    return this;
-  }
-
-  /**
-   * Get Folder.
-   *
-   * @return {@link String}
-   */
-  public String folder() {
-    return this.folder;
-  }
-
-  /**
-   * Set Folder.
-   *
-   * @param s {@link String}
-   * @return {@link SearchMetaCriteria}
-   */
-  public SearchMetaCriteria folder(final String s) {
-    this.folder = s;
-    return this;
-  }
-
-  /**
-   * Get Index 'Begins With' filter.
-   * 
-   * @return {@link String}
-   */
-  public String indexFilterBeginsWith() {
-    return this.indexFilterBeginsWith;
-  }
-
-  /**
-   * Set Index 'Begins With' filter.
-   * 
-   * @param beginsWith {@link String}
-   * @return {@link SearchMetaCriteria}
-   */
-  public SearchMetaCriteria indexFilterBeginsWith(final String beginsWith) {
-    this.indexFilterBeginsWith = beginsWith;
-    return this;
-  }
-
-  /**
-   * Get Index Type.
-   * 
-   * @return {@link String}
-   */
-  public String indexType() {
-    return this.indexType;
-  }
-
-  /**
-   * Set Index Type.
-   * 
-   * @param index {@link String}
-   * @return {@link SearchMetaCriteria}
-   */
-  public SearchMetaCriteria indexType(final String index) {
-    this.indexType = index;
-    return this;
-  }
-
-  /**
-   * Get Path.
-   *
-   * @return {@link String}
-   */
-  public String path() {
-    return this.path;
-  }
-
-  /**
-   * Set Path.
-   *
-   * @param s {@link String}
-   * @return {@link SearchMetaCriteria}
-   */
-  public SearchMetaCriteria path(final String s) {
-    this.path = s;
-    return this;
-  }
+    String indexFilterBeginsWith, String indexType, String path) {
 }

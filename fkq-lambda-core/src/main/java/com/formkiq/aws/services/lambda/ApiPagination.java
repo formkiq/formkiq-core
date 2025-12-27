@@ -35,20 +35,20 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class ApiPagination {
 
   /** String Next Token. */
-  @Reflectable
-  private String next;
+  private final String next;
   /** Has Next Token. */
-  @Reflectable
   private boolean hasNext;
+
   /** Previous Token. */
-  @Reflectable
   private String previous;
+
   /** Query Limit. */
-  @Reflectable
   private int limit;
+
   /** {@link PaginationMapToken}. */
-  @Reflectable
   private PaginationMapToken startkey;
+  /** Next token string. */
+  private String nextToken;
 
   /**
    * constructor.
@@ -66,6 +66,7 @@ public class ApiPagination {
     return this.limit;
   }
 
+
   /**
    * Get Next Token.
    * 
@@ -73,6 +74,15 @@ public class ApiPagination {
    */
   public String getNext() {
     return this.next;
+  }
+
+  /**
+   * Get Next Token.
+   * 
+   * @return {@link String}
+   */
+  public String getNextToken() {
+    return nextToken;
   }
 
   /**
@@ -127,6 +137,15 @@ public class ApiPagination {
    */
   public void setLimit(final int querylimit) {
     this.limit = querylimit;
+  }
+
+  /**
+   * Set Next Token.
+   * 
+   * @param token {@link String}
+   */
+  public void setNextToken(final String token) {
+    this.nextToken = token;
   }
 
   /**

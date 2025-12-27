@@ -24,59 +24,10 @@
 package com.formkiq.aws.dynamodb.model;
 
 import java.util.List;
+
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Search Query. */
+/** Search Response Fields. */
 @Reflectable
-public class SearchResponseFields {
-
-  /** Response Attributes. */
-  @Reflectable
-  private List<String> attributes;
-  /** Response Tags. */
-  @Reflectable
-  private List<String> tags;
-
-  /** constructor. */
-  public SearchResponseFields() {}
-
-  /**
-   * Set Response Attributes.
-   *
-   * @param responseAttributes {@link SearchTagCriteria}
-   * @return {@link SearchResponseFields}
-   */
-  public SearchResponseFields attributes(final List<String> responseAttributes) {
-    this.attributes = responseAttributes;
-    return this;
-  }
-
-  /**
-   * Get Response Tags.
-   *
-   * @return {@link List}
-   */
-  public List<String> getAttributes() {
-    return this.attributes;
-  }
-
-  /**
-   * Get Response Tags.
-   *
-   * @return {@link List}
-   */
-  public List<String> getTags() {
-    return this.tags;
-  }
-
-  /**
-   * Set Response Tags.
-   *
-   * @param responseTags {@link SearchTagCriteria}
-   * @return {@link SearchResponseFields}
-   */
-  public SearchResponseFields tags(final List<String> responseTags) {
-    this.tags = responseTags;
-    return this;
-  }
+public record SearchResponseFields(List<String> attributes, List<String> tags) {
 }

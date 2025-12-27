@@ -103,6 +103,16 @@ public class StringsTest {
   }
 
   @Test
+  void testLeftPad() {
+    assertEquals("07", Strings.leftPad("7", 2, '0'));
+    assertEquals("15", Strings.leftPad("15", 2, '0'));
+    assertEquals("00", Strings.leftPad(null, 2, '0'));
+    assertEquals("abc", Strings.leftPad("abc", 2, '_'));
+    assertEquals("xxxx", Strings.leftPad("", 4, 'x'));
+    assertEquals("__abc", Strings.leftPad("abc", 5, '_'));
+  }
+
+  @Test
   void testParseLocale() {
     assertLocale(Strings.parseLocale("en"), "", "en", null);
     assertLocale(Strings.parseLocale("fr"), "", "fr", null);

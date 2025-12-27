@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.indices;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.stacks.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
+import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
 
 import java.io.IOException;
 import java.util.Map;

@@ -48,13 +48,13 @@ import java.util.TimeZone;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -228,17 +228,16 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       createTestData(prefix);
       String tagKey = "status";
       String tagValue = "active";
-      SearchTagCriteria c = new SearchTagCriteria(tagKey);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
-      assertNotNull(results.getToken());
+      assertNotNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -265,17 +264,16 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       createTestData(prefix);
       String tagKey = "day";
       String tagValue = "today2";
-      SearchTagCriteria c = new SearchTagCriteria(tagKey);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(0, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
     }
   }
 
@@ -291,16 +289,16 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       createTestData(prefix);
       createTestData("finance");
       String tagKey = "status";
-      SearchTagCriteria c = new SearchTagCriteria(tagKey).beginsWith("a");
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, "a", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(MAX_RESULTS, results.getResults().size());
-      assertNotNull(results.getToken());
+      assertNotNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -328,23 +326,22 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       int limit = 1;
       String tagKey = "status";
       String tagValue = "active";
-      SearchTagCriteria c = new SearchTagCriteria(tagKey);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(prefix, q, null, null, limit);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNotNull(results.getToken());
+      assertNotNull(results.getNextToken());
 
       // given
-      PaginationMapToken startkey = results.getToken();
+      String startkey = results.getNextToken();
 
       // when
-      PaginationResults<DynamicDocumentItem> results2 =
+      Pagination<DynamicDocumentItem> results2 =
           this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
@@ -375,17 +372,16 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       String tagKey = "status";
       String tagValue = "notactive";
-      SearchTagCriteria c = new SearchTagCriteria(tagKey);
-      c.eq(tagValue);
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -414,18 +410,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
-      SearchTagCriteria c0 = new SearchTagCriteria("category").eq("thing");
-      SearchQuery q = new SearchQuery().tag(c0);
-      q.documentsIds(
+      SearchTagCriteria c0 = new SearchTagCriteria("category", null, "thing", null, null);
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c0).documentIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
 
       // when - wrong document id
-      PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -439,19 +434,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       });
 
       // given
-      q = new SearchQuery().tag(new SearchTagCriteria("nocategory"));
+      q = new SearchQueryBuilder().tag(new SearchTagCriteria("nocategory", null, null, null, null));
 
       // when
-      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
       assertEquals(doc2.getDocumentId(), results.getResults().get(0).getDocumentId());
 
       // given
-      q.documentsIds(List.of("123"));
+      q.documentIds(List.of("123"));
       // when
-      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -466,8 +461,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch07() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given - tag only
-      SearchTagCriteria c = new SearchTagCriteria("category");
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria("category", null, null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
       DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
@@ -477,7 +472,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
@@ -504,8 +499,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch08() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given - wrong value
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("thing123");
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "thing123", null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
       DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
@@ -515,7 +510,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
@@ -538,17 +533,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
-      SearchTagCriteria c = new SearchTagCriteria("category").beginsWith("th");
-      SearchQuery q = new SearchQuery().tag(c);
-      q.documentsIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId()));
+      SearchTagCriteria c = new SearchTagCriteria("category", "th", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId())).build();
 
       // when - wrong document id
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -572,8 +567,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch10() throws ValidationException {
     // given
     final int count = 100;
-    SearchTagCriteria c = new SearchTagCriteria("category");
-    SearchQuery q = new SearchQuery().tag(c);
+    SearchTagCriteria c = new SearchTagCriteria("category", null, null, null, null);
 
     Collection<String> docNumbers = new ArrayList<>();
     for (int i = 0; i < count; i++) {
@@ -582,10 +576,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(null, doc);
     }
 
-    q.documentsIds(docNumbers);
+    SearchQuery q = new SearchQueryBuilder().tag(c).documentIds(docNumbers).build();
 
     // when - wrong document id
-    PaginationResults<DynamicDocumentItem> results =
+    Pagination<DynamicDocumentItem> results =
         this.searchService.search(null, q, null, null, MAX_RESULTS);
 
     // then
@@ -609,18 +603,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc1);
       this.service.saveDocumentItemWithTag(siteId, doc2);
 
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("thing");
-      SearchQuery q = new SearchQuery().tag(c);
-      q.documentsIds(
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "thing", null, null);
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c).documentIds(
           Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
 
       // when - wrong document id
-      PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
         assertNotNull(s.getInsertedDate());
@@ -634,9 +627,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       });
 
       // given
-      q.documentsIds(List.of("123"));
+      q.documentIds(List.of("123"));
+
       // when
-      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
     }
@@ -670,19 +664,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc4);
 
       SearchTagCriteria c =
-          new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person2"));
-      SearchQuery q = new SearchQuery().tag(c);
-      q.documentsIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId(),
-          doc3.getDocumentId()));
+          new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person2"), null);
+      SearchQueryBuilder q =
+          new SearchQueryBuilder().tag(c).documentIds(Arrays.asList(doc0.getDocumentId(),
+              doc1.getDocumentId(), doc2.getDocumentId(), doc3.getDocumentId()));
 
       // when - wrong document id
-      PaginationResults<DynamicDocumentItem> results =
-          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(2, list.size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       assertEquals("category", list.get(0).getMap("matchedTag").get("key"));
       assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
@@ -701,9 +695,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       });
 
       // given
-      q.documentsIds(List.of("123"));
+      q.documentIds(List.of("123"));
+
       // when
-      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
       // then
       list = results.getResults();
       assertEquals(0, list.size());
@@ -729,17 +724,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocumentItemWithTag(siteId, doc3);
 
       SearchTagCriteria c =
-          new SearchTagCriteria("category").eqOr(Arrays.asList("thing", "person1"));
-      SearchQuery q = new SearchQuery().tag(c);
+          new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person1"), null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when - wrong document id
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(2, list.size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
       assertEquals("person1", list.get(1).getMap("matchedTag").get("value"));
@@ -782,17 +777,18 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocument(siteId, doc3, null);
 
       String folder = "";
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       final int expected = 3;
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(expected, list.size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       int i = 0;
       assertNotNull(list.get(i).getDocumentId());
@@ -804,7 +800,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // given
       folder = "sample";
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, folder, null, null, null))
+          .build();
 
       // when
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
@@ -819,7 +816,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // given
       folder = "sample/anotherone";
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, folder, null, null, null))
+          .build();
 
       // when
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
@@ -845,14 +843,16 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       doc0.setPath("sample/test2.pdf");
       this.service.saveDocument(siteId, doc0, null);
 
-      SearchQuery q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-      SearchQuery q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+      SearchQuery q0 =
+          new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
+      SearchQuery q1 = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, "sample", null, null, null)).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results0 =
+      Pagination<DynamicDocumentItem> results0 =
           this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
 
-      PaginationResults<DynamicDocumentItem> results1 =
+      Pagination<DynamicDocumentItem> results1 =
           this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
 
       // then
@@ -865,8 +865,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertEquals("sample/test2.pdf", list1.get(0).getPath());
 
       // given
-      q0 = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-      q1 = new SearchQuery().meta(new SearchMetaCriteria().folder("sample"));
+      q0 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null))
+          .build();
+      q1 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "sample", null, null, null))
+          .build();
 
       // when
       this.service.deleteDocument(siteId, doc0.getDocumentId(), false);
@@ -904,17 +906,18 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocument(siteId, doc2, null);
 
       String folder = "";
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(folder));
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       final int expected = 3;
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(expected, list.size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
 
       int i = 0;
       assertNotNull(list.get(i).getDocumentId());
@@ -941,11 +944,11 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       this.service.saveDocument(siteId, doc0, null);
 
       String folder = "";
-      SearchMetaCriteria meta = new SearchMetaCriteria();
-      SearchQuery q = new SearchQuery().meta(meta.folder(folder));
+      SearchMetaCriteria meta = new SearchMetaCriteria(null, folder, null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(meta).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
@@ -954,7 +957,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertEquals("a", list.get(0).getPath());
       assertEquals("c", list.get(1).getPath());
 
-      meta.folder("a/b");
+      meta = new SearchMetaCriteria(null, "a/b", null, null, null);
+      q = new SearchQueryBuilder().meta(meta).build();
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
@@ -975,11 +979,11 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       doc.setPath(path);
       this.service.saveDocument(siteId, doc, null);
 
-      SearchMetaCriteria meta = new SearchMetaCriteria();
-      SearchQuery q = new SearchQuery().meta(meta.path(path));
+      SearchMetaCriteria meta = new SearchMetaCriteria(null, null, null, null, path);
+      SearchQuery q = new SearchQueryBuilder().meta(meta).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
@@ -990,7 +994,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // given - invalid path
       path = ID.uuid();
-      q = new SearchQuery().meta(meta.path(path));
+      meta = new SearchMetaCriteria(null, null, null, null, path);
+      q = new SearchQueryBuilder().meta(meta).build();
 
       // when
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
@@ -1013,12 +1018,12 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       final String documentId1 = createDocument(siteId, "date", "2024-03-20T02:45:04+0000");
       createDocument(siteId, "date", "2024-03-21T02:45:04+0000");
 
-      SearchTagCriteria c = new SearchTagCriteria("date")
-          .range(new SearchTagCriteriaRange().start("2024-03-10").end("2024-03-21"));
-      SearchQuery q = new SearchQuery().tag(c);
+      SearchTagCriteria c = new SearchTagCriteria("date", null, null, null,
+          new SearchTagCriteriaRange("2024-03-10", "2024-03-21", null));
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      PaginationResults<DynamicDocumentItem> results =
+      Pagination<DynamicDocumentItem> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
@@ -1036,8 +1041,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch20() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      SearchAttributeCriteria a0 = new SearchAttributeCriteria().key("category").eq("person");
-      SearchQuery q = new SearchQuery().attributes(Arrays.asList(a0, a0));
+      SearchAttributeCriteria a0 =
+          new SearchAttributeCriteria("category", null, "person", null, null);
+      SearchQuery q = new SearchQueryBuilder().attributes(Arrays.asList(a0, a0)).build();
 
       // when
       try {
@@ -1063,25 +1069,25 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       final String documentId1 = createDocument(siteId, "category", "person1");
       createDocument(siteId, "category", "other");
 
-      SearchTagCriteria c = new SearchTagCriteria("category").eq("person0");
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "person0", null, null);
 
       // when
-      PaginationResults<String> results =
+      Pagination<String> results =
           this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(documentId0, results.getResults().get(0));
 
       // given
-      c = new SearchTagCriteria("category").beginsWith("per");
+      c = new SearchTagCriteria("category", "per", null, null, null);
 
       // when
       results = this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
 
       // then
-      assertNull(results.getToken());
+      assertNull(results.getNextToken());
       assertEquals(2, results.getResults().size());
       assertTrue(results.getResults().contains(documentId0));
       assertTrue(results.getResults().contains(documentId1));

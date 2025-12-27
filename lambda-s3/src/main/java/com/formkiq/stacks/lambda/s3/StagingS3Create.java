@@ -30,8 +30,6 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -78,6 +76,7 @@ import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
@@ -646,8 +645,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     logger.trace("matching Tag: " + request.getMatch().getTag() + " eq: " + matchTag.getEq()
         + " beginsWith: " + matchTag.getBeginsWith());
 
-    SearchTagCriteria query = new SearchTagCriteria().key(matchTag.getKey()).eq(matchTag.getEq())
-        .beginsWith(matchTag.getBeginsWith());
+    SearchTagCriteria query = new SearchTagCriteria(matchTag.getKey(), matchTag.getBeginsWith(),
+        matchTag.getEq(), null, null);
 
     runPatchDocumentsTags(siteId, request, query, date, user);
 
@@ -687,7 +686,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       final UpdateMatchingDocumentTagsRequest request, final SearchTagCriteria query,
       final Date date, final String user) {
 
-    PaginationMapToken token = null;
+    String token = null;
     final int maxresults = 100;
 
 
@@ -697,9 +696,9 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         request.getUpdate().getTags();
 
     do {
-      PaginationResults<String> results =
+      Pagination<String> results =
           searchService.searchForDocumentIds(siteId, query, token, maxresults);
-      token = results.getToken();
+      token = results.getNextToken();
 
       List<String> documentIds = results.getResults();
       logger.trace("found: " + documentIds.size() + " matching documents");

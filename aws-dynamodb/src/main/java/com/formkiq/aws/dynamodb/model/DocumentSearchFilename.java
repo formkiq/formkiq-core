@@ -23,12 +23,9 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
-import java.util.Collection;
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Searches for Search Tag. */
+/** Filename search criteria. */
 @Reflectable
-public record SearchTagCriteria(@Reflectable String key, @Reflectable String beginsWith,
-    @Reflectable String eq, @Reflectable Collection<String> eqOr,
-    @Reflectable SearchTagCriteriaRange range) {
+public record DocumentSearchFilename(String beginsWith) {
 }

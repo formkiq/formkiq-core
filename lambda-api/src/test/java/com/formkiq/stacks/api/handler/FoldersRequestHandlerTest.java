@@ -659,7 +659,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("Chicago/sample_1", documents.get(1).getPath());
 
       response = new GetFoldersRequestBuilder().indexKey(indexKey0).next(response.getNext())
-          .submit(client, siteId).response();
+          .submit(client, siteId).throwIfError().response();
       documents = response.getDocuments();
       assertNotNull(documents);
       assertEquals(expected / 2, documents.size());

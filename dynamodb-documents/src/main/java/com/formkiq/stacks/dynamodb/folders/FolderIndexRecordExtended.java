@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.folders;
 
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+
 /**
  * Extended Attributes for the {@link FolderIndexRecord}.
  */

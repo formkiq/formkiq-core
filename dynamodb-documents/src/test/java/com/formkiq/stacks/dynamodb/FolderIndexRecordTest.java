@@ -25,13 +25,12 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 import java.util.Arrays;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DbKeys;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -65,8 +64,8 @@ class FolderIndexRecordTest {
       assertEquals("ff#test-nested", record.sk());
       assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
       assertEquals("folder", record.skGsi1());
-      assertNull(record.pkGsi2(siteId));
-      assertNull(record.skGsi2());
+      assertEquals("global#filename#te", record.pkGsi2(siteId));
+      assertEquals("ff#test-nested", record.skGsi2());
     }
   }
 
@@ -88,8 +87,8 @@ class FolderIndexRecordTest {
       assertEquals("ff#test", record.sk());
       assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
       assertEquals("folder", record.skGsi1());
-      assertNull(record.pkGsi2(siteId));
-      assertNull(record.skGsi2());
+      assertEquals("global#filename#te", record.pkGsi2(siteId));
+      assertEquals("ff#test", record.skGsi2());
     }
   }
 
@@ -111,8 +110,8 @@ class FolderIndexRecordTest {
       assertEquals("fi#test.txt", record.sk());
       assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
       assertEquals("folder", record.skGsi1());
-      assertNull(record.pkGsi2(siteId));
-      assertNull(record.skGsi2());
+      assertEquals("global#filename#te", record.pkGsi2(siteId));
+      assertEquals("fi#test.txt", record.skGsi2());
     }
   }
 }

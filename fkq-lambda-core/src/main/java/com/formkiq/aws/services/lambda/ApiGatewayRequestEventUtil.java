@@ -96,6 +96,33 @@ public interface ApiGatewayRequestEventUtil {
     return current;
   }
 
+  default ApiPagination createPagination(CacheService cacheService, ApiGatewayRequestEvent event,
+      ApiPagination lastPagination, String nextToken, int limit) {
+    ApiPagination current;
+    final Map<String, String> q = getQueryParameterMap(event);
+
+    Gson gson = GsonUtil.getInstance();
+
+    if (isPaginationPrevious(q)) {
+
+      String json = cacheService.read(q.get("previous"));
+      current = gson.fromJson(json, ApiPagination.class);
+
+    } else {
+
+      current = new ApiPagination();
+
+      current.setLimit(limit);
+      current.setPrevious(lastPagination != null ? lastPagination.getNext() : null);
+      current.setNextToken(nextToken);
+      current.setHasNext(nextToken != null);
+
+      cacheService.write(current.getNext(), gson.toJson(current), 1);
+    }
+
+    return current;
+  }
+
   /**
    * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link DynamicObject}.
    *

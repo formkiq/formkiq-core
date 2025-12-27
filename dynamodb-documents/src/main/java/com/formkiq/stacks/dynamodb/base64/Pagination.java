@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
 /**
  * Pagination Results for a DynamoDB Query.
  *
@@ -45,14 +47,40 @@ public class Pagination<T> {
    * constructor.
    *
    * @param list {@link List}
+   */
+  public Pagination(final List<T> list) {
+    this(list, (String) null);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param list {@link List}
    * @param lastEvaluatedKey {@link Map}
    */
   public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey) {
     this.results = list;
 
-    Map<String, String> map = lastEvaluatedKey.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
-    this.nextToken = new MapToBase64().apply(map);
+    if (lastEvaluatedKey != null) {
+      Map<String, String> map = lastEvaluatedKey.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
+      String s = new MapToBase64().apply(map);
+      this.nextToken = !isEmpty(s) ? s : null;
+
+    } else {
+      this.nextToken = null;
+    }
+  }
+
+  /**
+   * constructor.
+   *
+   * @param list {@link List}
+   * @param token {@link String}
+   */
+  public Pagination(final List<T> list, final String token) {
+    this.results = list;
+    this.nextToken = !isEmpty(token) ? token : null;
   }
 
   /**
