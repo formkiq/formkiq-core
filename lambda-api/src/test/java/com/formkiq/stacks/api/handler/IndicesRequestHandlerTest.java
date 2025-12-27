@@ -38,17 +38,18 @@ import java.util.Date;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -106,9 +107,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       documentService.saveDocument(siteId, item, null);
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results =
-          dss.search(siteId, q, null, null, MAX_RESULTS);
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
+      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -141,9 +142,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
 
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results =
-          dss.search(siteId, q, null, null, MAX_RESULTS);
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
+      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();
@@ -194,7 +195,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   public void testHandleDelete04() throws Exception {
 
     String indexType = "tags";
-    SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().indexType(indexType));
+    SearchQuery q = new SearchQueryBuilder()
+        .meta(new SearchMetaCriteria(null, null, null, indexType, null)).build();
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
@@ -205,8 +207,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
       documentService.saveDocument(siteId, item, List.of(tag));
 
-      PaginationResults<DynamicDocumentItem> results =
-          dss.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
 
       String indexKey = "category";
@@ -263,9 +264,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       documentService.saveDocument(siteId, item, null);
       documentService.deleteDocument(siteId, item.getDocumentId(), false);
 
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder("x"));
-      PaginationResults<DynamicDocumentItem> results =
-          dss.search(siteId, q, null, null, MAX_RESULTS);
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
+      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       DynamicDocumentItem folder = results.getResults().get(0);
       String indexKey = folder.get("indexKey").toString();

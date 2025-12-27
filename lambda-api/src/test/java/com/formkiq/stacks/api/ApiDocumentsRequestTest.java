@@ -25,12 +25,12 @@ package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -39,6 +39,7 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.apache.commons.lang3.StringUtils;
@@ -902,12 +903,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       DocumentSearchService search = getAwsServices().getExtension(DocumentSearchService.class);
 
-      SearchQuery q = new SearchQuery().meta(new SearchMetaCriteria().folder(""));
-      PaginationResults<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
+      SearchQuery q =
+          new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
+      Pagination<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
       assertEquals("something", results.getResults().get(0).get("path"));
 
-      q = new SearchQuery().meta(new SearchMetaCriteria().folder("something"));
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "something", null, null, null))
+          .build();
       results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
       assertEquals("bleh", results.getResults().get(0).get("path"));
