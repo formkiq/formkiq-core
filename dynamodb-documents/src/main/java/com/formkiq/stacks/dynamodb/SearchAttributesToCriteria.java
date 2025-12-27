@@ -64,21 +64,21 @@ public class SearchAttributesToCriteria
   public SearchAttributeCriteria apply(final List<SearchAttributeCriteria> searchAttributes) {
 
     Map<String, SearchAttributeCriteria> map = searchAttributes.stream()
-        .collect(Collectors.toMap(SearchAttributeCriteria::getKey, Function.identity()));
+        .collect(Collectors.toMap(SearchAttributeCriteria::key, Function.identity()));
 
     List<String> compositeKeys = compositeKey != null ? compositeKey.getKeys()
-        : searchAttributes.stream().map(SearchAttributeCriteria::getKey).toList();
+        : searchAttributes.stream().map(SearchAttributeCriteria::key).toList();
 
     String eq = compositeKeys.stream().map(map::get).filter(java.util.Objects::nonNull)
-        .map(SearchAttributeCriteria::getEq).filter(java.util.Objects::nonNull)
+        .map(SearchAttributeCriteria::eq).filter(java.util.Objects::nonNull)
         .collect(Collectors.joining(DbKeys.COMPOSITE_KEY_DELIM));
 
     Collection<String> eqOrs = generateEqOr(compositeKeys, map);
 
     String lastKey = last(compositeKeys);
     SearchAttributeCriteria last = map.get(lastKey);
-    String beginsWith = last.getBeginsWith();
-    SearchTagCriteriaRange range = last.getRange();
+    String beginsWith = last.beginsWith();
+    SearchTagCriteriaRange range = last.range();
 
     if (!isEmpty(beginsWith) && !isEmpty(eq)) {
       beginsWith = eq + DbKeys.COMPOSITE_KEY_DELIM + beginsWith;
@@ -86,7 +86,7 @@ public class SearchAttributesToCriteria
     }
 
     if (range != null) {
-      generateRange(range, eq);
+      range = generateRange(range, eq);
       eq = null;
     }
 
@@ -95,15 +95,14 @@ public class SearchAttributesToCriteria
     }
 
     String attributeKey = String.join(DbKeys.COMPOSITE_KEY_DELIM, compositeKeys);
-    return new SearchAttributeCriteria().key(attributeKey).eq(eq).beginsWith(beginsWith)
-        .range(range).eqOr(eqOrs);
+    return new SearchAttributeCriteria(attributeKey, beginsWith, eq, eqOrs, range);
   }
 
   private Collection<String> generateEqOr(final List<String> compositeKeys,
       final Map<String, SearchAttributeCriteria> map) {
 
     List<ArrayList<String>> eqOrs = notNull(compositeKeys.stream().map(map::get)
-        .map(c -> new ArrayList<>(notNull(c.getEqOr()))).filter(l -> !l.isEmpty()).toList());
+        .map(c -> new ArrayList<>(notNull(c.eqOr()))).filter(l -> !l.isEmpty()).toList());
 
     Collection<String> strs = null;
 
@@ -135,25 +134,28 @@ public class SearchAttributesToCriteria
     return strs;
   }
 
-  private void generateRange(final SearchTagCriteriaRange range, final String eq) {
-    boolean number = "number".equalsIgnoreCase(range.getType());
+  private SearchTagCriteriaRange generateRange(final SearchTagCriteriaRange range,
+      final String eq) {
+    boolean number = "number".equalsIgnoreCase(range.type());
 
-    String start = range.getStart();
-    String end = range.getEnd();
+    String start = range.start();
+    String end = range.end();
 
     if (number) {
 
       try {
-        start = Objects.formatDouble(Double.valueOf(range.getStart()), Objects.DOUBLE_FORMAT);
-        end = Objects.formatDouble(Double.valueOf(range.getEnd()), Objects.DOUBLE_FORMAT);
+        start = Objects.formatDouble(Double.valueOf(range.start()), Objects.DOUBLE_FORMAT);
+        end = Objects.formatDouble(Double.valueOf(range.end()), Objects.DOUBLE_FORMAT);
       } catch (NumberFormatException e) {
-        start = range.getStart();
-        end = range.getEnd();
+        start = range.start();
+        end = range.end();
       }
     }
 
-    range.start(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + start : start);
-    range.end(!isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + end : end);
+    String s = !isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + start : start;
+    String e = !isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + end : end;
+
+    return new SearchTagCriteriaRange(s, e, range.type());
   }
 
   private String getString(final List<ArrayList<String>> strs, final List<Integer> position) {

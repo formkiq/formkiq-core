@@ -42,6 +42,7 @@ import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -210,7 +210,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("category2", tags.getResults().get(0).getKey());
@@ -262,7 +262,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -314,7 +314,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -368,7 +368,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -422,7 +422,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("abc", tags.getResults().get(0).getValue());
@@ -478,7 +478,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.getNext());
       assertNull(resp.getPrevious());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertNull(tags.getResults().get(0).getValue());
@@ -844,7 +844,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       int i = 0;
       final int expectedCount = 3;
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedCount, results.getResults().size());
       assertEquals(tagKey0, results.getResults().get(i).getKey());
@@ -920,7 +920,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("{\"message\":\"Created Tag 'category'.\"}", String.valueOf(m.get("body")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
@@ -958,7 +958,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
@@ -996,7 +996,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
@@ -1024,7 +1024,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
           Map.of("documentId", documentId, "userId", username, "insertedDate", new Date()));
       getDocumentService().saveDocumentItemWithTag(siteId, doc);
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
 
@@ -1078,7 +1078,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
@@ -1118,7 +1118,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       final int count = 3;
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(count, tags.getResults().size());
       assertEquals("caseId", tags.getResults().get(0).getKey());
@@ -1161,7 +1161,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
@@ -1285,7 +1285,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String expected = "\"body\":\"" + "{\\\"message\\\":\\\"Set Tags\\\"}\",\"statusCode\":200}";
       assertTrue(response.contains(expected));
 
-      PaginationResults<DocumentTag> results =
+      Pagination<DocumentTag> results =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey1, results.getResults().get(0).getKey());
@@ -1433,7 +1433,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       // then
       assertTrue(response.contains(expected));
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagKey, tags.getResults().get(0).getKey());
@@ -1473,7 +1473,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       // then
       assertTrue(response.contains(expected));
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagKey, tags.getResults().get(0).getKey());

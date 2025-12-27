@@ -40,6 +40,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -304,12 +305,12 @@ public interface DocumentService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DocumentFormat}
    */
-  PaginationResults<DocumentFormat> findDocumentFormats(String siteId, String documentId,
-      PaginationMapToken token, int maxresults);
+  Pagination<DocumentFormat> findDocumentFormats(String siteId, String documentId, String nextToken,
+      int maxresults);
 
   /**
    * Find Document Tag Value.
@@ -327,12 +328,12 @@ public interface DocumentService {
    * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
-   * @param pagination {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DocumentTag}
+   * @return {@link Pagination} {@link DocumentTag}
    */
-  PaginationResults<DocumentTag> findDocumentTags(String siteId, String documentId,
-      PaginationMapToken pagination, int maxresults);
+  Pagination<DocumentTag> findDocumentTags(String siteId, String documentId, String nextToken,
+      int maxresults);
 
   /**
    * Find {@link DocumentItem}.
@@ -348,12 +349,12 @@ public interface DocumentService {
    * 
    * @param siteId Optional Grouping siteId
    * @param date {@link ZonedDateTime}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link PaginationResults} {@link DocumentItem}
    */
-  PaginationResults<DocumentItem> findDocumentsByDate(String siteId, ZonedDateTime date,
-      PaginationMapToken token, int maxresults);
+  Pagination<DocumentItem> findDocumentsByDate(String siteId, ZonedDateTime date, String nextToken,
+      int maxresults);
 
   /**
    * Find Document Tags for number of DocumentIds.
@@ -401,14 +402,13 @@ public interface DocumentService {
    * 
    * @param siteId {@link String}
    * @param id {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link PaginationResults} {@link PresetTag}
    * @deprecated method needs to be updated
    */
   @Deprecated
-  PaginationResults<PresetTag> findPresetTags(String siteId, String id, PaginationMapToken token,
-      int maxresults);
+  Pagination<PresetTag> findPresetTags(String siteId, String id, String nextToken, int maxresults);
 
   /**
    * Get Presets.
@@ -417,14 +417,14 @@ public interface DocumentService {
    * @param id {@link String}
    * @param type {@link String}
    * @param name {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link PaginationResults} {@link Preset}
    * @deprecated method needs to be updated
    */
   @Deprecated
-  PaginationResults<Preset> findPresets(String siteId, String id, String type, String name,
-      PaginationMapToken token, int maxresults);
+  Pagination<Preset> findPresets(String siteId, String id, String type, String name,
+      String nextToken, int maxresults);
 
   /**
    * Get Publish Document.

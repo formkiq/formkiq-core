@@ -30,12 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -45,6 +44,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -81,7 +81,7 @@ public class IndicesSearchRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = event.getQueryStringParameter("next");
 
     Map<String, Object> body = fromBodyToMap(event);
 
@@ -91,14 +91,15 @@ public class IndicesSearchRequestHandler
         awsservice.getExtension(DocumentSearchService.class);
 
     String siteId = authorization.getSiteId();
-    SearchQuery q = new SearchQuery()
-        .meta(new SearchMetaCriteria().indexType(body.get("indexType").toString()));
+    SearchQuery q = new SearchQueryBuilder()
+        .meta(new SearchMetaCriteria(null, null, null, body.get("indexType").toString(), null))
+        .build();
 
-    PaginationResults<DynamicDocumentItem> results =
-        documentSearchService.search(siteId, q, null, ptoken, limit);
+    Pagination<DynamicDocumentItem> results =
+        documentSearchService.search(siteId, q, null, nextToken, limit);
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 

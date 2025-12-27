@@ -30,7 +30,6 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -39,6 +38,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -64,6 +64,7 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -714,7 +715,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -810,7 +811,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -882,7 +883,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -952,7 +953,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -1018,7 +1019,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -1090,7 +1091,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.COMPLETE,
           actionsService.getActions(siteId, documentId).get(0).status());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
@@ -2718,9 +2719,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
       assertNotNull(attribute);
 
-      SearchAttributeCriteria attr =
-          new SearchAttributeCriteria().key(AttributeKeyReserved.PUBLICATION.getKey());
-      SearchQuery req = new SearchQuery().attribute(attr);
+      SearchAttributeCriteria attr = new SearchAttributeCriteria(
+          AttributeKeyReserved.PUBLICATION.getKey(), null, null, null, null);
+      SearchQuery req = new SearchQueryBuilder().attribute(attr).build();
       List<DynamicDocumentItem> docs =
           notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
       assertEquals(1, docs.size());

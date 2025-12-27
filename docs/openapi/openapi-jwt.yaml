@@ -8267,6 +8267,10 @@ components:
           description: "Full text search"
         meta:
           $ref: "#/components/schemas/DocumentSearchMeta"
+        filename:
+          $ref: "#/components/schemas/DocumentSearchFilename"
+        folder:
+          $ref: "#/components/schemas/DocumentSearchFolder"
         attribute:
           $ref: "#/components/schemas/DocumentSearchAttribute"
         attributes:
@@ -8580,6 +8584,18 @@ components:
           description: "Attribute with boolean value"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
+    DocumentSearchFilename:
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+          description: "Searches for a filename"
+    DocumentSearchFolder:
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+          description: "Searches for a folder"
     DocumentSearchMeta:
       type: "object"
       properties:
@@ -12159,11 +12175,11 @@ components:
     ApiKeyPermission:
       type: string
       description: List of API permissions (defaults to READ / WRITE / DELETE)
-            enum:
-              - READ
-              - WRITE
-              - DELETE
-              - GOVERN
+      enum:
+        - READ
+        - WRITE
+        - DELETE
+        - GOVERN
     AddApiKeyResponse:
       type: object
       properties:

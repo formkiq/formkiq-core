@@ -25,77 +25,7 @@ package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Searches for {@link DocumentItem}. */
+/** Search Tag Criteria Range. */
 @Reflectable
-public class SearchTagCriteriaRange {
-
-  /** End. */
-  private String end;
-  /** Start. */
-  private String start;
-  /** Type. */
-  private String type;
-
-  /** constructor. */
-  public SearchTagCriteriaRange() {}
-
-  /**
-   * Set End Range.
-   * 
-   * @param rangeEnd {@link String}
-   * @return {@link SearchTagCriteriaRange}
-   */
-  public SearchTagCriteriaRange end(final String rangeEnd) {
-    this.end = rangeEnd;
-    return this;
-  }
-
-  /**
-   * Get End Range.
-   * 
-   * @return {@link String}
-   */
-  public String getEnd() {
-    return this.end;
-  }
-
-  /**
-   * Get Start Range.
-   * 
-   * @return {@link String}
-   */
-  public String getStart() {
-    return this.start;
-  }
-
-  /**
-   * Get Range Type.
-   * 
-   * @return {@link String}
-   */
-  public String getType() {
-    return this.type;
-  }
-
-  /**
-   * Set Start Range.
-   * 
-   * @param rangeStart {@link String}
-   * @return {@link SearchTagCriteriaRange}
-   */
-  public SearchTagCriteriaRange start(final String rangeStart) {
-    this.start = rangeStart;
-    return this;
-  }
-
-  /**
-   * Set Range Type.
-   * 
-   * @param rangeType {@link String}
-   * @return {@link SearchTagCriteriaRange}
-   */
-  public SearchTagCriteriaRange type(final String rangeType) {
-    this.type = rangeType;
-    return this;
-  }
+public record SearchTagCriteriaRange(String start, String end, String type) {
 }

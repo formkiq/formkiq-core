@@ -58,6 +58,8 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
     private List<Map<String, AttributeValue>> items;
     /** {@link Map}. */
     private Map<String, AttributeValue> lastEvaluatedKey;
+    /** Is Query Results truncated. */
+    private boolean truncated;
 
     /** Creates a new, empty builder. */
     public Builder() {}
@@ -80,6 +82,7 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
      * @return this builder instance
      */
     public Builder items(final List<Map<String, AttributeValue>> results, final int limit) {
+      this.truncated = results.size() > limit;
       this.items = limit > 0 && results.size() > limit ? results.subList(0, limit) : results;
       return this;
     }
@@ -102,7 +105,7 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
      * @return a new {@link QueryResult}
      */
     public QueryResult build() {
-      return new QueryResult(items, lastEvaluatedKey);
+      return new QueryResult(items, truncated ? lastEvaluatedKey : null);
     }
 
     /**

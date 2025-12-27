@@ -31,6 +31,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
