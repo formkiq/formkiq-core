@@ -23,13 +23,13 @@
  */
 package com.formkiq.stacks.api.handler;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.QueryRequest;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -49,6 +49,7 @@ import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -99,12 +100,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
-    if (responseFields != null && !notNull(responseFields.getTags()).isEmpty()) {
+    if (responseFields != null && !notNull(responseFields.tags()).isEmpty()) {
 
       Set<String> documentIds =
           documents.stream().map(DynamicDocumentItem::getDocumentId).collect(Collectors.toSet());
 
-      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.getTags());
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
     }
 
     return map;
@@ -154,17 +155,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     QueryRequest q = JsonToObject.fromJson(awsservice, event, QueryRequest.class);
-    validatePost(q);
+    q = validatePost(q);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
-    Collection<String> documentIds = q.query().getDocumentIds();
+    Collection<String> documentIds = q.query().documentIds();
 
     if (!Objects.isEmpty(documentIds)) {
       if (documentIds.size() > MAX_DOCUMENT_IDS) {
@@ -180,11 +181,11 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    PaginationResults<DynamicDocumentItem> results =
-        query(awsservice, documentSearchService, siteId, q, ptoken, limit);
+    Pagination<DynamicDocumentItem> results =
+        query(awsservice, documentSearchService, siteId, q, nextToken, limit);
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 
@@ -207,20 +208,20 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @param documentSearchService {@link DocumentSearchService}
    * @param siteId {@link String}
    * @param q {@link QueryRequest}
-   * @param ptoken {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DynamicDocumentItem}
    * @throws IOException IOException
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
-  private PaginationResults<DynamicDocumentItem> query(final AwsServiceCache awsservice,
+  private Pagination<DynamicDocumentItem> query(final AwsServiceCache awsservice,
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
-      final PaginationMapToken ptoken, final int limit)
+      final String nextToken, final int limit)
       throws IOException, BadException, ValidationException {
 
-    String text = q.query().getText();
-    PaginationResults<DynamicDocumentItem> results;
+    String text = q.query().text();
+    Pagination<DynamicDocumentItem> results;
 
     if (!isEmpty(text)) {
 
@@ -244,25 +245,30 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
               .collect(Collectors.toList()) : Collections.emptyList();
 
-      results = new PaginationResults<>(docs, null);
+      results = new Pagination<>(docs);
 
     } else {
 
-      results = documentSearchService.search(siteId, q.query(), q.responseFields(), ptoken, limit);
+      results =
+          documentSearchService.search(siteId, q.query(), q.responseFields(), nextToken, limit);
     }
 
     return results;
   }
 
-  private void validatePost(final QueryRequest q) throws ValidationException {
+  private QueryRequest validatePost(final QueryRequest q) throws ValidationException {
     QueryRequestValidator validator = new QueryRequestValidator();
     Collection<ValidationError> errors = validator.validation(q);
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
-    if (q.query() != null && q.query().getTags() != null && q.query().getTags().size() == 1) {
-      q.query().tag(q.query().getTags().get(0));
+    if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
+      SearchTagCriteria tag = q.query().tags().get(0);
+      return new QueryRequest()
+          .query(new SearchQuery(null, null, null, null, tag, null, null, null, null));
     }
+
+    return q;
   }
 }

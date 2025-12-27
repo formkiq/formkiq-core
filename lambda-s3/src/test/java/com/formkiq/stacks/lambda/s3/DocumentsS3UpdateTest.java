@@ -59,12 +59,12 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.stacks.dynamodb.GsonUtil;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -488,7 +488,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertFalse(item.getChecksum().endsWith("\""));
       assertNotNull(item.getS3version());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
 
       assertEquals(0, tags.getResults().size());
@@ -543,7 +543,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       // then
       assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
 
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
 
       final int size = 3;
@@ -676,7 +676,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       // then
       assertNotNull(item.getBelongsToDocumentId());
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, childDocumentId, null, MAX_RESULTS);
 
       try (DynamoDbClient client = dbBuilder.build()) {
@@ -735,7 +735,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertNull(mchild.get(GSI1_PK));
 
       assertEquals(doc.getDocumentId(), item.getDocumentId());
-      PaginationResults<DocumentTag> tags =
+      Pagination<DocumentTag> tags =
           service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")

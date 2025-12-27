@@ -42,6 +42,7 @@ import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
+import com.formkiq.client.model.DocumentSearchFilename;
 import com.formkiq.client.model.DocumentSearchMatchTag;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchMeta.IndexTypeEnum;
@@ -62,7 +63,8 @@ import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -78,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -181,6 +184,85 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     }
 
     return documentId;
+  }
+
+  /**
+   * Search for filename.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testFilenameSearch() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      new AddDocumentRequestBuilder().content().path("myfile").submit(client, siteId)
+          .throwIfError();
+      new AddDocumentRequestBuilder().content().path("dir1/dir2/mysomefile").submit(client, siteId)
+          .throwIfError();
+      new AddDocumentRequestBuilder().content().path("someotherfile").submit(client, siteId)
+          .throwIfError();
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().filename(new DocumentSearchFilename().beginsWith("my")));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(2, documents.size());
+      assertEquals("myfile", documents.get(0).getPath());
+      assertEquals("dir1/dir2/mysomefile", documents.get(1).getPath());
+    }
+  }
+
+  /**
+   * Search for filename with paging.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testFilenameSearchWithPaging() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      for (int i = 0; i < 15; i++) {
+        String path = "mypath_" + String.format("%02d", i);
+        new AddDocumentRequestBuilder().content().path(path).submit(client, siteId).throwIfError();
+      }
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest()
+          .query(new DocumentSearch().filename(new DocumentSearchFilename().beginsWith("my")));
+
+      // when
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(10, documents.size());
+      assertEquals(
+          "mypath_00,mypath_01,mypath_02,mypath_03,mypath_04,mypath_05,"
+              + "mypath_06,mypath_07,mypath_08,mypath_09",
+          documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
+      assertNotNull(response.getNext());
+
+      // when
+      response = this.searchApi.documentSearch(dsq, siteId, null, response.getNext(), null);
+
+      // then
+      documents = notNull(response.getDocuments());
+      assertEquals(5, documents.size());
+      assertEquals("mypath_10,mypath_11,mypath_12,mypath_13,mypath_14",
+          documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
+      assertNull(response.getNext());
+    }
   }
 
   /**

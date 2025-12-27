@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb.folders;
 
 import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toDate;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
@@ -31,9 +31,11 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -45,6 +47,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Reflectable
 public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbKeys {
 
+  /** Number of Shards - total of 4 shards, 0,1,2,3. */
+  public static final int SHARD_COUNT = 7;
   /** Index File SK. */
   public static final String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
   /** Index Folder SK. */
@@ -72,13 +76,31 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Reflectable
   private String userId;
 
-  private DynamoDbKey buildKey(final String siteId) {
+  /**
+   * Build {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link DynamoDbKey}
+   */
+  public DynamoDbShardKey buildKey(final String siteId) {
+    DynamoDbKey key = buildNonShardKey(siteId);
+    return DynamoDbShardKey.builder().key(key).pkGsi2Shard(SHARD_COUNT).build();
+  }
+
+  /**
+   * Build Non Shard {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link DynamoDbKey}
+   */
+  public DynamoDbKey buildNonShardKey(final String siteId) {
     DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
 
     if ("folder".equals(this.type)) {
       key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
     }
 
+    key = key.gsi2Pk(siteId, pkGsi2(null)).gsi2Sk(skGsi2());
     return key.build();
   }
 
@@ -259,7 +281,11 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   @Override
   public String pkGsi2(final String siteId) {
-    return null;
+    // TODO handle single filename
+    // String shardId = "s00";
+    String filename = Strings.getFilename(this.path).toLowerCase();
+    String bucket = com.formkiq.strings.Strings.leftPad(filename, 2, '_').substring(0, 2);
+    return "global#filename#" + bucket;
   }
 
   @Override
@@ -278,7 +304,9 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   @Override
   public String skGsi2() {
-    return null;
+    // TODO folder...
+    String filename = Strings.getFilename(this.path).toLowerCase();
+    return "folder".equals(this.type) ? INDEX_FOLDER_SK + filename : INDEX_FILE_SK + filename;
   }
 
   /**

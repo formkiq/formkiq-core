@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -47,8 +45,9 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import com.formkiq.stacks.dynamodb.folders.StringToFolder;
 
@@ -69,19 +68,19 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     ApiPagination pagination = getPagination(cacheService, event);
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
     String indexKey = getIndexKey(event, awsservice, siteId);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
-    PaginationResults<DynamicDocumentItem> results =
-        documentSearchService.findInFolder(siteId, indexKey, ptoken, limit);
+    Pagination<DynamicDocumentItem> results =
+        documentSearchService.findInFolder(siteId, indexKey, nextToken, limit);
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
 
