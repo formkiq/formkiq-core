@@ -54,8 +54,13 @@ public class QueryRequestValidator {
     return q.query().filename() == null || isEmpty(q.query().filename().beginsWith());
   }
 
+  private boolean isFolderEmpty(final QueryRequest q) {
+    return q.query().folder() == null || isEmpty(q.query().folder().beginsWith());
+  }
+
   private boolean isMetaDataEmpty(final QueryRequest q) {
-    return isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q) && isFilenameEmpty(q);
+    boolean isEmpty = isTagsEmpty(q) && isAttributesEmpty(q) && isQueryMetaDataEmpty(q);
+    return isEmpty && isFilenameEmpty(q) && isFolderEmpty(q);
   }
 
   private boolean isQueryEmpty(final QueryRequest q) {
