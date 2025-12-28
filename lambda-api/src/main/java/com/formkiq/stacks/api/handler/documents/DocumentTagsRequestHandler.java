@@ -37,7 +37,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
@@ -49,7 +48,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
@@ -91,19 +92,17 @@ public class DocumentTagsRequestHandler
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
     List<DocumentTag> tags = subList(results.getResults(), limit);
 
-    List<ApiDocumentTagItemResponse> list = tags.stream().map(t -> {
-      ApiDocumentTagItemResponse r = new ApiDocumentTagItemResponse();
-
-      r.setDocumentId(t.getDocumentId());
-      r.setInsertedDate(t.getInsertedDate());
-      r.setKey(t.getKey());
-      r.setValue(t.getValue());
-      r.setValues(t.getValues());
-      r.setUserId(t.getUserId());
-      r.setType(t.getType() != null ? t.getType().name().toLowerCase() : null);
-
-      return r;
-    }).collect(Collectors.toList());
+    List<Map<String, Object>> list = tags.stream().map(t -> {
+      Map<String, Object> map = new HashMap<>();
+      map.put("documentId", t.getDocumentId());
+      map.put("insertedDate", t.getInsertedDate());
+      map.put("key", t.getKey());
+      map.put("value", t.getValue());
+      map.put("values", t.getValues());
+      map.put("userId", t.getUserId());
+      map.put("type", t.getType() != null ? t.getType().name().toLowerCase() : null);
+      return map;
+    }).toList();
 
     return ApiRequestHandlerResponse.builder().ok().body("tags", list)
         .body("next", current.hasNext() ? current.getNext() : null)

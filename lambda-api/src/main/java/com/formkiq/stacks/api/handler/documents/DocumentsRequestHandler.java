@@ -55,7 +55,6 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.services.lambda.ApiMapResponse;
 import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
@@ -291,7 +290,8 @@ public class DocumentsRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    ApiMapResponse apiMapResponse;
+    // ApiMapResponse apiMapResponse;
+    ApiRequestHandlerResponse.Builder builder = ApiRequestHandlerResponse.builder().created();
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
     String siteId = authorization.getSiteId();
@@ -305,7 +305,8 @@ public class DocumentsRequestHandler
 
       if (!docService.isFolderExists(siteId, request.getPath())) {
         docService.addFolderIndex(siteId, request.getPath(), authorization.getUsername());
-        apiMapResponse = new ApiMapResponse(Map.of("message", "folder created"));
+        builder.body("message", "folder created");
+        // apiMapResponse = new ApiMapResponse(Map.of("message", "folder created"));
 
       } else {
         throw new ValidationException(Collections
@@ -318,17 +319,15 @@ public class DocumentsRequestHandler
 
       ApiRequestHandlerResponse response = handler.post(event, authorization, awsservice, request);
 
-      Map<String, Object> mapResponse = (Map<String, Object>) response.body();
+      Map<String, Object> mapResponse = new HashMap<>((Map<String, Object>) response.body());
+      mapResponse.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
 
       new PresignedUrlsToS3Bucket(request).apply(mapResponse);
 
-      apiMapResponse = new ApiMapResponse(mapResponse);
+      builder.body(mapResponse);
     }
 
-    Map<String, Object> hashMap = new HashMap<>(apiMapResponse.getMap());
-    hashMap.remove("headers");
-    hashMap.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
-    return ApiRequestHandlerResponse.builder().created().body(hashMap).build();
+    return builder.build();
   }
 
   /**
