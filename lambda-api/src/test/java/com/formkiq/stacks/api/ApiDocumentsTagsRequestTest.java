@@ -57,7 +57,6 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
-import com.formkiq.aws.services.lambda.ApiMessageResponse;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentTagToAttributeValueMap;
@@ -204,11 +203,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -256,11 +254,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -308,11 +305,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Removed 'category' from document '" + documentId + "'.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -362,11 +358,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Removed Tag from document '" + documentId + "'.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Removed Tag from document '" + documentId + "'.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -416,11 +411,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Removed Tag from document '" + documentId + "'.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Removed Tag from document '" + documentId + "'.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -472,11 +466,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("404.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiMessageResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiMessageResponse.class);
-      assertEquals("Tag/Value combination not found.", resp.getMessage());
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("Tag/Value combination not found.", resp.get("message"));
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
           getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
@@ -524,17 +517,17 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-      ApiDocumentTagsItemResponse resp = GsonUtil.getInstance().fromJson((String) m.get("body"),
-          ApiDocumentTagsItemResponse.class);
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
 
-      assertEquals(1, resp.getTags().size());
-      assertEquals(tagname, resp.getTags().get(0).getKey());
-      assertEquals(tagvalue, resp.getTags().get(0).getValue());
-      assertNull(resp.getTags().get(0).getDocumentId());
-      assertEquals(userId, resp.getTags().get(0).getUserId());
+      List<Map<String, Object>> tags = (List<Map<String, Object>>) resp.get("tags");
+      assertEquals(1, tags.size());
+      assertEquals(tagname, tags.get(0).get("key"));
+      assertEquals(tagvalue, tags.get(0).get("value"));
+      assertNull(tags.get(0).get("documentId"));
+      assertEquals(userId, tags.get(0).get("userId"));
 
-      assertNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      assertNull(resp.get("next"));
+      assertNull(resp.get("previous"));
     }
   }
 
@@ -575,19 +568,19 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-      ApiDocumentTagsItemResponse resp = GsonUtil.getInstance().fromJson((String) m.get("body"),
-          ApiDocumentTagsItemResponse.class);
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
 
-      assertEquals(1, resp.getTags().size());
-      assertNotNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      List<Map<String, Object>> tags = (List<Map<String, Object>>) resp.get("tags");
+      assertEquals(1, tags.size());
+      assertNotNull(resp.get("next"));
+      assertNull(resp.get("previous"));
 
-      assertNull(resp.getTags().get(0).getDocumentId());
-      assertNotNull(resp.getTags().get(0).getInsertedDate());
-      assertEquals("category0", resp.getTags().get(0).getKey());
-      assertEquals("userdefined", resp.getTags().get(0).getType());
-      assertEquals("jsmith", resp.getTags().get(0).getUserId());
-      assertEquals("person", resp.getTags().get(0).getValue());
+      assertNull(tags.get(0).get("documentId"));
+      assertNotNull(tags.get(0).get("insertedDate"));
+      assertEquals("category0", tags.get(0).get("key"));
+      assertEquals("userdefined", tags.get(0).get("type"));
+      assertEquals("jsmith", tags.get(0).get("userId"));
+      assertEquals("person", tags.get(0).get("value"));
     }
   }
 
@@ -630,20 +623,21 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
-      ApiDocumentTagsItemResponse resp = GsonUtil.getInstance().fromJson((String) m.get("body"),
-          ApiDocumentTagsItemResponse.class);
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
 
-      assertEquals(1, resp.getTags().size());
-      assertNotNull(resp.getNext());
-      assertNull(resp.getPrevious());
+      List<Map<String, Object>> tags = (List<Map<String, Object>>) resp.get("tags");
 
-      assertNull(resp.getTags().get(0).getDocumentId());
-      assertNotNull(resp.getTags().get(0).getInsertedDate());
-      assertEquals("category0", resp.getTags().get(0).getKey());
-      assertEquals("userdefined", resp.getTags().get(0).getType());
-      assertEquals("jsmith", resp.getTags().get(0).getUserId());
-      assertNull(resp.getTags().get(0).getValue());
-      assertEquals("[abc, xyz]", resp.getTags().get(0).getValues().toString());
+      assertEquals(1, tags.size());
+      assertNotNull(resp.get("next"));
+      assertNull(resp.get("previous"));
+
+      assertNull(tags.get(0).get("documentId"));
+      assertNotNull(tags.get(0).get("insertedDate"));
+      assertEquals("category0", tags.get(0).get("key"));
+      assertEquals("userdefined", tags.get(0).get("type"));
+      assertEquals("jsmith", tags.get(0).get("userId"));
+      assertNull(tags.get(0).get("value"));
+      assertEquals("[abc, xyz]", tags.get(0).get("values").toString());
     }
   }
 
@@ -723,10 +717,9 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiDocumentTagItemResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiDocumentTagItemResponse.class);
-      assertEquals("category", resp.getKey());
-      assertEquals("person", resp.getValue());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("category", resp.get("key"));
+      assertEquals("person", resp.get("value"));
     }
   }
 
@@ -760,10 +753,10 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiDocumentTagItemResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiDocumentTagItemResponse.class);
-      assertEquals("category", resp.getKey());
-      assertEquals("", resp.getValue());
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+
+      assertEquals("category", resp.get("key"));
+      assertEquals("", resp.get("value"));
     }
   }
 
@@ -797,11 +790,11 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      ApiDocumentTagItemResponse resp =
-          GsonUtil.getInstance().fromJson((String) m.get("body"), ApiDocumentTagItemResponse.class);
-      assertEquals("category", resp.getKey());
-      assertNull(resp.getValue());
-      assertEquals("[abc, xyz]", resp.getValues().toString());
+
+      Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
+      assertEquals("category", resp.get("key"));
+      assertNull(resp.get("value"));
+      assertEquals("[abc, xyz]", resp.get("values").toString());
     }
   }
 

@@ -70,9 +70,9 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
    * Verify Response.
    *
    * @param response {@link String}
-   * @return {@link ApiUrlResponse}
+   * @return {@link Map}
    */
-  private ApiUrlResponse expectResponse(final String response) {
+  private Map<String, Object> expectResponse(final String response) {
 
     Map<String, Object> m = GsonUtil.getInstance().fromJson(response, Map.class);
 
@@ -80,11 +80,10 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     assertEquals(mapsize, m.size());
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
     assertCorsHeaders((Map<String, Object>) m.get("headers"));
-    ApiUrlResponse resp =
-        GsonUtil.getInstance().fromJson((String) m.get("body"), ApiUrlResponse.class);
+    Map<String, Object> resp = GsonUtil.getInstance().fromJson((String) m.get("body"), Map.class);
 
-    assertNull(resp.getNext());
-    assertNull(resp.getPrevious());
+    assertNull(resp.get("next"));
+    assertNull(resp.get("previous"));
     return resp;
   }
 
@@ -131,13 +130,14 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         // then
         Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
         assertEquals("200.0", String.valueOf(m.get("statusCode")));
-        ApiUrlResponse resp = expectResponse(response);
-        assertFalse(resp.getUrl().contains("content-length"));
+        Map<String, Object> map = expectResponse(response);
+        String url = (String) map.get("url");
+        assertFalse(url.contains("content-length"));
 
         if (siteId != null) {
-          assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+          assertTrue(url.contains("/testbucket/" + siteId));
         } else {
-          assertFalse(resp.getUrl().contains("/testbucket/default"));
+          assertFalse(url.contains("/testbucket/default"));
         }
       }
     }
@@ -192,16 +192,16 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      ApiUrlResponse resp = expectResponse(response);
+      Map<String, Object> map = expectResponse(response);
+      String url = map.get("url").toString();
 
       if (siteId != null) {
-        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+        assertTrue(url.contains("/testbucket/" + siteId));
       } else {
-        assertFalse(resp.getUrl().contains("/testbucket/default"));
+        assertFalse(url.contains("/testbucket/default"));
       }
 
-      assertEquals(documentId, resp.getDocumentId());
-
+      assertEquals(documentId, map.get("documentId"));
       assertNotNull(getDocumentService().findMostDocumentDate());
     }
   }
@@ -223,15 +223,17 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      ApiUrlResponse resp = expectResponse(response);
+      Map<String, Object> resp = expectResponse(response);
+      String url = resp.get("url").toString();
 
       if (siteId != null) {
-        assertTrue(resp.getUrl().contains("/testbucket/" + siteId));
+        assertTrue(url.contains("/testbucket/" + siteId));
       } else {
-        assertFalse(resp.getUrl().contains("/testbucket/default"));
+        assertFalse(url.contains("/testbucket/default"));
       }
 
-      DocumentItem item = getDocumentService().findDocument(siteId, resp.getDocumentId());
+      DocumentItem item =
+          getDocumentService().findDocument(siteId, resp.get("documentId").toString());
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
           item.getUserId());
@@ -257,8 +259,8 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
     // then
     Map<String, String> m = GsonUtil.getInstance().fromJson(response, Map.class);
     assertEquals("200.0", String.valueOf(m.get("statusCode")));
-    ApiUrlResponse resp = expectResponse(response);
-    assertTrue(resp.getUrl().contains("content-length"));
+    Map<String, Object> resp = expectResponse(response);
+    assertTrue(resp.get("url").toString().contains("content-length"));
   }
 
   /**
