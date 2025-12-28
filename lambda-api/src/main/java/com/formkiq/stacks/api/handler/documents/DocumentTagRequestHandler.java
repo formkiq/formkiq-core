@@ -34,7 +34,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.api.ApiDocumentTagItemResponse;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
@@ -108,16 +107,16 @@ public class DocumentTagRequestHandler
       throw new ValidationException(tagErrors);
     }
 
-    ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
-    resp.setKey(tagKey);
-    resp.setValue(tag.getValue());
-    resp.setValues(tag.getValues());
-    resp.setInsertedDate(tag.getInsertedDate());
-    resp.setUserId(tag.getUserId());
-    resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
-    resp.setDocumentId(tag.getDocumentId());
+    // ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
+    // resp.setKey(tagKey);
+    // resp.setValue(tag.getValue());
+    // resp.setValues(tag.getValues());
+    // resp.setInsertedDate(tag.getInsertedDate());
+    // resp.setUserId(tag.getUserId());
+    // resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
+    // resp.setDocumentId(tag.getDocumentId());
 
-    return ApiRequestHandlerResponse.builder().ok().body(resp).build();
+    return ApiRequestHandlerResponse.builder().ok().body(tag).build();
   }
 
   @Override
