@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -185,7 +185,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
 
     final int limit = 100;
 
-    PaginationResults<DocumentAttributeRecord> results =
+    Pagination<DocumentAttributeRecord> results =
         this.documentService.findDocumentAttributes(siteId, documentId, null, limit);
 
     Collection<Map<String, Object>> list =

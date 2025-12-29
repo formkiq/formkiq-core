@@ -23,9 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -35,10 +32,10 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.schemas.ClassificationRecord;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -54,15 +51,14 @@ public class SitesClassificationRequestHandler
 
     CacheService cacheService = awsServices.getExtension(CacheService.class);
     ApiPagination pagination = getPagination(cacheService, event);
-    PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     int limit = getLimit(awsServices.getLogger(), event);
     String siteId = authorization.getSiteId();
 
     SchemaService service = awsServices.getExtension(SchemaService.class);
-    PaginationResults<ClassificationRecord> results =
-        service.findAllClassifications(siteId, startkey, limit);
+    Pagination<ClassificationRecord> results =
+        service.findAllClassifications(siteId, nextToken, limit);
 
     List<?> data =
         results
@@ -71,7 +67,7 @@ public class SitesClassificationRequestHandler
             .toList();
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     Map<String, Object> m = new HashMap<>();
     m.put("classifications", data);

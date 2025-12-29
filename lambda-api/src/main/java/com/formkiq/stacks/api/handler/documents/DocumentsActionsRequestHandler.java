@@ -30,9 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -50,7 +48,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -77,13 +74,10 @@ public class DocumentsActionsRequestHandler
 
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
-
-    PaginationToAttributeValue pav = new PaginationToAttributeValue();
-    Map<String, AttributeValue> startKey = pav.apply(ptoken);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    PaginationResults<Action> results = service.getActions(siteId, documentId, startKey, limit);
+    Pagination<Action> results = service.getActions(siteId, documentId, nextToken, limit);
 
     List<Map<String, Object>> list = new ArrayList<>();
     for (Action action : results.getResults()) {
@@ -105,7 +99,7 @@ public class DocumentsActionsRequestHandler
     }
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("actions", list);

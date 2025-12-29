@@ -30,7 +30,6 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
@@ -51,7 +50,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.folders.FolderPermissionAttributePredicate;
@@ -872,7 +871,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
 
     QueryResponse response = null;
-    PaginationMapToken pagination = null;
     List<Map<String, AttributeValue>> items;
 
     if (!Objects.isEmpty(query.documentIds())) {

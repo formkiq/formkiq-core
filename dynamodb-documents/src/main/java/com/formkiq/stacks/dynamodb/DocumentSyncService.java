@@ -23,8 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -66,12 +65,12 @@ public interface DocumentSyncService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentSyncRecord}
+   * @return {@link Pagination} {@link DocumentSyncRecord}
    */
-  PaginationResults<DocumentSyncRecord> getSyncs(String siteId, String documentId,
-      PaginationMapToken token, int limit);
+  Pagination<DocumentSyncRecord> getSyncs(String siteId, String documentId, String nextToken,
+      int limit);
 
   /**
    * Save Sync.

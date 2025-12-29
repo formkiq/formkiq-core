@@ -37,6 +37,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -118,7 +119,7 @@ public class WebhooksIdRequestHandler
       throw new NotFoundException("Webhook 'id' not found");
     }
 
-    DynamicObject obj = fromBodyToDynamicObject(event);
+    DynamicObject obj = new DynamicObject(JsonToObject.fromJson(awsServices, event, Map.class));
 
     Map<String, Object> map = new HashMap<>();
 

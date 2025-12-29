@@ -43,10 +43,9 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
@@ -148,12 +147,15 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public PaginationResults<Action> findDocumentsInQueue(final String siteId, final String queueName,
-      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
+  public Pagination<Action> findDocumentsInQueue(final String siteId, final String queueName,
+      final String nextToken, final int limit) {
 
     BatchGetConfig batchConfig = new BatchGetConfig();
     String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
     String sk = "action#";
+
+    Map<String, AttributeValue> exclusiveStartKey =
+        new StringToMapAttributeValue().apply(nextToken);
 
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
     QueryResponse response =
@@ -165,34 +167,32 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     List<Action> list = this.db.getBatch(batchConfig, keys).stream()
         .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
 
-    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
-    return new PaginationResults<>(list, pagination);
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override
-  public PaginationResults<String> findDocumentsWithStatus(final String siteId,
-      final ActionStatus status, final Map<String, AttributeValue> exclusiveStartKey,
-      final int limit) {
+  public Pagination<String> findDocumentsWithStatus(final String siteId, final ActionStatus status,
+      final String nextToken, final int limit) {
 
     Action a = new Action().status(status);
     String pk = a.pkGsi2(siteId);
     String sk = "action#";
 
-    PaginationMapToken pagination = null;
+    QueryResponse response = null;
     List<String> list = Collections.emptyList();
 
     if (pk != null) {
 
+      Map<String, AttributeValue> exclusiveStartKey =
+          new StringToMapAttributeValue().apply(nextToken);
       QueryConfig config = new QueryConfig().indexName(GSI2).scanIndexForward(Boolean.TRUE);
-      QueryResponse response =
-          this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
+      response = this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
 
       list =
           response.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
-      pagination = new QueryResponseToPagination().apply(response);
     }
 
-    return new PaginationResults<>(list, pagination);
+    return new Pagination<>(list, response != null ? response.lastEvaluatedKey() : null);
 
   }
 
@@ -202,9 +202,9 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public PaginationResults<Action> getActions(final String siteId, final String documentId,
-      final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
-    return queryActions(siteId, documentId, null, exclusiveStartKey, limit);
+  public Pagination<Action> getActions(final String siteId, final String documentId,
+      final String nextToken, final int limit) {
+    return queryActions(siteId, documentId, null, nextToken, limit);
   }
 
   @Override
@@ -249,12 +249,11 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * @param documentId {@link String}
    * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
-   * @param startKey {@link Map}
+   * @param nextToken {@link String}
    * @return {@link PaginationResults} {@link Action}
    */
-  private PaginationResults<Action> queryActions(final String siteId, final String documentId,
-      final List<String> projectionExpression, final Map<String, AttributeValue> startKey,
-      final Integer limit) {
+  private Pagination<Action> queryActions(final String siteId, final String documentId,
+      final List<String> projectionExpression, final String nextToken, final Integer limit) {
 
     String pk = new Action().documentId(documentId).pk(siteId);
     String sk = "action" + TAG_DELIMINATOR;
@@ -263,6 +262,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
         ":sk", AttributeValue.builder().s(sk).build());
 
+    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
     Builder q = QueryRequest.builder().tableName(this.documentTableName).exclusiveStartKey(startKey)
         .keyConditionExpression(expression).expressionAttributeValues(values).limit(limit);
 
@@ -284,8 +284,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
         response.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
             .sorted(new ActionIndexComparator()).collect(Collectors.toList());
 
-    PaginationMapToken pagination = new QueryResponseToPagination().apply(response);
-    return new PaginationResults<>(actions, pagination);
+    return new Pagination<>(actions, response.lastEvaluatedKey());
   }
 
   @Override

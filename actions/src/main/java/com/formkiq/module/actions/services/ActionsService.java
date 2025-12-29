@@ -25,7 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.List;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -60,24 +60,24 @@ public interface ActionsService {
    * 
    * @param siteId {@link String}
    * @param queueId {@link String}
-   * @param exclusiveStartKey {@link Map}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link Action}
+   * @return {@link Pagination} {@link Action}
    */
-  PaginationResults<Action> findDocumentsInQueue(String siteId, String queueId,
-      Map<String, AttributeValue> exclusiveStartKey, int limit);
+  Pagination<Action> findDocumentsInQueue(String siteId, String queueId, String nextToken,
+      int limit);
 
   /**
    * Find Documents with FAILED status.
    * 
    * @param siteId {@link String}
    * @param status {@link ActionStatus}
-   * @param exclusiveStartKey {@link Map}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults}
+   * @return {@link Pagination}
    */
-  PaginationResults<String> findDocumentsWithStatus(String siteId, ActionStatus status,
-      Map<String, AttributeValue> exclusiveStartKey, int limit);
+  Pagination<String> findDocumentsWithStatus(String siteId, ActionStatus status, String nextToken,
+      int limit);
 
   /**
    * Get {@link List} {@link Action} for a document.
@@ -93,12 +93,11 @@ public interface ActionsService {
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
-   * @param exclusiveStartKey {@link Map}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link Action}
+   * @return {@link Pagination} {@link Action}
    */
-  PaginationResults<Action> getActions(String siteId, String documentId,
-      Map<String, AttributeValue> exclusiveStartKey, int limit);
+  Pagination<Action> getActions(String siteId, String documentId, String nextToken, int limit);
 
   /**
    * Whether SiteId / DocumentId combination has any actions.
