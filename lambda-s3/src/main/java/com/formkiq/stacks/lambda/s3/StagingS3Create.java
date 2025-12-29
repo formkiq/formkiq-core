@@ -76,7 +76,7 @@ import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;

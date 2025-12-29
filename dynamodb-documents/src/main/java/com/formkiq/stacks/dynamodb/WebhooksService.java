@@ -27,10 +27,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 
 /** Services for Querying, Updating Webhooks. */
 public interface WebhooksService {
@@ -69,12 +67,11 @@ public interface WebhooksService {
    *
    * @param siteId Optional Grouping siteId
    * @param webhookId {@link String}
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * 
-   * @return {@link DynamicObject} {@link PaginationResults}
+   * @return {@link DynamicObject} {@link Pagination}
    */
-  PaginationResults<DynamicObject> findTags(String siteId, String webhookId,
-      PaginationMapToken token);
+  Pagination<DynamicObject> findTags(String siteId, String webhookId, String nextToken);
 
   /**
    * Find Webhook.

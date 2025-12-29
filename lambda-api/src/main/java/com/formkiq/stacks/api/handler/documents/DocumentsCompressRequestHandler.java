@@ -46,6 +46,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -118,7 +119,8 @@ public class DocumentsCompressRequestHandler
 
     S3Service s3 = awsServices.getExtension(S3Service.class);
     S3PresignerService s3Presigner = awsServices.getExtension(S3PresignerService.class);
-    DynamicObject requestBodyObject = fromBodyToDynamicObject(event);
+    DynamicObject requestBodyObject =
+        new DynamicObject(JsonToObject.fromJson(awsServices, event, Map.class));
 
     DocumentService documentService = awsServices.getExtension(DocumentService.class);
     validateRequestBody(documentService, requestBodyObject, siteId);

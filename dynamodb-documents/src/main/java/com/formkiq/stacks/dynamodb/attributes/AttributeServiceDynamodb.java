@@ -33,9 +33,6 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
@@ -45,6 +42,9 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributeKeyRecord;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
@@ -159,10 +159,10 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   }
 
   @Override
-  public PaginationResults<AttributeRecord> findAttributes(final String siteId,
-      final PaginationMapToken token, final int limit) {
+  public Pagination<AttributeRecord> findAttributes(final String siteId, final String token,
+      final int limit) {
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(token);
     QueryConfig config = new QueryConfig().indexName(DbKeys.GSI1).scanIndexForward(Boolean.TRUE);
     AttributeValue pk = AttributeValue.fromS(createDatabaseKey(siteId, "attr#"));
     AttributeValue sk = AttributeValue.fromS("attr#");
@@ -176,7 +176,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     List<AttributeRecord> list =
         attrs.stream().map(a -> new AttributeRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override
