@@ -27,8 +27,6 @@ import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import java.util.Collections;
 import java.util.Map;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiPagination;
@@ -43,53 +41,11 @@ import com.google.gson.Gson;
 public final class ApiGatewayRequestEventUtil {
 
   /**
-   * Create Pagination.
-   * 
-   * @param cacheService {@link CacheService}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param lastPagination {@link ApiPagination}
-   * @param results {@link PaginationResults}
-   * @param limit int
-   * 
-   * @return {@link ApiPagination}
-   */
-  public static ApiPagination createPagination(final CacheService cacheService,
-      final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
-      final PaginationResults<?> results, final int limit) {
-
-    ApiPagination current = null;
-    final Map<String, String> q = getQueryParameterMap(event);
-
-    Gson gson = GsonUtil.getInstance();
-    PaginationMapToken token = results.getToken();
-
-    if (isPaginationPrevious(q)) {
-
-      String json = cacheService.read(q.get("previous"));
-      current = gson.fromJson(json, ApiPagination.class);
-
-    } else {
-
-      current = new ApiPagination();
-
-      current.setLimit(limit);
-      current.setPrevious(lastPagination != null ? lastPagination.getNext() : null);
-      current.setStartkey(token);
-      current.setHasNext(token != null);
-
-      cacheService.write(current.getNext(), gson.toJson(current), 1);
-    }
-
-    return current;
-  }
-
-  /**
    * Get the calling Cognito Username.
    *
    * @param event {@link ApiGatewayRequestEvent}.
    * @return {@link String}
    */
-  @SuppressWarnings("unchecked")
   public static String getCallingCognitoUsername(final ApiGatewayRequestEvent event) {
 
     String username = null;
@@ -251,10 +207,8 @@ public final class ApiGatewayRequestEventUtil {
    * @return {@link Map}
    */
   public static Map<String, String> getQueryParameterMap(final ApiGatewayRequestEvent event) {
-    Map<String, String> q =
-        event.getQueryStringParameters() != null ? event.getQueryStringParameters()
-            : Collections.emptyMap();
-    return q;
+    return event.getQueryStringParameters() != null ? event.getQueryStringParameters()
+        : Collections.emptyMap();
   }
 
   /**
@@ -282,7 +236,7 @@ public final class ApiGatewayRequestEventUtil {
    * @return boolean
    */
   public static boolean isNotBlank(final String s) {
-    return s != null && s.length() > 0;
+    return s != null && !s.isEmpty();
   }
 
   /**

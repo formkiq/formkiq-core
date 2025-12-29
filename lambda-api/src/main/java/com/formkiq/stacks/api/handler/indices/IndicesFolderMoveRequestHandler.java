@@ -34,6 +34,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
@@ -70,13 +71,12 @@ public class IndicesFolderMoveRequestHandler
    * @return {@link ApiRequestHandlerResponse}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
-   * @throws IOException IOException
    */
   private ApiRequestHandlerResponse moveFolderIndex(final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final String siteId, final String userId)
-      throws BadException, ValidationException, IOException {
+      throws BadException, ValidationException {
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsServices, event, Map.class);
 
     Collection<ValidationError> errors = validation(body);
     if (!errors.isEmpty()) {

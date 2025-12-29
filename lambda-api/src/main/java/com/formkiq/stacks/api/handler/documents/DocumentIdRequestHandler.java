@@ -37,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -154,18 +154,19 @@ public class DocumentIdRequestHandler
     CacheService cacheService = awsservice.getExtension(CacheService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    ApiPagination token = getPagination(cacheService, event);
     String documentId = event.getPathParameter("documentId");
     ApiPagination pagination = getPagination(cacheService, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
-    PaginationResult<DocumentItem> presult = documentService.findDocument(siteId, documentId, true,
-        token != null ? token.getStartkey() : null, limit);
+    Pagination<DocumentItem> presult =
+        documentService.findDocument(siteId, documentId, true, nextToken, limit);
 
-    DocumentItem item = presult.getResult();
+    DocumentItem item =
+        !notNull(presult.getResults()).isEmpty() ? presult.getResults().get(0) : null;
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, presult.getToken(), limit);
+        createPagination(cacheService, event, pagination, presult.getNextToken(), limit);
 
     DynamicDocumentItem ditem = new DocumentItemToDynamicDocumentItem().apply(item);
     ditem.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);

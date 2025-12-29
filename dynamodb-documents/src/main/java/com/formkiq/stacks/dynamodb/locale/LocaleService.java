@@ -23,8 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.locale;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 
 import java.util.Collection;

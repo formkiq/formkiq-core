@@ -78,7 +78,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import org.junit.jupiter.api.BeforeAll;
@@ -87,7 +87,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResult;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -716,36 +715,39 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      PaginationResult<DocumentItem> result =
+      Pagination<DocumentItem> result =
           service.findDocument(siteId, doc.getDocumentId(), true, null, 1);
 
       // then
-      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
-      List<DocumentItem> documents = result.getResult().getDocuments();
+      DocumentItem item = result.getResults().get(0);
+      assertEquals(doc.getDocumentId(), item.getDocumentId());
+      List<DocumentItem> documents = item.getDocuments();
       assertEquals(1, documents.size());
 
       list.add(documents.get(0).getDocumentId());
-      assertNotNull(result.getToken());
+      assertNotNull(result.getNextToken());
 
       // when
-      result = service.findDocument(siteId, doc.getDocumentId(), true, result.getToken(), 1);
+      result = service.findDocument(siteId, doc.getDocumentId(), true, result.getNextToken(), 1);
 
       // then
-      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
-      documents = result.getResult().getDocuments();
+      item = result.getResults().get(0);
+      assertEquals(doc.getDocumentId(), item.getDocumentId());
+      documents = item.getDocuments();
 
       list.add(documents.get(0).getDocumentId());
       assertEquals(1, documents.size());
-      assertNotNull(result.getToken());
+      assertNotNull(result.getNextToken());
 
       // when
-      result = service.findDocument(siteId, doc.getDocumentId(), true, result.getToken(), 1);
+      result = service.findDocument(siteId, doc.getDocumentId(), true, result.getNextToken(), 1);
 
       // then
-      assertEquals(doc.getDocumentId(), result.getResult().getDocumentId());
-      documents = result.getResult().getDocuments();
+      item = result.getResults().get(0);
+      assertEquals(doc.getDocumentId(), item.getDocumentId());
+      documents = item.getDocuments();
       assertTrue(documents.isEmpty());
-      assertNull(result.getToken());
+      assertNull(result.getNextToken());
 
       assertEquals(2, list.size());
     }
@@ -1834,11 +1836,11 @@ public class DocumentServiceImplTest implements DbKeys {
       final DocumentItem doc1 = doc.getDocuments().get(0);
       final DocumentItem doc2 = doc.getDocuments().get(1);
 
-      PaginationResult<DocumentItem> result =
+      Pagination<DocumentItem> result =
           service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
-      assertNull(result.getToken());
+      assertNull(result.getNextToken());
 
-      DocumentItem item = result.getResult();
+      DocumentItem item = result.getResults().get(0);
       assertNotNull(item);
       assertEquals("text/plain", item.getContentType());
       assertEquals(2, item.getDocuments().size());
@@ -1897,11 +1899,11 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // then
-      PaginationResult<DocumentItem> result =
+      Pagination<DocumentItem> result =
           service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
-      assertNull(result.getToken());
+      assertNull(result.getNextToken());
 
-      DocumentItem item = result.getResult();
+      DocumentItem item = result.getResults().get(0);
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, item.getDocumentId(), null, MAX_RESULTS).getResults();
@@ -1934,10 +1936,10 @@ public class DocumentServiceImplTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // then
-      PaginationResult<DocumentItem> result =
+      Pagination<DocumentItem> result =
           service.findDocument(siteId, doc.getDocumentId(), true, null, MAX_RESULTS);
-      assertNull(result.getToken());
-      DocumentItem item = result.getResult();
+      assertNull(result.getNextToken());
+      DocumentItem item = result.getResults().get(0);
 
       assertNotNull(item);
       assertNotNull(item.getBelongsToDocumentId());

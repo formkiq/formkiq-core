@@ -69,6 +69,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
@@ -89,7 +90,6 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -974,7 +974,7 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
 
       DocumentItem i =
-          service.findDocument(siteId, documentId0, true, null, MAX_RESULTS).getResult();
+          service.findDocument(siteId, documentId0, true, null, MAX_RESULTS).getResults().get(0);
       assertNull(i.getContentType());
       verifyBelongsToDocument(i, Arrays.asList(documentId1, documentId2));
 
@@ -987,7 +987,7 @@ public class StagingS3CreateTest implements DbKeys {
       String k = createDatabaseKey(siteId, i.getDocumentId());
       assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
 
-      i = service.findDocument(siteId, documentId1, true, null, MAX_RESULTS).getResult();
+      i = service.findDocument(siteId, documentId1, true, null, MAX_RESULTS).getResults().get(0);
       assertEquals("application/json", i.getContentType());
       assertEquals(documentId0, i.getBelongsToDocumentId());
       tags = service.findDocumentTags(siteId, documentId1, null, MAX_RESULTS).getResults();
@@ -1650,7 +1650,7 @@ public class StagingS3CreateTest implements DbKeys {
       DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
       assertEquals("joesmith", doc.getUserId());
 
-      PaginationResults<DocumentAttributeRecord> documentAttributes =
+      Pagination<DocumentAttributeRecord> documentAttributes =
           service.findDocumentAttributes(siteId, documentId, null, limit);
       assertEquals(1, documentAttributes.getResults().size());
 
@@ -1840,7 +1840,7 @@ public class StagingS3CreateTest implements DbKeys {
 
   private void verifyCliSyncs(final String siteId, final String documentId) {
     int i = 0;
-    PaginationResults<DocumentSyncRecord> syncs =
+    Pagination<DocumentSyncRecord> syncs =
         syncService.getSyncs(siteId, documentId, null, MAX_RESULTS);
 
     final int expected = 2;
