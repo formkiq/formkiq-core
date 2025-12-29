@@ -63,7 +63,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.stacks.dynamodb.GsonUtil;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;

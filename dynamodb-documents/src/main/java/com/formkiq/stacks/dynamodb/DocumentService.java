@@ -30,9 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResult;
-import com.formkiq.aws.dynamodb.PaginationResults;
+
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -40,7 +38,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -246,12 +244,12 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
    * @param includeChildDocuments boolean
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentItem}
    */
-  PaginationResult<DocumentItem> findDocument(String siteId, String documentId,
-      boolean includeChildDocuments, PaginationMapToken token, int limit);
+  Pagination<DocumentItem> findDocument(String siteId, String documentId,
+      boolean includeChildDocuments, String nextToken, int limit);
 
   /**
    * Find Document Attribute.
@@ -269,12 +267,12 @@ public interface DocumentService {
    * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
-   * @param pagination {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentAttributeRecord}
+   * @return {@link Pagination} {@link DocumentAttributeRecord}
    */
-  PaginationResults<DocumentAttributeRecord> findDocumentAttributes(String siteId,
-      String documentId, PaginationMapToken pagination, int limit);
+  Pagination<DocumentAttributeRecord> findDocumentAttributes(String siteId, String documentId,
+      String nextToken, int limit);
 
   /**
    * Find {@link DocumentAttributeRecord} by Type.
@@ -282,13 +280,12 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param valueType {@link DocumentAttributeValueType}
-   * @param pagination {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentAttributeRecord}
+   * @return {@link Pagination} {@link DocumentAttributeRecord}
    */
-  PaginationResults<DocumentAttributeRecord> findDocumentAttributesByType(String siteId,
-      String documentId, DocumentAttributeValueType valueType, PaginationMapToken pagination,
-      int limit);
+  Pagination<DocumentAttributeRecord> findDocumentAttributesByType(String siteId, String documentId,
+      DocumentAttributeValueType valueType, String nextToken, int limit);
 
   /**
    * Get Document Format.
@@ -307,7 +304,7 @@ public interface DocumentService {
    * @param documentId {@link String}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DocumentFormat}
+   * @return {@link Pagination} {@link DocumentFormat}
    */
   Pagination<DocumentFormat> findDocumentFormats(String siteId, String documentId, String nextToken,
       int maxresults);
@@ -351,7 +348,7 @@ public interface DocumentService {
    * @param date {@link ZonedDateTime}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentItem}
    */
   Pagination<DocumentItem> findDocumentsByDate(String siteId, ZonedDateTime date, String nextToken,
       int maxresults);
@@ -404,7 +401,7 @@ public interface DocumentService {
    * @param id {@link String}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link PresetTag}
+   * @return {@link Pagination} {@link PresetTag}
    * @deprecated method needs to be updated
    */
   @Deprecated
@@ -419,7 +416,7 @@ public interface DocumentService {
    * @param name {@link String}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link PaginationResults} {@link Preset}
+   * @return {@link Pagination} {@link Preset}
    * @deprecated method needs to be updated
    */
   @Deprecated
@@ -439,12 +436,11 @@ public interface DocumentService {
    * Find Deleted {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param token {@link Map}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentItem}
    */
-  PaginationResults<DocumentItem> findSoftDeletedDocuments(String siteId,
-      Map<String, AttributeValue> token, int limit);
+  Pagination<DocumentItem> findSoftDeletedDocuments(String siteId, String nextToken, int limit);
 
   /**
    * Is Folder Exists.

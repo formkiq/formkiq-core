@@ -26,9 +26,8 @@ package com.formkiq.stacks.dynamodb.mappings;
 import java.util.Collection;
 import java.util.List;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -50,11 +49,11 @@ public interface MappingService {
    * Find {@link MappingRecord}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
-   * @return {@link PaginationResults} {@link MappingRecord}
+   * @return {@link Pagination} {@link MappingRecord}
    */
-  PaginationResults<MappingRecord> findMappings(String siteId, PaginationMapToken token, int limit);
+  Pagination<MappingRecord> findMappings(String siteId, String nextToken, int limit);
 
   /**
    * Get {@link MappingAttribute}.

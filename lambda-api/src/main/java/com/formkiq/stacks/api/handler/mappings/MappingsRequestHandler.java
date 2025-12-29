@@ -23,8 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.mappings;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -36,6 +34,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.MappingRecordToMap;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.HashMap;
@@ -53,19 +52,19 @@ public class MappingsRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsServices.getLogger(), event);
-    PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     String siteId = authorizer.getSiteId();
 
     MappingService service = awsServices.getExtension(MappingService.class);
-    PaginationResults<MappingRecord> mappings = service.findMappings(siteId, token, limit);
+    Pagination<MappingRecord> mappings = service.findMappings(siteId, nextToken, limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("mappings",
         mappings.getResults().stream().map(new MappingRecordToMap(service)).toList());
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, mappings.getToken(), limit);
+        createPagination(cacheService, event, pagination, mappings.getNextToken(), limit);
 
     if (current.hasNext()) {
       map.put("next", current.getNext());

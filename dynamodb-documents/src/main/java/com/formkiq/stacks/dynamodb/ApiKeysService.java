@@ -25,8 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
 
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 
 /**
  * 

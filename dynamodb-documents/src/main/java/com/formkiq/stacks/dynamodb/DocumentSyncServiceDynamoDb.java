@@ -37,11 +37,9 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.QueryResult;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -98,11 +96,11 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
   }
 
   @Override
-  public PaginationResults<DocumentSyncRecord> getSyncs(final String siteId,
-      final String documentId, final PaginationMapToken token, final int limit) {
+  public Pagination<DocumentSyncRecord> getSyncs(final String siteId, final String documentId,
+      final String nextToken, final int limit) {
 
     String pk = getPk(siteId, documentId);
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryRequest query = DynamoDbQueryBuilder.builder().scanIndexForward(Boolean.FALSE)
         .nextToken(startkey).pk(pk).beginsWith(SK_SYNCS).limit(limit).build(this.syncTableName);
@@ -111,7 +109,7 @@ public final class DocumentSyncServiceDynamoDb implements DocumentSyncService, D
     List<DocumentSyncRecord> syncs = response.items().stream()
         .map(a -> new DocumentSyncRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(syncs, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(syncs, response.lastEvaluatedKey());
   }
 
   @Override

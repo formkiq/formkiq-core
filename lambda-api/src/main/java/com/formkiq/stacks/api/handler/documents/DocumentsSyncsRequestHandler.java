@@ -31,8 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
@@ -92,13 +91,13 @@ public class DocumentsSyncsRequestHandler
 
     final int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
-    final PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
-    PaginationResults<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, token, limit);
+    Pagination<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, nextToken, limit);
 
     syncs.getResults().forEach(s -> s.setDocumentId(null));
     List<Map<String, Object>> list =
@@ -109,7 +108,7 @@ public class DocumentsSyncsRequestHandler
     }
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, syncs.getToken(), limit);
+        createPagination(cacheService, event, pagination, syncs.getNextToken(), limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("syncs", list);

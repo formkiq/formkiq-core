@@ -34,12 +34,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
 import com.formkiq.aws.dynamodb.DynamodbRecordTx;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResult;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
@@ -71,7 +66,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
 import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
@@ -366,18 +361,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     final int limit = 1000;
 
-    PaginationMapToken pagination = null;
+    String nextToken = null;
     Collection<DocumentAttributeRecord> attributes = new ArrayList<>();
 
-    PaginationResults<DocumentAttributeRecord> results;
+    Pagination<DocumentAttributeRecord> results;
 
     do {
-      results = findDocumentAttributes(siteId, documentId, pagination, limit);
+      results = findDocumentAttributes(siteId, documentId, nextToken, limit);
 
       attributes.addAll(results.getResults());
-      pagination = results.getToken();
+      nextToken = results.getNextToken();
 
-    } while (pagination != null);
+    } while (nextToken != null);
 
     return attributes;
   }
@@ -864,15 +859,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public DocumentItem findDocument(final String siteId, final String documentId) {
-    return findDocument(siteId, documentId, false, null, 0).getResult();
+    Pagination<DocumentItem> doc = findDocument(siteId, documentId, false, null, 0);
+    return !notNull(doc.getResults()).isEmpty() ? doc.getResults().get(0) : null;
   }
 
   @Override
-  public PaginationResult<DocumentItem> findDocument(final String siteId, final String documentId,
-      final boolean includeChildDocuments, final PaginationMapToken token, final int limit) {
+  public Pagination<DocumentItem> findDocument(final String siteId, final String documentId,
+      final boolean includeChildDocuments, final String nextToken, final int limit) {
 
     DocumentItem item = null;
-    PaginationMapToken pagination = null;
+    Map<String, AttributeValue> lastEvaluatedKey = null;
 
     Map<String, AttributeValue> result = getDocumentRecord(siteId, documentId);
 
@@ -885,7 +881,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         Map<String, AttributeValue> values =
             queryKeys(keysDocument(siteId, documentId, Optional.of("")));
 
-        Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+        Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
         QueryRequest q = QueryRequest.builder().tableName(this.documentTableName)
             .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ",:sk)")
@@ -899,11 +895,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         List<DocumentItem> childDocs = findDocuments(siteId, ids);
         item.setDocuments(childDocs);
 
-        pagination = new QueryResponseToPagination().apply(response);
+        lastEvaluatedKey = response.lastEvaluatedKey();
       }
     }
 
-    return new PaginationResult<>(item, pagination);
+    return new Pagination<>(item != null ? List.of(item) : null, lastEvaluatedKey);
   }
 
   @Override
@@ -930,11 +926,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
-      final String documentId, final PaginationMapToken token, final int limit) {
+  public Pagination<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
+      final String documentId, final String nextToken, final int limit) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocumentId(documentId);
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
     QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)),
@@ -943,17 +939,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentAttributeRecord> list = response.items().stream()
         .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override
-  public PaginationResults<DocumentAttributeRecord> findDocumentAttributesByType(
-      final String siteId, final String documentId, final DocumentAttributeValueType valueType,
-      final PaginationMapToken token, final int limit) {
+  public Pagination<DocumentAttributeRecord> findDocumentAttributesByType(final String siteId,
+      final String documentId, final DocumentAttributeValueType valueType, final String nextToken,
+      final int limit) {
 
     DocumentAttributeRecord r =
         new DocumentAttributeRecord().setDocumentId(documentId).setValueType(valueType);
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).indexName(GSI2);
     QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pkGsi2(siteId)),
@@ -965,7 +961,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentAttributeRecord> list = batch.stream()
         .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override
@@ -1246,19 +1242,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DocumentItem> findSoftDeletedDocuments(final String siteId,
-      final Map<String, AttributeValue> startkey, final int limit) {
+  public Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId,
+      final String nextToken, final int limit) {
 
     Map<String, AttributeValue> sdKeys =
         keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, SOFT_DELETE + "document");
 
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
     QueryResponse result =
         this.dbService.queryBeginsWith(config, sdKeys.get(PK), sdKeys.get(SK), startkey, limit);
 
     List<DocumentItem> items = result.items().stream()
         .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
-    return new PaginationResults<>(items, new QueryResponseToPagination().apply(result));
+    return new Pagination<>(items, result.lastEvaluatedKey());
   }
 
   /**

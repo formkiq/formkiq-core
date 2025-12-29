@@ -23,25 +23,16 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * 
@@ -55,46 +46,6 @@ public interface ApiGatewayRequestEventUtil {
 
   /** {@link Gson}. */
   Gson GSON = GsonUtil.getInstance();
-
-  /**
-   * Create Pagination.
-   *
-   * @param cacheService {@link CacheService}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param lastPagination {@link ApiPagination}
-   * @param token {@link PaginationMapToken}
-   * @param limit int
-   *
-   * @return {@link ApiPagination}
-   */
-  default ApiPagination createPagination(final CacheService cacheService,
-      final ApiGatewayRequestEvent event, final ApiPagination lastPagination,
-      final PaginationMapToken token, final int limit) {
-
-    ApiPagination current;
-    final Map<String, String> q = getQueryParameterMap(event);
-
-    Gson gson = GsonUtil.getInstance();
-
-    if (isPaginationPrevious(q)) {
-
-      String json = cacheService.read(q.get("previous"));
-      current = gson.fromJson(json, ApiPagination.class);
-
-    } else {
-
-      current = new ApiPagination();
-
-      current.setLimit(limit);
-      current.setPrevious(lastPagination != null ? lastPagination.getNext() : null);
-      current.setStartkey(token);
-      current.setHasNext(token != null);
-
-      cacheService.write(current.getNext(), gson.toJson(current), 1);
-    }
-
-    return current;
-  }
 
   default ApiPagination createPagination(CacheService cacheService, ApiGatewayRequestEvent event,
       ApiPagination lastPagination, String nextToken, int limit) {
@@ -121,54 +72,6 @@ public interface ApiGatewayRequestEventUtil {
     }
 
     return current;
-  }
-
-  /**
-   * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link DynamicObject}.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link DynamicObject}
-   * @throws BadException BadException
-   * @deprecated Use JsonToObject.fromJson instead
-   */
-  @Deprecated
-  default DynamicObject fromBodyToDynamicObject(final ApiGatewayRequestEvent event)
-      throws BadException {
-    return new DynamicObject(fromBodyToObject(event, Map.class));
-  }
-
-  /**
-   * Get the Body from {@link ApiGatewayRequestEvent} and transform to {@link Map}.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link Map}
-   * @throws BadException BadException
-   * @throws IOException IOException
-   * @deprecated Use JsonToObject.fromJson instead
-   */
-  @Deprecated
-  default Map<String, Object> fromBodyToMap(final ApiGatewayRequestEvent event)
-      throws BadException, IOException {
-    return fromBodyToObject(event, Map.class);
-  }
-
-  /**
-   * Get the Body from {@link ApiGatewayRequestEvent} and transform to Object.
-   *
-   * @param <T> Type of {@link Class}
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param classOfT {@link Class}
-   * @return T
-   * @deprecated Use JsonToObject.fromJson(awsservice, event, classOfT)
-   */
-  @Deprecated
-  default <T> T fromBodyToObject(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
-    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
-        StandardCharsets.UTF_8)) {
-      return GSON.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException | IOException e) {
-      throw new BadException("invalid JSON body");
-    }
   }
 
   /**

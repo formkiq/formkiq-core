@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -173,7 +173,7 @@ class TypesenseProcessorTest {
     documents = service.searchFulltext(null, "bleh.pdf", MAX);
     assertEquals(0, documents.size());
 
-    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
+    Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -213,7 +213,7 @@ class TypesenseProcessorTest {
     assertEquals("text/plain", data.get("contentType"));
     assertEquals("", data.get("metadata#"));
 
-    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
+    Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -255,8 +255,7 @@ class TypesenseProcessorTest {
       documents = service.searchFulltext(null, "some.pdf", MAX);
       assertEquals(0, documents.size());
 
-      PaginationResults<DocumentSyncRecord> syncs =
-          syncService.getSyncs(null, documentId, null, MAX);
+      Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
       assertEquals(0, syncs.getResults().size());
     }
   }
@@ -284,8 +283,7 @@ class TypesenseProcessorTest {
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
-    PaginationResults<DocumentSyncRecord> syncs =
-        syncService.getSyncs(siteId, documentId, null, MAX);
+    Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
 
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -323,8 +321,7 @@ class TypesenseProcessorTest {
       processor.handleRequest(map1, this.context);
 
       // then
-      PaginationResults<DocumentSyncRecord> syncs =
-          syncService.getSyncs(siteId, documentId, null, MAX);
+      Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(siteId, documentId, null, MAX);
       assertEquals(2, syncs.getResults().size());
 
       assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
@@ -364,7 +361,7 @@ class TypesenseProcessorTest {
     List<String> documents = service.searchFulltext(null, documentId, MAX);
     assertEquals(0, documents.size());
 
-    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
+    Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(0, syncs.getResults().size());
   }
 
@@ -455,7 +452,7 @@ class TypesenseProcessorTest {
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0));
 
-    PaginationResults<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
+    Pagination<DocumentSyncRecord> syncs = syncService.getSyncs(null, documentId, null, MAX);
     assertEquals(1, syncs.getResults().size());
     assertEquals(documentId, syncs.getResults().get(0).getDocumentId());
     assertEquals(DocumentSyncServiceType.TYPESENSE, syncs.getResults().get(0).getService());

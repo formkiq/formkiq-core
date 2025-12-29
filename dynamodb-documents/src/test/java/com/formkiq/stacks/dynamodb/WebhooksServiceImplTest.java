@@ -35,12 +35,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -117,7 +117,7 @@ public class WebhooksServiceImplTest {
         this.service.deleteWebhook(siteId, id0);
 
         // then
-        PaginationResults<DynamicObject> tags = this.service.findTags(siteId, id0, null);
+        Pagination<DynamicObject> tags = this.service.findTags(siteId, id0, null);
         assertEquals(0, tags.getResults().size());
       }
     }

@@ -28,6 +28,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -60,7 +61,7 @@ public class ReindexDocumentsRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
 
     String target = (String) body.getOrDefault("target", null);
     if (isEmpty(target)) {

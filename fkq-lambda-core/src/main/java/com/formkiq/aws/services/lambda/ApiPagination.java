@@ -24,7 +24,6 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
@@ -45,8 +44,6 @@ public class ApiPagination {
   /** Query Limit. */
   private int limit;
 
-  /** {@link PaginationMapToken}. */
-  private PaginationMapToken startkey;
   /** Next token string. */
   private String nextToken;
 
@@ -92,15 +89,6 @@ public class ApiPagination {
    */
   public String getPrevious() {
     return this.previous;
-  }
-
-  /**
-   * Get {@link PaginationMapToken}.
-   * 
-   * @return {@link PaginationMapToken}
-   */
-  public PaginationMapToken getStartkey() {
-    return this.startkey;
   }
 
   /**
@@ -155,14 +143,5 @@ public class ApiPagination {
    */
   public void setPrevious(final String token) {
     this.previous = token;
-  }
-
-  /**
-   * Set {@link PaginationMapToken}.
-   * 
-   * @param token {@link PaginationMapToken}
-   */
-  public void setStartkey(final PaginationMapToken token) {
-    this.startkey = token;
   }
 }

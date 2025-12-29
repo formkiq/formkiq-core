@@ -38,11 +38,11 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
@@ -378,7 +378,7 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<String> results =
+      Pagination<String> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(0, results.getResults().size());
     }
@@ -405,12 +405,12 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
+      Pagination<Action> docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
       assertEquals(1, docs.getResults().size());
       assertEquals(queueId, docs.getResults().get(0).queueId());
       assertNotNull(service.findActionInQueue(siteId, documentId, queueId));
 
-      PaginationResults<String> results =
+      Pagination<String> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.IN_QUEUE, null, LIMIT);
       assertEquals(1, results.getResults().size());
       assertEquals(documentId, results.getResults().get(0));
@@ -453,11 +453,11 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());
-      PaginationResults<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
+      Pagination<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, documentId, name));
 
-      PaginationResults<String> results =
+      Pagination<String> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(1, results.getResults().size());
       assertEquals(documentId, results.getResults().get(0));

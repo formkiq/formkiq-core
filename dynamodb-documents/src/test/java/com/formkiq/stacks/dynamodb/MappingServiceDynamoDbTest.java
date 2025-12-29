@@ -40,6 +40,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
@@ -52,7 +53,6 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
@@ -182,13 +182,13 @@ class MappingServiceDynamoDbTest implements DbKeys {
       }
 
       // then
-      PaginationResults<MappingRecord> mappings = service.findMappings(siteId, null, 2);
+      Pagination<MappingRecord> mappings = service.findMappings(siteId, null, 2);
       assertEquals(2, mappings.getResults().size());
 
       assertEquals("test_0", mappings.getResults().get(0).getName());
       assertEquals("test_1", mappings.getResults().get(1).getName());
 
-      mappings = service.findMappings(siteId, mappings.getToken(), 2);
+      mappings = service.findMappings(siteId, mappings.getNextToken(), 2);
       assertEquals(2, mappings.getResults().size());
 
       assertEquals("test_2", mappings.getResults().get(0).getName());
