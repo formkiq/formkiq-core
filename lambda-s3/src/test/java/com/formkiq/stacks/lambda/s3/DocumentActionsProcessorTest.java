@@ -66,7 +66,7 @@ import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;

@@ -33,7 +33,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

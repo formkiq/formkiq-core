@@ -27,7 +27,7 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationException;
 
 /**

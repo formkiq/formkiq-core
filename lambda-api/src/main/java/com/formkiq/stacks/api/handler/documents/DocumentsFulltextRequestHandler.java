@@ -36,6 +36,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -157,7 +158,7 @@ public class DocumentsFulltextRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
 
     Map<String, Object> document = buildDocumentFromRequestBody(body);
 
@@ -180,7 +181,7 @@ public class DocumentsFulltextRequestHandler
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
 
     Map<String, Object> document = buildDocumentFromRequestBody(body);
 

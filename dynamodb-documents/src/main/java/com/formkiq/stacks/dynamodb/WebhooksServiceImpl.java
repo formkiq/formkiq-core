@@ -40,14 +40,10 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -145,10 +141,9 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
         .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
   }
 
-  private void deleteWebhookTags(final String siteId, final String id,
-      final PaginationMapToken token) {
+  private void deleteWebhookTags(final String siteId, final String id, final String nextToken) {
 
-    PaginationResults<DynamicObject> tags = findTags(siteId, id, token);
+    Pagination<DynamicObject> tags = findTags(siteId, id, nextToken);
 
     for (DynamicObject t : tags.getResults()) {
       String pk = t.getString("PK");
@@ -161,8 +156,8 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
           DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
     }
 
-    if (tags.getToken() != null) {
-      deleteWebhookTags(siteId, id, tags.getToken());
+    if (tags.getNextToken() != null) {
+      deleteWebhookTags(siteId, id, tags.getNextToken());
     }
   }
 
@@ -177,15 +172,15 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
   }
 
   @Override
-  public PaginationResults<DynamicObject> findTags(final String siteId, final String webhookId,
-      final PaginationMapToken token) {
+  public Pagination<DynamicObject> findTags(final String siteId, final String webhookId,
+      final String nextToken) {
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
 
     Map<String, AttributeValue> values =
         queryKeys(keysGeneric(siteId, PREFIX_WEBHOOK + webhookId, PREFIX_TAGS));
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryRequest q =
         QueryRequest.builder().tableName(this.documentTableName).keyConditionExpression(expression)
@@ -196,7 +191,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
 
     List<DynamicObject> objs = result.items().stream().map(transform).collect(Collectors.toList());
 
-    return new PaginationResults<>(objs, new QueryResponseToPagination().apply(result));
+    return new Pagination<>(objs, result.lastEvaluatedKey());
   }
 
   @Override
@@ -294,7 +289,7 @@ public final class WebhooksServiceImpl implements WebhooksService, DbKeys {
     this.dbClient.updateItem(UpdateItemRequest.builder().tableName(this.documentTableName).key(key)
         .attributeUpdates(values).build());
 
-    PaginationResults<DynamicObject> result = findTags(siteId, webhookId, null);
+    Pagination<DynamicObject> result = findTags(siteId, webhookId, null);
     for (DynamicObject ob : result.getResults()) {
 
       key = new HashMap<>();

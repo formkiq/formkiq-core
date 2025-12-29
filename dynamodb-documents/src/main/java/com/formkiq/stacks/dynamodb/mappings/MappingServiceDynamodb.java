@@ -44,7 +44,7 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.PutResult;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.plugins.useractivity.UserActivityContext;
@@ -52,6 +52,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -98,10 +99,11 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   }
 
   @Override
-  public PaginationResults<MappingRecord> findMappings(final String siteId,
-      final PaginationMapToken token, final int limit) {
+  public Pagination<MappingRecord> findMappings(final String siteId, final String nextToken,
+      final int limit) {
 
-    Map<String, AttributeValue> startkey = new PaginationToAttributeValue().apply(token);
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
+
     QueryConfig config = new QueryConfig().indexName(DbKeys.GSI1).scanIndexForward(Boolean.TRUE);
     AttributeValue pk = AttributeValue.fromS(createDatabaseKey(siteId, MappingRecord.PREFIX_PK));
     AttributeValue sk = AttributeValue.fromS(MappingRecord.PREFIX_SK_GSI1);
@@ -115,7 +117,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     List<MappingRecord> list =
         attrs.stream().map(a -> new MappingRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override

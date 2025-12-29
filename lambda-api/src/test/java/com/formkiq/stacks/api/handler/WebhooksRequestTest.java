@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
@@ -55,7 +56,6 @@ import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -289,7 +289,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joe smith", obj.getString("path"));
       assertEquals("joesmith", obj.getString("userId"));
 
-      PaginationResults<DynamicObject> tags = webhookService.findTags(siteId, webhookId, null);
+      Pagination<DynamicObject> tags = webhookService.findTags(siteId, webhookId, null);
       assertEquals(2, tags.getResults().size());
 
       DynamicObject tag = tags.getResults().get(0);

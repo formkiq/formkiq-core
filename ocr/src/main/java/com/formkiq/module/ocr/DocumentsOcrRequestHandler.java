@@ -312,7 +312,7 @@ public class DocumentsOcrRequestHandler
 
     String userId = authorization.getUsername();
 
-    Map<String, Object> map = fromBodyToMap(event);
+    Map<String, Object> map = JsonToObject.fromJson(awsservice, event, Map.class);
     String contentType = (String) map.get("contentType");
     String content = (String) map.get("content");
 

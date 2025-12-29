@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -59,7 +59,7 @@ public class WebhooksTagsRequestHandler
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    PaginationResults<DynamicObject> list = webhooksService.findTags(siteId, id, null);
+    Pagination<DynamicObject> list = webhooksService.findTags(siteId, id, null);
 
     List<Map<String, Object>> tags = list.getResults().stream().map(m -> {
       Map<String, Object> map = new HashMap<>();

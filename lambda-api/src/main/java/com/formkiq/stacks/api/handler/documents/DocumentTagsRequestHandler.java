@@ -40,7 +40,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 

@@ -29,8 +29,9 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
 import com.formkiq.validation.ValidationError;
@@ -74,7 +75,7 @@ public class SitesLocalesRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    Map<String, Object> record = fromBodyToMap(event);
+    Map<String, Object> record = JsonToObject.fromJson(awsservice, event, Map.class);
 
     String siteId = authorization.getSiteId();
     LocaleService service = awsservice.getExtension(LocaleService.class);

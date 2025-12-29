@@ -41,7 +41,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKey;
 import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 

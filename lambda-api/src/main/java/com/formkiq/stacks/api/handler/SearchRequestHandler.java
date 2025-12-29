@@ -49,7 +49,7 @@ import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
