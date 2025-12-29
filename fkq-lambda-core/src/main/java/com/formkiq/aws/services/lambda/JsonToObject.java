@@ -44,6 +44,18 @@ public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class
 
   /**
    * Static helper for one-off calls.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param type Type of Class.
+   * @param <T> Type of result
+   * @return Result
+   */
+  public static <T> T fromJson(final ApiGatewayRequestEvent event, final Class<T> type) {
+    return new JsonToObject<T>(GsonUtil.getInstance()).apply(event, type);
+  }
+
+  /**
+   * Static helper for one-off calls.
    * 
    * @param aws {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
@@ -59,10 +71,23 @@ public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class
   /** {@link Gson}. */
   private final Gson gson;
 
+  /**
+   * constructor.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   */
   public JsonToObject(final AwsServiceCache awsservice) {
     this.gson = awsservice.getExtension(Gson.class);
   }
 
+  /**
+   * constructor.
+   * 
+   * @param gsonInstance {@link Gson}
+   */
+  public JsonToObject(final Gson gsonInstance) {
+    this.gson = gsonInstance;
+  }
 
   @Override
   public T apply(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
