@@ -30,6 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
@@ -144,7 +145,7 @@ public class DocumentTagRequestHandler
     final String documentId = event.getPathParameter("documentId");
     final String tagKey = event.getPathParameter("tagKey");
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
     String value = body != null ? (String) body.getOrDefault("value", null) : null;
     List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
 

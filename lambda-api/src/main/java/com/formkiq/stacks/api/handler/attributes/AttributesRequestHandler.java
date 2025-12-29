@@ -26,8 +26,6 @@ package com.formkiq.stacks.api.handler.attributes;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -42,6 +40,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 
 /** {@link ApiGatewayRequestHandler} for "/attributes". */
 public class AttributesRequestHandler
@@ -55,18 +54,18 @@ public class AttributesRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsServices.getLogger(), event);
-    PaginationMapToken token = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     String siteId = authorization.getSiteId();
     AttributeService service = awsServices.getExtension(AttributeService.class);
-    PaginationResults<AttributeRecord> attributes = service.findAttributes(siteId, token, limit);
+    Pagination<AttributeRecord> attributes = service.findAttributes(siteId, nextToken, limit);
 
     Map<String, Object> map = new HashMap<>();
     map.put("attributes",
         attributes.getResults().stream().map(new AttributeRecordToMap()).toList());
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, attributes.getToken(), limit);
+        createPagination(cacheService, event, pagination, attributes.getNextToken(), limit);
 
     if (current.hasNext()) {
       map.put("next", current.getNext());

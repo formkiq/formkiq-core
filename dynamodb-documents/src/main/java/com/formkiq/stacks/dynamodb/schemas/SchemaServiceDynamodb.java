@@ -28,14 +28,14 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbRecordToKeys;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleResourceType;
 import com.formkiq.validation.ValidationError;
@@ -175,14 +175,15 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public PaginationResults<ClassificationRecord> findAllClassifications(final String siteId,
-      final Map<String, AttributeValue> startkey, final int limit) {
+  public Pagination<ClassificationRecord> findAllClassifications(final String siteId,
+      final String nextToken, final int limit) {
 
     ClassificationRecord r = new ClassificationRecord();
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(true);
     AttributeValue pk = r.fromS(r.pkGsi1(siteId));
     AttributeValue sk = r.fromS("attr#");
 
+    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
     QueryResponse response = this.db.queryBeginsWith(config, pk, sk, startkey, limit);
 
     List<Map<String, AttributeValue>> attrs =
@@ -191,7 +192,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     List<ClassificationRecord> list =
         attrs.stream().map(a -> new ClassificationRecord().getFromAttributes(siteId, a)).toList();
 
-    return new PaginationResults<>(list, new QueryResponseToPagination().apply(response));
+    return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
   @Override

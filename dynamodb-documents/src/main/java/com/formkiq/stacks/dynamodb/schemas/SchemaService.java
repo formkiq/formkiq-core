@@ -28,10 +28,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Services for Schema.
@@ -51,12 +50,12 @@ public interface SchemaService {
    * Find {@link ClassificationRecord}.
    * 
    * @param siteId {@link String}
-   * @param startkey {@link Map}
+   * @param nextToken {@link String}
    * @param limit int
    * @return PaginationResults
    */
-  PaginationResults<ClassificationRecord> findAllClassifications(String siteId,
-      Map<String, AttributeValue> startkey, int limit);
+  Pagination<ClassificationRecord> findAllClassifications(String siteId, String nextToken,
+      int limit);
 
   /**
    * Find Classification.

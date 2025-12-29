@@ -42,7 +42,7 @@ import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

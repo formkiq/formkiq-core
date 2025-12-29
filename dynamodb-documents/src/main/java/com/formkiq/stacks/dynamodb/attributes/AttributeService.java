@@ -25,8 +25,8 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
 import java.util.Map;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
+
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 
 /**
@@ -92,12 +92,11 @@ public interface AttributeService {
    * Find {@link AttributeRecord}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param token {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param limit int
    * @return {@link PaginationResults} {@link AttributeRecord}
    */
-  PaginationResults<AttributeRecord> findAttributes(String siteId, PaginationMapToken token,
-      int limit);
+  Pagination<AttributeRecord> findAttributes(String siteId, String nextToken, int limit);
 
   /**
    * Get {@link AttributeRecord}.

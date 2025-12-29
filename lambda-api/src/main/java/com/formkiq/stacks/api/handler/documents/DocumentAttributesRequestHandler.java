@@ -31,9 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -73,20 +72,20 @@ public class DocumentAttributesRequestHandler
     int limit =
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
 
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
     verifyDocument(awsservice, siteId, documentId);
 
-    PaginationResults<DocumentAttributeRecord> results =
-        documentService.findDocumentAttributes(siteId, documentId, ptoken, limit);
+    Pagination<DocumentAttributeRecord> results =
+        documentService.findDocumentAttributes(siteId, documentId, nextToken, limit);
 
     Collection<Map<String, Object>> list =
         new DocumentAttributeRecordToMap(true).apply(results.getResults());
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     Map<String, Object> m = new HashMap<>();
     m.put("attributes", list);

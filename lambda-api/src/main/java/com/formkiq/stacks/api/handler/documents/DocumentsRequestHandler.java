@@ -37,11 +37,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
-import com.formkiq.aws.dynamodb.PaginationResults;
-import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -71,7 +69,6 @@ import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 /** {@link ApiGatewayRequestHandler} for "/documents". */
@@ -150,15 +147,12 @@ public class DocumentsRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
 
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     ActionsService actions = awsservice.getExtension(ActionsService.class);
 
-    PaginationToAttributeValue pav = new PaginationToAttributeValue();
-    Map<String, AttributeValue> token = pav.apply(ptoken);
-
-    PaginationResults<String> results =
-        actions.findDocumentsWithStatus(siteId, actionStatus, token, limit);
+    Pagination<String> results =
+        actions.findDocumentsWithStatus(siteId, actionStatus, nextToken, limit);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     List<DocumentItem> documents = documentService.findDocuments(siteId, results.getResults());
@@ -167,7 +161,7 @@ public class DocumentsRequestHandler
         documents.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList();
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     map.put("documents", docs);
     return current;
@@ -225,17 +219,13 @@ public class DocumentsRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
 
     int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
-    PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
-
-    PaginationToAttributeValue pav = new PaginationToAttributeValue();
-    Map<String, AttributeValue> token = pav.apply(ptoken);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
-    PaginationResults<DocumentItem> results =
-        service.findSoftDeletedDocuments(siteId, token, limit);
+    Pagination<DocumentItem> results = service.findSoftDeletedDocuments(siteId, nextToken, limit);
 
     ApiPagination current =
-        createPagination(cacheService, event, pagination, results.getToken(), limit);
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
     map.put("documents", results.getResults());
     return current;
