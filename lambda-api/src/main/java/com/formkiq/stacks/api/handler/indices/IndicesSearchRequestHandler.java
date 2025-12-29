@@ -42,9 +42,10 @@ import com.formkiq.aws.services.lambda.ApiPagination;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -83,7 +84,7 @@ public class IndicesSearchRequestHandler
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     String nextToken = event.getQueryStringParameter("next");
 
-    Map<String, Object> body = fromBodyToMap(event);
+    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
 
     validatePost(body);
 

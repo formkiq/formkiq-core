@@ -31,7 +31,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecordToMap;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
