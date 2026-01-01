@@ -34,7 +34,7 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.folders.GetFolderFilesByName;
+import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -616,8 +616,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else if (query.filename() != null) {
 
-      QueryResult result = new GetFolderFilesByName(false, query.filename().beginsWith()).query(db,
-          db.getTableName(), siteId, nextToken, limit);
+      QueryResult result = new GetFolderFilesByNameQuery(false, query.filename().beginsWith())
+          .query(db, db.getTableName(), siteId, nextToken, limit);
 
       List<String> documentIds =
           result.items().stream().map(i -> DynamoDbTypes.toString(i.get("documentId")))
@@ -630,8 +630,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else if (query.folder() != null) {
 
-      QueryResult result = new GetFolderFilesByName(true, query.folder().beginsWith()).query(db,
-          db.getTableName(), siteId, nextToken, limit);
+      QueryResult result = new GetFolderFilesByNameQuery(true, query.folder().beginsWith())
+          .query(db, db.getTableName(), siteId, nextToken, limit);
 
       AttributeValueToDocumentItem toItem = new AttributeValueToDocumentItem();
       List<DocumentItem> items = result.items().stream().map(toItem::apply).toList();

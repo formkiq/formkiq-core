@@ -43,8 +43,16 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
    * @return {@link String}
    */
   public String toNextToken() {
-    return lastEvaluatedKey != null ? new MapAttributeValueToString().apply(lastEvaluatedKey)
-        : null;
+    return hasLastEvaluatedKey() ? new MapAttributeValueToString().apply(lastEvaluatedKey) : null;
+  }
+
+  /**
+   * Has Last Evaluated Key.
+   * 
+   * @return boolean
+   */
+  public boolean hasLastEvaluatedKey() {
+    return lastEvaluatedKey != null && !lastEvaluatedKey.isEmpty();
   }
 
   /**
