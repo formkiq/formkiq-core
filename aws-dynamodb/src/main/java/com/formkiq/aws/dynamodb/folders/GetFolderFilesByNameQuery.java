@@ -43,7 +43,7 @@ import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK
 /**
  * {@link DynamoDbShardQuery} for finding filenames in folders.
  */
-public class GetFolderFilesByName implements DynamoDbShardQuery {
+public class GetFolderFilesByNameQuery implements DynamoDbShardQuery {
 
   /** Begins With {@link String}. */
   private final String begins;
@@ -56,7 +56,7 @@ public class GetFolderFilesByName implements DynamoDbShardQuery {
    * @param isFolderSearch Is folder search
    * @param beginsWith {@link String}
    */
-  public GetFolderFilesByName(final boolean isFolderSearch, final String beginsWith) {
+  public GetFolderFilesByNameQuery(final boolean isFolderSearch, final String beginsWith) {
     this.begins = beginsWith;
     this.folderSearch = isFolderSearch;
   }
