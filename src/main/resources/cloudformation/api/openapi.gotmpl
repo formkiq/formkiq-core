@@ -1,3 +1,6 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
 openapi: "3.0.1"
 info:
   title:
@@ -16,7 +19,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   description: |-
 {{ (ds "path" "desc.yaml").description | indent 4 }}
-  version: "{{ getenv "PROJECT_VERSION" }}"
+  version: #@ data.values.version or assert.fail("missing version")
 tags:
   - name: documents
     description: API for the add, updating and fetching of documents
@@ -105,8 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-
-{{ tmpl.Exec "paths.version" . | indent 2 }}
   /sites:
     get:
       operationId: GetSites
@@ -10365,7 +10366,6 @@ components:
         content:
           type: "string"
           description: "Document content"
-{{ tmpl.Exec "schemas.getVersionResponse" . | indent 4 }}
     UpdateConfigurationRequest:
       type: "object"
       properties:
@@ -12249,6 +12249,20 @@ components:
       type: "aws_proxy"
       payloadFormatVersion: "1.0"
     googleLambdaApi201:
+      uri:
+        Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
+      responses:
+        default:
+          statusCode: "201"
+          responseParameters:
+            method.response.header.Access-Control-Allow-Methods: "'*'"
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+      passthroughBehavior: "when_no_templates"
+      httpMethod: "POST"
+      type: "aws_proxy"
+      payloadFormatVersion: "1.0"
+    documentSignatureLambdaApi:
       uri:
         Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
       responses:
