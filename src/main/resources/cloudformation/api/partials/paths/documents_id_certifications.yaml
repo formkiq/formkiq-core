@@ -1,0 +1,121 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/certifications:
+    post:
+      operationId: AddDocumentCertification
+      description: |-
+        Applies one or more certifications (digital signatures) to a document using one or more certificates.
+        Target determines whether a presigned download is returned, a new version is created, or a new document is created.
+        ; available as an Add-On Module
+      summary: Add Document Certification
+      tags:
+        - Document Generation
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentCertificationRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentCertificationResponse'
+        '400':
+          description: 400 BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/documentSignatureLambdaApi"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    AddDocumentCertificationRequest:
+      type: object
+      required:
+        - target
+        - certificates
+      properties:
+        target:
+          $ref: '#/components/schemas/DocumentCertificationTarget'
+        certificates:
+          type: array
+          minItems: 1
+          description: One or more certificates used to certify/sign the document (in order).
+          items:
+            $ref: '#/components/schemas/DocumentCertification'
+
+    #@overlay/match missing_ok=True
+    DocumentCertificationTarget:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - DOWNLOAD
+            - NEW_VERSION
+            - NEW_DOCUMENT
+
+    #@overlay/match missing_ok=True
+    DocumentCertification:
+      type: object
+      required:
+        - alias
+        - type
+      properties:
+        alias:
+          type: string
+          description: Certificate alias.
+        type:
+          type: string
+          enum:
+            - AWS_SSM_PARAMETER_STORE
+        parameterStore:
+          $ref: '#/components/schemas/DocumentCertificationParameterStore'
+
+    #@overlay/match missing_ok=True
+    DocumentCertificationParameterStore:
+      type: object
+      required:
+        - pkcs12BundleParam
+        - pkcs12PasswordParam
+      properties:
+        pkcs12BundleParam:
+          type: string
+          description: SSM Parameter Store Key containing the PKCS#12/PFX bundle.
+        pkcs12PasswordParam:
+          type: string
+          description: SSM Parameter Store Key containing the PKCS#12/PFX password.
+
+    #@overlay/match missing_ok=True
+    AddDocumentCertificationResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document identifier (NEW_VERSION / NEW_DOCUMENT).
+        url:
+          type: string
+          description: Presigned download URL (DOWNLOAD).
