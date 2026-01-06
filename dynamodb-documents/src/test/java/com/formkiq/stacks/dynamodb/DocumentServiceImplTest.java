@@ -70,6 +70,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.GetDocumentFind;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -118,6 +119,8 @@ public class DocumentServiceImplTest implements DbKeys {
   private static FolderIndexProcessor folderIndexProcessor;
   /** {@link AttributeService}. */
   private static AttributeService attributeService;
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
 
   /**
    * Before Test.
@@ -132,7 +135,7 @@ public class DocumentServiceImplTest implements DbKeys {
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
-    DynamoDbService db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     attributeService = new AttributeServiceDynamodb(db);
   }
 
@@ -1376,6 +1379,26 @@ public class DocumentServiceImplTest implements DbKeys {
         Pagination<Preset> p0 = service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
         assertEquals(0, p0.getResults().size());
       }
+    }
+  }
+
+  @Test
+  void testGetDocumentFind() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
+      service.saveDocument(siteId, createDocument(documentId, ZonedDateTime.now()), null);
+
+      // when
+      var result0 = new GetDocumentFind().find(db, DOCUMENTS_TABLE, siteId, documentId);
+      var result1 = new GetDocumentFind().find(db, DOCUMENTS_TABLE, siteId, ID.uuid());
+
+      // then
+      assertNotNull(result0);
+      assertNotNull(result1);
+
+      assertFalse(result0.isEmpty());
+      assertTrue(result1.isEmpty());
     }
   }
 
