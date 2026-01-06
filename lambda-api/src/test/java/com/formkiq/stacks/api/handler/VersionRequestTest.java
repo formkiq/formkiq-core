@@ -79,4 +79,23 @@ public class VersionRequestTest extends AbstractApiClientRequestTest {
     // then
     assertNotNull(version.getVersion());
   }
+
+  /**
+   * GET /version With permissionsMap with single group.
+   *
+   */
+  @Test
+  public void testGetVersionWithSingleGroupPermissionMap() throws ApiException {
+    // given
+    new SetBearerPermissionMap().apply(client, List.of("SRSGroup"),
+        Map.of("mergesacquisitions", List.of("write", "read", "delete"), "LoanAgency",
+            List.of("write", "read", "delete", "govern")));
+    SystemManagementApi api = new SystemManagementApi(client);
+
+    // when
+    GetVersionResponse version = api.getVersion();
+
+    // then
+    assertNotNull(version.getVersion());
+  }
 }
