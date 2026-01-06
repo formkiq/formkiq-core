@@ -101,20 +101,20 @@ public class ApiAuthorizationBuilder {
       final ApiAuthorization authorization, final Collection<String> groups, final boolean admin) {
 
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+    Map<String, List<String>> permissionsMap = getPermissionsMap(event);
 
-    if (claims.containsKey("permissionsMap")) {
+    if (permissionsMap != null) {
 
       String siteId = event.getQueryStringParameter("siteId");
-      Map<String, List<String>> map = (Map<String, List<String>>) claims.get("permissionsMap");
 
-      map.forEach((group, perms) -> {
+      permissionsMap.forEach((group, perms) -> {
         List<ApiPermission> permissions = perms.stream()
             .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
         authorization.addPermission(group, permissions);
       });
 
-      if (map.size() == 1 && siteId == null) {
-        authorization.siteId(map.keySet().iterator().next());
+      if (permissionsMap.size() == 1 && siteId == null) {
+        authorization.siteId(permissionsMap.keySet().iterator().next());
       }
 
     } else {
@@ -260,14 +260,19 @@ public class ApiAuthorizationBuilder {
     String siteId = getSiteIdRequestParameter(event);
 
     if (siteId == null) {
-      Collection<String> filteredGroups =
-          groups.stream().filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
-              .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
-              .map(
-                  g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
-              .collect(Collectors.toSet());
 
-      siteId = filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
+      Map<String, List<String>> permissionsMap = getPermissionsMap(event);
+      if (permissionsMap != null) {
+        siteId = permissionsMap.size() == 1 ? permissionsMap.keySet().iterator().next() : null;
+      } else {
+        Collection<String> filteredGroups = groups.stream()
+            .filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
+            .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
+            .map(g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
+            .collect(Collectors.toSet());
+
+        siteId = filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
+      }
     }
 
     return siteId;
@@ -281,6 +286,17 @@ public class ApiAuthorizationBuilder {
    */
   private Collection<String> getGroups(final ApiGatewayRequestEvent event) {
     return loadJwtGroups(event);
+  }
+
+  private Map<String, List<String>> getPermissionsMap(final ApiGatewayRequestEvent event) {
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    Map<String, List<String>> map = null;
+    if (claims.containsKey("permissionsMap")) {
+      map = (Map<String, List<String>>) claims.get("permissionsMap");
+    }
+
+    return map;
   }
 
   /**
