@@ -730,18 +730,20 @@ class ApiAuthorizationBuilderTest {
    * Sites permissionsMap with Admins.
    */
   @Test
-  void testApiAuthorizer22() {
+  void testApiAuthorizer22() throws Exception {
     // given
     ApiGatewayRequestEvent event0 = getExplicitSitesJwtEvent(List.of("Admins"), Map.of());
 
     // when
-    try {
-      new ApiAuthorizationBuilder().build(event0);
-      fail();
-    } catch (Exception e) {
-      // then
-      assertEquals("fkq access denied to siteId (default)", e.getMessage());
-    }
+    ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+
+    // then
+    assertNull(api0.getSiteId());
+    assertEquals("", String.join(",", api0.getSiteIds()));
+    assertEquals("", api0.getAllPermissions().stream().map(Enum::name).sorted()
+        .collect(Collectors.joining(",")));
+    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("Admins", String.join(",", api0.getRoles()));
   }
 
   /**
