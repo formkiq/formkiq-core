@@ -55,7 +55,7 @@ public class ActivityRecordTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = ID.uuid();
-      ActivityRecord.Builder builder = ActivityRecord.builder("", "").resource("documents")
+      ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("documents")
           .documentId(documentId).userId(USER_ID);
 
       // when
@@ -85,7 +85,7 @@ public class ActivityRecordTest {
       String entityId = ID.uuid();
       String entityTypeId = ID.uuid();
 
-      ActivityRecord.Builder builder = ActivityRecord.builder("", "").resource("entities")
+      ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("entities")
           .entityId(entityId).entityTypeId(entityTypeId).userId(USER_ID);
 
       // when
@@ -115,7 +115,7 @@ public class ActivityRecordTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String entityTypeId = ID.uuid();
-      ActivityRecord.Builder builder = ActivityRecord.builder("", "").resource("entityTypes")
+      ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("entityTypes")
           .entityTypeId(entityTypeId).userId(USER_ID);
 
       // when

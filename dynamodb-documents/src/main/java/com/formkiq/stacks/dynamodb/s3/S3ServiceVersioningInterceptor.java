@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityRecordBuilder;
 import com.formkiq.aws.dynamodb.useractivities.DocumentActivityEventRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -84,8 +85,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
-    ActivityRecord ua = ActivityRecord.builder(null, null).resource("documents").source("S3Event")
-        .type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
+    ActivityRecord ua = new ActivityRecordBuilder(null, null).resource("documents")
+        .source("S3Event").type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
         .documentId(documentId).userId(username).insertedDate(new Date()).changes(changes)
         .build(siteId);
 

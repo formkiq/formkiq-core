@@ -78,9 +78,9 @@ public interface DynamoDbService {
    * Delete DynamoDb Record.
    *
    * @param key {@link DynamoDbKey}
-   * @return boolean
+   * @return {@link DeleteResult}
    */
-  boolean deleteItem(DynamoDbKey key);
+  DeleteResult deleteItem(DynamoDbKey key);
 
   /**
    * Delete DynamoDb Record.

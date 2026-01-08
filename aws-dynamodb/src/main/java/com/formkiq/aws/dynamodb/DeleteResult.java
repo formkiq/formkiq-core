@@ -21,24 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.useractivities;
+package com.formkiq.aws.dynamodb;
+
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Map;
 
 /**
- * Types of Activity Resources.
+ * Delete Dynamodb result.
+ * 
+ * @param attributes {@link Map}
  */
-public enum ActivityResourceType {
-  /** Document Resource Type. */
-  DOCUMENT,
-  /** Document Attribute Resource Type. */
-  DOCUMENT_ATTRIBUTE,
-  /** Entity Type Resource Type. */
-  ENTITY_TYPE,
-  /** Entity Resource Type. */
-  ENTITY,
-  /** Ruleset. */
-  RULESET,
-  /** Workflow. */
-  WORKFLOW,
-  /** Ruleset Rule. */
-  RULESET_RULE
+public record DeleteResult(Map<String, AttributeValue> attributes) {
+  public boolean isDelete() {
+    return !attributes.isEmpty();
+  }
 }
