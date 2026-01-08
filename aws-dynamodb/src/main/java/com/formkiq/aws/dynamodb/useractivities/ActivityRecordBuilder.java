@@ -123,8 +123,8 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     DynamoDbShardKey key = buildKey(siteId);
 
     return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
-        rulesetId, ruleId, entityTypeId, entityId, documentId, attributeKey, message, insertedDate,
-        versionPk, versionSk, changes);
+        rulesetId, ruleId, entityTypeId, entityId, documentId, workflowId, attributeKey, message,
+        insertedDate, versionPk, versionSk, changes);
   }
 
   private DynamoDbShardKey buildActivityKey(final String siteId, final String pk,
@@ -142,6 +142,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
 
     return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
         .build();
+  }
+
+  private DynamoDbShardKey buildAttributes(final String siteId) {
+
+    Objects.requireNonNull(attributeKey, "attributeKey must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "attributes#" + attributeKey, attributeKey);
   }
 
   private DynamoDbShardKey buildDocumentsKey(final String siteId) {
@@ -176,6 +184,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
       case "workflows" -> buildWorkflowsKey(siteId);
       case "entities" -> buildEntitiesKey(siteId);
       case "entityTypes" -> buildEntityTypesKey(siteId);
+      case "attributes" -> buildAttributes(siteId);
       default -> throw new IllegalArgumentException("Invalid resource " + resource);
     };
   }
@@ -186,7 +195,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     Objects.requireNonNull(ruleId, "ruleId must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
 
-    return buildActivityKey(siteId, "rulesetRule#" + rulesetId + "#" + ruleId, ruleId);
+    return buildActivityKey(siteId, "rulesetRules#" + rulesetId + "#" + ruleId, ruleId);
   }
 
   private DynamoDbShardKey buildRulesetsKey(final String siteId) {
@@ -194,17 +203,19 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     Objects.requireNonNull(rulesetId, "rulesetId must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
 
-    String pk = "rulesets#" + rulesetId;
-    String sk = "activity#" + getSkDate() + "#" + rulesetId + "#" + ID.ulid();
-    String gsi1Pk = "activity#user#" + userId;
-
-    String gsi2Pk = getGsi2Pk();
-
-    DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(sk)
-        .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
-
-    return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
-        .build();
+    return buildActivityKey(siteId, "rulesets#" + rulesetId, rulesetId);
+    // String pk = "rulesets#" + rulesetId;
+    // String sk = "activity#" + getSkDate() + "#" + rulesetId + "#" + ID.ulid();
+    // String gsi1Pk = "activity#user#" + userId;
+    //
+    // String gsi2Pk = getGsi2Pk();
+    //
+    // DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId,
+    // gsi1Pk).gsi1Sk(sk)
+    // .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
+    //
+    // return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
+    // .build();
   }
 
   private DynamoDbShardKey buildWorkflowsKey(final String siteId) {

@@ -66,9 +66,7 @@ public record UserActivity(
     /* Request Body. */
     String body,
     /* Change Set. */
-    Map<String, ChangeRecord> changes,
-    /* Properties. */
-    Map<String, Object> properties) {
+    Map<String, ChangeRecord> changes) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -105,8 +103,6 @@ public record UserActivity(
     private Map<String, ChangeRecord> changes;
     /** Resource Ids. */
     private Map<String, Object> resourceIds;
-    /** Properties. */
-    private Map<String, Object> properties;
 
     public Builder body(final String userActivityBody) {
       this.body = userActivityBody;
@@ -122,7 +118,7 @@ public record UserActivity(
      */
     public UserActivity build(final String siteId) {
       return new UserActivity(siteId, resource, type, userId, Date.from(insertedDate), message,
-          status, sourceIpAddress, source, resourceIds, body, changes, properties);
+          status, sourceIpAddress, source, resourceIds, body, changes);
     }
 
     public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
@@ -137,11 +133,6 @@ public record UserActivity(
 
     public Builder message(final String userActivityMessage) {
       this.message = userActivityMessage;
-      return this;
-    }
-
-    public Builder properties(final Map<String, Object> userActivityProperties) {
-      properties = userActivityProperties;
       return this;
     }
 

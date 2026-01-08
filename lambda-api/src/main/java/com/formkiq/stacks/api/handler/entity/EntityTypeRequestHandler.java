@@ -33,9 +33,6 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
-import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
-import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -48,7 +45,6 @@ import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
@@ -75,11 +71,7 @@ public class EntityTypeRequestHandler
     Map<String, AttributeValue> attributes =
         validateDelete(awsservice, siteId, entityTypeId, namespace);
 
-    Map<String, ChangeRecord> changes =
-        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityTypeId"))
-            .apply(attributes, null);
-    UserActivityContext.set(ActivityResourceType.ENTITY_TYPE, UserActivityType.DELETE, changes,
-        Collections.emptyMap());
+    UserActivityContext.setDelete(ActivityResourceType.ENTITY_TYPE, attributes);
 
     DynamoDbKey entityTypeKey = EntityTypeRecord.builder().documentId(entityTypeId)
         .namespace(namespace, EntityTypeNamespace.CUSTOM).name("").buildKey(siteId);

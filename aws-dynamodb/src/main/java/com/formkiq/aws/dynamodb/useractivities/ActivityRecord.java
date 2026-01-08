@@ -37,8 +37,8 @@ import java.util.Objects;
 public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivityType type,
     UserActivityStatus status, String sourceIpAddress, String source, String userId,
     String rulesetId, String ruleId, String entityTypeId, String entityId, String documentId,
-    String attributeKey, String message, Date insertedDate, String versionPk, String versionSk,
-    Map<String, Object> changes) {
+    String workflowId, String attributeKey, String message, Date insertedDate, String versionPk,
+    String versionSk, Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -66,7 +66,8 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
         .withString("userId", userId).withString("message", message)
         .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
         .withString("rulesetId", rulesetId).withString("ruleId", ruleId)
-        .withString("documentId", documentId).withString("attributeKey", attributeKey)
-        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
+        .withString("documentId", documentId).withString("workflowId", workflowId)
+        .withString("attributeKey", attributeKey).withDate("inserteddate", insertedDate)
+        .withMap("changes", changes).build();
   }
 }
