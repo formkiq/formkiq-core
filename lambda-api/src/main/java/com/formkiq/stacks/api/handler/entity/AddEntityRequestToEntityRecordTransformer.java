@@ -34,9 +34,6 @@ import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
-import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
-import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.JsonToObject;
@@ -103,19 +100,11 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
 
     if (!update) {
-      Map<String, ChangeRecord> changes =
-          new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId")).apply(null,
-              attributes);
-      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.CREATE, changes,
-          Collections.emptyMap());
+      UserActivityContext.setCreate(ActivityResourceType.ENTITY, attributes);
     } else {
 
       Map<String, AttributeValue> oldAttributes = db.get(entity.key());
-      Map<String, ChangeRecord> changes =
-          new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
-              .apply(oldAttributes, attributes);
-      UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.UPDATE, changes,
-          Collections.emptyMap());
+      UserActivityContext.setUpdate(ActivityResourceType.ENTITY, oldAttributes, attributes);
     }
 
     db.putItem(attributes);

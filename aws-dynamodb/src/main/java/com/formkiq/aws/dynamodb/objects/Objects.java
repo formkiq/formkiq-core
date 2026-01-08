@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.objects;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -151,6 +152,43 @@ public class Objects {
    */
   public static <T> T last(final String[] list) {
     return list == null || list.length == 0 ? null : (T) list[list.length - 1];
+  }
+
+  /**
+   * Merge two maps into a new {@link Map} where values from the {@code first} map take precedence
+   * when the same key exists in both maps.
+   * <p>
+   * Merge behavior:
+   * <ul>
+   * <li>If a key exists only in {@code second}, its value is included.</li>
+   * <li>If a key exists in both maps, the value from {@code first} is used.</li>
+   * <li>If either map is {@code null}, it is treated as empty.</li>
+   * </ul>
+   *
+   * <p>
+   * The returned map is a mutable {@link HashMap} and modifications to it will not affect the input
+   * maps.
+   *
+   * @param first the primary map whose values win on key collisions (may be {@code null})
+   * @param second the secondary map whose values are used only when a key is absent from
+   *        {@code first} (may be {@code null})
+   * @param <K> the key type
+   * @param <V> the value type
+   * @return a new {@link Map} containing the merged entries
+   */
+  public static <K, V> Map<K, V> merge(final Map<? extends K, ? extends V> first,
+      final Map<? extends K, ? extends V> second) {
+
+    Map<K, V> result = new HashMap<>();
+
+    if (second != null) {
+      result.putAll(second);
+    }
+    if (first != null) {
+      result.putAll(first);
+    }
+
+    return result;
   }
 
   /**
