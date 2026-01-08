@@ -4708,6 +4708,10 @@
               - $ref: '#/components/parameters/entityTypeIdQuery'
               - $ref: '#/components/parameters/namespaceParam'
               - $ref: '#/components/parameters/entityIdQuery'
+              - $ref: '#/components/parameters/rulesetIdQuery'
+              - $ref: '#/components/parameters/ruleIdQuery'
+              - $ref: '#/components/parameters/workflowIdQuery'
+              - $ref: '#/components/parameters/attributeKeyQuery'
               - $ref: '#/components/parameters/startParam'
               - $ref: '#/components/parameters/endParam'
               - $ref: '#/components/parameters/sortParam'
@@ -7426,6 +7430,34 @@
               required: false
               schema:
                 type: string
+            rulesetIdQuery:
+              name: rulesetId
+              in: query
+              description: RulesetId Identifier
+              required: false
+              schema:
+                type: string
+            ruleIdQuery:
+              name: ruleId
+              in: query
+              description: RuleId Identifier
+              required: false
+              schema:
+                type: string
+            workflowIdQuery:
+              name: workflowId
+              in: query
+              description: Workflow Identifier
+              required: false
+              schema:
+                type: string
+            attributeKeyQuery:
+              name: attributeKey
+              in: query
+              description: Attribute Key
+              required: false
+              schema:
+                type: string
             entityTypeIdParam:
               name: entityTypeId
               in: path
@@ -9647,6 +9679,15 @@
                 entityId:
                   type: string
                   description: Entity Identifier
+                rulesetId:
+                  type: string
+                  description: Ruleset Identifier
+                ruleId:
+                  type: string
+                  description: Ruleset Rule Identifier
+                workflowId:
+                  type: string
+                  description: Workflow Identifier
                 changes:
                   type: object
                   additionalProperties:

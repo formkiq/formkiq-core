@@ -23,7 +23,6 @@
  */
 package com.formkiq.aws.services.lambda;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import java.io.IOException;
@@ -32,6 +31,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,9 +49,7 @@ import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.plugins.useractivity.UserActivity;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.google.gson.Gson;
 import software.amazon.awssdk.utils.IoUtils;
 
@@ -463,10 +461,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
-    Collection<UserActivity.Builder> ua = null;
+    // Collection<UserActivity.Builder> ua = null;
     ApiAuthorization authorization = null;
     ApiRequestHandlerResponse response = null;
     Exception exception = null;
+    List<ApiRequestHandlerInterceptor> requestInterceptors = Collections.emptyList();
 
     try {
 
@@ -477,8 +476,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       authorization = buildApiAuthorization(event, interceptors);
 
-      List<ApiRequestHandlerInterceptor> requestInterceptors =
-          getApiRequestHandlerInterceptors(awsServices);
+      requestInterceptors = getApiRequestHandlerInterceptors(awsServices);
 
       executeRequestInterceptors(requestInterceptors, event, authorization);
 
@@ -486,25 +484,18 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       response = executeResponseInterceptors(requestInterceptors, event, authorization, response);
 
-      ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, response);
       writeJson(output, response.toMap());
-      writeUserActivity(awsServices, authorization, ua);
 
     } catch (Exception e) {
 
       exception = e;
       response = ApiRequestHandlerResponse.builder().exception(logger, e).build();
 
-      if (ua == null) {
-        ua = new ApiGatewayRequestToUserActivityFunction().apply(authorization, event, null);
-      }
-
-      for (var a : ua) {
-        a.status(response.statusCode()).message(e.getMessage());
+      for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
+        interceptor.onProcessRequestException(event, authorization, response, e);
       }
 
       writeJson(output, response.toMap());
-      writeUserActivity(awsServices, authorization, ua);
 
     } finally {
       log(authorization, event, response, exception);
@@ -571,16 +562,5 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     writer.write(json);
 
     writer.close();
-  }
-
-  private void writeUserActivity(final AwsServiceCache awsServices,
-      final ApiAuthorization authorization, final Collection<UserActivity.Builder> ua) {
-
-    if (awsServices.containsExtension(UserActivityPlugin.class)) {
-      String siteId = authorization != null ? authorization.getSiteId() : DEFAULT_SITE_ID;
-
-      UserActivityPlugin plugin = awsServices.getExtension(UserActivityPlugin.class);
-      plugin.addUserActivity(ua.stream().map(a -> a.build(siteId)).toList());
-    }
   }
 }

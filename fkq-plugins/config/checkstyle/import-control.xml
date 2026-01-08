@@ -12,6 +12,7 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.aws.dynamodb.objects" />
 		<allow pkg="com.formkiq.aws.dynamodb.useractivities" />
+        <allow pkg="software.amazon.awssdk.services.dynamodb.model" />
 	</subpackage>
 
 </import-control>

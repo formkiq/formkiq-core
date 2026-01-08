@@ -85,7 +85,7 @@ public class EntityTypeRequestHandler
         .namespace(namespace, EntityTypeNamespace.CUSTOM).name("").buildKey(siteId);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    if (!db.deleteItem(entityTypeKey)) {
+    if (!db.deleteItem(entityTypeKey).isDelete()) {
       throw new NotFoundException("entityType '" + entityTypeId + "' not found");
     }
 
