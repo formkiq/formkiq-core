@@ -58,11 +58,30 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private OffsetDateTime end;
   /** Sort. */
   private String sort;
+  /** Workflow Id. */
+  private String workflowId;
+  /** Ruleset Id. */
+  private String rulesetId;
+  /** Attribute Key. */
+  private String attributeKey;
+  /** {@link String}. */
+  private String ruleId;
 
   /**
    * constructor.
    */
   public GetActivitiesRequestBuilder() {}
+
+  /**
+   * Set Attribute Key.
+   *
+   * @param activitiesAttributeKey {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder attributeKey(final String activitiesAttributeKey) {
+    this.attributeKey = activitiesAttributeKey;
+    return this;
+  }
 
   /**
    * Set Document Id.
@@ -153,6 +172,28 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
+   * Set Rule Id.
+   *
+   * @param activitiesRuleId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder ruleId(final String activitiesRuleId) {
+    this.ruleId = activitiesRuleId;
+    return this;
+  }
+
+  /**
+   * Set Ruleset Id.
+   *
+   * @param activitiesRulesetId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder rulesetId(final String activitiesRulesetId) {
+    this.rulesetId = activitiesRulesetId;
+    return this;
+  }
+
+  /**
    * Set the Sort.
    *
    * @param sortOrder {@link String}
@@ -189,8 +230,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   public ApiHttpResponse<GetActivitesResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
-        this.documentId, this.entityTypeId, this.namespace, this.entityId, start, end, sort, next,
-        limit, this.userId));
+        this.documentId, this.entityTypeId, this.namespace, this.entityId, rulesetId, ruleId,
+        workflowId, attributeKey, start, end, sort, next, limit, this.userId));
   }
 
   /**
@@ -201,6 +242,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder userId(final String activitiesUserId) {
     this.userId = activitiesUserId;
+    return this;
+  }
+
+  /**
+   * Set Workflow Id.
+   *
+   * @param activitiesWorkflowId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder workflowId(final String activitiesWorkflowId) {
+    this.workflowId = activitiesWorkflowId;
     return this;
   }
 }

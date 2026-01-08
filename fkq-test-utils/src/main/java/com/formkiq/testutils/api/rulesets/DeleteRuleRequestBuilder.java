@@ -21,24 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.useractivities;
+package com.formkiq.testutils.api.rulesets;
+
+import com.formkiq.client.api.RulesetsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.DeleteRuleResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Types of Activity Resources.
+ * Builder for Delete Ruleset.
  */
-public enum ActivityResourceType {
-  /** Document Resource Type. */
-  DOCUMENT,
-  /** Document Attribute Resource Type. */
-  DOCUMENT_ATTRIBUTE,
-  /** Entity Type Resource Type. */
-  ENTITY_TYPE,
-  /** Entity Resource Type. */
-  ENTITY,
-  /** Ruleset. */
-  RULESET,
-  /** Workflow. */
-  WORKFLOW,
-  /** Ruleset Rule. */
-  RULESET_RULE
+public class DeleteRuleRequestBuilder implements HttpRequestBuilder<DeleteRuleResponse> {
+
+  /** {@link String}. */
+  private final String ruleset;
+  /** {@link String}. */
+  private final String rule;
+
+  /**
+   * constructor.
+   *
+   * @param rulesetId {@link String}
+   * @param ruleId {@link String}
+   */
+  public DeleteRuleRequestBuilder(final String rulesetId, final String ruleId) {
+    ruleset = rulesetId;
+    rule = ruleId;
+  }
+
+  @Override
+  public ApiHttpResponse<DeleteRuleResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(() -> new RulesetsApi(apiClient).deleteRule(ruleset, rule, siteId));
+  }
 }

@@ -32,19 +32,14 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * Represents an activity performed by a user on a document or entity. This includes metadata such
- * as who performed the action, when it occurred, where it is stored (S3), and the target entity
- * identifiers.
+ * Represents an activity performed by a user. This includes metadata such as who performed the
+ * action, when it occurred.
  */
 public record UserActivity(
     /* Site Identifier. */
     String siteId,
     /* Resource of User Activity. */
     String resource,
-    /* The unique identifier of the document. */
-    String documentId,
-    /* Document Attribute Key. */
-    String attributeKey,
     /* The type of activity performed (e.g., "UPLOAD", "DELETE"). */
     UserActivityType type,
 
@@ -66,17 +61,14 @@ public record UserActivity(
     /* The source system of the activity (e.g., HTTP, SQS). */
     String source,
 
-    /* The type identifier of the target entity. */
-    String entityTypeId,
-
-    /* The identifier of the target entity. */
-    String entityId,
-    /* Entity Namespace. */
-    String entityNamespace,
+    /* Resource Ids. */
+    Map<String, Object> resourceIds,
     /* Request Body. */
     String body,
     /* Change Set. */
-    Map<String, ChangeRecord> changes) {
+    Map<String, ChangeRecord> changes,
+    /* Properties. */
+    Map<String, Object> properties) {
 
   /**
    * Creates a new {@link UserActivity.Builder} for {@link UserActivity}.
@@ -91,10 +83,6 @@ public record UserActivity(
    * Builder class for creating instances of {@link UserActivity}.
    */
   public static class Builder {
-    /** Document Id. */
-    private String documentId;
-    /** Attribute Key. */
-    private String attributeKey;
     /** Activity Type. */
     private UserActivityType type;
     /** User Id. */
@@ -109,23 +97,16 @@ public record UserActivity(
     private String sourceIpAddress;
     /** Source. */
     private String source;
-    /** Entity Type Id. */
-    private String entityTypeId;
-    /** Entity Id. */
-    private String entityId;
-    /** Entity Namespace. */
-    private String entityNamespace;
     /** Activity Resource. */
     private String resource;
     /** Request Body. */
     private String body;
     /** Change Set. */
     private Map<String, ChangeRecord> changes;
-
-    public Builder attributeKey(final String userActivityAttributeKey) {
-      this.attributeKey = userActivityAttributeKey;
-      return this;
-    }
+    /** Resource Ids. */
+    private Map<String, Object> resourceIds;
+    /** Properties. */
+    private Map<String, Object> properties;
 
     public Builder body(final String userActivityBody) {
       this.body = userActivityBody;
@@ -140,72 +121,12 @@ public record UserActivity(
      * @return a new {@link UserActivity} object
      */
     public UserActivity build(final String siteId) {
-      return new UserActivity(siteId, resource, documentId, attributeKey, type, userId,
-          Date.from(insertedDate), message, status, sourceIpAddress, source, entityTypeId, entityId,
-          entityNamespace, body, changes);
+      return new UserActivity(siteId, resource, type, userId, Date.from(insertedDate), message,
+          status, sourceIpAddress, source, resourceIds, body, changes, properties);
     }
 
     public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
       this.changes = userActivityChanges;
-      return this;
-    }
-
-    public Builder documentId(final String userActivityDocumentId) {
-      this.documentId = userActivityDocumentId;
-      return this;
-    }
-
-    // public Builder s3Key(final String siteId, final String parentId, final String resourceId) {
-    //
-    // String timestamp = DateUtil.getNowInIso8601Format().replaceAll("[-:]", "");
-    //
-    // LocalDate date = LocalDate.now(ZoneOffset.UTC);
-    // int year = date.getYear();
-    // int month = date.getMonthValue();
-    // int day = date.getDayOfMonth();
-    //
-    // String uuid = UUID.randomUUID().toString();
-    // String resourceType = parentId != null ? resource + "/" + parentId : resource;
-    //
-    // if (!isEmpty(resource) && !isEmpty(resourceId)) {
-    // String key = String.format("activities/%s/%s/year=%d/month=%02d/day=%02d/%s/%s_%s.json",
-    // getSiteIdName(siteId), resourceType, year, month, day, resourceId, timestamp, uuid);
-    // s3Key(key);
-    // }
-    //
-    // return this;
-    // }
-
-    /**
-     * Sets the entity identifier.
-     *
-     * @param activityEntityId the entity identifier
-     * @return the builder instance
-     */
-    public Builder entityId(final String activityEntityId) {
-      this.entityId = activityEntityId;
-      return this;
-    }
-
-    /**
-     * Sets the entity namespace.
-     *
-     * @param activityEntityNamespace the entity namespace
-     * @return the builder instance
-     */
-    public Builder entityNamespace(final String activityEntityNamespace) {
-      this.entityNamespace = activityEntityNamespace;
-      return this;
-    }
-
-    /**
-     * Sets the entity type identifier.
-     *
-     * @param activityEntityTypeId the entity type identifier
-     * @return the builder instance
-     */
-    public Builder entityTypeId(final String activityEntityTypeId) {
-      this.entityTypeId = activityEntityTypeId;
       return this;
     }
 
@@ -219,6 +140,11 @@ public record UserActivity(
       return this;
     }
 
+    public Builder properties(final Map<String, Object> userActivityProperties) {
+      properties = userActivityProperties;
+      return this;
+    }
+
     /**
      * Sets the resourceof the activity.
      *
@@ -227,6 +153,11 @@ public record UserActivity(
      */
     public Builder resource(final String activityResource) {
       this.resource = activityResource;
+      return this;
+    }
+
+    public Builder resourceIds(final Map<String, Object> userActivityResourceIds) {
+      this.resourceIds = userActivityResourceIds;
       return this;
     }
 

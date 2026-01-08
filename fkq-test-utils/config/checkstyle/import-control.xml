@@ -57,6 +57,11 @@
             <allow pkg="java.time" />
 		</subpackage>
 
+		<subpackage name="rulesets">
+            <allow pkg="java.math" />
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
 		<subpackage name="opensearch">
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>

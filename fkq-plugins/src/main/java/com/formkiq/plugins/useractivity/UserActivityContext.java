@@ -24,8 +24,10 @@
 package com.formkiq.plugins.useractivity;
 
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
 import java.util.Map;
@@ -80,6 +82,56 @@ public class UserActivityContext {
         CONTEXT.get().add(new UserActivityContextData(resourceType, type, data, properties));
       }
     }
+  }
+
+  /**
+   * Set the create user activity context for the current thread.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param documentIdParam name for documentId attribute
+   * @param attributes the DynamoDB attribute map
+   */
+  public static void setCreate(final ActivityResourceType resourceType,
+      final String documentIdParam, final Map<String, AttributeValue> attributes) {
+
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", documentIdParam)).apply(null,
+            attributes);
+    set(resourceType, UserActivityType.CREATE, changes, Map.of());
+  }
+
+
+  /**
+   * Set the delete user activity context for the current thread.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param documentIdParam name for documentId attribute
+   * @param attributes the DynamoDB attribute map
+   */
+  public static void setDelete(final ActivityResourceType resourceType,
+      final String documentIdParam, final Map<String, AttributeValue> attributes) {
+
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", documentIdParam))
+            .apply(attributes, null);
+    set(resourceType, UserActivityType.DELETE, changes, Map.of());
+  }
+
+  /**
+   * Set the update user activity context for the current thread.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param documentIdParam name for documentId attribute
+   * @param oldAttributes the old DynamoDB attribute map
+   * @param newAttributes the new DynamoDB attribute map
+   */
+  public static void setUpdate(final ActivityResourceType resourceType,
+      final String documentIdParam, final Map<String, AttributeValue> oldAttributes,
+      final Map<String, AttributeValue> newAttributes) {
+    Map<String, ChangeRecord> changes =
+        new AttributeValuesToChangeRecordFunction(Map.of("documentId", documentIdParam))
+            .apply(oldAttributes, newAttributes);
+    set(resourceType, UserActivityType.UPDATE, changes, Map.of());
   }
 
   private UserActivityContext() {
