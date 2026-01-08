@@ -24,11 +24,14 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResult;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
@@ -36,6 +39,8 @@ import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributeKeyRecord;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
@@ -101,6 +106,9 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     Map<String, AttributeValue> attrs = a.getAttributes(siteId);
     this.db.putItem(attrs);
+
+    UserActivityContext.setCreate(ActivityResourceType.ATTRIBUTE_KEY, attrs,
+        Map.of("attributeKey", key));
   }
 
   @Override
@@ -112,24 +120,28 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
   @Override
   public Collection<ValidationError> deleteAttribute(
-      final AttributeValidationAccess validationAccess, final String siteId, final String key) {
+      final AttributeValidationAccess validationAccess, final String siteId,
+      final String attributeKey) {
 
-    boolean deleted = false;
+    DeleteResult deleted = new DeleteResult(Collections.emptyMap());
     ValidationBuilder vb = new ValidationBuilder();
-    validateDeleteAttribute(siteId, key, vb);
+    validateDeleteAttribute(siteId, attributeKey, vb);
 
     if (vb.isEmpty()) {
 
-      AttributeRecord r = new AttributeRecord().documentId(key);
+      AttributeRecord r = new AttributeRecord().documentId(attributeKey);
 
-      validateAttributeType(validationAccess, siteId, key, vb);
+      validateAttributeType(validationAccess, siteId, attributeKey, vb);
 
       if (vb.isEmpty()) {
-        deleted = this.db.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
+        DynamoDbKey key = new DynamoDbKey(r.pk(siteId), r.sk(), null, null, null, null);
+        deleted = this.db.deleteItem(key);
+        UserActivityContext.setDelete(ActivityResourceType.ATTRIBUTE_KEY, deleted.attributes(),
+            Map.of("attributeKey", attributeKey));
       }
     }
 
-    if (!deleted && vb.isEmpty()) {
+    if (!deleted.isDelete() && vb.isEmpty()) {
       vb.addError("key", "attribute 'key' not found");
     }
 
@@ -213,8 +225,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     ValidationBuilder vb = new ValidationBuilder();
 
     AttributeRecord r = new AttributeRecord().key(key).documentId(key);
-    Map<String, AttributeValue> attributes = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
-    vb.isRequired(null, !attributes.isEmpty(), "Attribute not found");
+    Map<String, AttributeValue> oldAttributes = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
+    vb.isRequired(null, !oldAttributes.isEmpty(), "Attribute not found");
     vb.check();
 
     vb.isRequired(null, !(type == null && watermark == null),
@@ -223,7 +235,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
         "Access denied to attribute");
     vb.check();
 
-    r = r.getFromAttributes(siteId, attributes);
+    r = r.getFromAttributes(siteId, oldAttributes);
     validateWatermark(siteId, r, vb);
     vb.check();
 
@@ -235,7 +247,11 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       updateWatermark(r, watermark);
     }
 
-    this.db.putItem(r.getAttributes(siteId));
+    Map<String, AttributeValue> attributes = r.getAttributes(siteId);
+    this.db.putItem(attributes);
+
+    UserActivityContext.setUpdate(ActivityResourceType.ATTRIBUTE_KEY, oldAttributes, attributes,
+        Map.of("attributeKey", key));
   }
 
   private void updateWatermark(final AttributeRecord record, final Watermark watermark) {

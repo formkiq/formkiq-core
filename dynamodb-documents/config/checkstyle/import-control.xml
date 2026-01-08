@@ -48,7 +48,11 @@
 			<allow pkg="java.io" />
 		</subpackage>
 
-		<subpackage name="schemas">
+        <subpackage name="attributes">
+            <allow pkg="com.formkiq.plugins.useractivity" />
+        </subpackage>
+
+        <subpackage name="schemas">
 			<allow pkg="com.google.gson" />
 		</subpackage>
 

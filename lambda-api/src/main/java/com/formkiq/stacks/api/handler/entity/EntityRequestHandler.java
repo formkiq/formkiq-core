@@ -26,13 +26,11 @@ package com.formkiq.stacks.api.handler.entity;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
+import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
-import com.formkiq.aws.dynamodb.useractivities.AttributeValuesToChangeRecordFunction;
-import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
-import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -67,18 +65,12 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         .name("").build(siteId).key();
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    Map<String, AttributeValue> attributes = db.get(key);
-    if (attributes.isEmpty()) {
+    DeleteResult deleteResult = db.deleteItem(key);
+
+    if (!deleteResult.isDelete()) {
       throw new NotFoundException("entity '" + entityTypeId + "' not found");
     }
-
-    db.deleteItem(key);
-
-    Map<String, ChangeRecord> changes =
-        new AttributeValuesToChangeRecordFunction(Map.of("documentId", "entityId"))
-            .apply(attributes, null);
-    UserActivityContext.set(ActivityResourceType.ENTITY, UserActivityType.DELETE, changes,
-        Map.of());
+    UserActivityContext.setDelete(ActivityResourceType.ENTITY, deleteResult.attributes());
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")
         .build();
