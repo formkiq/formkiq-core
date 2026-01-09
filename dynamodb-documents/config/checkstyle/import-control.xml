@@ -7,6 +7,7 @@
 
 	<subpackage name="dynamodb">
 
+        <allow pkg="com.formkiq.plugins.useractivity" />
         <allow pkg="com.formkiq.urls" />
 		<allow pkg="com.google.gson" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />
@@ -54,6 +55,7 @@
 
         <subpackage name="schemas">
 			<allow pkg="com.google.gson" />
+            <allow pkg="com.formkiq.plugins.useractivity" />
 		</subpackage>
 
 		<subpackage name="mappings">

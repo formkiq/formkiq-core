@@ -46,15 +46,17 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 class DynamoDbKeyTest {
 
   @Test
-  void constructorRejectsNullPk() {
-    assertThrows(NullPointerException.class,
-        () -> new DynamoDbKey(null, "sk", null, null, null, null));
+  void constructorNullSk() {
+    DynamoDbKey key = new DynamoDbKey("pk", null, null, null, null, null);
+    assertEquals(2, key.toMap().size(), "only PK and SK should be present");
+    assertEquals("pk", key.toMap().get(PK).s());
+    assertNull(key.toMap().get(SK).s());
   }
 
   @Test
-  void constructorRejectsNullSk() {
+  void constructorRejectsNullPk() {
     assertThrows(NullPointerException.class,
-        () -> new DynamoDbKey("pk", null, null, null, null, null));
+        () -> new DynamoDbKey(null, "sk", null, null, null, null));
   }
 
   @Test

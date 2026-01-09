@@ -55,7 +55,6 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
    */
   public DynamoDbKey {
     Objects.requireNonNull(pk, "pk must not be null");
-    Objects.requireNonNull(sk, "sk must not be null");
   }
 
   /**

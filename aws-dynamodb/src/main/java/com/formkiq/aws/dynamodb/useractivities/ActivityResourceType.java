@@ -45,8 +45,16 @@ public enum ActivityResourceType {
   RULESET_RULE("rulesetRules", "ruleId", true),
   /** Ruleset. */
   RULESET("rulesets", "rulesetId", true),
+  /** Schema. */
+  SCHEMA("schemas", "schema", true),
+  /** Classifications. */
+  CLASSIFICATION("classifications", "classificationId", true),
+  /** Classifications. */
+  MAPPING("mappings", "mappingId", true),
   /** Attribute Key. */
-  ATTRIBUTE_KEY("attributes", "attributeKey", true);
+  ATTRIBUTE_KEY("attributes", "attributeKey", true),
+  /** Api Key. */
+  API_KEY("apikeys", "apiKey", true);
 
   public static ActivityResourceType find(final Map<String, String> map) {
     Optional<ActivityResourceType> o = Arrays.stream(values()).filter(a -> a.queryable)

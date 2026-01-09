@@ -4712,6 +4712,10 @@
               - $ref: '#/components/parameters/ruleIdQuery'
               - $ref: '#/components/parameters/workflowIdQuery'
               - $ref: '#/components/parameters/attributeKeyQuery'
+              - $ref: '#/components/parameters/schemaQuery'
+              - $ref: '#/components/parameters/classificationIdQuery'
+              - $ref: '#/components/parameters/mappingIdQuery'
+              - $ref: '#/components/parameters/apiKeyQuery'
               - $ref: '#/components/parameters/startParam'
               - $ref: '#/components/parameters/endParam'
               - $ref: '#/components/parameters/sortParam'
@@ -7458,6 +7462,36 @@
               required: false
               schema:
                 type: string
+            schemaQuery:
+              name: schema
+              in: query
+              description: Schema Type
+              required: false
+              schema:
+                type: string
+                enum:
+                  - document
+            classificationIdQuery:
+              name: classificationId
+              in: query
+              description: Classification Id
+              required: false
+              schema:
+                type: string
+            mappingIdQuery:
+              name: mappingId
+              in: query
+              description: Mapping Id
+              required: false
+              schema:
+                type: string
+            apiKeyQuery:
+              name: apiKey
+              in: query
+              description: Api Key
+              required: false
+              schema:
+                type: string
             entityTypeIdParam:
               name: entityTypeId
               in: path
@@ -9679,9 +9713,21 @@
                 entityId:
                   type: string
                   description: Entity Identifier
+                apiKey:
+                  type: string
+                  description: API Key
                 rulesetId:
                   type: string
                   description: Ruleset Identifier
+                schema:
+                  type: string
+                  description: Schema Identifier
+                mappingId:
+                  type: string
+                  description: Mapping Identifier
+                classificationId:
+                  type: string
+                  description: Classification Identifier
                 ruleId:
                   type: string
                   description: Ruleset Rule Identifier
