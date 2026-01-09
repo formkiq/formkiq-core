@@ -35,10 +35,11 @@ import java.util.Objects;
  * Record representing a activity with its DynamoDB key structure and metadata.
  */
 public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivityType type,
-    UserActivityStatus status, String sourceIpAddress, String source, String userId,
-    String rulesetId, String ruleId, String entityTypeId, String entityId, String documentId,
-    String workflowId, String attributeKey, String message, Date insertedDate, String versionPk,
-    String versionSk, Map<String, Object> changes) {
+    UserActivityStatus status, String sourceIpAddress, String source, String userId, String schema,
+    String classificationId, String mappingId, String rulesetId, String ruleId, String entityTypeId,
+    String entityId, String documentId, String workflowId, String attributeKey, String apiKey,
+    String message, Date insertedDate, String versionPk, String versionSk,
+    Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -63,11 +64,12 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
     return key.getAttributesBuilder().withString("resource", resource)
         .withString("type", type.name()).withString("status", status.name())
         .withString("sourceIpAddress", sourceIpAddress).withString("source", source)
-        .withString("userId", userId).withString("message", message)
+        .withString("userId", userId).withString("message", message).withString("schema", schema)
+        .withString("mappingId", mappingId).withString("classificationId", classificationId)
         .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
         .withString("rulesetId", rulesetId).withString("ruleId", ruleId)
-        .withString("documentId", documentId).withString("workflowId", workflowId)
-        .withString("attributeKey", attributeKey).withDate("inserteddate", insertedDate)
-        .withMap("changes", changes).build();
+        .withString("apiKey", apiKey).withString("documentId", documentId)
+        .withString("workflowId", workflowId).withString("attributeKey", attributeKey)
+        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
   }
 }

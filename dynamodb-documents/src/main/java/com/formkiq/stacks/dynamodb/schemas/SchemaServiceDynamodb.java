@@ -25,13 +25,18 @@ package com.formkiq.stacks.dynamodb.schemas;
 
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResults;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbRecordToKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -54,6 +59,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -149,8 +155,14 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   @Override
   public boolean deleteClassification(final String siteId, final String classificationId) {
     ClassificationRecord r = new ClassificationRecord().setDocumentId(classificationId);
-    AttributeValue pk = r.fromS(r.pk(siteId));
-    return this.db.deleteItemsBeginsWith(pk, null);
+    DynamoDbKey key = new DynamoDbKey(r.pk(siteId), null, null, null, null, null);
+    DeleteResults deleteResults = this.db.deleteItemsBeginsWith(key, null);
+
+    Optional<Map<String, AttributeValue>> o = deleteResults.attributes().stream()
+        .filter(a -> "class#document".equals(DynamoDbTypes.toString(a.get(SK)))).findFirst();
+    o.ifPresent(map -> UserActivityContext.setDelete(ActivityResourceType.CLASSIFICATION, map));
+
+    return deleteResults.deleted();
   }
 
   private void deleteSchemaAttribute(final String siteId, final String documentId) {
@@ -487,7 +499,8 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     deleteSchemaAttribute(siteId, documentId);
 
     List<Map<String, AttributeValue>> list = new ArrayList<>();
-    list.add(r.getAttributes(siteId));
+    Map<String, AttributeValue> attributes = r.getAttributes(siteId);
+    list.add(attributes);
 
     List<SchemaCompositeKeyRecord> compositeKeys =
         createCompositeKeys(schema.getAttributes().getCompositeKeys());
@@ -503,6 +516,8 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     list.addAll(attributeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
 
     this.db.putItems(list);
+
+    UserActivityContext.setCreate(ActivityResourceType.CLASSIFICATION, attributes);
 
     return r;
   }
@@ -522,7 +537,8 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       deleteSchemaAttribute(siteId, null);
 
       List<Map<String, AttributeValue>> list = new ArrayList<>();
-      list.add(r.getAttributes(siteId));
+      Map<String, AttributeValue> schemaAttributes = r.getAttributes(siteId);
+      list.add(schemaAttributes);
 
       List<SchemaCompositeKeyRecord> compositeKeys =
           createCompositeKeys(schema.getAttributes().getCompositeKeys());
@@ -537,6 +553,9 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       list.addAll(attributeKeys.stream().map(a -> a.getAttributes(siteId)).toList());
 
       this.db.putItems(list);
+
+      UserActivityContext.setCreate(ActivityResourceType.SCHEMA, schemaAttributes,
+          Map.of("schema", "document"));
     }
 
     return errors;

@@ -27,6 +27,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -41,6 +43,8 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.base64.Pagination;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -80,7 +84,14 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     ApiKey key = ApiKey.builder().apiKey(apiKey).name(name).userId(userId).insertedDate(new Date())
         .permissions(permissions).groups(groups).build(siteId);
 
-    this.db.putItem(key.getAttributes());
+    Map<String, AttributeValue> attributes = key.getAttributes();
+    this.db.putItem(attributes);
+
+    HashMap<String, AttributeValue> newAttributes = new HashMap<>(attributes);
+    String mask = mask(apiKey);
+    newAttributes.put("apiKey", fromS(mask));
+    UserActivityContext.setCreate(ActivityResourceType.API_KEY, newAttributes,
+        Map.of("apiKey", mask));
     return apiKey;
   }
 
@@ -97,7 +108,16 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
     if (!response.items().isEmpty()) {
       Map<String, AttributeValue> map = response.items().get(0);
-      deleted = this.db.deleteItem(map.get(PK), map.get(SK));
+      DynamoDbKey dbKey = new DynamoDbKey(map.get(PK).s(), map.get(SK).s(), null, null, null, null);
+
+      DeleteResult deleteResult = this.db.deleteItem(dbKey);
+      Map<String, AttributeValue> attributes = new HashMap<>(deleteResult.attributes());
+      attributes.put("apiKey", fromS(apiKey));
+
+      UserActivityContext.setDelete(ActivityResourceType.API_KEY, attributes,
+          Map.of("apiKey", apiKey));
+
+      deleted = deleteResult.isDelete();
     }
 
     return deleted;

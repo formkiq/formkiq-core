@@ -30,6 +30,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="mappings">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 		<subpackage name="schemas">
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>

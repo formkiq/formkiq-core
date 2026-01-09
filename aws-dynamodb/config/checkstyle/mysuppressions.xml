@@ -7,4 +7,5 @@
     <suppress files=".*[\\/]src[\\/]test[\\/].*" checks="MagicNumber"/>
     <suppress files=".*[\\/]src[\\/]integration[\\/].*" checks="ImportControl"/>
     <suppress files=".*[\\/]src[\\/]integration[\\/].*" checks="MagicNumber"/>
+    <suppress files=".*ActivityRecordBuilder\.java" checks="CyclomaticComplexity" />
 </suppressions>
