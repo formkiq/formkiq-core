@@ -36,13 +36,18 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResult;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.PaginationToAttributeValue;
+import com.formkiq.aws.dynamodb.PutResult;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -55,6 +60,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 
 /**
  * {@link MappingService} implementation for Dynamodb.
@@ -85,7 +91,10 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   public boolean deleteMapping(final String siteId, final String mappingId) {
 
     MappingRecord r = new MappingRecord().setDocumentId(mappingId);
-    return this.db.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
+    DynamoDbKey key = new DynamoDbKey(r.pk(siteId), r.sk(), null, null, null, null);
+    DeleteResult deleteResult = this.db.deleteItem(key);
+    UserActivityContext.setDelete(ActivityResourceType.MAPPING, deleteResult.attributes());
+    return deleteResult.isDelete();
   }
 
   @Override
@@ -146,6 +155,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   public MappingRecord saveMapping(final String siteId, final String mappingId,
       final Mapping mapping) throws ValidationException {
 
+    boolean isNew = mappingId == null;
     Collection<ValidationError> errors = validate(siteId, mapping);
 
     if (!errors.isEmpty()) {
@@ -158,7 +168,16 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       record.setDocumentId(mappingId);
     }
 
-    this.db.putItem(record.getAttributes(siteId));
+    ReturnValue rv = isNew ? null : ReturnValue.ALL_OLD;
+    Map<String, AttributeValue> attributes = record.getAttributes(siteId);
+    PutResult putResult = this.db.putItem(attributes, rv);
+
+    if (isNew) {
+      UserActivityContext.setCreate(ActivityResourceType.MAPPING, attributes);
+    } else {
+      UserActivityContext.setUpdate(ActivityResourceType.MAPPING, putResult.attributes(),
+          attributes);
+    }
 
     return record;
   }

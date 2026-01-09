@@ -56,6 +56,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private String source;
   /** Activity Record UserId. */
   private String userId;
+  /** Activity Record Schema. */
+  private String schema;
+  /** Activity Record ClassificationId. */
+  private String classificationId;
+  /** Activity Record MappingId. */
+  private String mappingId;
+  /** Activity Record ApiKey. */
+  private String apiKey;
   /** Activity Record Entity Type Id. */
   private String entityTypeId;
   /** Activity Record Entity Id. */
@@ -122,9 +130,9 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
 
     DynamoDbShardKey key = buildKey(siteId);
 
-    return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId,
-        rulesetId, ruleId, entityTypeId, entityId, documentId, workflowId, attributeKey, message,
-        insertedDate, versionPk, versionSk, changes);
+    return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId, schema,
+        classificationId, mappingId, rulesetId, ruleId, entityTypeId, entityId, documentId,
+        workflowId, attributeKey, apiKey, message, insertedDate, versionPk, versionSk, changes);
   }
 
   private DynamoDbShardKey buildActivityKey(final String siteId, final String pk,
@@ -144,12 +152,28 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
         .build();
   }
 
+  private DynamoDbShardKey buildApiKeys(final String siteId) {
+
+    Objects.requireNonNull(apiKey, "apikeys must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "apikeys#" + apiKey, apiKey);
+  }
+
   private DynamoDbShardKey buildAttributes(final String siteId) {
 
     Objects.requireNonNull(attributeKey, "attributeKey must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
 
     return buildActivityKey(siteId, "attributes#" + attributeKey, attributeKey);
+  }
+
+  private DynamoDbShardKey buildClassifications(final String siteId) {
+
+    Objects.requireNonNull(classificationId, "classificationId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "classifications#" + classificationId, classificationId);
   }
 
   private DynamoDbShardKey buildDocumentsKey(final String siteId) {
@@ -176,6 +200,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   }
 
   @Override
+  @SuppressWarnings("CyclomaticComplexity")
   public DynamoDbShardKey buildKey(final String siteId) {
     return switch (resource) {
       case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
@@ -185,8 +210,20 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
       case "entities" -> buildEntitiesKey(siteId);
       case "entityTypes" -> buildEntityTypesKey(siteId);
       case "attributes" -> buildAttributes(siteId);
+      case "schemas" -> buildSchemas(siteId);
+      case "classifications" -> buildClassifications(siteId);
+      case "mappings" -> buildMappings(siteId);
+      case "apikeys" -> buildApiKeys(siteId);
       default -> throw new IllegalArgumentException("Invalid resource " + resource);
     };
+  }
+
+  private DynamoDbShardKey buildMappings(final String siteId) {
+
+    Objects.requireNonNull(mappingId, "mappingId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "mappings#" + mappingId, mappingId);
   }
 
   private DynamoDbShardKey buildRulesKey(final String siteId) {
@@ -204,18 +241,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     Objects.requireNonNull(userId, "userId must not be null");
 
     return buildActivityKey(siteId, "rulesets#" + rulesetId, rulesetId);
-    // String pk = "rulesets#" + rulesetId;
-    // String sk = "activity#" + getSkDate() + "#" + rulesetId + "#" + ID.ulid();
-    // String gsi1Pk = "activity#user#" + userId;
-    //
-    // String gsi2Pk = getGsi2Pk();
-    //
-    // DynamoDbKey key = DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId,
-    // gsi1Pk).gsi1Sk(sk)
-    // .gsi2Pk(siteId, gsi2Pk).gsi2Sk(sk).build();
-    //
-    // return DynamoDbShardKey.builder().key(key).pkGsi1Shard(pkGsi1Shard).pkGsi2Shard(pkGsi2Shard)
-    // .build();
+  }
+
+  private DynamoDbShardKey buildSchemas(final String siteId) {
+
+    Objects.requireNonNull(schema, "schema must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "schemas#" + schema, schema);
   }
 
   private DynamoDbShardKey buildWorkflowsKey(final String siteId) {
@@ -233,39 +266,6 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
    */
   public ActivityRecordBuilder changes(final Map<String, Object> activityChanges) {
     this.changes = activityChanges;
-    return this;
-  }
-
-  /**
-   * Sets the document ID.
-   *
-   * @param activityDocumentId the document identifier
-   * @return this Builder
-   */
-  public ActivityRecordBuilder documentId(final String activityDocumentId) {
-    this.documentId = activityDocumentId;
-    return this;
-  }
-
-  /**
-   * Sets the entity ID.
-   *
-   * @param activityEntityId the unique identifier of the entity
-   * @return this Builder
-   */
-  public ActivityRecordBuilder entityId(final String activityEntityId) {
-    this.entityId = activityEntityId;
-    return this;
-  }
-
-  /**
-   * Sets the entity type ID.
-   *
-   * @param activityEntityTypeId the entity type identifier
-   * @return this Builder
-   */
-  public ActivityRecordBuilder entityTypeId(final String activityEntityTypeId) {
-    this.entityTypeId = activityEntityTypeId;
     return this;
   }
 
@@ -323,24 +323,25 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   }
 
   /**
-   * Sets the rule ID.
-   *
-   * @param activityRuleId the rule identifier
+   * Set Resource Ids.
+   * 
+   * @param resourceIds {@link Map}
    * @return this Builder
    */
-  public ActivityRecordBuilder ruleId(final String activityRuleId) {
-    this.ruleId = activityRuleId;
-    return this;
-  }
+  public ActivityRecordBuilder resourceIds(final Map<String, Object> resourceIds) {
 
-  /**
-   * Sets the ruleset ID.
-   *
-   * @param activityRulesetId the ruleset identifier
-   * @return this Builder
-   */
-  public ActivityRecordBuilder rulesetId(final String activityRulesetId) {
-    this.rulesetId = activityRulesetId;
+    workflowId = (String) resourceIds.get("workflowId");
+    documentId = (String) resourceIds.get("documentId");
+    entityId = (String) resourceIds.get("entityId");
+    mappingId = (String) resourceIds.get("mappingId");
+    schema = (String) resourceIds.get("schema");
+    classificationId = (String) resourceIds.get("classificationId");
+    rulesetId = (String) resourceIds.get("rulesetId");
+    ruleId = (String) resourceIds.get("ruleId");
+    entityTypeId = (String) resourceIds.get("entityTypeId");
+    attributeKey = (String) resourceIds.get("attributeKey");
+    apiKey = (String) resourceIds.get("apiKey");
+
     return this;
   }
 
@@ -418,17 +419,6 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
    */
   public ActivityRecordBuilder versionSk(final String activityVersionSk) {
     this.versionSk = activityVersionSk;
-    return this;
-  }
-
-  /**
-   * Sets the worklfow ID.
-   *
-   * @param activityWorkflowId the workflow identifier
-   * @return this Builder
-   */
-  public ActivityRecordBuilder workflowId(final String activityWorkflowId) {
-    this.workflowId = activityWorkflowId;
     return this;
   }
 }

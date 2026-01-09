@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PK;
 import static com.formkiq.aws.dynamodb.DbKeys.SK;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import java.time.Instant;
@@ -38,7 +39,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -51,6 +52,7 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -172,7 +174,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       final AttributeValue skStart, final AttributeValue skEnd,
       final Map<String, AttributeValue> startkey, final int limit) {
 
-    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String gsi = isEmpty(config.indexName()) ? "" : config.indexName();
 
     String expression = gsi + PK + " = :pk and " + gsi + SK + " between :start and :end";
     Map<String, AttributeValue> values = new HashMap<>();
@@ -248,14 +250,22 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
   @Override
   public boolean deleteItemsBeginsWith(final AttributeValue pk, final AttributeValue sk) {
+    return deleteItemsBeginsWith(new DynamoDbKey(DynamoDbTypes.toString(pk),
+        DynamoDbTypes.toString(sk), null, null, null, null), "PK,SK").deleted();
+  }
+
+  @Override
+  public DeleteResults deleteItemsBeginsWith(final DynamoDbKey key, final String projection) {
 
     final int limit = 100;
     Map<String, AttributeValue> startkey = null;
     List<Map<String, AttributeValue>> list = new ArrayList<>();
-    QueryConfig config = new QueryConfig().projectionExpression("PK,SK");
+    QueryConfig config = new QueryConfig().projectionExpression(projection);
 
     do {
 
+      AttributeValue pk = !isEmpty(key.pk()) ? fromS(key.pk()) : null;
+      AttributeValue sk = !isEmpty(key.sk()) ? fromS(key.sk()) : null;
       QueryResponse response = queryBeginsWith(config, pk, sk, startkey, limit);
 
       List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
@@ -265,7 +275,11 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
 
     } while (startkey != null && !startkey.isEmpty());
 
-    return deleteItems(list);
+    Collection<Map<String, AttributeValue>> attrs =
+        list.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
+    boolean deleted = deleteItems(attrs);
+
+    return new DeleteResults(deleted, list);
   }
 
   @Override
@@ -498,9 +512,21 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public PutResult putItem(final Map<String, AttributeValue> attributes,
+      final ReturnValue returnValue) {
+    return putItem(this.tableName, attributes, returnValue);
+  }
+
+  @Override
   public void putItem(final String dynamoDbTable, final Map<String, AttributeValue> attributes) {
-    this.dbClient
-        .putItem(PutItemRequest.builder().tableName(dynamoDbTable).item(attributes).build());
+    putItem(dynamoDbTable, attributes, null);
+  }
+
+  private PutResult putItem(final String dynamoDbTable,
+      final Map<String, AttributeValue> attributes, final ReturnValue returnValue) {
+    PutItemResponse putItemResponse = this.dbClient.putItem(PutItemRequest.builder()
+        .tableName(dynamoDbTable).item(attributes).returnValues(returnValue).build());
+    return new PutResult(putItemResponse.attributes());
   }
 
   @Override
@@ -533,7 +559,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       final AttributeValue sk, final Map<String, AttributeValue> exclusiveStartKey,
       final int limit) {
 
-    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String gsi = isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk and " + gsi + SK + " = :sk";
     Map<String, AttributeValue> values = Map.of(":pk", pk, ":sk", sk);
 
@@ -550,7 +576,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   public QueryResponse query(final QueryConfig config, final AttributeValue pk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
-    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String gsi = isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk";
     Map<String, AttributeValue> values = Map.of(":pk", pk);
 
@@ -602,7 +628,7 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       final AttributeValue pk, final AttributeValue sk,
       final Map<String, AttributeValue> exclusiveStartKey, final int limit) {
 
-    String gsi = Strings.isEmpty(config.indexName()) ? "" : config.indexName();
+    String gsi = isEmpty(config.indexName()) ? "" : config.indexName();
     String expression = gsi + PK + " = :pk and begins_with(" + gsi + SK + ",:sk)";
 
     if (sk == null) {

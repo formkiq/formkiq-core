@@ -87,8 +87,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
 
     ActivityRecord ua = new ActivityRecordBuilder(null, null).resource("documents")
         .source("S3Event").type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
-        .documentId(documentId).userId(username).insertedDate(new Date()).changes(changes)
-        .build(siteId);
+        .resourceIds(Map.of("documentId", documentId)).userId(username).insertedDate(new Date())
+        .changes(changes).build(siteId);
 
     DocumentActivityEventRecord event = DocumentActivityEventRecord.builder().documentId(documentId)
         .activityKeys(List.of(ua.key())).build(siteId);

@@ -66,11 +66,30 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private String attributeKey;
   /** {@link String}. */
   private String ruleId;
+  /** {@link String}. */
+  private String schema;
+  /** {@link String}. */
+  private String classificationId;
+  /** {@link String}. */
+  private String mappingId;
+  /** {@link String}. */
+  private String apiKey;
 
   /**
    * constructor.
    */
   public GetActivitiesRequestBuilder() {}
+
+  /**
+   * Set Api Key.
+   *
+   * @param activitiesApiKey {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder apiKey(final String activitiesApiKey) {
+    this.apiKey = activitiesApiKey;
+    return this;
+  }
 
   /**
    * Set Attribute Key.
@@ -80,6 +99,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder attributeKey(final String activitiesAttributeKey) {
     this.attributeKey = activitiesAttributeKey;
+    return this;
+  }
+
+  /**
+   * Set ClassificationId.
+   *
+   * @param activitiesClassificationId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder classificationId(final String activitiesClassificationId) {
+    this.classificationId = activitiesClassificationId;
     return this;
   }
 
@@ -150,6 +180,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
+   * Set MappingId.
+   *
+   * @param activitiesMappingId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder mappingId(final String activitiesMappingId) {
+    this.mappingId = activitiesMappingId;
+    return this;
+  }
+
+  /**
    * Set Entity Type Namespace.
    *
    * @param activitiesNamespace {@link String}
@@ -194,6 +235,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
+   * Set Schema.
+   *
+   * @param activitiesSchema {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder schema(final String activitiesSchema) {
+    this.schema = activitiesSchema;
+    return this;
+  }
+
+  /**
    * Set the Sort.
    *
    * @param sortOrder {@link String}
@@ -231,7 +283,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
         this.documentId, this.entityTypeId, this.namespace, this.entityId, rulesetId, ruleId,
-        workflowId, attributeKey, start, end, sort, next, limit, this.userId));
+        workflowId, attributeKey, schema, classificationId, mappingId, apiKey, start, end, sort,
+        next, limit, this.userId));
   }
 
   /**
