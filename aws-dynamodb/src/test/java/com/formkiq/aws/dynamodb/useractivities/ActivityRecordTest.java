@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,7 +57,7 @@ public class ActivityRecordTest {
 
       String documentId = ID.uuid();
       ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("documents")
-          .documentId(documentId).userId(USER_ID);
+          .resourceIds(Map.of("documentId", documentId)).userId(USER_ID);
 
       // when
       DynamoDbShardKey shardKey = builder.buildKey(siteId);
@@ -86,7 +87,7 @@ public class ActivityRecordTest {
       String entityTypeId = ID.uuid();
 
       ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("entities")
-          .entityId(entityId).entityTypeId(entityTypeId).userId(USER_ID);
+          .resourceIds(Map.of("entityId", entityId, "entityTypeId", entityTypeId)).userId(USER_ID);
 
       // when
       DynamoDbShardKey shardKey = builder.buildKey(siteId);
@@ -116,7 +117,7 @@ public class ActivityRecordTest {
 
       String entityTypeId = ID.uuid();
       ActivityRecordBuilder builder = new ActivityRecordBuilder("", "").resource("entityTypes")
-          .entityTypeId(entityTypeId).userId(USER_ID);
+          .resourceIds(Map.of("entityTypeId", entityTypeId)).userId(USER_ID);
 
       // when
       DynamoDbShardKey shardKey = builder.buildKey(siteId);

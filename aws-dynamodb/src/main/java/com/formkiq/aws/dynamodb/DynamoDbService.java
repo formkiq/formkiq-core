@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
@@ -115,6 +116,15 @@ public interface DynamoDbService {
    * @return boolean
    */
   boolean deleteItemsBeginsWith(AttributeValue pk, AttributeValue sk);
+
+  /**
+   * Delete all records that beginsWith SK.
+   *
+   * @param key {@link DynamoDbKey}
+   * @param projection {@link String}
+   * @return {@link DeleteResults}
+   */
+  DeleteResults deleteItemsBeginsWith(DynamoDbKey key, String projection);
 
   /**
    * Delete all records that beginsWith PK.
@@ -275,6 +285,15 @@ public interface DynamoDbService {
    * @param attr {@link Map} {@link AttributeValue}
    */
   void putItem(Map<String, AttributeValue> attr);
+
+  /**
+   * Put DynamoDb Record.
+   *
+   * @param attr {@link Map} {@link AttributeValue}
+   * @param returnValue {@link ReturnValue}
+   * @return {@link PutResult}
+   */
+  PutResult putItem(Map<String, AttributeValue> attr, ReturnValue returnValue);
 
   /**
    * Put DynamoDb Record.
