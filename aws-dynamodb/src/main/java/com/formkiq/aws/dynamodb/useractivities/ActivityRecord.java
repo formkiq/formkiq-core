@@ -38,7 +38,7 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
     UserActivityStatus status, String sourceIpAddress, String source, String userId, String schema,
     String classificationId, String mappingId, String rulesetId, String ruleId, String entityTypeId,
     String entityId, String documentId, String workflowId, String attributeKey, String apiKey,
-    String message, Date insertedDate, String versionPk, String versionSk,
+    String controlPolicy, String message, Date insertedDate, String versionPk, String versionSk,
     Map<String, Object> changes) {
 
   /**
@@ -69,7 +69,8 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
         .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
         .withString("rulesetId", rulesetId).withString("ruleId", ruleId)
         .withString("apiKey", apiKey).withString("documentId", documentId)
-        .withString("workflowId", workflowId).withString("attributeKey", attributeKey)
-        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
+        .withString("controlPolicy", controlPolicy).withString("workflowId", workflowId)
+        .withString("attributeKey", attributeKey).withDate("inserteddate", insertedDate)
+        .withMap("changes", changes).build();
   }
 }

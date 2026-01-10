@@ -53,6 +53,8 @@ public enum ActivityResourceType {
   MAPPING("mappings", "mappingId", true),
   /** Attribute Key. */
   ATTRIBUTE_KEY("attributes", "attributeKey", true),
+  /** Control Policy Opa. */
+  CONTROL_POLICY_OPA("controlpolicy#opa", "controlPolicy", true),
   /** Api Key. */
   API_KEY("apikeys", "apiKey", true);
 

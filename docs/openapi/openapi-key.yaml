@@ -4716,6 +4716,7 @@
               - $ref: '#/components/parameters/classificationIdQuery'
               - $ref: '#/components/parameters/mappingIdQuery'
               - $ref: '#/components/parameters/apiKeyQuery'
+              - $ref: '#/components/parameters/controlPolicyQuery'
               - $ref: '#/components/parameters/startParam'
               - $ref: '#/components/parameters/endParam'
               - $ref: '#/components/parameters/sortParam'
@@ -7471,6 +7472,15 @@
                 type: string
                 enum:
                   - document
+            controlPolicyQuery:
+              name: controlPolicy
+              in: query
+              description: Control Policy
+              required: false
+              schema:
+                type: string
+                enum:
+                  - opa
             classificationIdQuery:
               name: classificationId
               in: query
@@ -9734,6 +9744,9 @@
                 workflowId:
                   type: string
                   description: Workflow Identifier
+                controlPolicy:
+                  type: string
+                  description: Control Policy Type
                 changes:
                   type: object
                   additionalProperties:
