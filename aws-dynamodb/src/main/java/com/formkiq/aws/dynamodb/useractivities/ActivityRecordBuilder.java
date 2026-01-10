@@ -92,10 +92,12 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private final String pkGsi2Shard;
   /** Rule Id. */
   private String ruleId;
+  /** Control Policy. */
+  private String controlPolicy;
 
   /**
    * constructor.
-   * 
+   *
    * @param gsi1Shard {@link String}
    * @param gsi2Shard {@link String}
    */
@@ -132,7 +134,8 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
 
     return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId, schema,
         classificationId, mappingId, rulesetId, ruleId, entityTypeId, entityId, documentId,
-        workflowId, attributeKey, apiKey, message, insertedDate, versionPk, versionSk, changes);
+        workflowId, attributeKey, apiKey, controlPolicy, message, insertedDate, versionPk,
+        versionSk, changes);
   }
 
   private DynamoDbShardKey buildActivityKey(final String siteId, final String pk,
@@ -176,6 +179,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     return buildActivityKey(siteId, "classifications#" + classificationId, classificationId);
   }
 
+  private DynamoDbShardKey buildControlPolicyOpa(final String siteId) {
+
+    Objects.requireNonNull(controlPolicy, "controlPolicy must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "controlpolicy#" + controlPolicy, controlPolicy);
+  }
+
   private DynamoDbShardKey buildDocumentsKey(final String siteId) {
 
     Objects.requireNonNull(documentId, "documentId must not be null");
@@ -214,6 +225,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
       case "classifications" -> buildClassifications(siteId);
       case "mappings" -> buildMappings(siteId);
       case "apikeys" -> buildApiKeys(siteId);
+      case "controlpolicy#opa" -> buildControlPolicyOpa(siteId);
       default -> throw new IllegalArgumentException("Invalid resource " + resource);
     };
   }
@@ -324,7 +336,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
 
   /**
    * Set Resource Ids.
-   * 
+   *
    * @param resourceIds {@link Map}
    * @return this Builder
    */
@@ -341,6 +353,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     entityTypeId = (String) resourceIds.get("entityTypeId");
     attributeKey = (String) resourceIds.get("attributeKey");
     apiKey = (String) resourceIds.get("apiKey");
+    controlPolicy = (String) resourceIds.get("controlPolicy");
 
     return this;
   }

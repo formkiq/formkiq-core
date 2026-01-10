@@ -74,6 +74,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private String mappingId;
   /** {@link String}. */
   private String apiKey;
+  /** {@link String}. */
+  private String controlPolicy;
 
   /**
    * constructor.
@@ -110,6 +112,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder classificationId(final String activitiesClassificationId) {
     this.classificationId = activitiesClassificationId;
+    return this;
+  }
+
+  /**
+   * Set Control Policy.
+   *
+   * @param activitiesControlPolicy {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder controlPolicy(final String activitiesControlPolicy) {
+    this.controlPolicy = activitiesControlPolicy;
     return this;
   }
 
@@ -283,8 +296,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
         this.documentId, this.entityTypeId, this.namespace, this.entityId, rulesetId, ruleId,
-        workflowId, attributeKey, schema, classificationId, mappingId, apiKey, start, end, sort,
-        next, limit, this.userId));
+        workflowId, attributeKey, schema, classificationId, mappingId, apiKey, controlPolicy, start,
+        end, sort, next, limit, this.userId));
   }
 
   /**
