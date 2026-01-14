@@ -42,6 +42,7 @@ import java.util.Random;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
 
 /**
@@ -54,6 +55,10 @@ public class FormKiqApiExtension
 
   /** {@link Random}. */
   private static final Random NUM_RAND = new Random();
+  /** NIO Thread Count. */
+  private static final int NIO_THREAD_COUNT = 16;
+  /** Action Thread Count. */
+  private static final int ACTION_THREAD_COUNT = 32;
 
   /**
    * Generate Random Port.
@@ -118,6 +123,9 @@ public class FormKiqApiExtension
       this.environmentMap = generateMap();
 
       this.callback.setEnvironmentMap(this.environmentMap);
+
+      ConfigurationProperties.nioEventLoopThreadCount(NIO_THREAD_COUNT);
+      ConfigurationProperties.actionHandlerThreadCount(ACTION_THREAD_COUNT);
 
       this.formkiqServer = startClientAndServer(this.port);
 

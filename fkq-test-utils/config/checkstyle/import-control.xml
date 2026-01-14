@@ -110,6 +110,7 @@
 		<allow pkg="com.formkiq.client.model" />
 
 		<allow pkg="com.formkiq.module.lambdaservices" />
+        <allow pkg="org.mockserver.configuration" />
 		<allow pkg="org.mockserver.mock.action" />
 		<allow pkg="org.mockserver.model" />
 		<allow pkg="org.mockserver.integration" />

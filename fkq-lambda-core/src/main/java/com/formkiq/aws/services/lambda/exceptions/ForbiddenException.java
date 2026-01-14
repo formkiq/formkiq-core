@@ -23,8 +23,10 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
+
 /** {@link Exception} that will return a 401 error. */
-public class ForbiddenException extends Exception {
+public class ForbiddenException extends Exception implements HasHttpStatusCode {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;
@@ -59,5 +61,10 @@ public class ForbiddenException extends Exception {
    */
   public String getDebug() {
     return this.debug;
+  }
+
+  @Override
+  public int getStatusCode() {
+    return SC_UNAUTHORIZED.getStatusCode();
   }
 }

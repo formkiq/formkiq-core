@@ -23,25 +23,47 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
+/** {@link Exception} that will return a custom status code error. */
+public class HttpStatusException extends RuntimeException implements HasHttpStatusCode {
 
-/** {@link Exception} that will return a 501 error. */
-public class NotImplementedException extends Exception implements HasHttpStatusCode {
+  /** Http Status Code. */
+  private final int status;
 
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307625320614270509L;
+  /** Response Body. */
+  private final String responseBody;
 
   /**
    * constructor.
    *
-   * @param msg {@link String}
+   * @param statusCode int
+   * @param body {@link String}
    */
-  public NotImplementedException(final String msg) {
-    super(msg);
+  public HttpStatusException(final int statusCode, final String body) {
+    super(statusCode + ": " + body);
+    this.status = statusCode;
+    this.responseBody = body;
+  }
+
+  /**
+   * Get Response Body.
+   * 
+   * @return {@link String}
+   */
+  public String getResponseBody() {
+    return responseBody;
+  }
+
+  /**
+   * Get Http Status Code.
+   * 
+   * @return int
+   */
+  public int getStatus() {
+    return status;
   }
 
   @Override
   public int getStatusCode() {
-    return SC_NOT_IMPLEMENTED.getStatusCode();
+    return status;
   }
 }
