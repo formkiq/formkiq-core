@@ -23,8 +23,11 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
+
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
+
 /** {@link Exception} that will return a 429 Too Many Requests. */
-public class TooManyRequestsException extends Exception {
+public class TooManyRequestsException extends Exception implements HasHttpStatusCode {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625320614270509L;
@@ -36,5 +39,10 @@ public class TooManyRequestsException extends Exception {
    */
   public TooManyRequestsException(final String msg) {
     super(msg);
+  }
+
+  @Override
+  public int getStatusCode() {
+    return SC_TOO_MANY_REQUESTS.getStatusCode();
   }
 }

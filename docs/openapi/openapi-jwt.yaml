@@ -4573,7 +4573,7 @@
               summary: Get document's data classification
               description: Retrieve an document's data classification; available as an Add-On Module
               tags:
-              - Document Data Classification
+              - Intelligent Document Processing
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -4602,7 +4602,7 @@
               summary: Set document's data classification
               description: Generate Data Classfication attributes within a document; available as an Add-On Module
               tags:
-              - Document Data Classification
+              - Intelligent Document Processing
               parameters:
               - $ref: '#/components/parameters/siteIdParam'
               - $ref: '#/components/parameters/documentIdParam'
@@ -4626,6 +4626,95 @@
                     application/json:
                       schema:
                         $ref: '#/components/schemas/SetDocumentDataClassificationResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+          /documents/{documentId}/metadataExtractionResults:
+            get:
+              operationId: GetAllDocumentMetadataExtractionResults
+              summary: Get all document's metadata extraction results
+              description: Retrieve all document's metadata extraction; available as an Add-On Module
+              tags:
+              - Intelligent Document Processing
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentMetadataExtractionResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+          /documents/{documentId}/metadataExtractionResults/{llmPromptEntityName}:
+            get:
+              operationId: GetDocumentMetadataExtractionResults
+              summary: Get document's metadata extraction results
+              description: Retrieve an document's metadata extraction; available as an Add-On Module
+              tags:
+              - Intelligent Document Processing
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/llmPromptEntityNameParam'
+              - $ref: '#/components/parameters/limitParam'
+              - $ref: '#/components/parameters/nextParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/GetDocumentMetadataExtractionResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+            post:
+              operationId: AddDocumentMetadataExtractionResult
+              summary: Add document's metadata extraction result
+              description: Create a document Metadatq Extraction Result attributes within a document; available as an Add-On Module
+              tags:
+              - Intelligent Document Processing
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              - $ref: '#/components/parameters/llmPromptEntityNameParam'
+              responses:
+                "200":
+                  description: 200 OK
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentMetadataExtractionResponse'
               security:
               - ApiAuthorization: []
               x-amazon-apigateway-integration:
@@ -7764,6 +7853,13 @@
               required: true
               schema:
                 type: string
+            llmPromptEntityNameParam:
+              name: llmPromptEntityName
+              in: path
+              description: LlmPrompt Entity Name
+              required: true
+              schema:
+                type: string
             documentIdQuery:
               name: documentId
               in: query
@@ -9570,6 +9666,17 @@
                 llmPromptEntityName:
                   type: string
                   description: Name of the LLM Prompt Entity
+            AddDocumentMetadataExtractionResponse:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Result content
+                attributes:
+                  description: Attributes extracted from result content
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DataClassificationAttribute'
             SetDocumentDataClassificationResponse:
               type: object
               properties:
@@ -9621,6 +9728,46 @@
                   description: List of Data Classifications
                   items:
                     $ref: '#/components/schemas/DataClassification'
+            MetadataExtractionAttribute:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: Data Classification Attribute Key
+                value:
+                  type: string
+                  description: Data Classification Attribute Value
+            MetadataExtraction:
+              type: object
+              properties:
+                llmPromptEntityName:
+                  type: string
+                  description: Name of the LLM Prompt Entity
+                insertedDate:
+                  type: string
+                  description: Inserted Timestamp
+                content:
+                  type: string
+                  description: Result content
+                userId:
+                  type: string
+                  description: UserId that created Result
+                attributes:
+                  description: Attributes extracted from result content
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MetadataExtractionAttribute'
+            GetDocumentMetadataExtractionResponse:
+              type: object
+              properties:
+                next:
+                  type: string
+                  description: Next page of results token
+                metdataExtractions:
+                  type: array
+                  description: List of Metadata Extractions
+                  items:
+                    $ref: '#/components/schemas/MetadataExtraction'
             GetActivitesResponse:
               type: object
               properties:
