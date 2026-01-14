@@ -23,8 +23,10 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
+
 /** {@link Exception} that will return a 409 error. */
-public class ConflictException extends Exception {
+public class ConflictException extends Exception implements HasHttpStatusCode {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;
@@ -36,5 +38,10 @@ public class ConflictException extends Exception {
    */
   public ConflictException(final String msg) {
     super(msg);
+  }
+
+  @Override
+  public int getStatusCode() {
+    return SC_METHOD_CONFLICT.getStatusCode();
   }
 }

@@ -23,25 +23,25 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
-
-/** {@link Exception} that will return a 501 error. */
-public class NotImplementedException extends Exception implements HasHttpStatusCode {
-
-  /** serialVersionUID. */
-  private static final long serialVersionUID = -3307625320614270509L;
-
+/**
+ * Marker interface for objects that expose an HTTP status code.
+ *
+ * <p>
+ * Implementations should return a valid HTTP status code as defined by
+ * <a href="https://www.rfc-editor.org/rfc/rfc9110">RFC 9110</a>.
+ *
+ * <p>
+ * This interface represents a capability rather than a type hierarchy and is intentionally designed
+ * to avoid forcing inheritance from a common base class.
+ */
+public interface HasHttpStatusCode {
   /**
-   * constructor.
+   * Returns the HTTP status code associated with this object.
    *
-   * @param msg {@link String}
+   * <p>
+   * The returned value should be a valid three-digit HTTP status code.
+   *
+   * @return the HTTP status code
    */
-  public NotImplementedException(final String msg) {
-    super(msg);
-  }
-
-  @Override
-  public int getStatusCode() {
-    return SC_NOT_IMPLEMENTED.getStatusCode();
-  }
+  int getStatusCode();
 }
