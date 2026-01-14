@@ -23,8 +23,10 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+
 /** {@link Exception} that will return a 400 error. */
-public class BadException extends RuntimeException {
+public class BadException extends RuntimeException implements HasHttpStatusCode {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625320614270509L;
@@ -36,5 +38,10 @@ public class BadException extends RuntimeException {
    */
   public BadException(final String msg) {
     super(msg);
+  }
+
+  @Override
+  public int getStatusCode() {
+    return SC_BAD_REQUEST.getStatusCode();
   }
 }

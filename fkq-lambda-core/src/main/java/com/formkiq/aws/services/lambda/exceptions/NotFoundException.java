@@ -23,8 +23,10 @@
  */
 package com.formkiq.aws.services.lambda.exceptions;
 
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
+
 /** {@link Exception} that will return a 404 error. */
-public class NotFoundException extends RuntimeException {
+public class NotFoundException extends RuntimeException implements HasHttpStatusCode {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307625920614270509L;
@@ -36,5 +38,10 @@ public class NotFoundException extends RuntimeException {
    */
   public NotFoundException(final String msg) {
     super(msg);
+  }
+
+  @Override
+  public int getStatusCode() {
+    return SC_NOT_FOUND.getStatusCode();
   }
 }

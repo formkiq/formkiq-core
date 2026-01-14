@@ -25,11 +25,8 @@ package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.DynamoDbQueryException;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.ConflictException;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
-import com.formkiq.aws.services.lambda.exceptions.NotImplementedException;
-import com.formkiq.aws.services.lambda.exceptions.TooManyRequestsException;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.aws.services.lambda.exceptions.HasHttpStatusCode;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ResponseStatusValidationError;
 import com.formkiq.validation.UnAuthorizedValidationError;
@@ -47,12 +44,9 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTL
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_METHOD_CONFLICT;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_IMPLEMENTED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
-import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.urls.HttpStatus.BAD_GATEWAY;
@@ -241,25 +235,21 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
       this.body.put("message", exception.getMessage());
 
-      if (exception instanceof ConflictException) {
-        this.statusCode = SC_METHOD_CONFLICT.getStatusCode();
+      if (exception instanceof HasHttpStatusCode e) {
+        this.statusCode = e.getStatusCode();
+
+        if (exception instanceof ForbiddenException ex) {
+          debug(logger, ex);
+        }
+
       } else if (exception instanceof SocketTimeoutException) {
         this.statusCode = GATEWAY_TIMEOUT;
       } else if (exception instanceof SdkException) {
         this.statusCode = BAD_GATEWAY;
-      } else if (exception instanceof TooManyRequestsException) {
-        this.statusCode = SC_TOO_MANY_REQUESTS.getStatusCode();
       } else if (exception instanceof ValidationException e) {
         handleValidationException(e);
       } else if (isBadRequestException(exception)) {
         this.statusCode = SC_BAD_REQUEST.getStatusCode();
-      } else if (exception instanceof ForbiddenException e) {
-        this.statusCode = SC_UNAUTHORIZED.getStatusCode();
-        debug(logger, e);
-      } else if (exception instanceof UnauthorizedException) {
-        this.statusCode = SC_UNAUTHORIZED.getStatusCode();
-      } else if (exception instanceof NotImplementedException) {
-        this.statusCode = SC_NOT_IMPLEMENTED.getStatusCode();
       } else {
         this.statusCode = buildStatus(exception).getStatusCode();
         this.body.put("message", buildErrorMessage(exception));
