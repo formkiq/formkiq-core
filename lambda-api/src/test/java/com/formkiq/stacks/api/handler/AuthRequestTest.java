@@ -41,6 +41,7 @@ import com.formkiq.testutils.api.users.GetGroupsRequestBuilder;
 import com.formkiq.testutils.api.users.GetUserGroupsRequestBuilder;
 import com.formkiq.testutils.api.users.GetUserRequestBuilder;
 import com.formkiq.testutils.api.users.GetUsersRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -70,7 +71,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
 
   private static void assertValidCognitoRequest(final ApiHttpResponse<?> resp) {
     assertNotEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
-    assertTrue(resp.is5XX()); // fails to access cognito, ok
+    assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode()); // fails to access cognito, ok
   }
 
   private void assertDocumentAddFail(final String siteId) {
