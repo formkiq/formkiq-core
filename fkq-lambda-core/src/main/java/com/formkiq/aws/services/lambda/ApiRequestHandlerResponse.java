@@ -32,6 +32,7 @@ import com.formkiq.validation.ResponseStatusValidationError;
 import com.formkiq.validation.UnAuthorizedValidationError;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkException;
 
 import java.net.SocketTimeoutException;
@@ -244,6 +245,8 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
       } else if (exception instanceof SocketTimeoutException) {
         this.statusCode = GATEWAY_TIMEOUT;
+      } else if (exception instanceof AwsServiceException e) {
+        this.statusCode = e.statusCode();
       } else if (exception instanceof SdkException) {
         this.statusCode = BAD_GATEWAY;
       } else if (exception instanceof ValidationException e) {
