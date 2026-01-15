@@ -461,7 +461,6 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private void processApiGatewayRequest(final Logger logger, final ApiGatewayRequestEvent event,
       final AwsServiceCache awsServices, final OutputStream output) throws IOException {
 
-    // Collection<UserActivity.Builder> ua = null;
     ApiAuthorization authorization = null;
     ApiRequestHandlerResponse response = null;
     Exception exception = null;
