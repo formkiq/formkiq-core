@@ -40,6 +40,8 @@ public enum MappingAttributeSourceType {
   MANUAL,
   /** Data Classification. */
   DATA_CLASSIFICATION,
+  /** Metadata Extraction Result. */
+  METADATA_EXTRACTION_RESULT,
   /** Malware Scan. */
   MALWARE_SCAN
 }

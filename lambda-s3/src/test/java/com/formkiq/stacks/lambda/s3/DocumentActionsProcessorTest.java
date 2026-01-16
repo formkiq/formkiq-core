@@ -144,6 +144,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.module.actions.ActionType.DATA_CLASSIFICATION;
+import static com.formkiq.module.actions.ActionType.METADATA_EXTRACTION;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -379,6 +381,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer
         .when(request().withMethod("GET")
             .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/dataClassification*"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
+
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION
+                + "/metadataExtractionResults/AnotherPrompt"))
         .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
 
     MalwareScanResponse malwareScanResponse =
@@ -1573,7 +1581,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Data Classification Action.
+   * Handle Data_Classification / METADATA_EXTRACTION Action.
    *
    */
   @Test
@@ -1582,32 +1590,48 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions = List.of(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-          .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        List<Action> actions = List.of(new Action().type(type).userId("joe")
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
-      // when
-      processor.handleRequest(map, null);
+        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
-      // then
-      HttpRequest lastRequest = CALLBACK.getLastRequest();
-      assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
-      assertEquals("PUT", lastRequest.getMethod().getValue());
-      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
+        // when
+        processor.handleRequest(map, null);
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals(ActionStatus.COMPLETE, action.status());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        // then
+        HttpRequest lastRequest = CALLBACK.getLastRequest();
+
+        if (DATA_CLASSIFICATION.equals(type)) {
+          assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
+          assertEquals("PUT", lastRequest.getMethod().getValue());
+
+          Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+          assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
+
+        } else {
+          assertEquals("POST", lastRequest.getMethod().getValue());
+          assertTrue(lastRequest.getPath().toString()
+              .endsWith("/documents/" + documentId + "/metadataExtractionResults/Myprompt"));
+          Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+          assertTrue(resultmap.isEmpty());
+        }
+
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+        assertEquals(ActionStatus.COMPLETE, action.status());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
+
+        CALLBACK.reset();
+      }
     }
   }
 
   /**
-   * Handle Data_classification that needs OCR Action.
+   * Handle Data_classification / meta data extraction that needs OCR Action.
    *
    * @throws ValidationException ValidationException
    */
@@ -1615,25 +1639,28 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleDataClassification02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
-      List<Action> actions = List.of(new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-          .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+        String documentId = createDocument2(siteId, "application/pdf");
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        List<Action> actions = List.of(new Action().type(type).userId("joe")
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")));
+        actionsService.saveNewActions(siteId, documentId, actions);
 
-      // when
-      processor.handleRequest(map, null);
+        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
-      // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
-      assertEquals(2, list.size());
-      assertEquals(ActionType.OCR, list.get(0).type());
-      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
-      assertEquals(ActionStatus.PENDING, list.get(0).status());
-      assertEquals(ActionType.DATA_CLASSIFICATION, list.get(1).type());
-      assertEquals(ActionStatus.PENDING, list.get(1).status());
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        List<Action> list = actionsService.getActions(siteId, documentId);
+        assertEquals(2, list.size());
+        assertEquals(ActionType.OCR, list.get(0).type());
+        assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
+        assertEquals(ActionStatus.PENDING, list.get(0).status());
+        assertEquals(type, list.get(1).type());
+        assertEquals(ActionStatus.PENDING, list.get(1).status());
+      }
     }
   }
 
@@ -2491,7 +2518,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
-   * Handle Idp with Mapping Action DATA_CLASSIFICATION, missing.
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION / METADATA_EXTRACTION_RESULT, missing.
    *
    * @throws ValidationException ValidationException
    */
@@ -2499,29 +2526,44 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testIdpSourceDataClassificationMissing() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = ID.uuid();
-
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("certificate_number", null, null,
-          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+      for (MappingAttributeSourceType sourceType : List.of(
+          MappingAttributeSourceType.DATA_CLASSIFICATION,
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)) {
 
-      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+        String documentId = ID.uuid();
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+        Mapping mapping =
+            createMapping("certificate_number", null, null, sourceType, null, null, null);
 
-      // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
-      assertEquals("No Data Classifications found", action.message());
-      assertEquals(ActionStatus.FAILED, action.status());
-      assertEquals(ActionType.IDP, action.type());
-      assertNotNull(action.startDate());
-      assertNotNull(action.insertedDate());
-      assertNotNull(action.completedDate());
+        boolean metadata = MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType);
+        if (metadata) {
+          mapping.getAttributes().forEach(a -> a.setLlmPromptEntityName("MyPrompt"));
+        }
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
-      assertEquals(0, results.size());
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+        processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+        // then
+        Action action = actionsService.getActions(siteId, documentId).get(0);
+
+        if (metadata) {
+          assertEquals("No Metadata Extraction Result found", action.message());
+        } else {
+          assertEquals("No Data Classifications found", action.message());
+        }
+        assertEquals(ActionStatus.FAILED, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
+
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        assertEquals(0, results.size());
+      }
     }
   }
 
@@ -2557,6 +2599,43 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
       assertEquals(0, results.size());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action META_DATA Extraction.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceMetaDataExtraction() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("certificate_number", null, null,
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT, null, null, null);
+      mapping.getAttributes().forEach(a -> a.setLlmPromptEntityName("AnotherPrompt"));
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
     }
   }
 

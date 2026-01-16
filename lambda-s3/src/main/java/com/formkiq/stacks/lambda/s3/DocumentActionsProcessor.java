@@ -82,6 +82,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
+import com.formkiq.stacks.lambda.s3.actions.AddMetadataExtractionAction;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
 import com.formkiq.stacks.lambda.s3.actions.DocumentExternalSystemExport;
 import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
@@ -355,6 +356,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
           new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
       case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
+          .run(logger, siteId, documentId, actions, action);
+
+      case METADATA_EXTRACTION -> actionStatus = new AddMetadataExtractionAction(serviceCache)
           .run(logger, siteId, documentId, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());

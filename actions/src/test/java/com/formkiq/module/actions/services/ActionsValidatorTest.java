@@ -197,6 +197,26 @@ class ActionsValidatorTest {
     testTemplate(action, "parameters.eventBusName", "'eventBusName' parameter is required");
   }
 
+  /**
+   * DATA_CLASSIFICATION Missing llmPromptEntityName.
+   */
+  @Test
+  void testValidation09() {
+    Action action = new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe");
+    testTemplate(action, "parameters.llmPromptEntityName",
+        "'llmPromptEntityName' parameter is required");
+  }
+
+  /**
+   * METADATA_EXTRACTION Missing llmPromptEntityName.
+   */
+  @Test
+  void testValidation10() {
+    Action action = new Action().type(ActionType.METADATA_EXTRACTION).userId("joe");
+    testTemplate(action, "parameters.llmPromptEntityName",
+        "'llmPromptEntityName' parameter is required");
+  }
+
   @Test
   void testZeroHeight() {
     testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
