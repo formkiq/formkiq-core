@@ -3031,6 +3031,7 @@ Resources:
                 | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
                 | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
+                | METADATA_EXTRACTION | llmPromptEntityName | LLM Prompt Entity Name |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
                 | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
@@ -11357,6 +11358,9 @@ Resources:
                   description: "Attribute Key"
                 sourceType:
                   $ref: "#/components/schemas/MappingAttributeSourceType"
+                llmPromptEntityName:
+                  type: string
+                  description: LLM Prompt Entity Name (used for METADATA_EXTRACTION)
                 defaultValue:
                   type: "string"
                   description: "Default value"
@@ -11403,6 +11407,7 @@ Resources:
                 - METADATA
                 - MANUAL
                 - DATA_CLASSIFICATION
+                - METADATA_EXTRACTION
                 - MALWARE_SCAN
 
             GetAttributeAllowedValuesResponse:
@@ -11697,6 +11702,7 @@ Resources:
                 - EVENTBRIDGE
                 - RESIZE
                 - DATA_CLASSIFICATION
+                - METADATA_EXTRACTION
                 - MALWARE_SCAN
             DocumentAction:
               type: object
@@ -12098,7 +12104,7 @@ Resources:
                   description: "OCR: For the rewriting of the PDF document, converting any image text to searchable text"
                 llmPromptEntityName:
                   type: "string"
-                  description: "DATA_CLASSIFICATION: Set the LLM Prompt Entity Name"
+                  description: "DATA_CLASSIFICATION / METADATA_EXTRACTION: Set the LLM Prompt Entity Name"
                 url:
                   type: "string"
                   description: "Webhook: Callback URL"

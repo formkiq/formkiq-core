@@ -148,6 +148,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
 
   private boolean isLabelRequired(final MappingAttributeSourceType type) {
     return !MappingAttributeSourceType.DATA_CLASSIFICATION.equals(type)
+        && !MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(type)
         && !MappingAttributeSourceType.MALWARE_SCAN.equals(type);
   }
 
@@ -198,6 +199,14 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
 
       validateManual(attributes, attribute, index, errors);
+
+    } else if (MappingAttributeSourceType.METADATA_EXTRACTION_RESULT
+        .equals(attribute.getSourceType())) {
+
+      if (isEmpty(attribute.getLlmPromptEntityName())) {
+        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].llmPromptEntityName")
+            .error("'llmPromptEntityName' is required"));
+      }
 
     } else if (isLabelRequired(attribute.getSourceType())) {
 

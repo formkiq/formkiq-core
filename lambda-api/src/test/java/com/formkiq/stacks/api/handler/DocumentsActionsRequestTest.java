@@ -254,7 +254,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"parameters.llmPromptEntityName\","
-                + "\"error\":\"action 'llmPromptEntityName' parameter is required\"}]}",
+                + "\"error\":\"'llmPromptEntityName' parameter is required\"}]}",
             e.getResponseBody());
       }
     }

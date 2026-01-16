@@ -21,44 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.documentattributes;
+package com.formkiq.stacks.lambda.s3.actions;
 
-import java.util.Objects;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import java.util.Map;
 
 /**
- * Document Attribute Entity Key Value.
- * 
- * @param entityTypeId {@link String}
- * @param entityId {@link String}
+ * DocumentAction for DataClassification {@link Action}.
  */
-public record DocumentAttributeEntityKeyValue(String entityTypeId, String entityId) {
-
-  /** Delimiter. */
-  private static final String DELIMITER = "#";
-
-  public DocumentAttributeEntityKeyValue {
-    Objects.requireNonNull(entityTypeId, "entityTypeId must not be null");
-    Objects.requireNonNull(entityId, "entityId must not be null");
-  }
+public class AddMetadataExtractionAction extends AbstractIntelligentDocumentProcessingAction {
 
   /**
-   * Compact representation: "type#id".
-   * 
-   * @return {@link String}
+   * constructor.
+   *
+   * @param serviceCache {@link AwsServiceCache}
    */
-  public String getStringValue() {
-    return entityTypeId + DELIMITER + entityId;
+  public AddMetadataExtractionAction(final AwsServiceCache serviceCache) {
+    super(serviceCache);
   }
 
-  /**
-   * Parse back from stringValue into DocumentAttributeEntityKeyValue.
-   * 
-   * @param stringValue {@link String}
-   * @return {@link DocumentAttributeEntityKeyValue}
-   */
-  public static DocumentAttributeEntityKeyValue fromString(final String stringValue) {
-    String[] parts = stringValue.split(DELIMITER, 2);
-    // TODO throw exception if parts != 2. Invalid EntityKeyValue
-    return new DocumentAttributeEntityKeyValue(parts[0], parts[1]);
+  @Override
+  protected Map<String, Object> buildPayload(final Action action) {
+    return Map.of();
+  }
+
+  @Override
+  protected String getMethod() {
+    return "POST";
+  }
+
+  @Override
+  protected String getUrl(final String documentId, final Action action) {
+    String llmPromptEntityName = (String) action.parameters().get("llmPromptEntityName");
+    return String.format("/documents/%s/metadataExtractionResults/%s", documentId,
+        llmPromptEntityName);
   }
 }

@@ -248,6 +248,18 @@ public enum ActionType {
       }
     }
   },
+  /** Metadata Extraction. */
+  METADATA_EXTRACTION {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+      if (!hasValue(parameters, "llmPromptEntityName")) {
+        errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
+            .error("'llmPromptEntityName' parameter is required"));
+      }
+    }
+  },
   /** Resize. */
   RESIZE {
     private boolean isGreaterThanZeroInteger(final String value) {
@@ -310,7 +322,7 @@ public enum ActionType {
         final String notificationsEmail, final Collection<ValidationError> errors) {
       if (!hasValue(parameters, "llmPromptEntityName")) {
         errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
-            .error("action 'llmPromptEntityName' parameter is required"));
+            .error("'llmPromptEntityName' parameter is required"));
       } else {
 
         String tableName = db.getTableName();

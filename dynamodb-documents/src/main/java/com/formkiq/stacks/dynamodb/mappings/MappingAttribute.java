@@ -42,8 +42,11 @@ public class MappingAttribute {
   private String validationRegex;
   /** Label Texts. */
   private List<String> labelTexts;
+  /** llmPromptEntityName. */
+  private String llmPromptEntityName;
   /** {@link MappingAttributeLabelMatchingType}. */
   private MappingAttributeLabelMatchingType labelMatchingType;
+
   /** Default Value. */
   private String defaultValue;
   /** Default Values. */
@@ -97,6 +100,15 @@ public class MappingAttribute {
    */
   public List<String> getLabelTexts() {
     return this.labelTexts;
+  }
+
+  /**
+   * Get llmPromptEntityName.
+   * 
+   * @return {@link String}
+   */
+  public String getLlmPromptEntityName() {
+    return llmPromptEntityName;
   }
 
   /**
@@ -179,6 +191,17 @@ public class MappingAttribute {
    */
   public MappingAttribute setLabelTexts(final List<String> attributeLabelTexts) {
     this.labelTexts = attributeLabelTexts;
+    return this;
+  }
+
+  /**
+   * Set LLM Prompt Entity Name.
+   *
+   * @param promptEntityName {@link String}
+   * @return {@link MappingAttribute}
+   */
+  public MappingAttribute setLlmPromptEntityName(final String promptEntityName) {
+    this.llmPromptEntityName = promptEntityName;
     return this;
   }
 
