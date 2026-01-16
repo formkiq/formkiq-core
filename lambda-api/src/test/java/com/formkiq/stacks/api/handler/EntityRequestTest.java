@@ -53,6 +53,9 @@ import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.GetEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.UpdateEntityRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -847,6 +850,45 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
       assertEquals("{\"message\":\"Entity '" + entityId + "' not found\"}", e.getResponseBody());
     }
+  }
+
+  /**
+   * PATCH /entities/{entityTypeId}/{entityId} name with attributes.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testUpdateEntity03() throws Exception {
+    // given
+    String siteId = ID.uuid();
+
+    setBearerToken(new String[] {siteId});
+    addAttribute(siteId, "s", AttributeDataType.STRING);
+
+    String entityTypeId = addEntityType(siteId);
+
+    // when
+    var addEntity = new AddEntityRequestBuilder(entityTypeId).name("mine").addAttribute("s", "555").submit(client, siteId).throwIfError();
+
+    // then
+    String entityId = addEntity.response().getEntityId();
+    assertNotNull(entityId);
+
+    // when
+    var resp = new UpdateEntityRequestBuilder(entityTypeId, entityId).name("newname").submit(client, siteId).throwIfError();
+
+    // then
+    assertEquals("Entity updated", resp.response().getMessage());
+
+    var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId).throwIfError().response();
+    var entity = get.getEntity();
+    assertNotNull(entity);
+
+    assertEquals("newname", entity.getName());
+    var attributes = notNull(entity.getAttributes());
+    assertEquals(1, attributes.size());
+    assertEquals("", attributes.get(0).getKey());
+    assertEquals("", attributes.get(0).getStringValue());
   }
 
   private void validateCheckoutAttributes(final String siteId) {

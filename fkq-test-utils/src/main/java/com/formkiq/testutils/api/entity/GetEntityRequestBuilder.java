@@ -38,8 +38,8 @@ public class GetEntityRequestBuilder implements HttpRequestBuilder<GetEntityResp
 
   /** Entity Type Id. */
   private final String entityType;
-  /** {@link EntityTypeNamespace}. */
-  private final EntityTypeNamespace namespace;
+  /** {@link String}. */
+  private final String namespace;
   /** Entity. */
   private final String entity;
 
@@ -51,28 +51,25 @@ public class GetEntityRequestBuilder implements HttpRequestBuilder<GetEntityResp
    */
   public GetEntityRequestBuilder(final DocumentAttributeEntityKeyValue entityKey,
       final EntityTypeNamespace entityTypeNamespace) {
-    this.entityType = entityKey.entityTypeId();
-    this.entity = entityKey.entityId();
-    this.namespace = entityTypeNamespace;
+    this(entityKey.entityTypeId(), entityTypeNamespace.name(), entityKey.entityId());
   }
 
   /**
    * constructor.
-   * 
+   *
    * @param entityTypeId {@link String}
+   * @param entityNamespace {@link String}
    * @param entityId {@link String}
-   * @param entityTypeNamespace {@link EntityTypeNamespace}
    */
-  public GetEntityRequestBuilder(final String entityTypeId, final String entityId,
-      final EntityTypeNamespace entityTypeNamespace) {
+  public GetEntityRequestBuilder(final String entityTypeId, final String entityNamespace, final String entityId) {
     this.entityType = entityTypeId;
     this.entity = entityId;
-    this.namespace = entityTypeNamespace;
+    this.namespace = entityNamespace;
   }
 
   @Override
   public ApiHttpResponse<GetEntityResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new EntityApi(apiClient).getEntity(this.entityType, this.entity,
-        siteId, namespace.name()));
+        siteId, namespace));
   }
 }
