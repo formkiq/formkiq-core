@@ -69,6 +69,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -111,18 +112,34 @@ public class IdpAction implements DocumentAction {
     this.http = new SendHttpRequest(serviceCache);
   }
 
-
   @Override
   public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
       final List<Action> actions, final Action action) throws IOException, ValidationException {
 
     String mappingId = (String) action.parameters().get("mappingId");
 
-    MappingRecord mapping = getMapping(siteId, mappingId);
+    var mapping = getMapping(siteId, mappingId);
 
-    List<MappingAttribute> mappingAttributes = this.mappingService.getAttributes(mapping);
-    Map<String, String> dataClassificationMap =
-        createDataClassificationMap(siteId, documentId, mappingAttributes);
+    var mappingAttributes = this.mappingService.getAttributes(mapping);
+    var dataClassificationMap = createDataClassificationMap(siteId, documentId, mappingAttributes);
+    var docMetadataExtractionMap =
+        createMetadataExtractionResultMap(siteId, documentId, mappingAttributes);
+
+    var records = createDocumentAttributeRecords(logger, siteId, documentId, mappingAttributes,
+        dataClassificationMap, docMetadataExtractionMap);
+
+    if (!records.isEmpty()) {
+      this.documentService.saveDocumentAttributes(siteId, documentId, records,
+          AttributeValidationType.FULL, AttributeValidationAccess.ADMIN_UPDATE);
+    }
+
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
+  }
+
+  private Collection<DocumentAttributeRecord> createDocumentAttributeRecords(final Logger logger,
+      final String siteId, final String documentId, final List<MappingAttribute> mappingAttributes,
+      final Map<String, String> dataClassificationMap,
+      final Map<String, Map<String, String>> docMetadataExtractionMap) throws IOException {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
@@ -145,6 +162,11 @@ public class IdpAction implements DocumentAction {
                 createDocumentAttribute(siteId, documentId, mappingAttribute, List.of(value)));
           }
         }
+        case METADATA_EXTRACTION_RESULT -> {
+          records.addAll(processMetadataExtraction(siteId, documentId, mappingAttribute,
+              docMetadataExtractionMap));
+        }
+
         case MALWARE_SCAN -> {
           String value = getScanStatus(siteId, documentId);
           if (!isEmpty(value)) {
@@ -155,13 +177,26 @@ public class IdpAction implements DocumentAction {
         default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
       }
     }
+    return records;
+  }
 
-    if (!records.isEmpty()) {
-      this.documentService.saveDocumentAttributes(siteId, documentId, records,
-          AttributeValidationType.FULL, AttributeValidationAccess.ADMIN_UPDATE);
+  private List<DocumentAttributeRecord> processMetadataExtraction(final String siteId,
+      final String documentId, final MappingAttribute mappingAttribute,
+      final Map<String, Map<String, String>> docMetadataExtractionMap) {
+    String llmPromptEntityName = mappingAttribute.getLlmPromptEntityName();
+
+    if (docMetadataExtractionMap.containsKey(llmPromptEntityName)) {
+
+      Map<String, String> attributeMap = docMetadataExtractionMap.get(llmPromptEntityName);
+      String value = attributeMap.get(mappingAttribute.getAttributeKey());
+      if (!isEmpty(value)) {
+        return createDocumentAttribute(siteId, documentId, mappingAttribute, List.of(value));
+      }
+
+      return Collections.emptyList();
+    } else {
+      throw new IllegalArgumentException("No Metadata Extraction Result found");
     }
-
-    return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private String getScanStatus(final String siteId, final String documentId) throws IOException {
@@ -183,6 +218,37 @@ public class IdpAction implements DocumentAction {
 
     return hasDataClassification ? createDataClassificationAttributes(siteId, documentId)
         : Collections.emptyMap();
+  }
+
+  private Map<String, Map<String, String>> createMetadataExtractionResultMap(final String siteId,
+      final String documentId, final List<MappingAttribute> mappingAttributes) throws IOException {
+
+    Map<String, List<MappingAttribute>> result = mappingAttributes.stream()
+        .filter(
+            a -> MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(a.getSourceType()))
+        .collect(Collectors.groupingBy(MappingAttribute::getLlmPromptEntityName));
+
+    Map<String, Map<String, String>> results = new HashMap<>();
+
+    for (Map.Entry<String, List<MappingAttribute>> e : result.entrySet()) {
+      HttpResponse<String> response = this.http.sendRequest(siteId, "get",
+          "/documents/" + documentId + "/metadataExtractionResults/" + e.getKey() + "?limit=1", "");
+
+      String body = response.body();
+      DataClassificationsResponse data = gson.fromJson(body, DataClassificationsResponse.class);
+      List<DataClassification> dataClassifications = notNull(data.dataClassifications());
+      if (!dataClassifications.isEmpty()) {
+
+        var attributes = dataClassifications.iterator().next().attributes();
+        Map<String, String> map =
+            attributes.stream().collect(Collectors.toMap(DataClassificationAttribute::key,
+                DataClassificationAttribute::value, (existing, replacement) -> existing));
+
+        results.put(e.getKey(), map);
+      }
+    }
+
+    return results;
   }
 
   private Map<String, String> createDataClassificationAttributes(final String siteId,
