@@ -144,14 +144,14 @@ public class SchemaCompositeKeyGenerator {
               newCompositeKeys.get(index).add(c.getKey());
 
               switch (c.getValueType()) {
-                case STRING:
-                  newCompositeValues.get(index).add(c.getStringValue());
-                  break;
-                case NUMBER:
+                case STRING -> newCompositeValues.get(index).add(c.getStringValue());
+                case NUMBER -> {
                   String s = Objects.formatDouble(c.getNumberValue(), Objects.DOUBLE_FORMAT);
                   newCompositeValues.get(index).add(s);
-                  break;
-                default:
+                }
+                case BOOLEAN ->
+                  newCompositeValues.get(index).add(String.valueOf(c.getBooleanValue()));
+                default ->
                   throw new IllegalArgumentException("Unexpected value: " + c.getValueType());
               }
 

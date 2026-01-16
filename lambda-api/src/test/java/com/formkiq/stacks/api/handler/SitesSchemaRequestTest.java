@@ -2401,6 +2401,61 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Search document by with boolean composite key.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").booleanValue(true)));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("true"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+
+      // invalid search
+      DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("false"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response1 =
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+      assertEquals(0, notNull(response1.getDocuments()).size());
+    }
+  }
+
+  /**
    * PUT /documents/{documentId}/attributes. Add attributes.
    *
    * @throws ApiException an error has occurred
