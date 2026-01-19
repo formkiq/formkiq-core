@@ -7433,6 +7433,25 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+          /entities/{entityTypeId}/{entityId}/attributes/{attributeKey}:
+            delete:
+              operationId: DeleteEntityAttribute
+              description: Deletes Entity Attribute
+              summary: Deletes Entity Attribute
+              tags:
+              - Entity
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/entityTypeIdParam'
+              - $ref: '#/components/parameters/entityIdParam'
+              - $ref: '#/components/parameters/attributeKeyParam'
+              responses:
+                "200":
+                  $ref: '#/components/responses/200CorsDeleteResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
           headers:
             AccessControlAllowOrigin:

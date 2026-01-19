@@ -33,6 +33,7 @@ import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntityBuilder;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -104,6 +105,8 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     } else {
 
       Map<String, AttributeValue> oldAttributes = db.get(entity.key());
+      attributes = Objects.merge(attributes, oldAttributes);
+      attributes.put("inserteddate", oldAttributes.get("inserteddate"));
       UserActivityContext.setUpdate(ActivityResourceType.ENTITY, oldAttributes, attributes);
     }
 

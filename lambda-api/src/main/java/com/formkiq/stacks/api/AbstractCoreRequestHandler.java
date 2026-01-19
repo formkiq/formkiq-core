@@ -92,6 +92,7 @@ import com.formkiq.stacks.api.handler.documents.DocumentsUploadRequestHandler;
 import com.formkiq.stacks.api.handler.documents.PublicDocumentsRequestHandler;
 import com.formkiq.stacks.api.handler.documents.UpdateDocumentMatchingRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntitiesRequestHandler;
+import com.formkiq.stacks.api.handler.entity.EntityDeleteAttributeRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntityRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntityRequestHandlerInterceptor;
 import com.formkiq.stacks.api.handler.entity.EntityTypeRequestHandler;
@@ -193,6 +194,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new EntityTypeRequestHandler());
     addRequestHandler(new EntitiesRequestHandler());
     addRequestHandler(new EntityRequestHandler());
+    addRequestHandler(new EntityDeleteAttributeRequestHandler());
   }
 
   private static void addGroupUsersEndpoints() {
