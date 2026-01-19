@@ -96,7 +96,8 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   }
 
   public void createVersion(final String siteId, final String documentId, final S3Service s3,
-      final String bucket, final String key, final ObjectVersion version) {
+      final String bucket, final String key, final ObjectVersion version,
+      final Map<String, String> metadata) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
@@ -114,6 +115,10 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     attr.put("userId", AttributeValue.fromS(username));
     attr.put("contentType", AttributeValue.fromS(resp.getContentType()));
     attr.put("contentLength", AttributeValue.fromN(String.valueOf(resp.getContentLength())));
+
+    if (metadata != null && metadata.containsKey("path")) {
+      attr.put("path", AttributeValue.fromS(metadata.get("path")));
+    }
 
     String checksumType = resp.getChecksumType();
     if (!isEmpty(checksumType)) {
@@ -145,7 +150,7 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
 
   @Override
   public void putObjectEvent(final S3Service s3, final String bucket, final String key,
-      final Map<String, Object> changes) {
+      final Map<String, String> metadata, final Map<String, Object> auditChanges) {
 
     if (this.watchBucket.equalsIgnoreCase(bucket)) {
 
@@ -154,10 +159,10 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
       String documentId = SiteIdKeyGenerator.getDocumentId(key);
 
       if (version != null) {
-        createVersion(siteId, documentId, s3, bucket, key, version);
+        createVersion(siteId, documentId, s3, bucket, key, version, metadata);
       }
 
-      createAudit(siteId, documentId, changes);
+      createAudit(siteId, documentId, auditChanges);
     }
   }
 }
