@@ -50,6 +50,7 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
 
   /**
    * constructor.
+   * 
    * @param entityTypeId {@link String}
    */
   public AddEntityRequestBuilder(final String entityTypeId) {
@@ -58,6 +59,7 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
 
   /**
    * constructor.
+   * 
    * @param entityTypeName {@link String}
    * @param entityNamespace {@link String}
    */
@@ -67,29 +69,34 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     this.request = new AddEntityRequest().entity(addEntity);
   }
 
+  public AddEntityRequestBuilder addAttribute(final String attributeKey,
+      final BigDecimal numberValue) {
+    addEntity
+        .addAttributesItem(new AddEntityAttribute().key(attributeKey).numberValue(numberValue));
+    return this;
+  }
+
+  public AddEntityRequestBuilder addAttribute(final String attributeKey,
+      final Boolean booleanValue) {
+    addEntity
+        .addAttributesItem(new AddEntityAttribute().key(attributeKey).booleanValue(booleanValue));
+    return this;
+  }
+
+  public AddEntityRequestBuilder addAttribute(final String attributeKey, final String stringValue) {
+    addEntity
+        .addAttributesItem(new AddEntityAttribute().key(attributeKey).stringValue(stringValue));
+    return this;
+  }
+
   public AddEntityRequestBuilder name(final String entityName) {
     addEntity.name(entityName);
     return this;
   }
 
-  public AddEntityRequestBuilder addAttribute(final String attributeKey, final String stringValue) {
-    addEntity.addAttributesItem(new AddEntityAttribute().key(attributeKey).stringValue(stringValue));
-    return this;
-  }
-
-  public AddEntityRequestBuilder addAttribute(final String attributeKey, final BigDecimal numberValue) {
-    addEntity.addAttributesItem(new AddEntityAttribute().key(attributeKey).numberValue(numberValue));
-    return this;
-  }
-
-  public AddEntityRequestBuilder addAttribute(final String attributeKey, final Boolean booleanValue) {
-    addEntity.addAttributesItem(new AddEntityAttribute().key(attributeKey).booleanValue(booleanValue));
-    return this;
-  }
-
   @Override
-  public ApiHttpResponse<AddEntityResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(() -> new EntityApi(apiClient).addEntity(entityType, this.request, siteId, namespace));
+  public ApiHttpResponse<AddEntityResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(
+        () -> new EntityApi(apiClient).addEntity(entityType, this.request, siteId, namespace));
   }
 }

@@ -48,6 +48,7 @@
 		</subpackage>
 
 		<subpackage name="entity">
+            <allow pkg="java.math" />
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 

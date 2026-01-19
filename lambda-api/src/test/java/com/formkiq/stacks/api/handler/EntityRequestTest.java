@@ -54,8 +54,10 @@ import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.DeleteEntityAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.GetEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.UpdateEntityRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -110,6 +112,15 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(entityTypeId);
 
     return entityTypeId;
+  }
+
+  private void assertEntity(final Entity entity, final String name, final String keys,
+      final String stringValues) {
+    assertEquals(name, entity.getName());
+    assertEquals(keys, notNull(entity.getAttributes()).stream().map(EntityAttribute::getKey)
+        .collect(Collectors.joining(",")));
+    assertEquals(stringValues, notNull(entity.getAttributes()).stream()
+        .map(EntityAttribute::getStringValue).collect(Collectors.joining(",")));
   }
 
   private void assertEntityAttributeBoolean(final EntityAttribute attribute) {
@@ -566,6 +577,49 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Post /entities/{entityTypeId} and try and delete an attributeKey.
+   *
+   */
+  @Test
+  public void testAddPresetEntityDeleteAttribute() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addLlmPromptEntityType(siteId);
+
+      String name = "MyPrompt_" + ID.uuid();
+      AddEntityRequest req =
+          new AddEntityRequest().entity(new AddEntity().name(name).addAttributesItem(
+              new AddEntityAttribute().key("UserPrompt").stringValue("This prompt")));
+
+      // when
+      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, null);
+
+      // then
+      String entityId = response.getEntityId();
+      assertNotNull(entityId);
+
+      var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId)
+          .throwIfError().response();
+      var entity = get.getEntity();
+      assertNotNull(entity);
+      assertEntity(entity, name, "UserPrompt", "This prompt");
+
+      // when
+      var resp = new DeleteEntityAttributeRequestBuilder(entityTypeId, entityId, "UserPrompt")
+          .submit(client, siteId);
+
+      // then
+      assertTrue(resp.isError());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals("{\"message\":\"PRESET Entities cannot have attributes removed\"}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
    * DELETE /entities/{entityTypeId}/{entityId}.
    *
    * @throws Exception an error has occurred
@@ -853,7 +907,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PATCH /entities/{entityTypeId}/{entityId} name with attributes.
+   * PATCH /entities/{entityTypeId}/{entityId} name with existing attributes.
    *
    * @throws Exception an error has occurred
    */
@@ -868,27 +922,76 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     String entityTypeId = addEntityType(siteId);
 
     // when
-    var addEntity = new AddEntityRequestBuilder(entityTypeId).name("mine").addAttribute("s", "555").submit(client, siteId).throwIfError();
+    var addEntity = new AddEntityRequestBuilder(entityTypeId).name("mine").addAttribute("s", "555")
+        .submit(client, siteId).throwIfError();
 
     // then
     String entityId = addEntity.response().getEntityId();
     assertNotNull(entityId);
 
     // when
-    var resp = new UpdateEntityRequestBuilder(entityTypeId, entityId).name("newname").submit(client, siteId).throwIfError();
+    var resp = new UpdateEntityRequestBuilder(entityTypeId, entityId).name("newname")
+        .submit(client, siteId).throwIfError();
 
     // then
     assertEquals("Entity updated", resp.response().getMessage());
 
-    var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId).throwIfError().response();
+    var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId)
+        .throwIfError().response();
     var entity = get.getEntity();
     assertNotNull(entity);
+    assertEntity(entity, "newname", "s", "555");
+  }
 
-    assertEquals("newname", entity.getName());
-    var attributes = notNull(entity.getAttributes());
-    assertEquals(1, attributes.size());
-    assertEquals("", attributes.get(0).getKey());
-    assertEquals("", attributes.get(0).getStringValue());
+  /**
+   * PATCH /entities/{entityTypeId}/{entityId} name with add/update/delete attributes.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testUpdateEntity04() throws Exception {
+    // given
+    String siteId = ID.uuid();
+
+    setBearerToken(new String[] {siteId});
+    addAttribute(siteId, "s", AttributeDataType.STRING);
+    addAttribute(siteId, "ss", AttributeDataType.STRING);
+
+    String entityTypeId = addEntityType(siteId);
+
+    // when
+    var addEntity = new AddEntityRequestBuilder(entityTypeId).name("mine").addAttribute("s", "555")
+        .submit(client, siteId).throwIfError();
+
+    // then
+    String entityId = addEntity.response().getEntityId();
+    assertNotNull(entityId);
+
+    // when
+    var resp = new UpdateEntityRequestBuilder(entityTypeId, entityId).addAttribute("ss", "111")
+        .addAttribute("s", "222").submit(client, siteId).throwIfError();
+
+    // then
+    assertEquals("Entity updated", resp.response().getMessage());
+
+    var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId)
+        .throwIfError().response();
+    var entity = get.getEntity();
+    assertNotNull(entity);
+    assertEntity(entity, "mine", "s,ss", "222,111");
+
+    // when
+    new DeleteEntityAttributeRequestBuilder(entityTypeId, entityId, "ss").submit(client, siteId)
+        .throwIfError();
+
+    // then
+    assertEquals("Entity updated", resp.response().getMessage());
+
+    get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId)
+        .throwIfError().response();
+    entity = get.getEntity();
+    assertNotNull(entity);
+    assertEntity(entity, "mine", "s", "222");
   }
 
   private void validateCheckoutAttributes(final String siteId) {
