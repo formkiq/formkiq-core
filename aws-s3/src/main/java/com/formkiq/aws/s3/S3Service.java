@@ -558,7 +558,7 @@ public class S3Service {
     PutObjectRequest request = build.build();
 
     if (this.interceptor != null) {
-      this.interceptor.putObjectEvent(this, bucket, key, null);
+      this.interceptor.putObjectEvent(this, bucket, key, null, null);
     }
 
     return this.s3Client.putObject(request, RequestBody.fromBytes(data));

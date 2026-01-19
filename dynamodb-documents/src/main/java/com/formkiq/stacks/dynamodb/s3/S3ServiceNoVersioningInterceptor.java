@@ -43,7 +43,7 @@ public class S3ServiceNoVersioningInterceptor implements S3ServiceInterceptor {
 
   @Override
   public void putObjectEvent(final S3Service s3, final String bucket, final String key,
-      final Map<String, Object> changes) {
+      final Map<String, String> metadata, final Map<String, Object> changes) {
     // empty
   }
 }

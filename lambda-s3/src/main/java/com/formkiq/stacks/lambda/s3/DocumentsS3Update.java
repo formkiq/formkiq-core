@@ -331,6 +331,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }));
   }
 
+  private Map<String, String> createMetadata(final DocumentItem item) {
+    return item != null && item.getPath() != null ? Map.of("path", item.getPath()) : null;
+  }
+
   private String findContentType(final DocumentItem item, final String contentType) {
 
     MimeType mimeType = MimeType.fromContentType(contentType);
@@ -631,6 +635,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       if (logger.isLogged(LogLevel.TRACE)) {
         logger.trace("metadata: " + resp.getMetadata());
         logger.trace("item checksum: " + resp.getChecksum());
+        logger.trace("item path: " + item.getPath());
         logger.trace("item content-type: " + resp.getContentType());
         logger.trace("content-type: " + contentType);
         logger.trace("s3 version id: " + s3VersionId);
@@ -651,7 +656,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
             new MapChangesFunction().apply(prevAttributes, currentMap);
         Map<String, Object> changes = convertToObjectMap(changeRecords);
 
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, changes);
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, createMetadata(item),
+            changes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);

@@ -36,7 +36,9 @@ public interface S3ServiceInterceptor {
    * @param s3 {@link S3Service}
    * @param bucket {@link String}
    * @param key {@link String}
+   * @param metadata {@link Map}
    * @param changes {@link Map}
    */
-  void putObjectEvent(S3Service s3, String bucket, String key, Map<String, Object> changes);
+  void putObjectEvent(S3Service s3, String bucket, String key, Map<String, String> metadata,
+      Map<String, Object> changes);
 }
