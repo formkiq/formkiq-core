@@ -23,54 +23,43 @@
  */
 package com.formkiq.testutils.api.entity;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.EntityTypeNamespace;
-import com.formkiq.client.model.GetEntityResponse;
+import com.formkiq.client.model.UpdateEntityRequest;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
-/**
- * Builder for Get Entity.
- */
-public class GetEntityRequestBuilder implements HttpRequestBuilder<GetEntityResponse> {
 
-  /** Entity Type Id. */
+/**
+ * Builder for {@link UpdateEntityRequest}.
+ */
+public class DeleteEntityAttributeRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
+
+  /** Entity Type. */
   private final String entityType;
-  /** {@link String}. */
-  private final String namespace;
   /** Entity. */
   private final String entity;
-
-  /**
-   * constructor.
-   * 
-   * @param entityKey {@link DocumentAttributeEntityKeyValue}
-   * @param entityTypeNamespace {@link EntityTypeNamespace}
-   */
-  public GetEntityRequestBuilder(final DocumentAttributeEntityKeyValue entityKey,
-      final EntityTypeNamespace entityTypeNamespace) {
-    this(entityKey.entityTypeId(), entityTypeNamespace.name(), entityKey.entityId());
-  }
+  /** Attribute Key. */
+  private final String attribute;
 
   /**
    * constructor.
    *
    * @param entityTypeId {@link String}
-   * @param entityNamespace {@link String}
    * @param entityId {@link String}
+   * @param attributeKey {@link String}
    */
-  public GetEntityRequestBuilder(final String entityTypeId, final String entityNamespace,
-      final String entityId) {
+  public DeleteEntityAttributeRequestBuilder(final String entityTypeId, final String entityId,
+      final String attributeKey) {
     this.entityType = entityTypeId;
     this.entity = entityId;
-    this.namespace = entityNamespace;
+    this.attribute = attributeKey;
   }
 
   @Override
-  public ApiHttpResponse<GetEntityResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new EntityApi(apiClient).getEntity(this.entityType, this.entity, siteId, namespace));
+  public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new EntityApi(apiClient).deleteEntityAttribute(entityType, entity,
+        attribute, siteId));
   }
 }
