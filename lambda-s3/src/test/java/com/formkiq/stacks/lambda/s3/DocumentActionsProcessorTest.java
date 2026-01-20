@@ -383,11 +383,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
             .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/dataClassification*"))
         .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
 
+    Map<String, Object> metadataExtractions = Map.of("metadataExtractions",
+        List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),
+            Map.of("key", "certificate_number", "value", "12")))));
+
     mockServer
         .when(request().withMethod("GET")
             .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION
                 + "/metadataExtractionResults/AnotherPrompt"))
-        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(metadataExtractions)));
 
     MalwareScanResponse malwareScanResponse =
         new MalwareScanResponse(List.of(new MalwareScanResult("CLEAN", "", "", "")));
