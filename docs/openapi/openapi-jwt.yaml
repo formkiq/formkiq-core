@@ -9783,7 +9783,7 @@
                 next:
                   type: string
                   description: Next page of results token
-                metdataExtractions:
+                metadataExtractions:
                   type: array
                   description: List of Metadata Extractions
                   items:
@@ -11287,7 +11287,7 @@
               - METADATA
               - MANUAL
               - DATA_CLASSIFICATION
-              - METADATA_EXTRACTION
+              - METADATA_EXTRACTION_RESULT
               - MALWARE_SCAN
             GetAttributeAllowedValuesResponse:
               type: object
