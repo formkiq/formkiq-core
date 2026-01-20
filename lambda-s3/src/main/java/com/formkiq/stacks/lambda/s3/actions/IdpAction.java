@@ -235,8 +235,8 @@ public class IdpAction implements DocumentAction {
           "/documents/" + documentId + "/metadataExtractionResults/" + e.getKey() + "?limit=1", "");
 
       String body = response.body();
-      DataClassificationsResponse data = gson.fromJson(body, DataClassificationsResponse.class);
-      List<DataClassification> dataClassifications = notNull(data.dataClassifications());
+      MetadataExtractionsResponse data = gson.fromJson(body, MetadataExtractionsResponse.class);
+      List<DataClassification> dataClassifications = notNull(data.metadataExtractions());
       if (!dataClassifications.isEmpty()) {
 
         var attributes = dataClassifications.iterator().next().attributes();
