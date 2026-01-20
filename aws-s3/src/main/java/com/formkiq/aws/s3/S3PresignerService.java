@@ -149,7 +149,7 @@ public class S3PresignerService {
         putObjectRequest = putObjectRequest.contentLength(contentLength.get());
       }
 
-      if (metadata != null) {
+      if (metadata != null && !metadata.isEmpty()) {
         AwsRequestOverrideConfiguration.Builder override =
             AwsRequestOverrideConfiguration.builder();
 

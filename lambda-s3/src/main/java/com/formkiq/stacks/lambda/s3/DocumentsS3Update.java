@@ -50,6 +50,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.base64.Base64ToMap;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -331,8 +332,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }));
   }
 
-  private Map<String, String> createMetadata(final DocumentItem item) {
-    return item != null && item.getPath() != null ? Map.of("path", item.getPath()) : null;
+  private Map<String, String> createMetadata(final Map<String, Object> map) {
+    Map<String, String> metadata = null;
+
+    if (map != null && map.containsKey("path")) {
+      metadata = new HashMap<>(1);
+      metadata.put("path", (String) map.get("path"));
+    }
+
+    return metadata;
   }
 
   private String findContentType(final DocumentItem item, final String contentType) {
@@ -413,7 +421,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String key = (String) e.getOrDefault("s3key", null);
       String s3VersionId = (String) e.getOrDefault("s3VersionId", null);
 
-      login(bucket, key);
+      Map<String, Object> s3PresignedUrlAttributes = login(bucket, key);
 
       String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
           eventName, bucket, key);
@@ -435,7 +443,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
             processS3Delete(bucket, key);
 
           } else {
-            processS3File(create, bucket, key, s3VersionId);
+            processS3File(create, bucket, key, s3VersionId, s3PresignedUrlAttributes);
           }
 
         } catch (IOException | InterruptedException ex) {
@@ -451,16 +459,24 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
-  private void login(final String s3Bucket, final String s3Key) {
+  private Map<String, Object> login(final String s3Bucket, final String s3Key) {
 
     String cacheKey = "s3PresignedUrl#" + s3Bucket + "#" + s3Key;
-    String username = cacheService.read(cacheKey);
+    String s = cacheService.read(cacheKey);
+    Map<String, Object> s3PresignedUrlAttributes = new Base64ToMap().apply(s);
+    s3PresignedUrlAttributes =
+        s3PresignedUrlAttributes != null ? s3PresignedUrlAttributes : Map.of();
+
+    String username = (String) s3PresignedUrlAttributes.get("username");
+
     if (isEmpty(username)) {
       username = "System";
     }
 
     ApiAuthorization authorization = new ApiAuthorization().username(username);
     ApiAuthorization.login(authorization);
+
+    return s3PresignedUrlAttributes;
   }
 
   /**
@@ -607,10 +623,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param s3bucket {@link String}
    * @param s3key {@link String}
    * @param s3VersionId {@link String}
+   * @param s3PresignedUrlAttributes {@link Map}
    * @throws FileNotFoundException FileNotFoundException
    */
   private void processS3File(final boolean create, final String s3bucket, final String s3key,
-      final String s3VersionId) throws FileNotFoundException {
+      final String s3VersionId, final Map<String, Object> s3PresignedUrlAttributes)
+      throws FileNotFoundException {
 
     String key = urlDecode(s3key);
 
@@ -656,8 +674,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
             new MapChangesFunction().apply(prevAttributes, currentMap);
         Map<String, Object> changes = convertToObjectMap(changeRecords);
 
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key, createMetadata(item),
-            changes);
+        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key,
+            createMetadata(s3PresignedUrlAttributes), changes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);

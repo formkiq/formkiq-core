@@ -109,12 +109,6 @@ public class DocumentsUploadRequestHandler
 
     String documentId = request.getDocumentId();
 
-    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
-            caculateDuration(event.getQueryStringParameters()),
-            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
-
     DocumentItem item =
         new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
             .apply(request);
@@ -137,6 +131,12 @@ public class DocumentsUploadRequestHandler
           awsservice.getExtension(ActionsNotificationService.class);
       notificationService.publishNextActionEvent(siteId, documentId);
     }
+
+    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
+            caculateDuration(event.getQueryStringParameters()),
+            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
+    Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
 
     return ApiRequestHandlerResponse.builder().created().body(map);
   }
