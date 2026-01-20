@@ -24,13 +24,19 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.plugins.useractivity.UserActivityContextData;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,16 +153,34 @@ public class AddDocumentRequestToPresignedUrls
     String documentId = o.getDocumentId();
     String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
+    String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
+    final int cacheInDays = 7;
+
+    Map<String, String> map = new HashMap<>();
+    map.put("username", this.username);
+    map.put("path", getOldPath());
+
+    String s = new MapToBase64().apply(map);
+    this.cacheService.write(cacheKey, s, cacheInDays);
+
     ChecksumAlgorithm checksumAlgorithm =
         this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
 
-    String url = this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
+    return this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
         checksumAlgorithm, o.getChecksum(), this.contentLength, null).toString();
+  }
 
-    String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
-    final int cacheInDays = 7;
-    this.cacheService.write(cacheKey, this.username, cacheInDays);
+  private String getOldPath() {
+    Collection<UserActivityContextData> activities = UserActivityContext.get();
 
-    return url;
+    var updateActivity = activities.stream()
+        .filter(a -> UserActivityType.UPDATE.equals(a.activityType())).findFirst();
+
+    if (updateActivity.isPresent()) {
+      ChangeRecord path = updateActivity.get().changeRecords().get("path");
+      return path != null ? (String) path.oldValue() : null;
+    }
+
+    return null;
   }
 }
