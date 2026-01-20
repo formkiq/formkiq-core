@@ -9866,7 +9866,7 @@ Resources:
                 next:
                   type: string
                   description: Next page of results token
-                metdataExtractions:
+                metadataExtractions:
                   type: array
                   description: List of Metadata Extractions
                   items:
