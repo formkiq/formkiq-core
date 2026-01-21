@@ -81,14 +81,15 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   }
 
   private void createAudit(final String siteId, final String documentId,
-      final Map<String, Object> changes) {
+      final Map<String, Object> changes, final boolean isNew) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
-    ActivityRecord ua = new ActivityRecordBuilder(null, null).resource("documents")
-        .source("S3Event").type(UserActivityType.NEW_VERSION).status(UserActivityStatus.COMPLETE)
-        .resourceIds(Map.of("documentId", documentId)).userId(username).insertedDate(new Date())
-        .changes(changes).build(siteId);
+    ActivityRecord ua =
+        new ActivityRecordBuilder(null, null).resource("documents").source("S3Event")
+            .type(isNew ? UserActivityType.NEW_VERSION : UserActivityType.UPDATE_VERSION)
+            .status(UserActivityStatus.COMPLETE).resourceIds(Map.of("documentId", documentId))
+            .userId(username).insertedDate(new Date()).changes(changes).build(siteId);
 
     DocumentActivityEventRecord event = DocumentActivityEventRecord.builder().documentId(documentId)
         .activityKeys(List.of(ua.key())).build(siteId);
@@ -162,7 +163,7 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
         createVersion(siteId, documentId, s3, bucket, key, version, metadata);
       }
 
-      createAudit(siteId, documentId, auditChanges);
+      createAudit(siteId, documentId, auditChanges, version == null);
     }
   }
 }
