@@ -153,10 +153,14 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
       Objects.requireNonNull(documentId, "documentId must not be null");
       Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
 
+      String timestamp = DateUtil.getNowInIso8601Format();
       String pk = PREFIX_DOCS + documentId;
-      String sk = KEY_SK_PREFIX + llmPromptEntityName + "#" + DateUtil.getNowInIso8601Format();
+      String sk = KEY_SK_PREFIX + llmPromptEntityName + "#" + timestamp;
+      String gsi1Pk = PREFIX_DOCS + documentId;
+      String gsi1Sk = KEY_SK_PREFIX + timestamp + "#" + llmPromptEntityName;
 
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
+          .build();
     }
 
     /**
