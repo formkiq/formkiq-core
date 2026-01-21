@@ -23,12 +23,14 @@
  */
 package com.formkiq.aws.dynamodb.llm;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import static com.formkiq.aws.dynamodb.llm.DocumentLlmMetadataExtractionRecord.KEY_SK_PREFIX;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * Query Document Llm Metadata Extraction.
@@ -56,10 +58,12 @@ public class QueryDocumentLlmMetadataExtractions implements DynamoDbQuery {
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
 
+    String index = isEmpty(this.name) ? DbKeys.GSI1 : null;
     DynamoDbKey key = DocumentLlmMetadataExtractionRecord.builder().documentId(docId)
         .llmPromptEntityName("").buildKey(siteId);
 
     return DynamoDbQueryBuilder.builder().pk(key.pk()).scanIndexForward(false)
-        .beginsWith(KEY_SK_PREFIX + this.name).nextToken(nextToken).limit(limit).build(tableName);
+        .beginsWith(KEY_SK_PREFIX + this.name).indexName(index).nextToken(nextToken).limit(limit)
+        .build(tableName);
   }
 }
