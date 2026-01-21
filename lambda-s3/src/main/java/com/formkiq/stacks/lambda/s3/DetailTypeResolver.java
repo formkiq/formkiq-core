@@ -47,6 +47,7 @@ public class DetailTypeResolver
   private final List<Map.Entry<Predicate<Map<String, AttributeValue>>, String>> rules =
       List.of(Map.entry(hasTypeResource("CREATE", "documents"), "New Document Create Metadata"),
           Map.entry(hasTypeResource("NEW_VERSION", "documents"), "New Document Create Content"),
+          Map.entry(hasTypeResource("UPDATE_VERSION", "documents"), "Document Create Content"),
           Map.entry(hasTypeResource("RESTORE", "documents"), "Document Restore"),
           Map.entry(hasTypeResource("UPDATE", "documents"), "Document Update Metadata"),
           Map.entry(hasTypeResource("CREATE", "documentAttributes"), "Document Create Metadata"),

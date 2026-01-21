@@ -9905,6 +9905,7 @@ Resources:
                 - SOFT_DELETE
                 - RESTORE
                 - NEW_VERSION
+                - UPDATE_VERSION
             UserActivity:
               type: "object"
               properties:
