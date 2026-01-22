@@ -164,8 +164,10 @@ public class ApiAuthorizationBuilder {
 
     Collection<String> roles = getRoles(event);
 
-    ApiAuthorization authorization =
-        new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event)).roles(roles);
+    Collection<String> samlGroups = getSamlGroups(event);
+
+    ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
+        .username(getUsername(event)).samlGroups(samlGroups).roles(roles);
 
     addPermissions(event, authorization, groups, admin);
 
@@ -235,6 +237,23 @@ public class ApiAuthorizationBuilder {
     return username;
   }
 
+  private Collection<String> getClaimsList(final ApiGatewayRequestEvent event, final String key) {
+    Collection<String> groups = new HashSet<>();
+
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    if (claims.containsKey(key)) {
+      Object obj = claims.get(key);
+      if (obj != null) {
+        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
+        groups = new HashSet<>(Arrays.asList(s.split(" ")));
+        groups.removeIf(String::isEmpty);
+      }
+    }
+
+    return groups;
+  }
+
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
       final Collection<String> groups) {
 
@@ -271,20 +290,11 @@ public class ApiAuthorizationBuilder {
    * @return {@link Collection} {@link String}
    */
   private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
-    Collection<String> groups = new HashSet<>();
+    return getClaimsList(event, "cognito:groups");
+  }
 
-    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
-
-    if (claims.containsKey("cognito:groups")) {
-      Object obj = claims.get("cognito:groups");
-      if (obj != null) {
-        String s = obj.toString().replaceFirst("^\\[", "").replaceAll("\\]$", "");
-        groups = new HashSet<>(Arrays.asList(s.split(" ")));
-        groups.removeIf(String::isEmpty);
-      }
-    }
-
-    return groups;
+  private Collection<String> getSamlGroups(final ApiGatewayRequestEvent event) {
+    return getClaimsList(event, "samlGroups");
   }
 
   /**

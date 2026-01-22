@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.sites;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -37,6 +38,7 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,10 +137,18 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     updateUploadEmail(awsservice, authorization, sites);
 
     String userId = authorization.getUsername();
+    Map<String, Object> map =
+        Map.of("username", userId, "roles", authorization.getRoles(), "sites", sites);
 
-    return ApiRequestHandlerResponse.builder().ok()
-        .body(Map.of("username", userId, "roles", authorization.getRoles(), "sites", sites))
-        .build();
+    Collection<String> samlGroups =
+        !Objects.notNull(authorization.getSamlGroups()).isEmpty() ? authorization.getSamlGroups()
+            : null;
+    if (samlGroups != null) {
+      map = new HashMap<>(map);
+      map.put("samlGroups", samlGroups);
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
   /**

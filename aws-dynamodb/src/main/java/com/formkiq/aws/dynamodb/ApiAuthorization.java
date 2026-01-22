@@ -96,6 +96,11 @@ public class ApiAuthorization {
   private Collection<String> roles;
 
   /**
+   * Authorization Saml Groups.
+   */
+  private Collection<String> samlGroups;
+
+  /**
    * {@link String}.
    */
   private String username;
@@ -205,6 +210,15 @@ public class ApiAuthorization {
   }
 
   /**
+   * Get Saml Groups.
+   *
+   * @return {@link Collection} {@link String}
+   */
+  public Collection<String> getSamlGroups() {
+    return this.samlGroups;
+  }
+
+  /**
    * Get Default SiteId.
    * 
    * @return {@link String}
@@ -268,6 +282,17 @@ public class ApiAuthorization {
    */
   public ApiAuthorization roles(final Collection<String> apiRoles) {
     this.roles = apiRoles;
+    return this;
+  }
+
+  /**
+   * Set Saml Groups.
+   *
+   * @param apiSamlGroups {@link Collection} {@link String}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization samlGroups(final Collection<String> apiSamlGroups) {
+    this.samlGroups = apiSamlGroups;
     return this;
   }
 

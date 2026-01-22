@@ -1022,7 +1022,7 @@ class ApiAuthorizationBuilderTest {
             "sitesClaims": "{\\"samlGroups\\":\\"default qa\\",\\"permissionsMap\\":
             {\\"default\\":[\\"WRITE\\",\\"READ\\",\\"DELETE\\"],
             \\"LoanAgency\\":[\\"READ\\",\\"DELETE\\",\\"WRITE\\",\\"GOVERN\\"]},
-            \\"cognito:groups\\":\\"default qa\\"}",
+            \\"cognito:groups\\":\\"default qa2\\"}",
             "scope": "aws.cognito.signin.user.admin",
             "auth_time": 1759973303,
             "exp": 1760059703,
@@ -1038,7 +1038,8 @@ class ApiAuthorizationBuilderTest {
     ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
 
     // then
-    assertEquals("qa,default", String.join(",", api.getRoles()));
+    assertEquals("default,qa2", String.join(",", api.getRoles()));
+    assertEquals("qa,default", String.join(",", api.getSamlGroups()));
     assertEquals("LoanAgency,default", String.join(",", api.getSiteIds()));
 
     assertEquals("DELETE,GOVERN,READ,WRITE", String.join(",", api.getPermissions("LoanAgency")
