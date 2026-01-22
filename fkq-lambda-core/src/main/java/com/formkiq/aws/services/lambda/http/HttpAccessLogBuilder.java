@@ -51,7 +51,7 @@ public class HttpAccessLogBuilder {
    * @return {@link HttpAccessLog}
    */
   public HttpAccessLog build() {
-    return new HttpAccessLog(requestTime, requestId, client, user, http, resp, userAgent);
+    return new HttpAccessLog(requestTime, requestId, client, user, http, resp, userAgent, null);
   }
 
   // ---- Client ----

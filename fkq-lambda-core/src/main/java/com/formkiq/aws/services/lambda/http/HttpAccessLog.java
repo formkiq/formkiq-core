@@ -32,7 +32,7 @@ import java.util.Map;
  */
 @Reflectable
 public record HttpAccessLog(String requestTime, String requestId, Client client, User user,
-    Http http, Resp resp, String userAgent) {
+    Http http, Resp resp, String userAgent, String opa) {
 
   /** Represents the client information. */
   @Reflectable

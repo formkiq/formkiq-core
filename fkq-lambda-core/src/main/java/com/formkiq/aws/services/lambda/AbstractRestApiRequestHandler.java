@@ -84,6 +84,19 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     return authorization;
   }
 
+  protected HttpAccessLog buildHttpAccessLog(final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event, final ApiRequestHandlerResponse response,
+      final ApiGatewayRequestContext rc, final Map<String, Object> identity,
+      final String responseBody, final String userAgent) {
+
+    return new HttpAccessLogBuilder().requestTime(rc.getRequestTime()).requestId(rc.getRequestId())
+        .clientIp((String) identity.get("sourceIp"))
+        .userId(authorization != null ? authorization.getUsername() : "Unknown")
+        .http(event.getHttpMethod(), rc.getProtocol(), event.getResource(),
+            event.getPathParameters(), event.getQueryStringParameters())
+        .resp(response.statusCode(), responseBody).userAgent(userAgent).build();
+  }
+
   /**
    * Call Handler Rest Method.
    *
@@ -424,12 +437,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
         }
       }
 
-      HttpAccessLog accessLog = new HttpAccessLogBuilder().requestTime(rc.getRequestTime())
-          .requestId(rc.getRequestId()).clientIp((String) identity.get("sourceIp"))
-          .userId(authorization != null ? authorization.getUsername() : "Unknown")
-          .http(event.getHttpMethod(), rc.getProtocol(), event.getResource(),
-              event.getPathParameters(), event.getQueryStringParameters())
-          .resp(response.statusCode(), responseBody).userAgent(userAgent).build();
+      HttpAccessLog accessLog =
+          buildHttpAccessLog(authorization, event, response, rc, identity, responseBody, userAgent);
 
       logger.info(gson.toJson(accessLog));
 
