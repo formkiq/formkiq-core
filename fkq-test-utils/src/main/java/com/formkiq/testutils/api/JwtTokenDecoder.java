@@ -37,6 +37,8 @@ import com.google.gson.GsonBuilder;
  */
 public final class JwtTokenDecoder {
 
+  /** {@link List} Saml Groups. */
+  private final List<String> samlGroups;
   /** Groups. */
   private List<String> groups;
   /** Username. */
@@ -64,6 +66,7 @@ public final class JwtTokenDecoder {
     }
 
     this.groups = (List<String>) map.get("cognito:groups");
+    this.samlGroups = (List<String>) map.get("samlGroups");
   }
 
   /**
@@ -82,6 +85,15 @@ public final class JwtTokenDecoder {
    */
   public Map<String, List<String>> getPermissions() {
     return this.permissions;
+  }
+
+  /**
+   * Get Saml Groups.
+   *
+   * @return {@link List} {@link String}
+   */
+  public List<String> getSamlGroups() {
+    return this.samlGroups;
   }
 
   /**

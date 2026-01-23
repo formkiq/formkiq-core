@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 import com.formkiq.testutils.api.JwtTokenDecoder;
 import org.mockserver.model.HttpRequest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 /**
  * 
  * {@link Function} for transfoming {@link HttpRequest} to {@link ApiHttpRequest}.
@@ -84,6 +86,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
             p -> decode(p.getName().getValue()), p -> decode(p.getValues().get(0).getValue())));
 
     String group = getGroup(decoder);
+    String samlGroups = getSamlGroups(decoder);
     Map<String, List<String>> permissions = getPermissions(decoder);
 
     Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
@@ -92,7 +95,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     return new ApiHttpRequest().headers(httpHeaders).httpMethod(httpRequest.getMethod().getValue())
         .resource(resource).path(path).pathParameters(pathParameters)
         .queryParameters(queryParameters).user(getUsername(decoder)).group(group)
-        .permissions(permissions).body(body);
+        .samlGroups(samlGroups).permissions(permissions).body(body);
   }
 
   /**
@@ -186,6 +189,10 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
   private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
     return decoder != null ? decoder.getPermissions() : Map.of();
+  }
+
+  private String getSamlGroups(final JwtTokenDecoder decoder) {
+    return decoder != null ? String.join(" ", notNull(decoder.getSamlGroups())) : "";
   }
 
   private String getUsername(final JwtTokenDecoder decoder) {
