@@ -255,6 +255,17 @@ public class ApiHttpRequest {
   }
 
   /**
+   * Set Saml Group.
+   *
+   * @param group {@link String}
+   * @return {@link ApiHttpRequest}
+   */
+  public ApiHttpRequest samlGroups(final String group) {
+    getClaims().put("samlGroups", "[" + group + "]");
+    return this;
+  }
+
+  /**
    * Set Username.
    * 
    * @param username {@link String}

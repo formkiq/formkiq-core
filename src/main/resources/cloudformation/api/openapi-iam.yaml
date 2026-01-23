@@ -13284,6 +13284,11 @@ Resources:
                   type: "array"
                   items:
                     type: "string"
+                samlGroups:
+                  type: array
+                  description: List of User Saml Groups
+                  items:
+                    type: string
                 sites:
                   type: "array"
                   description: "List of sites"

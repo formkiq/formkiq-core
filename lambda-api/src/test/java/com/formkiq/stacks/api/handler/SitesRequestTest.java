@@ -43,6 +43,7 @@ import com.formkiq.client.model.SiteUsage;
 import com.formkiq.module.ocr.DocumentOcrService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
+import com.formkiq.testutils.api.JwtTokenBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.ssm.SsmService;
@@ -77,6 +78,22 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     configService = awsServices.getExtension(ConfigService.class);
     ssm = awsServices.getExtension(SsmService.class);
+  }
+
+  @Test
+  void testGetSitesWithSaml() throws ApiException {
+    // given
+    new JwtTokenBuilder("bill").group("test").samlGroups(List.of("asd")).build(this.client);
+
+    // when
+    GetSitesResponse response = this.systemApi.getSites(null);
+
+    // then
+    List<Site> sites = notNull(response.getSites());
+    assertEquals(1, sites.size());
+    assertEquals("test", sites.get(0).getSiteId());
+    assertEquals("test", String.join(", ", notNull(response.getRoles())));
+    assertEquals("asd", String.join(", ", notNull(response.getSamlGroups())));
   }
 
   /**
