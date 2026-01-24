@@ -8,6 +8,7 @@ dependencies {
   api project(':aws-sns')
   api project(':aws-sqs')
   implementation project(':aws-ssm')
+  implementation project(':aws-secrets-manager')
   implementation project(':aws-dynamodb')
   implementation project(':fkq-lambda-services')
 
