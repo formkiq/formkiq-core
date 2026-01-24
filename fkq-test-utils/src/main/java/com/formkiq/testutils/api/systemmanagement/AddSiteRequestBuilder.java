@@ -46,6 +46,7 @@ public class AddSiteRequestBuilder implements HttpRequestBuilder<AddResponse> {
    * constructor.
    * 
    * @param siteId {@link String}
+   * @param siteTitle {@link String}
    */
   public AddSiteRequestBuilder(final String siteId, final String siteTitle) {
     req.setSite(site);
