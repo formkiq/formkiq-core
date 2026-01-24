@@ -52,6 +52,8 @@ public class JwtTokenBuilder {
 
   /**
    * Build Token and add Authorization Header.
+   * 
+   * @param client {@link ApiClient}
    */
   public void build(final ApiClient client) {
     String token = jwt.compact();
