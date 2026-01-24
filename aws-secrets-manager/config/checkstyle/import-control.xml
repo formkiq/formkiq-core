@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.aws">
+
+	<subpackage name="secretsmanager">
+
+		<allow pkg="java.io" />
+		<allow pkg="java.net" />
+		<allow pkg="java.nio" />
+		<allow pkg="java.security" />
+		<allow pkg="java.time" />
+		<allow pkg="java.util" />
+
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.auth.signer" />
+		<allow pkg="software.amazon.awssdk.awscore" />
+		<allow pkg="software.amazon.awssdk.core" />
+		<allow pkg="software.amazon.awssdk.http" />
+		<allow pkg="software.amazon.awssdk.regions" />
+		<allow pkg="software.amazon.awssdk.utils" />
+
+        <allow pkg="com.formkiq.module.lambdaservices" />
+        <allow pkg="software.amazon.awssdk.services.secretsmanager" />
+        <allow pkg="software.amazon.awssdk.services.secretsmanager.model" />
+
+	</subpackage>
+
+</import-control>

@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.aws.secretsmanager.SecretsManagerConnectionBuilder;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
@@ -100,6 +102,8 @@ public final class TestServices {
   public static final String STAGE_BUCKET_NAME = "stagebucket";
   /** {@link String}. */
   public static final String ACTIVITY_BUCKET_NAME = "activitybucket";
+  /** {@link SecretsManagerConnectionBuilder}. */
+  private static SecretsManagerConnectionBuilder secretsManagerConnection;
 
   /**
    * Clear SQS Queue.
@@ -191,6 +195,7 @@ public final class TestServices {
         TestServices.getEndpoint(Service.S3, null), "ssm",
         TestServices.getEndpoint(Service.SSM, null), "sqs",
         TestServices.getEndpoint(Service.SQS, null), "sns",
+        TestServices.getEndpoint(Service.SECRETSMANAGER, null), "secretsmanager",
         TestServices.getEndpoint(Service.SNS, null));
     return endpoints;
   }
@@ -260,6 +265,28 @@ public final class TestServices {
     }
 
     return s3PresignerConnection;
+  }
+
+  /**
+   * Get Singleton {@link SecretsManagerConnectionBuilder}.
+   *
+   * @param endpointOverride {@link URI}
+   *
+   * @return {@link SecretsManagerConnectionBuilder}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static synchronized SecretsManagerConnectionBuilder getSecretsManagerConnection(
+      final URI endpointOverride) throws URISyntaxException {
+    if (secretsManagerConnection == null) {
+      AwsCredentialsProvider cred = StaticCredentialsProvider
+          .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
+
+      secretsManagerConnection =
+          new SecretsManagerConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
+              .setEndpointOverride(getEndpoint(Service.SECRETSMANAGER, endpointOverride));
+    }
+
+    return secretsManagerConnection;
   }
 
   /**

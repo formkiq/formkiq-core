@@ -127,6 +127,7 @@
 			pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
 		<allow pkg="software.amazon.awssdk.services.s3" />
 		<allow pkg="software.amazon.awssdk.services.ssm" />
+        <allow pkg="com.formkiq.aws.secretsmanager" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		<allow pkg="software.amazon.awssdk.services.sqs.model" />
 
