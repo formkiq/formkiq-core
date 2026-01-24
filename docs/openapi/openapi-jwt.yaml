@@ -13912,7 +13912,7 @@
               type: string
               description: Document Certification Source Type
               enum:
-              - AWS_SSM_PARAMETER_STORE
+              - AWS_SECRETS_MANAGER
             DocumentCertification:
               type: object
               required:
@@ -13924,20 +13924,19 @@
                   description: Certificate alias.
                 sourceType:
                   $ref: '#/components/schemas/DocumentCertificationSourceType'
-                parameterStore:
-                  $ref: '#/components/schemas/DocumentCertificationParameterStore'
-            DocumentCertificationParameterStore:
+                awsSecretsManager:
+                  $ref: '#/components/schemas/DocumentCertificationAwsSecretsManager'
+            DocumentCertificationAwsSecretsManager:
               type: object
               required:
-              - pkcs12BundleParam
-              - pkcs12PasswordParam
+              - certificateArn
               properties:
-                pkcs12BundleParam:
+                certificateArn:
                   type: string
-                  description: SSM Parameter Store Key containing the PKCS#12/PFX bundle.
-                pkcs12PasswordParam:
+                  description: AWS Secrets Manager - Certificate ARN
+                passwordArn:
                   type: string
-                  description: SSM Parameter Store Key containing the PKCS#12/PFX password.
+                  description: AWS Secrets Manager - Certificate password ARN
             AddDocumentCertificationResponse:
               type: object
               properties:
