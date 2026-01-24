@@ -7088,6 +7088,49 @@ Resources:
                 - ApiAuthorization: []
               x-amazon-apigateway-integration:
                 $ref: "#/components/x-amazon-apigateway-integrations/documentGenerationLambdaApi201"
+          /documents/{documentId}/certifications:
+            post:
+              operationId: AddDocumentCertification
+              description: |-
+                Applies one or more certifications (digital signatures) to a document using one or more certificates.
+                Target determines whether a presigned download is returned, a new version is created, or a new document is created.
+                ; available as an Add-On Module
+              summary: Add Document Certification
+              tags:
+              - Document Generation
+              parameters:
+              - $ref: '#/components/parameters/siteIdParam'
+              - $ref: '#/components/parameters/documentIdParam'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/AddDocumentCertificationRequest'
+              responses:
+                "201":
+                  description: 201 CREATED
+                  headers:
+                    Access-Control-Allow-Origin:
+                      $ref: '#/components/headers/AccessControlAllowOrigin'
+                    Access-Control-Allow-Methods:
+                      $ref: '#/components/headers/AccessControlAllowMethods'
+                    Access-Control-Allow-Headers:
+                      $ref: '#/components/headers/AccessControlAllowHeaders'
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AddDocumentCertificationResponse'
+                "400":
+                  description: 400 BAD REQUEST
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/ValidationErrorsResponse'
+              security:
+              - ApiAuthorization: []
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/documentSignatureLambdaApi'
           /integrations/google/drive/documents/{documentId}/export:
             post:
               operationId: AddGoogleDocumentExport
@@ -14016,6 +14059,67 @@ Resources:
                 viewUrl:
                   type: "string"
                   description: "The view URL to be navigated to complete DocuSign signing"
+            AddDocumentCertificationRequest:
+              type: object
+              required:
+              - target
+              - certificates
+              properties:
+                target:
+                  $ref: '#/components/schemas/DocumentCertificationTarget'
+                certificates:
+                  type: array
+                  minItems: 1
+                  description: One or more certificates used to certify/sign the document (in order).
+                  items:
+                    $ref: '#/components/schemas/DocumentCertification'
+            DocumentCertificationTarget:
+              type: object
+              required:
+              - type
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - DOWNLOAD
+                  - NEW_VERSION
+                  - NEW_DOCUMENT
+            DocumentCertification:
+              type: object
+              required:
+              - alias
+              - type
+              properties:
+                alias:
+                  type: string
+                  description: Certificate alias.
+                type:
+                  type: string
+                  enum:
+                  - AWS_SSM_PARAMETER_STORE
+                parameterStore:
+                  $ref: '#/components/schemas/DocumentCertificationParameterStore'
+            DocumentCertificationParameterStore:
+              type: object
+              required:
+              - pkcs12BundleParam
+              - pkcs12PasswordParam
+              properties:
+                pkcs12BundleParam:
+                  type: string
+                  description: SSM Parameter Store Key containing the PKCS#12/PFX bundle.
+                pkcs12PasswordParam:
+                  type: string
+                  description: SSM Parameter Store Key containing the PKCS#12/PFX password.
+            AddDocumentCertificationResponse:
+              type: object
+              properties:
+                documentId:
+                  type: string
+                  description: Document identifier (NEW_VERSION / NEW_DOCUMENT).
+                url:
+                  type: string
+                  description: Presigned download URL (DOWNLOAD).
           securitySchemes:
             ApiAuthorization:
               type: apiKey
@@ -14170,6 +14274,20 @@ Resources:
               passthroughBehavior: "when_no_templates"
               httpMethod: "POST"
               type: "aws_proxy"
+              payloadFormatVersion: "1.0"
+            documentSignatureLambdaApi:
+              uri:
+                Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations
+              responses:
+                default:
+                  statusCode: "201"
+                  responseParameters:
+                    method.response.header.Access-Control-Allow-Methods: '''*'''
+                    method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+                    method.response.header.Access-Control-Allow-Origin: '''*'''
+              passthroughBehavior: when_no_templates
+              httpMethod: POST
+              type: aws_proxy
               payloadFormatVersion: "1.0"
             dataClassificationLambdaApi200:
               uri:
