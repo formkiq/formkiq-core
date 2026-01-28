@@ -4,6 +4,12 @@ Description: FormKiQ - VPC
     
 Parameters:
 
+  EnableNatGateway:
+    Description: Enable a NAT Gateway for private subnets outbound internet access (requires public subnets)
+    Default: "false"
+    Type: String
+    AllowedValues: ["false", "true"]
+
   VpcLabel:
     Type: String
     Description: A Label for the VPC
@@ -80,6 +86,16 @@ Parameters:
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
 
 Conditions:
+
+  IsEnableNatGateway:
+    Fn::Equals:
+      - Ref: EnableNatGateway
+      - "true"
+
+  CreateNatGateway:
+    Fn::And:
+      - Condition: HasPublic
+      - Condition: IsEnableNatGateway
 
   HasPublic:
     Fn::And:
@@ -529,6 +545,34 @@ Resources:
                   - logs:PutLogEvents
                 Resource: "*"
 
+  NatEip:
+    Condition: CreateNatGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    DependsOn:
+      - GatewayToInternet
+
+  NatGateway:
+    Condition: CreateNatGateway
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub "${VpcLabel} NatGateway"
+        - Key: Application
+          Value: FormKiQ
+
+  PrivateDefaultRouteToNat:
+    Condition: CreateNatGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
 Outputs:
 
   VpcFlowLogsBucket:
@@ -643,3 +687,13 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-VpcLinkSecurityGroup"
+
+  NatGatewayId:
+    Condition: CreateNatGateway
+    Description: "NAT Gateway Id"
+    Value: !Ref NatGateway
+
+  NatEipAllocationId:
+    Condition: CreateNatGateway
+    Description: "NAT Gateway Elastic IP Allocation Id"
+    Value: !GetAtt NatEip.AllocationId
