@@ -14082,8 +14082,6 @@ Resources:
                   type: string
                   enum:
                   - DOWNLOAD
-                  - NEW_VERSION
-                  - NEW_DOCUMENT
             DocumentCertification:
               type: object
               required:
