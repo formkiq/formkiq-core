@@ -13906,8 +13906,6 @@
               description: Target for Document Certification
               enum:
               - DOWNLOAD
-              - NEW_VERSION
-              - NEW_DOCUMENT
             DocumentCertificationSourceType:
               type: string
               description: Document Certification Source Type
