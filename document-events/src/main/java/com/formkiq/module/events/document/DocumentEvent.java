@@ -25,6 +25,9 @@ package com.formkiq.module.events.document;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Response to a Document Create Event.
  *
@@ -62,6 +65,8 @@ public class DocumentEvent {
   /** Document Content S3 Presigned Url. */
   @Reflectable
   private String url;
+  /** {@link Map} Tags. */
+  private Map<String, String> tags = new HashMap<>();
 
   /**
    * constructor.
@@ -207,6 +212,26 @@ public class DocumentEvent {
    */
   public DocumentEvent siteId(final String id) {
     this.siteId = id;
+    return this;
+  }
+
+  /**
+   * Get {@link DocumentEvent} Tags.
+   *
+   * @return {@link String}
+   */
+  public Map<String, String> tags() {
+    return this.tags;
+  }
+
+  /**
+   * Set {@link DocumentEvent} Tags.
+   *
+   * @param documentTags {@link Map}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent tags(final Map<String, String> documentTags) {
+    this.tags = documentTags;
     return this;
   }
 

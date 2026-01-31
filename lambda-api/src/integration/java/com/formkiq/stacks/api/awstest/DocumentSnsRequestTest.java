@@ -62,12 +62,6 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
     return messages.get(0);
   }
 
-  private static SqsMessageReceiver getSqsMessageReceiver() {
-    String eventBridgeQueueUrl =
-        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
-    return new SqsMessageReceiver(getSqs(), eventBridgeQueueUrl);
-  }
-
   @BeforeAll
   public static void setup() {
     documentSnsQueue =

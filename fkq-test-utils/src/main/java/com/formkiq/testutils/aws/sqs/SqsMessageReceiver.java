@@ -26,8 +26,11 @@ package com.formkiq.testutils.aws.sqs;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,7 +47,7 @@ public class SqsMessageReceiver {
 
   /**
    * constructor.
-   * 
+   *
    * @param awsServiceCache {@link AwsServiceCache}
    * @param sqsQueueUrl {@link String}
    */
@@ -91,5 +94,34 @@ public class SqsMessageReceiver {
 
     response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
     return response;
+  }
+
+  /**
+   * Get Messages.
+   *
+   * @param searchStrings {@link List} {@link String}
+   * @return {@link List} {@link Message}
+   * @throws InterruptedException InterruptedException
+   */
+  public List<Message> get(final List<String> searchStrings) throws InterruptedException {
+    int retry = 0;
+    List<Message> messages = Collections.emptyList();
+    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
+
+    while (messages.isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqs.receiveMessages(queueUrl);
+
+      messages = response.messages().stream()
+          .filter(m -> searchStrings.stream().allMatch(m.body()::contains)).toList();
+
+      retry++;
+      if (retry > RETRY_LIMIT) {
+        throw new RuntimeException("Timeout waiting for SQS message");
+      }
+    }
+
+    messages.forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
+    return messages;
   }
 }
