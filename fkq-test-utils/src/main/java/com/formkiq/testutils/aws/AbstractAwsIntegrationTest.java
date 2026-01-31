@@ -33,6 +33,7 @@ import java.util.Map;
 
 import com.formkiq.client.model.ApiKeyPermission;
 import com.formkiq.testutils.api.ApiClientBuilder;
+import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
@@ -258,6 +259,17 @@ public abstract class AbstractAwsIntegrationTest {
    */
   public static SqsService getSqs() {
     return sqs;
+  }
+
+  /**
+   * Get {@link SqsMessageReceiver}.
+   * 
+   * @return {@link SqsMessageReceiver}
+   */
+  public static SqsMessageReceiver getSqsMessageReceiver() {
+    String eventBridgeQueueUrl =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/sqs/sns-queue/url");
+    return new SqsMessageReceiver(getSqs(), eventBridgeQueueUrl);
   }
 
   /**
