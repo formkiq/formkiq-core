@@ -38,10 +38,6 @@ import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
-import com.formkiq.client.model.AddEntity;
-import com.formkiq.client.model.AddEntityRequest;
-import com.formkiq.client.model.AddEntityType;
-import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
@@ -55,6 +51,7 @@ import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
@@ -67,8 +64,12 @@ import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -93,6 +94,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
+
+  private static void assertEntity(final DocumentAttribute da, final String entityTypeId,
+      final String entityId) {
+    assertNotNull(da.getEntity());
+    assertEquals("My Company", da.getEntity().getName());
+    assertEquals(entityTypeId, da.getEntity().getEntityTypeId());
+    assertEquals(entityId, da.getEntity().getEntityId());
+  }
 
   private void addAttribute(final String siteId, final String key,
       final AttributeDataType dataType) {
@@ -205,6 +214,18 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     return new AddAttributeSchemaRequired().attributeKey(attributeKey);
   }
 
+  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId,
+      final String attributeKey) throws ApiException {
+    return new GetDocumentAttributeRequestBuilder(documentId, attributeKey).submit(client, siteId)
+        .throwIfError().response().getAttribute();
+  }
+
+  private @NotNull List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId) throws ApiException {
+    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
+        .getAttributes());
+  }
+
   /**
    * POST /documents Add attributes.
    *
@@ -232,8 +253,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNotNull(documentId);
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
     }
@@ -300,8 +320,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNotNull(documentId);
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(0, attributes.size());
     }
   }
@@ -339,8 +358,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
 
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
     }
@@ -421,8 +439,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
 
       // then
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 5;
       int i = 0;
@@ -522,8 +539,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
 
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
     }
@@ -646,12 +662,11 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
 
       String entityTypeId0 =
-          this.entityApi.addEntityType(
-              new AddEntityTypeRequest().entityType(
-                  new AddEntityType().namespace(EntityTypeNamespace.CUSTOM).name("Company")),
-              siteId).getEntityTypeId();
+          new AddEntityTypeRequestBuilder().setEntityType("Company", EntityTypeNamespace.CUSTOM)
+              .submit(client, siteId).throwIfError().response().getEntityTypeId();
       assertNotNull(entityTypeId0);
 
       for (String entityTypeId : List.of(entityTypeId0, "Company")) {
@@ -659,9 +674,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
         assertNotNull(documentId);
 
-        String entityId = this.entityApi
-            .addEntity(entityTypeId0,
-                new AddEntityRequest().entity(new AddEntity().name("My Company")), siteId, null)
+        String entityId = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+            .addAttribute("address", "123").submit(client, siteId).throwIfError().response()
             .getEntityId();
         assertNotNull(entityId);
 
@@ -678,12 +692,23 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals("added attributes to documentId '" + documentId + "'",
             addResponse.getMessage());
 
-        List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-            .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+        List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
         assertEquals(1, documentAttributes.size());
-        assertEquals(AttributeValueType.ENTITY, documentAttributes.get(0).getValueType());
-        String stringValue = entityTypeId0 + "#" + entityId;
-        assertDocumentAttributeEquals(documentAttributes.get(0), "strings", stringValue, null);
+
+        DocumentAttribute da0 = documentAttributes.get(0);
+        DocumentAttribute da1 = getDocumentAttribute(siteId, documentId, "strings");
+
+        List.of(da0, da1).forEach(da -> {
+          assertEquals(AttributeValueType.ENTITY, da.getValueType());
+          String stringValue = entityTypeId0 + "#" + entityId;
+          assertDocumentAttributeEquals(da, "strings", stringValue, null);
+          assertEntity(da, entityTypeId0, entityId);
+
+          List<EntityAttribute> attributes = notNull(da.getEntity().getAttributes());
+          assertEquals(1, attributes.size());
+          assertEquals("address", attributes.get(0).getKey());
+          assertEquals("123", attributes.get(0).getStringValue());
+        });
       }
     }
   }
@@ -966,8 +991,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       for (String documentId : Arrays.asList(response0.getDocumentId(),
           response1.getDocumentId())) {
 
-        List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-            .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+        List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
 
         int i = 0;
         final int expected = 5;
@@ -1037,8 +1061,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
 
       int i = 0;
       final int expected = 4;
@@ -1101,8 +1124,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       final int expected = 4;
       assertEquals(expected, attributes.size());
 
@@ -1316,8 +1338,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(2, attributes.size());
 
       // given
@@ -1433,8 +1454,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(
           "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(0, attributes.size());
     }
   }
@@ -1471,8 +1491,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals(
           "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(0, attributes.size());
     }
   }
@@ -1531,8 +1550,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("attribute 'strings' removed from document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(0, attributes.size());
     }
   }
@@ -1655,8 +1673,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           siteId);
 
       // then
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), attributeKey, "123", null);
     }
@@ -1698,8 +1715,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Updated attribute 'category' on document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "category", "123", null);
     }
@@ -1784,8 +1800,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Updated attribute 'strings' on document '" + documentId + "'",
           response.getMessage());
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "4444", null);
     }
@@ -2488,8 +2503,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
 
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, attributes.size());
       assertDocumentAttributeEquals(attributes.get(0), "strings", "category", null);
     }
@@ -2563,8 +2577,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       int i = 0;
       final int expected3 = 3;
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(expected3, attributes.size());
       assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
       assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
@@ -2579,8 +2592,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
 
       // then
-      attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      attributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 5;
       i = 0;
@@ -2627,8 +2639,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       int i = 0;
       final int expected3 = 3;
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(expected3, attributes.size());
       assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
       assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
@@ -2642,8 +2653,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
 
       // then
-      attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      attributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 3;
       i = 0;
@@ -2687,8 +2697,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       int i = 0;
       final int expected = 3;
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(expected, attributes.size());
       assertDocumentAttributeEquals(attributes.get(i++), "category", "other", null);
       assertDocumentAttributeEquals(attributes.get(i++), "category::documentType", null,
@@ -2743,8 +2752,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
       int i = 0;
       final int expected = 3;
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(expected, attributes.size());
       assertDocumentAttributeEquals(attributes.get(i++), "code", "1", null);
       assertDocumentAttributeEquals(attributes.get(i++), "documentType", "2", null);

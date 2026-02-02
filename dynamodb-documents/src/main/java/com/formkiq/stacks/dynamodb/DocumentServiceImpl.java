@@ -1979,7 +1979,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       AttributeValueToMap toMap = new AttributeValueToMap();
 
       Map<String, Map<String, Object>> prevValues = new DocumentAttributeRecordToMap(true)
-          .apply((Collection<DocumentAttributeRecord>) tx.previousValues()).stream()
+          .apply(siteId, (Collection<DocumentAttributeRecord>) tx.previousValues()).stream()
           .collect(Collectors.toMap(a -> (String) a.get("key"), Function.identity()));
 
       this.interceptor.saveDocument(siteId, documentId, toMap.apply(current),
