@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.documentattributes;
 
+import com.formkiq.validation.ValidationBuilder;
+
 import java.util.Objects;
 
 /**
@@ -58,7 +60,13 @@ public record DocumentAttributeEntityKeyValue(String entityTypeId, String entity
    */
   public static DocumentAttributeEntityKeyValue fromString(final String stringValue) {
     String[] parts = stringValue.split(DELIMITER, 2);
-    // TODO throw exception if parts != 2. Invalid EntityKeyValue
+
+    if (parts.length != 2) {
+      var vb = new ValidationBuilder();
+      vb.isRequired("stringValue", false, "invalid 'stringValue' for Entity");
+      vb.check();
+    }
+
     return new DocumentAttributeEntityKeyValue(parts[0], parts[1]);
   }
 }
