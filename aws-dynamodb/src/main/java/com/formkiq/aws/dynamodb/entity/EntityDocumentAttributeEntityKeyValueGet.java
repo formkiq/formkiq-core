@@ -21,28 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.entity;
+package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.MapToEntityMap;
-import com.formkiq.aws.dynamodb.entity.MapToEntityAttributeMapTransformer;
+import com.formkiq.aws.dynamodb.DynamoDbGet;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
- * {@link Function} to convert {@link Map} {@link Object} to Entity Attributes.
+ * Batch Fetch for {@link EntityRecord} values.
  */
-public class AddEntityAttributeTransformer implements Function<Map<String, Object>, Void> {
+public class EntityDocumentAttributeEntityKeyValueGet implements DynamoDbGet {
+
+  /** {@link Stream} {@link EntityRecord.Builder}. */
+  private final Stream<EntityRecord.Builder> builders;
+
+  /**
+   * constructor.
+   * 
+   * @param entityKeyValues {@link Collection} {@link DocumentAttributeEntityKeyValue}
+   */
+  public EntityDocumentAttributeEntityKeyValueGet(
+      final Collection<DocumentAttributeEntityKeyValue> entityKeyValues) {
+    builders = entityKeyValues.stream().map(v -> EntityRecord.builder().name("")
+        .entityTypeId(v.entityTypeId()).documentId(v.entityId()));// .buildKey(siteId)).toList();
+  }
+
   @Override
-  public Void apply(final Map<String, Object> values) {
-    Map<String, Object> entityMap = new MapToEntityMap("attr#").apply(values);
-    values.keySet().removeAll(entityMap.keySet());
-
-    List<Map<String, Object>> attributeList =
-        new MapToEntityAttributeMapTransformer().apply(entityMap);
-    values.put("attributes", attributeList);
-
-    return null;
+  public Collection<DynamoDbKey> build(final String siteId) {
+    return builders.map(b -> b.buildKey(siteId)).toList();
   }
 }

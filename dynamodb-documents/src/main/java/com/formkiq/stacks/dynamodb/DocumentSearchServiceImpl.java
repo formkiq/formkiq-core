@@ -196,7 +196,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
                 .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
 
         Collection<Map<String, Object>> attributes =
-            new DocumentAttributeRecordToMap(true).apply(records);
+            new DocumentAttributeRecordToMap(true).apply(siteId, records);
 
         Map<String, Object> attributeFields = new HashMap<>();
 

@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
+import com.formkiq.aws.dynamodb.entity.EntityAttributeTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -80,7 +81,7 @@ public class EntitiesRequestHandler
     List<Map<String, Object>> items =
         new AttributeValueListToListMap(config).apply(response.items());
 
-    items.forEach(i -> new AddEntityAttributeTransformer().apply(i));
+    items.forEach(i -> new EntityAttributeTransformer().apply(i));
 
     String nextToken = new MapAttributeValueToString().apply(response.lastEvaluatedKey());
 

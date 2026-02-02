@@ -24,11 +24,11 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.AttributeValueToMap;
-import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.entity.AttributeValueToEntityTransformer;
+import com.formkiq.aws.dynamodb.entity.EntityAttributeTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -94,11 +94,8 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       throw new NotFoundException("entity '" + entityId + "' not found");
     }
 
-    AttributeValueToMapConfig config = AttributeValueToMapConfig.builder().removeDbKeys(true)
-        .addRenameKeys("documentId", "entityId").build();
-
-    Map<String, Object> values = new AttributeValueToMap(config).apply(attributes);
-    new AddEntityAttributeTransformer().apply(values);
+    Map<String, Object> values = new AttributeValueToEntityTransformer().apply(attributes);
+    new EntityAttributeTransformer().apply(values);
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("entity", values).build();
   }
