@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
@@ -270,13 +271,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
 
     if (vb.isEmpty()) {
-      String[] s = a.getStringValue().split("#");
-      DynamoDbKey entityType = EntityTypeRecord.builder().nameEmpty()
-          .namespace(EntityTypeNamespace.CUSTOM).documentId(s[0]).buildKey(siteId);
+      var entityKey = DocumentAttributeEntityKeyValue.fromString(a.getStringValue());
+
+      DynamoDbKey entityType =
+          EntityTypeRecord.builder().nameEmpty().namespace(EntityTypeNamespace.CUSTOM)
+              .documentId(entityKey.entityTypeId()).buildKey(siteId);
       vb.isRequired("entityTypeId", this.db.exists(entityType), "EntityTypeId does not exist");
 
-      DynamoDbKey entity =
-          EntityRecord.builder().name("").entityTypeId(s[0]).documentId(s[1]).buildKey(siteId);
+      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityKey.entityTypeId())
+          .documentId(entityKey.entityId()).buildKey(siteId);
       vb.isRequired("entityId", this.db.exists(entity), "EntityId does not exist");
     }
   }
