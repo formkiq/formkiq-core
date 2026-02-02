@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -66,6 +67,8 @@ public class DocumentAttributesRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
@@ -83,7 +86,8 @@ public class DocumentAttributesRequestHandler
         documentService.findDocumentAttributes(siteId, documentId, ptoken, limit);
 
     Collection<Map<String, Object>> list =
-        new DocumentAttributeRecordToMap(true).apply(results.getResults());
+        new DocumentAttributeRecordToMap(true, true, db, tableName).apply(siteId,
+            results.getResults());
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getToken(), limit);
