@@ -189,7 +189,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
         this.documentService.findDocumentAttributes(siteId, documentId, null, limit);
 
     Collection<Map<String, Object>> list =
-        new DocumentAttributeRecordToMap(true).apply(results.getResults());
+        new DocumentAttributeRecordToMap(true).apply(siteId, results.getResults());
 
     Map<String, Map<String, Object>> map = new HashMap<>();
 

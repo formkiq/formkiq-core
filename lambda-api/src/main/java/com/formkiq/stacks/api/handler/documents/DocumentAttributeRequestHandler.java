@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -92,6 +93,8 @@ public class DocumentAttributeRequestHandler
     String documentId = event.getPathParameter("documentId");
     String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
     verifyDocument(awsservice, siteId, documentId);
 
@@ -99,7 +102,8 @@ public class DocumentAttributeRequestHandler
     List<DocumentAttributeRecord> list =
         documentService.findDocumentAttribute(siteId, documentId, attributeKey);
 
-    Collection<Map<String, Object>> map = new DocumentAttributeRecordToMap(true).apply(list);
+    Collection<Map<String, Object>> map =
+        new DocumentAttributeRecordToMap(true, true, db, tableName).apply(siteId, list);
 
     if (map.isEmpty()) {
       throw new NotFoundException(

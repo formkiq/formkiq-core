@@ -9498,6 +9498,8 @@ Resources:
                   description: "User who added attribute"
                 valueType:
                   $ref: "#/components/schemas/AttributeValueType"
+                entity:
+                  $ref: '#/components/schemas/Entity'
             DocumentTag:
               type: "object"
               properties:
