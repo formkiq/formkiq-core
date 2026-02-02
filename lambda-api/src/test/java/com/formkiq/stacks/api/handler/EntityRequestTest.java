@@ -317,6 +317,80 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Post /entities/{entityTypeId}. Entity Attribute Data Type.
+   *
+   */
+  @Test
+  public void testAddEntity06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+      addAttribute(siteId, "myentity", AttributeDataType.ENTITY);
+
+      String entityTypeId = addEntityType(siteId);
+
+      // when
+      var resp = new AddEntityRequestBuilder(entityTypeId, "custom").name("test")
+          .addAttribute("myentity", "123").submit(client, siteId);
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"stringValue\","
+              + "\"error\":\"invalid 'stringValue' for Entity\"}]}",
+          resp.exception().getResponseBody());
+
+      // given
+      var stringValue = "asd#123";
+
+      // when
+      resp = new AddEntityRequestBuilder(entityTypeId, "custom").name("test")
+          .addAttribute("myentity", stringValue).submit(client, siteId);
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId}. Link two entities with Entity Attribute Data Type.
+   *
+   */
+  @Test
+  public void testAddEntity07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+      addAttribute(siteId, "myentity", AttributeDataType.ENTITY);
+
+      String entityTypeId = addEntityType(siteId);
+
+      // when
+      var resp0 = new AddEntityRequestBuilder(entityTypeId, "custom").name("test0")
+          .submit(client, siteId).throwIfError();
+
+      // then
+      assertNotNull(resp0.response());
+      String entityId = resp0.response().getEntityId();
+
+      // when
+      var resp1 = new AddEntityRequestBuilder(entityTypeId, "custom").name("test1")
+          .addAttribute("myentity", entityTypeId + "#" + entityId).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertNotNull(resp1.response());
+      assertNotNull(resp1.response().getEntityId());
+    }
+  }
+
+  /**
    * Post /entities/{entityTypeId} for Checkout.
    *
    */
