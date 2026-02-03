@@ -29,7 +29,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyVal
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
-import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;

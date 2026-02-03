@@ -54,6 +54,7 @@ import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.entity.DeleteEntityAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.GetEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.UpdateEntityRequestBuilder;
@@ -77,6 +78,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /entities. */
 public class EntityRequestTest extends AbstractApiClientRequestTest {
+
+  private static void assertEntityAttribute(final EntityAttribute attribute, final String key,
+      final String stringValue, final String numberValue) {
+    assertEquals(key, attribute.getKey());
+    assertEquals(stringValue, attribute.getStringValue());
+
+    if (numberValue != null) {
+      assertNotNull(attribute.getNumberValue());
+      assertEquals(numberValue, attribute.getNumberValue().toString());
+    }
+  }
 
   private void addAttribute(final String siteId, final String attributeKey,
       final AttributeDataType dataType) throws ApiException {
@@ -105,12 +117,17 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
   private String addLlmPromptEntityType(final String siteId) throws ApiException {
     String entityTypeId =
-        this.entityApi.addEntityType(
-            new AddEntityTypeRequest().entityType(
-                new AddEntityType().name("LlmPrompt").namespace(EntityTypeNamespace.PRESET)),
-            siteId).getEntityTypeId();
+        new AddEntityTypeRequestBuilder().setEntityType("LlmPrompt", EntityTypeNamespace.PRESET)
+            .submit(client, siteId).throwIfError().response().getEntityTypeId();
     assertNotNull(entityTypeId);
+    return entityTypeId;
+  }
 
+  private String addRetentionEntityType(final String siteId) throws ApiException {
+    String entityTypeId = new AddEntityTypeRequestBuilder()
+        .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
+        .throwIfError().response().getEntityTypeId();
+    assertNotNull(entityTypeId);
     return entityTypeId;
   }
 
@@ -602,8 +619,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
           List<EntityAttribute> attributes = notNull(entity.getAttributes());
           assertEquals(1, attributes.size());
-          assertEquals("UserPrompt", attributes.get(0).getKey());
-          assertEquals("This prompt", attributes.get(0).getStringValue());
+          assertEntityAttribute(attributes.get(0), "UserPrompt", "This prompt", null);
         }
       }
     }
@@ -646,6 +662,91 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         assertEquals(
             "{\"errors\":[{\"key\":\"UserPrompt\",\"error\":\"'UserPrompt' is required\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Retention.
+   *
+   */
+  @Test
+  public void testAddEntityRetention() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addRetentionEntityType(siteId);
+
+      for (String namespace : Arrays.asList(null, "preset", "custom")) {
+
+        String name = "RetentionPolicy_" + ID.uuid();
+
+        // when
+        String entityId = new AddEntityRequestBuilder(entityTypeId, namespace).name(name)
+            .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
+            .addAttribute("RetentionStartDateSourceType", "date_inserted").submit(client, siteId)
+            .throwIfError().response().getEntityId();
+
+        // then
+        assertNotNull(entityId);
+
+        // when - try with different namespaces
+        GetEntityResponse entityResponse0 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
+        GetEntityResponse entityResponse1 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
+        GetEntityResponse entityResponse2 =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
+
+        for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
+            entityResponse2)) {
+          Entity entity = entityResponse.getEntity();
+          assertNotNull(entity);
+          assertEquals(name, entity.getName());
+
+          List<EntityAttribute> attributes = notNull(entity.getAttributes());
+          assertEquals(2, attributes.size());
+          assertEntityAttribute(attributes.get(0), "RetentionPeriodInDays", null, "10.0");
+          assertEntityAttribute(attributes.get(1), "RetentionStartDateSourceType", "DATE_INSERTED",
+              null);
+        }
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Retention missing Attributes.
+   *
+   */
+  @Test
+  public void testAddEntityRetentionMissingAttributes() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addRetentionEntityType(siteId);
+
+      for (String namespace : Arrays.asList(null, "preset", "custom")) {
+
+        String name = "RetentionPolicy_" + ID.uuid();
+
+        // when
+        var response =
+            new AddEntityRequestBuilder(entityTypeId, namespace).name(name).submit(client, siteId);
+
+        // then
+        assertNull(response.response());
+        assertNotNull(response.exception());
+        assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"RetentionPeriodInDays\","
+                + "\"error\":\"'RetentionPeriodInDays' is required\"},"
+                + "{\"key\":\"RetentionStartDateSourceType\","
+                + "\"error\":\"'RetentionStartDateSourceType' is required\"}]}",
+            response.exception().getResponseBody());
       }
     }
   }

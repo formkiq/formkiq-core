@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.validation.ValidationError;
 
 /**

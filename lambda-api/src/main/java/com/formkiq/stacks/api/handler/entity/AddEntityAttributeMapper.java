@@ -23,9 +23,13 @@
  */
 package com.formkiq.stacks.api.handler.entity;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.entity.EntityAttribute;
 
+import java.util.List;
 import java.util.function.Function;
+
+import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * {@link Function} to convert {@link AddEntityAttribute} to {@link EntityAttribute}.
@@ -34,8 +38,22 @@ public class AddEntityAttributeMapper implements Function<AddEntityAttribute, En
 
   @Override
   public EntityAttribute apply(final AddEntityAttribute a) {
-    return EntityAttribute.builder().key(a.key()).addStringValue(a.stringValue())
-        .stringValues(a.stringValues()).addNumberValue(a.numberValue())
-        .numberValues(a.numberValues()).booleanValue(a.booleanValue()).build();
+
+    String stringValue = a.stringValue();
+    List<String> stringValues = a.stringValues();
+
+    if (AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey().equals(a.key())) {
+      if (!stringValues.isEmpty()) {
+        stringValues = stringValues.stream().map(String::toUpperCase).toList();
+      }
+
+      if (!isEmpty(stringValue)) {
+        stringValue = stringValue.toUpperCase();
+      }
+    }
+
+    return EntityAttribute.builder().key(a.key()).addStringValue(stringValue)
+        .stringValues(stringValues).addNumberValue(a.numberValue()).numberValues(a.numberValues())
+        .booleanValue(a.booleanValue()).build();
   }
 }
