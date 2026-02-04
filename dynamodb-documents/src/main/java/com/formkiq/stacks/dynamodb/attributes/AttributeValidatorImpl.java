@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
@@ -209,7 +210,9 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           AttributeDataType dataType = attribute.getDataType();
           validateDataType(siteId, da, dataType, vb);
 
-          validateAttributeTypeOpaOrGoverance(attribute, access, vb);
+          AttributeValidationAccess va =
+              da.getValidationAccess() != null ? da.getValidationAccess() : access;
+          validateAttributeTypeOpaOrGoverance(attribute, va, vb);
         }
       }
     }

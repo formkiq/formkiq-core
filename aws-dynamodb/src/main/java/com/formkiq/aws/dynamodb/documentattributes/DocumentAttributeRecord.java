@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -67,6 +68,30 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   private Date insertedDate;
   /** Attribute Document Id. */
   private String userId;
+
+  /**
+   * Get {@link AttributeValidationAccess}.
+   * 
+   * @return {@link AttributeValidationAccess}
+   */
+  public AttributeValidationAccess getValidationAccess() {
+    return validationAccess;
+  }
+
+  /**
+   * Set {@link AttributeValidationAccess}.
+   * 
+   * @param attributeValidationAccess {@link AttributeValidationAccess}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setValidationAccess(
+      final AttributeValidationAccess attributeValidationAccess) {
+    this.validationAccess = attributeValidationAccess;
+    return this;
+  }
+
+  /** Override {@link AttributeValidationAccess}. */
+  private AttributeValidationAccess validationAccess;
 
   /**
    * constructor.

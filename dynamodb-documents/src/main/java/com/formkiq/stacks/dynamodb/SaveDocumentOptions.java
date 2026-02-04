@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 
 /**
  * Options to use when saving a document.
