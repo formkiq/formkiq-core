@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+
 /**
  * Attribute Validation Wrapper.
  */

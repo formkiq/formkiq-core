@@ -37,7 +37,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 

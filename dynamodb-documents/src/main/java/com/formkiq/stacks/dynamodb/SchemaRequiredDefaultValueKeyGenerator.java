@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -115,6 +116,9 @@ public class SchemaRequiredDefaultValueKeyGenerator {
           v -> list.add(createDocumentAttributeRecord(documentId, attributeRecord, v, username)));
     }
 
+    // override attributes created from default Schem values
+    // allows normal users to save schema OPA / Governance attributes set by default value
+    list.forEach(rr -> rr.setValidationAccess(AttributeValidationAccess.ADMIN_CREATE));
     return list;
   }
 

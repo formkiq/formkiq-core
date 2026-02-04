@@ -1359,6 +1359,60 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents, with GOVERANCE attribute with default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+
+      addAttribute(siteId, "strings", AttributeDataType.STRING, AttributeType.GOVERNANCE);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addRequiredItem(createRequired("strings").defaultValue("123")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest();
+
+      // given
+      setBearerToken(siteId);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertEquals("123", attributes.get(0).getStringValue());
+
+      // given - try to override OPA attribute value in schema
+      ureq0 = new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. schema required
    * attribute.
    *

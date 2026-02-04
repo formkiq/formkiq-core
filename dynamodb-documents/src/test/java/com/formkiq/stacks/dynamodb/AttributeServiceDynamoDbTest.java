@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.validation.ValidationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
