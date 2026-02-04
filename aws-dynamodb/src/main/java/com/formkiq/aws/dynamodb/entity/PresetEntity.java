@@ -34,7 +34,10 @@ public enum PresetEntity {
   /** Checkout Lock Entity. */
   CHECKOUT("Checkout", List.of("LockedBy", "LockedDate")),
   /** Lock Entity. */
-  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate"));
+  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate")),
+  /** Retention Policy. */
+  RETENTION_POLICY("RetentionPolicy",
+      List.of("RetentionPeriodInDays", "RetentionStartDateSourceType"));
 
   /**
    * Convert a string to the matching enum constant. Defaults to {@link #LLM_PROMPT} if no match is

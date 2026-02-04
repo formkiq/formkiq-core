@@ -128,7 +128,7 @@ import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequestUpdate;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;

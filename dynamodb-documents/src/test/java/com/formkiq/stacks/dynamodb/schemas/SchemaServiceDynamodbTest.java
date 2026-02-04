@@ -28,7 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;

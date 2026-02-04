@@ -57,7 +57,7 @@ import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
-import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
@@ -874,15 +874,15 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // given
       addAttribute(siteId, "invoiceNumber");
       new AddAttributeRequestBuilder()
-          .keyAsNumber("retentionPeriodInDays", AttributeType.GOVERNANCE).submit(client, siteId)
+          .keyAsNumber("retentionPeriodInDays2", AttributeType.GOVERNANCE).submit(client, siteId)
           .throwIfError();
 
       SetSchemaAttributes sa =
-          createSchemaAttributes(List.of("retentionPeriodInDays"), List.of("invoiceNumber"));
+          createSchemaAttributes(List.of("retentionPeriodInDays2"), List.of("invoiceNumber"));
       addClassification(siteId, sa);
 
       String documentId = new AddDocumentRequestBuilder().content()
-          .addAttribute("retentionPeriodInDays", new BigDecimal(1)).submit(client, siteId)
+          .addAttribute("retentionPeriodInDays2", new BigDecimal(1)).submit(client, siteId)
           .throwIfError().response().getDocumentId();
 
       setBearerToken(siteId);
@@ -897,7 +897,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<DocumentAttribute> documentAttributes = notNull(results.response().getAttributes());
       assertEquals(2, documentAttributes.size());
       assertEquals("invoiceNumber", documentAttributes.get(0).getKey());
-      assertEquals("retentionPeriodInDays", documentAttributes.get(1).getKey());
+      assertEquals("retentionPeriodInDays2", documentAttributes.get(1).getKey());
     }
   }
 

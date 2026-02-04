@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;

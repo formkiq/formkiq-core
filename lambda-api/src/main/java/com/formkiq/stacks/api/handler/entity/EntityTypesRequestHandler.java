@@ -45,7 +45,8 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.validation.ValidationBuilder;
@@ -79,8 +80,12 @@ public class EntityTypesRequestHandler
       PresetEntity presetEntity = PresetEntity.fromString(addEntityType.name());
       if (presetEntity != null) {
         presetEntity.getAttributeKeys().forEach(k -> {
-          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD)
-              .dataType(AttributeDataType.STRING).key(k).documentId(k);
+
+          AttributeKeyReserved key = AttributeKeyReserved.find(k);
+          AttributeDataType dataType = key != null ? key.getDataType() : AttributeDataType.STRING;
+
+          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD).dataType(dataType)
+              .key(k).documentId(k);
           attributeList.add(a.getAttributes(siteId));
         });
       }

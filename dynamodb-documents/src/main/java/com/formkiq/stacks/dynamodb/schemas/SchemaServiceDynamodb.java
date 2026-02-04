@@ -37,7 +37,7 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
