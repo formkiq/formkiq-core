@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.aws.dynamodb.attributes;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -49,7 +49,11 @@ public enum AttributeKeyReserved {
   /** Esignature Docusign Envelope id. */
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */
-  ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus");
+  ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
+  /** Retention Period In Days. */
+  RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeDataType.NUMBER),
+  /** Retention Start Date Source Type. */
+  RETENTION_START_DATE_SOURCE_TYPE("RetentionStartDateSourceType");
 
   /**
    * Find {@link AttributeKeyReserved}.
@@ -63,17 +67,34 @@ public enum AttributeKeyReserved {
     return a.orElse(null);
   }
 
+  /** Attribute Data Type. */
+  private final AttributeDataType dataType;
+
   /** Key Name. */
   private final String key;
 
   AttributeKeyReserved(final String reservedKey) {
+    this(reservedKey, AttributeDataType.STRING);
+  }
+
+  AttributeKeyReserved(final String reservedKey, final AttributeDataType attributeDataType) {
     this.key = reservedKey;
+    this.dataType = attributeDataType;
+  }
+
+  /**
+   * Get Data Type.
+   *
+   * @return {@link AttributeDataType}
+   */
+  public AttributeDataType getDataType() {
+    return this.dataType;
   }
 
   /**
    * Get Key Name.
    * 
-   * @return String
+   * @return {@link String}
    */
   public String getKey() {
     return this.key;

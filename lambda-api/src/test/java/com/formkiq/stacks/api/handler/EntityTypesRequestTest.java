@@ -150,7 +150,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"name\","
             + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
-            + "CheckoutForLegalHold'\"}]}", e.getResponseBody());
+            + "CheckoutForLegalHold, RetentionPolicy'\"}]}", e.getResponseBody());
       }
     }
   }
@@ -528,7 +528,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"name\","
             + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
-            + "CheckoutForLegalHold'\"}]}", e.getResponseBody());
+            + "CheckoutForLegalHold, RetentionPolicy'\"}]}", e.getResponseBody());
       }
     }
   }

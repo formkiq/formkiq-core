@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.validation.ValidationBuilder;
 
@@ -90,7 +91,7 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   }
 
   /**
-   * Sets the UserPrompt.
+   * Sets the Preset Entity Attributes.
    *
    * @param entityAttributes the entity attributes
    * @return this Builder
@@ -116,10 +117,23 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
 
     switch (this.entityType) {
       case LLM_PROMPT, CHECKOUT -> validateAttributes(vb, this.entityType.getAttributeKeys());
+      case RETENTION_POLICY -> {
+        validateAttributes(vb, this.entityType.getAttributeKeys());
+        vb.check();
+        validateRetentionStartDateSourceType(vb);
+      }
       default -> throw new IllegalStateException("Unexpected value: " + this.entityType);
     }
 
     vb.check();
+  }
+
+  private void validateRetentionStartDateSourceType(final ValidationBuilder vb) {
+    Optional<EntityAttribute> o =
+        findAttribute(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey());
+    o.ifPresent(entityAttribute -> notNull(entityAttribute.getStringValues())
+        .forEach(s -> vb.isRequired("key", RetentionStartDateSourceType.fromString(s),
+            "invalid value '" + s + "'")));
   }
 
   private void validateAttributes(final ValidationBuilder vb,

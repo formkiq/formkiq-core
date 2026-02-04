@@ -74,7 +74,7 @@ import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
-import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;

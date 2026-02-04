@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.attributes;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
 

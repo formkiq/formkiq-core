@@ -71,7 +71,7 @@ import com.formkiq.client.model.WatermarkPosition;
 import com.formkiq.client.model.WatermarkPositionXAnchor;
 import com.formkiq.client.model.WatermarkPositionYAnchor;
 import com.formkiq.client.model.WatermarkScale;
-import com.formkiq.stacks.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
