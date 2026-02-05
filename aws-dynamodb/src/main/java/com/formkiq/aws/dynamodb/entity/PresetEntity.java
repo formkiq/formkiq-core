@@ -23,21 +23,39 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Present Entity.
  */
 public enum PresetEntity {
   /** LLM Prompt entity. */
-  LLM_PROMPT("LlmPrompt", List.of("UserPrompt")),
+  LLM_PROMPT("LlmPrompt", List.of("UserPrompt"), List.of()),
   /** Checkout Lock Entity. */
-  CHECKOUT("Checkout", List.of("LockedBy", "LockedDate")),
+  CHECKOUT("Checkout", List.of("LockedBy", "LockedDate"), List.of()),
   /** Lock Entity. */
-  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate")),
+  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate"), List.of()),
   /** Retention Policy. */
   RETENTION_POLICY("RetentionPolicy",
-      List.of("RetentionPeriodInDays", "RetentionStartDateSourceType"));
+      List.of("RetentionPeriodInDays", "RetentionStartDateSourceType"),
+      List.of(new RetentionEffectiveStartDateAttribute(), new RetentionEffectiveEndDateAttribute(),
+          new RetentionEffectiveStatusAttribute()));
+
+  /**
+   * Find {@link DerivedDocumentAttribute} by AttributeKey.
+   * 
+   * @param derivedAttributeKey {@link String}
+   * @return {@link DerivedDocumentAttribute}
+   */
+  public static Optional<PresetEntity> findPresetEntityByDerivedAttribute(
+      final String derivedAttributeKey) {
+    return Arrays.stream(values()).filter(a -> a.getDerivedAttributes().stream()
+        .anyMatch(da -> da.getAttributeKey().equals(derivedAttributeKey))).findAny();
+  }
 
   /**
    * Convert a string to the matching enum constant. Defaults to {@link #LLM_PROMPT} if no match is
@@ -57,15 +75,31 @@ public enum PresetEntity {
     return null;
   }
 
+  /** Derived Document Attributes. */
+  private final List<DerivedDocumentAttribute> derivedAttributes;
+
   /** Entity Name. */
   private final String name;
 
   /** Attribute Keys. */
   private final List<String> attributeKeys;
 
-  PresetEntity(final String entityName, final List<String> entityAttributeKeys) {
+  PresetEntity(final String entityName, final List<String> entityAttributeKeys,
+      final List<DerivedDocumentAttribute> derivedDocumentAttributes) {
     this.name = entityName;
     this.attributeKeys = entityAttributeKeys;
+    this.derivedAttributes = derivedDocumentAttributes;
+  }
+
+  /**
+   * Find Derived Attribute.
+   * 
+   * @param derivedAttributeKey {@link String}
+   * @return {@link Optional} {@link DerivedDocumentAttribute}
+   */
+  public Optional<DerivedDocumentAttribute> findDerivedAttribute(final String derivedAttributeKey) {
+    return getDerivedAttributes().stream()
+        .filter(a -> a.getAttributeKey().equals(derivedAttributeKey)).findAny();
   }
 
   /**
@@ -75,6 +109,15 @@ public enum PresetEntity {
    */
   public List<String> getAttributeKeys() {
     return attributeKeys;
+  }
+
+  /**
+   * Get {@link List} {@link DerivedDocumentAttribute}.
+   * 
+   * @return {@link List} {@link DerivedDocumentAttribute}
+   */
+  public List<DerivedDocumentAttribute> getDerivedAttributes() {
+    return derivedAttributes;
   }
 
   /**

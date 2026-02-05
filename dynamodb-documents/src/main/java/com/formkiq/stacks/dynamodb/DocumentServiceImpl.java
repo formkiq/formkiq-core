@@ -2534,6 +2534,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         errors);
 
     validateDocumentRelationships(siteId, documentId, documentAttributes, errors);
+
+    validateDocumentDerivedAttributes(documentAttributes, errors);
   }
 
   private void validateDocumentAttributes(final List<SchemaAttributes> schemaAttributes,
@@ -2583,6 +2585,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+  }
+
+  private void validateDocumentDerivedAttributes(
+      final Collection<DocumentAttributeRecord> documentAttributes,
+      final Collection<ValidationError> errors) {
+
+    var derivedKeys = AttributeKeyReserved.getDerivedAttributes().stream()
+        .map(AttributeKeyReserved::getKey).collect(Collectors.toSet());
+    documentAttributes.forEach(da -> {
+      if (derivedKeys.contains(da.getKey())) {
+        errors.add(
+            new ValidationErrorImpl().key(da.getKey()).error("attribute key is derived reserved"));
+      }
+    });
   }
 
   /**

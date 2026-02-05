@@ -56,7 +56,14 @@ public class FindEntityTypeByName
   public record EntityTypeName(EntityTypeNamespace namespace, String name) {
   }
 
-  @Override
+  /**
+   * Build {@link QueryRequest} for finding Entity.
+   * 
+   * @param tableName {@link String}
+   * @param siteId {@link String}
+   * @param record {@link FindEntityTypeByName.EntityTypeName}
+   * @return {@link QueryRequest}
+   */
   public QueryRequest build(final String tableName, final String siteId,
       final FindEntityTypeByName.EntityTypeName record) {
 

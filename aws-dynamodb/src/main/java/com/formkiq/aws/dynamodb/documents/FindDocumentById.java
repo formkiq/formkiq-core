@@ -21,42 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.entity;
+package com.formkiq.aws.dynamodb.documents;
 
+import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbFind;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
+import java.util.Map;
 
 /**
- * Find Entity by Name.
+ * Find Document by Id.
  */
-public class FindEntityByName implements DynamoDbFind<EntityRecord, FindEntityByName.EntityName> {
-
-  public record EntityName(String entityTypeId, String name) {
-  }
-
-  private QueryRequest build(final String tableName, final String siteId,
-      final FindEntityByName.EntityName record) {
-
-    DynamoDbKey key = EntityRecord.builder().entityTypeId(record.entityTypeId()).documentId("1")
-        .name(record.name()).buildKey(siteId);
-
-    return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
-        .beginsWith("entity#" + record.name()).limit(1).build(tableName);
-  }
+public class FindDocumentById implements DynamoDbFind<DocumentRecord, String>, DbKeys {
 
   @Override
-  public EntityRecord find(final DynamoDbService db, final String tableName, final String siteId,
-      final FindEntityByName.EntityName record) {
-    QueryRequest query = build(tableName, siteId, record);
-    QueryResponse response = db.query(query, true);
-    return response.items().isEmpty() ? null
-        : EntityRecord.fromAttributeMap(response.items().get(0));
+  public DocumentRecord find(final DynamoDbService db, final String tableName, final String siteId,
+      final String documentId) {
+    Map<String, AttributeValue> map = keysDocument(siteId, documentId);
+
+    DynamoDbKey key = new DynamoDbKey(map.get(PK).s(), map.get(SK).s(), null, null, null, null);
+    Map<String, AttributeValue> attributes = db.get(key);
+
+    return attributes.isEmpty() ? null : DocumentRecord.fromAttributeMap(attributes);
   }
 }

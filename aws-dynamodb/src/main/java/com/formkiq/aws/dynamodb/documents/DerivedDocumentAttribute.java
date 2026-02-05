@@ -21,26 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.documents;
 
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
 
 /**
- * DynamoDb Query Builder.
+ * Represents a document attribute whose value is derived dynamically from document data rather than
+ * stored explicitly.
  *
- * @param <T> Type of record
- * @param <E> Type of Payload
  */
-public interface DynamoDbFind<T, E> {
+public interface DerivedDocumentAttribute {
 
   /**
-   * Find the first record to match {@link QueryRequest}.
+   * Returns the unique attribute key/name.
    *
-   * @param db {@link DynamoDbService}
-   * @param tableName DynamoDb Table Name.
-   * @param siteId Site Identifier
-   * @param record Payload Parameter
-   * @return record
+   * @return attribute name
    */
-  T find(DynamoDbService db, String tableName, String siteId, E record);
+  String getAttributeKey();
+
+  /**
+   * Create {@link DocumentAttributeRecord}.
+   * 
+   * @param entityRecord {@link EntityRecord}
+   * @param document {@link DocumentRecord}
+   * @return {@link DocumentAttributeRecord}
+   */
+  DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
+      DocumentRecord document);
 }

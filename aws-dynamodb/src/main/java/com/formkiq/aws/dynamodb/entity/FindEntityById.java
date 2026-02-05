@@ -24,39 +24,25 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbFind;
-import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Map;
 
-import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 
 /**
- * Find Entity by Name.
+ * Find Entity by Id.
  */
-public class FindEntityByName implements DynamoDbFind<EntityRecord, FindEntityByName.EntityName> {
-
-  public record EntityName(String entityTypeId, String name) {
-  }
-
-  private QueryRequest build(final String tableName, final String siteId,
-      final FindEntityByName.EntityName record) {
-
-    DynamoDbKey key = EntityRecord.builder().entityTypeId(record.entityTypeId()).documentId("1")
-        .name(record.name()).buildKey(siteId);
-
-    return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk())
-        .beginsWith("entity#" + record.name()).limit(1).build(tableName);
-  }
+public class FindEntityById implements DynamoDbFind<EntityRecord, DocumentAttributeEntityKeyValue> {
 
   @Override
   public EntityRecord find(final DynamoDbService db, final String tableName, final String siteId,
-      final FindEntityByName.EntityName record) {
-    QueryRequest query = build(tableName, siteId, record);
-    QueryResponse response = db.query(query, true);
-    return response.items().isEmpty() ? null
-        : EntityRecord.fromAttributeMap(response.items().get(0));
+      final DocumentAttributeEntityKeyValue record) {
+
+    var key = new EntityRecord.Builder().name("").entityTypeId(record.entityTypeId())
+        .documentId(record.entityId()).buildKey(siteId);
+    Map<String, AttributeValue> attributes = db.get(key);
+    return attributes.isEmpty() ? null : EntityRecord.fromAttributeMap(attributes);
   }
 }
