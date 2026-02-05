@@ -31,7 +31,7 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
-import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;

@@ -1993,10 +1993,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute "
-                + "'security' is an access attribute, can only be changed by Admin\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute 'security' is an protected attribute, "
+            + "can only be changed by Goverance/Admin role\"}]}", e.getResponseBody());
       }
 
       // given
@@ -2066,10 +2065,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"security\",\"error\":\"attribute "
-                + "'security' is an access attribute, can only be changed by Admin\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"security\","
+            + "\"error\":\"attribute 'security' is an protected attribute, "
+            + "can only be changed by Goverance/Admin role\"}]}", e.getResponseBody());
       }
 
       // given

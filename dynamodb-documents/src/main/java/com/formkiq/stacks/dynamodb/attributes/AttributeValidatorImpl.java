@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -195,7 +196,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
           if (reserved != null) {
             attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.STRING,
-                AttributeType.STANDARD, true);
+                reserved.getType(), true);
 
             savedReservedKeys.add(da.getKey());
 
@@ -351,11 +352,13 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (isUpdateDeleteOrSet(validationAccess)) {
 
-      if (attribute != null && AttributeType.OPA.equals(attribute.getType())) {
-        String attributeKey = attribute.getKey();
-        String errorMsg =
-            "attribute '" + attributeKey + "' is an access attribute, can only be changed by Admin";
-        vb.addError(attributeKey, errorMsg);
+      if (attribute != null) {
+        if (List.of(AttributeType.OPA, AttributeType.GOVERNANCE).contains(attribute.getType())) {
+          String attributeKey = attribute.getKey();
+          String errorMsg = "attribute '" + attributeKey
+              + "' is an protected attribute, can only be changed by Goverance/Admin role";
+          vb.addError(attributeKey, errorMsg);
+        }
       }
     }
   }

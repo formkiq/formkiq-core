@@ -57,7 +57,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
-import com.formkiq.stacks.dynamodb.attributes.AttributeType;
+import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidation;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
