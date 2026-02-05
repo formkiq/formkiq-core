@@ -35,10 +35,9 @@ import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.api.SetBearer;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
@@ -58,7 +57,6 @@ import java.util.List;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -67,15 +65,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest {
 
   /** {@link DocumentService}. */
-  private static DocumentService service;
-  /** {@link DocumentService}. */
   private static DynamoDbService db;
 
   @BeforeAll
   public static void setup() throws URISyntaxException {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
-        new DocumentVersionServiceNoVersioning());
     db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
   }
 
@@ -107,9 +101,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
-  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId,
-      final String attributeKey) throws ApiException {
-    var resp = new GetDocumentAttributeRequestBuilder(documentId, attributeKey)
+  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId)
+      throws ApiException {
+    var resp = new GetDocumentAttributeRequestBuilder(documentId, "RetentionEffectiveStatus")
         .submit(client, siteId).throwIfError().response();
     return resp.getAttribute();
   }
@@ -117,10 +111,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   /**
    * Put Derived Attribute that does not exist.
    *
-   * @throws ApiException ApiException
    */
   @Test
-  void testAddDocumentWithDerivedAttributeNotFound() throws ApiException {
+  void testAddDocumentWithDerivedAttributeNotFound() {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       new SetBearer().apply(client, siteId);
@@ -149,7 +142,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   void testAddRetentionEntityToDocument() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId);
+      new SetBearer().apply(client, siteId + "_govern");
 
       String entityTypeId = addRetentionEntityType(siteId);
       String entityId = addRetentionEntity(siteId, entityTypeId, "DATE_INSERTED");
@@ -162,8 +155,33 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // then
       String documentId = resp.response().getDocumentId();
       verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
-      assertEquals("IN_EFFECT",
-          getDocumentAttribute(siteId, documentId, "RetentionEffectiveStatus").getStringValue());
+      assertEquals("IN_EFFECT", getDocumentAttribute(siteId, documentId).getStringValue());
+
+      // given
+      new SetBearer().apply(client, siteId);
+
+      // when
+      var delete = new DeleteDocumentAttributeRequestBuilder(documentId, "RetentionPolicy")
+          .submit(client, siteId);
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, delete.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"RetentionPolicy\","
+              + "\"error\":\"attribute 'RetentionPolicy' is an protected attribute, "
+              + "can only be changed by Goverance/Admin role\"}]}",
+          delete.exception().getResponseBody());
+
+      // given
+      new SetBearer().apply(client, siteId + "_govern");
+
+      // when
+      delete = new DeleteDocumentAttributeRequestBuilder(documentId, "RetentionPolicy")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(delete.response());
+      assertNull(delete.exception());
     }
   }
 
@@ -176,10 +194,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   void testAddRetentionEntityToDocumentDateInsertedInEffect() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId);
+      new SetBearer().apply(client, siteId + "_govern");
 
       String entityTypeId = addRetentionEntityType(siteId);
-      // DATE_LAST_MODIFIED
       String entityId = addRetentionEntity(siteId, entityTypeId, "DATE_INSERTED");
 
       // when
@@ -202,7 +219,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   void testAddRetentionEntityToDocumentDateInsertedNotInEffect() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId);
+      new SetBearer().apply(client, siteId + "_govern");
 
       String entityTypeId = addRetentionEntityType(siteId);
       String entityId = addRetentionEntity(siteId, entityTypeId, "DATE_INSERTED");
@@ -241,7 +258,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   void testAddRetentionEntityToDocumentDateLastModifiedInEffect() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId);
+      new SetBearer().apply(client, siteId + "_govern");
 
       String entityTypeId = addRetentionEntityType(siteId);
       String entityId = addRetentionEntity(siteId, entityTypeId, "DATE_LAST_MODIFIED");
@@ -267,7 +284,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   void testAddRetentionEntityToDocumentDateLastModifiedNotInEffect() throws ApiException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId);
+      new SetBearer().apply(client, siteId + "_govern");
 
       String entityTypeId = addRetentionEntityType(siteId);
       String entityId = addRetentionEntity(siteId, entityTypeId, "DATE_LAST_MODIFIED");
@@ -299,10 +316,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   /**
    * Get Derived Attribute that does not exist.
    *
-   * @throws ApiException ApiException
    */
   @Test
-  void testGetDerivedAttributeNotFound() throws ApiException {
+  void testGetDerivedAttributeNotFound() {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       new SetBearer().apply(client, siteId);

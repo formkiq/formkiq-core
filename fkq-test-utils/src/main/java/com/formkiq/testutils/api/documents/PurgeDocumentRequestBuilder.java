@@ -21,19 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.attributes;
+package com.formkiq.testutils.api.documents;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Attribute Type.
+ * Builder for Purge Document Request.
  */
-@Reflectable
-public enum AttributeType {
-  /** OPA. */
-  OPA,
-  /** Standard. */
-  STANDARD,
-  /** GOVERNANCE. */
-  GOVERNANCE
+public class PurgeDocumentRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
+
+  /** {@link String}. */
+  private final String id;
+
+  /**
+   * constructor.
+   *
+   * @param documentId {@link String}
+   */
+  public PurgeDocumentRequestBuilder(final String documentId) {
+    this.id = documentId;
+  }
+
+  @Override
+  public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new DocumentsApi(apiClient).purgeDocument(this.id, siteId));
+  }
 }
