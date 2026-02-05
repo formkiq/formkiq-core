@@ -15,3 +15,5 @@ node_modules
 !console/src/test/resources/test.zip
 websocket-api/src/coverage
 .settings
+
+codex-patches
