@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.attributes;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -50,10 +51,18 @@ public enum AttributeKeyReserved {
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
+  /** Retention Policy. */
+  RETENTION_POLICY("RetentionPolicy"),
   /** Retention Period In Days. */
-  RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeDataType.NUMBER),
+  RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeDataType.NUMBER, false),
   /** Retention Start Date Source Type. */
-  RETENTION_START_DATE_SOURCE_TYPE("RetentionStartDateSourceType");
+  RETENTION_START_DATE_SOURCE_TYPE("RetentionStartDateSourceType"),
+  /** Retention Effective Start Date. */
+  RETENTION_EFFECTIVE_START_DATE("RetentionEffectiveStartDate", AttributeDataType.STRING, true),
+  /** Retention Effective End Date. */
+  RETENTION_EFFECTIVE_END_DATE("RetentionEffectiveEndDate", AttributeDataType.STRING, true),
+  /** Retention Effective Status. */
+  RETENTION_EFFECTIVE_STATUS("RetentionEffectiveStatus", AttributeDataType.STRING, true);
 
   /**
    * Find {@link AttributeKeyReserved}.
@@ -67,6 +76,18 @@ public enum AttributeKeyReserved {
     return a.orElse(null);
   }
 
+  /**
+   * Get Derived Attributes.
+   * 
+   * @return {@link List} {@link AttributeKeyReserved}
+   */
+  public static List<AttributeKeyReserved> getDerivedAttributes() {
+    return Arrays.stream(values()).filter(AttributeKeyReserved::isDerived).toList();
+  }
+
+  /** Is Attribute Derived. */
+  private final boolean derived;
+
   /** Attribute Data Type. */
   private final AttributeDataType dataType;
 
@@ -74,12 +95,14 @@ public enum AttributeKeyReserved {
   private final String key;
 
   AttributeKeyReserved(final String reservedKey) {
-    this(reservedKey, AttributeDataType.STRING);
+    this(reservedKey, AttributeDataType.STRING, false);
   }
 
-  AttributeKeyReserved(final String reservedKey, final AttributeDataType attributeDataType) {
+  AttributeKeyReserved(final String reservedKey, final AttributeDataType attributeDataType,
+      final boolean derivedAttribute) {
     this.key = reservedKey;
     this.dataType = attributeDataType;
+    this.derived = derivedAttribute;
   }
 
   /**
@@ -98,5 +121,14 @@ public enum AttributeKeyReserved {
    */
   public String getKey() {
     return this.key;
+  }
+
+  /**
+   * Is Attribute Key Derived.
+   * 
+   * @return boolean
+   */
+  public boolean isDerived() {
+    return derived;
   }
 }

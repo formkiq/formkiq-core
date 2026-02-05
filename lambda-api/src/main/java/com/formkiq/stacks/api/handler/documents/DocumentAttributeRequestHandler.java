@@ -24,12 +24,21 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.FindDocumentById;
+import com.formkiq.aws.dynamodb.entity.FindEntityById;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -50,6 +59,46 @@ import com.formkiq.validation.ValidationException;
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/attributes/{attributeKey}". */
 public class DocumentAttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  private static Collection<Map<String, Object>> findDerivedAttribute(final String siteId,
+      final String documentId, final String attributeKey, final DynamoDbService db,
+      final String tableName, final DocumentRecord document,
+      final DocumentAttributeRecordToMap toMap) {
+
+    Collection<Map<String, Object>> map = Collections.emptyList();
+
+    var attribute = AttributeKeyReserved.find(attributeKey);
+    if (attribute != null && attribute.isDerived()) {
+
+      var presetEntity = PresetEntity.findPresetEntityByDerivedAttribute(attributeKey);
+      if (presetEntity.isPresent()) {
+
+        var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey);
+        if (derivedAttribute.isPresent()) {
+
+          var documentAttributes =
+              new QueryDocumentAttributesByKey(documentId, presetEntity.get().getName()).query(db,
+                  tableName, siteId, null, 1);
+
+          if (!documentAttributes.items().isEmpty()) {
+
+            var documentAttribute = documentAttributes.items().get(0);
+            var stringValue = DynamoDbTypes.toString(documentAttribute.get("stringValue"));
+
+            var entityKeyValue = DocumentAttributeEntityKeyValue.fromString(stringValue);
+            var entityRecord = new FindEntityById().find(db, tableName, siteId, entityKeyValue);
+
+            if (entityRecord != null) {
+              var documentAttributeRecord =
+                  derivedAttribute.get().getDocumentAttributeRecord(entityRecord, document);
+              map = toMap.apply(siteId, List.of(documentAttributeRecord));
+            }
+          }
+        }
+      }
+    }
+    return map;
+  }
 
   private static AttributeValidationType getValidationType(
       final Collection<DocumentAttributeRecord> documentAttributes) {
@@ -96,18 +145,23 @@ public class DocumentAttributeRequestHandler
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
-    verifyDocument(awsservice, siteId, documentId);
+    DocumentRecord document = verifyDocument(awsservice, siteId, documentId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     List<DocumentAttributeRecord> list =
         documentService.findDocumentAttribute(siteId, documentId, attributeKey);
 
-    Collection<Map<String, Object>> map =
-        new DocumentAttributeRecordToMap(true, true, db, tableName).apply(siteId, list);
+    var toMap = new DocumentAttributeRecordToMap(true, true, db, tableName, document);
+    Collection<Map<String, Object>> map = toMap.apply(siteId, list);
 
     if (map.isEmpty()) {
-      throw new NotFoundException(
-          "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
+
+      map = findDerivedAttribute(siteId, documentId, attributeKey, db, tableName, document, toMap);
+
+      if (map.isEmpty()) {
+        throw new NotFoundException(
+            "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
+      }
     }
 
     return ApiRequestHandlerResponse.builder().ok().body("attribute", map.iterator().next())
@@ -174,11 +228,17 @@ public class DocumentAttributeRequestHandler
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'").build();
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+  private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
       final String documentId) {
-    DocumentService ds = awsservice.getExtension(DocumentService.class);
-    if (!ds.exists(siteId, documentId)) {
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+
+    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentId);
+    if (document == null) {
       throw new DocumentNotFoundException(documentId);
     }
+
+    return document;
   }
 }

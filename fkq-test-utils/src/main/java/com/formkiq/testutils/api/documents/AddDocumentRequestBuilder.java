@@ -28,11 +28,13 @@ import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -132,6 +134,23 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   public AddDocumentRequestBuilder addAttribute(final String key, final String value) {
     AddDocumentAttribute attr =
         new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).stringValue(value));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Entity Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @param namespace {@link EntityTypeNamespace}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addAttribute(final String key, final String entityTypeId,
+      final String entityId, final EntityTypeNamespace namespace) {
+    AddDocumentAttribute attr = new AddDocumentAttribute(new AddDocumentAttributeEntity().key(key)
+        .entityTypeId(entityTypeId).entityId(entityId).namespace(namespace));
     this.request.addAttributesItem(attr);
     return this;
   }

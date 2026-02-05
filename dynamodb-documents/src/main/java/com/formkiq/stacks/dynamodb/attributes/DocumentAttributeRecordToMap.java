@@ -25,13 +25,17 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.entity.AttributeValueToEntityTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityAttributeTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityDocumentAttributeEntityKeyValueGet;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
@@ -60,6 +64,8 @@ public class DocumentAttributeRecordToMap implements
   private final DynamoDbService db;
   /** Table Name. */
   private final String tabeName;
+  /** {@link DocumentRecord}. */
+  private final DocumentRecord doc;
 
   /**
    * constructor.
@@ -67,7 +73,7 @@ public class DocumentAttributeRecordToMap implements
    * @param uniqueAttributeKeys boolean
    */
   public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys) {
-    this(uniqueAttributeKeys, false, null, null);
+    this(uniqueAttributeKeys, false, null, null, null);
   }
 
   /**
@@ -77,14 +83,16 @@ public class DocumentAttributeRecordToMap implements
    * @param loadEntityValues boolean
    * @param dbService {@link DynamoDbService}
    * @param dynamoDbTableName {@link String}
+   * @param document {@link DocumentRecord}
    */
   public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys,
       final boolean loadEntityValues, final DynamoDbService dbService,
-      final String dynamoDbTableName) {
+      final String dynamoDbTableName, final DocumentRecord document) {
     this.uniqueKeys = uniqueAttributeKeys;
     this.loadEntities = loadEntityValues;
     this.db = dbService;
     this.tabeName = dynamoDbTableName;
+    this.doc = document;
   }
 
   private void addEntityValue(final DocumentAttributeRecord a,
@@ -93,12 +101,17 @@ public class DocumentAttributeRecordToMap implements
 
     if (DocumentAttributeValueType.ENTITY.equals(a.getValueType())
         && !isEmpty(a.getStringValue())) {
+
       String key = a.getStringValue();
       if (entityMap.containsKey(key)) {
 
-        Map<String, Object> values =
-            new AttributeValueToEntityTransformer().apply(entityMap.get(key));
+        Map<String, AttributeValue> entityAttributes = entityMap.get(key);
+        AttributeValueToEntityTransformer transformer = new AttributeValueToEntityTransformer();
+        Map<String, Object> values = transformer.apply(entityAttributes);
         new EntityAttributeTransformer().apply(values);
+
+        EntityRecord entityRecord = EntityRecord.fromAttributeMap(entityAttributes);
+        updateDervivedAttributes(entityRecord, a.getKey(), values);
 
         lastValues.put("entity", values);
       }
@@ -204,6 +217,31 @@ public class DocumentAttributeRecordToMap implements
     }
 
     return Collections.emptyMap();
+  }
+
+  private void updateDervivedAttributes(final EntityRecord entityRecord, final String key,
+      final Map<String, Object> values) {
+
+    if (doc != null && AttributeKeyReserved.RETENTION_POLICY.getKey().equals(key)) {
+
+      Object rawAttributes = values.get("attributes");
+      List<Map<String, Object>> attributes = rawAttributes instanceof List<?> rawList
+          ? rawList.stream().filter(Map.class::isInstance).map(m -> (Map<String, Object>) m)
+              .collect(Collectors.toCollection(ArrayList::new))
+          : List.of();
+
+      PresetEntity.RETENTION_POLICY.getDerivedAttributes().forEach(da -> {
+
+        var transformer = new AttributeValueToEntityTransformer();
+        var dar = da.getDocumentAttributeRecord(entityRecord, doc);
+        Map<String, Object> map = transformer.apply(dar.getAttributes(null));
+        map.remove("userId");
+        map.remove("entityId");
+        attributes.add(map);
+      });
+
+      values.put("attributes", attributes);
+    }
   }
 
 }

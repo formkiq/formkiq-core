@@ -108,8 +108,25 @@ public interface DynamoDbTypes {
     return av.l().stream().map(l -> new AttributeValueToMap(null).apply(l.m())).toList();
   }
 
+  /**
+   * Convert {@link AttributeValue} to {@link Long}.
+   * 
+   * @param attributeValue {@link AttributeValue}
+   * @return {@link Long}
+   */
   static Long toLong(AttributeValue attributeValue) {
-    return attributeValue != null ? Long.valueOf(attributeValue.n()) : null;
+    return toLong(attributeValue, null);
+  }
+
+  /**
+   * Convert {@link AttributeValue} to {@link Long} with default value.
+   * 
+   * @param attributeValue {@link AttributeValue}
+   * @param defaultValue {@link Long}
+   * @return {@link Long}
+   */
+  static Long toLong(AttributeValue attributeValue, Long defaultValue) {
+    return attributeValue != null ? Long.valueOf(attributeValue.n()) : defaultValue;
   }
 
   /**

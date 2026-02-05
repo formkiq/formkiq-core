@@ -21,26 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.entity;
 
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttributeString;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 /**
- * DynamoDb Query Builder.
- *
- * @param <T> Type of record
- * @param <E> Type of Payload
+ * RetentionEffectiveStartDate {@link DerivedDocumentAttribute}.
  */
-public interface DynamoDbFind<T, E> {
+public class RetentionEffectiveStartDateAttribute implements DerivedDocumentAttributeString {
+  @Override
+  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
+    var sourceType = DynamoDbTypes.toString(entityRecord.getAttributes()
+        .get(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey()));
+    var date = RetentionStartDateSourceType.DATE_LAST_MODIFIED.name().equals(sourceType)
+        ? document.lastModifiedDate()
+        : document.insertedDate();
+    return DateUtil.getIsoDateFormatter().format(date);
+  }
 
-  /**
-   * Find the first record to match {@link QueryRequest}.
-   *
-   * @param db {@link DynamoDbService}
-   * @param tableName DynamoDb Table Name.
-   * @param siteId Site Identifier
-   * @param record Payload Parameter
-   * @return record
-   */
-  T find(DynamoDbService db, String tableName, String siteId, E record);
+  @Override
+  public String getAttributeKey() {
+    return "RetentionEffectiveStartDate";
+  }
 }

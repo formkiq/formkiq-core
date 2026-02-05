@@ -21,26 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb;
+package com.formkiq.aws.dynamodb.entity;
 
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttributeString;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+
+import java.util.Date;
 
 /**
- * DynamoDb Query Builder.
- *
- * @param <T> Type of record
- * @param <E> Type of Payload
+ * RetentionEffectiveEndDate {@link DerivedDocumentAttribute}.
  */
-public interface DynamoDbFind<T, E> {
+public class RetentionEffectiveStatusAttribute implements DerivedDocumentAttributeString {
+  @Override
+  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
 
-  /**
-   * Find the first record to match {@link QueryRequest}.
-   *
-   * @param db {@link DynamoDbService}
-   * @param tableName DynamoDb Table Name.
-   * @param siteId Site Identifier
-   * @param record Payload Parameter
-   * @return record
-   */
-  T find(DynamoDbService db, String tableName, String siteId, E record);
+    var now = DateUtil.getIsoDateFormatter().format(new Date());
+    var start = new RetentionEffectiveStartDateAttribute().calculate(entityRecord, document);
+    var end = new RetentionEffectiveEndDateAttribute().calculate(entityRecord, document);
+
+    return now.compareTo(start) >= 0 && now.compareTo(end) <= 0 ? "IN_EFFECT" : "NOT_IN_EFFECT";
+  }
+
+  @Override
+  public String getAttributeKey() {
+    return "RetentionEffectiveStatus";
+  }
 }

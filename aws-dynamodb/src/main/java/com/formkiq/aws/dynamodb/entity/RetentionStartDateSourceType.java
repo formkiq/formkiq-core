@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import java.util.Arrays;
+
 /**
  * Defines the source used to determine the start date for retention calculations.
  */
@@ -56,7 +58,8 @@ public enum RetentionStartDateSourceType {
     try {
       return RetentionStartDateSourceType.valueOf(value.trim().toUpperCase());
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid RetentionStartDateSourceType: " + value, e);
+      throw new IllegalArgumentException("Invalid 'RetentionStartDateSourceType' must be "
+          + String.join(",", Arrays.stream(values()).sorted().map(Enum::name).toList()));
     }
   }
 }

@@ -35,6 +35,8 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -80,13 +82,13 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    verifyDocument(awsservice, siteId, documentId);
+    DocumentRecord document = verifyDocument(awsservice, siteId, documentId);
 
     PaginationResults<DocumentAttributeRecord> results =
         documentService.findDocumentAttributes(siteId, documentId, ptoken, limit);
 
     Collection<Map<String, Object>> list =
-        new DocumentAttributeRecordToMap(true, true, db, tableName).apply(siteId,
+        new DocumentAttributeRecordToMap(true, true, db, tableName, document).apply(siteId,
             results.getResults());
 
     ApiPagination current =
@@ -180,11 +182,16 @@ public class DocumentAttributesRequestHandler
         .body("message", "set attributes on documentId '" + documentId + "'").build();
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+  private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
       final String documentId) {
-    DocumentService ds = awsservice.getExtension(DocumentService.class);
-    if (!ds.exists(siteId, documentId)) {
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+
+    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentId);
+    if (document == null) {
       throw new DocumentNotFoundException(documentId);
     }
+
+    return document;
   }
 }
