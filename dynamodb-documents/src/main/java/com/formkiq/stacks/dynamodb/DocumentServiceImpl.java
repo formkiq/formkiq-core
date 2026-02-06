@@ -2506,9 +2506,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentAttributeRecord> relationships = documentAttributes.stream()
         .filter(a -> AttributeKeyReserved.RELATIONSHIPS.getKey().equals(a.getKey())).toList();
 
-    List<String> docIds = relationships.stream()
-        .map(r -> r.getStringValue().substring(r.getStringValue().indexOf("#") + 1))
-        .filter(d -> !d.equals(documentId)).toList();
+    List<String> docIds = relationships.stream().map(r -> {
+      String s = !isEmpty(r.getStringValue()) ? r.getStringValue() : "#";
+      return s.substring(s.indexOf("#") + 1);
+    }).filter(d -> !d.equals(documentId)).toList();
     List<DynamoDbKey> keys = docIds.stream().map(id -> {
       Map<String, AttributeValue> val = keysDocument(siteId, id);
       return new DynamoDbKey(val.get(PK).s(), val.get(SK).s(), "", "", "", "");

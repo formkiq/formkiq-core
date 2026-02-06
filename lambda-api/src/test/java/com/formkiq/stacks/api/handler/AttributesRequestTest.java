@@ -72,6 +72,8 @@ import com.formkiq.client.model.WatermarkPositionXAnchor;
 import com.formkiq.client.model.WatermarkPositionYAnchor;
 import com.formkiq.client.model.WatermarkScale;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -1703,6 +1705,29 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       // then
       response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
+    }
+  }
+
+  /**
+   * Test Add relationship when missing linking document.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAddRelationshipMissingDocument() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      setBearerToken(siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().addAttribute("Relationships")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"\",\"error\":\"document '' does not exist\"}]}",
+          resp.exception().getResponseBody());
     }
   }
 
