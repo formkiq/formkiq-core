@@ -133,8 +133,14 @@ public class SqsServiceImpl implements SqsService {
 
   @Override
   public ReceiveMessageResponse receiveMessages(final String queueUrl) {
-    return this.sqsClient
-        .receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build());
+    return receiveMessages(queueUrl, 1);
+  }
+
+  @Override
+  public ReceiveMessageResponse receiveMessages(final String queueUrl,
+      final int maxNumberOfMessages) {
+    return this.sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl)
+        .maxNumberOfMessages(maxNumberOfMessages).build());
   }
 
   @Override
