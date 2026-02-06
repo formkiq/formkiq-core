@@ -121,6 +121,15 @@ public interface SqsService {
   ReceiveMessageResponse receiveMessages(String queueUrl);
 
   /**
+   * Receives SQS Messages from a queueUrl.
+   *
+   * @param queueUrl {@link String}
+   * @param maxNumberOfMessages int
+   * @return {@link ReceiveMessageResponse}
+   */
+  ReceiveMessageResponse receiveMessages(String queueUrl, int maxNumberOfMessages);
+
+  /**
    * Send Message to SQS.
    * 
    * @param queueUrl {@link String}

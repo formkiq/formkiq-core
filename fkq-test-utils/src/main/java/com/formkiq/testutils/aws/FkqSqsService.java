@@ -113,6 +113,12 @@ public class FkqSqsService implements SqsService {
   }
 
   @Override
+  public ReceiveMessageResponse receiveMessages(final String queueUrl,
+      final int maxNumberOfMessages) {
+    return this.service.receiveMessages(queueUrl, maxNumberOfMessages);
+  }
+
+  @Override
   public SendMessageResponse sendMessage(final String queueUrl, final String message) {
     return this.service.sendMessage(queueUrl, message);
   }

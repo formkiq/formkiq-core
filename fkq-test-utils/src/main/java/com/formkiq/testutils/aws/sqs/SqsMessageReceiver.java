@@ -38,6 +38,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class SqsMessageReceiver {
 
+  /** Message Fetch Count. */
+  private static final int MESSAGE_COUNT = 10;
+  /** Sleep Delay. */
+  private static final int SLEEP_DELAY = 20;
   /** Retry Limit. */
   private static final int RETRY_LIMIT = 10;
   /** {@link SqsService}. */
@@ -106,22 +110,24 @@ public class SqsMessageReceiver {
   public List<Message> get(final List<String> searchStrings) throws InterruptedException {
     int retry = 0;
     List<Message> messages = Collections.emptyList();
-    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
 
     while (messages.isEmpty()) {
-      TimeUnit.SECONDS.sleep(1);
-      response = sqs.receiveMessages(queueUrl);
+      ReceiveMessageResponse response = sqs.receiveMessages(queueUrl, MESSAGE_COUNT);
+      messages = response.messages();
+      messages.forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
+      messages = messages.stream().filter(m -> searchStrings.stream().allMatch(m.body()::contains))
+          .toList();
 
-      messages = response.messages().stream()
-          .filter(m -> searchStrings.stream().allMatch(m.body()::contains)).toList();
+      if (messages.isEmpty()) {
+        retry++;
+        TimeUnit.MILLISECONDS.sleep(SLEEP_DELAY);
+      }
 
-      retry++;
       if (retry > RETRY_LIMIT) {
         throw new RuntimeException("Timeout waiting for SQS message");
       }
     }
 
-    messages.forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
     return messages;
   }
 }
