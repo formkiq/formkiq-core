@@ -96,7 +96,7 @@ public class PublicationsDocumentIdRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addDocumentViewActivity(siteId, documentId, s3VersionKey);
+      plugin.addDocumentViewActivity(siteId, documentId, s3VersionKey, false);
     }
 
     return ApiRequestHandlerResponse.builder().status(SC_TEMPORARY_REDIRECT)

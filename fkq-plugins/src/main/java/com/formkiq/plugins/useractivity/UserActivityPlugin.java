@@ -50,8 +50,9 @@ public interface UserActivityPlugin {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param versionKey {@link String}
+   * @param inline Is new inline
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey);
+  void addDocumentViewActivity(String siteId, String documentId, String versionKey, boolean inline);
 
   /**
    * Add User Activity.
