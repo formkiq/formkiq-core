@@ -9958,6 +9958,7 @@ Resources:
               description:  "The type of the activity"
               enum:
                 - VIEW
+                - DOWNLOAD
                 - CREATE
                 - UPDATE
                 - DELETE

@@ -120,7 +120,7 @@ public class DocumentIdContentRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addDocumentViewActivity(siteId, documentId, versionKey);
+      plugin.addDocumentViewActivity(siteId, documentId, versionKey, false);
     }
 
     authorization.addCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name(), item);

@@ -116,7 +116,7 @@ public class DocumentIdUrlRequestHandler
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
         UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-        plugin.addDocumentViewActivity(siteId, documentId, versionKey);
+        plugin.addDocumentViewActivity(siteId, documentId, versionKey, inline);
       }
     }
 

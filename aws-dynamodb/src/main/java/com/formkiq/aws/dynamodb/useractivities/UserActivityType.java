@@ -32,6 +32,8 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public enum UserActivityType {
   /** View Activity. */
   VIEW,
+  /** Download Activity. */
+  DOWNLOAD,
   /** Create Activity. */
   CREATE,
   /** Update Activity. */
