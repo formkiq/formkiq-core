@@ -87,6 +87,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogMessageBuilder;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.plugins.useractivity.MapChangesFunction;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -423,27 +424,20 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       Map<String, Object> s3PresignedUrlAttributes = login(bucket, key);
 
-      String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
-          eventName, bucket, key);
-      logger.info(s);
-
       if (bucket != null && key != null) {
 
         boolean create = eventName != null && eventName.toLowerCase().contains("objectcreated");
 
         boolean remove = eventName != null && eventName.toLowerCase().contains("objectremove");
 
-        logger.trace(
-            String.format("processing event %s for file %s in bucket %s", eventName, bucket, key));
-
         try {
 
           if (remove) {
 
-            processS3Delete(bucket, key);
+            processS3Delete(eventName, bucket, key);
 
           } else {
-            processS3File(create, bucket, key, s3VersionId, s3PresignedUrlAttributes);
+            processS3File(eventName, create, bucket, key, s3VersionId, s3PresignedUrlAttributes);
           }
 
         } catch (IOException | InterruptedException ex) {
@@ -560,21 +554,25 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /**
    * Process S3 Delete Request.
    *
+   * @param eventName {@link String}
    * @param bucket {@link String}
    * @param key {@link String}
    * @throws InterruptedException InterruptedException
    * @throws IOException IOException
    */
-  private void processS3Delete(final String bucket, final String key)
+  private void processS3Delete(final String eventName, final String bucket, final String key)
       throws IOException, InterruptedException {
 
-    if (!s3service.getObjectMetadata(bucket, key, null).isObjectExists()) {
+    boolean objectExist = s3service.getObjectMetadata(bucket, key, null).isObjectExists();
+    String s = String.format(
+        "{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\",\"objectExist\",\"%s\"}",
+        eventName, bucket, key, objectExist);
+    logger.info(s);
+
+    if (!objectExist) {
 
       String siteId = getSiteId(key);
       String documentId = resetDatabaseKey(siteId, key);
-
-      String msg = String.format("Removing %s from bucket %s.", key, bucket);
-      logger.trace(msg);
 
       boolean moduleOcr = serviceCache.hasModule("ocr");
       boolean moduleFulltext = serviceCache.hasModule("opensearch");
@@ -619,6 +617,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   /**
    * Process S3 File.
    *
+   * @param eventName {@link String}
    * @param create boolean
    * @param s3bucket {@link String}
    * @param s3key {@link String}
@@ -626,9 +625,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * @param s3PresignedUrlAttributes {@link Map}
    * @throws FileNotFoundException FileNotFoundException
    */
-  private void processS3File(final boolean create, final String s3bucket, final String s3key,
-      final String s3VersionId, final Map<String, Object> s3PresignedUrlAttributes)
-      throws FileNotFoundException {
+  private void processS3File(final String eventName, final boolean create, final String s3bucket,
+      final String s3key, final String s3VersionId,
+      final Map<String, Object> s3PresignedUrlAttributes) throws FileNotFoundException {
+
+    String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
+        eventName, s3bucket, s3key);
+    logger.info(s);
 
     String key = urlDecode(s3key);
 
@@ -651,13 +654,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       contentType = findContentType(item, contentType);
 
       if (logger.isLogged(LogLevel.TRACE)) {
-        logger.trace("metadata: " + resp.getMetadata());
-        logger.trace("item checksum: " + resp.getChecksum());
-        logger.trace("item path: " + item.getPath());
-        logger.trace("item content-type: " + resp.getContentType());
-        logger.trace("content-type: " + contentType);
-        logger.trace("s3 version id: " + s3VersionId);
-        logger.trace("s3 file version id: " + resp.getVersionId());
+        s = LogMessageBuilder.title("updating document").property("metadata", resp.getMetadata())
+            .property("checksum", resp.getChecksum()).property("path", item.getPath())
+            .property("contentType", resp.getContentType()).property("s3 version id", s3VersionId)
+            .property("s3 file version id", resp.getVersionId()).build();
+        logger.trace(s);
       }
 
       Map<String, AttributeValue> attributes = new HashMap<>();
@@ -669,19 +670,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         service.updateDocument(siteId, documentId, attributes);
 
-        Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
-        Map<String, ChangeRecord> changeRecords =
-            new MapChangesFunction().apply(prevAttributes, currentMap);
-        Map<String, Object> changes = convertToObjectMap(changeRecords);
-
-        s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key,
-            createMetadata(s3PresignedUrlAttributes), changes);
-
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
         service.addTags(siteId, documentId, tags, null);
 
         service.deleteDocumentFormats(siteId, documentId);
       }
+
+      putObjectEvent(s3bucket, s3key, s3PresignedUrlAttributes, attributes, prevAttributes);
 
       DocumentEvent event =
           buildDocumentEvent(create ? CREATE : UPDATE, siteId, item, s3bucket, key, contentType);
@@ -692,6 +687,19 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     } else {
       logger.error("Cannot find document " + documentId + " in site " + siteId);
     }
+  }
+
+  private void putObjectEvent(final String s3bucket, final String s3key,
+      final Map<String, Object> s3PresignedUrlAttributes,
+      final Map<String, AttributeValue> attributes, final Map<String, Object> prevAttributes) {
+
+    Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
+    Map<String, ChangeRecord> changeRecords =
+        new MapChangesFunction().apply(prevAttributes, currentMap);
+    Map<String, Object> changes = convertToObjectMap(changeRecords);
+
+    s3ServiceInterceptor.putObjectEvent(s3service, s3bucket, s3key,
+        createMetadata(s3PresignedUrlAttributes), changes);
   }
 
   /**
