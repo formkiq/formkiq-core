@@ -97,8 +97,19 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  OperationalMode:
+    Type: String
+    Default: "ACTIVE"
+    Description: >
+      Controls the runtime operational behavior of the FormKiQ environment.
+
 Conditions:
-        
+
+  IsOperationalModeActive:
+    Fn::Equals:
+      - Ref: OperationalMode
+      - ACTIVE
+
   HasVpcStackName:
     Fn::Not:
       - Fn::Equals: 
@@ -179,6 +190,8 @@ Resources:
             Ref: FormKiQVersion
           USER_AUTHENTICATION:
             Ref: UserAuthentication
+          OPERATIONAL_MODE:
+            Ref: OperationalMode
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"

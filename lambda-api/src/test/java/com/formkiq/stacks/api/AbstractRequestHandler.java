@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.sns.SnsService;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +62,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceImpl;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
@@ -131,7 +132,7 @@ public abstract class AbstractRequestHandler {
     }
 
     String queueSqsArn = sqsService.getQueueArn(sqsDocumentEventUrl);
-    SnsService snsService = new SnsService(TestServices.getSnsConnection(null));
+    SnsService snsService = new SnsServiceImpl(TestServices.getSnsConnection(null));
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
     snsService.subscribe(snsDocumentEvent, "sqs", queueSqsArn);
   }

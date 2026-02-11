@@ -23,40 +23,21 @@
  */
 package com.formkiq.module.events;
 
-import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
- * 
- * {@link AwsServiceExtension} for {@link EventService}.
- *
+ * Disabled {@link EventService}.
  */
-public class EventServiceSnsExtension implements AwsServiceExtension<EventService> {
-
-  /** {@link EventService}. */
-  private EventService service;
-
-  /**
-   * constructor.
-   */
-  public EventServiceSnsExtension() {}
+public class EventServiceDisabled implements EventService {
+  @Override
+  public String publish(final Logger logger, final DocumentEvent event) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
   @Override
-  public EventService loadService(final AwsServiceCache awsServiceCache) {
-
-    if (this.service == null) {
-
-      SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      if ("ACTIVE".equals(awsServiceCache.environment("OPERATIONAL_MODE"))) {
-        this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
-      } else {
-        this.service = new EventServiceDisabled();
-      }
-    }
-
-    return this.service;
+  public String publish(final Logger logger, final FolderEvent event) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
   }
 }
-
-

@@ -72,6 +72,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
+import com.formkiq.aws.sns.SnsService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
@@ -104,7 +105,7 @@ import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sns.SnsServiceExtension;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
@@ -350,7 +351,7 @@ public class StagingS3CreateTest implements DbKeys {
       snsSqsCreateQueueUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
     }
 
-    snsService = new SnsService(TestServices.getSnsConnection(null));
+    snsService = new SnsServiceImpl(TestServices.getSnsConnection(null));
 
     snsDeleteTopic = snsService.createTopic("deleteDocument").topicArn();
     snsService.subscribe(snsDeleteTopic, "sqs",
@@ -382,6 +383,7 @@ public class StagingS3CreateTest implements DbKeys {
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
+    env.put("OPERATIONAL_MODE", "ACTIVE");
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     return env;
   }

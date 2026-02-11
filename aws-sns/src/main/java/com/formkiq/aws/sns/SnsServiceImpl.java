@@ -23,22 +23,41 @@
  */
 package com.formkiq.aws.sns;
 
+import java.util.Map;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest;
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse;
+import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
+import software.amazon.awssdk.services.sns.model.ListSubscriptionsResponse;
+import software.amazon.awssdk.services.sns.model.ListTopicsRequest;
 import software.amazon.awssdk.services.sns.model.ListTopicsResponse;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.PublishResponse;
+import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 import software.amazon.awssdk.services.sns.model.SubscribeResponse;
+import software.amazon.awssdk.services.sns.model.UnsubscribeRequest;
 import software.amazon.awssdk.services.sns.model.UnsubscribeResponse;
-
-import java.util.Map;
 
 /**
  * SNS Service.
  *
  */
-public interface SnsService {
+public class SnsServiceImpl implements SnsService {
 
+  /** {@link SnsClient}. */
+  private final SnsClient snsClient;
+
+  /**
+   * constructor.
+   * 
+   * @param connection {@link SnsConnectionBuilder}
+   * 
+   */
+  public SnsServiceImpl(final SnsConnectionBuilder connection) {
+    this.snsClient = connection.build();
+  }
 
   /**
    * Confirm SNS Subscription.
@@ -47,7 +66,11 @@ public interface SnsService {
    * @param token {@link String}
    * @return {@link ConfirmSubscriptionResponse}
    */
-  ConfirmSubscriptionResponse confirmSubscription(String topicArn, String token);
+  public ConfirmSubscriptionResponse confirmSubscription(final String topicArn,
+      final String token) {
+    return this.snsClient.confirmSubscription(
+        ConfirmSubscriptionRequest.builder().topicArn(topicArn).token(token).build());
+  }
 
   /**
    * Create SNS Topic.
@@ -55,7 +78,9 @@ public interface SnsService {
    * @param topicName {@link String}
    * @return {@link CreateTopicResponse}
    */
-  CreateTopicResponse createTopic(String topicName);
+  public CreateTopicResponse createTopic(final String topicName) {
+    return this.snsClient.createTopic(CreateTopicRequest.builder().name(topicName).build());
+  }
 
   /**
    * Get a List of SNS Topics.
@@ -63,7 +88,9 @@ public interface SnsService {
    * @param nextToken {@link String}
    * @return {@link ListTopicsResponse}
    */
-  ListTopicsResponse listTopics(String nextToken);
+  public ListTopicsResponse listTopics(final String nextToken) {
+    return this.snsClient.listTopics(ListTopicsRequest.builder().nextToken(nextToken).build());
+  }
 
   /**
    * Publish Message to SNS Topic.
@@ -73,8 +100,11 @@ public interface SnsService {
    * @param messageAttributes {@link Map}
    * @return {@link PublishResponse}
    */
-  PublishResponse publish(String topicArn, String message,
-      Map<String, MessageAttributeValue> messageAttributes);
+  public PublishResponse publish(final String topicArn, final String message,
+      final Map<String, MessageAttributeValue> messageAttributes) {
+    return this.snsClient.publish(PublishRequest.builder().topicArn(topicArn).message(message)
+        .messageAttributes(messageAttributes).build());
+  }
 
   /**
    * Subscribe to SNS Topic.
@@ -84,7 +114,11 @@ public interface SnsService {
    * @param endpoint {@link String}
    * @return {@link SubscribeResponse}
    */
-  SubscribeResponse subscribe(String topicArn, String protocol, String endpoint);
+  public SubscribeResponse subscribe(final String topicArn, final String protocol,
+      final String endpoint) {
+    return this.snsClient.subscribe(SubscribeRequest.builder().protocol(protocol).topicArn(topicArn)
+        .endpoint(endpoint).build());
+  }
 
   /**
    * Deletes a subscription.
@@ -92,10 +126,16 @@ public interface SnsService {
    * @param subscriptionArn {@link String}
    * @return {@link UnsubscribeResponse}
    */
-  UnsubscribeResponse unsubscribe(String subscriptionArn);
+  public UnsubscribeResponse unsubscribe(final String subscriptionArn) {
+    return this.snsClient
+        .unsubscribe(UnsubscribeRequest.builder().subscriptionArn(subscriptionArn).build());
+  }
 
   /**
    * Unsubscribe all subscriptions.
    */
-  void unsubscribeAll();
+  public void unsubscribeAll() {
+    ListSubscriptionsResponse response = this.snsClient.listSubscriptions();
+    response.subscriptions().forEach(s -> unsubscribe(s.subscriptionArn()));
+  }
 }

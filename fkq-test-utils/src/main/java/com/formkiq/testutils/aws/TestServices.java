@@ -38,13 +38,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.secretsmanager.SecretsManagerConnectionBuilder;
+import com.formkiq.aws.sns.SnsService;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceImpl;
@@ -130,7 +131,7 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static String createSnsTopic() throws URISyntaxException {
-    SnsService snsService = new SnsService(getSnsConnection(null));
+    SnsService snsService = new SnsServiceImpl(getSnsConnection(null));
     return snsService.createTopic("sns_" + UUID.randomUUID()).topicArn();
   }
 
@@ -144,7 +145,7 @@ public final class TestServices {
   public static String createSqsSubscriptionToSnsTopic(final String snsTopicArn)
       throws URISyntaxException {
     SqsService sqsService = new SqsServiceImpl(getSqsConnection(null));
-    SnsService snsService = new SnsService(getSnsConnection(null));
+    SnsService snsService = new SnsServiceImpl(getSnsConnection(null));
     String queueUrl = sqsService.createQueue("sqs_" + UUID.randomUUID()).queueUrl();
     String sqsQueueArn = sqsService.getQueueArn(queueUrl);
     snsService.subscribe(snsTopicArn, "sqs", sqsQueueArn);

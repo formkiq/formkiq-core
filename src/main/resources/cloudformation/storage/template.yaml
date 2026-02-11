@@ -64,8 +64,19 @@ Parameters:
     Description: "Enable deletion protection on AWS Services that support the feature"
     Type: String
 
+  OperationalMode:
+    Type: String
+    Default: "ACTIVE"
+    Description: >
+      Controls the runtime operational behavior of the FormKiQ environment.
+
 Conditions:
-        
+
+  IsOperationalModeActive:
+    Fn::Equals:
+      - Ref: OperationalMode
+      - ACTIVE
+
   HasVpcStackName:
     Fn::Not:
       - Fn::Equals: 
@@ -173,12 +184,15 @@ Resources:
            AllowedMethods: ["PUT", "POST", "GET"]
            AllowedHeaders: ["*"]
       NotificationConfiguration:
-        QueueConfigurations:
-        - Event: 's3:ObjectCreated:*'
-          Queue: 
-            Fn::GetAtt:
-            - DocumentsStagingQueue
-            - Arn
+        Fn::If:
+          - IsOperationalModeActive
+          - QueueConfigurations:
+              - Event: 's3:ObjectCreated:*'
+                Queue:
+                  Fn::GetAtt:
+                    - DocumentsStagingQueue
+                    - Arn
+          - Ref: AWS::NoValue
       LifecycleConfiguration:
         Rules:
           - Id: ExpiryRule
@@ -270,17 +284,20 @@ Resources:
            AllowedMethods: ["PUT", "POST", "GET"]
            AllowedHeaders: ["*"]
       NotificationConfiguration:
-        LambdaConfigurations:
-        - Event: 's3:ObjectCreated:*'
-          Function: 
-            Fn::GetAtt:
-            - DocumentsS3Update
-            - Arn
-        - Event: 's3:ObjectRemoved:*'
-          Function: 
-            Fn::GetAtt:
-            - DocumentsS3Update
-            - Arn
+        Fn::If:
+          - IsOperationalModeActive
+          - LambdaConfigurations:
+              - Event: 's3:ObjectCreated:*'
+                Function:
+                  Fn::GetAtt:
+                    - DocumentsS3Update
+                    - Arn
+              - Event: 's3:ObjectRemoved:*'
+                Function:
+                  Fn::GetAtt:
+                    - DocumentsS3Update
+                    - Arn
+          - Ref: AWS::NoValue
       Tags:
         - Key: "Application"
           Value: "FormKiQ"
@@ -350,6 +367,8 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          OPERATIONAL_MODE:
+            Ref: OperationalMode
           CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/chat/completions"
           MODULE_typesense:
             Fn::If:
@@ -383,13 +402,18 @@ Resources:
         ActionsEvent:
           Type: SQS
           Properties:
-            Queue: 
-              Fn::GetAtt: 
-              - DocumentActionsQueue
-              - Arn
+            Queue:
+              Fn::GetAtt:
+                - DocumentActionsQueue
+                - Arn
             BatchSize: 1
             ScalingConfig:
               MaximumConcurrency: 200
+            Enabled:
+              Fn::If:
+                - IsOperationalModeActive
+                - true
+                - false
 
   StagingS3CreateLogGroup:
     Type: AWS::Logs::LogGroup
@@ -434,6 +458,8 @@ Resources:
             Ref: FormKiQType
           SNS_DOCUMENT_EVENT: 
             Ref: SnsDocumentEvent
+          OPERATIONAL_MODE:
+            Ref: OperationalMode
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
@@ -469,11 +495,16 @@ Resources:
         CreateSQSEvent:
           Type: SQS
           Properties:
-            Queue: 
-              Fn::GetAtt: 
-              - DocumentsStagingQueue
-              - Arn
+            Queue:
+              Fn::GetAtt:
+                - DocumentsStagingQueue
+                - Arn
             BatchSize: 1
+            Enabled:
+              Fn::If:
+                - IsOperationalModeActive
+                - true
+                - false
 
   StagingCreateObjectParameter:
     Type: AWS::SSM::Parameter
@@ -532,6 +563,8 @@ Resources:
             Ref: SnsDocumentEvent
           FormKiQType:
             Ref: FormKiQType
+          OPERATIONAL_MODE:
+            Ref: OperationalMode
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENTS_S3_BUCKET:
             Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
@@ -569,11 +602,16 @@ Resources:
         CreateSQSEvent:
           Type: SQS
           Properties:
-            Queue: 
-              Fn::GetAtt: 
-              - DocumentsUpdateQueue
-              - Arn
+            Queue:
+              Fn::GetAtt:
+                - DocumentsUpdateQueue
+                - Arn
             BatchSize: 1
+            Enabled:
+              Fn::If:
+                - IsOperationalModeActive
+                - true
+                - false
 
   DocumentActionsQueue:
     Type: "AWS::SQS::Queue"
@@ -715,6 +753,7 @@ Resources:
       
   SnsDocumentsCreateSubscriptionSqs:
     Type: AWS::SNS::Subscription
+    Condition: IsOperationalModeActive
     DependsOn:
     - DocumentActionsProcessor
     Properties:

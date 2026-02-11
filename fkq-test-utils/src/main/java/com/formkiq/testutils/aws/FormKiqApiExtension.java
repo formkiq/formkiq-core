@@ -175,6 +175,7 @@ public class FormKiqApiExtension
     map.put("FORMKIQ_VERSION", "1.1");
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("MODULE_site_permissions", "automatic");
+    map.put("OPERATIONAL_MODE", "ACTIVE");
 
     if (this.typeSenseExtension != null) {
       map.put("TYPESENSE_HOST", "http://localhost:" + this.typeSenseExtension.getFirstMappedPort());

@@ -34,68 +34,44 @@ import software.amazon.awssdk.services.sns.model.UnsubscribeResponse;
 import java.util.Map;
 
 /**
- * SNS Service.
- *
+ * Disabled {@link SnsServiceImpl}.
  */
-public interface SnsService {
+public class SnsServiceDisabled implements SnsService {
+  @Override
+  public ConfirmSubscriptionResponse confirmSubscription(final String topicArn,
+      final String token) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
+  @Override
+  public CreateTopicResponse createTopic(final String topicName) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
-  /**
-   * Confirm SNS Subscription.
-   * 
-   * @param topicArn {@link String}
-   * @param token {@link String}
-   * @return {@link ConfirmSubscriptionResponse}
-   */
-  ConfirmSubscriptionResponse confirmSubscription(String topicArn, String token);
+  @Override
+  public ListTopicsResponse listTopics(final String nextToken) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
-  /**
-   * Create SNS Topic.
-   * 
-   * @param topicName {@link String}
-   * @return {@link CreateTopicResponse}
-   */
-  CreateTopicResponse createTopic(String topicName);
+  @Override
+  public PublishResponse publish(final String topicArn, final String message,
+      final Map<String, MessageAttributeValue> messageAttributes) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
-  /**
-   * Get a List of SNS Topics.
-   * 
-   * @param nextToken {@link String}
-   * @return {@link ListTopicsResponse}
-   */
-  ListTopicsResponse listTopics(String nextToken);
+  @Override
+  public SubscribeResponse subscribe(final String topicArn, final String protocol,
+      final String endpoint) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
-  /**
-   * Publish Message to SNS Topic.
-   * 
-   * @param topicArn {@link String}
-   * @param message {@link String}
-   * @param messageAttributes {@link Map}
-   * @return {@link PublishResponse}
-   */
-  PublishResponse publish(String topicArn, String message,
-      Map<String, MessageAttributeValue> messageAttributes);
+  @Override
+  public UnsubscribeResponse unsubscribe(final String subscriptionArn) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 
-  /**
-   * Subscribe to SNS Topic.
-   * 
-   * @param topicArn {@link String}
-   * @param protocol {@link String}
-   * @param endpoint {@link String}
-   * @return {@link SubscribeResponse}
-   */
-  SubscribeResponse subscribe(String topicArn, String protocol, String endpoint);
-
-  /**
-   * Deletes a subscription.
-   * 
-   * @param subscriptionArn {@link String}
-   * @return {@link UnsubscribeResponse}
-   */
-  UnsubscribeResponse unsubscribe(String subscriptionArn);
-
-  /**
-   * Unsubscribe all subscriptions.
-   */
-  void unsubscribeAll();
+  @Override
+  public void unsubscribeAll() {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
 }

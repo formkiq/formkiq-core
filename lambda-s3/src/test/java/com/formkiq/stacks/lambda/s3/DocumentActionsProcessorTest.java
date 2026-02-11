@@ -46,6 +46,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceImpl;
@@ -318,7 +319,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 
-    SnsService sns = new SnsService(TestServices.getSnsConnection(null));
+    SnsService sns = new SnsServiceImpl(TestServices.getSnsConnection(null));
     snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
 
     SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
@@ -338,6 +339,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
     env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    env.put("OPERATIONAL_MODE", "ACTIVE");
     return env;
   }
 

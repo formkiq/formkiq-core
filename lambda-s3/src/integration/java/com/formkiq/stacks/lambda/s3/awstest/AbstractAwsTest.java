@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.formkiq.aws.eventbridge.EventBridgeConnectionBuilder;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.eventbridge.EventBridgeServiceImpl;
+import com.formkiq.aws.sns.SnsService;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -36,7 +37,7 @@ import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sns.SnsConnectionBuilder;
-import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsConnectionBuilder;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceImpl;
@@ -128,7 +129,7 @@ public abstract class AbstractAwsTest {
     s3PresignerService = new S3PresignerService(
         new S3PresignerConnectionBuilder().setCredentials(awsprofile).setRegion(awsregion));
     ssmService = new SsmServiceImpl(ssmBuilder);
-    snsService = new SnsService(snsBuilder);
+    snsService = new SnsServiceImpl(snsBuilder);
 
     edition = ssmService.getParameterValue("/formkiq/" + appenvironment + "/edition");
     sesbucketname =
