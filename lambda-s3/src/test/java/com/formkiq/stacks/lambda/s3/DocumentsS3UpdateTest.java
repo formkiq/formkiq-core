@@ -61,6 +61,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.stacks.dynamodb.GsonUtil;
@@ -225,7 +226,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     s3service.createBucket("example-bucket");
 
     SnsConnectionBuilder snsBuilder = TestServices.getSnsConnection(null);
-    SnsService snsService = new SnsService(snsBuilder);
+    SnsService snsService = new SnsServiceImpl(snsBuilder);
 
     final String snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
 
@@ -248,6 +249,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     map.put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
     map.put("AWS_REGION", AWS_REGION.id());
     map.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    map.put("OPERATIONAL_MODE", "ACTIVE");
     map.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");

@@ -80,7 +80,7 @@ public class ConsoleInstallHandlerTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    Map<String, String> env = Map.of("AWS_REGION", "us-east-1");
+    Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "OPERATIONAL_MODE", "ACTIVE");
     AwsServiceCache serviceCache =
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), cred)
             .addService(new S3AwsServiceRegistry()).build();

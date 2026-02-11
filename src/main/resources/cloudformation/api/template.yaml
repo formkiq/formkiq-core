@@ -143,6 +143,12 @@ Parameters:
     Description: Certificate Key Api Domain
     Default: ""
 
+  OperationalMode:
+    Type: String
+    Default: "Active"
+    Description: >
+      Controls the runtime operational behavior of the FormKiQ environment.
+
 Conditions:
 
   HasCertificateStackNameHttpApiDomain:
@@ -193,6 +199,8 @@ Resources:
     Properties:
       Location: ./api-lambda.yaml
       Parameters:
+        OperationalMode:
+          Ref: OperationalMode
         AppEnvironment: 
           Ref: AppEnvironment
         LogRetentionInDays:

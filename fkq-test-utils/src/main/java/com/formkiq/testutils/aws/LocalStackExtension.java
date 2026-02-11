@@ -31,6 +31,8 @@ import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import java.util.Map;
 import java.util.UUID;
+
+import com.formkiq.aws.sns.SnsService;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -39,7 +41,6 @@ import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
-import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sns.SnsServiceExtension;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
@@ -76,7 +77,8 @@ public class LocalStackExtension
 
     TestServices.startLocalStack();
 
-    Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE,
+        "OPERATIONAL_MODE", "ACTIVE");
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 

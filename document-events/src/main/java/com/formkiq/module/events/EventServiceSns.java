@@ -27,6 +27,7 @@ import java.util.Map;
 
 import com.formkiq.aws.sns.SnsConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -64,7 +65,7 @@ public final class EventServiceSns implements EventService {
     if (eventTopicArn == null) {
       throw new IllegalArgumentException("'eventTopicArn' is null");
     }
-    this.snsService = new SnsService(snsBuilder);
+    this.snsService = new SnsServiceImpl(snsBuilder);
     this.topicArn = eventTopicArn;
   }
 
