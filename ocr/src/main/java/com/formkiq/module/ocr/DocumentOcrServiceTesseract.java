@@ -44,7 +44,6 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionTypePredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
@@ -358,10 +357,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
         : OcrScanStatus.SKIPPED.equals(status) ? ActionStatus.SKIPPED : ActionStatus.COMPLETE;
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
+    List<Action> actions = service.getAction(siteId, documentId, ActionStatus.RUNNING);
 
-    List<Action> actions = service.getActions(siteId, documentId);
-    Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
-        .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
+    Optional<Action> o =
+        actions.stream().filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
     if (o.isPresent()) {
       o.get().status(actionStatus);

@@ -32,6 +32,8 @@ import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +43,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.actions.FindDocumentActions;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.module.lambda.ocr.docx.PptxFormatConverter;
 import com.formkiq.module.lambda.ocr.docx.XlsxFormatConverter;
 import org.junit.jupiter.api.BeforeAll;
@@ -77,6 +83,7 @@ import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
@@ -99,6 +106,8 @@ class OcrTesseractProcessorTest {
   private static OcrTesseractProcessor processor;
   /** {@link S3Service}. */
   private static S3Service s3;
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
 
   @BeforeAll
   public static void beforeAll() {
@@ -114,6 +123,7 @@ class OcrTesseractProcessorTest {
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry())
         .build();
+    services.register(DynamoDbService.class, new DynamoDbServiceExtension());
 
     TesseractWrapperData wrapper = new TesseractWrapperData(OCR_TEXT);
     processor = new OcrTesseractProcessor(services,
@@ -124,6 +134,7 @@ class OcrTesseractProcessorTest {
     ocrService = services.getExtension(DocumentOcrService.class);
     s3 = services.getExtension(S3Service.class);
     actionsService = services.getExtension(ActionsService.class);
+    db = services.getExtension(DynamoDbService.class);
   }
 
   private static void createOcrRecord(final String siteId, final String documentId,
@@ -143,6 +154,65 @@ class OcrTesseractProcessorTest {
 
   /** {@link Context}. */
   private final Context context = new LambdaContextRecorder();
+
+  /**
+   * Test Handle Invalid Action Type.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandleInvalidActionType() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      String documentId = ID.uuid();
+
+      Action dummyAction =
+          new Action().type(ActionType.FULLTEXT).status(ActionStatus.PENDING).userId("joe");
+
+      List<Action> actions =
+          List.of(new Action().type(ActionType.OCR).status(ActionStatus.RUNNING).userId("joe"),
+              dummyAction);
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      Map<String, AttributeValue> attrs = dummyAction.getAttributes(siteId);
+      attrs.put("type", fromS("mytest"));
+      db.putItem(attrs);
+
+      putFileInS3(siteId, documentId, "/example.xlsx", MimeType.MIME_XLSX);
+
+      String jobId = ID.uuid();
+      createOcrRecord(siteId, documentId, jobId);
+
+      SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
+          .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
+              "contentType", MimeType.MIME_XLSX.getContentType())));
+      SqsMessageRecords records =
+          new SqsMessageRecords().records(Collections.singletonList(record));
+
+      String json = GSON.toJson(records);
+      InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+
+      // when
+      processor.handleRequest(is, null, this.context);
+
+      // then
+      Ocr obj = ocrService.get(siteId, documentId);
+      assertEquals("SUCCESSFUL", obj.status().name());
+
+      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
+      assertTrue(text.contains("Product\tRegion"));
+      assertTrue(text.contains("Accessories\tWest"));
+
+      var data = new FindDocumentActions(documentId).query(db, db.getTableName(), siteId, null, 2);
+
+      List<Map<String, AttributeValue>> items = data.items();
+      assertEquals(ActionType.OCR.name(), DynamoDbTypes.toString(items.get(0).get("type")));
+      assertEquals(ActionStatus.COMPLETE.name(),
+          DynamoDbTypes.toString(items.get(0).get("status")));
+    }
+  }
 
   /**
    * Test S3 File doesn't exist.
