@@ -551,15 +551,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsHttpUrl"
       Type: String
       Value:
-        Fn::If:
-          - HasCertificateStackNameHttpApiDomain
-          - Fn::Join:
-            - ''
-            - - 'https://'
-              - Ref: CertificateStackNameHttpApiDomain
-          - Fn::GetAtt:
-            - HttpApi
-            - Outputs.DocumentsHttpApiUrl
+        Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApiUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -573,15 +567,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsPublicHttpUrl"
       Type: String
       Value: 
-        Fn::If:
-          - HasCertificateStackNameHttpApiDomain
-          - Fn::Join:
-            - ''
-            - - 'https://'
-              - Ref: CertificateStackNameHttpApiDomain
-          - Fn::GetAtt:
-            - HttpApi
-            - Outputs.DocumentsHttpApiUrl
+        Fn::GetAtt:
+          - HttpApi
+          - Outputs.DocumentsHttpApiUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -595,15 +583,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsIamUrl"
       Type: String
       Value: 
-        Fn::If:
-          - HasCertificateStackNameIamApiDomain
-          - Fn::Join:
-            - ''
-            - - 'https://'
-              - Ref: CertificateStackNameIamApiDomain
-          - Fn::GetAtt:
-            - IamApi
-            - Outputs.DocumentsIamApiUrl
+        Fn::GetAtt:
+          - IamApi
+          - Outputs.DocumentsIamApiUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -633,15 +615,9 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/api/DocumentsKeyUrl"
       Type: String
       Value: 
-        Fn::If:
-          - HasCertificateStackNameKeyApiDomain
-          - Fn::Join:
-            - ''
-            - - 'https://'
-              - Ref: CertificateStackNameKeyApiDomain
-          - Fn::GetAtt:
-            - KeyApi
-            - Outputs.DocumentsKeyApiUrl
+        Fn::GetAtt:
+          - KeyApi
+          - Outputs.DocumentsKeyApiUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -807,39 +783,21 @@ Outputs:
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 
-      Fn::If:
-        - HasCertificateStackNameIamApiDomain
-        - Fn::Join:
-          - ''
-          - - 'https://'
-            - Ref: CertificateStackNameIamApiDomain
-        - Fn::GetAtt:
-          - IamApi
-          - Outputs.DocumentsIamApiUrl
+      Fn::GetAtt:
+        - IamApi
+        - Outputs.DocumentsIamApiUrl
   DocumentsKeyApiUrl:
     Description: "The endpoint url for the Key API"
     Value: 
-      Fn::If:
-        - HasCertificateStackNameKeyApiDomain
-        - Fn::Join:
-          - ''
-          - - 'https://'
-            - Ref: CertificateStackNameKeyApiDomain
-        - Fn::GetAtt:
-          - KeyApi
-          - Outputs.DocumentsKeyApiUrl    
+      Fn::GetAtt:
+        - KeyApi
+        - Outputs.DocumentsKeyApiUrl
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the Http API"
     Value:
-      Fn::If:
-        - HasCertificateStackNameHttpApiDomain
-        - Fn::Join:
-          - ''
-          - - 'https://'
-            - Ref: CertificateStackNameHttpApiDomain
-        - Fn::GetAtt:
-          - HttpApi
-          - Outputs.DocumentsHttpApiUrl
+      Fn::GetAtt:
+        - HttpApi
+        - Outputs.DocumentsHttpApiUrl
 #!  AuthApiUrl:
 #!    Description: "The endpoint url for the Auth API"
 #!    Value:
