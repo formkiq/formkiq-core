@@ -247,6 +247,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        CertificateStackNameHttpApiDomain:
+          Ref: CertificateStackNameHttpApiDomain
         CognitoUserPool:
           Ref: CognitoUserPool
         CognitoUserPoolClient:
@@ -267,6 +269,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        CertificateStackNameIamApiDomain:
+          Ref: CertificateStackNameIamApiDomain
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -283,6 +287,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        CertificateStackNameKeyApiDomain:
+          Ref: CertificateStackNameKeyApiDomain
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:
