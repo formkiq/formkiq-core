@@ -80,6 +80,16 @@ public interface ActionsService {
       Map<String, AttributeValue> exclusiveStartKey, int limit);
 
   /**
+   * Get List of {@link Action} by {@link ActionStatus}.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param status {@link ActionStatus}
+   * @return {@link List} {@link ActionStatus}
+   */
+  List<Action> getAction(String siteId, String documentId, ActionStatus status);
+
+  /**
    * Get {@link List} {@link Action} for a document.
    * 
    * @param siteId {@link String}

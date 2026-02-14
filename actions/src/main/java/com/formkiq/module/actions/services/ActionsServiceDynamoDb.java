@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
@@ -194,6 +195,14 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     return new PaginationResults<>(list, pagination);
 
+  }
+
+  @Override
+  public List<Action> getAction(final String siteId, final String documentId,
+      final ActionStatus status) {
+    var results = new FindDocumentActionByStatus(documentId, ActionStatus.RUNNING.name()).query(db,
+        db.getTableName(), siteId, null, 2);
+    return results.items().stream().map(a -> new Action().getFromAttributes(siteId, a)).toList();
   }
 
   @Override
