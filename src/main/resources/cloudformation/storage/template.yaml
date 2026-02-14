@@ -436,8 +436,7 @@ Resources:
       Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
       Description: Lambda function that processes document written to the Staging S3 Bucket
       Runtime: provided.al2023
-      Timeout: 
-        Fn::Sub: "${LambdaTimeout}"
+      Timeout: 300
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
