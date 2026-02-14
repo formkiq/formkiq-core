@@ -42,11 +42,6 @@ Resources:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       FailOnWarnings: "true"
-      DisableExecuteApiEndpoint:
-        Fn::If:
-          - HasCertificateStackNameIamApiDomain
-          - true
-          - false
 
 Outputs:
   DocumentsIamApi:
