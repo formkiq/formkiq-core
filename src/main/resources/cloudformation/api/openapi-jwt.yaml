@@ -132,6 +132,12 @@ Resources:
         servers:
           - url: http://localhost
             description: Local development server
+            x-amazon-apigateway-endpoint-configuration:
+              disableExecuteApiEndpoint:
+                Fn::If:
+                  - HasCertificateStackNameHttpApiDomain
+                  - true
+                  - false
         paths:
 
           /version:
