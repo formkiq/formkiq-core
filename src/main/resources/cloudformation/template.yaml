@@ -421,6 +421,7 @@ Resources:
     DependsOn:
       - Cognito
       - TypeSenseService
+      - CoreConsole
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -470,6 +471,10 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQVersion
+        ConsoleUrl:
+          Fn::GetAtt:
+            - CoreConsole
+            - Outputs.ConsoleUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 

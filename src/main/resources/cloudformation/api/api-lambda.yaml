@@ -97,6 +97,10 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  ConsoleUrl:
+    Type: String
+    Description: The URL for the FormKiQ Console
+
 Conditions:
         
   HasVpcStackName:
@@ -190,6 +194,8 @@ Resources:
             Ref: OcrBucket
           OCR_SQS_QUEUE_URL:
             Ref: OcrQueueUrl
+          CONSOLE_URL:
+            Ref: ConsoleUrl
           MODULE_site_permissions: "automatic"
           MODULE_typesense:
             Fn::If:
