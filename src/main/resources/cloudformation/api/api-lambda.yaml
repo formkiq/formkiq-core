@@ -107,6 +107,10 @@ Parameters:
     Type: String
     Description: "VPC Https Security Group"
 
+  ConsoleUrl:
+    Type: String
+    Description: The URL for the FormKiQ Console
+
 Conditions:
 
   IsOperationalModeActive:
@@ -207,6 +211,8 @@ Resources:
             Ref: OcrBucket
           OCR_SQS_QUEUE_URL:
             Ref: OcrQueueUrl
+          CONSOLE_URL:
+            Ref: ConsoleUrl
           MODULE_site_permissions: "automatic"
           MODULE_typesense:
             Fn::If:
