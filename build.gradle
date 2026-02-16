@@ -101,10 +101,10 @@ ytt {
       hash "sha256"
     }
 
-    apiAuth {
-      from("src/main/resources/cloudformation/api/api-auth.yaml",
-          "src/main/resources/cloudformation/api/openapi-auth.yaml")
-      into("api/api-auth.yaml")
+    apiUserAuth {
+      from("src/main/resources/cloudformation/api/api-userauth.yaml",
+          "src/main/resources/cloudformation/api/openapi-userauth.yaml")
+      into("api/api-userauth.yaml")
       hash "sha256"
     }
 
