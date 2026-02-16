@@ -1,0 +1,495 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - Cognito
+
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: Unique Application Environment Identifier, IE dev/staging/prod
+    Default: ""
+
+  UserPoolTier:
+    Type: String
+    Description: "User pool feature plan (tier)."
+    AllowedValues: ["LITE", "ESSENTIALS", "PLUS"]
+    Default: "LITE"
+
+  UserPoolName:
+    Type: String
+    Description: Name of the User Pool.
+    AllowedPattern: ".+"
+
+  AllowAdminCreateUserOnly:
+    Default: "false"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  PasswordMinimumLength:
+    Type: Number
+    Description: The minimum password length.
+    MinValue: "6"
+    MaxValue: "99"
+    Default: "8"
+
+  PasswordRequireLowercase:
+    Description: Password requires at least one lowercase letter.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  PasswordRequireNumbers:
+    Description: Password requires at least one number.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  PasswordRequireSymbols:
+    Description: Password requires at least one symbol.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  PasswordRequireUppercase:
+    Description: Password requires at least one uppercase letter.
+    Default: "true"
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    AllowedPattern: ".+"
+    Type: String
+
+  DomainCertificateArn:
+    Description: Amazon Cognito Certificate ARN to use
+    Type: String
+    Default: ""
+
+  SesSourceArn:
+    Type: String
+    Description: The Amazon Resource Name (ARN) of a verified email address in Amazon SES
+    Default: ""
+
+  ReplyToEmailAddress:
+    Type: String
+    Description: The destination to which the receiver of the email should reply to
+    Default: ""
+
+  RedirectUrl:
+    Type: String
+    Description: The URL to redirect to from Cognito Signup
+    AllowedPattern: ".+"
+
+  AccessTokenValidity:
+    Description: The time limit, after which the access token is no longer valid and cannot be used.
+    Type: Number
+    Default: 24
+
+  IdTokenValidity:
+    Description: The time limit, after which the ID token is no longer valid and cannot be used.
+    Type: Number
+    Default: 24
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+    Default: 90
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1096
+      - 1827
+      - 2192
+      - 2557
+      - 2922
+      - 3288
+      - 3653
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+    AllowedValues: ["Text", "JSON"]
+    Default: "Text"
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
+    Default: "INFO"
+    AllowedValues: ["TRACE", "DEBUG", "INFO", "ERROR"]
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
+    Default: "INFO"
+    AllowedValues: ["DEBUG", "INFO", "WARN"]
+
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+Conditions:
+
+  HasDomainCertificate:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DomainCertificateArn
+          - ""
+  HasSesSourceArn:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: SesSourceArn
+          - ""
+  HasReplyToEmailAddress:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: ReplyToEmailAddress
+          - ""
+  HasNoDomainCertificate:
+    Fn::Equals:
+      - Ref: DomainCertificateArn
+      - ""
+
+  IsLogFormatJSON:
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
+  IsDeletionProtectionEnabled:
+    Fn::Equals:
+      - Ref: EnableDeletionProtection
+      - "true"
+
+Resources:
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    DependsOn:
+      - CognitoCustomMessage
+    Properties:
+      DeletionProtection:
+        Fn::If:
+          - IsDeletionProtectionEnabled
+          - "ACTIVE"
+          - "INACTIVE"
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      UserPoolName:
+        Ref: UserPoolName
+      UserPoolTier:
+        Ref: UserPoolTier
+      EmailConfiguration:
+        EmailSendingAccount:
+          Fn::If:
+            - HasSesSourceArn
+            - DEVELOPER
+            - COGNITO_DEFAULT
+        From:
+          Fn::If:
+            - HasReplyToEmailAddress
+            - Ref: ReplyToEmailAddress
+            - Ref: AWS::NoValue
+        SourceArn:
+          Fn::If:
+            - HasSesSourceArn
+            - Ref: SesSourceArn
+            - Ref: AWS::NoValue
+        ReplyToEmailAddress:
+          Fn::If:
+            - HasReplyToEmailAddress
+            - Ref: ReplyToEmailAddress
+            - Ref: AWS::NoValue
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      UsernameConfiguration:
+        CaseSensitive: false
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly:
+          Fn::Sub: "${AllowAdminCreateUserOnly}"
+      LambdaConfig:
+        CustomMessage:
+          Fn::GetAtt:
+            - CognitoCustomMessage
+            - Arn
+      Policies:
+        PasswordPolicy:
+          MinimumLength:
+            Fn::Sub: "${PasswordMinimumLength}"
+          RequireLowercase:
+            Fn::Sub: "${PasswordRequireLowercase}"
+          RequireNumbers:
+            Fn::Sub: "${PasswordRequireNumbers}"
+          RequireSymbols:
+            Fn::Sub: "${PasswordRequireSymbols}"
+          RequireUppercase:
+            Fn::Sub: "${PasswordRequireUppercase}"
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+      UserPoolTags:
+        Application: FormKiQ
+        StackName:
+          Fn::Sub: "${AWS::StackName}"
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: CognitoUserPool
+      PreventUserExistenceErrors: ENABLED
+      AccessTokenValidity:
+        Ref: AccessTokenValidity
+      IdTokenValidity:
+        Ref: IdTokenValidity
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  CognitoCustomMessageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: Application
+          Value: "FormKiQ"
+
+  CognitoCustomMessage:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CognitoCustomMessage/
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Description: Lambda function that processes Cognito Custom Email Messages
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+          - CognitoCustomMessageRole
+          - Arn
+      Environment:
+        Variables:
+          REDIRECT_URI:
+            Ref: RedirectUrl
+          DOMAIN:
+            Ref: Domain
+          S3_BUCKET:
+            Ref: CognitoConfig
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+      Tags:
+        Application: FormKiQ
+      LoggingConfig:
+        LogGroup:
+          Ref: CognitoCustomMessageLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelApplication
+            - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelSystem
+            - Ref: AWS::NoValue
+
+  CognitoConfig:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+
+  CognitoCustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - CognitoCustomMessage
+      - CognitoUserPool
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: CognitoCustomMessage
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - CognitoUserPool
+          - Arn
+
+  CognitoCustomMessageRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: Application
+          Value: FormKiQ
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /service-role/
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${AWS::StackName}-CognitoCustomMessageRole"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource:
+                  Fn::Sub: "arn:${AWS::Partition}:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/cognito/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:s3:::${CognitoConfig}/*"
+
+  UserPoolDomainCustom:
+    Type: AWS::Cognito::UserPoolDomain
+    DependsOn:
+      - CognitoUserPool
+    Condition: HasDomainCertificate
+    Properties:
+      UserPoolId:
+        Ref: CognitoUserPool
+      Domain:
+        Ref: Domain
+      CustomDomainConfig:
+        CertificateArn:
+          Ref: DomainCertificateArn
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    DependsOn:
+      - CognitoUserPool
+    Condition: HasNoDomainCertificate
+    Properties:
+      UserPoolId:
+        Ref: CognitoUserPool
+      Domain:
+        Ref: Domain
+
+  CognitoIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName:
+        Fn::Sub: "${AWS::StackName}-identity-pool"
+      CognitoIdentityProviders:
+        -
+          ClientId:
+            Ref: CognitoUserPoolClient
+          ProviderName:
+            Fn::GetAtt:
+              - CognitoUserPool
+              - ProviderName
+      AllowUnauthenticatedIdentities: false
+
+
+Outputs:
+  CognitoConfigBucket:
+    Description: The Cognito Config Bucket
+    Value:
+      Ref: CognitoConfig
+  CognitoUserPoolId:
+    Description: The Cognito User Pool Id
+    Value:
+      Ref: CognitoUserPool
+  CognitoUserPoolProviderName:
+    Description: The Cognito User Pool Provider Name
+    Value:
+      Fn::GetAtt:
+        - CognitoUserPool
+        - ProviderName
+  CognitoUserPoolProviderURL:
+    Description: The Cognito User Pool Provider URL
+    Value:
+      Fn::GetAtt:
+        - CognitoUserPool
+        - ProviderURL
+  CognitoUserPoolArn:
+    Description: The Cognito User Pool Arn
+    Value:
+      Fn::GetAtt:
+        - CognitoUserPool
+        - Arn
+  CognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id
+    Value:
+      Ref: CognitoUserPoolClient
+  CognitoIdentityPoolId:
+    Description: Cognito Identity Pool
+    Value:
+      Ref: CognitoIdentityPool
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    Value:
+      Ref: Domain
+  CognitoHostedUi:
+    Description: Amazon Cognito Hosted UI Url
+    Value:
+      Fn::If:
+        - HasDomainCertificate
+        - Ref: Domain
+        - Fn::Sub: "https://${Domain}.auth.${AWS::Region}.amazoncognito.com"
+  CognitoDomain:
+    Description: Amazon Cognito Domain
+    Value:
+      Fn::If:
+        - HasDomainCertificate
+        - Ref: Domain
+        - Fn::Sub: "https://${Domain}.auth.${AWS::Region}.amazoncognito.com"

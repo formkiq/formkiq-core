@@ -309,10 +309,10 @@ Resources:
           Fn::GetAtt:
             - CoreApi
             - Outputs.DocumentsKeyApiUrl
-        AuthApiUrl: 
-          Fn::GetAtt: 
-          - Cognito
-          - Outputs.ApiEndpoint
+        AuthApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.UserAuthApiUrl
         AllowAdminCreateUserOnly: "true"
         CognitoHostedUi:
           Fn::GetAtt:
@@ -352,8 +352,6 @@ Resources:
       Parameters:
         AppEnvironment:
           Ref: AppEnvironment
-        VpcStackName:
-          Ref: VpcStackName
         EnableDeletionProtection:
           Ref: EnableDeletionProtection
         UserPoolName: 
@@ -577,22 +575,7 @@ Resources:
           Fn::Sub: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
-  CognitoApiIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "Cognito API ID"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/api/CognitoApiId"
-      Type: String
-      Value:
-        Fn::GetAtt: 
-        - Cognito
-        - Outputs.HttpApi
-      Tags:
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-          
+
   Monitoring:
     Type: AWS::Serverless::Application
     DependsOn:
@@ -686,12 +669,6 @@ Outputs:
       Fn::GetAtt:
         - CoreStorage
         - Outputs.DocumentsTableArn
-  CognitoApiEndpoint:
-    Description: The Cognito Login API endpoint
-    Value: 
-      Fn::GetAtt: 
-      - Cognito
-      - Outputs.ApiEndpoint
   DocumentsS3Buckets:
     Description: Documents Bucket.
     Value: 
