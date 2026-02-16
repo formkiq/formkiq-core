@@ -562,7 +562,23 @@ Resources:
         Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
+
+  UserAuthApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The URL for the User Authentication endpoint"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/UserAuthApiUrl"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - UserAuthApi
+          - Outputs.UserAuthApiUrl
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
