@@ -69,7 +69,12 @@ tasks.register("downloadAwsCognito", Download) {
 
 tasks.register("unzipAwsCognito", Copy) {
   dependsOn downloadAwsCognito
-  from({ zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile) })
+  from({
+    zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
+  }) {
+    include("CognitoCustomMessage/**")
+  }
+
   into(layout.buildDirectory.dir("modules/cognito"))
 }
 
