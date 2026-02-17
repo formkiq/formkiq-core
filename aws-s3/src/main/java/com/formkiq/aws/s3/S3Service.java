@@ -31,9 +31,11 @@ import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteMarkerEntry;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
@@ -50,9 +52,12 @@ import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest.Builder;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
@@ -72,6 +77,7 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -206,22 +212,25 @@ public class S3Service {
 
   /**
    * Delete All Files in bucket.
-   * 
+   *
    * @param bucket {@link String}
    */
   public void deleteAllFiles(final String bucket) {
-    boolean isDone = false;
+    deleteCurrentObjectsOnly(bucket);
+  }
 
-    while (!isDone) {
+  /**
+   * Delete All Files in bucket.
+   * 
+   * @param bucket {@link String}
+   * @param removeAllVersions boolean
+   */
+  public void deleteAllFiles(final String bucket, final boolean removeAllVersions) {
 
-      ListObjectsRequest req = ListObjectsRequest.builder().bucket(bucket).build();
-      ListObjectsResponse resp = this.s3Client.listObjects(req);
-
-      for (S3Object s3Object : resp.contents()) {
-        deleteObject(bucket, s3Object.key(), null);
-      }
-
-      isDone = !resp.isTruncated();
+    if (removeAllVersions) {
+      deleteAllVersions(bucket);
+    } else {
+      deleteCurrentObjectsOnly(bucket);
     }
   }
 
@@ -235,6 +244,43 @@ public class S3Service {
     DeleteObjectTaggingRequest req =
         DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
     this.s3Client.deleteObjectTagging(req);
+  }
+
+  private void deleteAllVersions(final String bucket) {
+
+    String keyMarker = null;
+    String versionIdMarker = null;
+    ListObjectVersionsResponse response;
+
+    do {
+      ListObjectVersionsRequest request = ListObjectVersionsRequest.builder().bucket(bucket)
+          .keyMarker(keyMarker).versionIdMarker(versionIdMarker).build();
+
+      response = s3Client.listObjectVersions(request);
+
+      List<ObjectIdentifier> toDelete = new ArrayList<>();
+
+      // Object versions
+      for (ObjectVersion version : response.versions()) {
+        toDelete.add(
+            ObjectIdentifier.builder().key(version.key()).versionId(version.versionId()).build());
+      }
+
+      // Delete markers
+      for (DeleteMarkerEntry marker : response.deleteMarkers()) {
+        toDelete.add(
+            ObjectIdentifier.builder().key(marker.key()).versionId(marker.versionId()).build());
+      }
+
+      if (!toDelete.isEmpty()) {
+        s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket)
+            .delete(Delete.builder().objects(toDelete).build()).build());
+      }
+
+      keyMarker = response.nextKeyMarker();
+      versionIdMarker = response.nextVersionIdMarker();
+
+    } while (response.isTruncated());
   }
 
   /**
@@ -287,6 +333,34 @@ public class S3Service {
     } while (response.isTruncated());
 
     return totalDeleted;
+  }
+
+  private void deleteCurrentObjectsOnly(final String bucket) {
+
+    String continuationToken = null;
+    ListObjectsV2Response response;
+
+    do {
+      ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucket)
+          .continuationToken(continuationToken).build();
+
+      response = s3Client.listObjectsV2(request);
+
+      if (!response.contents().isEmpty()) {
+
+        List<ObjectIdentifier> objects = new ArrayList<>();
+
+        for (S3Object obj : response.contents()) {
+          objects.add(ObjectIdentifier.builder().key(obj.key()).build());
+        }
+
+        s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket)
+            .delete(Delete.builder().objects(objects).build()).build());
+      }
+
+      continuationToken = response.nextContinuationToken();
+
+    } while (response.isTruncated());
   }
 
   /**
