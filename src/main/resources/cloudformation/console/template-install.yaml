@@ -346,6 +346,8 @@ Resources:
         Ref: IamApiUrl
       API_KEY_URL:
         Ref: KeyApiUrl
+      API_AUTH_URL:
+        Ref: AuthApiUrl
       HttpApiUrl:
         Fn::If:
           - HasCertificateStackName
