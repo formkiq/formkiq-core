@@ -36,6 +36,7 @@ import software.amazon.awssdk.services.s3.model.DeleteMarkerEntry;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
@@ -66,6 +67,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectLegalHoldRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.S3Error;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
@@ -226,9 +228,8 @@ public class S3Service {
    * @param removeAllVersions boolean
    */
   public void deleteAllFiles(final String bucket, final boolean removeAllVersions) {
-
     if (removeAllVersions) {
-      deleteAllVersions(bucket);
+      emptyVersionedBucket(bucket);
     } else {
       deleteCurrentObjectsOnly(bucket);
     }
@@ -246,41 +247,42 @@ public class S3Service {
     this.s3Client.deleteObjectTagging(req);
   }
 
-  private void deleteAllVersions(final String bucket) {
+  private int deleteAllVersionsAndMarkersOnce(final String bucket) {
+    int deletedCount = 0;
+    final int initialCapacity = 1000;
 
-    String keyMarker = null;
-    String versionIdMarker = null;
-    ListObjectVersionsResponse response;
+    ListObjectVersionsRequest baseReq = ListObjectVersionsRequest.builder().bucket(bucket).build();
 
-    do {
-      ListObjectVersionsRequest request = ListObjectVersionsRequest.builder().bucket(bucket)
-          .keyMarker(keyMarker).versionIdMarker(versionIdMarker).build();
+    for (ListObjectVersionsResponse page : s3Client.listObjectVersionsPaginator(baseReq)) {
+      List<ObjectIdentifier> batch = new ArrayList<>(initialCapacity);
 
-      response = s3Client.listObjectVersions(request);
-
-      List<ObjectIdentifier> toDelete = new ArrayList<>();
-
-      // Object versions
-      for (ObjectVersion version : response.versions()) {
-        toDelete.add(
-            ObjectIdentifier.builder().key(version.key()).versionId(version.versionId()).build());
+      // Add object versions
+      for (ObjectVersion v : page.versions()) {
+        batch.add(ObjectIdentifier.builder().key(v.key()).versionId(v.versionId()).build());
+        if (batch.size() == initialCapacity) {
+          deleteBatch(bucket, batch);
+          deletedCount += batch.size();
+          batch.clear();
+        }
       }
 
-      // Delete markers
-      for (DeleteMarkerEntry marker : response.deleteMarkers()) {
-        toDelete.add(
-            ObjectIdentifier.builder().key(marker.key()).versionId(marker.versionId()).build());
+      // Add delete markers
+      for (DeleteMarkerEntry m : page.deleteMarkers()) {
+        batch.add(ObjectIdentifier.builder().key(m.key()).versionId(m.versionId()).build());
+        if (batch.size() == initialCapacity) {
+          deleteBatch(bucket, batch);
+          deletedCount += batch.size();
+          batch.clear();
+        }
       }
 
-      if (!toDelete.isEmpty()) {
-        s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket)
-            .delete(Delete.builder().objects(toDelete).build()).build());
+      if (!batch.isEmpty()) {
+        deleteBatch(bucket, batch);
+        deletedCount += batch.size();
       }
+    }
 
-      keyMarker = response.nextKeyMarker();
-      versionIdMarker = response.nextVersionIdMarker();
-
-    } while (response.isTruncated());
+    return deletedCount;
   }
 
   /**
@@ -335,32 +337,40 @@ public class S3Service {
     return totalDeleted;
   }
 
-  private void deleteCurrentObjectsOnly(final String bucket) {
+  private void deleteBatch(final String bucket, final List<ObjectIdentifier> objects) {
+    DeleteObjectsResponse resp = s3Client.deleteObjects(DeleteObjectsRequest.builder()
+        .bucket(bucket).delete(Delete.builder().objects(objects).quiet(true).build()).build());
 
-    String continuationToken = null;
-    ListObjectsV2Response response;
-
-    do {
-      ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucket)
-          .continuationToken(continuationToken).build();
-
-      response = s3Client.listObjectsV2(request);
-
-      if (!response.contents().isEmpty()) {
-
-        List<ObjectIdentifier> objects = new ArrayList<>();
-
-        for (S3Object obj : response.contents()) {
-          objects.add(ObjectIdentifier.builder().key(obj.key()).build());
-        }
-
-        s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket)
-            .delete(Delete.builder().objects(objects).build()).build());
+    if (resp.hasErrors() && !resp.errors().isEmpty()) {
+      StringBuilder sb = new StringBuilder("DeleteObjects had errors:\n");
+      for (S3Error e : resp.errors()) {
+        sb.append("- key=").append(e.key()).append(" versionId=").append(e.versionId())
+            .append(" code=").append(e.code()).append(" msg=").append(e.message()).append("\n");
       }
+      throw new RuntimeException(sb.toString());
+    }
+  }
 
-      continuationToken = response.nextContinuationToken();
+  private void deleteCurrentObjectsOnly(final String bucket) {
+    final int limit = 1000;
+    ListObjectsV2Request baseReq = ListObjectsV2Request.builder().bucket(bucket).build();
 
-    } while (response.isTruncated());
+    for (ListObjectsV2Response page : s3Client.listObjectsV2Paginator(baseReq)) {
+      if (!page.contents().isEmpty()) {
+
+        List<ObjectIdentifier> batch = new ArrayList<>(Math.min(limit, page.contents().size()));
+        for (S3Object obj : page.contents()) {
+          batch.add(ObjectIdentifier.builder().key(obj.key()).build());
+          if (batch.size() == limit) {
+            deleteBatch(bucket, batch);
+            batch.clear();
+          }
+        }
+        if (!batch.isEmpty()) {
+          deleteBatch(bucket, batch);
+        }
+      }
+    }
   }
 
   /**
@@ -374,6 +384,17 @@ public class S3Service {
     this.s3Client.deleteObject(
         DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
 
+  }
+
+  private void emptyVersionedBucket(final String bucket) {
+    // Keep looping until S3 reports there are no versions or delete markers left.
+    // (This also makes the method resilient to pagination and large buckets.)
+    while (true) {
+      int deletedThisPass = deleteAllVersionsAndMarkersOnce(bucket);
+      if (deletedThisPass == 0) {
+        break;
+      }
+    }
   }
 
   /**
