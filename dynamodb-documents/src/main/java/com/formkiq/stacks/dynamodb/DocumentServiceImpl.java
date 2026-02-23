@@ -44,6 +44,7 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
+import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -436,12 +437,29 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     var query =
         softDelete ? new SoftDeleteDocumentQuery(documentId) : new DeleteDocumentQuery(documentId);
 
-    if (!softDelete) {
+    DeleteResults deleted = query.delete(dbService, siteId);
+
+    if (!softDelete && deleted.deleted()) {
       this.versionsService.deleteAllVersionIds(siteId, documentId);
     }
 
-    DeleteResults deleted = query.delete(dbService, siteId);
+    // check if folder index exists
+    if (!deleted.deleted()) {
+      var index = new GetFolderFileByDocumentIdFind().find(dbService, dbService.getTableName(),
+          siteId, documentId);
+      if (index != null) {
+        boolean del = dbService.deleteItem(index.buildKey(siteId).key());
+        deleted = new DeleteResults(del, Collections.emptyList());
+      }
+    }
 
+    processDeleteDocumentAudit(siteId, documentId, softDelete, deleted);
+
+    return deleted.deleted();
+  }
+
+  private void processDeleteDocumentAudit(final String siteId, final String documentId,
+      final boolean softDelete, final DeleteResults deleted) {
     if (this.interceptor != null) {
 
       Collection<Map<String, AttributeValue>> list = deleted.attributes();
@@ -463,44 +481,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             toMap.apply(documentRecord));
       }
     }
-
-    return deleted.deleted();
-    /*
-     * Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
-     *
-     * if (documentRecord.containsKey("path")) { String path =
-     * DynamoDbTypes.toString(documentRecord.get("path")); validateDocumentPath(siteId, path,
-     * Collections.emptyMap()); deleteFolderIndex(siteId, path); }
-     *
-     * Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
-     * AttributeValue pk = keys.get(PK);
-     *
-     * List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null);
-     *
-     * boolean deleted; if (softDelete) {
-     *
-     * deleted = deleteDocumentSoft(siteId, documentId, list);
-     *
-     * } else {
-     *
-     * deleted = deleteDocumentHard(siteId, documentId, pk, list); }
-     *
-     * if (this.interceptor != null) {
-     *
-     * if (documentRecord.isEmpty()) { documentRecord = list.stream().filter(l ->
-     * l.get(SK).s().startsWith("softdelete#document#")) .findAny().orElse(null); }
-     *
-     * if (documentRecord != null) { AttributeValueToMap toMap = new AttributeValueToMap();
-     *
-     * list.forEach(a -> { if (a.containsKey("SK") && a.get("SK").s().startsWith("attr#")) {
-     * this.interceptor.deleteDocumentAttribute(siteId, documentId, softDelete, toMap.apply(a)); }
-     * });
-     *
-     * this.interceptor.deleteDocument(siteId, documentId, softDelete, toMap.apply(documentRecord));
-     * } }
-     *
-     * return deleted;
-     */
   }
 
   @Override

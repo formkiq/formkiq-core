@@ -69,6 +69,8 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.GetDocumentFind;
+import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
+import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -653,6 +655,46 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(service.findDocument(siteId, documentId));
       assertEquals(0,
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults().size());
+    }
+  }
+
+  /**
+   * Test situation where the document is deleted, but still exists in path index.
+   */
+  @Test
+  void testDeleteDocumentOnlyPath() {
+    // given
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      item.setPath("a/mytest333.txt");
+      service.saveDocument(siteId, item, null);
+
+      // when
+      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.getPath());
+
+      // then
+      assertEquals(2, indexRecords.size());
+
+      // when
+      assertTrue(service.deleteDocument(siteId, item.getDocumentId(), false));
+
+      // given - resave folder index
+      db.putItem(indexRecords.get(1).getAttributes(siteId));
+      var get = new GetFolderFilesByNameQuery(false, "mytest");
+
+      // when
+      var results = get.query(db, db.getTableName(), siteId, null, 2);
+
+      // then
+      assertEquals(1, results.items().size());
+
+      // when
+      assertTrue(service.deleteDocument(siteId, item.getDocumentId(), false));
+
+      // then
+      results = get.query(db, db.getTableName(), siteId, null, 2);
+      assertEquals(0, results.items().size());
     }
   }
 

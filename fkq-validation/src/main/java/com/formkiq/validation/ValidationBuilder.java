@@ -58,17 +58,19 @@ public class ValidationBuilder {
 
   /**
    * Add multiple list.
-   * 
+   *
    * @param list {@link Collection} {@link ValidationError}
+   * @return {@link ValidationBuilder}
    */
-  public void addErrors(final Collection<ValidationError> list) {
+  public ValidationBuilder addErrors(final Collection<ValidationError> list) {
     this.errors.addAll(list);
+    return this;
   }
 
-  public void authorized(final boolean authorized) {
-    if (!authorized) {
-      errors.add(new UnAuthorizedValidationError());
-    }
+
+  private ValidationErrorImpl addRequiredMessage(final ValidationErrorImpl error,
+      final String key) {
+    return error.error("'" + key + "' is required");
   }
 
   /**
@@ -104,27 +106,35 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param value String
    * @param expectedValues {@link List} {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isEquals(final String key, final String value, final List<String> expectedValues) {
+  public ValidationBuilder isEquals(final String key, final String value,
+      final List<String> expectedValues) {
     if (!expectedValues.contains(value)) {
       String error = "'" + key + "' unexpected value '" + value + "' must be one of "
           + String.join(", ", expectedValues);
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
+
+    return this;
   }
 
   /**
    * Is {@link String} equals.
-   * 
+   *
    * @param key {@link String}
    * @param value String
    * @param expectedValue {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isEquals(final String key, final String value, final String expectedValue) {
+  public ValidationBuilder isEquals(final String key, final String value,
+      final String expectedValue) {
     if (!value.equals(expectedValue)) {
       String error = "'" + key + "' unexpected value '" + value + "'";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
+
+    return this;
   }
 
   /**
@@ -133,11 +143,15 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param values {@link String}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Collection<?> values, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final Collection<?> values,
+      final String errorMessage) {
     if (values == null || values.isEmpty()) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
   }
 
   /**
@@ -145,9 +159,10 @@ public class ValidationBuilder {
    *
    * @param key {@link String}
    * @param value {@link Double}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Double value) {
-    isRequired(key, value, null);
+  public ValidationBuilder isRequired(final String key, final Double value) {
+    return isRequired(key, value, null);
   }
 
   /**
@@ -156,28 +171,36 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param value {@link Double}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Double value, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final Double value,
+      final String errorMessage) {
     if (value == null) {
       String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
+
+    return this;
   }
 
   /**
    * At list 1 value in the {@link List} must be not null.
-   * 
+   *
    * @param key {@link String}
    * @param values {@link List} {@link Object}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final List<Object> values, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final List<Object> values,
+      final String errorMessage) {
 
     long presentCount = values.stream().filter(Objects::nonNull).count();
 
     if (presentCount == 0) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
   }
 
   /**
@@ -186,11 +209,30 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param values {@link String}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Map<?, ?> values, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final Map<?, ?> values,
+      final String errorMessage) {
     if (values == null || values.isEmpty()) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isRequired(final String key, final Object value) {
+    if (value == null) {
+      errors.add(addRequiredMessage(new ValidationErrorImpl().key(key), key));
+    }
+
+    return this;
   }
 
   /**
@@ -199,11 +241,15 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param value {@link String}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Object value, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final Object value,
+      final String errorMessage) {
     if (value == null) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
   }
 
   /**
@@ -211,9 +257,10 @@ public class ValidationBuilder {
    *
    * @param key {@link Optional}
    * @param value boolean
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final Optional<?> value) {
-    isRequired(key, value.orElse(null), "'" + key + "' is required");
+  public ValidationBuilder isRequired(final String key, final Optional<?> value) {
+    return isRequired(key, value.orElse(null), "'" + key + "' is required");
   }
 
   /**
@@ -221,9 +268,10 @@ public class ValidationBuilder {
    *
    * @param key {@link String}
    * @param value {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final String value) {
-    isRequired(key, value, null);
+  public ValidationBuilder isRequired(final String key, final String value) {
+    return isRequired(key, value, null);
   }
 
   /**
@@ -232,12 +280,16 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param value {@link String}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final String value, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final String value,
+      final String errorMessage) {
     if (value == null || value.isEmpty()) {
       String error = errorMessage != null ? errorMessage : "'" + key + "' is required";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
+
+    return this;
   }
 
   /**
@@ -245,9 +297,10 @@ public class ValidationBuilder {
    *
    * @param key {@link String}
    * @param value boolean
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final boolean value) {
-    isRequired(key, value, "'" + key + "' is invalid");
+  public ValidationBuilder isRequired(final String key, final boolean value) {
+    return isRequired(key, value, "'" + key + "' is invalid");
   }
 
   /**
@@ -256,11 +309,29 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param value boolean
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequired(final String key, final boolean value, final String errorMessage) {
+  public ValidationBuilder isRequired(final String key, final boolean value,
+      final String errorMessage) {
     if (!value) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
+  }
+
+  /**
+   * Add {@link ValidationError} on boolean condition.
+   *
+   * @param value boolean.
+   * @param error {@link ValidationError}
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isRequired(final boolean value, final ValidationError error) {
+    if (!value) {
+      errors.add(error);
+    }
+    return this;
   }
 
   /**
@@ -269,8 +340,9 @@ public class ValidationBuilder {
    * @param key {@link String}
    * @param values {@link String}
    * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isRequiredOnlyOne(final String key, final List<Object> values,
+  public ValidationBuilder isRequiredOnlyOne(final String key, final List<Object> values,
       final String errorMessage) {
     long objectCount =
         values.stream().filter(Objects::nonNull).filter(c -> !(c instanceof Collection)).count();
@@ -281,20 +353,26 @@ public class ValidationBuilder {
     if (objectCount + listCount != 1) {
       errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
     }
+
+    return this;
   }
 
   /**
    * Is value valid by regex.
-   * 
+   *
    * @param key {@link String}
    * @param value {@link String}
    * @param regex {@link String}
+   * @return {@link ValidationBuilder}
    */
-  public void isValidByRegex(final String key, final String value, final String regex) {
+  public ValidationBuilder isValidByRegex(final String key, final String value,
+      final String regex) {
     Pattern pattern = Pattern.compile(regex);
     if (!pattern.matcher(value).matches()) {
       String error = "'" + key + "' unexpected value '" + value + "'";
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
+
+    return this;
   }
 }
