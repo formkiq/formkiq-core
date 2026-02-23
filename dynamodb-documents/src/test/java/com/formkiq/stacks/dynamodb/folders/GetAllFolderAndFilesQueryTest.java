@@ -48,7 +48,6 @@ import java.util.Date;
 import java.util.Map;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,8 +72,8 @@ public class GetAllFolderAndFilesQueryTest {
   public static void beforeAll() throws Exception {
     DynamoDbConnectionBuilder dbc = DynamoDbTestServices.getDynamoDbConnection();
     db = new DynamoDbServiceImpl(dbc, DOCUMENTS_TABLE);
-    service = new DocumentServiceImpl(dbc, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
-        new DocumentVersionServiceNoVersioning());
+    service =
+        new DocumentServiceImpl(dbc, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
   }
 
   private static String getPath(final Map<String, AttributeValue> item) {

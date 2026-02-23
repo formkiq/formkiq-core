@@ -21,39 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb.documents;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.QueryResult;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
-import java.util.Collection;
-import java.util.function.BiPredicate;
-
-public class FolderPermissionPredicate
-    implements BiPredicate<String, Collection<FolderRolePermission>> {
-
-  /** {@link ApiAuthorization}. */
-  private final ApiAuthorization authorization;
-  /** {@link Collection} {@link String}. */
-  private final Collection<String> roles;
-  /** {@link ApiPermission}. */
-  private final ApiPermission permission;
+/**
+ * Soft {@link DeleteDocumentQuery}.
+ */
+public class SoftDeleteDocumentQuery extends DeleteDocumentQuery {
 
   /**
    * constructor.
    *
-   * @param apiPermission {@link ApiPermission}
+   * @param documentId {@link String}
    */
-  public FolderPermissionPredicate(final ApiPermission apiPermission) {
-
-    authorization = ApiAuthorization.getAuthorization();
-    roles = authorization.getRoles();
-    permission = apiPermission;
+  public SoftDeleteDocumentQuery(final String documentId) {
+    super(documentId, false);
   }
 
   @Override
-  public boolean test(final String siteId, final Collection<FolderRolePermission> permissions) {
-    return permissions == null || authorization.isAdminOrGovern(siteId) || permissions.stream()
-        .anyMatch(p -> roles.contains(p.roleName()) && p.permissions().contains(permission));
+  public QueryRequest build(final String tableName, final String siteId, final String nextToken,
+      final int limit) {
+
+    var pk = DynamoDbTypes.toString(keysDocument(siteId, getDocumentId()).get(PK));
+    var builder = DynamoDbQueryBuilder.builder().pk(pk).limit(limit);
+    return builder.build(tableName);
+  }
+
+  @Override
+  public boolean deleteItems(final DynamoDbService db, final String tableName, final String siteId,
+      final QueryResult result) {
+    return db.moveItems(result.items(),
+        new DocumentDeleteMoveAttributeFunction(siteId, getDocumentId()));
   }
 }

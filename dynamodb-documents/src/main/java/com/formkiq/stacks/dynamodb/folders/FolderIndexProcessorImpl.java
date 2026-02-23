@@ -58,7 +58,13 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
+import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
+import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
+import com.formkiq.aws.dynamodb.folders.StringToFolderTokens;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -103,21 +109,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @return {@link String}
    */
   private static String[] tokens(final String path) {
-
-    String[] strs;
-
-    if (!StringUtils.isEmpty(path) && !"/".equals(path)) {
-
-      String p =
-          path.replaceAll(":://", DELIMINATOR).replaceFirst("^\\.+", "").replaceAll("/+", "/");
-      String ss = p.startsWith(DELIMINATOR) ? p.substring(DELIMINATOR.length()) : p;
-      strs = ss.split(DELIMINATOR);
-
-    } else {
-      strs = new String[] {};
-    }
-
-    return strs;
+    return new StringToFolderTokens().apply(path);
   }
 
   /** {@link DynamoDbClient}. */
@@ -501,36 +493,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path)
-      throws IOException {
-
-    if (StringUtils.isEmpty(path)) {
-      return Collections.emptyList();
-    }
-
-    String[] tokens = tokens(path);
-    String fileToken = getFileToken(path, tokens);
-    String lastUuid = "";
-    List<FolderIndexRecord> records = new ArrayList<>();
-
-    for (String folder : tokens) {
-
-      String pk = getPk(siteId, lastUuid);
-      String sk = getSk(folder, folder.equals(fileToken));
-      DynamoDbKey key = new DynamoDbKey(pk, sk, null, null, null, null);
-
-      Map<String, AttributeValue> attr = this.db.get(key);
-      if (!attr.isEmpty()) {
-        FolderIndexRecord record = new FolderIndexRecord().getFromAttributes(siteId, attr);
-        records.add(record);
-        lastUuid = record.documentId();
-      } else {
-        throw new IOException("Cannot find folder '" + path + "'");
-      }
-
-    }
-
-    return records;
+  public List<FolderIndexRecord> getFolderIndexRecords(final String siteId, final String path) {
+    return new PathToFolderIndexRecords(db).apply(siteId, path);
   }
 
   @Override
@@ -927,7 +891,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   public void validateFolderPermissions(final String siteId, final String path,
       final ApiPermission permission) {
     if (!isEmpty(path)) {
-      new FolderPermissionValidate(db, permission).apply(siteId, new StringToFolder().apply(path));
+      new FolderPermissionValidate(db, permission).apply(siteId, path);
     }
   }
 }

@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.clearSqsQueue;
 import static com.formkiq.testutils.aws.TestServices.createSnsTopic;
 import static com.formkiq.testutils.aws.TestServices.createSqsSubscriptionToSnsTopic;
@@ -103,7 +102,7 @@ class FolderIndexProcessorTest implements DbKeys {
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
 
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
+    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);

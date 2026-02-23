@@ -75,10 +75,15 @@ public class DynamoDbQueryBuilder implements DbKeys {
    */
   private DynamoDbQueryBuilder() {}
 
-  private String addName(final String name) {
-    String placeholder = "#" + name;
-    expressionAttributeNames.put(placeholder, name);
-    return placeholder;
+  /**
+   * Add Expression Attribute Name.
+   * 
+   * @param name {@link String}
+   * @return {@link DynamoDbQueryBuilder}
+   */
+  public DynamoDbQueryBuilder addExpressionAttributeName(final String name) {
+    createExpressionAttributeName(name);
+    return this;
   }
 
   private String addValue(final String name, final AttributeValue value) {
@@ -102,7 +107,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
    * @return this builder
    */
   public DynamoDbQueryBuilder beginsWith(final String value) {
-    String nameKey = addName(SK);
+    String nameKey = createExpressionAttributeName(SK);
     String val = addValue("SK", AttributeValue.builder().s(value).build());
     keyConditions.add("begins_with(" + nameKey + "," + val + ")");
     return this;
@@ -116,7 +121,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
    * @return this builder
    */
   public DynamoDbQueryBuilder betweenSK(final String low, final String high) {
-    String nameKey = addName(SK);
+    String nameKey = createExpressionAttributeName(SK);
     String lowKey = addValue("SK_low", AttributeValue.builder().s(low).build());
     String highKey = addValue("SK_high", AttributeValue.builder().s(high).build());
     keyConditions.add(nameKey + " BETWEEN " + lowKey + " AND " + highKey);
@@ -150,13 +155,25 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
+   * Add Expression Attribute Name.
+   * 
+   * @param name {@link String}
+   * @return {@link String}
+   */
+  private String createExpressionAttributeName(final String name) {
+    String placeholder = "#" + name;
+    expressionAttributeNames.put(placeholder, name);
+    return placeholder;
+  }
+
+  /**
    * Adds an equality condition on SK.
    *
    * @param value sort key value
    * @return this builder
    */
   public DynamoDbQueryBuilder eq(final String value) {
-    String nameKey = addName(SK);
+    String nameKey = createExpressionAttributeName(SK);
     String valKey = addValue(SK, AttributeValue.builder().s(value).build());
     keyConditions.add(nameKey + " = " + valKey);
     return this;
@@ -235,7 +252,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
    * @return this builder
    */
   public DynamoDbQueryBuilder lte(final String value) {
-    String nameKey = addName(SK);
+    String nameKey = createExpressionAttributeName(SK);
     String valKey = addValue(SK, AttributeValue.builder().s(value).build());
     keyConditions.add(nameKey + " <= " + valKey);
     return this;
@@ -292,7 +309,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
    * @return this builder
    */
   public DynamoDbQueryBuilder pk(final String value) {
-    String nameKey = addName(PK);
+    String nameKey = createExpressionAttributeName(PK);
     String valKey = addValue(PK, AttributeValue.builder().s(value).build());
     keyConditions.add(nameKey + " = " + valKey);
     return this;

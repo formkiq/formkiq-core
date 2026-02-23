@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResults;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
@@ -40,8 +41,10 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
+import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
+import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -68,13 +71,11 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
-import com.formkiq.stacks.dynamodb.folders.FindFolderIndexTopLevelFolder;
-import com.formkiq.stacks.dynamodb.folders.FindFolderParentByPath;
+import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
-import com.formkiq.stacks.dynamodb.folders.FolderPermissionValidate;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
@@ -125,6 +126,7 @@ import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
 import static com.formkiq.aws.dynamodb.objects.Objects.concat;
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -168,8 +170,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   /** {@link DocumentServiceInterceptor}. */
   private final DocumentServiceInterceptor interceptor;
-  /** Document Sync Table. */
-  private final String documentSyncsTable;
   /** Last Short Date. */
   private String lastShortDate = null;
 
@@ -178,13 +178,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
-   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final String syncsTable,
-      final DocumentVersionService documentVersionsService) {
-    this(connection, documentsTable, syncsTable, documentVersionsService, null);
+      final String documentsTable, final DocumentVersionService documentVersionsService) {
+    this(connection, documentsTable, documentVersionsService, null);
   }
 
   /**
@@ -192,24 +190,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
-   * @param syncsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final String syncsTable,
-      final DocumentVersionService documentVersionsService,
+      final String documentsTable, final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
-    if (syncsTable == null) {
-      throw new IllegalArgumentException("'syncsTable' is null");
-    }
-
-    this.documentSyncsTable = syncsTable;
     this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
@@ -442,35 +433,21 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final String documentId,
       final boolean softDelete) {
 
-    Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
+    var query =
+        softDelete ? new SoftDeleteDocumentQuery(documentId) : new DeleteDocumentQuery(documentId);
 
-    if (documentRecord.containsKey("path")) {
-      String path = DynamoDbTypes.toString(documentRecord.get("path"));
-      validateDocumentPath(siteId, path, Collections.emptyMap());
-      deleteFolderIndex(siteId, path);
+    if (!softDelete) {
+      this.versionsService.deleteAllVersionIds(siteId, documentId);
     }
 
-    Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
-    AttributeValue pk = keys.get(PK);
-
-    List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null);
-
-    boolean deleted;
-    if (softDelete) {
-
-      deleted = deleteDocumentSoft(siteId, documentId, list);
-
-    } else {
-
-      deleted = deleteDocumentHard(siteId, documentId, pk, list);
-    }
+    DeleteResults deleted = query.delete(dbService, siteId);
 
     if (this.interceptor != null) {
 
-      if (documentRecord.isEmpty()) {
-        documentRecord = list.stream().filter(l -> l.get(SK).s().startsWith("softdelete#document#"))
-            .findAny().orElse(null);
-      }
+      Collection<Map<String, AttributeValue>> list = deleted.attributes();
+      Map<String, AttributeValue> documentRecord = list.stream().filter(
+          l -> "document".equals(l.get(SK).s()) || l.get(SK).s().startsWith("softdelete#document#"))
+          .findAny().orElse(null);
 
       if (documentRecord != null) {
         AttributeValueToMap toMap = new AttributeValueToMap();
@@ -487,36 +464,43 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    return deleted;
-  }
-
-  private boolean deleteDocumentSoft(final String siteId, final String documentId,
-      final List<Map<String, AttributeValue>> list) {
-    return this.dbService.moveItems(list,
-        new DocumentDeleteMoveAttributeFunction(siteId, documentId));
-  }
-
-  private boolean deleteDocumentHard(final String siteId, final String documentId,
-      final AttributeValue pk, final List<Map<String, AttributeValue>> list) {
-
-    list.addAll(queryDocumentAttributes(fromS(SOFT_DELETE + pk.s()), null));
-
-    Map<String, AttributeValue> keys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
-    AttributeValue sk = fromS(SOFT_DELETE + "document#" + documentId);
-
-    list.addAll(queryDocumentAttributes(keys.get(PK), sk));
-
-    List<Map<String, AttributeValue>> listKeys = list.stream()
-        .map(map -> map.entrySet().stream()
-            .filter(entry -> entry.getKey().equals(PK) || entry.getKey().equals(SK))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-        .toList();
-
-    // TODO merge deletes together
-    final boolean deleted = this.dbService.deleteItems(listKeys);
-    this.versionsService.deleteAllVersionIds(siteId, documentId);
-
-    return deleted;
+    return deleted.deleted();
+    /*
+     * Map<String, AttributeValue> documentRecord = getDocumentRecord(siteId, documentId);
+     *
+     * if (documentRecord.containsKey("path")) { String path =
+     * DynamoDbTypes.toString(documentRecord.get("path")); validateDocumentPath(siteId, path,
+     * Collections.emptyMap()); deleteFolderIndex(siteId, path); }
+     *
+     * Map<String, AttributeValue> keys = keysGeneric(siteId, PREFIX_DOCS + documentId, null);
+     * AttributeValue pk = keys.get(PK);
+     *
+     * List<Map<String, AttributeValue>> list = queryDocumentAttributes(pk, null);
+     *
+     * boolean deleted; if (softDelete) {
+     *
+     * deleted = deleteDocumentSoft(siteId, documentId, list);
+     *
+     * } else {
+     *
+     * deleted = deleteDocumentHard(siteId, documentId, pk, list); }
+     *
+     * if (this.interceptor != null) {
+     *
+     * if (documentRecord.isEmpty()) { documentRecord = list.stream().filter(l ->
+     * l.get(SK).s().startsWith("softdelete#document#")) .findAny().orElse(null); }
+     *
+     * if (documentRecord != null) { AttributeValueToMap toMap = new AttributeValueToMap();
+     *
+     * list.forEach(a -> { if (a.containsKey("SK") && a.get("SK").s().startsWith("attr#")) {
+     * this.interceptor.deleteDocumentAttribute(siteId, documentId, softDelete, toMap.apply(a)); }
+     * });
+     *
+     * this.interceptor.deleteDocument(siteId, documentId, softDelete, toMap.apply(documentRecord));
+     * } }
+     *
+     * return deleted;
+     */
   }
 
   @Override
@@ -634,37 +618,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       nextToken = pr.getNextToken();
 
     } while (nextToken != null);
-  }
-
-  /**
-   * Delete Folder Index.
-   *
-   * @param siteId {@link String}
-   * @param path {@link String}
-   */
-  private void deleteFolderIndex(final String siteId, final String path) {
-    if (!isEmpty(path)) {
-
-      try {
-        List<FolderIndexRecord> folderIndexRecords =
-            this.folderIndexProcessor.getFolderIndexRecords(siteId, path);
-        FolderIndexRecord folder = new FindFolderIndexTopLevelFolder().apply(folderIndexRecords);
-        FolderIndexRecord file = last(folderIndexRecords);
-
-        if (folder != null) {
-          new FolderPermissionValidate(dbService, ApiPermission.DELETE).apply(siteId,
-              folder.path());
-        }
-
-        if (file != null && "file".equals(file.type())) {
-          DynamoDbKey key = new DynamoDbKey(file.pk(siteId), file.sk(), null, null, null, null);
-          dbService.deleteItem(key);
-        }
-
-      } catch (IOException e) {
-        // ignore folder doesn't exist
-      }
-    }
   }
 
   /**
@@ -1558,36 +1511,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Query For Document Attributes.
-   *
-   * @param pk {@link AttributeValue}
-   * @param sk {@link AttributeValue}
-   * @return {@link List} {@link Map}
-   */
-  private List<Map<String, AttributeValue>> queryDocumentAttributes(final AttributeValue pk,
-      final AttributeValue sk) {
-
-    final int limit = 100;
-    Map<String, AttributeValue> startkey = null;
-    List<Map<String, AttributeValue>> list = new ArrayList<>();
-    QueryConfig config = new QueryConfig();
-
-    do {
-
-      QueryResponse response = this.dbService.queryBeginsWith(config, pk, sk, startkey, limit);
-
-      List<Map<String, AttributeValue>> attrs = response.items().stream().toList();
-      list.addAll(attrs);
-
-      startkey = response.lastEvaluatedKey();
-
-    } while (startkey != null && !startkey.isEmpty());
-
-    return list;
-
-  }
-
-  /**
    * Query Documents by Primary Key.
    *
    * @param siteId DynamoDB PK siteId
@@ -2396,12 +2319,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
     this.dbService.updateValues(keys.get(PK), keys.get(SK), attributes);
-  }
-
-  private void saveDocumentSyncRecord(final String siteId, final DocumentSyncRecord a) {
-    WriteRequestBuilder writeBuilder =
-        new WriteRequestBuilder().append(this.documentSyncsTable, a.getAttributes(siteId));
-    writeBuilder.batchWriteItem(this.dbClient);
   }
 
   private void updatePathFromDeepLink(final DocumentItem item) {
