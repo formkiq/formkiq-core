@@ -63,6 +63,7 @@ import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
+import com.formkiq.aws.dynamodb.folders.FolderType;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.folders.StringToFolderTokens;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
@@ -794,7 +795,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @return {@link QueryResponse}
    */
   private QueryResponse queryForFolderByDocumentId(final String siteId, final String documentId) {
-    FolderIndexRecord record = new FolderIndexRecord().documentId(documentId);
+    FolderIndexRecord record =
+        new FolderIndexRecord().documentId(documentId).type(FolderType.FOLDER.getValue());
     String pk = record.pkGsi1(siteId);
     return this.db.queryIndex(GSI1, fromS(pk), null, 1);
   }

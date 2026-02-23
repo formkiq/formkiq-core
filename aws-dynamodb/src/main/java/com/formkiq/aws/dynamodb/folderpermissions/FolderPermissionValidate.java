@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.folderpermissions;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.validation.UnAuthorizedValidationError;
 import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -65,9 +66,8 @@ public class FolderPermissionValidate implements BiFunction<String, String, Void
       FolderPermissionRecord folderPermissions =
           FolderPermissionRecord.fromAttributeMap(attributes);
 
-      ValidationBuilder vb = new ValidationBuilder();
-      vb.authorized(pred.test(siteId, folderPermissions.rolePermissions()));
-      vb.check();
+      boolean authorized = pred.test(siteId, folderPermissions.rolePermissions());
+      new ValidationBuilder().isRequired(authorized, new UnAuthorizedValidationError()).check();
     }
 
     return null;
