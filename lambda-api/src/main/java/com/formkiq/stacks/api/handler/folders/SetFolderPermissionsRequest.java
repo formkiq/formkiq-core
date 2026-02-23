@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.stacks.dynamodb.folders.FolderRolePermission;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 
 import java.util.Collection;
 

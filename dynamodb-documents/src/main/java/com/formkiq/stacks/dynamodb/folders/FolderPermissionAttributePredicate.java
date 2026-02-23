@@ -27,6 +27,10 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionPredicate;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
+import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 

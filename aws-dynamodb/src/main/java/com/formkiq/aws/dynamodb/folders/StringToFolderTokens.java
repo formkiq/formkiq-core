@@ -21,25 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb.folders;
 
-import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
-import org.junit.jupiter.api.Test;
+import com.formkiq.strings.Strings;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.function.Function;
 
 /**
- * Unit Test for {@link FindFolderParentByPath}.
+ * Converts {@link String} to Folder Tokens.
  */
-public class FindFolderParentByPathTest {
+public class StringToFolderTokens implements Function<String, String[]> {
+  /** Deliminator. */
+  private static final String DELIMINATOR = "/";
 
-  @Test
-  public void testApply() {
-    assertNull(new FindFolderParentByPath().apply(null));
-    assertNull(new FindFolderParentByPath().apply(""));
-    assertNull(new FindFolderParentByPath().apply("test"));
-    assertEquals("test", new FindFolderParentByPath().apply("test/other"));
-    assertEquals("test/other", new FindFolderParentByPath().apply("test/other/my.pdf"));
+  @Override
+  public String[] apply(final String path) {
+    String[] strs;
+
+    if (!Strings.isEmpty(path) && !"/".equals(path)) {
+
+      String p =
+          path.replaceAll(":://", DELIMINATOR).replaceFirst("^\\.+", "").replaceAll("/+", "/");
+      String ss = p.startsWith(DELIMINATOR) ? p.substring(DELIMINATOR.length()) : p;
+      strs = ss.split(DELIMINATOR);
+
+    } else {
+      strs = new String[] {};
+    }
+
+    return strs;
   }
 }

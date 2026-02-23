@@ -103,7 +103,7 @@ public class DocumentCompressorTest {
 
     dbHelper = DynamoDbTestServices.getDynamoDbHelper();
     s3 = new S3Service(s3Builder);
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
+    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
 
     serviceCache = new AwsServiceCache().environment(env);
