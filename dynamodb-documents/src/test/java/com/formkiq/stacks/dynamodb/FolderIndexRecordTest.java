@@ -108,8 +108,8 @@ class FolderIndexRecordTest {
       // then
       assertEquals(createDatabaseKey(siteId, "global#folders#"), record.pk(siteId));
       assertEquals("fi#test.txt", record.sk());
-      assertEquals(createDatabaseKey(siteId, "folder#" + documentId), record.pkGsi1(siteId));
-      assertEquals("folder", record.skGsi1());
+      assertEquals(createDatabaseKey(siteId, "file#" + documentId), record.pkGsi1(siteId));
+      assertEquals("file", record.skGsi1());
       assertEquals("global#filename#te", record.pkGsi2(siteId));
       assertEquals("fi#test.txt", record.skGsi2());
     }
