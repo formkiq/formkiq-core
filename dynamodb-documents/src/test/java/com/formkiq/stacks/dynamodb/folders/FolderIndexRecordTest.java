@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.validation.ValidationException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -48,8 +49,7 @@ class FolderIndexRecordTest {
     FolderIndexRecord r =
         new FolderIndexRecord().parentDocumentId("p1").path("/a/b").type("folder");
 
-    IllegalArgumentException ex =
-        assertThrows(IllegalArgumentException.class, () -> r.pkGsi1("site1"));
+    ValidationException ex = assertThrows(ValidationException.class, () -> r.pkGsi1("site1"));
     assertEquals("'documentId' is required", ex.getMessage());
   }
 
@@ -109,11 +109,11 @@ class FolderIndexRecordTest {
   @Test
   void skThrowsWhenPathOrTypeMissing() {
     FolderIndexRecord r1 = new FolderIndexRecord().type("file").parentDocumentId("p1");
-    IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, r1::sk);
-    assertEquals("'path' and 'type' is required", ex1.getMessage());
+    ValidationException ex1 = assertThrows(ValidationException.class, r1::sk);
+    assertEquals("'path' is required", ex1.getMessage());
 
     FolderIndexRecord r2 = new FolderIndexRecord().path("/a/b.txt").parentDocumentId("p1");
-    IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, r2::sk);
-    assertEquals("'path' and 'type' is required", ex2.getMessage());
+    ValidationException ex2 = assertThrows(ValidationException.class, r2::sk);
+    assertEquals("'type' is required", ex2.getMessage());
   }
 }

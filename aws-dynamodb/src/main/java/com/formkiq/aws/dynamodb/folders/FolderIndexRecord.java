@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.validation.ValidationChecks;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -55,25 +56,18 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public static final String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
   /** Document Id. */
-  @Reflectable
   private String documentId;
   /** Record inserted date. */
-  @Reflectable
   private Date insertedDate;
   /** Record modified date. */
-  @Reflectable
   private Date lastModifiedDate;
   /** Parent Id. */
-  @Reflectable
   private String parentDocumentId;
   /** Path. */
-  @Reflectable
   private String path;
   /** Folder Type. */
-  @Reflectable
   private String type;
   /** Creator of record. */
-  @Reflectable
   private String userId;
 
   /**
@@ -96,9 +90,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   public DynamoDbKey buildNonShardKey(final String siteId) {
     DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
 
-    if ("folder".equals(this.type)) {
-      key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
-    }
+    key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
 
     key = key.gsi2Pk(siteId, pkGsi2(null)).gsi2Sk(skGsi2());
     return key.build();
@@ -267,16 +259,21 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Override
   public String pk(final String siteId) {
     checkParentId();
-    return SiteIdKeyGenerator.createDatabaseKey(siteId,
+    return createDatabaseKey(siteId,
         GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentDocumentId);
   }
 
   @Override
   public String pkGsi1(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return createDatabaseKey(siteId, "folder#" + this.documentId);
+
+    ValidationChecks.checkNotNull("documentId", this.documentId);
+    ValidationChecks.checkNotNull("type", this.type);
+
+    return switch (this.type) {
+      case "folder" -> createDatabaseKey(siteId, "folder#" + this.documentId);
+      case "file" -> createDatabaseKey(siteId, "file#" + this.documentId);
+      default -> throw new IllegalStateException("Unexpected value: " + this.type);
+    };
   }
 
   @Override
@@ -290,23 +287,29 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
 
   @Override
   public String sk() {
-    if (this.path == null || this.type == null) {
-      throw new IllegalArgumentException("'path' and 'type' is required");
-    }
+    ValidationChecks.checkNotNull("path", this.path);
+    ValidationChecks.checkNotNull("type", this.type);
+
     String folder = this.path.toLowerCase();
-    return "file".equals(this.type) ? INDEX_FILE_SK + folder : INDEX_FOLDER_SK + folder;
+    return FolderType.isFile(this.type) ? INDEX_FILE_SK + folder : INDEX_FOLDER_SK + folder;
   }
 
   @Override
   public String skGsi1() {
-    return "folder";
+    ValidationChecks.checkNotNull("type", this.type);
+
+    return switch (this.type) {
+      case "folder" -> FolderType.FOLDER.getValue();
+      case "file" -> FolderType.FILE.getValue();
+      default -> throw new IllegalStateException("Unexpected value: " + this.type);
+    };
   }
 
   @Override
   public String skGsi2() {
     // TODO folder...
     String filename = Strings.getFilename(this.path).toLowerCase();
-    return "folder".equals(this.type) ? INDEX_FOLDER_SK + filename : INDEX_FILE_SK + filename;
+    return FolderType.isFolder(this.type) ? INDEX_FOLDER_SK + filename : INDEX_FILE_SK + filename;
   }
 
   /**

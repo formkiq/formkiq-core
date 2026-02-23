@@ -736,7 +736,7 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals("joe", map.userId());
       assertEquals("folder", map.type());
     } else {
-      final int expected = 9;
+      final int expected = 11;
       assertEquals(expected, map.getAttributes(siteId).size());
       assertNull(map.insertedDate());
       assertNull(map.lastModifiedDate());

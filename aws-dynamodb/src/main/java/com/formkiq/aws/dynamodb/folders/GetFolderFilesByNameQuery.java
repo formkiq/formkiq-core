@@ -70,8 +70,8 @@ public class GetFolderFilesByNameQuery implements DynamoDbShardQuery {
     List<String> shards =
         new ArrayList<>(DynamoDbShardKey.getShardsSuffix(FolderIndexRecord.SHARD_COUNT));
 
-    DynamoDbKey key = new FolderIndexRecord().parentDocumentId("").type("file").path(begins)
-        .buildNonShardKey(siteId);
+    DynamoDbKey key = new FolderIndexRecord().parentDocumentId("").documentId("").type("file")
+        .path(begins).buildNonShardKey(siteId);
     List<DynamoDbShardKey> shardKeys = shards.stream().map(
         shard -> DynamoDbShardKey.builder().key(key).pkGsi1Shard(shard).pkGsi2Shard(shard).build())
         .toList();
