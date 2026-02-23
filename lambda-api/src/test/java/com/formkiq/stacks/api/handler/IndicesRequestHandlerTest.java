@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -85,8 +84,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   @BeforeAll
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    documentService = new DocumentServiceImpl(db, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
-        new DocumentVersionServiceNoVersioning());
+    documentService =
+        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
     dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE);
   }
 
@@ -128,10 +127,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   /**
    * DELETE /indices/{type}/{indexKey} request, folder not empty.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete02() throws Exception {
+  public void testHandleDelete02() {
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
@@ -250,10 +248,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
   /**
    * DELETE /indices/{type}/{indexKey} with invalid siteId.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleDelete06() throws Exception {
+  public void testHandleDelete06() {
 
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given

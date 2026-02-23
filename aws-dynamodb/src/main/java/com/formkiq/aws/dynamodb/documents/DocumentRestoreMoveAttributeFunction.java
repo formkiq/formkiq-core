@@ -21,19 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.documents;
 
-import static com.formkiq.stacks.dynamodb.DocumentService.SOFT_DELETE;
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.MoveAttributeFunction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
+
 /**
  * Delete Document {@link MoveAttributeFunction}.
  */
-public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunction, DbKeys {
+public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFunction, DbKeys {
 
   /** Site Id. */
   private final String siteId;
@@ -46,7 +47,7 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
    * @param siteIdParam {@link String}
    * @param id {@link String}
    */
-  public DocumentDeleteMoveAttributeFunction(final String siteIdParam, final String id) {
+  public DocumentRestoreMoveAttributeFunction(final String siteIdParam, final String id) {
     this.siteId = siteIdParam;
     this.documentId = id;
   }
@@ -58,31 +59,31 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
     String pk = a.get(PK).s();
     String sk = a.get(SK).s();
 
-    if ("document".equals(sk)) {
+    if (sk.startsWith(SOFT_DELETE + "document")) {
 
-      Map<String, AttributeValue> sdKeys =
-          keysGeneric(this.siteId, SOFT_DELETE + PREFIX_DOCS, null);
-      a.put(PK, sdKeys.get(PK));
-      a.put(SK, AttributeValue.fromS(SOFT_DELETE + sk + "#" + this.documentId));
+      Map<String, AttributeValue> keys = keysDocument(this.siteId, this.documentId);
+
+      a.put(PK, keys.get(PK));
+      a.put(SK, keys.get(SK));
 
       if (a.containsKey(GSI1_PK)) {
-        a.put(GSI1_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI1_PK).s()));
-        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s()));
+        a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s().replaceAll(SOFT_DELETE, "")));
       }
 
     } else {
 
-      a.put(PK, AttributeValue.fromS(SOFT_DELETE + pk));
-      a.put(SK, AttributeValue.fromS(SOFT_DELETE + sk));
+      a.put(PK, AttributeValue.fromS(pk.replaceAll(SOFT_DELETE, "")));
+      a.put(SK, AttributeValue.fromS(sk.replaceAll(SOFT_DELETE, "")));
 
       if (a.containsKey(GSI1_PK)) {
-        a.put(GSI1_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI1_PK).s()));
-        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s()));
+        a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s().replaceAll(SOFT_DELETE, "")));
       }
 
       if (a.containsKey(GSI2_PK)) {
-        a.put(GSI2_PK, AttributeValue.fromS(SOFT_DELETE + a.get(GSI2_PK).s()));
-        a.put(GSI2_SK, AttributeValue.fromS(a.get(GSI2_SK).s()));
+        a.put(GSI2_PK, AttributeValue.fromS(a.get(GSI2_PK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI2_SK, AttributeValue.fromS(a.get(GSI2_SK).s().replaceAll(SOFT_DELETE, "")));
       }
     }
 

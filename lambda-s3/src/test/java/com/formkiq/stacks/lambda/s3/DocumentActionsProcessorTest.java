@@ -297,8 +297,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
     DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
 
-    documentService =
-        new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE, versionService);
+    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     mappingService = new MappingServiceDynamodb(db);
     attributeService = new AttributeServiceDynamodb(db);

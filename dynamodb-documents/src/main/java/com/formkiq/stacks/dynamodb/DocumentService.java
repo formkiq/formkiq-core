@@ -49,9 +49,6 @@ public interface DocumentService {
   /** The Default maximum results returned. */
   int MAX_RESULTS = 10;
 
-  /** Soft Deleted Prefix. */
-  String SOFT_DELETE = "softdelete#";
-
   /** System Defined Tags. */
   Set<String> SYSTEM_DEFINED_TAGS = Set.of("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP");
 

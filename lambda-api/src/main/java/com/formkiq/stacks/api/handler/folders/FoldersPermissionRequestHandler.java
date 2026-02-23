@@ -32,7 +32,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.folders.FolderPermissionRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 
 import java.util.Collections;
 

@@ -144,12 +144,9 @@ public abstract class AbstractAwsTest {
     String documentsTable =
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentsTableName");
 
-    String documentsSyncsTable = ssmService
-        .getParameterValue("/formkiq/" + appenvironment + "/dynamodb/DocumentSyncsTableName");
-
     dbConnection =
         new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
-    documentService = new DocumentServiceImpl(dbConnection, documentsTable, documentsSyncsTable,
+    documentService = new DocumentServiceImpl(dbConnection, documentsTable,
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable);
 
