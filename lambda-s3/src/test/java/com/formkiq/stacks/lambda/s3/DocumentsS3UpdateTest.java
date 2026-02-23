@@ -237,7 +237,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       schema.createCacheTable(CACHE_TABLE);
     }
 
-    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
+    service = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
 

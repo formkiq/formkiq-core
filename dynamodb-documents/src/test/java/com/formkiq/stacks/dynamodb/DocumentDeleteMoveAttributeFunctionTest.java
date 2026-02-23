@@ -33,6 +33,8 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction;
+import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 

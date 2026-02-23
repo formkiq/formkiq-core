@@ -50,7 +50,7 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
-import com.formkiq.stacks.dynamodb.folders.StringToFolder;
+import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 
 /** {@link ApiGatewayRequestHandler} for "/folders". */
 public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {

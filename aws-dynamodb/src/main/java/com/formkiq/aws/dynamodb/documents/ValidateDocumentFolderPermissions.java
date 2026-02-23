@@ -21,52 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb.documents;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.validation.ValidationBuilder;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
+import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 
-/**
- * Validate Folder Permissions to Role.
- */
-public class FolderPermissionValidate implements BiFunction<String, String, Void> {
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
-  /** {@link FolderPermissionPredicate}. */
-  private final FolderPermissionPredicate pred;
+/**
+ * Validate Folder Permissions.
+ */
+public class ValidateDocumentFolderPermissions implements BiFunction<String, String, String> {
+
   /** {@link DynamoDbService}. */
-  private final DynamoDbService db;
+  private DynamoDbService db;
+  /** {@link ApiPermission}. */
+  private ApiPermission permission;
 
   /**
    * constructor.
-   * 
+   *
    * @param dbService {@link DynamoDbService}
    * @param apiPermission {@link ApiPermission}
    */
-  public FolderPermissionValidate(final DynamoDbService dbService,
+  public ValidateDocumentFolderPermissions(final DynamoDbService dbService,
       final ApiPermission apiPermission) {
-    pred = new FolderPermissionPredicate(apiPermission);
     this.db = dbService;
+    this.permission = apiPermission;
   }
 
   @Override
-  public Void apply(final String siteId, final String path) {
+  public String apply(final String siteId, final String path) {
 
-    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
-    Map<String, AttributeValue> attributes = db.get(key);
+    String parentPath = new FindFolderParentByPath().apply(path);
 
-    if (!attributes.isEmpty()) {
-      FolderPermissionRecord folderPermissions =
-          FolderPermissionRecord.fromAttributeMap(attributes);
-
-      ValidationBuilder vb = new ValidationBuilder();
-      vb.authorized(pred.test(siteId, folderPermissions.rolePermissions()));
-      vb.check();
+    if (!isEmpty(parentPath)) {
+      new FolderPermissionValidate(db, permission).apply(siteId, parentPath);
     }
 
     return null;

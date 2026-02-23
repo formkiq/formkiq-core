@@ -21,20 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb.folderpermissions;
 
-import java.util.function.Function;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 
-/**
- * Convert {@link String} to Folder.
- */
-public class StringToFolder implements Function<String, String> {
+import java.util.Collection;
+import java.util.function.BiPredicate;
+
+public class FolderPermissionPredicate
+    implements BiPredicate<String, Collection<FolderRolePermission>> {
+
+  /** {@link ApiAuthorization}. */
+  private final ApiAuthorization authorization;
+  /** {@link Collection} {@link String}. */
+  private final Collection<String> roles;
+  /** {@link ApiPermission}. */
+  private final ApiPermission permission;
+
+  /**
+   * constructor.
+   *
+   * @param apiPermission {@link ApiPermission}
+   */
+  public FolderPermissionPredicate(final ApiPermission apiPermission) {
+
+    authorization = ApiAuthorization.getAuthorization();
+    roles = authorization.getRoles();
+    permission = apiPermission;
+  }
+
   @Override
-  public String apply(final String path) {
-    String result = "/";
-    if (path != null) {
-      result = path.endsWith("/") ? path : path + "/";
-    }
-    return result;
+  public boolean test(final String siteId, final Collection<FolderRolePermission> permissions) {
+    return permissions == null || authorization.isAdminOrGovern(siteId) || permissions.stream()
+        .anyMatch(p -> roles.contains(p.roleName()) && p.permissions().contains(permission));
   }
 }

@@ -32,8 +32,8 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.folders.FolderPermissionValidate;
-import com.formkiq.stacks.dynamodb.folders.StringToFolder;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
+import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.strings.Strings;
 
 

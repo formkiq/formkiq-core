@@ -61,7 +61,6 @@ import static com.formkiq.aws.dynamodb.DbKeys.SK;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -100,8 +99,8 @@ public class GetAllDocumentsQueryTest {
   public static void beforeAll() throws Exception {
     DynamoDbConnectionBuilder dbc = DynamoDbTestServices.getDynamoDbConnection();
     db = new DynamoDbServiceImpl(dbc, DOCUMENTS_TABLE);
-    service = new DocumentServiceImpl(dbc, DOCUMENTS_TABLE, DOCUMENT_SYNCS_TABLE,
-        new DocumentVersionServiceNoVersioning());
+    service =
+        new DocumentServiceImpl(dbc, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
   }
 
   private @NotNull List<String> addDocuments(final String siteId,

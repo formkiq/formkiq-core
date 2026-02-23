@@ -21,25 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.folders;
+package com.formkiq.aws.dynamodb;
 
-import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
-import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.Collection;
+import java.util.Map;
 
 /**
- * Unit Test for {@link FindFolderParentByPath}.
+ * Delete Dynamodb result.
+ *
+ * @param deleted boolean
+ * @param attributes {@link Map}
  */
-public class FindFolderParentByPathTest {
-
-  @Test
-  public void testApply() {
-    assertNull(new FindFolderParentByPath().apply(null));
-    assertNull(new FindFolderParentByPath().apply(""));
-    assertNull(new FindFolderParentByPath().apply("test"));
-    assertEquals("test", new FindFolderParentByPath().apply("test/other"));
-    assertEquals("test/other", new FindFolderParentByPath().apply("test/other/my.pdf"));
-  }
+public record DeleteResults(boolean deleted, Collection<Map<String, AttributeValue>> attributes) {
 }
