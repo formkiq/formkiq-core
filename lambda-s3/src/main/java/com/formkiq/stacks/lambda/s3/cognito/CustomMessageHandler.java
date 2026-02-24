@@ -189,9 +189,9 @@ public class CustomMessageHandler
     String consoleUrl = parameters.get(consoleUrlParam);
     var config = new CustomMessageConfig(parameters.get(urlParamName), subject, consoleUrl);
 
-    if (config.cognitoHttpApiUrl() == null) {
-      throw new IllegalStateException("Missing required SSM parameter: " + urlParamName);
-    }
+    // if (config.cognitoHttpApiUrl() == null) {
+    // throw new IllegalStateException("Missing required SSM parameter: " + urlParamName);
+    // }
 
     if (config.consoleUrl() == null) {
       throw new IllegalStateException("Missing required SSM parameter: " + consoleUrlParam);
