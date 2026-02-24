@@ -17,7 +17,7 @@ allprojects {
 
   version = '1.19.0'
 
-  ext.awsCognitoVersion = '1.6.5'
+  //  ext.awsCognitoVersion = '1.6.5'
   group = 'com.formkiq.stacks'
 
   configurations.all {
@@ -54,11 +54,11 @@ description = "FormKiQ Core"
 
 apply plugin: 'distribution'
 
-tasks.register("downloadAwsCognito", Download) {
-  src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-  dest(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
-  overwrite false
-}
+//tasks.register("downloadAwsCognito", Download) {
+//  src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
+//  dest(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
+//  overwrite false
+//}
 
 /*
  task downloadAwsCognito(type: Copy) {
@@ -67,16 +67,16 @@ tasks.register("downloadAwsCognito", Download) {
  into file("${buildDir}")
  }*/
 
-tasks.register("unzipAwsCognito", Copy) {
-  dependsOn downloadAwsCognito
-  from({
-    zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
-  }) {
-    include("CognitoCustomMessage/**")
-  }
-
-  into(layout.buildDirectory.dir("modules/cognito"))
-}
+/*
+ tasks.register("unzipAwsCognito", Copy) {
+ dependsOn downloadAwsCognito
+ from({
+ zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
+ }) {
+ include("CognitoCustomMessage/**")
+ }
+ into(layout.buildDirectory.dir("modules/cognito"))
+ }*/
 
 ytt {
   defaultDataValues.put("version", project.version.toString())
@@ -183,7 +183,7 @@ ytt {
 }
 
 tasks.named('distZip') {
-  dependsOn subprojects.collect { it.tasks.named('build') }, unzipAwsCognito, yttRenderAll
+  dependsOn subprojects.collect { it.tasks.named('build') }, yttRenderAll
 }
 
 tasks.distTar.enabled = false
