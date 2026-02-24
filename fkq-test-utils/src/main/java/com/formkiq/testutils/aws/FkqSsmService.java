@@ -29,6 +29,8 @@ import com.formkiq.aws.ssm.SsmServiceImpl;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
+import java.util.Map;
+
 /**
  * 
  * {@link SsmService} configured specifically for FormKiQ.
@@ -65,6 +67,11 @@ public class FkqSsmService implements SsmService {
   @Override
   public String getParameterValue(final String key) {
     return this.service.getParameterValue(key);
+  }
+
+  @Override
+  public Map<String, String> getParameterValues(final String[] names) {
+    return this.service.getParameterValues(names);
   }
 
   @Override
