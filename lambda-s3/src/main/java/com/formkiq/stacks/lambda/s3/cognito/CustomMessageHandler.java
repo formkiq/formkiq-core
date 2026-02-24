@@ -33,6 +33,7 @@ import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
@@ -46,6 +47,7 @@ import java.util.Optional;
 /**
  * Cognito Custom Message Handler.
  */
+@Reflectable
 public class CustomMessageHandler
     implements RequestHandler<CognitoCustomMessageEvent, CognitoCustomMessageEvent> {
 
