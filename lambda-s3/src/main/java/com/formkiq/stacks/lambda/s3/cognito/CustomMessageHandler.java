@@ -36,6 +36,10 @@ import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.GsonUtil;
+import com.google.gson.Gson;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkException;
 
@@ -55,7 +59,6 @@ public class CustomMessageHandler
   private static final Map<String, Map<String, String>> DEFAULTS = new HashMap<>();
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
-
   static {
     DEFAULTS.put("CustomMessage_SignUp", Map.of("Subject", "Your Verification Link", "Message",
         "Thank you for signing up. <a href=\"${link}\" target=\"_blank\">Click this link to verify</a>"));
@@ -90,6 +93,9 @@ public class CustomMessageHandler
     awsServiceCache.register(S3Service.class, new S3ServiceExtension());
     awsServiceCache.register(SsmService.class, new SsmServiceExtension());
   }
+
+  /** {@link Gson}. */
+  private final Gson gson = GsonUtil.getInstance();
 
   /**
    * constructor.
@@ -204,6 +210,11 @@ public class CustomMessageHandler
   public CognitoCustomMessageEvent handleRequest(final CognitoCustomMessageEvent event,
       final Context context) {
 
+    Logger logger = serviceCache.getLogger();
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String json = this.gson.toJson(event);
+      logger.debug(json);
+    }
     context.getLogger().log("triggerSource=" + event.triggerSource() + "\n");
 
     String domain = requireEnv("DOMAIN");
@@ -235,7 +246,11 @@ public class CustomMessageHandler
 
     CognitoCustomMessageEvent updated = event.withEmail(config.subject(), rendered);
 
-    context.getLogger().log("emailSubject=" + updated.response().emailSubject() + "\n");
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String json = this.gson.toJson(updated);
+      logger.debug(json);
+    }
+
     return updated;
   }
 

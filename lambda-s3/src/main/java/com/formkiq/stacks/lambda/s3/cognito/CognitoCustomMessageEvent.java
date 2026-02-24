@@ -28,23 +28,28 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import java.util.Map;
 
 @Reflectable
-public record CognitoCustomMessageEvent(String triggerSource, String region, String userName,
-    CallerContext callerContext, Request request, Response response) {
+public record CognitoCustomMessageEvent(String version, String region, String userPoolId,
+    String userName, CallerContext callerContext, String triggerSource, Request request,
+    Response response) {
+
   @Reflectable
-  public record CallerContext(String clientId) {
+  public record CallerContext(String awsSdkVersion, String clientId) {
   }
 
   @Reflectable
-  public record Request(String codeParameter, String usernameParameter,
-      Map<String, String> userAttributes) {
+  public record Request(Map<String, String> userAttributes, String codeParameter,
+      String linkParameter, String usernameParameter) {
   }
 
   @Reflectable
-  public record Response(String emailSubject, String emailMessage) {
+  public record Response(String smsMessage, String emailMessage, String emailSubject) {
   }
 
+  /** Return a copy of the event with updated email subject + message (keeps smsMessage as-is). */
   public CognitoCustomMessageEvent withEmail(final String subject, final String message) {
-    return new CognitoCustomMessageEvent(this.triggerSource, this.region, this.userName,
-        this.callerContext, this.request, new Response(subject, message));
+    final Response r = this.response != null ? this.response : new Response(null, null, null);
+    return new CognitoCustomMessageEvent(this.version, this.region, this.userPoolId, this.userName,
+        this.callerContext, this.triggerSource, this.request,
+        new Response(r.smsMessage(), message, subject));
   }
 }
