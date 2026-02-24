@@ -247,6 +247,9 @@ Resources:
 
   CoreConsole:
     Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+      - Cognito
     Properties:
       Location: console/template.yaml
       Parameters:
@@ -256,6 +259,26 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
+        Domain:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.Domain
+        CognitoConfigBucket:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoConfigBucket
+        CognitoHostedUi:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoHostedUi
+        CognitoUserPoolId:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoUserPoolClientId
         AdminEmail: 
           Ref: AdminEmail
         WAFWebACLId:
@@ -265,42 +288,10 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
-
-  CoreConsoleInstall:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreApi
-      - Cognito
-    Properties:
-      Location: console/template-install.yaml
-      Parameters:
-        LogRetentionInDays:
-          Ref: LogRetentionInDays
-        LogFormat:
-          Ref: LogFormat
-        LogLevelApplication:
-          Ref: LogLevelApplication
-        LogLevelSystem:
-          Ref: LogLevelSystem
-        IsGovCloud:
-          Fn::If:
-          - IsGovCloud
-          - "true"
-          - "false"
-        AppEnvironment: 
-          Ref: AppEnvironment
-        ConsoleVersion: 
-          Fn::GetAtt: 
-          - CoreConsole
-          - Outputs.ConsoleVersion
-        ConsoleBucket: 
-          Fn::GetAtt: 
-          - CoreConsole
-          - Outputs.ConsoleBucket
-        ApiUrl: 
-          Fn::GetAtt: 
-          - CoreApi
-          - Outputs.DocumentsHttpApiUrl
+        ApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.DocumentsHttpApiUrl
         IamApiUrl:
           Fn::GetAtt:
             - CoreApi
@@ -314,26 +305,22 @@ Resources:
             - CoreApi
             - Outputs.UserAuthApiUrl
         AllowAdminCreateUserOnly: "true"
-        CognitoHostedUi:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoHostedUi
-        CognitoUserPoolId:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoUserPoolClientId
-        CognitoConfigBucket:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoConfigBucket
-        Domain:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.Domain
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
+
+  CoreConsoleInstall:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreConsole
+    Properties:
+      Location: console/template-install.yaml
+      Parameters:
         HostedZoneId:
           Fn::GetAtt:
           - CoreConsole

@@ -215,7 +215,6 @@ public class CustomMessageHandler
       String json = this.gson.toJson(event);
       logger.debug(json);
     }
-    context.getLogger().log("triggerSource=" + event.triggerSource() + "\n");
 
     String domain = requireEnv("DOMAIN");
     String bucket = requireEnv("S3_BUCKET");
@@ -238,20 +237,12 @@ public class CustomMessageHandler
     String link = generateLink(event, config, userStatus, email);
 
     if (link == null) {
-      // Unknown triggerSource: return unchanged event
       return event;
     }
 
     String rendered = processMessage(attrs, message, link);
 
-    CognitoCustomMessageEvent updated = event.withEmail(config.subject(), rendered);
-
-    if (logger.isLogged(LogLevel.DEBUG)) {
-      String json = this.gson.toJson(updated);
-      logger.debug(json);
-    }
-
-    return updated;
+    return event.withEmail(config.subject(), rendered);
   }
 
   private String processMessage(final Map<String, String> userAttributes, final String message,
