@@ -388,6 +388,7 @@ Resources:
                   - ssm:GetParameters
                 Resource:
                   - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/cognito/*"
+                  - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/${AppEnvironment}/*"
               - Effect: Allow
                 Action:
                   - s3:GetObject
