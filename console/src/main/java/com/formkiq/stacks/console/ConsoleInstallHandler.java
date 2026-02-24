@@ -140,7 +140,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /**
    * Customize Cognito Email Templates.
-   *
+   * 
+   * @param logger {@link LambdaLogger}
    * @throws IOException IOException
    */
   private void createCognitoEmail(final LambdaLogger logger) throws IOException {
