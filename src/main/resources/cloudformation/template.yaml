@@ -345,8 +345,6 @@ Resources:
 
   Cognito:
     Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreConsole
     Properties:
       Location: cognito/template.yaml
       Parameters:
@@ -379,10 +377,6 @@ Resources:
           Ref: LogLevelSystem
         UserPoolTier:
           Ref: UserPoolTier
-        RedirectUrl:
-          Fn::GetAtt:
-          - CoreConsole
-          - Outputs.ConsoleUrl
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -419,7 +413,6 @@ Resources:
     DependsOn:
       - Cognito
       - TypeSenseService
-      - CoreConsole
     Properties:
       Location: api/template.yaml
       Parameters:
@@ -469,10 +462,6 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQVersion
-        ConsoleUrl:
-          Fn::GetAtt:
-            - CoreConsole
-            - Outputs.ConsoleUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 

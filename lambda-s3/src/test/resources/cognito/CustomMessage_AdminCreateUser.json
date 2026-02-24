@@ -1,0 +1,26 @@
+{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_1sZ0oCa02",
+  "userName": "db1270e6-d939-4ef0-8f9b-8c5ee47100e3",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-unknown-unknown",
+    "clientId": "CLIENT_ID_NOT_APPLICABLE"
+  },
+  "triggerSource": "CustomMessage_AdminCreateUser",
+  "request": {
+    "userAttributes": {
+      "sub": "db1270e6-d939-4ef0-8f9b-8c5ee47100e3",
+      "cognito:user_status": "FORCE_CHANGE_PASSWORD",
+      "email": "test@formkiq.com"
+    },
+    "codeParameter": "{####}",
+    "linkParameter": "{##Click Here##}",
+    "usernameParameter": "{username}"
+  },
+  "response": {
+    "smsMessage": null,
+    "emailMessage": null,
+    "emailSubject": null
+  }
+}

@@ -21,45 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.ssm;
+package com.formkiq.stacks.lambda.s3.cognito;
+
+import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.Map;
 
-/**
- * 
- * SSM Services.
- *
- */
-public interface SsmService {
+@Reflectable
+public record CognitoCustomMessageEvent(String triggerSource, String region, String userName,
+    CallerContext callerContext, Request request, Response response) {
+  @Reflectable
+  public record CallerContext(String clientId) {
+  }
 
-  /**
-   * Get Parameter Store Value.
-   *
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  String getParameterValue(String key);
+  @Reflectable
+  public record Request(String codeParameter, String usernameParameter,
+      Map<String, String> userAttributes) {
+  }
 
-  /**
-   * Get Parameters Values.
-   * 
-   * @param names {@link String}
-   * @return {@link Map}
-   */
-  Map<String, String> getParameterValues(String[] names);
+  @Reflectable
+  public record Response(String emailSubject, String emailMessage) {
+  }
 
-  /**
-   * Put SSM Parameter.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  void putParameter(String key, String value);
-
-  /**
-   * Remove Parameter.
-   * 
-   * @param key {@link String}
-   */
-  void removeParameter(String key);
+  public CognitoCustomMessageEvent withEmail(final String subject, final String message) {
+    return new CognitoCustomMessageEvent(this.triggerSource, this.region, this.userName,
+        this.callerContext, this.request, new Response(subject, message));
+  }
 }

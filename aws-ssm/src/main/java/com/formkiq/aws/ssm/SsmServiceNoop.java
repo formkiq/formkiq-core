@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.ssm;
 
+import java.util.Map;
+
 /**
  * NoOp {@link SsmService}.
  */
@@ -30,6 +32,11 @@ public class SsmServiceNoop implements SsmService {
 
   @Override
   public String getParameterValue(final String key) {
+    return null;
+  }
+
+  @Override
+  public Map<String, String> getParameterValues(final String[] names) {
     return null;
   }
 

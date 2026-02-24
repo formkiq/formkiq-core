@@ -27,9 +27,15 @@ import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.DeleteParameterRequest;
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
 import software.amazon.awssdk.services.ssm.model.GetParameterResponse;
+import software.amazon.awssdk.services.ssm.model.GetParametersRequest;
+import software.amazon.awssdk.services.ssm.model.GetParametersResponse;
+import software.amazon.awssdk.services.ssm.model.Parameter;
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
 import software.amazon.awssdk.services.ssm.model.ParameterType;
 import software.amazon.awssdk.services.ssm.model.PutParameterRequest;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -65,6 +71,14 @@ public class SsmServiceImpl implements SsmService {
     }
 
     return value;
+  }
+
+  @Override
+  public Map<String, String> getParameterValues(final String[] names) {
+    GetParametersResponse response =
+        this.ssm.getParameters(GetParametersRequest.builder().names(names).build());
+    return response.parameters().stream()
+        .collect(Collectors.toMap(Parameter::name, Parameter::value));
   }
 
   @Override
