@@ -143,11 +143,12 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    *
    * @throws IOException IOException
    */
-  private void createCognitoEmail() throws IOException {
+  private void createCognitoEmail(final LambdaLogger logger) throws IOException {
     String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
     String domain = this.environmentMap.get("DOMAIN");
 
     String key1 = String.format("formkiq/cognito/%s/CustomMessage_AdminCreateUser/Message", domain);
+    logger.log("writing cognito email key1 " + key1);
 
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_AdminCreateUser/Message")) {
@@ -155,12 +156,14 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
 
     String key2 = String.format("formkiq/cognito/%s/CustomMessage_SignUp/Message", domain);
+    logger.log("writing cognito email key2 " + key2);
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_SignUp/Message")) {
       this.s3.putObject(cognitoConfigBucket, key2, is, null);
     }
 
     String key3 = String.format("formkiq/cognito/%s/CustomMessage_ForgotPassword/Message", domain);
+    logger.log("writing cognito email key3 " + key3);
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_ForgotPassword/Message")) {
       this.s3.putObject(cognitoConfigBucket, key3, is, null);
@@ -217,7 +220,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
         unzipConsole(input, context, logger);
         createCognitoConfig(logger);
-        createCognitoEmail();
+        createCognitoEmail(logger);
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
 
