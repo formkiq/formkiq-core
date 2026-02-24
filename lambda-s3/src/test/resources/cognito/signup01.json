@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "region": "us-east-2",
+  "userPoolId": "us-east-2_8fKedJtEB",
+  "userName": "42575cda-2414-4ef5-8679-ed10d219d814",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-nodejs-2.804.0",
+    "clientId": "197cl4eouv0fcbkc60sj0n0tp2"
+  },
+  "triggerSource": "CustomMessage_SignUp",
+  "request": {
+    "userAttributes": {
+      "sub": "42575cda-2414-4ef5-8679-ed10d219d814",
+      "cognito:user_status": "UNCONFIRMED",
+      "email_verified": "false",
+      "cognito:email_alias": "test@formkiq.com",
+      "email": "test@formkiq.com"
+    },
+    "codeParameter": "{####}",
+    "linkParameter": "{##Click Here##}",
+    "usernameParameter": null
+  },
+  "response": {
+    "smsMessage": null,
+    "emailMessage": null,
+    "emailSubject": null
+  }
+}

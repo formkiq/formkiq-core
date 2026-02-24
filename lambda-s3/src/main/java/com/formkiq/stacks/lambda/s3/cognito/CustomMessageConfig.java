@@ -21,45 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.ssm;
+package com.formkiq.stacks.lambda.s3.cognito;
 
-import java.util.Map;
-
-/**
- * 
- * SSM Services.
- *
- */
-public interface SsmService {
-
-  /**
-   * Get Parameter Store Value.
-   *
-   * @param key {@link String}
-   * @return {@link String}
-   */
-  String getParameterValue(String key);
-
-  /**
-   * Get Parameters Values.
-   * 
-   * @param names {@link String}
-   * @return {@link Map}
-   */
-  Map<String, String> getParameterValues(String[] names);
-
-  /**
-   * Put SSM Parameter.
-   * 
-   * @param key {@link String}
-   * @param value {@link String}
-   */
-  void putParameter(String key, String value);
-
-  /**
-   * Remove Parameter.
-   * 
-   * @param key {@link String}
-   */
-  void removeParameter(String key);
+public record CustomMessageConfig(String cognitoHttpApiUrl, String subject, String consoleUrl) {
 }

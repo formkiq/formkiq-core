@@ -21,32 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.ssm;
+package com.formkiq.stacks.lambda.s3.cognito;
+
+import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.Map;
 
-/**
- * NoOp {@link SsmService}.
- */
-public class SsmServiceNoop implements SsmService {
+@Reflectable
+public record CognitoCustomMessageEvent(String version, String region, String userPoolId,
+    String userName, CallerContext callerContext, String triggerSource, Request request,
+    Response response) {
 
-  @Override
-  public String getParameterValue(final String key) {
-    return null;
+  @Reflectable
+  public record CallerContext(String awsSdkVersion, String clientId) {
   }
 
-  @Override
-  public Map<String, String> getParameterValues(final String[] names) {
-    return null;
+  @Reflectable
+  public record Request(Map<String, String> userAttributes, String codeParameter,
+      String linkParameter, String usernameParameter) {
   }
 
-  @Override
-  public void putParameter(final String key, final String value) {
-    // empty
+  @Reflectable
+  public record Response(String smsMessage, String emailMessage, String emailSubject) {
   }
 
-  @Override
-  public void removeParameter(final String key) {
-    // empty
+  /** Return a copy of the event with updated email subject + message (keeps smsMessage as-is). */
+  public CognitoCustomMessageEvent withEmail(final String subject, final String message) {
+    final Response r = this.response != null ? this.response : new Response(null, null, null);
+    return new CognitoCustomMessageEvent(this.version, this.region, this.userPoolId, this.userName,
+        this.callerContext, this.triggerSource, this.request,
+        new Response(r.smsMessage(), message, subject));
   }
 }

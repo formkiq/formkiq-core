@@ -84,6 +84,12 @@ public class SsmServiceCache implements SsmService {
     return value;
   }
 
+
+  @Override
+  public Map<String, String> getParameterValues(final String[] names) {
+    return this.ssm.getParameterValues(names);
+  }
+
   /**
    * Is Cache Expired.
    * 

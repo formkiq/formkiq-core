@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "region": "us-east-2",
+  "userPoolId": "us-east-2_pSk3V7W7o",
+  "userName": "4b2857fe-9376-4d21-bf5c-fdc1bcba291b",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-nodejs-2.804.0",
+    "clientId": "57cqrjqsl9e193m9r2hamagn2k"
+  },
+  "triggerSource": "CustomMessage_ForgotPassword",
+  "request": {
+    "userAttributes": {
+      "sub": "4b2857fe-9376-4d21-bf5c-fdc1bcba291b",
+      "email_verified": "true",
+      "cognito:user_status": "CONFIRMED",
+      "cognito:email_alias": "test@formkiq.com",
+      "email": "test@formkiq.com"
+    },
+    "codeParameter": "{####}",
+    "linkParameter": "{##Click Here##}",
+    "usernameParameter": null
+  },
+  "response": {
+    "smsMessage": null,
+    "emailMessage": null,
+    "emailSubject": null
+  }
+}

@@ -159,10 +159,6 @@ Parameters:
     Description: Certificate Auth Api Domain
     Default: ""
 
-  ConsoleUrl:
-    Type: String
-    Description: The URL for the FormKiQ Console
-
 Conditions:
 
   HasCertificateStackNameHttpApiDomain:
@@ -219,8 +215,6 @@ Resources:
           Ref: OperationalMode
         AppEnvironment: 
           Ref: AppEnvironment
-        ConsoleUrl:
-          Ref: ConsoleUrl
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:

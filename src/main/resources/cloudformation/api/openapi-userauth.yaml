@@ -289,3 +289,11 @@ Resources:
               httpMethod: "POST"
               type: "aws_proxy"
               payloadFormatVersion: "1.0"
+        x-amazon-apigateway-cors:
+          allowOrigins:
+            - '*'
+          maxAge: 3600
+          allowMethods:
+            - '*'
+          allowHeaders:
+            - '*'

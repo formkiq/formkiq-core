@@ -76,11 +76,6 @@ Parameters:
     Description: The destination to which the receiver of the email should reply to
     Default: ""
 
-  RedirectUrl:
-    Type: String
-    Description: The URL to redirect to from Cognito Signup
-    AllowedPattern: ".+"
-
   AccessTokenValidity:
     Description: The time limit, after which the access token is no longer valid and cannot be used.
     Type: Number
@@ -291,19 +286,19 @@ Resources:
   CognitoCustomMessage:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: CognitoCustomMessage/
-      Handler: app.lambdaHandler
-      Runtime: nodejs22.x
+      CodeUri: ../storage/lambda-s3-graalvm.zip
+      Handler: com.formkiq.stacks.lambda.s3.cognito.CustomMessageHandler
+      Runtime: provided.al2023
       Description: Lambda function that processes Cognito Custom Email Messages
-      MemorySize: 512
+      MemorySize: 1024
       Role:
         Fn::GetAtt:
           - CognitoCustomMessageRole
           - Arn
       Environment:
         Variables:
-          REDIRECT_URI:
-            Ref: RedirectUrl
+          APP_ENVIRONMENT:
+            Ref: AppEnvironment
           DOMAIN:
             Ref: Domain
           S3_BUCKET:
@@ -393,6 +388,7 @@ Resources:
                   - ssm:GetParameters
                 Resource:
                   - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/cognito/*"
+                  - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/${AppEnvironment}/*"
               - Effect: Allow
                 Action:
                   - s3:GetObject

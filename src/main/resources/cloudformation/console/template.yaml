@@ -9,6 +9,11 @@ Parameters:
     Default: ""
     Description: (Optional) ARN of the AWS WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
 
+  DistributionBucket:
+    Type: String
+    Description: FormKiQ Distribution BucketName
+    Default: "formkiq-distribution-console"
+
   AdminEmail:
     Type: String
     Description: Administrator Email
@@ -19,10 +24,18 @@ Parameters:
     Description: The Document Stack Environment
     AllowedPattern: ".+"
 
+  Domain:
+    Description: Amazon Cognito domain to use (include full domain if CertificateArn used)
+    Type: String
+
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
     Default: v4.0.35
+
+  CognitoConfigBucket:
+    Type: String
+    Description: Cognito Config S3 Bucket
 
   FormKiQType:
     Description: The type of FormKiQ installation
@@ -42,6 +55,72 @@ Parameters:
     Description: Is Installation AWS Region gov cloud
     Type: String
     AllowedValues: ["true", "false"]
+
+  ApiUrl:
+    Type: String
+    Description: JWT API URL
+
+  IamApiUrl:
+    Type: String
+    Description: IAM API URL
+
+  KeyApiUrl:
+    Type: String
+    Description: Key API URL
+
+  AuthApiUrl:
+    Type: String
+    Description: Auth Api URL
+
+  Brand:
+    Type: String
+    Description: Console Installer Brand
+    Default: "formkiq"
+
+  AllowAdminCreateUserOnly:
+    Description: When true only Cognito Admin can create users, false users can register themselves
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoHostedUi:
+    Description: Amazon Cognito Hosted UI Url
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoUserPoolId:
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+    Type: String
+
+  CognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+    Type: String
+
+  UserAuthentication:
+    Description: How are the users authenticating
+    AllowedPattern: ".+"
+    Type: String
+    Default: "cognito"
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs. Only used when LogFormat is JSON
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs. Only used when LogFormat is JSON
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
 
 Conditions:
   HasWAF:
@@ -67,13 +146,18 @@ Conditions:
       - Ref: IsGovCloud
       - 'false'
 
+  IsLogFormatJSON:
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+
 Resources:
 
-  Console:
+  WebUiConsole:
     Type: AWS::S3::Bucket
     Properties:
       BucketName:
-        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-console-${AWS::AccountId}"
+        Fn::Sub: "formkiq-${AppEnvironment}-web-ui-${AWS::AccountId}"
       AccessControl: Private
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -115,7 +199,7 @@ Resources:
         Fn::Sub: "/formkiq/${AppEnvironment}/s3/Console"
       Type: String
       Value:
-        Ref: Console
+        Ref: WebUiConsole
       Tags:
         Application: "FormKiQ"
         AppEnvironment:
@@ -130,7 +214,7 @@ Resources:
       Type: String
       Value:
         Fn::GetAtt:
-        - Console
+        - WebUiConsole
         - Arn
       Tags:
         Application: "FormKiQ"
@@ -140,7 +224,7 @@ Resources:
   ConsoleDomainNameParameter:
     Type: AWS::SSM::Parameter
     DependsOn:
-    - Console
+    - WebUiConsole
     Properties:
       Description: "Console S3 Bucket Domain Name"
       Name:
@@ -148,7 +232,7 @@ Resources:
       Type: String
       Value:
         Fn::GetAtt:
-        - Console
+        - WebUiConsole
         - DomainName
       Tags:
         Application: "FormKiQ"
@@ -164,7 +248,7 @@ Resources:
       Type: String
       Value:
         Fn::GetAtt:
-        - Console
+        - WebUiConsole
         - RegionalDomainName
       Tags:
         Application: "FormKiQ"
@@ -177,18 +261,18 @@ Resources:
     Properties:
       DistributionConfig:
         Comment:
-          Fn::Sub: "FormKiQ Console ${ConsoleVersion}"
+          Fn::Sub: "FormKiQ WebUi Console ${ConsoleVersion}"
         Origins:
         - DomainName:
             Fn::GetAtt:
-            - Console
+            - WebUiConsole
             - RegionalDomainName
           Id: s3origin
           OriginPath:
             Fn::Sub: "/${ConsoleVersion}"
           OriginAccessControlId:
             Fn::GetAtt:
-              - ConsoleOAC
+              - WebUiConsoleOAC
               - Id
           S3OriginConfig:
             OriginAccessIdentity: ''
@@ -277,25 +361,25 @@ Resources:
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
-  ConsoleOAC:
+  WebUiConsoleOAC:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
         Name:
-          Fn::Sub: "FormKiQ-Console-${AppEnvironment}-Oac"
+          Fn::Sub: "FormKiQ-WebUiConsole-${AppEnvironment}-Oac"
         Description: Access control for S3 origin
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
 
-  ConsoleBucketPolicy:
+  WebUiConsoleBucketPolicy:
     Condition: IsNotGovCloud
     Type: "AWS::S3::BucketPolicy"
     DependsOn:
-    - Console
+    - WebUiConsole
     Properties:
       Bucket:
-        Ref: Console
+        Ref: WebUiConsole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -304,8 +388,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${Console}"
-              - Fn::Sub: "arn:aws:s3:::${Console}/*"
+              - Fn::Sub: "arn:aws:s3:::${WebUiConsole}"
+              - Fn::Sub: "arn:aws:s3:::${WebUiConsole}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
@@ -315,10 +399,209 @@ Resources:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource:
-              Fn::Sub: 'arn:aws:s3:::${Console}/*'
+              Fn::Sub: 'arn:aws:s3:::${WebUiConsole}/*'
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+
+  ConsoleInstaller:
+    Type: AWS::Serverless::Function
+    Condition: IsNotGovCloud
+    Properties:
+      Handler: com.formkiq.stacks.console.ConsoleInstallHandler
+      Description: Lambda function that Installs the FormKiQ Console
+      Runtime: java17
+      Timeout: 300
+      MemorySize: 512
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Role:
+        Fn::GetAtt:
+          - ConsoleInstallRole
+          - Arn
+      CodeUri: ./console-installer.zip
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+      Environment:
+        Variables:
+          CONSOLE_VERSION:
+            Fn::Sub: "${ConsoleVersion}"
+          DISTRIBUTION_BUCKET:
+            Fn::Sub: "${DistributionBucket}"
+          REGION:
+            Fn::Sub: "${AWS::Region}"
+          CONSOLE_BUCKET:
+            Fn::Sub: "${WebUiConsole}"
+          COGNITO_CONFIG_BUCKET:
+            Fn::Sub: "${CognitoConfigBucket}"
+          API_URL:
+            Ref: ApiUrl
+          API_IAM_URL:
+            Ref: IamApiUrl
+          API_KEY_URL:
+            Ref: KeyApiUrl
+          API_AUTH_URL:
+            Ref: AuthApiUrl
+          BRAND:
+            Fn::Sub: "${Brand}"
+          ALLOW_ADMIN_CREATE_USER_ONLY:
+            Fn::Sub: "${AllowAdminCreateUserOnly}"
+          COGNITO_HOSTED_UI:
+            Ref: CognitoHostedUi
+          USER_AUTHENTICATION:
+            Ref: UserAuthentication
+          DOMAIN:
+            Ref: Domain
+          COGNITO_USER_POOL_CLIENT_ID:
+            Ref: CognitoUserPoolClientId
+          COGNITO_USER_POOL_ID:
+            Ref: CognitoUserPoolId
+      LoggingConfig:
+        LogGroup:
+          Ref: ConsoleInstallerLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelApplication
+            - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+            - IsLogFormatJSON
+            - Ref: LogLevelSystem
+            - Ref: AWS::NoValue
+
+  ConsoleInstallerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+
+  ConsoleInstallRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotGovCloud
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /service-role/
+      Policies:
+        -
+          PolicyName:
+            Fn::Sub: "${AWS::StackName}-ConsoleInstallPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                        - Ref: WebUiConsole
+                  - Fn::Join:
+                      - ''
+                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                        - Ref: WebUiConsole
+                        - '/*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                        - Ref: CognitoConfigBucket
+                  - Fn::Join:
+                      - ''
+                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                        - Ref: CognitoConfigBucket
+                        - '/*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
+                        - Ref: DistributionBucket
+                        - '/*'
+              - Effect: Allow
+                Action:
+                  - 'kms:Encrypt'
+                  - 'kms:Decrypt'
+                  - 'kms:ReEncrypt*'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:DescribeKey'
+                Resource: '*'
+
+  ConsoleInstallerRef:
+    Type: Custom::ConsoleInstallerRef
+    Condition: IsNotGovCloud
+    Properties:
+      Nonce:
+        Ref: ConsoleVersion
+      API_URL:
+        Ref: ApiUrl
+      API_IAM_URL:
+        Ref: IamApiUrl
+      API_KEY_URL:
+        Ref: KeyApiUrl
+      API_AUTH_URL:
+        Ref: AuthApiUrl
+      HttpApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - ''
+      IamApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - ''
+      ServiceToken:
+        Fn::GetAtt:
+          - ConsoleInstaller
+          - Arn
 
 Outputs:
 
@@ -345,7 +628,7 @@ Outputs:
 
   ConsoleBucket:
     Value:
-      Ref: Console
+      Ref: WebUiConsole
 
   ConsoleVersion:
     Value:
