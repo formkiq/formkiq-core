@@ -109,6 +109,11 @@ Parameters:
     Description: The name of the FormKiQ Certificate Stack Name
     Default: ""
 
+  HttpsSecurityGroup:
+    Type: String
+    Description: "VPC Https Security Group"
+    Default: ""
+
   LogRetentionInDays:
     Type: Number
     Description: The number of days to retain the log events
@@ -199,6 +204,8 @@ Resources:
     Properties:
       Location: ./api-lambda.yaml
       Parameters:
+        HttpsSecurityGroup:
+          Ref: HttpsSecurityGroup
         OperationalMode:
           Ref: OperationalMode
         AppEnvironment: 

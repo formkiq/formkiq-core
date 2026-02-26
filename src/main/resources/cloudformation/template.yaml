@@ -212,6 +212,8 @@ Resources:
     Properties:
       Location: config.yaml
       Parameters:
+        VpcStackName:
+          Ref: VpcStackName
         FormKiQType: "core"
         FormKiQVersion: #@ data.values.version or assert.fail("missing version")
 

@@ -103,6 +103,10 @@ Parameters:
     Description: >
       Controls the runtime operational behavior of the FormKiQ environment.
 
+  HttpsSecurityGroup:
+    Type: String
+    Description: "VPC Https Security Group"
+
 Conditions:
 
   IsOperationalModeActive:
