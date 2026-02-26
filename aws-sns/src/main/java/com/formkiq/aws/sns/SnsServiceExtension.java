@@ -41,11 +41,11 @@ public class SnsServiceExtension implements AwsServiceExtension<SnsService> {
     if (this.service == null) {
       SnsConnectionBuilder connection = awsServiceCache.getExtension(SnsConnectionBuilder.class);
 
-      if ("ACTIVE".equals(awsServiceCache.environment("OPERATIONAL_MODE"))) {
-        this.service = new SnsServiceImpl(connection);
-      } else {
-        this.service = new SnsServiceDisabled();
-      }
+      // if ("ACTIVE".equals(awsServiceCache.environment("OPERATIONAL_MODE"))) {
+      this.service = new SnsServiceImpl(connection);
+      // } else {
+      // this.service = new SnsServiceDisabled();
+      // }
     }
 
     return this.service;
