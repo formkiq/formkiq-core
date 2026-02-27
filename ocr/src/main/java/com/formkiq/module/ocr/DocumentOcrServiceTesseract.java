@@ -369,7 +369,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);
-    notificationService.publishNextActionEvent(actions, siteId, documentId);
+    notificationService.publishNextActionEvent(siteId, documentId);
   }
 
   @Override

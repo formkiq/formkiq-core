@@ -40,7 +40,9 @@ public interface ActionsNotificationService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
+   * @deprecated use {@link #publishNextActionEvent(String, String)}
    */
+  @Deprecated
   boolean publishNextActionEvent(List<Action> actions, String siteId, String documentId);
 
   /**
