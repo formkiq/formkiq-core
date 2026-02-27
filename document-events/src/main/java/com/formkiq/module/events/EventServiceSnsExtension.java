@@ -48,11 +48,16 @@ public class EventServiceSnsExtension implements AwsServiceExtension<EventServic
     if (this.service == null) {
 
       SnsConnectionBuilder sns = awsServiceCache.getExtension(SnsConnectionBuilder.class);
-      // if ("ACTIVE".equals(awsServiceCache.environment("OPERATIONAL_MODE"))) {
-      this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
-      // } else {
-      // this.service = new EventServiceDisabled();
-      // }
+      String om = awsServiceCache.environment("OPERATIONAL_MODE");
+      if (om == null) {
+        throw new UnsupportedOperationException("'OPERATIONAL_MODE' is not set");
+      }
+
+      if ("ACTIVE".equals(om)) {
+        this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
+      } else {
+        this.service = new EventServiceDisabled();
+      }
     }
 
     return this.service;

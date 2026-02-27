@@ -242,6 +242,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("LOG_LEVEL", "trace");
     env.put("DOCUMENTS_IAM_URL", "http://localhost:8080");
     env.put("PATH_STYLE_ACCESS_ENABLED", "true");
+    env.put("OPERATIONAL_MODE", "ACTIVE");
 
     env.put("MODULE_typesense", "true");
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));

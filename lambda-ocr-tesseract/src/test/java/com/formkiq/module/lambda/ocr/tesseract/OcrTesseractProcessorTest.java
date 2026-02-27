@@ -114,7 +114,7 @@ class OcrTesseractProcessorTest {
 
     Map<String, String> map = Map.of("AWS_REGION", AWS_REGION.toString(), "DOCUMENTS_TABLE",
         DOCUMENTS_TABLE, "DOCUMENTS_S3_BUCKET", BUCKET_NAME, "OCR_S3_BUCKET", OCR_BUCKET_NAME,
-        "SNS_DOCUMENT_EVENT", "");
+        "SNS_DOCUMENT_EVENT", "", "OPERATIONAL_MODE", "ACTIVE");
 
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
