@@ -27,7 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -48,7 +49,6 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
@@ -56,9 +56,7 @@ import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.DocumentWorkflowRecord;
 import com.github.f4b6a3.ulid.Ulid;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
@@ -97,13 +95,6 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
-  }
-
-  private void addKeyIfNotNull(final Map<String, AttributeValueUpdate> updates,
-      final Map<String, AttributeValue> attrs, final String key) {
-    if (attrs.get(key) != null) {
-      updates.put(key, AttributeValueUpdate.builder().value(attrs.get(key)).build());
-    }
   }
 
   private void deleteAction(final String siteId, final Action action) {
@@ -369,38 +360,11 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       action.completedDate(new Date());
     }
 
-    Map<String, AttributeValue> attrs = action.getAttributes(siteId);
-
-    Map<String, AttributeValueUpdate> updates = new HashMap<>();
-    updates.put("status", AttributeValueUpdate.builder().value(attrs.get("status")).build());
-
     if (ActionStatus.RUNNING.equals(action.status())) {
-      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      updates.put("startDate",
-          AttributeValueUpdate.builder().value(fromS(df.format(new Date()))).build());
+      action.startDate(new Date());
     }
 
-    addKeyIfNotNull(updates, attrs, "message");
-    addKeyIfNotNull(updates, attrs, "retryCount");
-    addKeyIfNotNull(updates, attrs, "maxRetries");
-    addKeyIfNotNull(updates, attrs, "completedDate");
-
-    for (String index : Arrays.asList(GSI1, GSI2)) {
-
-      if (attrs.containsKey(index + PK) && attrs.containsKey(index + SK)) {
-        updates.put(index + PK,
-            AttributeValueUpdate.builder().value(attrs.get(index + PK)).build());
-        updates.put(index + SK,
-            AttributeValueUpdate.builder().value(attrs.get(index + SK)).build());
-      } else {
-        updates.put(index + PK,
-            AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
-        updates.put(index + SK,
-            AttributeValueUpdate.builder().action(AttributeAction.DELETE).build());
-      }
-    }
-
-    this.db.updateItem(attrs.get(PK), attrs.get(SK), updates);
+    this.db.putInTransaction(List.of(action.getAttributes(siteId)));
   }
 
   @Override
