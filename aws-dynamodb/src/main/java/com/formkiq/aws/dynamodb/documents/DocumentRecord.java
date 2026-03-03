@@ -23,56 +23,79 @@
  */
 package com.formkiq.aws.dynamodb.documents;
 
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
-import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-
 /**
- * Record representing an Document, with its DynamoDB key structure and metadata.
+ * DocumentRecord representing a document item, with its DynamoDB key structure and metadata.
  */
-public record DocumentRecord(DynamoDbKey key, String documentId, Date insertedDate,
-    Date lastModifiedDate) {
+public record DocumentRecord(DynamoDbKey key, String documentId, String belongsToDocumentId,
+    String path, String deepLinkPath, String contentType, Long contentLength, String checksum,
+    String checksumType, String s3version, String userId, String version, String width,
+    String height, String timeToLive, Date insertedDate, Date lastModifiedDate,
+    Collection<DocumentMetadata> metadata) {
 
   /**
-   * Canonical constructor to enforce non-null properties and defensive copy of Date.
+   * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
    */
   public DocumentRecord {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(documentId, "documentId must not be null");
-    Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-    Objects.requireNonNull(lastModifiedDate, "lastModifiedDate must not be null");
-    insertedDate = new Date(insertedDate.getTime());
-    lastModifiedDate = new Date(lastModifiedDate.getTime());
+
+    if (insertedDate != null) {
+      insertedDate = new Date(insertedDate.getTime());
+    }
+    if (lastModifiedDate != null) {
+      lastModifiedDate = new Date(lastModifiedDate.getTime());
+    }
   }
 
   /**
-   * Constructs a {@code EntityRecord} from a map of DynamoDB attributes.
+   * Constructs a {@code DocumentRecord} from a map of DynamoDB attributes.
+   *
+   * <p>
+   * <b>Note:</b> This implementation maps simple scalar fields. Nested fields like {@code metadata}
+   * and {@code documents} are not deserialized here (left as-is / null), because their DynamoDB
+   * shape varies by implementation.
    *
    * @param attributes the map of attribute names to {@link AttributeValue}
-   * @return a new {@code EntityRecord} instance
+   * @return a new {@code DocumentRecord} instance
    * @throws NullPointerException if {@code attributes} is null
    */
   public static DocumentRecord fromAttributeMap(final Map<String, AttributeValue> attributes) {
     Objects.requireNonNull(attributes, "attributes must not be null");
+
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
+    Collection<DocumentMetadata> metadata =
+        new AttributeValueToDocumentMetadata().apply(attributes);
 
     return new DocumentRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
+        DynamoDbTypes.toString(attributes.get("belongsToDocumentId")),
+        DynamoDbTypes.toString(attributes.get("path")),
+        DynamoDbTypes.toString(attributes.get("deepLinkPath")),
+        DynamoDbTypes.toString(attributes.get("contentType")),
+        DynamoDbTypes.toLong(attributes.get("contentLength")),
+        DynamoDbTypes.toString(attributes.get("checksum")),
+        DynamoDbTypes.toString(attributes.get("checksumType")),
+        DynamoDbTypes.toString(attributes.get("s3version")),
+        DynamoDbTypes.toString(attributes.get("userId")),
+        DynamoDbTypes.toString(attributes.get("version")),
+        DynamoDbTypes.toString(attributes.get("width")),
+        DynamoDbTypes.toString(attributes.get("height")),
+        DynamoDbTypes.toString(attributes.get("timeToLive")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")),
-        DynamoDbTypes.toDate(attributes.get("lastModifiedDate")));
+        DynamoDbTypes.toDate(attributes.get("lastModifiedDate")), metadata);
   }
 
   /**
-   * Builds the DynamoDB item attribute map for this entity, starting from the key attributes and
+   * Builds the DynamoDB item attribute map for this document, starting from the key attributes and
    * adding metadata fields.
    * <p>
    * Only non-null values are included via {@link DynamoDbAttributeMapBuilder}.
@@ -80,94 +103,29 @@ public record DocumentRecord(DynamoDbKey key, String documentId, Date insertedDa
    * @return a Map of attribute names to {@link AttributeValue} instances
    */
   public Map<String, AttributeValue> getAttributes() {
-    DynamoDbAttributeMapBuilder map =
-        key.getAttributesBuilder().withString("documentId", documentId)
-            .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate);
+
+    Map<String, AttributeValue> metadataAttrs =
+        new DocumentMetadataToAttributeValue().apply(metadata);
+
+    DynamoDbAttributeMapBuilder map = key.getAttributesBuilder()
+        .withString("documentId", documentId).withString("belongsToDocumentId", belongsToDocumentId)
+        .withString("path", path).withString("deepLinkPath", deepLinkPath)
+        .withString("contentType", contentType).withLong("contentLength", contentLength)
+        .withString("checksum", checksum).withString("checksumType", checksumType)
+        .withString("s3version", s3version).withString("userId", userId)
+        .withString("version", version).withString("width", width).withString("height", height)
+        .withNumber("TimeToLive", timeToLive).withDate("inserteddate", insertedDate)
+        .withDate("lastModifiedDate", lastModifiedDate).withMap(metadataAttrs);
 
     return map.build();
   }
 
   /**
-   * Creates a new {@link Builder} for {@link DocumentRecord}.
+   * Creates a new {@link DocumentRecordBuilder} for {@link DocumentRecord}.
    *
    * @return a Builder instance
    */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  /**
-   * Fluent builder for {@link DocumentRecord} that computes the DynamoDbKey.
-   */
-  public static class Builder implements DynamoDbEntityBuilder<DocumentRecord>, DbKeys {
-    /** Document Id. */
-    private String documentId;
-    /** Inserted Date. */
-    private Date insertedDate = new Date();
-    /** Last Modified Date. */
-    private Date lastModifiedDate = null;
-
-    @Override
-    public DocumentRecord build(final String siteId) {
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-      if (lastModifiedDate == null) {
-        lastModifiedDate = insertedDate;
-      }
-
-      DynamoDbKey key = buildKey(siteId);
-      return new DocumentRecord(key, documentId, insertedDate, lastModifiedDate);
-    }
-
-    @Override
-    public DynamoDbKey buildKey(final String siteId) {
-
-      Objects.requireNonNull(documentId, "documentId must not be null");
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-
-      String shortdate = DateUtil.getYyyyMmDdFormatter().format(insertedDate);
-      String fullInsertedDate = DateUtil.getIsoDateFormatter().format(insertedDate);
-
-      Map<String, AttributeValue> map = keysDocument(siteId, documentId);
-      String pk = map.get(PK).s();
-      String sk = map.get(SK).s();
-      String gsi1Pk = createDatabaseKey(siteId, PREFIX_DOCUMENT_DATE_TS + shortdate);
-      String gsi1Sk = fullInsertedDate + TAG_DELIMINATOR + documentId;
-
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
-          .build();
-    }
-
-    /**
-     * Sets the document identifier.
-     *
-     * @param entityTypeDocumentId the document ID
-     * @return this Builder
-     */
-    public Builder documentId(final String entityTypeDocumentId) {
-      this.documentId = entityTypeDocumentId;
-      return this;
-    }
-
-    /**
-     * Sets the insertion timestamp with millisecond precision.
-     *
-     * @param documentInsertedDate the insertion date
-     * @return this Builder
-     */
-    public Builder insertedDate(final Date documentInsertedDate) {
-      this.insertedDate = new Date(documentInsertedDate.getTime());
-      return this;
-    }
-
-    /**
-     * Sets the insertion timestamp with millisecond precision.
-     *
-     * @param documentLastModifiedDate the last modified date
-     * @return this Builder
-     */
-    public Builder lastModifiedDate(final Date documentLastModifiedDate) {
-      this.lastModifiedDate = new Date(documentLastModifiedDate.getTime());
-      return this;
-    }
+  public static DocumentRecordBuilder builder() {
+    return new DocumentRecordBuilder();
   }
 }

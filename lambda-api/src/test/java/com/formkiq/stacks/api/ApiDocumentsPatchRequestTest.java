@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
@@ -302,8 +302,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
 
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
-          new DocumentMetadata("playerId", "something")));
+      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something", null),
+          new DocumentMetadata("playerId", "something", null)));
       getDocumentService().saveDocument(siteId, doc, null);
 
       String body = "{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
@@ -323,13 +323,13 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assertEquals(2, metadata.size());
 
       DocumentMetadata o =
-          metadata.stream().filter(m -> m.getKey().equals("person")).findFirst().get();
-      assertEquals("person", o.getKey());
-      assertEquals("category", o.getValue());
+          metadata.stream().filter(m -> m.key().equals("person")).findFirst().get();
+      assertEquals("person", o.key());
+      assertEquals("category", o.value());
 
-      o = metadata.stream().filter(m -> m.getKey().equals("playerId")).findFirst().get();
-      assertEquals("playerId", o.getKey());
-      assertEquals("111,222", String.join(",", o.getValues()));
+      o = metadata.stream().filter(m -> m.key().equals("playerId")).findFirst().get();
+      assertEquals("playerId", o.key());
+      assertEquals("111,222", String.join(",", o.values()));
     }
   }
 
@@ -347,8 +347,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
 
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something"),
-          new DocumentMetadata("playerId", "something")));
+      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something", null),
+          new DocumentMetadata("playerId", "something", null)));
       getDocumentService().saveDocument(siteId, doc, null);
 
       Map<String, Object> data = new HashMap<>();

@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
@@ -106,6 +107,8 @@ class FolderIndexProcessorTest implements DbKeys {
         new DocumentVersionServiceNoVersioning());
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
   }
 
   @BeforeEach
@@ -126,8 +129,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("/a/b/c/test.pdf");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       final String site = siteId != null ? siteId + "/" : "";
@@ -151,7 +153,7 @@ class FolderIndexProcessorTest implements DbKeys {
       verifyIndex(siteId, map, site + "global#folders#" + documentIdB, "ff#c", "c", true);
 
       // when
-      index.createFolders(siteId, item.getPath(), item.getUserId());
+      index.createFolders(siteId, item.getPath());
     }
   }
 
@@ -165,8 +167,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("/test.pdf");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       assertEquals(0, indexes.size());
@@ -185,8 +186,7 @@ class FolderIndexProcessorTest implements DbKeys {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       assertTrue(indexes.isEmpty());
@@ -204,8 +204,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("formkiq:://sample/test.txt");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       final int expected = 2;
@@ -251,8 +250,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("/a/B/");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       final int expected = 2;
@@ -287,8 +285,7 @@ class FolderIndexProcessorTest implements DbKeys {
         item.setPath(path);
 
         // when
-        List<FolderIndexRecord> indexes =
-            index.createFolders(siteId, item.getPath(), item.getUserId());
+        List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
         // then
         assertEquals(0, indexes.size());
@@ -311,8 +308,7 @@ class FolderIndexProcessorTest implements DbKeys {
       String site = siteId != null ? siteId + "/" : "";
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       assertEquals(0, indexes.size());
@@ -339,8 +335,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("./aa/b/c/test.pdf");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
       // dbService.putItems(indexes);
 
       // then
@@ -365,7 +360,7 @@ class FolderIndexProcessorTest implements DbKeys {
       verifyIndex(siteId, map, site + "global#folders#" + documentIdB, "ff#c", "c", true);
 
       // when
-      indexes = index.createFolders(siteId, item.getPath(), item.getUserId());
+      indexes = index.createFolders(siteId, item.getPath());
 
       // then
       assertEquals(expected, indexes.size());
@@ -381,8 +376,7 @@ class FolderIndexProcessorTest implements DbKeys {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/test.pdf");
 
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
       assertEquals(1, indexes.size());
 
       FolderIndexRecord map =
@@ -410,8 +404,7 @@ class FolderIndexProcessorTest implements DbKeys {
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("/a/b/c/test.pdf");
 
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
       assertEquals(expected, indexes.size());
 
       // when
@@ -439,8 +432,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item.setPath("./aa/b/c/test.pdf");
 
       // when
-      List<FolderIndexRecord> indexes =
-          index.createFolders(siteId, item.getPath(), item.getUserId());
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, item.getPath());
 
       // then
       final int expected = 3;

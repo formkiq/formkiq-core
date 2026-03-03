@@ -180,6 +180,27 @@ public class DynamoDbAttributeMapBuilder {
     return this;
   }
 
+  public DynamoDbAttributeMapBuilder withLong(final String name, final Long value) {
+    if (value != null) {
+      attributes.put(name, AttributeValue.builder().n(String.valueOf(value)).build());
+    }
+    return this;
+
+  }
+
+  /**
+   * Set {@link AttributeValue} {@link Map}.
+   * 
+   * @param attrs {@link AttributeValue} {@link Map}
+   * @return DynamoDbAttributeMapBuilder
+   */
+  public DynamoDbAttributeMapBuilder withMap(final Map<String, AttributeValue> attrs) {
+    if (attrs != null) {
+      attributes.putAll(attrs);
+    }
+    return this;
+  }
+
   /**
    * Adds a String attribute if the value is non-null.
    *
@@ -205,6 +226,20 @@ public class DynamoDbAttributeMapBuilder {
   public DynamoDbAttributeMapBuilder withNumber(final String name, final Number value) {
     if (value != null) {
       attributes.put(name, AttributeValue.builder().n(value.toString()).build());
+    }
+    return this;
+  }
+
+  /**
+   * Adds a Number attribute if the value is non-null.
+   *
+   * @param name the attribute name
+   * @param value the {@link String} value
+   * @return this builder
+   */
+  public DynamoDbAttributeMapBuilder withNumber(final String name, final String value) {
+    if (value != null) {
+      attributes.put(name, AttributeValue.builder().n(value).build());
     }
     return this;
   }

@@ -23,6 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.model;
 
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;

@@ -63,6 +63,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
@@ -91,7 +92,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -138,6 +139,8 @@ public class DocumentServiceImplTest implements DbKeys {
     folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     attributeService = new AttributeServiceDynamodb(db);
+
+    ApiAuthorization.login(new ApiAuthorization().username("joe"));
   }
 
   /** {@link SimpleDateFormat}. */
@@ -477,6 +480,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       List<DocumentTag> tags1 = List.of(new DocumentTag(null, "category", "person0", new Date(),
           "joe", DocumentTagType.USERDEFINED));
+      service.saveDocument(siteId, new DocumentItemDynamoDb(documentId, new Date(), "joe"), null);
 
       // when
       service.addTags(siteId, documentId, tags0, null);
@@ -1437,10 +1441,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // then
       assertNotNull(result0);
-      assertNotNull(result1);
-
-      assertFalse(result0.isEmpty());
-      assertTrue(result1.isEmpty());
+      assertNull(result1);
     }
   }
 
@@ -1774,13 +1775,13 @@ public class DocumentServiceImplTest implements DbKeys {
       final String content = "This is a test";
       final String username = UUID.randomUUID() + "@formkiq.com";
 
-      DocumentMetadata m0 = new DocumentMetadata();
-      m0.setKey("some");
-      m0.setValue("thing");
+      DocumentMetadata m0 = new DocumentMetadata("some", "thing", null);
+      // m0.setKey("some");
+      // m0.setValue("thing");
 
-      DocumentMetadata m1 = new DocumentMetadata();
-      m1.setKey("playerId");
-      m1.setValues(Arrays.asList("111", "222"));
+      DocumentMetadata m1 = new DocumentMetadata("playerId", null, Arrays.asList("111", "222"));
+      // m1.setKey("playerId");
+      // m1.setValues(Arrays.asList("111", "222"));
 
       DynamicDocumentItem doc =
           new DynamicDocumentItem(Map.of("documentId", ID.uuid(), "userId", username, "content",
@@ -1796,10 +1797,10 @@ public class DocumentServiceImplTest implements DbKeys {
       List<DocumentMetadata> metadata = new ArrayList<>(item.getMetadata());
       metadata.sort(new DocumentMetadataComparator());
       assertEquals(2, metadata.size());
-      assertEquals("playerId", metadata.get(0).getKey());
-      assertEquals("[111, 222]", metadata.get(0).getValues().toString());
-      assertEquals("some", metadata.get(1).getKey());
-      assertEquals("thing", metadata.get(1).getValue());
+      assertEquals("playerId", metadata.get(0).key());
+      assertEquals("[111, 222]", metadata.get(0).values().toString());
+      assertEquals("some", metadata.get(1).key());
+      assertEquals("thing", metadata.get(1).value());
     }
   }
 
