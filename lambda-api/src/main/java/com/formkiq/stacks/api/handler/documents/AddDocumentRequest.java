@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import java.util.List;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 

@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentContentTypes;
 import com.formkiq.validation.ValidationBuilder;
@@ -60,14 +60,14 @@ public class DocumentValidatorImpl implements DocumentValidator {
 
       metadata.forEach(m -> {
 
-        if (m.getValues() != null) {
-          String s = m.getValues().stream().collect(Collectors.joining(","));
+        if (m.values() != null) {
+          String s = m.values().stream().collect(Collectors.joining(","));
           if (s.length() > MAX_METADATA_SIZE) {
-            errors.add(new ValidationErrorImpl().key(m.getKey())
+            errors.add(new ValidationErrorImpl().key(m.key())
                 .error("value cannot exceed " + MAX_METADATA_SIZE));
           }
-        } else if (m.getValue() != null && m.getValue().length() > MAX_METADATA_SIZE) {
-          errors.add(new ValidationErrorImpl().key(m.getKey())
+        } else if (m.value() != null && m.value().length() > MAX_METADATA_SIZE) {
+          errors.add(new ValidationErrorImpl().key(m.key())
               .error("value cannot exceed " + MAX_METADATA_SIZE));
         }
       });

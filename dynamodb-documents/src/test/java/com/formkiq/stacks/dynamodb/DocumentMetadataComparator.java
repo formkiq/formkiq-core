@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.io.Serializable;
 import java.util.Comparator;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 
 /**
  * 
@@ -39,6 +39,6 @@ public class DocumentMetadataComparator implements Comparator<DocumentMetadata>,
 
   @Override
   public int compare(final DocumentMetadata o1, final DocumentMetadata o2) {
-    return o1.getKey().compareTo(o2.getKey());
+    return o1.key().compareTo(o2.key());
   }
 }

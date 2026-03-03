@@ -63,10 +63,9 @@ public interface FolderIndexProcessor {
    *
    * @param siteId {@link String}
    * @param path {@link String}
-   * @param userId {@link String}
    * @return {@link List} {@link Map}
    */
-  List<FolderIndexRecord> createFolders(String siteId, String path, String userId);
+  List<FolderIndexRecord> createFolders(String siteId, String path);
 
   /**
    * Delete Empty Directory.

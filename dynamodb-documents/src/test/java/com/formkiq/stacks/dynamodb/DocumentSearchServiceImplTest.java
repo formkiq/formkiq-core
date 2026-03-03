@@ -961,6 +961,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(0, list.size());
+
+      meta = new SearchMetaCriteria(null, "c/b", null, null, null);
+      q = new SearchQueryBuilder().meta(meta).build();
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals("/c/b/test3.pdf", list.get(0).getPath());
     }
   }
 
@@ -989,7 +996,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(1, list.size());
       assertEquals(doc.getDocumentId(), list.get(0).getDocumentId());
-      assertEquals(doc.getPath(), list.get(0).getPath());
+      assertEquals("/a/b/test2.pdf", list.get(0).getPath());
 
       // given - invalid path
       path = ID.uuid();

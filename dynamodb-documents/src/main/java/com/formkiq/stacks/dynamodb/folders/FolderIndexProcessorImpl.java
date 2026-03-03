@@ -177,13 +177,13 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param parentId {@link String}
    * @param folder {@link String}
    * @param insertedDate {@link Date}
-   * @param userId {@link String}
    * @return {@link FolderIndexRecord}
    */
   private FolderIndexRecord createFolder(final String siteId, final String parentId,
-      final String folder, final Date insertedDate, final String userId) {
+      final String folder, final Date insertedDate) {
 
     String uuid = ID.uuid();
+    String userId = ApiAuthorization.getAuthorization().getUsername();
 
     FolderIndexRecord record = new FolderIndexRecord().parentDocumentId(parentId).documentId(uuid)
         .insertedDate(insertedDate).lastModifiedDate(insertedDate).userId(userId).path(folder)
@@ -235,7 +235,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   private List<FolderIndexRecord> createFolderPaths(final String siteId, final String[] folders,
-      final Date insertedDate, final String userId, final boolean allDirectories) {
+      final Date insertedDate, final boolean allDirectories) {
 
     int i = 0;
     String parentId = "";
@@ -246,10 +246,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     for (String folder : folders) {
 
-      sb.append(folder + "/");
+      sb.append(folder).append("/");
       if (allDirectories || !isFileToken(folder, i, len)) {
 
-        FolderIndexRecord record = createFolder(siteId, parentId, folder, insertedDate, userId);
+        FolderIndexRecord record = createFolder(siteId, parentId, folder, insertedDate);
         parentId = record.documentId();
 
         list.add(record);
@@ -266,13 +266,13 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   @Override
-  public List<FolderIndexRecord> createFolders(final String siteId, final String path,
-      final String userId) {
-    boolean allDirectories = path != null && path.endsWith("/");
-    Date insertedDate = new Date();
-    String[] folders = tokens(path);
-
-    return createFolderPaths(siteId, folders, insertedDate, userId, allDirectories);
+  public List<FolderIndexRecord> createFolders(final String siteId, final String path) {
+    return new PathToFolderIndexRecords(db, true).apply(siteId, path);
+    // boolean allDirectories = path != null && path.endsWith("/");
+    // Date insertedDate = new Date();
+    // String[] folders = tokens(path);
+    //
+    // return createFolderPaths(siteId, folders, insertedDate, allDirectories);
   }
 
   @Override

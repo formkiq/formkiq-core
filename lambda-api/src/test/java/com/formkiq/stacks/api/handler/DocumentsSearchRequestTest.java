@@ -1393,7 +1393,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       req.setResponseFields(
           new SearchResponseFields().tags(List.of("test1", "test2")).addAttributesItem("bleh"));
 
-      List<FolderIndexRecord> folders = indexProcessor.createFolders(siteId, path, "joe");
+      List<FolderIndexRecord> folders = indexProcessor.createFolders(siteId, path);
       FolderIndexRecord a = folders.get(1);
       final int timeout = 10000;
       DynamoDbKey key = new DynamoDbKey(a.pk(siteId), a.sk(), null, null, null, null);

@@ -21,36 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb;
+package com.formkiq.aws.dynamodb.documents;
 
-import java.util.Collection;
-import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
-import com.formkiq.validation.ValidationBuilder;
-import com.formkiq.validation.ValidationError;
+import java.util.List;
+
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.graalvm.annotations.Reflectable;
+
 
 /**
- * 
- * Document Validator.
- *
+ * Immutable representation of document metadata.
  */
-public interface DocumentValidator {
+@Reflectable
+public record DocumentMetadata(String key, String value, List<String> values) {
 
   /**
-   * Validate {@link DynamicDocumentItem}.
-   * 
-   * @param metadata {@link Collection} {@link DocumentMetadata}
-   * @return {@link Collection} {@link ValidationError}
+   * Canonical constructor with defensive copy for values list.
    */
-  Collection<ValidationError> validate(Collection<DocumentMetadata> metadata);
+  public DocumentMetadata {
+    if (values != null) {
+      values = List.copyOf(values);
+    }
+  }
 
   /**
-   * Validate {@link SiteConfiguration} against Document Content-Type.
+   * Is Empty value.
    * 
-   * @param config {@link SiteConfiguration}
-   * @param contentType {@link String}
-   * @param vb {@link ValidationBuilder}
+   * @return boolean
    */
-  void validateContentType(SiteConfiguration config, String contentType, ValidationBuilder vb);
+  public boolean isEmpty() {
+    return value == null && Objects.isEmpty(values);
+  }
 }
