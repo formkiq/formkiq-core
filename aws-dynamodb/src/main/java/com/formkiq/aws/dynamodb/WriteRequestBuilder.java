@@ -38,6 +38,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.Delete;
+import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
+import software.amazon.awssdk.services.dynamodb.model.Put;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -50,6 +57,7 @@ public class WriteRequestBuilder {
   private static final int MAX_RETRIES = 5;
   /** Max Batch Size. */
   private static final int MAX_BATCH_SIZE = 25;
+
   /** {@link Map} of {@link WriteRequest}. */
   private final Map<String, List<WriteRequest>> items = new HashMap<>();
 
@@ -81,6 +89,7 @@ public class WriteRequestBuilder {
     return this;
   }
 
+
   /**
    * Append {@link WriteRequest}.
    * 
@@ -104,6 +113,35 @@ public class WriteRequestBuilder {
       final Map<String, AttributeValue> values) {
     Map<String, WriteRequest> writes = new AttributeValueToWriteRequest(tableName).apply(values);
     append(writes);
+    return this;
+  }
+
+  /**
+   * Append a delete {@link WriteRequest} for the given table and key.
+   *
+   * @param tableName table name
+   * @param key DynamoDB primary key map (PK/SK etc.)
+   * @return this builder
+   */
+  public WriteRequestBuilder appendDelete(final String tableName, final DynamoDbKey key) {
+
+    WriteRequest wr = WriteRequest.builder()
+        .deleteRequest(DeleteRequest.builder().key(key.toMap()).build()).build();
+
+    this.items.computeIfAbsent(tableName, k -> new ArrayList<>()).add(wr);
+    return this;
+  }
+
+  /**
+   * Append a delete {@link WriteRequest} for the given table and key.
+   *
+   * @param tableName table name
+   * @param keys DynamoDB primary key map (PK/SK etc.)
+   * @return this builder
+   */
+  public WriteRequestBuilder appendDeletes(final String tableName,
+      final Collection<DynamoDbKey> keys) {
+    keys.forEach(key -> appendDelete(tableName, key));
     return this;
   }
 
@@ -143,6 +181,15 @@ public class WriteRequestBuilder {
     }
 
     return this;
+  }
+
+  private void backoffSleep(final int retries) {
+    try {
+      TimeUnit.SECONDS.sleep((long) Math.pow(2, retries));
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Retry interrupted", ie);
+    }
   }
 
   /**
@@ -195,17 +242,49 @@ public class WriteRequestBuilder {
 
       toBeProcessed = unprocessedItems;
 
-      try {
-        TimeUnit.SECONDS.sleep((long) Math.pow(2, retries));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException("Retry interrupted", e);
-      }
+      backoffSleep(retries);
 
       retries++;
     }
 
     throw new RuntimeException("Some items could not be saved after retries.");
+  }
+
+  /**
+   * Determine if a WriteRequest already exists for the given key.
+   *
+   * <p>
+   * This checks both PutRequest and DeleteRequest entries.
+   *
+   * @param key DynamoDB primary key map (e.g., PK/SK)
+   * @return true if a WriteRequest exists for this key
+   */
+  public boolean exists(final DynamoDbKey key) {
+
+    java.util.Objects.requireNonNull(key, "key must not be null");
+
+    final Map<String, AttributeValue> map = key.toMap();
+    boolean found = false;
+
+    for (List<WriteRequest> requests : this.items.values()) {
+      for (WriteRequest wr : requests) {
+
+        if (wr.deleteRequest() != null && map.equals(wr.deleteRequest().key())) {
+          found = true;
+        }
+
+        if (!found && wr.putRequest() != null) {
+          Map<String, AttributeValue> item = wr.putRequest().item();
+          found = map.entrySet().stream().allMatch(e -> e.getValue().equals(item.get(e.getKey())));
+        }
+
+        if (found) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -224,5 +303,101 @@ public class WriteRequestBuilder {
    */
   public boolean isEmpty() {
     return this.items.isEmpty();
+  }
+
+  /**
+   * Convert a batch {@link WriteRequest} into a {@link TransactWriteItem}. Only Put and Delete are
+   * supported (mirrors BatchWriteItem capabilities).
+   *
+   * @param tableName table name
+   * @param wr write request
+   * @return transact write item, or null if request has neither put nor delete
+   */
+  private TransactWriteItem toTransactWriteItem(final String tableName, final WriteRequest wr) {
+
+    TransactWriteItem tx = null;
+
+    if (wr.putRequest() != null) {
+      tx = TransactWriteItem.builder()
+          .put(Put.builder().tableName(tableName).item(wr.putRequest().item()).build()).build();
+    } else if (wr.deleteRequest() != null) {
+      tx = TransactWriteItem.builder()
+          .delete(Delete.builder().tableName(tableName).key(wr.deleteRequest().key()).build())
+          .build();
+    }
+
+    return tx;
+  }
+
+  /**
+   * Execute the collected requests using DynamoDB {@code TransactWriteItems}.
+   *
+   * <p>
+   * Each {@link WriteRequest} is converted to a {@link TransactWriteItem}:
+   * <ul>
+   * <li>{@code putRequest} -> {@code Put}</li>
+   * <li>{@code deleteRequest} -> {@code Delete}</li>
+   * </ul>
+   *
+   * <p>
+   * Requests are chunked into transactions of up to {@value #MAX_BATCH_SIZE} items.
+   *
+   * @param dbClient dynamodb client
+   * @return true if at least one transaction was executed
+   */
+  public boolean transactWriteItems(final DynamoDbClient dbClient) {
+
+    boolean wrote = false;
+
+    final List<TransactWriteItem> txnItems = new ArrayList<>();
+
+    for (Entry<String, List<WriteRequest>> e : new HashMap<>(getItems()).entrySet()) {
+      final String tableName = e.getKey();
+
+      for (WriteRequest wr : e.getValue()) {
+        TransactWriteItem t = toTransactWriteItem(tableName, wr);
+        if (t != null) {
+          txnItems.add(t);
+        }
+      }
+    }
+
+    List<List<TransactWriteItem>> partitions = Objects.parition(txnItems, MAX_BATCH_SIZE);
+
+    for (List<TransactWriteItem> part : partitions) {
+      if (!part.isEmpty()) {
+        transactWriteWithRetry(dbClient, part);
+        wrote = true;
+      }
+    }
+
+    return wrote;
+  }
+
+  private void transactWriteWithRetry(final DynamoDbClient dbClient,
+      final List<TransactWriteItem> list) {
+
+    int retries = 0;
+
+    while (retries < MAX_RETRIES) {
+      try {
+        dbClient
+            .transactWriteItems(TransactWriteItemsRequest.builder().transactItems(list).build());
+        return;
+
+      } catch (TransactionCanceledException e) {
+        // Often not retriable (conditional failures), but could be throttling-related.
+        // Keep behavior conservative: retry like batch does; caller can adjust later.
+        backoffSleep(retries);
+        retries++;
+
+      } catch (DynamoDbException e) {
+        // Includes throttling / internal errors
+        backoffSleep(retries);
+        retries++;
+      }
+    }
+
+    throw new RuntimeException("Transaction could not be completed after retries.");
   }
 }

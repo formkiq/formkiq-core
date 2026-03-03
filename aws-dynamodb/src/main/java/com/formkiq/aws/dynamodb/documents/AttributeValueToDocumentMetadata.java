@@ -23,32 +23,36 @@
  */
 package com.formkiq.aws.dynamodb.documents;
 
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbFind;
-import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.DynamoDbService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCUMENT_METADATA;
 
 /**
- * Get {@link DocumentRecord}.
+ * Convert {@link Map} {@link AttributeValue} to {@link Collection} {@link DocumentMetadata}.
  */
-public class GetDocumentFind implements DynamoDbFind<DocumentRecord, String>, DbKeys {
+public class AttributeValueToDocumentMetadata
+    implements Function<Map<String, AttributeValue>, Collection<DocumentMetadata>> {
+  private static DocumentMetadata toMetadata(final String key, final AttributeValue av) {
+    final String kk = key.substring(PREFIX_DOCUMENT_METADATA.length());
 
-  @Override
-  public QueryRequest build(final String tableName, final String siteId, final String documentId) {
-    throw new UnsupportedOperationException();
+    if (av.s() != null) {
+      return new DocumentMetadata(kk, av.s(), null);
+    }
+
+    List<String> strs = av.l().stream().map(AttributeValue::s).toList();
+    return new DocumentMetadata(kk, null, strs);
   }
 
   @Override
-  public DocumentRecord find(final DynamoDbService db, final String tableName, final String siteId,
-      final String documentId) {
-    Map<String, AttributeValue> keyAttributes = keysDocument(siteId, documentId);
-    DynamoDbKey key = new DynamoDbKey(keyAttributes.get(PK).s(), keyAttributes.get(SK).s(), null,
-        null, null, null);
-    Map<String, AttributeValue> attr = db.get(key);
-    return !attr.isEmpty() ? DocumentRecord.fromAttributeMap(attr) : null;
+  public Collection<DocumentMetadata> apply(final Map<String, AttributeValue> map) {
+    List<DocumentMetadata> list =
+        map.entrySet().stream().filter(e -> e.getKey().startsWith(PREFIX_DOCUMENT_METADATA))
+            .map(e -> toMetadata(e.getKey(), e.getValue())).toList();
+    return !list.isEmpty() ? list : null;
   }
 }

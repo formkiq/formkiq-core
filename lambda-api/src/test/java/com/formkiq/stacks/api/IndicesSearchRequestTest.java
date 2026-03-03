@@ -25,6 +25,8 @@ package com.formkiq.stacks.api;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -57,7 +59,6 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
    *
    * @throws Exception an error has occurred
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testHandleSearchRequest01() throws Exception {
 
@@ -71,7 +72,7 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
       String documentId = ID.uuid();
 
-      this.indexWriter.writeTagIndex(siteId, Arrays.asList("categoryId"));
+      this.indexWriter.writeTagIndex(siteId, new ArrayList<>(List.of("categoryId")));
 
       DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
       document.setPath("something/path.txt");

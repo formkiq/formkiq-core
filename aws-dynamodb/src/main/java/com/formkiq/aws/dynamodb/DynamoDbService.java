@@ -29,6 +29,7 @@ import java.util.Map;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
@@ -271,6 +272,13 @@ public interface DynamoDbService {
   void putInTransaction(Collection<Map<String, AttributeValue>> attributes);
 
   /**
+   * Put In Transaction.
+   * 
+   * @param put {@link Put}
+   */
+  void putInTransaction(Put put);
+
+  /**
    * Put in transaction.
    *
    * @param writeRequest {@link WriteRequestBuilder}
@@ -303,13 +311,13 @@ public interface DynamoDbService {
    */
   void putItem(String tableName, Map<String, AttributeValue> attr);
 
+
   /**
    * Put DynamoDb Records.
    *
    * @param attrs {@link List} {@link Map} {@link AttributeValue}
    */
   void putItems(List<Map<String, AttributeValue>> attrs);
-
 
   /**
    * Put DynamoDb Records.

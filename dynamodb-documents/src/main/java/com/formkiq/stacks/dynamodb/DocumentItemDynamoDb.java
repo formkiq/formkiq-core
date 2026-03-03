@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Holder class for Document(s). */

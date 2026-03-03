@@ -40,7 +40,7 @@ import java.util.Optional;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;

@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -101,7 +101,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       String userId = "jsmith";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
-      DocumentMetadata md = new DocumentMetadata("category", "person");
+      DocumentMetadata md = new DocumentMetadata("category", "person", null);
       item.setMetadata(List.of(md));
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 

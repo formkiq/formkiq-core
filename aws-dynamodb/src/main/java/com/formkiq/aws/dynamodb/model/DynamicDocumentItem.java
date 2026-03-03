@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.objects.Objects;
 
 /**
@@ -118,9 +119,9 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
       metadata = c.stream().map(m -> {
         DocumentMetadata md;
         if (m.containsKey("values")) {
-          md = new DocumentMetadata((String) m.get("key"), (List<String>) m.get("values"));
+          md = new DocumentMetadata((String) m.get("key"), null, (List<String>) m.get("values"));
         } else {
-          md = new DocumentMetadata((String) m.get("key"), (String) m.get("value"));
+          md = new DocumentMetadata((String) m.get("key"), (String) m.get("value"), null);
         }
         return md;
       }).collect(Collectors.toList());
@@ -219,9 +220,8 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   public void setMetadata(final Collection<DocumentMetadata> metadata) {
 
     List<Map<String, ? extends Object>> list = metadata.stream()
-        .map(m -> !Objects.isEmpty(m.getValues())
-            ? Map.of("key", m.getKey(), "values", m.getValues())
-            : Map.of("key", m.getKey(), "value", m.getValue()))
+        .map(m -> !Objects.isEmpty(m.values()) ? Map.of("key", m.key(), "values", m.values())
+            : Map.of("key", m.key(), "value", m.value()))
         .collect(Collectors.toList());
 
     put("metadata", list);

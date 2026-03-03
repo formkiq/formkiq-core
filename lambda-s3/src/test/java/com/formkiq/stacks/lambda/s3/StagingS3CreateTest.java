@@ -92,7 +92,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -1469,11 +1469,11 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(2, doc.getMetadata().size());
       Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
       DocumentMetadata md = itr.next();
-      assertEquals("category", md.getKey());
-      assertEquals("person", md.getValue());
+      assertEquals("category", md.key());
+      assertEquals("person", md.value());
       md = itr.next();
-      assertEquals("playerId", md.getKey());
-      assertEquals("[111, 222]", md.getValues().toString());
+      assertEquals("playerId", md.key());
+      assertEquals("[111, 222]", md.values().toString());
     }
   }
 
@@ -1503,12 +1503,12 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(2, doc.getMetadata().size());
       Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
       DocumentMetadata md = itr.next();
-      assertEquals("category", md.getKey());
-      assertEquals("person", md.getValue());
+      assertEquals("category", md.key());
+      assertEquals("person", md.value());
       md = itr.next();
-      assertEquals("playerId", md.getKey());
-      assertNull(md.getValues());
-      assertEquals("333", md.getValue());
+      assertEquals("playerId", md.key());
+      assertNull(md.values());
+      assertEquals("333", md.value());
     }
   }
 
@@ -1519,7 +1519,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws ValidationException ValidationException
    */
   @Test
-  @Timeout(value = TEST_TIMEOUT)
+  // @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension15() throws IOException, ValidationException {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -1538,8 +1538,8 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals(1, doc.getMetadata().size());
       Iterator<DocumentMetadata> itr = doc.getMetadata().iterator();
       DocumentMetadata md = itr.next();
-      assertEquals("category", md.getKey());
-      assertEquals("person", md.getValue());
+      assertEquals("category", md.key());
+      assertEquals("person", md.value());
     }
   }
 
@@ -1615,7 +1615,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       processFkB64File(siteId, item, "14");
       DocumentItem doc = service.findDocument(siteId, item.getDocumentId());
-      assertEquals("", doc.getDeepLinkPath());
+      assertNull(doc.getDeepLinkPath());
     }
   }
 

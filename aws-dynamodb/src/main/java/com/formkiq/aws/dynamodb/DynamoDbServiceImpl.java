@@ -502,6 +502,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public void putInTransaction(final Put put) {
+    this.dbClient.transactWriteItems(TransactWriteItemsRequest.builder()
+        .transactItems(TransactWriteItem.builder().put(put).build()).build());
+  }
+
+  @Override
   public void putInTransaction(final WriteRequestBuilder writeRequest) {
     writeRequest.batchWriteItem(this.dbClient);
   }

@@ -37,6 +37,18 @@ public interface DynamoDbFind<T, E> {
    * Find the first record to match {@link QueryRequest}.
    *
    * @param db {@link DynamoDbService}
+   * @param siteId Site Identifier
+   * @param record Payload Parameter
+   * @return record
+   */
+  default T find(DynamoDbService db, String siteId, E record) {
+    return find(db, db.getTableName(), siteId, record);
+  }
+
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
    * @param tableName DynamoDb Table Name.
    * @param siteId Site Identifier
    * @param record Payload Parameter

@@ -306,9 +306,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = ID.uuid();
       DynamicDocumentItem item =
           new DynamicDocumentItem(Map.of("documentId", documentId, "userId", username));
-      var metadata = new com.formkiq.aws.dynamodb.model.DocumentMetadata();
-      metadata.setKey("asd");
-      metadata.setValue("123");
+      var metadata = new com.formkiq.aws.dynamodb.documents.DocumentMetadata("asd", "123", null);
       item.setMetadata(List.of(metadata));
       item.setContentLength(contentLength);
       item.put("streamTriggeredDate", "123");

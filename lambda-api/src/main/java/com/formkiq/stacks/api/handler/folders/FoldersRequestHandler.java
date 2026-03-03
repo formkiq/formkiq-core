@@ -137,8 +137,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
 
     String siteId = authorization.getSiteId();
     FolderIndexProcessor indexProcessor = awsservice.getExtension(FolderIndexProcessor.class);
-    List<FolderIndexRecord> record =
-        indexProcessor.createFolders(siteId, path, authorization.getUsername());
+    List<FolderIndexRecord> record = indexProcessor.createFolders(siteId, path);
 
     StringToBase64Encoder encoder = new StringToBase64Encoder();
     List<Map<String, String>> list = record.stream().map(r -> {
