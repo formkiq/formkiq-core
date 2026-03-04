@@ -252,7 +252,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
    * @param nextToken {@link String}
-   * @return {@link PaginationResults} {@link Action}
+   * @return {@link Pagination} {@link Action}
    */
   private Pagination<Action> queryActions(final String siteId, final String documentId,
       final List<String> projectionExpression, final String nextToken, final Integer limit) {
@@ -380,15 +380,16 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
       status = "FAILED";
     }
 
-    DocumentWorkflowRecord r =
-        new DocumentWorkflowRecord().documentId(documentId).workflowId(workflowId);
+    DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(documentId)
+        .workflowName("").workflowId(workflowId).build(siteId);
+    var documentWorkflowKey = r.key();
 
-    Map<String, AttributeValue> attrs =
-        this.db.get(AttributeValue.fromS(r.pk(siteId)), AttributeValue.fromS(r.sk()));
+    Map<String, AttributeValueUpdate> values =
+        Map.of("status", AttributeValueUpdate.builder().value(fromS(status)).build(),
+            "currentStepId", AttributeValueUpdate.builder().value(fromS(stepId)).build(),
+            "actionPk", AttributeValueUpdate.builder().value(fromS(action.pk(siteId))).build(),
+            "actionSk", AttributeValueUpdate.builder().value(fromS(action.sk())).build());
 
-    r = new DocumentWorkflowRecord().getFromAttributes(siteId, attrs).status(status)
-        .currentStepId(stepId).actionPk(action.pk(siteId)).actionSk(action.sk());
-
-    this.db.putItem(r.getAttributes(siteId));
+    this.db.updateItem(fromS(documentWorkflowKey.pk()), fromS(documentWorkflowKey.sk()), values);
   }
 }

@@ -233,6 +233,15 @@ public interface DynamoDbService {
       List<Map<String, AttributeValue>> keys);
 
   /**
+   * Batch Get a number of Keys.
+   *
+   * @param config {@link BatchGetConfig}
+   * @param keys {@link List}
+   * @return {@link List}
+   */
+  List<Map<String, AttributeValue>> getBatchByKey(BatchGetConfig config, List<DynamoDbKey> keys);
+
+  /**
    * Get Single Result from a Query.
    *
    * @param query {@link QueryRequest}

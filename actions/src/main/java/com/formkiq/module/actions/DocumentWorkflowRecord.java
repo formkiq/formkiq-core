@@ -23,314 +23,272 @@
  */
 package com.formkiq.module.actions;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.validation.ValidationChecks;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
+
 /**
- * 
- * {@link DynamodbRecord} for Document Workflow.
- *
+ * Record representing a Document Workflow relationship, with its DynamoDB key structure and
+ * metadata.
  */
-@Reflectable
-public class DocumentWorkflowRecord implements DynamodbRecord<DocumentWorkflowRecord>, DbKeys {
+public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String workflowId,
+    String workflowName, String status, String actionPk, String actionSk, String currentStepId,
+    Date insertedDate) {
 
-  /** Document Workflow Status. */
-  @Reflectable
-  private String actionPk;
-  /** Document Workflow Status. */
-  @Reflectable
-  private String actionSk;
-  /** Cuurent Workflow Step. */
-  @Reflectable
-  private String currentStepId;
-  /** DocumentId. */
-  @Reflectable
-  private String documentId;
-  /** Document Workflow Status. */
-  @Reflectable
-  private String status;
-  /** DocumentId. */
-  @Reflectable
-  private String workflowId;
-  /** Cuurent Workflow Name. */
-  @Reflectable
-  private String workflowName;
-  /** Record inserted date. */
-  @Reflectable
-  private Date insertedDate;
+  /** DynamoDB attribute name for document id. */
+  private static final String ATTR_DOCUMENT_ID = "documentId";
+  /** DynamoDB attribute name for workflow id. */
+  private static final String ATTR_WORKFLOW_ID = "workflowId";
+  /** DynamoDB attribute name for workflow name. */
+  private static final String ATTR_WORKFLOW_NAME = "workflowName";
+  /** DynamoDB attribute name for status. */
+  private static final String ATTR_STATUS = "status";
+  /** DynamoDB attribute name for action PK. */
+  private static final String ATTR_ACTION_PK = "actionPk";
+  /** DynamoDB attribute name for action SK. */
+  private static final String ATTR_ACTION_SK = "actionSk";
+  /** DynamoDB attribute name for current step id. */
+  private static final String ATTR_CURRENT_STEP_ID = "currentStepId";
+  /** DynamoDB attribute name for inserted date. */
+  private static final String ATTR_INSERTED_DATE = "inserteddate";
 
   /**
-   * constructor.
+   * Canonical constructor to enforce non-null properties and defensive copy of Date.
    */
-  public DocumentWorkflowRecord() {
-
+  public DocumentWorkflowRecord {
+    Objects.requireNonNull(key, "key must not be null");
+    Objects.requireNonNull(documentId, "documentId must not be null");
+    Objects.requireNonNull(workflowId, "workflowId must not be null");
+    Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+    insertedDate = new Date(insertedDate.getTime());
   }
 
   /**
-   * Get Action PK.
-   * 
-   * @return {@link String}
+   * Constructs a {@code DocumentWorkflowRecord} from a map of DynamoDB attributes.
+   *
+   * @param attributes the map of attribute names to {@link AttributeValue}
+   * @return a new {@code DocumentWorkflowRecord} instance, or {@code null} if {@code attributes} is
+   *         null or empty
    */
-  public String actionPk() {
-    return this.actionPk;
-  }
+  public static DocumentWorkflowRecord fromAttributeMap(
+      final Map<String, AttributeValue> attributes) {
 
-  /**
-   * Set Action PK.
-   * 
-   * @param pk {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord actionPk(final String pk) {
-    this.actionPk = pk;
-    return this;
-  }
+    if (attributes != null && !attributes.isEmpty()) {
+      DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
-  /**
-   * Get Action SK.
-   * 
-   * @return {@link String}
-   */
-  public String actionSk() {
-    return this.actionSk;
-  }
+      String documentId = DynamoDbTypes.toString(attributes.get(ATTR_DOCUMENT_ID));
+      String workflowId = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_ID));
+      String workflowName = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_NAME));
+      String status = DynamoDbTypes.toString(attributes.get(ATTR_STATUS));
+      String actionPk = DynamoDbTypes.toString(attributes.get(ATTR_ACTION_PK));
+      String actionSk = DynamoDbTypes.toString(attributes.get(ATTR_ACTION_SK));
+      String currentStepId = DynamoDbTypes.toString(attributes.get(ATTR_CURRENT_STEP_ID));
+      Date insertedDate = DynamoDbTypes.toDate(attributes.get(ATTR_INSERTED_DATE));
 
-  /**
-   * Set Action SK.
-   * 
-   * @param sk {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord actionSk(final String sk) {
-    this.actionSk = sk;
-    return this;
-  }
-
-  /**
-   * Get Current Step Id.
-   * 
-   * @return {@link String}
-   */
-  public String currentStepId() {
-    return this.currentStepId;
-  }
-
-  /**
-   * Set Current Step Id.
-   * 
-   * @param stepId {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord currentStepId(final String stepId) {
-    this.currentStepId = stepId;
-    return this;
-  }
-
-  /**
-   * Get Document Id.
-   * 
-   * @return {@link String}
-   */
-  public String documentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Set Document Id.
-   * 
-   * @param id {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord documentId(final String id) {
-    this.documentId = id;
-    return this;
-  }
-
-  @Override
-  public Map<String, AttributeValue> getAttributes(final String siteIdParam) {
-
-    Map<String, AttributeValue> map = new HashMap<>();
-    map.put(DbKeys.PK, AttributeValue.fromS(pk(siteIdParam)));
-    map.put(DbKeys.SK, AttributeValue.fromS(sk()));
-    map.put("documentId", AttributeValue.fromS(this.documentId));
-    map.put("workflowId", AttributeValue.fromS(this.workflowId));
-    map.put("workflowName", AttributeValue.fromS(this.workflowName));
-    map.put("status", AttributeValue.fromS(this.status));
-    map.put("actionPk", AttributeValue.fromS(this.actionPk));
-    map.put("actionSk", AttributeValue.fromS(this.actionSk));
-    map.put("currentStepId", AttributeValue.fromS(this.currentStepId));
-
-    if (this.insertedDate != null) {
-      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      map.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
+      return new DocumentWorkflowRecord(key, documentId, workflowId, workflowName, status, actionPk,
+          actionSk, currentStepId, insertedDate);
     }
 
-    map.put(DbKeys.GSI1_PK, AttributeValue.fromS(pkGsi1(siteIdParam)));
-    map.put(DbKeys.GSI1_SK, AttributeValue.fromS(skGsi1()));
-
-    map.put(DbKeys.GSI2_PK, AttributeValue.fromS(pkGsi2(siteIdParam)));
-    map.put(DbKeys.GSI2_SK, AttributeValue.fromS(skGsi2()));
-
-    return map;
-  }
-
-  @Override
-  public Map<String, AttributeValue> getDataAttributes() {
     return null;
   }
 
-  @Override
-  public DocumentWorkflowRecord getFromAttributes(final String siteIdParam,
-      final Map<String, AttributeValue> attrs) {
-
-    DocumentWorkflowRecord record = new DocumentWorkflowRecord().documentId(ss(attrs, "documentId"))
-        .workflowId(ss(attrs, "workflowId")).status(ss(attrs, "status"))
-        .workflowName(ss(attrs, "workflowName")).actionPk(ss(attrs, "actionPk"))
-        .actionSk(ss(attrs, "actionSk")).currentStepId(ss(attrs, "currentStepId"));
-
-    try {
-      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      record = record.insertedDate(df.parse(ss(attrs, "inserteddate")));
-    } catch (ParseException e) {
-      throw new IllegalArgumentException("invalid 'inserteddate'");
-    }
-
-    return record;
-  }
-
   /**
-   * Get Inserted Date.
+   * Builds the DynamoDB item attribute map for this document-workflow record, starting from the key
+   * attributes and adding metadata fields.
    *
-   * @return {@link Date}
+   * @return a map of attribute names to {@link AttributeValue} instances
    */
-  public Date insertedDate() {
-    return this.insertedDate;
+  public Map<String, AttributeValue> getAttributes() {
+    return key.getAttributesBuilder().withString(ATTR_DOCUMENT_ID, documentId)
+        .withString(ATTR_WORKFLOW_ID, workflowId).withString(ATTR_WORKFLOW_NAME, workflowName)
+        .withString(ATTR_STATUS, status).withString(ATTR_ACTION_PK, actionPk)
+        .withString(ATTR_ACTION_SK, actionSk).withString(ATTR_CURRENT_STEP_ID, currentStepId)
+        .withDate(ATTR_INSERTED_DATE, insertedDate).build();
   }
 
   /**
-   * Set Inserted Date.
+   * Creates a new {@link Builder} for {@link DocumentWorkflowRecord}.
    *
-   * @param date {@link Date}
-   * @return {@link DocumentWorkflowRecord}
+   * @return a new {@link Builder} instance
    */
-  public DocumentWorkflowRecord insertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  @Override
-  public String pk(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return "wfdoc#" + this.documentId;
-  }
-
-  @Override
-  public String pkGsi1(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return "wfdoc#" + this.documentId;
-  }
-
-  @Override
-  public String pkGsi2(final String siteId) {
-    if (this.workflowId == null) {
-      throw new IllegalArgumentException("'workflowId' is required");
-    }
-    return "wf#" + this.workflowId;
-  }
-
-  @Override
-  public String sk() {
-    if (this.workflowId == null) {
-      throw new IllegalArgumentException("'workflowId' is required");
-    }
-    return "wf#" + this.workflowId;
-  }
-
-  @Override
-  public String skGsi1() {
-    if (this.workflowId == null || this.workflowName == null) {
-      throw new IllegalArgumentException("'workflowId' and 'workflowName' is required");
-    }
-    return "wf#" + this.workflowName + "#" + this.workflowId;
-  }
-
-  @Override
-  public String skGsi2() {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return "wfdoc#" + this.documentId;
+  public static Builder builder() {
+    return new Builder();
   }
 
   /**
-   * Get Status.
-   * 
-   * @return {@link String}
+   * Fluent builder for {@link DocumentWorkflowRecord} that computes the {@link DynamoDbKey}.
    */
-  public String status() {
-    return this.status;
-  }
+  public static class Builder implements DynamoDbEntityBuilder<DocumentWorkflowRecord> {
 
-  /**
-   * Set Status.
-   * 
-   * @param workflowStatus {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord status(final String workflowStatus) {
-    this.status = workflowStatus;
-    return this;
-  }
+    /** DocumentId. */
+    private String documentId;
+    /** WorkflowId. */
+    private String workflowId;
+    /** WorkflowName. */
+    private String workflowName;
+    /** Status. */
+    private String status;
+    /** Action PK. */
+    private String actionPk;
+    /** Action SK. */
+    private String actionSk;
+    /** Current Step Id. */
+    private String currentStepId;
+    /** Inserted Date. */
+    private Date insertedDate = new Date();
 
-  /**
-   * Get Workflow Id.
-   * 
-   * @return {@link String}
-   */
-  public String workflowId() {
-    return this.workflowId;
-  }
+    /**
+     * Sets the action partition key.
+     *
+     * @param pk the action PK
+     * @return this {@link Builder}
+     */
+    public Builder actionPk(final String pk) {
+      this.actionPk = pk;
+      return this;
+    }
 
-  /**
-   * Set Workflow Id.
-   * 
-   * @param id {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord workflowId(final String id) {
-    this.workflowId = id;
-    return this;
-  }
+    /**
+     * Sets the action sort key.
+     *
+     * @param sk the action SK
+     * @return this {@link Builder}
+     */
+    public Builder actionSk(final String sk) {
+      this.actionSk = sk;
+      return this;
+    }
 
-  /**
-   * Get Workflow Name.
-   * 
-   * @return {@link String}
-   */
-  public String workflowName() {
-    return this.workflowName;
-  }
+    /**
+     * Builds a {@link DocumentWorkflowRecord}, computing its {@link DynamoDbKey}.
+     *
+     * @param siteId the site identifier
+     * @return a new {@link DocumentWorkflowRecord}
+     */
+    @Override
+    public DocumentWorkflowRecord build(final String siteId) {
 
-  /**
-   * Set Workflow Name.
-   * 
-   * @param name {@link String}
-   * @return {@link DocumentWorkflowRecord}
-   */
-  public DocumentWorkflowRecord workflowName(final String name) {
-    this.workflowName = name;
-    return this;
+      DynamoDbKey key = buildKey(siteId);
+      return new DocumentWorkflowRecord(key, documentId, workflowId, workflowName, status, actionPk,
+          actionSk, currentStepId, insertedDate);
+    }
+
+    /**
+     * Builds the {@link DynamoDbKey} for this document-workflow record.
+     *
+     * @param siteId the site identifier
+     * @return a {@link DynamoDbKey}
+     */
+    @Override
+    public DynamoDbKey buildKey(final String siteId) {
+      ValidationChecks.checkNotNull("documentId", documentId);
+      ValidationChecks.checkNotNull("workflowId", workflowId);
+      ValidationChecks.checkNotNull("workflowName", workflowName);
+
+      String pk = "docs#" + documentId;
+      String sk = "wf#" + workflowId;
+
+      String gsi1Pk = "wfdoc#" + documentId;
+      String gsi1Sk = "wf#" + workflowName + "#" + workflowId;
+
+      String gsi2Pk = "wf#" + workflowId;
+      String gsi2Sk = "wfdoc#" + documentId;
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
+    }
+
+    /**
+     * Build {@link DynamoDbKey} for installs previous to 1.19.
+     * 
+     * @param siteId {@link String}
+     * @return {@link DynamoDbKey}
+     */
+    public DynamoDbKey buildLegacyKey(final String siteId) {
+
+      String pk = "wfdoc#" + documentId;
+      String sk = "wf#" + workflowId;
+
+      String gsi1Pk = "wfdoc#" + documentId;
+      String gsi1Sk = "wf#" + workflowName + "#" + workflowId;
+
+      String gsi2Pk = "wf#" + workflowId;
+      String gsi2Sk = "wfdoc#" + documentId;
+
+      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
+          .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
+    }
+
+    /**
+     * Sets the current workflow step id.
+     *
+     * @param stepId the current step id
+     * @return this {@link Builder}
+     */
+    public Builder currentStepId(final String stepId) {
+      this.currentStepId = stepId;
+      return this;
+    }
+
+    /**
+     * Sets the document id.
+     *
+     * @param id the document id
+     * @return this {@link Builder}
+     */
+    public Builder documentId(final String id) {
+      this.documentId = id;
+      return this;
+    }
+
+    /**
+     * Sets the inserted date (defensive copy).
+     *
+     * @param date the inserted date
+     * @return this {@link Builder}
+     */
+    public Builder insertedDate(final Date date) {
+      this.insertedDate = date == null ? null : new Date(date.getTime());
+      return this;
+    }
+
+    /**
+     * Sets the status.
+     *
+     * @param workflowStatus the status
+     * @return this {@link Builder}
+     */
+    public Builder status(final String workflowStatus) {
+      this.status = workflowStatus;
+      return this;
+    }
+
+    /**
+     * Sets the workflow id.
+     *
+     * @param id the workflow id
+     * @return this {@link Builder}
+     */
+    public Builder workflowId(final String id) {
+      this.workflowId = id;
+      return this;
+    }
+
+    /**
+     * Sets the workflow name.
+     *
+     * @param name the workflow name
+     * @return this {@link Builder}
+     */
+    public Builder workflowName(final String name) {
+      this.workflowName = name;
+      return this;
+    }
   }
 }
