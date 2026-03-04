@@ -76,6 +76,19 @@ public class ReadRequestBuilder {
   }
 
   /**
+   * Collects {@link WriteRequest} and adds to a internal list.
+   *
+   * @param tableName {@link String}
+   * @param keys {@link Collection}
+   * @return {@link ReadRequestBuilder}
+   */
+  public ReadRequestBuilder appendByKey(final String tableName,
+      final Collection<DynamoDbKey> keys) {
+    return append(tableName, keys.stream().map(DynamoDbKey::toMap).toList());
+  }
+
+
+  /**
    * Batch Read Items.
    * 
    * @param dbClient {@link DynamoDbClient}
