@@ -121,8 +121,6 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
         String path = DynamoDbTypes.toString(o.get().get("path"));
         new ValidateDocumentFolderPermissions(db, ApiPermission.DELETE).apply(siteId, path);
 
-        // if document does not have a path mapping (pre 1.19)
-
         var folderIndexs = new PathToFolderIndexRecords(db).apply(siteId, path);
         var folderIndex = last(folderIndexs);
         if (folderIndex != null) {

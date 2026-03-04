@@ -60,6 +60,16 @@ public interface DynamoDbTypes {
     return df;
   }
 
+  /**
+   * Convert {@link AttributeValue} to {@link Boolean}.
+   * 
+   * @param attributeValue {@link AttributeValue}
+   * @return {@link Boolean}
+   */
+  static Boolean toBoolean(AttributeValue attributeValue) {
+    return attributeValue != null ? attributeValue.bool() : Boolean.FALSE;
+  }
+
   static <T> T toCustom(final String name, final Map<String, AttributeValue> attrs,
       final CustomDynamoDbAttributeBuilder builder) {
     return builder.decode(name, attrs);

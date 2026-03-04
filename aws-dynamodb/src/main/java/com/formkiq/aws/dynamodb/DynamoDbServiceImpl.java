@@ -390,21 +390,20 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   @Override
   public List<Map<String, AttributeValue>> getBatch(final BatchGetConfig config,
       final List<Map<String, AttributeValue>> attributes) {
-    return getBatch(this.tableName, config, attributes);
+
+    var keys = attributes.stream()
+        .map(a -> new DynamoDbKey(a.get(PK).s(), a.get(SK).s(), null, null, null, null)).toList();
+    return getBatchByKey(config, keys);
   }
 
-  private List<Map<String, AttributeValue>> getBatch(final String dbTableName,
-      final BatchGetConfig config, final List<Map<String, AttributeValue>> attributes) {
-
-    List<Map<String, AttributeValue>> keys =
-        attributes.stream().map(a -> Map.of(PK, a.get(PK), SK, a.get(SK))).toList();
-
+  public List<Map<String, AttributeValue>> getBatch(final String dbTableName,
+      final BatchGetConfig config, final List<DynamoDbKey> keys) {
     List<Map<String, AttributeValue>> list = Collections.emptyList();
 
     if (!keys.isEmpty()) {
 
       ReadRequestBuilder builder = new ReadRequestBuilder();
-      builder.append(dbTableName, keys);
+      builder.appendByKey(dbTableName, keys);
 
       Map<String, List<Map<String, AttributeValue>>> batchReadItems =
           builder.batchReadItems(this.dbClient, config);
@@ -422,6 +421,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
+  public List<Map<String, AttributeValue>> getBatchByKey(final BatchGetConfig config,
+      final List<DynamoDbKey> keys) {
+    return getBatch(this.tableName, config, keys);
+  }
+
+  @Override
   public Map<String, AttributeValue> getByQuery(final QueryRequest query) {
     Map<String, AttributeValue> attributes = Collections.emptyMap();
     QueryResponse response = this.dbClient.query(query);
@@ -430,6 +435,10 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     }
 
     return attributes;
+  }
+
+  private String getKey(final DynamoDbKey key) {
+    return key.pk() + "#" + key.sk();
   }
 
   private String getKey(final Map<String, AttributeValue> attr) {
@@ -607,10 +616,12 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       QueryResponse response = this.dbClient.query(q);
 
       if (q.indexName() != null && fetchAllAttributes) {
-        List<Map<String, AttributeValue>> results =
-            response.items().stream().map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).toList();
+        List<DynamoDbKey> keys = response.items().stream()
+            .map(i -> new DynamoDbKey(i.get(PK).s(), i.get(SK).s(), null, null, null, null))
+            .toList();
 
-        results = getBatch(q.tableName(), new BatchGetConfig(), results);
+        List<Map<String, AttributeValue>> results =
+            getBatch(q.tableName(), new BatchGetConfig(), keys);
 
         response = QueryResponse.builder().items(results)
             .lastEvaluatedKey(response.lastEvaluatedKey()).build();
