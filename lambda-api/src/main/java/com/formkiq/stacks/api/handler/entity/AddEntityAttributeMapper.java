@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.entity.EntityAttribute;
 import java.util.List;
 import java.util.function.Function;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.strings.Strings.isEmpty;
 
 /**
@@ -40,7 +41,7 @@ public class AddEntityAttributeMapper implements Function<AddEntityAttribute, En
   public EntityAttribute apply(final AddEntityAttribute a) {
 
     String stringValue = a.stringValue();
-    List<String> stringValues = a.stringValues();
+    List<String> stringValues = notNull(a.stringValues());
 
     if (AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey().equals(a.key())) {
       if (!stringValues.isEmpty()) {
