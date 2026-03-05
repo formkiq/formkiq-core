@@ -38,7 +38,7 @@ import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
-import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
+import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +71,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     if (EntityTypeNamespace.PRESET.equals(namespace)) {
       assertNotNull(presetEntity);
       List<String> attributes = notNull(
-          new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes())
+          new GetAttributesRequestBuilder().submit(client, siteId).response().getAttributes())
           .stream().map(Attribute::getKey).toList();
 
       presetEntity.getAttributeKeys().forEach(attr -> assertTrue(attributes.contains(attr)));
@@ -245,7 +245,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       // then
       assertFalse(add.isError());
 
-      var get = new GetAttributeRequestBuilder().submit(client, siteId);
+      var get = new GetAttributesRequestBuilder().submit(client, siteId);
       assertFalse(get.isError());
 
       List<Attribute> attributes = notNull(get.response().getAttributes());

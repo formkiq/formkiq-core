@@ -52,7 +52,7 @@ public enum AttributeKeyReserved {
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
   /** Retention Policy. */
-  RETENTION_POLICY("RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.STRING, false),
+  RETENTION_POLICY("RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY, false),
   /** Retention Period In Days. */
   RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeType.STANDARD,
       AttributeDataType.NUMBER, false),
