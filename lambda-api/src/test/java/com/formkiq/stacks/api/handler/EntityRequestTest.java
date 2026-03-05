@@ -49,7 +49,7 @@ import com.formkiq.client.model.GetEntityResponse;
 import com.formkiq.client.model.UpdateEntityRequest;
 import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
-import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
+import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
@@ -1170,8 +1170,8 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   private void validateCheckoutAttributes(final String siteId) {
-    List<Attribute> attributes =
-        notNull(new GetAttributeRequestBuilder().submit(client, siteId).response().getAttributes());
+    List<Attribute> attributes = notNull(
+        new GetAttributesRequestBuilder().submit(client, siteId).response().getAttributes());
     assertEquals(2, attributes.size());
     assertEquals("LockedBy", attributes.get(0).getKey());
     assertEquals("LockedDate", attributes.get(1).getKey());

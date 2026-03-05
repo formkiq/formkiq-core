@@ -30,14 +30,20 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.Attribute;
+import com.formkiq.client.model.AttributeDataType;
+import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.api.SetBearer;
+import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
+import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
@@ -53,6 +59,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -85,6 +92,14 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     return new AddEntityTypeRequestBuilder()
         .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
         .throwIfError().response().getEntityTypeId();
+  }
+
+  private void assertAttribute(final Attribute attribute, final String key,
+      final AttributeType type, final AttributeDataType dataType) {
+    assertEquals(key, attribute.getKey());
+    assertEquals(type, attribute.getType());
+    assertEquals(dataType, attribute.getDataType());
+
   }
 
   private void assertEntityAttributeEquals(final EntityAttribute attr, final String key,
@@ -207,6 +222,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // then
       String documentId = resp.response().getDocumentId();
       verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
+
+      // when
+      new DeleteDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
     }
   }
 
@@ -229,8 +247,12 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .addAttribute("RetentionPolicy", entityTypeId, entityId, EntityTypeNamespace.PRESET)
           .submit(client, siteId).throwIfError();
 
-
       // then
+      var getAttribute =
+          new GetAttributeRequestBuilder("RetentionPolicy").submit(client, siteId).throwIfError();
+      assertAttribute(Objects.requireNonNull(getAttribute.response().getAttribute()),
+          "RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY);
+
       String documentId = resp.response().getDocumentId();
 
       // given
@@ -313,6 +335,42 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
+  @Test
+  void testAddRetentionEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      addRetentionEntityType(siteId);
+
+      // when
+      var getAttributes = new GetAttributesRequestBuilder().submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals(2, notNull(getAttributes.response().getAttributes()).size());
+
+      // when
+      var resp = new GetAttributeRequestBuilder("RetentionPeriodInDays").submit(client, siteId)
+          .throwIfError();
+
+      // then
+      Attribute attribute = resp.response().getAttribute();
+      assertNotNull(attribute);
+      assertAttribute(attribute, "RetentionPeriodInDays", AttributeType.STANDARD,
+          AttributeDataType.NUMBER);
+
+      // when
+      resp = new GetAttributeRequestBuilder("RetentionStartDateSourceType").submit(client, siteId)
+          .throwIfError();
+
+      // then
+      attribute = resp.response().getAttribute();
+      assertNotNull(attribute);
+      assertAttribute(attribute, "RetentionStartDateSourceType", AttributeType.STANDARD,
+          AttributeDataType.STRING);
+    }
+  }
+
   /**
    * Get Derived Attribute that does not exist.
    *
@@ -333,6 +391,55 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       assertEquals(HttpStatus.NOT_FOUND, getResp.exception().getCode());
       assertEquals("{\"message\":\"attribute 'RetentionEffectiveStatus' not found on document '"
           + documentId + "'\"}", getResp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Add RetentionPolicy as invalid Entity String value.
+   *
+   */
+  @Test
+  void testRetentionPolicyInvalidEntityValue() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("RetentionPolicy", "asdasd#dfsdfds").submit(client, siteId);
+
+      // then
+      assertNull(resp.response());
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Add RetentionPolicy as invalid String value.
+   *
+   */
+  @Test
+  void testRetentionPolicyInvalidStringValue() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().addAttribute("RetentionPolicy", "asdasd")
+          .submit(client, siteId);
+
+      // then
+      assertNull(resp.response());
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"stringValue\",\"error\":\"invalid 'stringValue' for Entity\"}]}",
+          resp.exception().getResponseBody());
     }
   }
 

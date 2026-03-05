@@ -195,10 +195,12 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           AttributeKeyReserved reserved = AttributeKeyReserved.find(da.getKey());
 
           if (reserved != null) {
-            attributeService.addAttribute(access, siteId, da.getKey(), AttributeDataType.STRING,
+            attributeService.addAttribute(access, siteId, da.getKey(), reserved.getDataType(),
                 reserved.getType(), true);
 
             savedReservedKeys.add(da.getKey());
+
+            validateDataType(siteId, da, reserved.getDataType(), vb);
 
           } else {
             String errorMsg = "attribute '" + da.getKey() + "' not found";

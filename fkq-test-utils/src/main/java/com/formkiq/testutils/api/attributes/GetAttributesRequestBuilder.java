@@ -27,35 +27,28 @@ import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttributeRequest;
-import com.formkiq.client.model.GetAttributeResponse;
+import com.formkiq.client.model.GetAttributesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
  * Builder for {@link AddAttributeRequest}.
  */
-public class GetAttributeRequestBuilder implements HttpRequestBuilder<GetAttributeResponse> {
-
-  /** Attribute Key. */
-  private final String key;
+public class GetAttributesRequestBuilder implements HttpRequestBuilder<GetAttributesResponse> {
 
   /**
    * constructor.
-   * 
-   * @param attributeKey {@link String}
    */
-  public GetAttributeRequestBuilder(final String attributeKey) {
-    this.key = attributeKey;
-  }
+  public GetAttributesRequestBuilder() {}
 
   @Override
-  public ApiHttpResponse<GetAttributeResponse> submit(final ApiClient apiClient,
+  public ApiHttpResponse<GetAttributesResponse> submit(final ApiClient apiClient,
       final String siteId) {
 
-    GetAttributeResponse obj = null;
+    GetAttributesResponse obj = null;
     ApiException ex = null;
     try {
-      obj = new AttributesApi(apiClient).getAttribute(key, siteId);
+      obj = new AttributesApi(apiClient).getAttributes(siteId, null, null);
     } catch (ApiException e) {
       ex = e;
     }
