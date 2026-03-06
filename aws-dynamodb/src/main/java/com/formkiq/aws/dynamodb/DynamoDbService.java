@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -248,6 +249,13 @@ public interface DynamoDbService {
    * @return Map
    */
   Map<String, AttributeValue> getByQuery(QueryRequest query);
+
+  /**
+   * Get {@link DynamoDbClient}.
+   * 
+   * @return {@link DynamoDbClient}
+   */
+  DynamoDbClient getClient();
 
   /**
    * Get Next Number.
