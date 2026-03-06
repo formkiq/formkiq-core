@@ -83,23 +83,26 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
    * @return {@link ActionBuilder}
    */
   public ActionBuilder action(final Action action) {
-    documentId = action.documentId();
-    index = action.index();
-    type = action.type();
-    status = action.status();
-    userId = action.userId();
-    message = action.message();
-    queueId = action.queueId();
-    workflowId = action.workflowId();
-    workflowLastStep = action.workflowLastStep();
-    workflowStepId = action.workflowStepId();
-    metadata = action.metadata() != null ? new HashMap<>(action.metadata()) : null;
-    parameters = action.parameters() != null ? new HashMap<>(action.parameters()) : null;
-    retryCount = action.retryCount();
-    maxRetries = action.maxRetries();
-    insertedDate = action.insertedDate();
-    startDate = action.startDate();
-    completedDate = action.completedDate();
+
+    if (action != null) {
+      documentId = action.documentId();
+      index = action.index();
+      type = action.type();
+      status = action.status();
+      userId = action.userId();
+      message = action.message();
+      queueId = action.queueId();
+      workflowId = action.workflowId();
+      workflowLastStep = action.workflowLastStep();
+      workflowStepId = action.workflowStepId();
+      metadata = action.metadata() != null ? new HashMap<>(action.metadata()) : null;
+      parameters = action.parameters() != null ? new HashMap<>(action.parameters()) : null;
+      retryCount = action.retryCount();
+      maxRetries = action.maxRetries();
+      insertedDate = action.insertedDate();
+      startDate = action.startDate();
+      completedDate = action.completedDate();
+    }
 
     return this;
   }
