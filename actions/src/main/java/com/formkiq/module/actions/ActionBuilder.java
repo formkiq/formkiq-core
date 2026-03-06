@@ -132,6 +132,11 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
     return build(key);
   }
 
+  public Action buildForWorkflowStep() {
+    return new Action(null, null, null, type, null, userId, null, queueId, workflowId,
+        workflowLastStep, workflowStepId, null, parameters, null, null, null, null, null);
+  }
+
   /**
    * Builds the {@link DynamoDbKey} for this action.
    *

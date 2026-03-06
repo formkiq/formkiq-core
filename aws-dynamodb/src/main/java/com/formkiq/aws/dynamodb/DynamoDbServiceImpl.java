@@ -437,6 +437,11 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
     return attributes;
   }
 
+  @Override
+  public DynamoDbClient getClient() {
+    return dbClient;
+  }
+
   private String getKey(final DynamoDbKey key) {
     return key.pk() + "#" + key.sk();
   }

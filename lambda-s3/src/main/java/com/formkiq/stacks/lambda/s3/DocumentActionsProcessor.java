@@ -28,7 +28,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
@@ -56,12 +55,12 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.DocumentWorkflowRecord;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.actions.workflows.DocumentWorkflowStatusUpdate;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
@@ -111,7 +110,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.io.IOException;
@@ -461,13 +459,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
 
     WriteRequestBuilder wrb = new WriteRequestBuilder();
-    updateDocumentWorkflow(wrb, siteId, documentId, action, builder);
+    updateDocumentWorkflow(wrb, siteId, documentId, action, builder.status());
 
     Action updateAction = builder.build(siteId);
     logger.debug(String.format("Updating Action Status to %s", updateAction.status()));
 
     wrb.appendUpdate(getDb().getTableName(), updateAction.getAttributes());
-    wrb.transactWriteItems(getDbClient());
+    wrb.transactWriteItems(getDb().getClient());
   }
 
   /**
@@ -638,10 +636,10 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         // skip
       }
       case IN_QUEUE -> {
-        updateDocumentWorkflow(wrb, siteId, documentId, action, builder);
+        updateDocumentWorkflow(wrb, siteId, documentId, action, processStatus.actionStatus());
 
         wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
-        wrb.transactWriteItems(getDbClient());
+        wrb.transactWriteItems(getDb().getClient());
       }
       case PENDING -> {
         getActionsService().updateAction(builder.build(siteId));
@@ -654,10 +652,10 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
         builder.completedDate(new Date());
 
-        updateDocumentWorkflow(wrb, siteId, documentId, action, builder);
+        updateDocumentWorkflow(wrb, siteId, documentId, action, processStatus.actionStatus());
         wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
 
-        wrb.transactWriteItems(getDbClient());
+        wrb.transactWriteItems(getDb().getClient());
 
         getNotificationService().publishNextActionEvent(siteId, documentId);
       }
@@ -665,40 +663,12 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
   }
 
   private void updateDocumentWorkflow(final WriteRequestBuilder wrb, final String siteId,
-      final String documentId, final Action action, final ActionBuilder builder) {
-
-    if (!isEmpty(action.workflowId()) && !isEmpty(action.workflowStepId())) {
-      updateDocumentWorkflowStatus(wrb, siteId, documentId, action, builder);
-    }
-  }
-
-  private void updateDocumentWorkflowStatus(final WriteRequestBuilder wrb, final String siteId,
-      final String documentId, final Action action, final ActionBuilder builder) {
-
-    String workflowId = action.workflowId();
-    String stepId = action.workflowStepId();
-
-    if (!ActionStatus.FAILED.equals(builder.status())) {
-      ActionStatus status =
-          !isEmpty(action.workflowLastStep()) ? ActionStatus.COMPLETE : ActionStatus.IN_PROGRESS;
-      builder.status(status);
-    }
-
-    DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(documentId)
-        .workflowName("").workflowId(workflowId).build(siteId);
-
-    DocumentWorkflowRecord dwr =
-        DocumentWorkflowRecord.builder().status(builder.status().name()).currentStepId(stepId)
-            .actionPk(action.key().pk()).actionSk(action.key().sk()).build(r.key());
-
-    wrb.appendUpdate(getDb().getTableName(), dwr.getAttributes());
+      final String documentId, final Action action, final ActionStatus newStatus) {
+    new DocumentWorkflowStatusUpdate(getDb().getTableName(), siteId, documentId, action, newStatus)
+        .appendTo(wrb);
   }
 
   private DynamoDbService getDb() {
     return serviceCache.getExtension(DynamoDbService.class);
-  }
-
-  private DynamoDbClient getDbClient() {
-    return serviceCache.getExtension(DynamoDbConnectionBuilder.class).build();
   }
 }
