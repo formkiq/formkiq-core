@@ -26,12 +26,9 @@ package com.formkiq.stacks.api.handler.documents;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamodbRecordToDynamoDbKeys;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -41,6 +38,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -57,14 +55,6 @@ public class DocumentsActionsRetryRequestHandler
    *
    */
   public DocumentsActionsRetryRequestHandler() {}
-
-  private Action clone(final String siteId, final Action action) {
-    Action na = new Action().getFromAttributes(siteId, action.getAttributes(siteId));
-    na.status(ActionStatus.PENDING);
-    na.indexUlid();
-    na.message(null);
-    return na;
-  }
 
   private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
       final String documentId) {
@@ -90,48 +80,54 @@ public class DocumentsActionsRetryRequestHandler
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getActions(siteId, documentId);
 
-    actions
-        .stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING,
-            ActionStatus.MAX_RETRIES_REACHED, ActionStatus.WAITING_FOR_RETRY))
-        .forEach(a -> a.status(ActionStatus.FAILED));
+    var toUpdatePred = new ActionStatusPredicate(ActionStatus.RUNNING,
+        ActionStatus.MAX_RETRIES_REACHED, ActionStatus.WAITING_FOR_RETRY);
+    var failedPred = new ActionStatusPredicate(ActionStatus.FAILED);
 
-    int index = IntStream.range(0, actions.size()).map(i -> actions.size() - 1 - i)
-        .filter(i -> ActionStatus.FAILED.equals(actions.get(i).status())).findFirst().orElse(-1);
+    List<Action> toUpdate = new ArrayList<>();
+    List<Action> failedActions = new ArrayList<>();
+
+    actions.forEach(a -> {
+      if (toUpdatePred.test(a)) {
+        var action = new ActionBuilder().action(a).status(ActionStatus.FAILED).build(siteId);
+        toUpdate.add(action);
+        failedActions.add(action);
+      } else if (failedPred.test(a)) {
+        failedActions.add(a);
+      }
+    });
+
+    service.updateActions(toUpdate);
+
+    int index = IntStream.range(0, failedActions.size()).map(i -> failedActions.size() - 1 - i)
+        .filter(i -> ActionStatus.FAILED.equals(failedActions.get(i).status())).findFirst()
+        .orElse(-1);
 
     String userId = authorization.getUsername();
 
     if (index >= 0) {
 
       List<Action> toSave = new ArrayList<>();
-      Action ac = actions.get(index);
-      ac.status(ActionStatus.FAILED_RETRY);
-      toSave.add(ac);
+      Action action = failedActions.get(index);
+      Action ac = new ActionBuilder().action(action).status(ActionStatus.FAILED_RETRY)
+          .userId(userId).build(siteId);
+      service.updateAction(ac);
 
-      Action cloned = clone(siteId, ac);
-      toSave.add(cloned);
+      Action aa = new ActionBuilder().action(action).status(ActionStatus.PENDING).indexUlid()
+          .userId(userId).message(null).build(siteId);
+      toSave.add(aa);
 
-      List<Action> pending = actions.subList(index, actions.size()).stream()
-          .filter(a -> ActionStatus.PENDING.equals(a.status())).toList();
+      List<Action> pending =
+          actions.stream().filter(a -> ActionStatus.PENDING.equals(a.status())).toList();
+      service.deleteActions(pending);
 
-      var keysToBeDeleted =
-          pending.stream().map(a -> new DynamodbRecordToDynamoDbKeys().apply(siteId, a)).toList();
+      pending.stream()
+          .map(a -> new ActionBuilder().action(a).userId(userId).indexUlid().build(siteId))
+          .forEach(toSave::add);
 
-      for (Action action : pending) {
-        Action a = new Action().getFromAttributes(siteId, action.getAttributes(siteId));
-        a.indexUlid();
-        a.userId(userId);
-        a.insertedDate(new Date());
-        a.message(null);
-
-        toSave.add(a);
-      }
-
-      DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-      db.deleteItems(db.getTableName(), keysToBeDeleted);
       service.saveActions(siteId, toSave);
 
-      ActionsNotificationService notificationService =
-          awsservice.getExtension(ActionsNotificationService.class);
+      var notificationService = awsservice.getExtension(ActionsNotificationService.class);
       notificationService.publishNextActionEvent(siteId, documentId);
 
       return ApiRequestHandlerResponse.builder().ok().body("message", "Actions retrying").build();

@@ -80,6 +80,10 @@ public class ActionsServiceDynamoDbTest {
         new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
   }
 
+  private ActionBuilder createAction(final String documentId, final ActionType actionType) {
+    return new ActionBuilder().documentId(documentId).indexUlid().type(actionType).userId("joe");
+  }
+
   /**
    * Has Actions.
    */
@@ -87,14 +91,13 @@ public class ActionsServiceDynamoDbTest {
   public void hasActions01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String userId0 = "joe";
       String documentId0 = ID.uuid();
       String documentId1 = ID.uuid();
 
-      Action action0 = new Action().type(ActionType.OCR).userId(userId0);
+      Action action = createAction(documentId0, ActionType.OCR).build(siteId);
 
       // when
-      service.saveNewActions(siteId, documentId0, List.of(action0));
+      service.saveNewActions(List.of(action));
 
       // then
       assertTrue(service.hasActions(siteId, documentId0));
@@ -116,8 +119,8 @@ public class ActionsServiceDynamoDbTest {
       documentService.saveDocument(siteId, item, null);
 
       Action action0 =
-          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
-      service.saveNewActions(siteId, documentId, List.of(action0));
+          createAction(documentId, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
+      service.saveNewActions(List.of(action0));
 
       // when
       documentService.deleteDocument(siteId, documentId, false);
@@ -142,8 +145,8 @@ public class ActionsServiceDynamoDbTest {
       documentService.saveDocument(siteId, item, null);
 
       Action action0 =
-          new Action().type(ActionType.OCR).userId("joe").parameters(Map.of("test", "1234"));
-      service.saveNewActions(siteId, documentId, List.of(action0));
+          createAction(documentId, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
+      service.saveNewActions(List.of(action0));
 
       // when
       service.deleteActions(siteId, documentId);
@@ -165,18 +168,18 @@ public class ActionsServiceDynamoDbTest {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      Action action0 = new Action().type(ActionType.DOCUMENTTAGGING).userId(user)
-          .parameters(Map.of("tags", "type")).status(ActionStatus.COMPLETE);
+      Action action0 = createAction(documentId, ActionType.DOCUMENTTAGGING)
+          .parameters(Map.of("tags", "type")).status(ActionStatus.COMPLETE).build(siteId);
 
-      Action action1 = new Action().type(ActionType.FULLTEXT).userId(user);
-      Action insertedAction = new Action().type(ActionType.OCR).userId(user);
+      Action action1 = createAction(documentId, ActionType.FULLTEXT).build(siteId);
+      ActionBuilder insertedAction = createAction(documentId, ActionType.OCR);
 
       List<Action> actions = Arrays.asList(action0, action1);
-      service.saveNewActions(siteId, documentId, actions);
+      service.saveNewActions(actions);
       assertEquals(2, service.getActions(siteId, documentId).size());
 
       // when
-      service.insertBeforeAction(siteId, documentId, action1, insertedAction);
+      service.insertBeforeAction(siteId, action1, insertedAction);
 
       // then
       final int expected = 3;
@@ -203,20 +206,19 @@ public class ActionsServiceDynamoDbTest {
   public void testSave01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String userId0 = "joe";
-      String userId1 = "jane";
+      final String userId0 = "joe";
+      final String userId1 = "jane";
       String documentId0 = ID.uuid();
       String documentId1 = ID.uuid();
 
-      Action action0 =
-          new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
-      Action action1 =
-          new Action().type(ActionType.OCR).userId(userId1).status(ActionStatus.COMPLETE);
+      Action action0 = createAction(documentId0, ActionType.OCR).parameters(Map.of("test", "1234"))
+          .build(siteId);
+      Action action1 = createAction(documentId1, ActionType.OCR).userId(userId1)
+          .status(ActionStatus.COMPLETE).build(siteId);
 
       // when
-      final List<Map<String, AttributeValue>> list =
-          service.saveNewActions(siteId, documentId0, List.of(action0));
-      service.saveNewActions(siteId, documentId1, List.of(action1));
+      final List<Map<String, AttributeValue>> list = service.saveNewActions(List.of(action0));
+      service.saveNewActions(List.of(action1));
 
       // then
       assertEquals(1, list.size());
@@ -244,10 +246,10 @@ public class ActionsServiceDynamoDbTest {
       assertNull(results.get(0).parameters());
 
       // given
-      action0.status(ActionStatus.FAILED);
+      Action action = new ActionBuilder().action(action0).status(ActionStatus.FAILED).build(siteId);
 
       // when
-      service.updateActionStatus(siteId, documentId0, action0);
+      service.updateAction(action);
 
       // then
       results = service.getActions(siteId, documentId0);
@@ -268,12 +270,12 @@ public class ActionsServiceDynamoDbTest {
 
       List<Action> actions = new ArrayList<>();
       for (int i = 0; i < numberOfActions; i++) {
-        actions.add(new Action().type(ActionType.DOCUMENTTAGGING).userId(user)
-            .parameters(Map.of("tags", "" + i)));
+        actions.add(createAction(documentId, ActionType.DOCUMENTTAGGING)
+            .parameters(Map.of("tags", "" + i)).build(siteId));
       }
 
       // when
-      service.saveNewActions(siteId, documentId, actions);
+      service.saveNewActions(actions);
 
       // then
       int i = 0;
@@ -293,14 +295,14 @@ public class ActionsServiceDynamoDbTest {
   public void testSave03() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String userId0 = "joe";
+      final String userId0 = "joe";
       String name = "test94832";
       String documentId = ID.uuid();
 
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
+      Action action0 = createAction(documentId, ActionType.QUEUE).queueId(name).build(siteId);
 
       // when
-      service.saveNewActions(siteId, documentId, List.of(action0));
+      service.saveNewActions(List.of(action0));
 
       // then
       List<Action> results = service.getActions(siteId, documentId);
@@ -320,8 +322,8 @@ public class ActionsServiceDynamoDbTest {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String docId = ID.uuid();
-      Action action0 = new Action().documentId(docId).index("0").type(ActionType.QUEUE)
-          .userId("joe").queueId("A");
+      Action action0 = new ActionBuilder().documentId(docId).index("0").type(ActionType.QUEUE)
+          .userId("joe").queueId("A").build(siteId);
 
       // when
       service.saveAction(siteId, action0);
@@ -332,12 +334,12 @@ public class ActionsServiceDynamoDbTest {
       assertEquals("0", actions.get(0).index());
 
       // given - Ulid index
-      Action ulid0 = new Action().documentId(docId).indexUlid().type(ActionType.OCR).userId("joe")
-          .insertedDate(new Date());
-      Action ulid1 = new Action().documentId(docId).indexUlid().type(ActionType.IDP).userId("joe")
-          .insertedDate(new Date());
-      Action ulid2 = new Action().documentId(docId).indexUlid().type(ActionType.FULLTEXT)
-          .userId("joe").insertedDate(new Date());
+      Action ulid0 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.OCR)
+          .userId("joe").insertedDate(new Date()).build(siteId);
+      Action ulid1 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.IDP)
+          .userId("joe").insertedDate(new Date()).build(siteId);
+      Action ulid2 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.FULLTEXT)
+          .userId("joe").insertedDate(new Date()).build(siteId);
 
       // when
       service.saveActions(siteId, List.of(ulid2, ulid1, ulid0));
@@ -364,16 +366,17 @@ public class ActionsServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      String userId0 = "joe";
       Action action0 =
-          new Action().type(ActionType.OCR).userId(userId0).parameters(Map.of("test", "1234"));
-      service.saveNewActions(siteId, documentId, List.of(action0));
+          createAction(documentId, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
+      service.saveNewActions(List.of(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
-      action0.status(ActionStatus.COMPLETE);
+      Action action =
+          new ActionBuilder().action(action0).status(ActionStatus.COMPLETE).build(siteId);
+      // action0.status(ActionStatus.COMPLETE);
 
       // when
-      service.updateActionStatus(siteId, documentId, action0);
+      service.updateAction(action);
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
@@ -392,15 +395,17 @@ public class ActionsServiceDynamoDbTest {
       // given
       String queueId = "queue1234";
       String documentId = ID.uuid();
-      String userId0 = "joe";
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(queueId);
-      service.saveNewActions(siteId, documentId, List.of(action0));
+      Action action0 = createAction(documentId, ActionType.QUEUE).queueId(queueId).build(siteId);
+      service.saveNewActions(List.of(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
-      action0.status(ActionStatus.IN_QUEUE);
+      Action action =
+          new ActionBuilder().action(action0).status(ActionStatus.IN_QUEUE).build(siteId);
+
+      // action0.status(ActionStatus.IN_QUEUE);
 
       // when
-      service.updateActionStatus(siteId, documentId, action0);
+      service.updateAction(action);
 
       // then
       assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, documentId).get(0).status());
@@ -415,10 +420,11 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(documentId, results.getResults().get(0));
 
       // given
-      action0.status(ActionStatus.COMPLETE);
+      Action a = new ActionBuilder().action(action0).status(ActionStatus.COMPLETE).build(siteId);
+      // action0.status(ActionStatus.COMPLETE);
 
       // when
-      service.updateActionStatus(siteId, documentId, action0);
+      service.updateAction(a);
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, documentId).get(0).status());
@@ -441,14 +447,15 @@ public class ActionsServiceDynamoDbTest {
       String name = "queue1234";
       String documentId = ID.uuid();
       String userId0 = "joe";
-      Action action0 = new Action().type(ActionType.QUEUE).userId(userId0).queueId(name);
-      service.saveNewActions(siteId, documentId, List.of(action0));
+      Action action0 = createAction(documentId, ActionType.QUEUE).queueId(name).build(siteId);
+      service.saveNewActions(List.of(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());
 
-      action0.status(ActionStatus.FAILED);
+      Action action = new ActionBuilder().action(action0).status(ActionStatus.FAILED).build(siteId);
+      // action0.status(ActionStatus.FAILED);
 
       // when
-      service.updateActionStatus(siteId, documentId, action0);
+      service.updateAction(action);
 
       // then
       assertEquals(ActionStatus.FAILED, service.getActions(siteId, documentId).get(0).status());

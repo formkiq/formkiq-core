@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
+import software.amazon.awssdk.services.dynamodb.model.Update;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -60,6 +61,9 @@ public class WriteRequestBuilder {
 
   /** {@link Map} of {@link WriteRequest}. */
   private final Map<String, List<WriteRequest>> items = new HashMap<>();
+
+  /** {@link Map} of Update operations. */
+  private final Map<String, List<Update>> updates = new HashMap<>();
 
   /**
    * constructor.
@@ -88,7 +92,6 @@ public class WriteRequestBuilder {
 
     return this;
   }
-
 
   /**
    * Append {@link WriteRequest}.
@@ -142,6 +145,97 @@ public class WriteRequestBuilder {
   public WriteRequestBuilder appendDeletes(final String tableName,
       final Collection<DynamoDbKey> keys) {
     keys.forEach(key -> appendDelete(tableName, key));
+    return this;
+  }
+
+  /**
+   * Append an Update request using attribute values.
+   *
+   * <p>
+   * The provided map must contain the primary key attributes (PK/SK etc).
+   * </p>
+   *
+   * <p>
+   * Behaviour:
+   * <ul>
+   * <li>value == null → REMOVE attribute</li>
+   * <li>value != null → SET attribute</li>
+   * </ul>
+   * </p>
+   *
+   * @param tableName {@link String}
+   * @param values {@link Map} {@link AttributeValue}
+   * @return {@link WriteRequestBuilder}
+   */
+  public WriteRequestBuilder appendUpdate(final String tableName,
+      final Map<String, AttributeValue> values) {
+
+    java.util.Objects.requireNonNull(tableName, "tableName must not be null");
+    java.util.Objects.requireNonNull(values, "values must not be null");
+
+    Map<String, AttributeValue> key = new HashMap<>();
+    Map<String, AttributeValue> attrs = new HashMap<>();
+
+    splitKeysAndAttributes(values, key, attrs);
+
+    Map<String, String> names = new HashMap<>();
+    Map<String, AttributeValue> attrValues = new HashMap<>();
+
+    StringBuilder set = new StringBuilder();
+    StringBuilder remove = new StringBuilder();
+
+    int i = 0;
+
+    for (Entry<String, AttributeValue> e : attrs.entrySet()) {
+
+      String name = "#n" + i;
+      names.put(name, e.getKey());
+
+      if (e.getValue() == null) {
+
+        if (!remove.isEmpty()) {
+          remove.append(", ");
+        }
+
+        remove.append(name);
+
+      } else {
+
+        String value = ":v" + i;
+
+        if (!set.isEmpty()) {
+          set.append(", ");
+        }
+
+        set.append(name).append("=").append(value);
+
+        attrValues.put(value, e.getValue());
+      }
+
+      i++;
+    }
+
+    StringBuilder update = new StringBuilder();
+
+    if (!set.isEmpty()) {
+      update.append("SET ").append(set);
+    }
+
+    if (!remove.isEmpty()) {
+
+      if (!update.isEmpty()) {
+        update.append(" ");
+      }
+
+      update.append("REMOVE ").append(remove);
+    }
+
+    Update u = Update.builder().tableName(tableName).key(key).updateExpression(update.toString())
+        .expressionAttributeNames(names)
+        .expressionAttributeValues(attrValues.isEmpty() ? null : attrValues).build();
+
+    this.updates.computeIfAbsent(tableName, k -> new ArrayList<>()).add(u);
+
     return this;
   }
 
@@ -302,7 +396,25 @@ public class WriteRequestBuilder {
    * @return boolean
    */
   public boolean isEmpty() {
-    return this.items.isEmpty();
+    return this.items.isEmpty() && this.updates.isEmpty();
+  }
+
+  private void splitKeysAndAttributes(final Map<String, AttributeValue> values,
+      final Map<String, AttributeValue> key, final Map<String, AttributeValue> attrs) {
+    // Assume PK/SK are key attributes
+    values.forEach((k, v) -> {
+      if ("PK".equals(k) || "SK".equals(k)) {
+        key.put(k, v);
+      } else {
+        attrs.put(k, v);
+      }
+    });
+
+    attrs.remove("inserteddate");
+
+    if (key.isEmpty()) {
+      throw new IllegalArgumentException("values must contain PK/SK attributes");
+    }
   }
 
   /**
@@ -359,6 +471,12 @@ public class WriteRequestBuilder {
         if (t != null) {
           txnItems.add(t);
         }
+      }
+    }
+
+    for (Entry<String, List<Update>> e : this.updates.entrySet()) {
+      for (Update u : e.getValue()) {
+        txnItems.add(TransactWriteItem.builder().update(u).build());
       }
     }
 

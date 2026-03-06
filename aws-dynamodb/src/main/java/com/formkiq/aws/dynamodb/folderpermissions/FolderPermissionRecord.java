@@ -117,9 +117,14 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
     private Collection<FolderRolePermission> rolePermissions = null;
 
     @Override
+    public FolderPermissionRecord build(final DynamoDbKey key) {
+      return new FolderPermissionRecord(key, path, type, insertedDate, userId, rolePermissions);
+    }
+
+    @Override
     public FolderPermissionRecord build(final String siteId) {
       DynamoDbKey key = buildKey(siteId);
-      return new FolderPermissionRecord(key, path, type, insertedDate, userId, rolePermissions);
+      return build(key);
     }
 
     @Override

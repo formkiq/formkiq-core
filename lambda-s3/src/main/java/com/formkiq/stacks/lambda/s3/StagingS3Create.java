@@ -50,6 +50,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
@@ -562,13 +563,15 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (existingDocument != null && !hasContent) {
 
       List<Action> actions = actionsService.getActions(siteId, item.getDocumentId());
-      List<Action> syncs =
-          actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type())).toList();
-      syncs.forEach(a -> a.status(ActionStatus.PENDING));
-      actionsService.saveNewActions(siteId, item.getDocumentId(), actions);
+      List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
+          .map(a -> new ActionBuilder().action(a).insertedDate(new Date()).indexUlid()
+              .status(ActionStatus.PENDING).build(siteId))
+          .toList();
+
+      actionsService.saveNewActions(syncs);
 
       logger.trace("publishing actions message to " + snsDocumentEvent);
-      notificationService.publishNextActionEvent(actions, siteId, item.getDocumentId());
+      notificationService.publishNextActionEvent(syncs, siteId, item.getDocumentId());
     }
 
     deleteObject(bucket, s3Key);
@@ -689,7 +692,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     String token = null;
     final int maxresults = 100;
 
-
     DocumentSearchService searchService = serviceCache.getExtension(DocumentSearchService.class);
 
     List<com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag> addTags =
@@ -731,9 +733,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       DynamicObjectToAction transform = new DynamicObjectToAction();
       List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions = list.stream().map(transform).collect(Collectors.toList());
+      List<Action> actions = list.stream().map(transform)
+          .map(t -> t.documentId(doc.getDocumentId()).indexUlid().build(siteId)).toList();
 
-      actionsService.saveNewActions(siteId, doc.getDocumentId(), actions);
+      actionsService.saveNewActions(actions);
     }
   }
 

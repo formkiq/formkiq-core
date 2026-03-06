@@ -175,7 +175,7 @@ public class ConfigServiceDynamoDbTest {
   public void testConfig04() {
     // given
     SiteConfiguration siteConfig = SiteConfiguration.builder().documentTimeToLive(ID.uuid())
-        .maxWebhooks(ID.uuid()).maxDocuments(ID.uuid()).build(null);
+        .maxWebhooks(ID.uuid()).maxDocuments(ID.uuid()).build((String) null);
 
     // DynamicObject obj = new DynamicObject(map);
     this.service.save(null, siteConfig);

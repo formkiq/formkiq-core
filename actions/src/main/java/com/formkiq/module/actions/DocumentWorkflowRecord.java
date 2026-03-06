@@ -165,18 +165,16 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       return this;
     }
 
-    /**
-     * Builds a {@link DocumentWorkflowRecord}, computing its {@link DynamoDbKey}.
-     *
-     * @param siteId the site identifier
-     * @return a new {@link DocumentWorkflowRecord}
-     */
     @Override
-    public DocumentWorkflowRecord build(final String siteId) {
-
-      DynamoDbKey key = buildKey(siteId);
+    public DocumentWorkflowRecord build(final DynamoDbKey key) {
       return new DocumentWorkflowRecord(key, documentId, workflowId, workflowName, status, actionPk,
           actionSk, currentStepId, insertedDate);
+    }
+
+    @Override
+    public DocumentWorkflowRecord build(final String siteId) {
+      DynamoDbKey key = buildKey(siteId);
+      return build(key);
     }
 
     /**

@@ -106,12 +106,17 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     private Date insertedDate = new Date();
 
     @Override
+    public EntityTypeRecord build(final DynamoDbKey key) {
+      return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
+    }
+
+    @Override
     public EntityTypeRecord build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       validate();
       DynamoDbKey key = buildKey(siteId);
-      return new EntityTypeRecord(key, documentId, namespace, name, insertedDate);
+      return build(key);
     }
 
     @Override
