@@ -45,7 +45,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +62,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
@@ -270,6 +270,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     String eventSnsQueue = TestServices.createSqsSubscriptionToSnsTopic(snsDocumentEvent);
     eventQueue = new SqsMessageReceiver(awsServices, eventSnsQueue);
+  }
+
+  private static ActionBuilder createAction(final String documentId) {
+    return new ActionBuilder().documentId(documentId).type(ActionType.OCR).indexUlid()
+        .userId("joe");
   }
 
   private static Map<String, Object> createS3Map(final String siteId,
@@ -900,8 +905,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
       DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
-      actionsService.saveNewActions(siteId, doc.getDocumentId(), Collections.singletonList(
-          new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.COMPLETE)));
+      actionsService.saveNewActions(
+          List.of(createAction(doc.getDocumentId()).status(ActionStatus.COMPLETE).build(siteId)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -962,8 +967,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       String key = createDatabaseKey(siteId, documentId);
 
       DynamicDocumentItem doc = createDocument(siteId, documentId, "test.txt", null);
-      actionsService.saveNewActions(siteId, doc.getDocumentId(), Collections.singletonList(
-          new Action().type(ActionType.OCR).userId("joe").status(ActionStatus.RUNNING)));
+      actionsService.saveNewActions(
+          List.of(createAction(doc.getDocumentId()).status(ActionStatus.RUNNING).build(siteId)));
 
       addS3File(key, "pdf", false, "testdata");
 

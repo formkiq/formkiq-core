@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.LogType;
 import com.formkiq.module.lambdaservices.logger.LoggerImpl;
@@ -56,9 +57,10 @@ public class ActionsNotificationServiceImplTest {
   void publishNextActionEvent01() {
     // given
     String documentId = ID.uuid();
-    List<Action> actions = List.of(new Action().documentId(documentId).type(ActionType.OCR));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      List<Action> actions = List.of(new ActionBuilder().userId("J").indexUlid()
+          .documentId(documentId).type(ActionType.OCR).build(siteId));
 
       // when
       SERVICE.publishNextActionEvent(actions, siteId, documentId);
@@ -79,11 +81,11 @@ public class ActionsNotificationServiceImplTest {
   @Test
   void publishNextActionEvent02() {
     // given
-    String documentId = ID.uuid();
-    List<Action> actions = List
-        .of(new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.FAILED));
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      List<Action> actions = List.of(new ActionBuilder().documentId(documentId).type(ActionType.OCR)
+          .status(ActionStatus.FAILED).userId("J").indexUlid().build(siteId));
 
       // when
       SERVICE.publishNextActionEvent(actions, siteId, documentId);
@@ -99,12 +101,13 @@ public class ActionsNotificationServiceImplTest {
   @Test
   void publishNextActionEvent03() {
     // given
-    String documentId = ID.uuid();
-    List<Action> actions = Arrays.asList(
-        new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.RUNNING),
-        new Action().documentId(documentId).type(ActionType.OCR).status(ActionStatus.PENDING));
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String documentId = ID.uuid();
+      List<Action> actions = Arrays.asList(
+          new ActionBuilder().documentId(documentId).type(ActionType.OCR).userId("J").indexUlid()
+              .status(ActionStatus.RUNNING).build(siteId),
+          new ActionBuilder().documentId(documentId).type(ActionType.OCR).userId("J").indexUlid()
+              .status(ActionStatus.PENDING).build(siteId));
 
       // when
       SERVICE.publishNextActionEvent(actions, siteId, documentId);

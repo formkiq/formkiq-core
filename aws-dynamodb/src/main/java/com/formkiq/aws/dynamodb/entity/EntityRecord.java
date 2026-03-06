@@ -132,15 +132,19 @@ public record EntityRecord(DynamoDbKey key, String entityTypeId, String document
     }
 
     @Override
-    public EntityRecord build(final String siteId) {
-      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-
-      DynamoDbKey key = buildKey(siteId);
-
+    public EntityRecord build(final DynamoDbKey key) {
       Map<String, Object> map = new EntityAttributesToMapTransformer().apply(attributes);
 
       Map<String, AttributeValue> entityAttributes = new MapToAttributeValue().apply(map);
       return new EntityRecord(key, entityTypeId, documentId, name, insertedDate, entityAttributes);
+    }
+
+    @Override
+    public EntityRecord build(final String siteId) {
+      Objects.requireNonNull(insertedDate, "insertedDate must not be null");
+
+      DynamoDbKey key = buildKey(siteId);
+      return build(key);
     }
 
     @Override

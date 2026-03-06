@@ -30,6 +30,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.module.actions.ActionBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,7 +67,8 @@ class ActionsValidatorTest {
 
   private static void testDimensionTemplate(final Map<String, Object> parameters,
       final String errorKey, final String errorMessage) {
-    Action action = new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters);
+    Action action = new ActionBuilder().documentId(ID.uuid()).indexUlid().type(ActionType.RESIZE)
+        .userId("joe").parameters(parameters).build((String) null);
     testTemplate(action, errorKey, errorMessage);
   }
 
@@ -142,20 +145,23 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation02() {
-    Action action = new Action();
+    Action action = new Action(null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null);
     testTemplate(action, "type", "action 'type' is required");
   }
 
   @Test
   void testValidation03() {
-    Action action = new Action().type(ActionType.WEBHOOK).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.WEBHOOK).userId("joe").documentId(ID.uuid())
+        .indexUlid().build((String) null);
     testTemplate(action, "parameters.url", "action 'url' parameter is required");
   }
 
   @Test
   void testValidation04() {
     // given
-    Action action = new Action();
+    Action action = new Action(null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null);
     List<Action> actions = List.of(action);
 
     // when
@@ -172,19 +178,22 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation05() {
-    Action action = new Action().type(ActionType.OCR).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.OCR).documentId(ID.uuid()).indexUlid()
+        .userId("joe").build((String) null);
     testTemplate(action, null, null);
   }
 
   @Test
   void testValidation06() {
-    Action action = new Action().type(ActionType.QUEUE).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.QUEUE).documentId(ID.uuid()).indexUlid()
+        .userId("joe").build((String) null);
     testTemplate(action, "queueId", "'queueId' is required");
   }
 
   @Test
   void testValidation07() {
-    Action action = new Action().type(ActionType.QUEUE).queueId("Testqueue").userId("joe");
+    Action action = new ActionBuilder().type(ActionType.QUEUE).documentId(ID.uuid()).indexUlid()
+        .queueId("Testqueue").userId("joe").build((String) null);
     testTemplate(action, "queueId", "'queueId' does not exist");
   }
 
@@ -193,7 +202,8 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation08() {
-    Action action = new Action().type(ActionType.EVENTBRIDGE).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.EVENTBRIDGE).userId("joe")
+        .documentId(ID.uuid()).indexUlid().build((String) null);
     testTemplate(action, "parameters.eventBusName", "'eventBusName' parameter is required");
   }
 

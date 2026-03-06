@@ -108,6 +108,10 @@ public interface DynamoDbTypes {
     return date;
   }
 
+  static Integer toInteger(final AttributeValue attributeValue) {
+    return attributeValue != null ? Integer.valueOf(attributeValue.n()) : null;
+  }
+
   /**
    * Convert {@link AttributeValue} to {@link List} {@link Map}.
    * 

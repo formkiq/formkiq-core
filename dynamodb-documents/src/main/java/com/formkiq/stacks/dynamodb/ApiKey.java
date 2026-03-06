@@ -178,12 +178,11 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
       return this;
     }
 
-    /**
-     * Builds a populated {@link ApiKey} record using the provided siteId.
-     *
-     * @param siteId site identifier used when constructing the DynamoDB key
-     * @return new ApiKey record
-     */
+    @Override
+    public ApiKey build(final DynamoDbKey key) {
+      throw new UnsupportedOperationException();
+    }
+
     @Override
     public ApiKey build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
@@ -194,6 +193,8 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
 
       return new ApiKey(key, getSiteIdName(siteId), apiKey, name, userId, insertedDate, perms, g);
     }
+
+
 
     /**
      * Computes the DynamoDB key for this API key.

@@ -131,13 +131,14 @@ public class DocumentsActionsRequestHandler
     AddDocumentActionsRequest body =
         JsonToObject.fromJson(awsservice, event, AddDocumentActionsRequest.class);
 
-    List<Action> actions = body.actions().stream().map(new AddActionsToAction()).toList();
+    List<Action> actions = body.actions().stream()
+        .map(a -> new AddActionsToAction().apply(siteId, documentId, a)).toList();
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
     validateActions(awsservice, config, siteId, actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    service.saveNewActions(siteId, documentId, actions);
+    service.saveNewActions(actions);
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);

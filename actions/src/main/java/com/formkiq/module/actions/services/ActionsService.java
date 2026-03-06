@@ -23,10 +23,13 @@
  */
 package com.formkiq.module.actions.services;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -36,6 +39,13 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 public interface ActionsService {
+
+  /**
+   * Delete {@link Action}.
+   * 
+   * @param actions {@link Collection} {@link Action}
+   */
+  void deleteActions(Collection<Action> actions);
 
   /**
    * Delete Document Actions.
@@ -122,12 +132,26 @@ public interface ActionsService {
    * Insert {@link Action}.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
    * @param currentAction {@link Action}
-   * @param insertedAction {@link Action}
+   * @param insertedAction {@link ActionBuilder}
    */
-  void insertBeforeAction(String siteId, String documentId, Action currentAction,
-      Action insertedAction);
+  void insertBeforeAction(String siteId, Action currentAction, ActionBuilder insertedAction);
+
+  /**
+   * Return the next ULID value (index + 1).
+   *
+   * @param index {@link String} ULID
+   * @return next ULID
+   */
+  String nextIndex(String index);
+
+  /**
+   * Get Previous Index.
+   * 
+   * @param index {@link String}
+   * @return {@link String}
+   */
+  String previousIndex(String index);
 
   /**
    * Save {@link Action}.
@@ -147,30 +171,23 @@ public interface ActionsService {
 
   /**
    * Save {@link List} {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
+   *
    * @param actions {@link List} {@link Action}
    * @return {@link List} {@link Map}
    */
-  List<Map<String, AttributeValue>> saveNewActions(String siteId, String documentId,
-      List<Action> actions);
+  List<Map<String, AttributeValue>> saveNewActions(List<Action> actions);
 
   /**
-   * Update {@link Action} {@link ActionStatus}.
+   * Update {@link Action}.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
    * @param action {@link Action}
    */
-  void updateActionStatus(String siteId, String documentId, Action action);
+  void updateAction(Action action);
 
   /**
-   * Update Document Workflow Status.
+   * Update {@link Collection} {@link Action}.
    * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param action {@link Action}
+   * @param actions {@link Collection} {@link Action}
    */
-  void updateDocumentWorkflowStatus(String siteId, String documentId, Action action);
+  void updateActions(Collection<Action> actions);
 }

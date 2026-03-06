@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -162,9 +163,9 @@ public class FullTextAction implements DocumentAction {
 
     } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
 
-      Action ocrAction = new Action().userId("System").type(ActionType.OCR)
-          .parameters(Map.of("ocrEngine", "tesseract"));
-      this.actionsService.insertBeforeAction(siteId, documentId, action, ocrAction);
+      ActionBuilder ocrAction = new ActionBuilder().documentId(documentId).userId("System")
+          .type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
+      this.actionsService.insertBeforeAction(siteId, action, ocrAction);
 
     } else {
       throw new IOException("no OCR document found");

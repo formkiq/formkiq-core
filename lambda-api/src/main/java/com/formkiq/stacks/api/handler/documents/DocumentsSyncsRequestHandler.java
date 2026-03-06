@@ -46,7 +46,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -147,8 +147,8 @@ public class DocumentsSyncsRequestHandler
 
     if (DocumentSyncType.CONTENT.equals(sync.getType()) && isActionService(sync.getService())) {
 
-      actionsService.saveNewActions(siteId, documentId, List.of(new Action().documentId(documentId)
-          .type(ActionType.FULLTEXT).userId(authorization.getUsername())));
+      actionsService.saveNewActions(List.of(new ActionBuilder().indexUlid().documentId(documentId)
+          .type(ActionType.FULLTEXT).userId(authorization.getUsername()).build(siteId)));
 
     } else {
       DocumentSyncService service = awsservice.getExtension(DocumentSyncService.class);

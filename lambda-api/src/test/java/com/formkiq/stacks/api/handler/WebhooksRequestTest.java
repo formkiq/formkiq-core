@@ -393,7 +393,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     String ttl = "87400";
 
     ConfigService configService = getAwsServices().getExtension(ConfigService.class);
-    SiteConfiguration config = SiteConfiguration.builder().webhookTimeToLive(ttl).build(null);
+    SiteConfiguration config =
+        SiteConfiguration.builder().webhookTimeToLive(ttl).build((String) null);
     configService.save(null, config);
 
     // when
@@ -420,7 +421,7 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
 
     // given
     ttl = "-87400";
-    config = SiteConfiguration.builder().webhookTimeToLive(ttl).build(null);
+    config = SiteConfiguration.builder().webhookTimeToLive(ttl).build((String) null);
     configService.save(null, config);
 
     // when

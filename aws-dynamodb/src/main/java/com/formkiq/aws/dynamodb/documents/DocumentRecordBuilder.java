@@ -102,9 +102,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   }
 
   @Override
-  public DocumentRecord build(final String siteId) {
-    DynamoDbKey key = buildKey(siteId);
-
+  public DocumentRecord build(final DynamoDbKey key) {
     updateDeepLink();
     Collection<DocumentMetadata> documentMetadata = updateDefaultValues();
 
@@ -121,6 +119,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         ps(userId, prev, "userId"), ps(version, prev, "version"), ps(width, prev, "width"),
         ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"), insertedDate,
         lastModifiedDate, documentMetadata);
+  }
+
+  @Override
+  public DocumentRecord build(final String siteId) {
+    DynamoDbKey key = buildKey(siteId);
+    return build(key);
   }
 
   /**

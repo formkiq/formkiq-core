@@ -164,6 +164,14 @@ public class DynamoDbAttributeMapBuilder {
     return this;
   }
 
+  public DynamoDbAttributeMapBuilder withInteger(final String name, final Integer value) {
+    if (value != null) {
+      attributes.put(name, AttributeValue.builder().n(String.valueOf(value)).build());
+    }
+    return this;
+
+  }
+
   /**
    * Add Attribute {@link List}.
    * 
@@ -185,7 +193,6 @@ public class DynamoDbAttributeMapBuilder {
       attributes.put(name, AttributeValue.builder().n(String.valueOf(value)).build());
     }
     return this;
-
   }
 
   /**
@@ -213,6 +220,16 @@ public class DynamoDbAttributeMapBuilder {
       Map<String, AttributeValue> map = new MapToAttributeValue().apply(value);
       attributes.put(name, AttributeValue.builder().m(map).build());
     }
+    return this;
+  }
+
+  public DynamoDbAttributeMapBuilder withMapObject(final String name,
+      final Map<String, Object> value) {
+    if (value != null) {
+      Map<String, AttributeValue> map = new MapToAttributeValue().apply(value);
+      attributes.put(name, AttributeValue.builder().m(map).build());
+    }
+
     return this;
   }
 

@@ -34,7 +34,7 @@ import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
@@ -414,8 +414,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       addParameter(event, "actionStatus", "pending");
 
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
-      actions.saveAction(siteId,
-          new Action().index("0").type(ActionType.OCR).documentId(documentId).userId("joe"));
+      actions.saveAction(siteId, new ActionBuilder().index("0").type(ActionType.OCR)
+          .documentId(documentId).userId("joe").build(siteId));
 
       // when
       String response = handleRequest(event);
@@ -1098,7 +1098,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
           obj.getString("body"));
     }
   }
@@ -1121,7 +1121,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       // then
       assertEquals("400.0", obj.getString("statusCode"));
-      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+      assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
           obj.getString("body"));
     }
   }

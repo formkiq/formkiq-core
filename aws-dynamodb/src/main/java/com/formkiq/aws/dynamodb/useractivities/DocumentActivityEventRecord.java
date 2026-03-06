@@ -118,6 +118,11 @@ public record DocumentActivityEventRecord(DynamoDbKey key, String siteId, String
     }
 
     @Override
+    public DocumentActivityEventRecord build(final DynamoDbKey key) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public DocumentActivityEventRecord build(final String siteId) {
       DynamoDbKey key = buildKey(siteId);
       return new DocumentActivityEventRecord(key, getSiteIdName(siteId), documentId, new Date(),

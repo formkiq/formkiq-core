@@ -106,7 +106,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // given
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
     SiteConfiguration siteConfig =
-        SiteConfiguration.builder().chatGptApiKey("somevalue").build(null);
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build((String) null);
     configService.save(null, siteConfig);
 
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
@@ -234,7 +234,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     SiteConfiguration siteConfig = SiteConfiguration.builder().maxDocuments("5").maxWebhooks("10")
-        .ocr(new SiteConfigurationOcr(-1, 2)).build(null);
+        .ocr(new SiteConfigurationOcr(-1, 2)).build((String) null);
     configService.save(siteId, siteConfig);
 
     configService.increment(siteId, ConfigService.DOCUMENT_COUNT);

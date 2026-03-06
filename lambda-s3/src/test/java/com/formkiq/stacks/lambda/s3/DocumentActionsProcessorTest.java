@@ -39,6 +39,7 @@ import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -55,6 +56,7 @@ import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -134,9 +136,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -552,6 +554,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
     s3Service.deleteAllFiles(BUCKET_NAME);
   }
 
+  private ActionBuilder createAction(final String documentId, final ActionType actionType) {
+    return new ActionBuilder().type(actionType).documentId(documentId).indexUlid().userId("joe");
+  }
+
   private String createDocument2(final String siteId, final String contentType) {
     String documentId = ID.uuid();
     return createDocument2(siteId, documentId, contentType);
@@ -612,9 +618,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       final String contentType, final MappingRecord mappingRecord) throws ValidationException {
     createDocument2(siteId, documentId, contentType);
 
-    List<Action> actions = List.of(new Action().type(ActionType.IDP).userId("joe")
-        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())));
-    actionsService.saveNewActions(siteId, documentId, actions);
+    List<Action> actions = List.of(createAction(documentId, ActionType.IDP)
+        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())).build(siteId));
+    actionsService.saveNewActions(actions);
 
     AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -625,9 +631,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   // Helper method to create and process a resize action.
   private void processResizeAction(final String siteId, final String documentId,
       final Map<String, Object> parameters) {
-    List<Action> actions = Collections
-        .singletonList(new Action().type(ActionType.RESIZE).userId("joe").parameters(parameters));
-    actionsService.saveNewActions(siteId, documentId, actions);
+    List<Action> actions =
+        List.of(createAction(documentId, ActionType.RESIZE).parameters(parameters).build(siteId));
+    actionsService.saveNewActions(actions);
 
     AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -637,6 +643,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private void removeAllS3Objects() {
     s3Service.deleteAllFiles(BUCKET_NAME);
   }
+
 
   // Helper method to set up an image document for testing.
   private String setupImageDocument(final String siteId, final String imageFormat)
@@ -659,7 +666,6 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     return documentId;
   }
-
 
   /**
    * Handle Checksum Action.
@@ -706,10 +712,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -750,10 +759,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -800,10 +812,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "unknown", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "unknown", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -846,10 +861,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -918,10 +936,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -988,10 +1009,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1054,10 +1078,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(new Action().type(ActionType.DOCUMENTTAGGING).userId("joe")
+      List<Action> actions = List.of(createAction(documentId, ActionType.DOCUMENTTAGGING)
           .parameters(Map.of("engine", "chatgpt", "tags",
-              "document type,meeting date,chairperson,secretary,board members,resolutions")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+              "document type,meeting date,chairperson,secretary,board members,resolutions"))
+          .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1126,10 +1151,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
           "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(
-          new Action().type(ActionType.DOCUMENTTAGGING).userId("joe").parameters(Map.of("engine",
-              "chatgpt", "tags", "Organization,location,person,subject,sentiment,document type")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1194,9 +1222,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
       documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
 
-      List<Action> actions = List.of(new Action().type(ActionType.EVENTBRIDGE)
-          .parameters(Map.of("eventBusName", eventBusName)).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.EVENTBRIDGE)
+          .parameters(Map.of("eventBusName", eventBusName)).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1222,16 +1250,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testGetOcrParseTypes01() {
     AddOcrAction ocrAction = new AddOcrAction(serviceCache);
-    assertEquals("[TEXT]", ocrAction.getOcrParseTypes(new Action()).toString());
+    ActionBuilder action =
+        new ActionBuilder().documentId(ID.uuid()).userId("joe").indexUlid().type(ActionType.OCR);
+    assertEquals("[TEXT]", ocrAction.getOcrParseTypes(action.build((String) null)).toString());
 
     // invalid
     Map<String, Object> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
+    action.parameters(parameters);
     assertEquals("[ADAD, IUJK]",
-        ocrAction.getOcrParseTypes(new Action().parameters(parameters)).toString());
+        ocrAction.getOcrParseTypes(action.build((String) null)).toString());
 
     parameters = Map.of("ocrParseTypes", "tEXT, forms, TABLES");
+    action.parameters(parameters);
     assertEquals("[TEXT, FORMS, TABLES]",
-        ocrAction.getOcrParseTypes(new Action().parameters(parameters)).toString());
+        ocrAction.getOcrParseTypes(action.build((String) null)).toString());
   }
 
   /**
@@ -1243,10 +1275,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = List.of(new Action().type(ActionType.OCR).userId("joe")
-          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2",
-              "ocrOutputType", "CSV")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(
+              createAction(documentId, ActionType.OCR)
+                  .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages",
+                      "2", "ocrOutputType", "CSV"))
+                  .documentId(documentId).indexUlid().build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1281,8 +1316,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = createDocument2(siteId, "text/plain");
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1315,8 +1350,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = createDocument2(siteId, DOCUMENT_ID_OCR, "application/pdf");
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1346,8 +1381,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1378,9 +1413,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = List.of(new Action().type(ActionType.WEBHOOK).userId("joe")
-          .parameters(Map.of("url", URL + "/callback")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.WEBHOOK)
+          .parameters(Map.of("url", URL + "/callback")).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1434,10 +1469,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.saveDocument(siteId, item, tags);
 
       List<Action> actions = Arrays.asList(
-          new Action().type(ActionType.ANTIVIRUS).userId("joe").status(ActionStatus.COMPLETE),
-          new Action().type(ActionType.WEBHOOK).userId("joe")
-              .parameters(Map.of("url", URL + "/callback")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+          createAction(documentId, ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE)
+              .build(siteId),
+          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1493,8 +1529,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1529,11 +1565,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          new Action().status(ActionStatus.RUNNING).type(ActionType.WEBHOOK).userId("joe")
-              .parameters(Map.of("url", URL + "/callback")),
-          new Action().type(ActionType.WEBHOOK).userId("joe")
-              .parameters(Map.of("url", URL + "/callback2")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+          createAction(documentId, ActionType.WEBHOOK).status(ActionStatus.RUNNING)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1563,11 +1599,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          new Action().status(ActionStatus.FAILED).type(ActionType.WEBHOOK).userId("joe")
-              .parameters(Map.of("url", URL + "/callback")),
-          new Action().type(ActionType.WEBHOOK).userId("joe")
-              .parameters(Map.of("url", URL + "/callback2")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+          createAction(documentId, ActionType.WEBHOOK).status(ActionStatus.FAILED)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1606,8 +1642,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         // given
         String documentId = createDocument2(siteId, "application/pdf");
 
-        List<Action> actions = List.of(new Action().type(type).userId("joe"));
-        actionsService.saveNewActions(siteId, documentId, actions);
+        List<Action> actions = List.of(createAction(documentId, type).build(siteId));
+        actionsService.saveNewActions(actions);
 
         AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1718,8 +1754,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1749,9 +1785,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          new Action().type(ActionType.OCR).status(ActionStatus.COMPLETE).userId("joe"),
-          new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+          createAction(documentId, ActionType.OCR).status(ActionStatus.COMPLETE).build(siteId),
+          createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1781,8 +1817,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = createDocument2(siteId, DOCUMENT_ID_404, "text/plain");
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1813,8 +1849,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = createDocument2(siteId, DOCUMENT_ID_429, "text/plain");
-      List<Action> actions = List.of(new Action().type(ActionType.FULLTEXT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1855,9 +1891,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Map<String, Object>> queries =
           List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
       String documentId = ID.uuid();
-      List<Action> actions = List.of(new Action().type(ActionType.OCR).userId("joe").parameters(
-          Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries)));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.OCR)
+          .parameters(
+              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries))
+          .build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2713,8 +2751,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2743,8 +2781,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       String documentId = createDocument2(siteId, "text/plain");
 
-      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2777,8 +2815,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions = List.of(new Action().type(ActionType.PDFEXPORT).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2816,8 +2854,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      List<Action> actions = List.of(new Action().type(ActionType.PUBLISH).userId("joe"));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions = List.of(createAction(documentId, ActionType.PUBLISH).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2860,9 +2898,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = ID.uuid();
       String name = "testqueue#" + documentId;
 
-      List<Action> actions = Collections
-          .singletonList(new Action().type(ActionType.QUEUE).userId("joe").queueId(name));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      Action action = createAction(documentId, ActionType.QUEUE).queueId(name).build(siteId);
+      List<Action> actions = List.of(action);
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -2870,8 +2908,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      assertEquals(ActionStatus.IN_QUEUE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+      var raction = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionStatus.IN_QUEUE, raction.status());
+      assertEquals(SiteIdKeyGenerator.createDatabaseKey(siteId, "actions#IN_QUEUE#"),
+          raction.key().gsi2Pk());
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      assertEquals(df.format(action.insertedDate()), df.format(raction.insertedDate()));
     }
   }
 

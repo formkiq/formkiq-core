@@ -1043,7 +1043,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
             e.getResponseBody());
       }
     }

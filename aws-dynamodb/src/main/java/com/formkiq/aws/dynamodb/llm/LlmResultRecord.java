@@ -124,12 +124,17 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     }
 
     @Override
+    public LlmResultRecord build(final DynamoDbKey key) {
+      return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
+          attributes, userId);
+    }
+
+    @Override
     public LlmResultRecord build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       DynamoDbKey key = buildKey(siteId);
-      return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
-          attributes, userId);
+      return build(key);
     }
 
     @Override

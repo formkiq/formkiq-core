@@ -189,7 +189,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     SiteConfiguration siteConfig =
-        SiteConfiguration.builder().chatGptApiKey("somevalue").build(null);
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build((String) null);
     this.config.save(null, siteConfig);
 
     // when
@@ -216,7 +216,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     SiteConfiguration siteConfig0 =
-        SiteConfiguration.builder().chatGptApiKey("somevalue").build(null);
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build((String) null);
     this.config.save(null, siteConfig0);
 
     SiteConfiguration siteConfig1 =

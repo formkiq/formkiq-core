@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.ocr.AwsTextractQuery;
 import com.formkiq.module.ocr.OcrEngine;
 import com.formkiq.module.ocr.OcrOutputType;
@@ -33,23 +34,29 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Convert {@link Map} to {@link Action}.
  */
-public class AddActionsToAction implements Function<AddAction, Action> {
+public class AddActionsToAction {
 
-  @Override
-  public Action apply(final AddAction addAction) {
+  /**
+   * Convert {@link AddAction} to {@link Action}.
+   * 
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param addAction {@link AddAction}
+   * @return {@link Action}
+   */
+  public Action apply(final String siteId, final String documentId, final AddAction addAction) {
 
     String userId = ApiAuthorization.getAuthorization().getUsername();
 
     Map<String, Object> parameters = createMap(addAction.parameters());
-    return new Action().queueId(addAction.queueId()).type(addAction.type()).parameters(parameters)
-        .userId(userId);
+    return new ActionBuilder().documentId(documentId).indexUlid().queueId(addAction.queueId())
+        .type(addAction.type()).parameters(parameters).userId(userId).build(siteId);
   }
 
   private Map<String, Object> createMap(final AddActionParameters parameters) {

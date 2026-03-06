@@ -112,6 +112,11 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
     return builder.attributes(attributes).build(siteId);
   }
 
+  @Override
+  public EntityRecord build(final DynamoDbKey key) {
+    return builder.attributes(attributes).build(key);
+  }
+
   private void validate() {
     ValidationBuilder vb = new ValidationBuilder();
 
