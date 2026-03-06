@@ -125,7 +125,7 @@ public class DocumentsActionsRetryRequestHandler
           .map(a -> new ActionBuilder().action(a).userId(userId).indexUlid().build(siteId))
           .forEach(toSave::add);
 
-      service.saveActions(siteId, toSave);
+      service.saveNewActions(toSave);
 
       var notificationService = awsservice.getExtension(ActionsNotificationService.class);
       notificationService.publishNextActionEvent(siteId, documentId);

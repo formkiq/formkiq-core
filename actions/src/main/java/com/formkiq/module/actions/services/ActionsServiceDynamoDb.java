@@ -26,7 +26,7 @@ package com.formkiq.module.actions.services;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
+
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -56,11 +56,9 @@ import com.formkiq.module.actions.ActionType;
 import com.github.f4b6a3.ulid.Ulid;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * 
@@ -228,29 +226,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     String index = previousIndex(currentAction.index());
     insertedAction.index(index).insertedDate(new Date());
-    saveAction(siteId, insertedAction.build(siteId));
-  }
-
-  @Override
-  public String nextIndex(final String index) {
-
-    Ulid ulid = Ulid.from(index);
-
-    long msb = ulid.getMostSignificantBits();
-    long lsb = ulid.getLeastSignificantBits();
-
-    if (lsb == -1L) {
-      lsb = 0L;
-      msb += 1;
-    } else {
-      lsb += 1;
-    }
-
-    if (msb < 0) {
-      throw new IllegalArgumentException("No larger ULID exists");
-    }
-
-    return new Ulid(msb, lsb).toString();
+    saveNewActions(List.of(insertedAction.build(siteId)));
   }
 
   @Override
@@ -319,31 +295,6 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
         .sorted(new ActionIndexComparator()).collect(Collectors.toList());
 
     return new Pagination<>(actions, response.lastEvaluatedKey());
-  }
-
-  @Override
-  public void saveAction(final String siteId, final Action action) {
-    saveActions(siteId, List.of(action));
-  }
-
-  @Override
-  public void saveActions(final String siteId, final List<Action> actions) {
-
-    List<Map<String, AttributeValue>> values = new ArrayList<>();
-
-    for (Action action : actions) {
-
-      Map<String, AttributeValue> valueMap = action.getAttributes();
-      values.add(valueMap);
-    }
-
-    if (!values.isEmpty()) {
-      Map<String, Collection<WriteRequest>> items =
-          new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
-
-      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
-      this.dbClient.batchWriteItem(batch);
-    }
   }
 
   @Override

@@ -138,36 +138,12 @@ public interface ActionsService {
   void insertBeforeAction(String siteId, Action currentAction, ActionBuilder insertedAction);
 
   /**
-   * Return the next ULID value (index + 1).
-   *
-   * @param index {@link String} ULID
-   * @return next ULID
-   */
-  String nextIndex(String index);
-
-  /**
    * Get Previous Index.
    * 
    * @param index {@link String}
    * @return {@link String}
    */
   String previousIndex(String index);
-
-  /**
-   * Save {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param action {@link Action}
-   */
-  void saveAction(String siteId, Action action);
-
-  /**
-   * Save {@link Action}.
-   * 
-   * @param siteId {@link String}
-   * @param actions {@link List} {@link Action}
-   */
-  void saveActions(String siteId, List<Action> actions);
 
   /**
    * Save {@link List} {@link Action}.
