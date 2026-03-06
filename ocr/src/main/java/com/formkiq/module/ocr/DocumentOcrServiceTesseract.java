@@ -42,6 +42,7 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionTypePredicate;
@@ -362,10 +363,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     Optional<Action> o =
         actions.stream().filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
-    if (o.isPresent()) {
-      o.get().status(actionStatus);
-      service.updateActionStatus(siteId, documentId, o.get());
-    }
+    o.ifPresent(a -> {
+      var action = new ActionBuilder().action(a).status(actionStatus).build(siteId);
+      service.updateAction(action);
+    });
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);

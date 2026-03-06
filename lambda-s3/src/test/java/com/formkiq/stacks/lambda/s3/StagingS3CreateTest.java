@@ -74,6 +74,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.sns.SnsService;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
@@ -1292,8 +1293,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("joesmith", actions.get(1).userId());
       assertNotNull(actions.get(1).insertedDate());
 
-      actions.get(0).status(ActionStatus.COMPLETE);
-      actionsService.saveNewActions(siteId, documentId, actions);
+      actionsService.saveNewActions(actions);
 
       // given
       data.put("actions", List
@@ -1404,8 +1404,9 @@ public class StagingS3CreateTest implements DbKeys {
           Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
               new DocumentTag(documentId, "category", "person", new Date(), userId)));
 
-      actionsService.saveNewActions(siteId, documentId, List
-          .of(new Action().type(ActionType.FULLTEXT).userId("joe").status(ActionStatus.COMPLETE)));
+      actionsService
+          .saveNewActions(List.of(new ActionBuilder().type(ActionType.FULLTEXT).userId("joe")
+              .documentId(documentId).indexUlid().status(ActionStatus.COMPLETE).build(siteId)));
 
       TimeUnit.SECONDS.sleep(1);
 
@@ -1519,7 +1520,7 @@ public class StagingS3CreateTest implements DbKeys {
    * @throws ValidationException ValidationException
    */
   @Test
-  // @Timeout(value = TEST_TIMEOUT)
+  @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension15() throws IOException, ValidationException {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {

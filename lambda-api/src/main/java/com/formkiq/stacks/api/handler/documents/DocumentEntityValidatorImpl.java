@@ -28,6 +28,8 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -85,11 +87,15 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
     initActionsValidator(awsservice);
 
-    List<Action> actions = item.getActions();
+    List<Action> actions = notNull(item.getActions()).stream()
+        .map(a -> new ActionBuilder().action(a).status(ActionStatus.PENDING)
+            .userId(authorization.getUsername()).documentId(item.getDocumentId()).indexUlid()
+            .build(siteId))
+        .toList();
 
-    if (!notNull(actions).isEmpty()) {
+    if (!actions.isEmpty()) {
 
-      actions.forEach(a -> a.userId(authorization.getUsername()));
+      item.setActions(actions);
 
       for (Action action : actions) {
         errors.addAll(this.actionsValidator.validation(siteId, action, config.chatGptApiKey(),

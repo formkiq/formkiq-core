@@ -23,614 +23,185 @@
  */
 package com.formkiq.module.actions;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.graalvm.annotations.Reflectable;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.AttributeValueToMap;
-import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamodbRecord;
-import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
-import com.formkiq.graalvm.annotations.Reflectable;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-
 /**
- * Action.
+ * Record representing an Action, with its DynamoDB key structure and metadata.
  */
 @Reflectable
-public class Action implements DynamodbRecord<Action>, DbKeys {
+public record Action(DynamoDbKey key, String documentId, String index, ActionType type,
+    ActionStatus status, String userId, String message, String queueId, String workflowId,
+    String workflowLastStep, String workflowStepId, Map<String, String> metadata,
+    Map<String, Object> parameters, Integer retryCount, Integer maxRetries, Date insertedDate,
+    Date startDate, Date completedDate) {
 
-  /** Record Completed date. */
-  @Reflectable
-  private Date completedDate;
-  /** DocumentId. */
-  @Reflectable
-  private String documentId;
-  /** Index. */
-  @Reflectable
-  private String index = null;
-  /** Record inserted date. */
-  @Reflectable
-  private Date insertedDate;
-  /** Action Message. */
-  @Reflectable
-  private String message;
-  /** Action Metadata. */
-  @Reflectable
-  private Map<String, String> metadata;
-  /** Action Parameters. */
-  @Reflectable
-  private Map<String, Object> parameters;
-  /** QueueId. */
-  @Reflectable
-  private String queueId;
-  /** Record Start date. */
-  @Reflectable
-  private Date startDate;
-  /** Is Action Completed. */
-  @Reflectable
-  private ActionStatus status;
-  /** Type of Action. */
-  @Reflectable
-  private ActionType type;
-  /** UserId. */
-  @Reflectable
-  private String userId;
-  /** WorkflowId. */
-  @Reflectable
-  private String workflowId;
-  /** Workflow Last Step. */
-  @Reflectable
-  private String workflowLastStep;
-  /** Workflow Step Id. */
-  @Reflectable
-  private String workflowStepId;
-  /** Retry Count. */
-  @Reflectable
-  private Integer retryCount;
-  /** Max Retries. */
-  @Reflectable
-  private Integer maxRetries;
+  /** DynamoDB attribute name for document id. */
+  private static final String ATTR_DOCUMENT_ID = "documentId";
+  /** DynamoDB attribute name for type. */
+  private static final String ATTR_TYPE = "type";
+  /** DynamoDB attribute name for status. */
+  private static final String ATTR_STATUS = "status";
+  /** DynamoDB attribute name for user id. */
+  private static final String ATTR_USER_ID = "userId";
+  /** DynamoDB attribute name for message. */
+  private static final String ATTR_MESSAGE = "message";
+  /** DynamoDB attribute name for queue id. */
+  private static final String ATTR_QUEUE_ID = "queueId";
+  /** DynamoDB attribute name for workflow id. */
+  private static final String ATTR_WORKFLOW_ID = "workflowId";
+  /** DynamoDB attribute name for workflow last step. */
+  private static final String ATTR_WORKFLOW_LAST_STEP = "workflowLastStep";
+  /** DynamoDB attribute name for workflow step id. */
+  private static final String ATTR_WORKFLOW_STEP_ID = "workflowStepId";
+  /** DynamoDB attribute name for metadata. */
+  private static final String ATTR_METADATA = "metadata";
+  /** DynamoDB attribute name for parameters. */
+  private static final String ATTR_PARAMETERS = "parameters";
+  /** DynamoDB attribute name for retry count. */
+  private static final String ATTR_RETRY_COUNT = "retryCount";
+  /** DynamoDB attribute name for max retries. */
+  private static final String ATTR_MAX_RETRIES = "maxRetries";
+  /** DynamoDB attribute name for inserted date. */
+  private static final String ATTR_INSERTED_DATE = "inserteddate";
+  /** DynamoDB attribute name for completed date. */
+  private static final String ATTR_COMPLETED_DATE = "completedDate";
+  /** DynamoDB attribute name for start date. */
+  private static final String ATTR_START_DATE = "startDate";
 
   /**
-   * constructor.
+   * Canonical constructor to enforce non-null properties and defensive copy of dates.
    */
-  public Action() {
-    this.status = ActionStatus.PENDING;
+  public Action {
+    if (insertedDate != null) {
+      insertedDate = new Date(insertedDate.getTime());
+    }
+    if (startDate != null) {
+      startDate = new Date(startDate.getTime());
+    }
+    if (completedDate != null) {
+      completedDate = new Date(completedDate.getTime());
+    }
   }
 
   /**
-   * Get Completed Date.
-   * 
-   * @return {@link Date}
+   * Constructs an {@code ActionRecord} from a map of DynamoDB attributes.
+   *
+   * @param attributes the map of attribute names to {@link AttributeValue}
+   * @return a new {@code ActionRecord} instance, or {@code null} if {@code attributes} is null or
+   *         empty
    */
-  public Date completedDate() {
-    return this.completedDate;
-  }
+  public static Action fromAttributeMap(final Map<String, AttributeValue> attributes) {
 
-  /**
-   * Set Completed Date.
-   * 
-   * @param date {@link Date}
-   * @return {@link Action}
-   */
-  public Action completedDate(final Date date) {
-    this.completedDate = date;
-    return this;
-  }
+    if (attributes != null && !attributes.isEmpty()) {
+      DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
-  /**
-   * Get DocumentId.
-   * 
-   * @return {@link String}
-   */
-  public String documentId() {
-    return this.documentId;
-  }
+      String documentId = DynamoDbTypes.toString(attributes.get(ATTR_DOCUMENT_ID));
+      String userId = DynamoDbTypes.toString(attributes.get(ATTR_USER_ID));
+      String message = DynamoDbTypes.toString(attributes.get(ATTR_MESSAGE));
+      String queueId = DynamoDbTypes.toString(attributes.get(ATTR_QUEUE_ID));
+      String workflowId = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_ID));
+      String workflowLastStep = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_LAST_STEP));
+      String workflowStepId = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_STEP_ID));
 
-  /**
-   * Set Document Id.
-   * 
-   * @param id {@link String}
-   * @return {@link Action}
-   */
-  public Action documentId(final String id) {
-    this.documentId = id;
-    return this;
-  }
+      ActionStatus status = attributes.containsKey(ATTR_STATUS)
+          ? ActionStatus.valueOf(DynamoDbTypes.toString(attributes.get(ATTR_STATUS)))
+          : ActionStatus.PENDING;
 
-  @Override
-  public Map<String, AttributeValue> getAttributes(final String siteId) {
+      ActionType type = attributes.containsKey(ATTR_TYPE)
+          ? ActionType.valueOf(DynamoDbTypes.toString(attributes.get(ATTR_TYPE)))
+          : null;
 
-    Map<String, AttributeValue> attrs =
-        new HashMap<>(Map.of(DbKeys.PK, fromS(pk(siteId)), DbKeys.SK, fromS(sk()), "type",
-            fromS(this.type.name()), "status", fromS(this.status.name()), "documentId",
-            fromS(this.documentId), "userId", fromS(this.userId)));
+      Integer retryCount = DynamoDbTypes.toInteger(attributes.get(ATTR_RETRY_COUNT));
+      Integer maxRetries = DynamoDbTypes.toInteger(attributes.get(ATTR_MAX_RETRIES));
 
-    addMobject(attrs, "parameters", this.parameters);
-    addM(attrs, "metadata", this.metadata);
+      Date insertedDate = DynamoDbTypes.toDate(attributes.get(ATTR_INSERTED_DATE));
+      Date completedDate = DynamoDbTypes.toDate(attributes.get(ATTR_COMPLETED_DATE));
+      Date startDate = DynamoDbTypes.toDate(attributes.get(ATTR_START_DATE));
 
-    String pkGsi1 = pkGsi1(siteId);
-    String skGsi1 = skGsi1();
+      Map<String, Object> parameters = null;
+      if (attributes.containsKey(ATTR_PARAMETERS) && attributes.get(ATTR_PARAMETERS).hasM()) {
+        parameters = new AttributeValueToMap().apply(attributes.get(ATTR_PARAMETERS).m());
+      }
 
-    if (pkGsi1 != null && skGsi1 != null) {
-      attrs.put(GSI1_PK, fromS(pkGsi1));
-      attrs.put(GSI1_SK, fromS(skGsi1));
+      Map<String, String> metadata = null;
+      if (attributes.containsKey(ATTR_METADATA) && attributes.get(ATTR_METADATA).hasM()) {
+        metadata = attributes.get(ATTR_METADATA).m().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
+      }
+
+      String index = calculateIndex(attributes);
+
+      return new Action(key, documentId, index, type, status, userId, message, queueId, workflowId,
+          workflowLastStep, workflowStepId, metadata, parameters, retryCount, maxRetries,
+          insertedDate, startDate, completedDate);
     }
 
-    String pkGsi2 = pkGsi2(siteId);
-    String skGsi2 = skGsi2();
-
-    if (pkGsi2 != null && skGsi2 != null) {
-      attrs.put(GSI2_PK, fromS(pkGsi2));
-      attrs.put(GSI2_SK, fromS(skGsi2));
-    }
-
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
-    if (this.insertedDate != null) {
-      attrs.put("inserteddate", AttributeValue.fromS(df.format(this.insertedDate)));
-    }
-
-    if (this.completedDate != null) {
-      attrs.put("completedDate", AttributeValue.fromS(df.format(this.completedDate)));
-    }
-
-    if (this.startDate != null) {
-      attrs.put("startDate", AttributeValue.fromS(df.format(this.startDate)));
-    }
-
-    addN(attrs, "retryCount", this.retryCount);
-    addN(attrs, "maxRetries", this.maxRetries);
-    addS(attrs, "message", this.message);
-    addS(attrs, "queueId", this.queueId);
-    addS(attrs, "workflowId", this.workflowId);
-    addS(attrs, "workflowLastStep", this.workflowLastStep);
-    addS(attrs, "workflowStepId", this.workflowStepId);
-
-    return attrs;
-  }
-
-  @Override
-  public Map<String, AttributeValue> getDataAttributes() {
     return null;
   }
 
-  private Date getDate(final SimpleDateFormat df, final Map<String, AttributeValue> attrs,
-      final String key) {
-
-    Date date = null;
-
-    if (attrs.containsKey(key)) {
-      try {
-        date = df.parse(ss(attrs, key));
-      } catch (ParseException e) {
-        // ignore
+  /**
+   * index is encoded in SK as: action|index|type.
+   * 
+   * @param attributes {@link Map}
+   * @return {@link String}
+   */
+  private static String calculateIndex(final Map<String, AttributeValue> attributes) {
+    String index = null;
+    if (attributes.containsKey(DbKeys.SK)) {
+      String[] parts =
+          DynamoDbTypes.toString(attributes.get(DbKeys.SK)).split(DbKeys.TAG_DELIMINATOR);
+      if (parts.length > 1) {
+        index = parts[1];
       }
     }
-
-    return date;
-  }
-
-  @Override
-  public Action getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
-
-    Action record = new Action().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
-        .message(ss(attrs, "message")).queueId(ss(attrs, "queueId"))
-        .workflowId(ss(attrs, "workflowId")).workflowLastStep(ss(attrs, "workflowLastStep"))
-        .workflowStepId(ss(attrs, "workflowStepId")).retryCount(toInt(attrs, "retryCount"))
-        .maxRetries(toInt(attrs, "maxRetries"));
-
-    if (attrs.containsKey("status")) {
-      record.status(ActionStatus.valueOf(ss(attrs, "status")));
-    }
-
-    if (attrs.containsKey("type")) {
-      record.type(ActionType.valueOf(ss(attrs, "type")));
-    }
-
-    if (attrs.containsKey("parameters")) {
-      Map<String, AttributeValue> params = attrs.get("parameters").m();
-      Map<String, Object> map = new AttributeValueToMap().apply(params);
-      record.parameters(map);
-    }
-
-    if (attrs.containsKey("metadata")) {
-      record.metadata(attrs.get("metadata").m().entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s())));
-    }
-
-    if (attrs.containsKey(SK)) {
-      record.index(attrs.get(SK).s().split(TAG_DELIMINATOR)[1]);
-    }
-
-    SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-
-    record = record.insertedDate(getDate(df, attrs, "inserteddate"));
-    record = record.completedDate(getDate(df, attrs, "completedDate"));
-    record = record.startDate(getDate(df, attrs, "startDate"));
-
-    return record;
+    return index;
   }
 
   /**
-   * Get Index.
-   * 
-   * @return {@link String}
-   */
-  public String index() {
-    return this.index;
-  }
-
-  /**
-   * Set Index.
+   * Builds the DynamoDB item attribute map for this action, starting from the key attributes and
+   * adding metadata fields.
    *
-   * @param idx int
-   * @return {@link Action}
+   * @return a map of attribute names to {@link AttributeValue} instances
    */
-  public Action index(final String idx) {
-    this.index = idx;
-    return this;
-  }
+  public Map<String, AttributeValue> getAttributes() {
+    var b = key.getAttributesBuilder().withString(ATTR_DOCUMENT_ID, documentId)
+        .withString(ATTR_USER_ID, userId).withString(ATTR_TYPE, type != null ? type.name() : null)
+        .withString(ATTR_STATUS, status.name()).withString(ATTR_MESSAGE, message)
+        .withString(ATTR_QUEUE_ID, queueId).withString(ATTR_WORKFLOW_ID, workflowId)
+        .withString(ATTR_WORKFLOW_LAST_STEP, workflowLastStep)
+        .withString(ATTR_WORKFLOW_STEP_ID, workflowStepId).withInteger(ATTR_RETRY_COUNT, retryCount)
+        .withInteger(ATTR_MAX_RETRIES, maxRetries);
 
-  /**
-   * Set Index to Ulid.
-   * 
-   * @return {@link Action}
-   */
-  public Action indexUlid() {
-    index(ID.ulid());
-    return this;
-  }
-
-  /**
-   * Get Inserted Date.
-   * 
-   * @return {@link Date}
-   */
-  public Date insertedDate() {
-    return this.insertedDate;
-  }
-
-  /**
-   * Set Inserted Date.
-   * 
-   * @param date {@link Date}
-   * @return {@link Action}
-   */
-  public Action insertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  /**
-   * Get Max Retries.
-   * 
-   * @return {@link Integer}
-   */
-  public Integer maxRetries() {
-    return maxRetries;
-  }
-
-  /**
-   * Set Max Retries.
-   * 
-   * @param count {@link Integer}
-   * @return {@link Action}
-   */
-  public Action maxRetries(final Integer count) {
-    this.maxRetries = count;
-    return this;
-  }
-
-  /**
-   * Get Action Message.
-   * 
-   * @return {@link String}
-   */
-  public String message() {
-    return this.message;
-  }
-
-  /**
-   * Set Action Message.
-   * 
-   * @param actionMessage {@link String}
-   * @return {@link Action}
-   */
-  public Action message(final String actionMessage) {
-    this.message = actionMessage;
-    return this;
-  }
-
-  /**
-   * Get Action Metadata.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, String> metadata() {
-    return this.metadata;
-  }
-
-  /**
-   * Set Action Metadata.
-   * 
-   * @param map {@link Map}
-   * @return {@link Action}
-   */
-  public Action metadata(final Map<String, String> map) {
-    this.metadata = map;
-    return this;
-  }
-
-  /**
-   * Get Action parameters {@link Map}.
-   * 
-   * @return {@link Map}
-   */
-  public Map<String, Object> parameters() {
-    return this.parameters;
-  }
-
-  /**
-   * Set Action parameters {@link Map}.
-   * 
-   * @param map {@link Map}
-   * @return {@link Action}
-   */
-  public Action parameters(final Map<String, Object> map) {
-    this.parameters = map;
-    return this;
-  }
-
-  @Override
-  public String pk(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return createDatabaseKey(siteId, PREFIX_DOCS + this.documentId);
-  }
-
-  @Override
-  public String pkGsi1(final String siteId) {
-
-    String pk = null;
-
-    if (this.status.equals(ActionStatus.IN_QUEUE)) {
-      pk = createDatabaseKey(siteId, "action#" + this.type + "#" + this.queueId);
+    if (metadata != null) {
+      b = b.withMapObject(ATTR_METADATA, new HashMap<>(metadata));
     }
 
-    return pk;
-  }
-
-  @Override
-  public String pkGsi2(final String siteId) {
-    String pk = null;
-
-    if (!ActionStatus.COMPLETE.equals(this.status)) {
-      pk = createDatabaseKey(siteId, "actions#" + this.status + "#");
-    }
-    return pk;
-  }
-
-  /**
-   * Get Queue Id.
-   * 
-   * @return {@link String}
-   */
-  public String queueId() {
-    return this.queueId;
-  }
-
-  /**
-   * Set Queue Id.
-   * 
-   * @param id {@link String}
-   * @return {@link Action}
-   */
-  public Action queueId(final String id) {
-    this.queueId = id;
-    return this;
-  }
-
-  /**
-   * Get Retry Count.
-   * 
-   * @return {@link Integer}
-   */
-  public Integer retryCount() {
-    return retryCount;
-  }
-
-  /**
-   * Set retry Count.
-   * 
-   * @param count {@link Integer}
-   * @return {@link Action}
-   */
-  public Action retryCount(final Integer count) {
-    this.retryCount = count;
-    return this;
-  }
-
-  @Override
-  public String sk() {
-    if (isEmpty(this.index)) {
-      throw new IllegalArgumentException("'index' is required");
-    }
-    if (this.type == null) {
-      throw new IllegalArgumentException("'type' is required");
-    }
-    return "action" + TAG_DELIMINATOR + this.index + TAG_DELIMINATOR + this.type.name();
-  }
-
-  @Override
-  public String skGsi1() {
-
-    String sk = null;
-    if (this.status.equals(ActionStatus.IN_QUEUE)) {
-      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      sk = "action#" + this.documentId + "#" + df.format(new Date());
+    if (parameters != null) {
+      b = b.withMapObject(ATTR_PARAMETERS, parameters);
     }
 
-    return sk;
-  }
-
-  @Override
-  public String skGsi2() {
-
-    String sk = null;
-
-    if (!ActionStatus.COMPLETE.equals(this.status)) {
-      sk = "action#" + this.documentId;
+    if (insertedDate != null) {
+      b = b.withDate(ATTR_INSERTED_DATE, insertedDate);
     }
 
-    return sk;
-  }
+    if (startDate != null) {
+      b = b.withDate(ATTR_START_DATE, startDate);
+    }
 
-  /**
-   * Get Start Date.
-   * 
-   * @return {@link Date}
-   */
-  public Date startDate() {
-    return this.startDate;
-  }
+    if (completedDate != null) {
+      b = b.withDate(ATTR_COMPLETED_DATE, completedDate);
+    }
 
-  /**
-   * Set Start Date.
-   * 
-   * @param date {@link Date}
-   * @return {@link Action}
-   */
-  public Action startDate(final Date date) {
-    this.startDate = date;
-    return this;
-  }
-
-  /**
-   * Get {@link ActionStatus}.
-   * 
-   * @return {@link ActionStatus}
-   */
-  public ActionStatus status() {
-    return this.status;
-  }
-
-  /**
-   * Set {@link ActionStatus}.
-   * 
-   * @param actionStatus {@link ActionStatus}
-   * @return {@link Action}
-   */
-  public Action status(final ActionStatus actionStatus) {
-    this.status = actionStatus;
-    return this;
-  }
-
-  /**
-   * Get {@link ActionType}.
-   * 
-   * @return {@link ActionType}
-   */
-  public ActionType type() {
-    return this.type;
-  }
-
-  /**
-   * Set {@link ActionType}.
-   * 
-   * @param actionType {@link ActionType}
-   * @return {@link Action}
-   */
-  public Action type(final ActionType actionType) {
-    this.type = actionType;
-    return this;
-  }
-
-  /**
-   * Get UserId.
-   * 
-   * @return {@link String}
-   */
-  public String userId() {
-    return this.userId;
-  }
-
-  /**
-   * Set UserId.
-   * 
-   * @param user {@link String}
-   * @return {@link Action}
-   */
-  public Action userId(final String user) {
-    this.userId = user;
-    return this;
-  }
-
-  /**
-   * Get Workflow Id.
-   * 
-   * @return {@link String}
-   */
-  public String workflowId() {
-    return this.workflowId;
-  }
-
-  /**
-   * Get Workflow Id.
-   * 
-   * @param id {@link String}
-   * @return {@link Action}
-   */
-  public Action workflowId(final String id) {
-    this.workflowId = id;
-    return this;
-  }
-
-  /**
-   * Get Workflow Last Step.
-   * 
-   * @return {@link String}
-   */
-  public String workflowLastStep() {
-    return this.workflowLastStep;
-  }
-
-  /**
-   * Set Workflow Last Step.
-   * 
-   * @param lastStep {@link String}
-   * @return {@link Action}
-   */
-  public Action workflowLastStep(final String lastStep) {
-    this.workflowLastStep = lastStep;
-    return this;
-  }
-
-  /**
-   * Get Workflow Step id.
-   * 
-   * @return {@link String}
-   */
-  public String workflowStepId() {
-    return this.workflowStepId;
-  }
-
-  /**
-   * Get Workflow Step id.
-   * 
-   * @param stepId {@link String}
-   * @return {@link Action}
-   */
-  public Action workflowStepId(final String stepId) {
-    this.workflowStepId = stepId;
-    return this;
+    return b.build();
   }
 }

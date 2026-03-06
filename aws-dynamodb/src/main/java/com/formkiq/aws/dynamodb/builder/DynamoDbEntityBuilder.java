@@ -30,6 +30,14 @@ public interface DynamoDbEntityBuilder<T> {
   /**
    * Builds the {@link T}, computing the DynamoDbKey.
    *
+   * @param key {@link DynamoDbKey}
+   * @return a new T
+   */
+  T build(DynamoDbKey key);
+
+  /**
+   * Builds the {@link T}, computing the DynamoDbKey.
+   *
    * @param siteId {@link String}
    * @return a new T
    */

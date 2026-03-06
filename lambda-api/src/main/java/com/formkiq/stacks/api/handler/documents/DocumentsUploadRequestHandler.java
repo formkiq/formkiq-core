@@ -129,8 +129,7 @@ public class DocumentsUploadRequestHandler
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
     List<Action> actions = notNull(request.getActions());
-    actions.forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, actions);
+    actionsService.saveNewActions(actions);
 
     if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =

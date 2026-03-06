@@ -138,6 +138,21 @@ public class ValidationBuilder {
   }
 
   /**
+   * Validate Field is not null.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isNotNull(final String key, final Object value) {
+    if (value == null) {
+      errors.add(addRequiredMessage(new ValidationErrorImpl().key(key), key));
+    }
+
+    return this;
+  }
+
+  /**
    * Validate Field is required.
    *
    * @param key {@link String}

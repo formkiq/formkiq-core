@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -36,12 +37,12 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * Convert {@link Map} {@link AttributeValue} to {@link Action}.
  *
  */
-public class DynamicObjectToAction implements Function<DynamicObject, Action> {
+public class DynamicObjectToAction implements Function<DynamicObject, ActionBuilder> {
 
   @Override
-  public Action apply(final DynamicObject obj) {
+  public ActionBuilder apply(final DynamicObject obj) {
 
-    Action action = new Action();
+    ActionBuilder action = new ActionBuilder();
 
     String userId = obj.containsKey("userId") ? obj.getString("userId") : "System";
     action.userId(userId);

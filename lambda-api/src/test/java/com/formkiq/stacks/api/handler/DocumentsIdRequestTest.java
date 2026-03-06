@@ -61,6 +61,7 @@ import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -502,9 +503,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
       String documentId = addDocumentUpload(siteId, req);
 
-      Action action = new Action().documentId(documentId).type(ActionType.OCR)
-          .status(ActionStatus.RUNNING).userId("joe");
-      as.saveNewActions(siteId, documentId, List.of(action));
+      Action action = new ActionBuilder().documentId(documentId).type(ActionType.OCR)
+          .status(ActionStatus.RUNNING).indexUlid().userId("joe").build(siteId);
+      as.saveNewActions(List.of(action));
 
       // when
       this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
@@ -675,7 +676,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"action 'type' is required\"}]}",
+        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
             e.getResponseBody());
       }
     }

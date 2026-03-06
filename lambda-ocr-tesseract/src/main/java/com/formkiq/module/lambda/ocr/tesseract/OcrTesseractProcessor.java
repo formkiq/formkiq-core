@@ -53,6 +53,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
@@ -321,9 +322,9 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
           .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
       o.ifPresent(action -> {
-        action.status(ActionStatus.FAILED);
-        action.message(e.getMessage());
-        actionsService.updateActionStatus(siteId, documentId, action);
+        var a = new ActionBuilder().action(action).status(ActionStatus.FAILED)
+            .message(e.getMessage()).build(siteId);
+        actionsService.updateAction(a);
       });
     }
   }

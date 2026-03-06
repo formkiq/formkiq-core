@@ -237,6 +237,13 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     /** {@link SiteConfigurationDocument}. */
     private SiteConfigurationDocument document;
 
+    @Override
+    public SiteConfiguration build(final DynamoDbKey key) {
+      return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
+          maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
+          webhookTimeToLive);
+    }
+
     /**
      * Build a {@link SiteConfiguration} for the given site.
      *
@@ -246,9 +253,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     @Override
     public SiteConfiguration build(final String siteId) {
       DynamoDbKey key = buildKey(siteId);
-      return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
-          maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
-          webhookTimeToLive);
+      return build(key);
     }
 
     /**

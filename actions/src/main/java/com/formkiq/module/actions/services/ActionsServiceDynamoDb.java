@@ -25,9 +25,7 @@ package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,30 +35,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.formkiq.aws.dynamodb.AttributeValuesToWriteRequests;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
-import com.formkiq.aws.dynamodb.QueryResponseToPagination;
-import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionIndexComparator;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
-import com.formkiq.module.actions.DocumentWorkflowRecord;
 import com.github.f4b6a3.ulid.Ulid;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -98,14 +94,32 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     this.db = new DynamoDbServiceImpl(this.dbClient, documentsTable);
   }
 
-  private void deleteAction(final String siteId, final Action action) {
-    String pk = action.pk(siteId);
-    String sk = action.sk();
+  private void addUpdateActionAttributes(final WriteRequestBuilder writeRequestBuilder,
+      final Action action) {
+    var attributes = new HashMap<>(action.getAttributes());
 
-    Map<String, AttributeValue> key = Map.of(PK, AttributeValue.builder().s(pk).build(), SK,
-        AttributeValue.builder().s(sk).build());
-    this.dbClient
-        .deleteItem(DeleteItemRequest.builder().tableName(this.documentTableName).key(key).build());
+    if (!attributes.containsKey(GSI1_PK) || !attributes.containsKey(GSI1_SK)) {
+      attributes.put(GSI1_PK, null);
+      attributes.put(GSI1_SK, null);
+    }
+
+    if (!attributes.containsKey(GSI2_PK) || !attributes.containsKey(GSI2_SK)) {
+      attributes.put(GSI2_PK, null);
+      attributes.put(GSI2_SK, null);
+    }
+
+    writeRequestBuilder.appendUpdate(db.getTableName(), attributes);
+  }
+
+  private void deleteAction(final Action action) {
+    this.db.deleteItem(action.key());
+  }
+
+  @Override
+  public void deleteActions(final Collection<Action> actions) {
+    var writeRequestBuilder = new WriteRequestBuilder();
+    actions.forEach(a -> writeRequestBuilder.appendDelete(db.getTableName(), a.key()));
+    writeRequestBuilder.transactWriteItems(dbClient);
   }
 
   @Override
@@ -115,9 +129,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
         queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null, null).getResults();
 
     for (Action action : actions) {
-
-      action.documentId(documentId);
-      deleteAction(siteId, action);
+      deleteAction(action);
     }
   }
 
@@ -134,7 +146,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     if (!response.items().isEmpty()) {
       Map<String, AttributeValue> attrs = response.items().get(0);
       attrs = this.db.get(attrs.get(PK), attrs.get(SK));
-      action = new Action().getFromAttributes(siteId, attrs);
+      action = Action.fromAttributeMap(attrs);
     }
 
     return action;
@@ -158,8 +170,8 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     List<Map<String, AttributeValue>> keys = response.items().stream()
         .map(i -> Map.of(PK, i.get(PK), SK, i.get(SK))).collect(Collectors.toList());
 
-    List<Action> list = this.db.getBatch(batchConfig, keys).stream()
-        .map(a -> new Action().getFromAttributes(siteId, a)).collect(Collectors.toList());
+    List<Action> list = this.db.getBatch(batchConfig, keys).stream().map(Action::fromAttributeMap)
+        .collect(Collectors.toList());
 
     return new Pagination<>(list, response.lastEvaluatedKey());
   }
@@ -168,34 +180,28 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   public Pagination<String> findDocumentsWithStatus(final String siteId, final ActionStatus status,
       final String nextToken, final int limit) {
 
-    Action a = new Action().status(status);
-    String pk = a.pkGsi2(siteId);
+    // DUMMY value
+    ActionType type = ActionType.OCR;
+    DynamoDbKey key = new ActionBuilder().status(status).documentId("").queueId("").type(type)
+        .index("").buildKey(siteId);
+    // String pk = a.pkGsi2(siteId);
     String sk = "action#";
 
     QueryResponse response = null;
     List<String> list = Collections.emptyList();
 
-    if (pk != null) {
+    if (key.gsi2Pk() != null) {
 
-      Map<String, AttributeValue> exclusiveStartKey =
-          new StringToMapAttributeValue().apply(nextToken);
-      QueryConfig config = new QueryConfig().indexName(GSI2).scanIndexForward(Boolean.TRUE);
-      response = this.db.queryBeginsWith(config, fromS(pk), fromS(sk), exclusiveStartKey, limit);
+      QueryRequest q = DynamoDbQueryBuilder.builder().indexName(GSI2, key).beginsWith(sk)
+          .scanIndexForward(true).nextToken(nextToken).limit(limit).build(db.getTableName());
+      response = this.db.query(q);
 
       list =
-          response.items().stream().map(i -> i.get("documentId").s()).collect(Collectors.toList());
+          response.items().stream().map(i -> DynamoDbTypes.toString(i.get("documentId"))).toList();
     }
 
     return new Pagination<>(list, response != null ? response.lastEvaluatedKey() : null);
 
-  }
-
-  @Override
-  public List<Action> getAction(final String siteId, final String documentId,
-      final ActionStatus status) {
-    var results = new FindDocumentActionByStatus(documentId, ActionStatus.RUNNING.name()).query(db,
-        db.getTableName(), siteId, null, 2);
-    return results.items().stream().map(a -> new Action().getFromAttributes(siteId, a)).toList();
   }
 
   @Override
@@ -211,20 +217,44 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
   @Override
   public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions = queryActions(siteId, documentId, List.of(PK), null, null).getResults();
+    List<Action> actions =
+        queryActions(siteId, documentId, List.of(PK, SK), null, null).getResults();
     return !actions.isEmpty();
   }
 
   @Override
-  public void insertBeforeAction(final String siteId, final String documentId,
-      final Action currentAction, final Action insertedAction) {
+  public void insertBeforeAction(final String siteId, final Action currentAction,
+      final ActionBuilder insertedAction) {
 
     String index = previousIndex(currentAction.index());
-    insertedAction.index(index).documentId(documentId).insertedDate(new Date());
-    saveAction(siteId, insertedAction);
+    insertedAction.index(index).insertedDate(new Date());
+    saveAction(siteId, insertedAction.build(siteId));
   }
 
-  private String previousIndex(final String index) {
+  @Override
+  public String nextIndex(final String index) {
+
+    Ulid ulid = Ulid.from(index);
+
+    long msb = ulid.getMostSignificantBits();
+    long lsb = ulid.getLeastSignificantBits();
+
+    if (lsb == -1L) {
+      lsb = 0L;
+      msb += 1;
+    } else {
+      lsb += 1;
+    }
+
+    if (msb < 0) {
+      throw new IllegalArgumentException("No larger ULID exists");
+    }
+
+    return new Ulid(msb, lsb).toString();
+  }
+
+  @Override
+  public String previousIndex(final String index) {
     Ulid ulid = Ulid.from(index);
 
     long msb = ulid.getMostSignificantBits();
@@ -257,11 +287,14 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   private Pagination<Action> queryActions(final String siteId, final String documentId,
       final List<String> projectionExpression, final String nextToken, final Integer limit) {
 
-    String pk = new Action().documentId(documentId).pk(siteId);
+    // DUMMY VALUE
+    var actionType = ActionType.OCR;
+    DynamoDbKey key =
+        new ActionBuilder().documentId(documentId).indexUlid().type(actionType).buildKey(siteId);
     String sk = "action" + TAG_DELIMINATOR;
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
-    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(pk).build(),
+    Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(key.pk()).build(),
         ":sk", AttributeValue.builder().s(sk).build());
 
     Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
@@ -282,23 +315,15 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     QueryResponse response = this.dbClient.query(q.build());
 
-    List<Action> actions =
-        response.items().stream().map(a -> new Action().getFromAttributes(siteId, a))
-            .sorted(new ActionIndexComparator()).collect(Collectors.toList());
+    List<Action> actions = response.items().stream().map(Action::fromAttributeMap)
+        .sorted(new ActionIndexComparator()).collect(Collectors.toList());
 
     return new Pagination<>(actions, response.lastEvaluatedKey());
   }
 
   @Override
   public void saveAction(final String siteId, final Action action) {
-
-    if (action.insertedDate() == null) {
-      action.insertedDate(new Date());
-    }
-
-    Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
-    this.dbClient
-        .putItem(PutItemRequest.builder().tableName(this.documentTableName).item(valueMap).build());
+    saveActions(siteId, List.of(action));
   }
 
   @Override
@@ -308,7 +333,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     for (Action action : actions) {
 
-      Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
+      Map<String, AttributeValue> valueMap = action.getAttributes();
       values.add(valueMap);
     }
 
@@ -322,74 +347,28 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public List<Map<String, AttributeValue>> saveNewActions(final String siteId,
-      final String documentId, final List<Action> actions) {
+  public List<Map<String, AttributeValue>> saveNewActions(final List<Action> actions) {
 
-    List<Map<String, AttributeValue>> values = new ArrayList<>();
-
-    for (Action action : notNull(actions)) {
-
-      action.documentId(documentId);
-      action.indexUlid();
-
-      if (action.insertedDate() == null) {
-        action.insertedDate(new Date());
-      }
-
-      Map<String, AttributeValue> valueMap = action.getAttributes(siteId);
-
-      values.add(valueMap);
-    }
-
-    if (!values.isEmpty()) {
-      Map<String, Collection<WriteRequest>> items =
-          new AttributeValuesToWriteRequests(this.documentTableName).apply(values);
-
-      BatchWriteItemRequest batch = BatchWriteItemRequest.builder().requestItems(items).build();
-      this.dbClient.batchWriteItem(batch);
-    }
+    WriteRequestBuilder builder = new WriteRequestBuilder();
+    List<Map<String, AttributeValue>> values =
+        notNull(actions).stream().map(Action::getAttributes).toList();
+    builder.appends(this.documentTableName, values);
+    builder.transactWriteItems(dbClient);
 
     return values;
   }
 
   @Override
-  public void updateActionStatus(final String siteId, final String documentId,
-      final Action action) {
-
-    if (ActionStatus.COMPLETE.equals(action.status())
-        || ActionStatus.FAILED.equals(action.status())) {
-      action.completedDate(new Date());
-    }
-
-    if (ActionStatus.RUNNING.equals(action.status())) {
-      action.startDate(new Date());
-    }
-
-    this.db.putInTransaction(List.of(action.getAttributes(siteId)));
+  public void updateAction(final Action action) {
+    var writeRequestBuilder = new WriteRequestBuilder();
+    addUpdateActionAttributes(writeRequestBuilder, action);
+    writeRequestBuilder.transactWriteItems(dbClient);
   }
 
   @Override
-  public void updateDocumentWorkflowStatus(final String siteId, final String documentId,
-      final Action action) {
-    String workflowId = action.workflowId();
-    String stepId = action.workflowStepId();
-
-    String status = !isEmpty(action.workflowLastStep()) ? "COMPLETE" : "IN_PROGRESS";
-
-    if (ActionStatus.FAILED.equals(action.status())) {
-      status = "FAILED";
-    }
-
-    DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(documentId)
-        .workflowName("").workflowId(workflowId).build(siteId);
-    var documentWorkflowKey = r.key();
-
-    Map<String, AttributeValueUpdate> values =
-        Map.of("status", AttributeValueUpdate.builder().value(fromS(status)).build(),
-            "currentStepId", AttributeValueUpdate.builder().value(fromS(stepId)).build(),
-            "actionPk", AttributeValueUpdate.builder().value(fromS(action.pk(siteId))).build(),
-            "actionSk", AttributeValueUpdate.builder().value(fromS(action.sk())).build());
-
-    this.db.updateItem(fromS(documentWorkflowKey.pk()), fromS(documentWorkflowKey.sk()), values);
+  public void updateActions(final Collection<Action> actions) {
+    var writeRequestBuilder = new WriteRequestBuilder();
+    actions.forEach(a -> addUpdateActionAttributes(writeRequestBuilder, a));
+    writeRequestBuilder.transactWriteItems(dbClient);
   }
 }

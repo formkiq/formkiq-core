@@ -253,8 +253,7 @@ public class DocumentIdRequestHandler
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
     List<Action> actions = notNull(request.getActions());
-    actions.forEach(a -> a.userId(authorization.getUsername()));
-    actionsService.saveNewActions(siteId, documentId, request.getActions());
+    actionsService.saveNewActions(request.getActions());
 
     if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =
