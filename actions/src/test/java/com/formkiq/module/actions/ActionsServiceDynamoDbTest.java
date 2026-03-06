@@ -164,7 +164,6 @@ public class ActionsServiceDynamoDbTest {
   public void testInsertAction01() {
     // given
     String documentId = ID.uuid();
-    String user = "joe";
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -265,7 +264,6 @@ public class ActionsServiceDynamoDbTest {
     // given
     final int numberOfActions = 15;
     String documentId = ID.uuid();
-    String user = "joe";
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<Action> actions = new ArrayList<>();
@@ -326,7 +324,7 @@ public class ActionsServiceDynamoDbTest {
           .userId("joe").queueId("A").build(siteId);
 
       // when
-      service.saveAction(siteId, action0);
+      service.saveNewActions(List.of(action0));
 
       // then
       List<Action> actions = service.getActions(siteId, docId);
@@ -342,7 +340,7 @@ public class ActionsServiceDynamoDbTest {
           .userId("joe").insertedDate(new Date()).build(siteId);
 
       // when
-      service.saveActions(siteId, List.of(ulid2, ulid1, ulid0));
+      service.saveNewActions(List.of(ulid2, ulid1, ulid0));
 
       // then
       actions = service.getActions(siteId, docId);
@@ -446,7 +444,6 @@ public class ActionsServiceDynamoDbTest {
       // given
       String name = "queue1234";
       String documentId = ID.uuid();
-      String userId0 = "joe";
       Action action0 = createAction(documentId, ActionType.QUEUE).queueId(name).build(siteId);
       service.saveNewActions(List.of(action0));
       assertEquals(ActionStatus.PENDING, service.getActions(siteId, documentId).get(0).status());

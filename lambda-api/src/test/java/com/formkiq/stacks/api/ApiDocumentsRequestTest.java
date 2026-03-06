@@ -414,8 +414,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       addParameter(event, "actionStatus", "pending");
 
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
-      actions.saveAction(siteId, new ActionBuilder().index("0").type(ActionType.OCR)
-          .documentId(documentId).userId("joe").build(siteId));
+      actions.saveNewActions(List.of(new ActionBuilder().index("0").type(ActionType.OCR)
+          .documentId(documentId).userId("joe").build(siteId)));
 
       // when
       String response = handleRequest(event);
