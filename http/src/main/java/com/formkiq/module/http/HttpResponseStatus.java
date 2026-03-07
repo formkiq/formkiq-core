@@ -38,6 +38,8 @@ public class HttpResponseStatus {
   private static final int STATUS_300 = 300;
   /** 403 Forbidden Response Code. */
   public static final int STATUS_FORBIDDEN = 403;
+  /** 400 Response Code. */
+  private static final int STATUS_400 = 400;
   /** 404 Response Code. */
   private static final int STATUS_404 = 404;
   /** 409 Response Code. */
@@ -60,6 +62,16 @@ public class HttpResponseStatus {
   public static boolean is2XX(final HttpResponse<?> response) {
     int statusCode = response.statusCode();
     return statusCode >= STATUS_200 && statusCode < STATUS_300;
+  }
+
+  /**
+   * Is 400 Status Code.
+   * 
+   * @param response {@link HttpResponse}
+   * @return boolean
+   */
+  public static boolean is400(final HttpResponse<?> response) {
+    return HttpResponseStatus.STATUS_400 == response.statusCode();
   }
 
   /**

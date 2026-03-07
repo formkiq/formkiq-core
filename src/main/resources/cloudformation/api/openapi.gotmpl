@@ -11654,21 +11654,18 @@ components:
           description: "Result message"
     AddDocumentWorkflowDecisionsRequest:
       type: "object"
-      required:
-        - queueId
-        - decision
       properties:
-        stepId:
-          type: "string"
-          description: "Workflow Step Identifier"
         comments:
           type: "string"
           description: "Workflow decision comments"
         decision:
-          type: "string"
-          enum:
-            - APPROVE
-            - REJECT
+          $ref: "#/components/schemas/WorkflowDecision"
+    WorkflowDecision:
+      type: string
+      description: "Workflow Decisions"
+      enum:
+        - APPROVE
+        - REJECT
     AddDocumentWorkflowDecisionsResponse:
       type: "object"
       properties:
