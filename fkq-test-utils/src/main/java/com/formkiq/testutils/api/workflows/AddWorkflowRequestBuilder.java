@@ -26,6 +26,7 @@ package com.formkiq.testutils.api.workflows;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddWorkflowRequest;
 import com.formkiq.client.model.AddWorkflowResponse;
 import com.formkiq.client.model.AddWorkflowStep;
@@ -84,6 +85,21 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
   public AddWorkflowRequestBuilder addAction(final String stepId, final DocumentActionType type) {
     AddWorkflowStep step = getWorkflowStep(stepId);
     step.action(new AddAction().type(type));
+    return this;
+  }
+
+  /**
+   * Add Document Action.
+   *
+   * @param stepId {@link String}
+   * @param type {@link DocumentActionType}
+   * @param parameters {@link AddActionParameters}
+   * @return AddWorkflowRequestBuilder
+   */
+  public AddWorkflowRequestBuilder addAction(final String stepId, final DocumentActionType type,
+      final AddActionParameters parameters) {
+    AddWorkflowStep step = getWorkflowStep(stepId);
+    step.action(new AddAction().type(type).parameters(parameters));
     return this;
   }
 

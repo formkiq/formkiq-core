@@ -64,6 +64,7 @@ import com.formkiq.module.actions.workflows.DocumentWorkflowStatusUpdate;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -623,7 +624,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @param processStatus {@link ProcessActionStatus}
    */
   private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final Action action, final ProcessActionStatus processStatus) {
+      final Action action, final ProcessActionStatus processStatus) throws IOException {
 
     WriteRequestBuilder wrb = new WriteRequestBuilder();
 
@@ -647,6 +648,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       }
 
       default -> {
+
         logger.trace(
             String.format("updating status of %s to %s", documentId, processStatus.actionStatus()));
 
@@ -657,7 +659,26 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
         wrb.transactWriteItems(getDb().getClient());
 
+        sendWorkflowDecisionIfNeeded(siteId, documentId, action, processStatus);
+
         getNotificationService().publishNextActionEvent(siteId, documentId);
+      }
+    }
+  }
+
+  private void sendWorkflowDecisionIfNeeded(final String siteId, final String documentId,
+      final Action action, final ProcessActionStatus processStatus) throws IOException {
+
+    if (ActionStatus.COMPLETE.equals(processStatus.actionStatus())
+        && !isEmpty(action.workflowId())) {
+      HttpService http = serviceCache.getExtension(HttpService.class);
+      String url = serviceCache.environment("documentsIamUrl");
+      HttpResponse<String> response = http.post(
+          url + "/documents/" + documentId + "/workflow/" + action.workflowId() + "/decisions",
+          Optional.empty(), Optional.of(Map.of("siteId", siteId)), "{}");
+      if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
+        throw new IOException(
+            "Error sending workflow decision: " + response.statusCode() + ":" + response.body());
       }
     }
   }

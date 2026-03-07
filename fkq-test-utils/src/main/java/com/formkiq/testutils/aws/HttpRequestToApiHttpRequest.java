@@ -39,6 +39,7 @@ import com.formkiq.testutils.api.JwtTokenDecoder;
 import org.mockserver.model.HttpRequest;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * 
@@ -85,9 +86,9 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
         httpRequest.getQueryStringParameterList().stream().collect(Collectors.toMap(
             p -> decode(p.getName().getValue()), p -> decode(p.getValues().get(0).getValue())));
 
-    String group = getGroup(decoder);
-    String samlGroups = getSamlGroups(decoder);
-    Map<String, List<String>> permissions = getPermissions(decoder);
+    boolean sigv4 = isSigV4(headers);
+    String group = getGroup(sigv4, httpRequest, decoder);
+    Map<String, List<String>> permissions = !sigv4 ? getPermissions(decoder) : null;
 
     Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
         Collectors.toMap(h -> h.getName().getValue(), h -> h.getValues().get(0).getValue()));
@@ -183,8 +184,19 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     return bearerToken != null ? new JwtTokenDecoder(headers.get(0)) : null;
   }
 
-  private String getGroup(final JwtTokenDecoder decoder) {
-    return decoder != null ? String.join(" ", decoder.getGroups()) : "";
+  private String getGroup(final boolean isSigv4, final HttpRequest httpRequest,
+      final JwtTokenDecoder decoder) {
+    String groups = "";
+
+    if (isSigv4) {
+      String siteId = httpRequest.getFirstQueryStringParameter("siteId");
+      siteId = !isEmpty(siteId) ? siteId : "default";
+      groups = String.join(" ", List.of("Admins", siteId));
+    } else if (decoder != null) {
+      groups = String.join(" ", decoder.getGroups());
+    }
+
+    return groups;
   }
 
   private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
@@ -203,5 +215,9 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     List<String> publicUrls =
         List.of("/login", "/forgotPassword", "/confirmRegistration", "/changePassword");
     return publicUrls.stream().anyMatch(url::contains);
+  }
+
+  private boolean isSigV4(final List<String> headers) {
+    return headers.stream().anyMatch(a -> a.contains("AWS4-HMAC-SHA256"));
   }
 }
