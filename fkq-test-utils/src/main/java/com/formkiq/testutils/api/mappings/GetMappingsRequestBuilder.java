@@ -26,54 +26,46 @@ package com.formkiq.testutils.api.mappings;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentWorkflowRequest;
-import com.formkiq.client.model.AddMapping;
-import com.formkiq.client.model.AddMappingRequest;
-import com.formkiq.client.model.AddMappingResponse;
-import com.formkiq.client.model.MappingAttribute;
-import com.formkiq.client.model.MappingAttributeSourceType;
+import com.formkiq.client.model.GetMappingsResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 
 /**
  * Builder for {@link AddDocumentWorkflowRequest}.
  */
-public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingResponse> {
+public class GetMappingsRequestBuilder implements HttpRequestBuilder<GetMappingsResponse> {
 
-  /** {@link AddMappingRequest}. */
-  private AddMappingRequest req;
+  /** Limit. */
+  private String limit;
+  /** Limit. */
+  private String next;
 
   /**
    * constructor.
+   *
    */
-  public AddMappingRequestBuilder() {
-    this.req = new AddMappingRequest();
-  }
+  public GetMappingsRequestBuilder() {}
 
   /**
-   * Add Mapping.
-   * 
-   * @param name {@link String}
-   * @param attributeKey {@link String}
-   * @param defaultValue {@link String}
-   * @return {@link AddMappingRequestBuilder}
+   * Set Limit.
+   *
+   * @param mappingsLimit {@link String}
+   * @return {@link GetDocumentsRequestBuilder}
    */
-  public AddMappingRequestBuilder addManualMapping(final String name, final String attributeKey,
-      final String defaultValue) {
-    MappingAttribute ma = new MappingAttribute().sourceType(MappingAttributeSourceType.MANUAL)
-        .attributeKey(attributeKey).defaultValue(defaultValue);
-    AddMapping mapping = new AddMapping().name(name).addAttributesItem(ma);
-    this.req.setMapping(mapping);
+  public GetMappingsRequestBuilder limit(final String mappingsLimit) {
+    this.limit = mappingsLimit;
     return this;
   }
 
   /**
-   * Add Mapping.
-   * 
-   * @param mapping {@link AddMapping}
-   * @return {@link AddMappingRequestBuilder}
+   * Set Next token.
+   *
+   * @param nextToken {@link String}
+   * @return {@link GetDocumentsRequestBuilder}
    */
-  public AddMappingRequestBuilder addMapping(final AddMapping mapping) {
-    this.req.setMapping(mapping);
+  public GetMappingsRequestBuilder next(final String nextToken) {
+    this.next = nextToken;
     return this;
   }
 
@@ -82,10 +74,10 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return AddMappingResponse
+   * @return GetMappingsResponse
    */
-  public ApiHttpResponse<AddMappingResponse> submit(final ApiClient apiClient,
+  public ApiHttpResponse<GetMappingsResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new MappingsApi(apiClient).addMapping(req, siteId));
+    return executeApiCall(() -> new MappingsApi(apiClient).getMappings(siteId, limit, next));
   }
 }

@@ -8109,6 +8109,10 @@ components:
           $ref: '#/components/schemas/DocumentAction'
         queue:
           $ref: '#/components/schemas/WorkflowQueue'
+        mappingIds:
+          type: array
+          items:
+            type: string
         decisions:
           type: array
           description: Workflow Decisions
@@ -12993,6 +12997,10 @@ components:
           $ref: '#/components/schemas/AddAction'
         queue:
           $ref: '#/components/schemas/AddWorkflowStepQueue'
+        mappingIds:
+          type: array
+          items:
+            type: string
         decisions:
           type: array
           description: Workflow Decisions

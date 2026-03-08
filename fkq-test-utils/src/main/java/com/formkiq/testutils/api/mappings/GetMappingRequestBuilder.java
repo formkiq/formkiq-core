@@ -26,55 +26,25 @@ package com.formkiq.testutils.api.mappings;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentWorkflowRequest;
-import com.formkiq.client.model.AddMapping;
-import com.formkiq.client.model.AddMappingRequest;
-import com.formkiq.client.model.AddMappingResponse;
-import com.formkiq.client.model.MappingAttribute;
-import com.formkiq.client.model.MappingAttributeSourceType;
+import com.formkiq.client.model.GetMappingResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
  * Builder for {@link AddDocumentWorkflowRequest}.
  */
-public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingResponse> {
+public class GetMappingRequestBuilder implements HttpRequestBuilder<GetMappingResponse> {
 
-  /** {@link AddMappingRequest}. */
-  private AddMappingRequest req;
+  /** Mapping Id. */
+  private final String id;
 
   /**
    * constructor.
-   */
-  public AddMappingRequestBuilder() {
-    this.req = new AddMappingRequest();
-  }
-
-  /**
-   * Add Mapping.
    * 
-   * @param name {@link String}
-   * @param attributeKey {@link String}
-   * @param defaultValue {@link String}
-   * @return {@link AddMappingRequestBuilder}
+   * @param mappingId {@link String}
    */
-  public AddMappingRequestBuilder addManualMapping(final String name, final String attributeKey,
-      final String defaultValue) {
-    MappingAttribute ma = new MappingAttribute().sourceType(MappingAttributeSourceType.MANUAL)
-        .attributeKey(attributeKey).defaultValue(defaultValue);
-    AddMapping mapping = new AddMapping().name(name).addAttributesItem(ma);
-    this.req.setMapping(mapping);
-    return this;
-  }
-
-  /**
-   * Add Mapping.
-   * 
-   * @param mapping {@link AddMapping}
-   * @return {@link AddMappingRequestBuilder}
-   */
-  public AddMappingRequestBuilder addMapping(final AddMapping mapping) {
-    this.req.setMapping(mapping);
-    return this;
+  public GetMappingRequestBuilder(final String mappingId) {
+    this.id = mappingId;
   }
 
   /**
@@ -82,10 +52,10 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return AddMappingResponse
+   * @return GetMappingResponse
    */
-  public ApiHttpResponse<AddMappingResponse> submit(final ApiClient apiClient,
+  public ApiHttpResponse<GetMappingResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new MappingsApi(apiClient).addMapping(req, siteId));
+    return executeApiCall(() -> new MappingsApi(apiClient).getMapping(this.id, siteId));
   }
 }
