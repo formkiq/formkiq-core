@@ -119,6 +119,19 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
   }
 
   /**
+   * Add Workflow Step Malling.
+   *
+   * @param stepId {@link String}
+   * @param mappingId {@link String}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addMapping(final String stepId, final String mappingId) {
+    AddWorkflowStep step = getWorkflowStep(stepId);
+    step.addMappingIdsItem(mappingId);
+    return this;
+  }
+
+  /**
    * Add Queue.
    * 
    * @param stepId {@link String}
