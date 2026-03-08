@@ -43,6 +43,10 @@
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
+        <subpackage name="mappings">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
 		<subpackage name="folders">
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
