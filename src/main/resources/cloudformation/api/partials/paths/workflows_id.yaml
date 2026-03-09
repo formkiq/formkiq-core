@@ -1,0 +1,253 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /workflows/{workflowId}:
+    get:
+      operationId: GetWorkflow
+      summary: Get workflow
+      description: Get a workflow; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
+      tags:
+        - Document Workflows
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetWorkflowResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteWorkflow
+      summary: Delete workflow
+      description: Delete a Workflow; available as an Add-On Module
+      tags:
+        - Document Workflows
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DeleteResponse"
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetWorkflow
+      summary: Set workflow
+      description: Set a Workflow details; available as an Add-On Module
+      tags:
+        - Document Workflows
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetWorkflowRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 BAD REQUEST
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      operationId: UpdateWorkflow
+      summary: Update workflow
+      description: Update a Workflow details; available as an Add-On Module
+      tags:
+        - Document Workflows
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkflowRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateResponse'
+        '400':
+          description: 400 BAD REQUEST
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+
+    #@overlay/match missing_ok=True
+    GetWorkflowResponse:
+      type: "object"
+      properties:
+        name:
+          description: "Workflow name"
+          type: "string"
+        description:
+          description: "Workflow description"
+          type: "string"
+        inUse:
+          type: "boolean"
+          description: "Whether the Workflow is in use"
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+        steps:
+          description: "Workflow steps"
+          items:
+            $ref: "#/components/schemas/WorkflowStep"
+
+    #@overlay/match missing_ok=True
+    WorkflowStep:
+      type: "object"
+      properties:
+        stepId:
+          type: "string"
+          description: "Workflow Step Identifier"
+        action:
+          $ref: "#/components/schemas/DocumentAction"
+        queue:
+          $ref: "#/components/schemas/WorkflowQueue"
+        mappingIds:
+          type: "array"
+          items:
+            type: "string"
+        decisions:
+          type: "array"
+          description: "Workflow Decisions"
+          items:
+            $ref: "#/components/schemas/WorkflowStepDecision"
+
+    #@overlay/match missing_ok=True
+    WorkflowQueue:
+      type: object
+      properties:
+        queueId:
+          type: "string"
+          description: "Queue Id"
+        approvalGroups:
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepDecision:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/WorkflowStepDecisionType"
+        nextStepId:
+          type: "string"
+          description: "Workflow Step to move to"
+
+    #@overlay/match missing_ok=True
+    SetWorkflowRequest:
+      type: "object"
+      required:
+        - name
+        - status
+        - steps
+      properties:
+        name:
+          description: "Workflow name"
+          type: "string"
+        description:
+          description: "Workflow description"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+        steps:
+          type: "array"
+          description: "Workflow Steps"
+          items:
+            $ref: "#/components/schemas/AddWorkflowStep"
+
+    #@overlay/match missing_ok=True
+    UpdateWorkflowRequest:
+      type: "object"
+      properties:
+        name:
+          description: "Workflow name"
+          type: "string"
+        description:
+          description: "Workflow description"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+
