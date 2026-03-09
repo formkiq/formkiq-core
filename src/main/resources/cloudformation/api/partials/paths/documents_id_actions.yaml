@@ -1,0 +1,344 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/actions:
+    get:
+      operationId: GetDocumentActions
+      summary: Get document actions
+      description: Get document actions and their status
+      tags:
+        - Document Actions
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentActionsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddDocumentActions
+      summary: Add document action
+      description: |-
+        Add one or more actions to a document; this appends actions and does not replace previous actions
+        
+        Each action type supports a different set of parameters as shown in the table below:
+        
+        ### Action Parameters
+        
+        | ActionType | Parameter | Description | Example |
+        | -------- | ------- | ------- | ------- |
+        | OCR  | ocrParseTypes | Ocr Parsing strategy to use | TEXT, FORMS, TABLES, QUERIES (requires 'ocrTextractQueries') |
+        | OCR  | ocrTextractQueries | Required for "QUERIES", questions to ask Textract |
+        | OCR | ocrEngine     | Ocr Engine to use | tesseract or textract |
+        | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
+        | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
+        | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
+        | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
+        | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
+        | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
+        | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
+        | WEBHOOK    | url    | Webhook URL | https://yourdomain.com/webhook-endpoint |
+        | NOTIFICATION    | notificationType | Type of Notification | email |
+        | NOTIFICATION    | notificationToCc    | Notification Carbon Copy | email@yourdomain.com |
+        | NOTIFICATION    | notificationToBcc    | Notification Blind Carbon Copy | email@yourdomain.com |
+        | NOTIFICATION    | notificationSubject    | Notification Subject | Email Subject |
+        | NOTIFICATION    | notificationText    | Notification as Text | Email Text |
+        | NOTIFICATION    | notificationHtml    | Notification as Html | Email HTML Text |
+        | QUEUE    | queueId    | Id of Queue | |
+        | IDP    | mappingId    | Id of Mapping | |
+        | EVENTBRIDGE    | eventBusName    | The name or ARN of the Amazon EventBridge to receive the event. | |
+        | RESIZE    | width    | The width of the image to resize (or 'auto'). | |
+        | RESIZE    | height    | The height of the image to resize (or 'auto'). | |
+        | RESIZE    | outputType    | The output type of the image (optional). | |
+        | RESIZE    | path    | The path to use when creating resized document (optional). | |
+      tags:
+        - Document Actions
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentActionsRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/actions/retry:
+    post:
+      operationId: AddDocumentRetryAction
+      summary: Retries failed document action(s)
+      description: |-
+        Retries all failed document action(s). Failed action status changes to "FAILED_RETRY" and a new "PENDING" action is created.
+      tags:
+        - Document Actions
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+
+    #@overlay/match missing_ok=True
+    GetDocumentActionsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        actions:
+          type: "array"
+          description: "List of document actions"
+          items:
+            $ref: "#/components/schemas/DocumentAction"
+
+    #@overlay/match missing_ok=True
+    DocumentActionStatus:
+      type: string
+      description: Status of the Document Action
+      enum:
+        - COMPLETE
+        - FAILED
+        - IN_QUEUE
+        - PENDING
+        - RUNNING
+        - SKIPPED
+        - FAILED_RETRY
+        - MAX_RETRIES_REACHED
+        - WAITING_FOR_RETRY
+
+    #@overlay/match missing_ok=True
+    DocumentActionType:
+      type: string
+      description: Type of the Document Action
+      enum:
+        - ANTIVIRUS
+        - DOCUMENTTAGGING
+        - FULLTEXT
+        - NOTIFICATION
+        - OCR
+        - QUEUE
+        - WEBHOOK
+        - IDP
+        - PUBLISH
+        - PDFEXPORT
+        - EVENTBRIDGE
+        - RESIZE
+        - DATA_CLASSIFICATION
+        - MALWARE_SCAN
+
+    #@overlay/match missing_ok=True
+    DocumentAction:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/DocumentActionStatus"
+        type:
+          $ref: "#/components/schemas/DocumentActionType"
+        retryCount:
+          type: "number"
+          description: "The number of times this action has already been attempted"
+        maxRetries:
+          type: "number"
+          description: "The maximum number of retry attempts allowed for this action"
+        queueId:
+          type: string
+          description: Queue Id
+        workflowId:
+          type: string
+          description: Workflow Id
+        workflowStepId:
+          type: string
+          description: Workflow Step Id
+        message:
+          type: string
+          description: Action message information
+        userId:
+          type: "string"
+          description: "User who requested the Action"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        startDate:
+          type: "string"
+          description: "Started Timestamp"
+        completedDate:
+          type: "string"
+          description: "Completed Timestamp"
+        parameters:
+          type: "object"
+          description: Action parameters
+          additionalProperties:
+            type: object
+        metadata:
+          type: "object"
+          description: Action metadata
+          additionalProperties:
+            type: string
+
+    #@overlay/match missing_ok=True
+    AddDocumentActionsRequest:
+      type: object
+      properties:
+        actions:
+          type: array
+          description: "List of Actions"
+          items:
+            $ref: "#/components/schemas/AddAction"
+
+    #@overlay/match missing_ok=True
+    AddAction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/DocumentActionType"
+        parameters:
+          $ref: "#/components/schemas/AddActionParameters"
+        queueId:
+          description: "Id of Queue"
+          type: "string"
+
+    #@overlay/match missing_ok=True
+    AddActionParameters:
+      type: "object"
+      properties:
+        ocrTextractQueries:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/TextractQuery"
+        ocrParseTypes:
+          type: "string"
+          description: "OCR: Parse types - TEXT, FORMS, TABLES, QUERIES (must include ocrTextractQueries)"
+        ocrEngine:
+          $ref: "#/components/schemas/OcrEngine"
+        ocrOutputType:
+          $ref: "#/components/schemas/OcrOutputType"
+        ocrNumberOfPages:
+          type: "string"
+          description: "Number of pages to OCR (from start) (-1 all)"
+        addPdfDetectedCharactersAsText:
+          type: "string"
+          description: "OCR: For the rewriting of the PDF document, converting any image text to searchable text"
+        llmPromptEntityName:
+          type: "string"
+          description: "DATA_CLASSIFICATION: Set the LLM Prompt Entity Name"
+        url:
+          type: "string"
+          description: "Webhook: Callback URL"
+        characterMax:
+          type: "string"
+          description: "Fulltext: Maximum number of characters (-1 unlimited, Typesense defaults to 2048 characters)"
+        engine:
+          type: "string"
+          description: "DocumentTagging: Engine to use for document tagging generation"
+          enum:
+            - chatgpt
+        notificationType:
+          type: "string"
+          description: "Notification Type"
+          enum:
+            - email
+        notificationToCc:
+          description: "Who to carbon copy on the notification to (comma-delimited list)"
+          type: "string"
+        notificationToBcc:
+          description: "Who to blind carbon copy on the notification to (comma-delimited list)"
+          type: "string"
+        notificationSubject:
+          description: "Subject of the notification"
+          type: "string"
+        notificationText:
+          description: "Text of the notification"
+          type: "string"
+        notificationHtml:
+          description: "Html of the notification"
+          type: "string"
+        tags:
+          description: "DocumentTagging: Comma-deliminted list of keywords to generate tags for"
+          type: "string"
+        mappingId:
+          description: "Id of Mapping"
+          type: "string"
+        eventBusName:
+          type: "string"
+          description: "The name or ARN of the event bus to receive the event"
+        width:
+          type: "string"
+          description: "The width of the image to resize (or 'auto')"
+        height:
+          type: "string"
+          description: "The height of the image to resize (or 'auto')"
+        path:
+          type: "string"
+          description: "The path to use when creating resized document (optional)"
+        outputType:
+          type: "string"
+          description: "The output type of the image"
