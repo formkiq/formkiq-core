@@ -2,6 +2,7 @@ name: OWASP Dependency Check
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -21,11 +22,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - name: Build Project
+        uses: actions/setup-java@v5
         with:
-          distribution: temurin
-          java-version: '21'
+          java-version: '17'
+          distribution: 'temurin'
 
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
