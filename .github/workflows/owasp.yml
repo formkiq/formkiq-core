@@ -29,22 +29,13 @@ jobs:
           distribution: 'temurin'
 
       - name: Run OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: '${{ github.repository }}'
-          path: '.'
-          format: 'HTML,JSON,XML'
-          out: 'reports'
-          args: >
-            --failOnCVSS 7
-            --scan ./pom.xml
-            --scan ./build.gradle
-            --scan ./build.gradle.kts
-            --enableRetired
+        timeout-minutes: 10
+        run: ./gradlew --no-parallel dependencyCheckAggregate --no-daemon --console=plain
 
-      - name: Upload reports
+      - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dependency-check-report
-          path: reports
+          name: test-reports
+          path: "**/build/reports/*"
+          retention-days: 5
