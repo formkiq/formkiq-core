@@ -35,7 +35,7 @@ dependencies {
   testImplementation group: 'com.google.guava', name: 'guava', version: '33.5.0-jre'
   testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
 
-  testImplementation platform("org.junit:junit-bom:6.0.1")
+  testImplementation platform("org.junit:junit-bom:6.0.3")
   testImplementation "org.junit.jupiter:junit-jupiter"
   testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
 

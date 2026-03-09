@@ -57,8 +57,8 @@ dependencies {
   testImplementation project(':fkq-test-utils')
   testImplementation project(':lambda-typesense')
 
-  testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.40.14'
-  testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.40.14'
+  testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.42.8'
+  testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.42.8'
 
   testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.20.0'
 
@@ -66,7 +66,7 @@ dependencies {
   testImplementation "org.junit.jupiter:junit-jupiter"
   testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
 
-  testImplementation platform("org.junit:junit-bom:6.0.1")
+  testImplementation platform("org.junit:junit-bom:6.0.3")
   testImplementation "org.junit.jupiter:junit-jupiter"
   testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
 
