@@ -26,6 +26,14 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Write Gradle secrets
+        run: |
+          mkdir -p ~/.gradle
+          cat <<EOF >> ~/.gradle/gradle.properties
+          ossIndexUsername=${{ secrets.OSS_INDEX_USERNAME }}
+          ossIndexPassword=${{ secrets.OSS_INDEX_PASSWORD }}
+          nvdKey=${{ secrets.NVD_KEY }}
+          EOF
       - name: add binaries to path
         run: |
           mkdir -p "$HOME/.local/bin"
