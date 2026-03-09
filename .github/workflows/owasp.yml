@@ -28,9 +28,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Write Gradle secrets
+        run: |
+          mkdir -p ~/.gradle
+          cat <<EOF > ~/.gradle/gradle.properties
+          ossIndexUsername=${{ secrets.OSS_INDEX_USERNAME }}
+          ossIndexPassword=${{ secrets.OSS_INDEX_PASSWORD }}
+          nvdKey=${{ secrets.NVD_KEY }}
+          EOF
+
       - name: Run OWASP Dependency-Check
         timeout-minutes: 10
-        run: ./gradlew --no-parallel dependencyCheckAggregate --no-daemon --console=plain
+        run: ./gradlew --no-parallel --no-configuration-cache dependencyCheckAggregate --no-daemon --console=plain --info
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4

@@ -51,9 +51,7 @@ allprojects {
     // Keep test-related groups out
     skipTestGroups = true
 
-      skipProjects = [':fkq-test-utils']
-
-    autoUpdate = false
+    skipProjects = [':fkq-test-utils']
 
     // Optional: avoid embedded JS/npm issues if you only want JVM deps
     analyzers {
