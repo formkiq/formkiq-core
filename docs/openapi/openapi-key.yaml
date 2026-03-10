@@ -13519,15 +13519,26 @@ components:
           $ref: '#/components/schemas/AddAction'
         queue:
           $ref: '#/components/schemas/AddWorkflowStepQueue'
-        mappingIds:
+        mappings:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/WorkflowStepMapping'
+        decision:
+          $ref: '#/components/schemas/WorkflowStepDecision'
         decisions:
           type: array
-          description: Workflow Decisions
+          deprecated: true
+          description: Deprecated; use 'decision' instead
           items:
             $ref: '#/components/schemas/AddWorkflowStepDecision'
+    WorkflowStepMapping:
+      type: object
+      required:
+      - mappingId
+      properties:
+        mappingId:
+          type: string
+          description: Mapping Identifier
     AddWorkflowStepQueue:
       type: object
       required:
@@ -13539,6 +13550,37 @@ components:
         approvalGroups:
           items:
             type: string
+    WorkflowStepDecision:
+      required:
+      - conditions
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/WorkflowStepCondition'
+        conditions:
+          type: array
+          description: Workflow Step Conditions
+          items:
+            $ref: '#/components/schemas/WorkflowStepCondition'
+        defaultTransition:
+          $ref: '#/components/schemas/WorkflowStepTransition'
+    WorkflowStepCondition:
+      required:
+      - transition
+      type: object
+      properties:
+        all:
+          type: array
+          description: Workflow Step Condition Criteria
+          items:
+            $ref: '#/components/schemas/WorkflowStepConditionCriterion'
+        any:
+          type: array
+          description: Workflow Step Condition Criteria
+          items:
+            $ref: '#/components/schemas/WorkflowStepConditionCriterion'
+        transition:
+          $ref: '#/components/schemas/WorkflowStepTransition'
     AddWorkflowStepDecision:
       required:
       - type
@@ -13550,6 +13592,160 @@ components:
         nextStepId:
           type: string
           description: Workflow Step to move to
+    WorkflowStepConditionOperator:
+      type: string
+      description: |
+        Comparison operator used to evaluate a workflow condition criterion.
+
+        Values:
+
+        - `EQ` - Equals
+        - `NEQ` - Not equals
+        - `CONTAINS` - Contains substring or matching value
+        - `NOT_CONTAINS` - Does not contain substring or matching value
+        - `STARTS_WITH` - Starts with value
+        - `ENDS_WITH` - Ends with value
+        - `GT` - Greater than
+        - `GTE` - Greater than or equal
+        - `LT` - Less than
+        - `LTE` - Less than or equal
+        - `EXISTS` - Field exists
+        - `NOT_EXISTS` - Field does not exist
+        - `IN` - Matches one of the provided values
+        - `NOT_IN` - Does not match any of the provided values
+      enum:
+      - EQ
+      - NEQ
+      - CONTAINS
+      - NOT_CONTAINS
+      - STARTS_WITH
+      - ENDS_WITH
+      - GT
+      - GTE
+      - LT
+      - LTE
+      - EXISTS
+      - NOT_EXISTS
+      - IN
+      - NOT_IN
+    WorkflowStepConditionCriterion:
+      type: object
+      required:
+      - source
+      - operator
+      description: |
+        A single criterion used to evaluate whether a workflow condition matches.
+
+        A criterion compares a document-derived source value against one or more
+        provided values using the specified operator.
+
+        Supported sources include:
+        - document attributes
+        - document content type
+        - document path
+
+        Typical examples:
+        - attribute `status` equals `approved`
+        - attribute `amount` greater than `1000`
+        - content type equals `application/pdf`
+        - path contains `/invoices/`
+
+        Use the appropriate typed value field for the comparison:
+        - `stringValue` for string comparisons
+        - `numberValue` for numeric comparisons
+        - `booleanValue` for boolean comparisons
+        - `stringValues` for multi-value comparisons such as `IN` and `NOT_IN`
+      properties:
+        source:
+          $ref: '#/components/schemas/WorkflowStepConditionSource'
+        operator:
+          $ref: '#/components/schemas/WorkflowStepConditionOperator'
+        stringValue:
+          type: string
+          description: String comparison value
+        numberValue:
+          type: number
+          description: Numeric comparison value
+        booleanValue:
+          type: boolean
+          description: Boolean comparison value
+        stringValues:
+          type: array
+          description: String values used for IN or NOT_IN comparisons
+          items:
+            type: string
+    WorkflowStepConditionSource:
+      description: |
+        Defines the document-derived source value to evaluate for a workflow
+        condition criterion.
+
+        The source identifies where the value comes from before applying the
+        operator. Supported sources include:
+        - a document attribute identified by `attributeKey`
+        - the document content type
+        - the document path
+      oneOf:
+      - $ref: '#/components/schemas/WorkflowStepConditionDocumentAttribute'
+      - $ref: '#/components/schemas/WorkflowStepConditionDocumentStandardMetadata'
+    WorkflowStepConditionDocumentAttribute:
+      type: object
+      required:
+      - attributeKey
+      description: |
+        Uses a document attribute as the source value for a workflow condition
+        criterion.
+
+        The attribute is selected using `attributeKey`.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key
+    WorkflowStepConditionDocumentStandardMetadata:
+      type: string
+      description: |
+        Identifies the built-in document metadata field to evaluate for a workflow
+        condition criterion.
+
+        Values:
+
+        - `PATH` - Evaluate the document path
+        - `CONTENT_TYPE` - Evaluate the document content type
+      enum:
+      - PATH
+      - CONTENT_TYPE
+    WorkflowStepTransition:
+      type: object
+      required:
+      - type
+      properties:
+        type:
+          $ref: '#/components/schemas/WorkflowStepTransitionType'
+        stepId:
+          type: string
+          description: Target workflow step
+    WorkflowStepTransitionType:
+      type: string
+      description: |
+        Defines the outcome of a workflow step transition.
+
+        A transition determines what happens after a workflow step finishes
+        evaluating its conditions, decisions, or actions.
+
+        Depending on the transition type, the workflow may:
+
+        - Move to another workflow step
+        - Complete successfully
+        - Be rejected
+        - Be cancelled
+        - Remain on the current step
+
+        Some transition types require additional properties. For example,
+        when the type is `STEP`, a target step identifier must be provided
+        in the transition object.
+      enum:
+      - STEP
+      - RETRY
+      - COMPLETE
     WorkflowStepDecisionType:
       type: string
       description: Type of Workflow Step Decision
@@ -13590,15 +13786,17 @@ components:
           $ref: '#/components/schemas/DocumentAction'
         queue:
           $ref: '#/components/schemas/WorkflowQueue'
-        mappingIds:
+        mappings:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/WorkflowStepMapping'
+        decision:
+          $ref: '#/components/schemas/WorkflowStepDecision'
         decisions:
           type: array
           description: Workflow Decisions
           items:
-            $ref: '#/components/schemas/WorkflowStepDecision'
+            $ref: '#/components/schemas/WorkflowStepDecisions'
     WorkflowQueue:
       type: object
       properties:
@@ -13608,7 +13806,7 @@ components:
         approvalGroups:
           items:
             type: string
-    WorkflowStepDecision:
+    WorkflowStepDecisions:
       type: object
       properties:
         type:
