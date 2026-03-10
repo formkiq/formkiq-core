@@ -185,15 +185,17 @@ components:
           $ref: "#/components/schemas/DocumentAction"
         queue:
           $ref: "#/components/schemas/WorkflowQueue"
-        mappingIds:
+        mappings:
           type: "array"
           items:
-            type: "string"
+            $ref: "#/components/schemas/WorkflowStepMapping"
+        decision:
+          $ref: "#/components/schemas/WorkflowStepDecision"
         decisions:
           type: "array"
           description: "Workflow Decisions"
           items:
-            $ref: "#/components/schemas/WorkflowStepDecision"
+            $ref: "#/components/schemas/WorkflowStepDecisions"
 
     #@overlay/match missing_ok=True
     WorkflowQueue:
@@ -207,7 +209,7 @@ components:
             type: "string"
 
     #@overlay/match missing_ok=True
-    WorkflowStepDecision:
+    WorkflowStepDecisions:
       type: object
       properties:
         type:
@@ -250,4 +252,3 @@ components:
           type: "string"
         status:
           $ref: "#/components/schemas/WorkflowStatus"
-
