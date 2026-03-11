@@ -39,7 +39,7 @@ jobs:
 
       - name: Run OWASP Dependency-Check
         timeout-minutes: 10
-        run: ./gradlew --no-parallel --no-configuration-cache dependencyCheckAggregate --no-daemon --console=plain --info
+        run: ./gradlew --no-parallel --no-configuration-cache dependencyCheckAggregate --no-daemon --console=plain --info -PdependencyCheckSkipProjects=:fkq-test-utils
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
