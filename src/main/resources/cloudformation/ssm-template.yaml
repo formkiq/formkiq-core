@@ -104,20 +104,7 @@ Resources:
         Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
-  CustomMessageSignUpUserSubjectParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "SignUp Email Subject"
-      Name: 
-        Fn::Sub: "/formkiq/cognito/${Domain}/CustomMessage_SignUp/Subject"
-      Type: String
-      Value: "Welcome to FormKiQ"
-      Tags:
-        Application: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-          
+
   CustomMessageSignUpUserSubjectParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -143,4 +130,3 @@ Resources:
         Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
