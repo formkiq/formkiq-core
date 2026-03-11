@@ -4,12 +4,11 @@ import com.github.jk1.license.render.JsonReportRenderer
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
-  id 'com.formkiq.gradle.java-base' version '1.0.8'
+  id 'com.formkiq.gradle.java-base' version '1.0.9'
   id 'com.formkiq.gradle.ytt' version '1.0.1'
   id 'de.undercouch.download' version '5.7.0'
   id 'org.openapi.generator' version '7.20.0'
   id 'com.github.jk1.dependency-license-report' version '3.1.1'
-  id 'org.owasp.dependencycheck' version '12.2.0'
 }
 
 repositories { mavenCentral() }
@@ -39,35 +38,6 @@ allprojects {
     filters = [
       new LicenseBundleNormalizer()
     ]
-  }
-
-  dependencyCheck {
-    formats = ['HTML', 'JSON', 'SARIF']
-    failBuildOnCVSS = 7.0
-
-    // Only scan runtime dependencies
-    scanConfigurations = ['runtimeClasspath']
-
-    // Keep test-related groups out
-    skipTestGroups = true
-
-    skipProjects = [':fkq-test-utils']
-
-    // Optional: avoid embedded JS/npm issues if you only want JVM deps
-    analyzers {
-      nodeAudit {
-        enabled = false
-      }
-
-      ossIndex {
-        enabled = true
-        username = project.getProperty('ossIndexUsername')
-        password = project.getProperty('ossIndexPassword')
-      }
-    }
-    nvd {
-      apiKey = project.getProperty('nvdKey')
-    }
   }
 }
 
