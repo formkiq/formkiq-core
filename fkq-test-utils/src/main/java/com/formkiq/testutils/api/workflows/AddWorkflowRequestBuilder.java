@@ -35,6 +35,7 @@ import com.formkiq.client.model.AddWorkflowStepQueue;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.WorkflowStatus;
 import com.formkiq.client.model.WorkflowStepDecisionType;
+import com.formkiq.client.model.WorkflowStepMapping;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -127,7 +128,7 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
    */
   public AddWorkflowRequestBuilder addMapping(final String stepId, final String mappingId) {
     AddWorkflowStep step = getWorkflowStep(stepId);
-    step.addMappingIdsItem(mappingId);
+    step.addMappingsItem(new WorkflowStepMapping().mappingId(mappingId));
     return this;
   }
 

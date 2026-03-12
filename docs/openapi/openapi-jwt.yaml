@@ -13555,8 +13555,6 @@ components:
       - conditions
       type: object
       properties:
-        condition:
-          $ref: '#/components/schemas/WorkflowStepCondition'
         conditions:
           type: array
           description: Workflow Step Conditions

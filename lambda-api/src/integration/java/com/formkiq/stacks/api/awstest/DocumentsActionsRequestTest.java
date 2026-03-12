@@ -35,8 +35,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
-import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.Document;
@@ -278,8 +278,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
 
     // when
-    AddDocumentActionsRetryResponse retryResponse =
-        actionsApi.addDocumentRetryAction(documentId, null);
+    AddResponse retryResponse = actionsApi.addDocumentRetryAction(documentId, null);
 
     // then
     assertEquals("Actions retrying", retryResponse.getMessage());
