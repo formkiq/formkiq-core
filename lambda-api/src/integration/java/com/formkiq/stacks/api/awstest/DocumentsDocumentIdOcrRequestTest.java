@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.DocumentAction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -50,7 +51,6 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentActionsRequest;
-import com.formkiq.client.model.AddDocumentActionsResponse;
 import com.formkiq.client.model.AddDocumentOcrRequest;
 import com.formkiq.client.model.AddDocumentOcrResponse;
 import com.formkiq.client.model.DocumentActionStatus;
@@ -102,7 +102,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
             .type(DocumentActionType.OCR)));
 
     // when
-    AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
+    AddResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
@@ -220,7 +220,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
             new AddActionParameters().ocrEngine(OcrEngine.TESSERACT).ocrNumberOfPages("2"))));
 
     // when
-    AddDocumentActionsResponse response = actionsApi.addDocumentActions(documentId, null, req);
+    AddResponse response = actionsApi.addDocumentActions(documentId, null, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
