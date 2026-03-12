@@ -53,6 +53,7 @@ import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
@@ -74,8 +75,6 @@ import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
-import com.formkiq.client.model.AddDocumentActionsResponse;
-import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
@@ -292,8 +291,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           List.of(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -443,8 +441,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertDocumentAction(actions.get(0), DocumentActionType.OCR, FAILED, "some message");
 
       // when
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+      AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
       assertEquals("Actions retrying", retry.getMessage());
@@ -495,8 +492,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .type(ActionType.FULLTEXT).build(siteId)));
 
       // when
-      AddDocumentActionsRetryResponse retry =
-          this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+      AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
       // then
       assertEquals("Actions retrying", retry.getMessage());
@@ -562,8 +558,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         // when
         this.service.saveNewActions(addActions);
 
-        AddDocumentActionsRetryResponse retry =
-            this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
+        AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId);
 
         // then
         assertEquals("Actions retrying", retry.getMessage());
@@ -630,8 +625,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().url("https://localhost"))));
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -744,8 +738,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().engine(EngineEnum.CHATGPT).tags("something"))));
 
       // when - correct parameters
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -816,8 +809,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -1001,8 +993,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().mappingId(mappingId))));
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -1034,8 +1025,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
 
       // when
-      AddDocumentActionsResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, req);
+      AddResponse response = this.documentActionsApi.addDocumentActions(documentId, siteId, req);
 
       // then
       assertEquals("Actions saved", response.getMessage());

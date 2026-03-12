@@ -26,15 +26,14 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
-import com.formkiq.client.model.AddDocumentActionsRetryResponse;
+import com.formkiq.client.model.AddResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
  * Builder for {@link AddDocumentAttributesRequest}.
  */
-public class AddDocumentActionsRetryRequestBuilder
-    implements HttpRequestBuilder<AddDocumentActionsRetryResponse> {
+public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
   /** Document Id. */
   private final String id;
@@ -55,8 +54,7 @@ public class AddDocumentActionsRetryRequestBuilder
    * @param siteId Site ID
    * @return AddDocumentResponse
    */
-  public ApiHttpResponse<AddDocumentActionsRetryResponse> submit(final ApiClient apiClient,
-      final String siteId) {
+  public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(
         () -> new DocumentActionsApi(apiClient).addDocumentRetryAction(this.id, siteId));
   }
