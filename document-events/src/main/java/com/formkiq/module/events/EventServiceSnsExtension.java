@@ -53,7 +53,7 @@ public class EventServiceSnsExtension implements AwsServiceExtension<EventServic
         om = "ACTIVE";
       }
 
-      if ("ACTIVE".equals(om)) {
+      if ("ACTIVE".equalsIgnoreCase(om)) {
         this.service = new EventServiceSns(sns, awsServiceCache.environment("SNS_DOCUMENT_EVENT"));
       } else {
         this.service = new EventServiceDisabled();

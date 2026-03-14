@@ -47,7 +47,7 @@ public class EventBridgeServiceExtension implements AwsServiceExtension<EventBri
         om = "ACTIVE";
       }
 
-      if ("ACTIVE".equals(om)) {
+      if ("ACTIVE".equalsIgnoreCase(om)) {
         this.service = new EventBridgeServiceImpl(awsServiceCache.getLogger(), connection);
       } else {
         this.service = new EventBridgeServiceDisabled();
