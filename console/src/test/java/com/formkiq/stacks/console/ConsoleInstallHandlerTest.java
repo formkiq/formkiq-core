@@ -49,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.module.http.HttpServiceJdk11;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
@@ -89,12 +90,7 @@ public class ConsoleInstallHandlerTest {
     s3Connection = serviceCache.getExtension(S3ConnectionBuilder.class);
     s3 = serviceCache.getExtension(S3Service.class);
 
-    s3.createBucket("distrobucket");
     s3.createBucket(CONSOLE_BUCKET);
-
-    try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/test.zip")) {
-      s3.putObject("distrobucket", "formkiq-console/0.1/formkiq-console.zip", is, null);
-    }
 
     connection = new HttpUrlConnectionRecorder(new URL("http://localhost"));
 
@@ -121,8 +117,9 @@ public class ConsoleInstallHandlerTest {
   private Map<String, String> createEnvironment() {
     Map<String, String> map = new HashMap<>();
     map.put("CONSOLE_VERSION", "0.1");
+    map.put("CONSOLE_ZIP_URL",
+        "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip");
     map.put("REGION", "us-east-1");
-    map.put("DISTRIBUTION_BUCKET", "distrobucket");
     map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
     map.put("API_URL",
         "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
@@ -141,13 +138,19 @@ public class ConsoleInstallHandlerTest {
   }
 
   private void createHandler(final Map<String, String> map) {
-    this.handler = new ConsoleInstallHandler(map, Region.US_EAST_2, s3Connection, s3Connection) {
+    this.handler =
+        new ConsoleInstallHandler(map, Region.US_EAST_2, s3Connection, new HttpServiceJdk11()) {
 
-      @Override
-      protected HttpURLConnection getConnection(final String responseUrl) {
-        return ConsoleInstallHandlerTest.this.getConnection();
-      }
-    };
+          @Override
+          protected HttpURLConnection getConnection(final String responseUrl) {
+            return ConsoleInstallHandlerTest.this.getConnection();
+          }
+
+          @Override
+          protected InputStream getConsoleZipInputStream(final String consoleZipUrl) {
+            return ConsoleInstallHandlerTest.class.getResourceAsStream("/test.zip");
+          }
+        };
   }
 
   /**
@@ -187,8 +190,8 @@ public class ConsoleInstallHandlerTest {
     // when
     this.logger.log(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
-    this.logger.log("unpacking formkiq-console/0.1/formkiq-console.zip "
-        + "from bucket distrobucket to bucket destbucket");
+    this.logger.log(
+        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
@@ -261,8 +264,8 @@ public class ConsoleInstallHandlerTest {
     assertTrue(this.logger.containsString(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Update}"));
 
-    assertTrue(this.logger.containsString("unpacking formkiq-console/0.1/formkiq-console.zip "
-        + "from bucket distrobucket to bucket destbucket"));
+    assertTrue(this.logger.containsString(
+        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket"));
     assertTrue(
         this.logger.containsString("sending SUCCESS to https://cloudformation-custom-resource"));
     assertTrue(this.logger.containsString("Request Update was successful!"));
@@ -371,8 +374,8 @@ public class ConsoleInstallHandlerTest {
     // when
     this.logger.log(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
-    this.logger.log("unpacking formkiq-console/0.1/formkiq-console.zip "
-        + "from bucket distrobucket to bucket destbucket");
+    this.logger.log(
+        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
