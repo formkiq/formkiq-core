@@ -43,7 +43,7 @@ public class SnsServiceExtension implements AwsServiceExtension<SnsService> {
 
       String om = awsServiceCache.environment("OPERATIONAL_MODE");
       if (om == null) {
-        throw new UnsupportedOperationException("'OPERATIONAL_MODE' is not set");
+        om = "ACTIVE";
       }
 
       if ("ACTIVE".equals(om)) {
