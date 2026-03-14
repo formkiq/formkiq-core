@@ -150,7 +150,7 @@ Parameters:
 
   OperationalMode:
     Type: String
-    Default: "Active"
+    Default: "ACTIVE"
     Description: >
       Controls the runtime operational behavior of the FormKiQ environment.
 

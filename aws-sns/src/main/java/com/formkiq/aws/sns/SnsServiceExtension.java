@@ -46,7 +46,7 @@ public class SnsServiceExtension implements AwsServiceExtension<SnsService> {
         om = "ACTIVE";
       }
 
-      if ("ACTIVE".equals(om)) {
+      if ("ACTIVE".equalsIgnoreCase(om)) {
         this.service = new SnsServiceImpl(connection);
       } else {
         this.service = new SnsServiceDisabled();
