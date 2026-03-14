@@ -48,6 +48,7 @@ import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -72,8 +73,10 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
 
   @BeforeAll
   public static void beforeAll() throws ApiException {
-    new OpenSearchIndexPurgeRequestBuilder().submit(getApiClients(null).get(1), null)
-        .throwIfError();
+    var resp = new OpenSearchIndexPurgeRequestBuilder().submit(getApiClients(null).get(1), null);
+    if (resp.isError() && HttpStatus.NOT_FOUND != resp.exception().getCode()) {
+      resp.throwIfError();
+    }
   }
 
   private DocumentSync find(final Collection<DocumentSync> list, final DocumentSyncType type) {
