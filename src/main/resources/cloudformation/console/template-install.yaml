@@ -48,11 +48,6 @@ Parameters:
     Description: Console Installer Brand
     Default: "formkiq"
 
-  DistributionBucket:
-    Type: String
-    Description: FormKiQ Distribution BucketName
-    Default: "formkiq-distribution-console"
-
   AllowAdminCreateUserOnly:
     Description: When true only Cognito Admin can create users, false users can register themselves
     AllowedPattern: ".+"
@@ -189,8 +184,8 @@ Resources:
         Variables:
           CONSOLE_VERSION:
             Fn::Sub: "${ConsoleVersion}"
-          DISTRIBUTION_BUCKET:
-            Fn::Sub: "${DistributionBucket}"
+          CONSOLE_ZIP_URL:
+            Fn::Sub: "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
           REGION:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET:
@@ -319,15 +314,6 @@ Resources:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                   - Ref: CognitoConfigBucket
-                  - '/*'
-            - Effect: Allow
-              Action:
-              - s3:GetObject
-              Resource:
-              - Fn::Join:
-                - ''
-                - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Ref: DistributionBucket
                   - '/*'
             - Effect: Allow
               Action:

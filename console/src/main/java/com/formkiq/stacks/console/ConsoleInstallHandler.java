@@ -31,9 +31,11 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.json.JSONObject;
@@ -42,6 +44,9 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.urls.HttpStatus;
 import software.amazon.awssdk.regions.Region;
 
 /** {@link RequestHandler} for installing the console. */
@@ -49,13 +54,12 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /** Environment Variable {@link Map}. */
   private final Map<String, String> environmentMap;
+  /** {@link HttpService}. */
+  private final HttpService http;
   /** Extra Mime Types. */
   private final Map<String, String> mimeTypes = new HashMap<>();
   /** {@link S3Service}. */
   private final S3Service s3;
-
-  /** {@link S3Service}. */
-  private final S3Service s3UsEast1;
   /** {@link Region}. */
   private final Region awsRegion;
 
@@ -63,9 +67,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   public ConsoleInstallHandler() {
     this(System.getenv(), Region.of(System.getenv("REGION")),
         new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.US_EAST_1),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("REGION"))));
+            .setRegion(Region.of(System.getenv("REGION"))),
+        new HttpServiceJdk11());
   }
 
   /**
@@ -73,14 +76,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    *
    * @param map {@link Map}
    * @param region {@link Region}
-   * @param s3builderUsEast1 {@link S3ConnectionBuilder}
    * @param s3builder {@link S3ConnectionBuilder}
+   * @param httpService {@link HttpService}
    */
   public ConsoleInstallHandler(final Map<String, String> map, final Region region,
-      final S3ConnectionBuilder s3builderUsEast1, final S3ConnectionBuilder s3builder) {
+      final S3ConnectionBuilder s3builder, final HttpService httpService) {
 
     this.environmentMap = map;
     this.awsRegion = region;
+    this.http = httpService;
 
     this.mimeTypes.put(".woff2", "font/woff2");
     this.mimeTypes.put(".eot", "application/vnd.ms-fontobject");
@@ -92,7 +96,6 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     this.mimeTypes.put(".css", "text/css");
 
     this.s3 = new S3Service(s3builder);
-    this.s3UsEast1 = new S3Service(s3builderUsEast1);
   }
 
   /**
@@ -192,6 +195,40 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
     URL url = new URL(responseUrl);
     return (HttpURLConnection) url.openConnection();
+  }
+
+  /**
+   * Get console zip as {@link InputStream}.
+   *
+   * @param consoleZipUrl {@link String}
+   * @return {@link InputStream}
+   * @throws IOException IOException
+   */
+  protected InputStream getConsoleZipInputStream(final String consoleZipUrl) throws IOException {
+
+    HttpResponse<InputStream> response =
+        this.http.getAsInputStream(consoleZipUrl, Optional.empty(), Optional.empty());
+
+    if (response.statusCode() < HttpStatus.OK
+        || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES) {
+      if (response.body() != null) {
+        response.body().close();
+      }
+      throw new IOException("failed to download console zip from " + consoleZipUrl
+          + ", status code " + response.statusCode());
+    }
+
+    return response.body();
+  }
+
+  /**
+   * Get console zip URL.
+   *
+   * @param consoleversion {@link String}
+   * @return {@link String}
+   */
+  protected String getConsoleZipUrl(final String consoleversion) {
+    return this.environmentMap.get("CONSOLE_ZIP_URL");
   }
 
   /**
@@ -323,33 +360,16 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       final LambdaLogger logger) {
 
     String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
-
-    String distributionBucket = this.environmentMap.get("DISTRIBUTION_BUCKET");
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
+    String consoleZipUrl = getConsoleZipUrl(consoleversion);
+    logger.log("unpacking " + consoleZipUrl + " to bucket " + destinationBucket);
 
-    String consoleZipKey = "formkiq-console/" + consoleversion + "/formkiq-console.zip";
-
-    logger.log("unpacking " + consoleZipKey + " from bucket " + distributionBucket + " to bucket "
-        + destinationBucket);
-
-    InputStream stream = this.s3UsEast1.getContentAsInputStream(distributionBucket, consoleZipKey);
-
-    try {
-
+    try (InputStream stream = getConsoleZipInputStream(consoleZipUrl)) {
       writeToBucket(stream, destinationBucket, consoleversion);
-
     } catch (IOException e) {
 
       logStacktrace(context, e);
       sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
-
-    } finally {
-
-      try {
-        stream.close();
-      } catch (IOException e) {
-        logger.log("cannot close stream " + e);
-      }
     }
   }
 

@@ -10,6 +10,8 @@
 	<allow pkg="java.util" />
 	<allow pkg="org.json" />
 	<allow pkg="com.amazonaws.services.lambda.runtime" />
+	<allow pkg="com.formkiq.module.http" />
+	<allow pkg="com.formkiq.urls" />
 	<allow pkg="com.formkiq.aws.s3" />
 	<allow pkg="com.formkiq.aws.ssm" />
 	<allow pkg="software.amazon.awssdk.services.s3" />
