@@ -136,7 +136,12 @@ Conditions:
     Fn::Equals:
       - Ref: EnableVpcLinks
       - 'true'
-    
+
+  IsCaCentral1:
+    Fn::Equals:
+      - Ref: AWS::Region
+      - 'ca-central-1'
+
 Resources:
 
   InternetGateway:
@@ -169,9 +174,13 @@ Resources:
       SecurityGroupIds:
         - Ref: VpcLinkSecurityGroup
       SubnetIds:
-        - Ref: PrivateSubnet1
-        - Ref: PrivateSubnet2
-        - Ref: PrivateSubnet3
+        Fn::If:
+          - IsCaCentral1
+          - - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+          - - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
 
   VpcLinkSecurityGroup:
     Condition: IsEnableVpcLinks
@@ -343,9 +352,10 @@ Resources:
         Ref: PublicSubnet2
       RouteTableId:
         Ref: PublicRouteTable
-        
+
   PubliceSubnet3RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: HasPublic
     Properties:
       SubnetId:
         Ref: PublicSubnet3
@@ -611,7 +621,9 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-PublicSubnet2"
+
   PublicSubnet3:
+    Condition: HasPublic
     Description: "Public Subnet 3"
     Value:
       Ref: PublicSubnet3
