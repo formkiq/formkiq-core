@@ -34,12 +34,17 @@ import com.formkiq.client.model.AddWorkflowStepDecision;
 import com.formkiq.client.model.AddWorkflowStepQueue;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.WorkflowStatus;
+import com.formkiq.client.model.WorkflowStepCondition;
+import com.formkiq.client.model.WorkflowStepConditionCriterion;
+import com.formkiq.client.model.WorkflowStepDecision;
 import com.formkiq.client.model.WorkflowStepDecisionType;
 import com.formkiq.client.model.WorkflowStepMapping;
+import com.formkiq.client.model.WorkflowStepTransition;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -105,6 +110,43 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
   }
 
   /**
+   * Add Decision.
+   *
+   * @param stepId {@link String}
+   * @param all {@link List} {@link WorkflowStepConditionCriterion}
+   * @param any {@link List} {@link WorkflowStepConditionCriterion}
+   * @param transition {@link WorkflowStepTransition}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addDecisionCondition(final String stepId,
+      final List<WorkflowStepConditionCriterion> all,
+      final List<WorkflowStepConditionCriterion> any, final WorkflowStepTransition transition) {
+    return addDecisionCondition(stepId, all, any, transition, null);
+  }
+
+  /**
+   * Add Decision with defaultTransition.
+   *
+   * @param stepId {@link String}
+   * @param all {@link List} {@link WorkflowStepConditionCriterion}
+   * @param any {@link List} {@link WorkflowStepConditionCriterion}
+   * @param transition {@link WorkflowStepTransition}
+   * @param defaultTransition {@link WorkflowStepTransition}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addDecisionCondition(final String stepId,
+      final List<WorkflowStepConditionCriterion> all,
+      final List<WorkflowStepConditionCriterion> any, final WorkflowStepTransition transition,
+      final WorkflowStepTransition defaultTransition) {
+    AddWorkflowStep step = getWorkflowStep(stepId);
+    WorkflowStepCondition condition =
+        new WorkflowStepCondition().all(all).any(any).transition(transition);
+    step.decision(new WorkflowStepDecision().addConditionsItem(condition)
+        .defaultTransition(defaultTransition));
+    return this;
+  }
+
+  /**
    * Add Document Action.
    *
    * @param stepId {@link String}
@@ -112,7 +154,7 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
    * @param nextStepId {@link String}
    * @return AddWorkflowRequestBuilder
    */
-  public AddWorkflowRequestBuilder addDecision(final String stepId,
+  public AddWorkflowRequestBuilder addDecisions(final String stepId,
       final WorkflowStepDecisionType type, final String nextStepId) {
     AddWorkflowStep step = getWorkflowStep(stepId);
     step.addDecisionsItem(new AddWorkflowStepDecision().type(type).nextStepId(nextStepId));
