@@ -63,10 +63,9 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
    */
   public DocumentWorkflowRecord {
     Objects.requireNonNull(key, "key must not be null");
-    Objects.requireNonNull(documentId, "documentId must not be null");
-    Objects.requireNonNull(workflowId, "workflowId must not be null");
-    Objects.requireNonNull(insertedDate, "insertedDate must not be null");
-    insertedDate = new Date(insertedDate.getTime());
+    if (insertedDate != null) {
+      insertedDate = new Date(insertedDate.getTime());
+    }
   }
 
   /**
