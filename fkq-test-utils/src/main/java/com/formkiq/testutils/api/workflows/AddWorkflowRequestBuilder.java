@@ -162,6 +162,20 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
   }
 
   /**
+   * Add Decision with defaultTransition.
+   *
+   * @param stepId {@link String}
+   * @param defaultTransition {@link WorkflowStepTransition}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addDefaultTransition(final String stepId,
+      final WorkflowStepTransition defaultTransition) {
+    AddWorkflowStep step = getWorkflowStep(stepId);
+    step.decision(new WorkflowStepDecision().defaultTransition(defaultTransition));
+    return this;
+  }
+
+  /**
    * Add Workflow Step Malling.
    *
    * @param stepId {@link String}

@@ -199,8 +199,6 @@ components:
 
     #@overlay/match missing_ok=True
     WorkflowStepDecision:
-      required:
-        - conditions
       type: object
       properties:
         conditions:
