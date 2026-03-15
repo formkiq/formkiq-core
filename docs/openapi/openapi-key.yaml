@@ -13551,8 +13551,6 @@ components:
           items:
             type: string
     WorkflowStepDecision:
-      required:
-      - conditions
       type: object
       properties:
         conditions:
