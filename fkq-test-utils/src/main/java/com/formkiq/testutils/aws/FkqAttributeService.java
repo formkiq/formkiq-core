@@ -29,6 +29,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
@@ -64,6 +65,20 @@ public class FkqAttributeService {
         new AddAttributeRequest().attribute(
             new AddAttribute().key(attributeKey).dataType(attributeDataType).type(attributeType)),
         siteId);
+  }
+
+  /**
+   * Create String {@link AddDocumentAttribute}.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return {@link AddDocumentAttribute}
+   */
+  public static AddDocumentAttribute createEntityAttribute(final String key,
+      final String entityTypeId, final String entityId) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeEntity().key(key).entityTypeId(entityTypeId).entityId(entityId));
   }
 
   /**
@@ -104,7 +119,6 @@ public class FkqAttributeService {
     return new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(key).stringValue(stringValue));
   }
-
 
   /**
    * Create Strings {@link AddDocumentAttribute}.

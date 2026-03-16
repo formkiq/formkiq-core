@@ -63,6 +63,35 @@ public class SetSchemaDocumentRequestBuilder implements HttpRequestBuilder<SetRe
   }
 
   /**
+   * Add Optional Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return SetDocumentAttributesRequestBuilder
+   */
+  public SetSchemaDocumentRequestBuilder addOptionalAttribute(final String key,
+      final String entityTypeId, final String entityId) {
+    attributes.addOptionalItem(new AddAttributeSchemaOptional().attributeKey(key)
+        .defaultEntityTypeId(entityTypeId).defaultEntityId(entityId));
+    return this;
+  }
+
+  /**
+   * Add Optional Attribute constrained to an Entity Type.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @return SetDocumentAttributesRequestBuilder
+   */
+  public SetSchemaDocumentRequestBuilder addOptionalEntityTypeAttribute(final String key,
+      final String entityTypeId) {
+    attributes.addOptionalItem(
+        new AddAttributeSchemaOptional().attributeKey(key).defaultEntityTypeId(entityTypeId));
+    return this;
+  }
+
+  /**
    * Add Required Attribute.
    * 
    * @param key {@link String}
@@ -70,6 +99,35 @@ public class SetSchemaDocumentRequestBuilder implements HttpRequestBuilder<SetRe
    */
   public SetSchemaDocumentRequestBuilder addRequiredAttribute(final String key) {
     attributes.addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key));
+    return this;
+  }
+
+  /**
+   * Add Required Entity Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return SetDocumentAttributesRequestBuilder
+   */
+  public SetSchemaDocumentRequestBuilder addRequiredEntityAttribute(final String key,
+      final String entityTypeId, final String entityId) {
+    attributes.addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key)
+        .defaultEntityTypeId(entityTypeId).defaultEntityId(entityId));
+    return this;
+  }
+
+  /**
+   * Add Required Attribute constrained to an Entity Type.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @return SetDocumentAttributesRequestBuilder
+   */
+  public SetSchemaDocumentRequestBuilder addRequiredEntityTypeAttribute(final String key,
+      final String entityTypeId) {
+    attributes.addRequiredItem(
+        new AddAttributeSchemaRequired().attributeKey(key).defaultEntityTypeId(entityTypeId));
     return this;
   }
 

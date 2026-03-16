@@ -38,6 +38,10 @@ public class SchemaAttributesOptional {
   private List<String> allowedValues;
   /** Attribute Key. */
   private String attributeKey;
+  /** Entity Type Id. */
+  private String defaultEntityTypeId;
+  /** Entity Id. */
+  private String defaultEntityId;
   /** Localized Allowed Values. */
   private Map<String, String> localizedAllowedValues;
   /** Min Number of values. */
@@ -75,6 +79,28 @@ public class SchemaAttributesOptional {
   }
 
   /**
+   * Set Entity Id.
+   *
+   * @param optionalEntityId {@link String}
+   * @return {@link SchemaAttributesOptional}
+   */
+  public SchemaAttributesOptional defaultEntityId(final String optionalEntityId) {
+    this.defaultEntityId = optionalEntityId;
+    return this;
+  }
+
+  /**
+   * Set Entity Type Id.
+   *
+   * @param optionalEntityTypeId {@link String}
+   * @return {@link SchemaAttributesOptional}
+   */
+  public SchemaAttributesOptional defaultEntityTypeId(final String optionalEntityTypeId) {
+    this.defaultEntityTypeId = optionalEntityTypeId;
+    return this;
+  }
+
+  /**
    * Get Allowed Values.
    * 
    * @return {@link List} {@link String}
@@ -90,6 +116,24 @@ public class SchemaAttributesOptional {
    */
   public String getAttributeKey() {
     return this.attributeKey;
+  }
+
+  /**
+   * Get Entity Id.
+   *
+   * @return {@link String}
+   */
+  public String getDefaultEntityId() {
+    return this.defaultEntityId;
+  }
+
+  /**
+   * Get Entity Type Id.
+   *
+   * @return {@link String}
+   */
+  public String getDefaultEntityTypeId() {
+    return this.defaultEntityTypeId;
   }
 
   /**

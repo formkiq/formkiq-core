@@ -42,6 +42,10 @@ public class SchemaAttributesRequired {
   private String defaultValue;
   /** Default Values. */
   private List<String> defaultValues;
+  /** Entity Type Id. */
+  private String defaultEntityTypeId;
+  /** Entity Id. */
+  private String defaultEntityId;
   /** Localized Allowed Values. */
   private Map<String, String> localizedAllowedValues;
   /** Min Number of values. */
@@ -75,6 +79,28 @@ public class SchemaAttributesRequired {
    */
   public SchemaAttributesRequired attributeKey(final String requiredAttributeKey) {
     this.attributeKey = requiredAttributeKey;
+    return this;
+  }
+
+  /**
+   * Set Entity Id.
+   *
+   * @param requiredEntityId {@link String}
+   * @return {@link SchemaAttributesRequired}
+   */
+  public SchemaAttributesRequired defaultEntityId(final String requiredEntityId) {
+    this.defaultEntityId = requiredEntityId;
+    return this;
+  }
+
+  /**
+   * Set Entity Type Id.
+   *
+   * @param requiredEntityTypeId {@link String}
+   * @return {@link SchemaAttributesRequired}
+   */
+  public SchemaAttributesRequired defaultEntityTypeId(final String requiredEntityTypeId) {
+    this.defaultEntityTypeId = requiredEntityTypeId;
     return this;
   }
 
@@ -116,6 +142,24 @@ public class SchemaAttributesRequired {
    */
   public String getAttributeKey() {
     return this.attributeKey;
+  }
+
+  /**
+   * Get Entity Id.
+   *
+   * @return {@link String}
+   */
+  public String getDefaultEntityId() {
+    return this.defaultEntityId;
+  }
+
+  /**
+   * Get Entity Type Id.
+   *
+   * @return {@link String}
+   */
+  public String getDefaultEntityTypeId() {
+    return this.defaultEntityTypeId;
   }
 
   /**
