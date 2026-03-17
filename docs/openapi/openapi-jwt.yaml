@@ -3009,6 +3009,7 @@
                 | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
                 | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
                 | METADATA_EXTRACTION | llmPromptEntityName | LLM Prompt Entity Name |
+                | CHECKSUM    | checksumType    | Checksum algorithm to calculate and persist for the document | SHA1 or SHA256 |
                 | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
                 | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
                 | DOCUMENTTAGGING    | tags    | Comma-deliminted list of keywords | author,title,description |
@@ -11621,6 +11622,7 @@
               - ANTIVIRUS
               - DOCUMENTTAGGING
               - FULLTEXT
+              - CHECKSUM
               - NOTIFICATION
               - OCR
               - QUEUE
@@ -12073,6 +12075,8 @@
                 eventBusName:
                   type: string
                   description: The name or ARN of the event bus to receive the event
+                checksumType:
+                  $ref: '#/components/schemas/ChecksumType'
                 width:
                   type: string
                   description: The width of the image to resize (or 'auto')

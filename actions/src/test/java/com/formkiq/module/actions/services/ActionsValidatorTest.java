@@ -218,6 +218,27 @@ class ActionsValidatorTest {
   }
 
   @Test
+  void testValidation11() {
+    Action action = new Action().type(ActionType.CHECKSUM).userId("joe");
+    testTemplate(action, "parameters.checksumType", "'checksumType' parameter is required");
+  }
+
+  @Test
+  void testValidation12() {
+    Action action = new Action().type(ActionType.CHECKSUM).userId("joe")
+        .parameters(Map.of("checksumType", "md5"));
+    testTemplate(action, "parameters.checksumType",
+        "'checksumType' parameter must be one of [SHA1, SHA256]");
+  }
+
+  @Test
+  void testValidation13() {
+    Action action = new Action().type(ActionType.CHECKSUM).userId("joe")
+        .parameters(Map.of("checksumType", "sha256"));
+    testTemplate(action, null, null);
+  }
+
+  @Test
   void testZeroHeight() {
     testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
         "'height' parameter must be an integer > 0 or 'auto'");

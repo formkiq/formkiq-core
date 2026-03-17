@@ -319,6 +319,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       case FULLTEXT -> actionStatus =
           new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
 
+      case CHECKSUM -> actionStatus =
+          new ChecksumAction(serviceCache).run(logger, siteId, documentId, actions, action);
+
       case ANTIVIRUS, MALWARE_SCAN -> {
         new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
             "/documents/" + documentId + "/malwareScan", "");

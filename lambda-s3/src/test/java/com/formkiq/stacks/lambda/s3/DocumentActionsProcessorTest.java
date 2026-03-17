@@ -661,6 +661,42 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
 
   /**
+   * Handle Checksum Action.
+   *
+   */
+  @Test
+  public void testChecksumAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String content = "this is some data";
+      String documentId = createDocument2(siteId, "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions = List.of(new Action().type(ActionType.CHECKSUM).userId("joe")
+          .parameters(Map.of("checksumType", "SHA256")));
+      actionsService.saveNewActions(siteId, documentId, actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, documentId).get(0);
+      assertEquals(ActionType.CHECKSUM, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentItem item = documentService.findDocument(siteId, documentId);
+      assertEquals("SHA256", item.getChecksumType());
+      assertEquals("dff90087e2a95f1c093cf40e7be6ef4e998e21b4ea38d0b494ea2fdb2576fcfe",
+          item.getChecksum());
+    }
+  }
+
+  /**
    * Handle documentTagging ChatApt Action missing GptKey.
    *
    */
