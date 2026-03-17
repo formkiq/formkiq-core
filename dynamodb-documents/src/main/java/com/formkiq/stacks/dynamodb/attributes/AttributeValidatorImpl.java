@@ -85,7 +85,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   private boolean isEmptyDefaultValue(final SchemaAttributesRequired attribute) {
-    return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty();
+    return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty()
+        && (isEmpty(attribute.getDefaultEntityTypeId()) || isEmpty(attribute.getDefaultEntityId()));
   }
 
   private boolean isKeyOnlyValues(final DocumentAttributeRecord da) {
@@ -527,6 +528,39 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateOptionalAttributes(schemaAttributes, documentAttributes, vb);
 
       validateAllowedValues(schemaAttributes, documentAttributes, vb);
+
+      validateEntityTypeDefaults(schemaAttributes, documentAttributes, vb);
+    }
+  }
+
+  private void validateEntityTypeDefaults(final SchemaAttributes attributes,
+      final Collection<DocumentAttributeRecord> documentAttributes, final ValidationBuilder vb) {
+
+    Map<String, String> requiredEntityTypes =
+        notNull(attributes.getRequired()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
+            .collect(Collectors.toMap(SchemaAttributesRequired::getAttributeKey,
+                SchemaAttributesRequired::getDefaultEntityTypeId, (a, b) -> a));
+
+    Map<String, String> optionalEntityTypes =
+        notNull(attributes.getOptional()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
+            .collect(Collectors.toMap(SchemaAttributesOptional::getAttributeKey,
+                SchemaAttributesOptional::getDefaultEntityTypeId, (a, b) -> a));
+
+    for (DocumentAttributeRecord attribute : documentAttributes) {
+      if (DocumentAttributeValueType.ENTITY.equals(attribute.getValueType())) {
+        String expected = requiredEntityTypes.containsKey(attribute.getKey())
+            ? requiredEntityTypes.get(attribute.getKey())
+            : optionalEntityTypes.get(attribute.getKey());
+
+        if (!isEmpty(expected)) {
+          String entityTypeId =
+              DocumentAttributeEntityKeyValue.fromString(attribute.getStringValue()).entityTypeId();
+          if (!expected.equals(entityTypeId)) {
+            vb.addError(attribute.getKey(),
+                "attribute '" + attribute.getKey() + "' must use entityTypeId '" + expected + "'");
+          }
+        }
+      }
     }
   }
 }

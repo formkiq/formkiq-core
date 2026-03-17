@@ -34,6 +34,9 @@ import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.plugins.useractivity.UserActivityContext;
@@ -392,6 +395,12 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         if (isEmpty(u.getDefaultValue()) && !isEmpty(r.getDefaultValue())) {
           u.defaultValue(r.getDefaultValue());
         }
+        if (isEmpty(u.getDefaultEntityTypeId()) && !isEmpty(r.getDefaultEntityTypeId())) {
+          u.defaultEntityTypeId(r.getDefaultEntityTypeId());
+        }
+        if (isEmpty(u.getDefaultEntityId()) && !isEmpty(r.getDefaultEntityId())) {
+          u.defaultEntityId(r.getDefaultEntityId());
+        }
       }
     });
 
@@ -680,7 +689,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
       validateAttributesExist(attributeDataTypes, attributeKeys, errors);
 
-      validateDefaultValues(schema, attributeDataTypes, errors);
+      validateDefaultValues(siteId, schema, attributeDataTypes, errors);
 
       validateOverlap(requiredAttributes, optionalAttributes, errors);
 
@@ -796,28 +805,96 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     }
   }
 
-  private void validateDefaultValues(final Schema schema,
+  private void validateDefaultValues(final String siteId, final Schema schema,
       final Map<String, AttributeRecord> attributes, final Collection<ValidationError> errors) {
 
     if (errors.isEmpty()) {
-      notNull(schema.getAttributes().getRequired()).forEach(a -> {
+      validateRequiredSchemaAttributes(siteId, schema, attributes, errors);
 
-        String attributeKey = a.getAttributeKey();
-        AttributeRecord ar = attributes.get(attributeKey);
+      validateOptionalSchemaAttributes(siteId, schema, attributes, errors);
+    }
+  }
 
-        if (AttributeDataType.KEY_ONLY.equals(ar.getDataType())) {
+  private void validateOptionalSchemaAttributes(final String siteId, final Schema schema,
+      final Map<String, AttributeRecord> attributes, final Collection<ValidationError> errors) {
+    notNull(schema.getAttributes().getOptional()).forEach(a -> {
+      String attributeKey = a.getAttributeKey();
+      AttributeRecord ar = attributes.get(attributeKey);
 
-          if (!notNull(a.getAllowedValues()).isEmpty()) {
-            String errorMsg = "attribute '" + attributeKey + "' does not allow allowed values";
-            errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-          }
-
-          if (!notNull(a.getDefaultValues()).isEmpty() || a.getDefaultValue() != null) {
-            String errorMsg = "attribute '" + attributeKey + "' does not allow default values";
-            errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-          }
+      if (AttributeDataType.ENTITY.equals(ar.getDataType())) {
+        if (isEmpty(a.getDefaultEntityTypeId()) && !isEmpty(a.getDefaultEntityId())) {
+          errors.add(
+              new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
         }
-      });
+
+        if (errors.isEmpty()) {
+          validateEntity(siteId, a.getDefaultEntityTypeId(), a.getDefaultEntityId(), errors);
+        }
+      }
+    });
+  }
+
+  private void validateRequiredSchemaAttributes(final String siteId, final Schema schema,
+      final Map<String, AttributeRecord> attributes, final Collection<ValidationError> errors) {
+
+    notNull(schema.getAttributes().getRequired()).forEach(sar -> {
+
+      String attributeKey = sar.getAttributeKey();
+      AttributeRecord ar = attributes.get(attributeKey);
+
+      switch (ar.getDataType()) {
+        case KEY_ONLY -> validateKeyOnlySchemaAttribute(sar, attributeKey, errors);
+        case ENTITY -> validateEntitySchemaAttribute(siteId, sar, errors);
+        default -> { // ignore
+        }
+      }
+    });
+  }
+
+  private void validateEntitySchemaAttribute(final String siteId, final SchemaAttributesRequired a,
+      final Collection<ValidationError> errors) {
+
+    if (isEmpty(a.getDefaultEntityTypeId())) {
+      errors.add(new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
+    }
+
+    if (errors.isEmpty()) {
+      validateEntity(siteId, a.getDefaultEntityTypeId(), a.getDefaultEntityId(), errors);
+    }
+  }
+
+  private void validateKeyOnlySchemaAttribute(final SchemaAttributesRequired a,
+      final String attributeKey, final Collection<ValidationError> errors) {
+
+    if (!notNull(a.getAllowedValues()).isEmpty()) {
+      String errorMsg = "attribute '" + attributeKey + "' does not allow allowed values";
+      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+    }
+
+    if (!notNull(a.getDefaultValues()).isEmpty() || a.getDefaultValue() != null) {
+      String errorMsg = "attribute '" + attributeKey + "' does not allow default values";
+      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+    }
+  }
+
+  private void validateEntity(final String siteId, final String entityTypeId, final String entityId,
+      final Collection<ValidationError> errors) {
+
+    DynamoDbKey entityType = EntityTypeRecord.builder().nameEmpty()
+        .namespace(EntityTypeNamespace.CUSTOM).documentId(entityTypeId).buildKey(siteId);
+    boolean entityTypeExists = this.db.exists(entityType);
+
+    if (!entityTypeExists) {
+      errors
+          .add(new ValidationErrorImpl().key("entityTypeId").error("EntityTypeId does not exist"));
+    }
+
+    if (!isEmpty(entityId)) {
+      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityTypeId)
+          .documentId(entityId).buildKey(siteId);
+      if (!this.db.exists(entity)) {
+        errors.add(new ValidationErrorImpl().key("entityId").error("EntityId does not exist"));
+      }
     }
   }
 
