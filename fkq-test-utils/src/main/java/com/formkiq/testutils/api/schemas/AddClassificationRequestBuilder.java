@@ -60,7 +60,7 @@ public class AddClassificationRequestBuilder
    * Add Optional Attribute.
    *
    * @param attributeKey {@link String}
-   * @return SetDocumentAttributesRequestBuilder
+   * @return AddClassificationRequestBuilder
    */
   public AddClassificationRequestBuilder addOptionalAttribute(final String attributeKey) {
     schemaAttributes.addOptionalItem(new AddAttributeSchemaOptional().attributeKey(attributeKey));
@@ -68,13 +68,43 @@ public class AddClassificationRequestBuilder
   }
 
   /**
+   * Add Optional Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return AddClassificationRequestBuilder
+   */
+  public AddClassificationRequestBuilder addOptionalAttribute(final String key,
+      final String entityTypeId, final String entityId) {
+    schemaAttributes.addOptionalItem(new AddAttributeSchemaOptional().attributeKey(key)
+        .defaultEntityTypeId(entityTypeId).defaultEntityId(entityId));
+    return this;
+  }
+
+  /**
    * Add Required Attribute.
    *
    * @param attributeKey {@link String}
-   * @return SetDocumentAttributesRequestBuilder
+   * @return AddClassificationRequestBuilder
    */
   public AddClassificationRequestBuilder addRequiredAttribute(final String attributeKey) {
     schemaAttributes.addRequiredItem(new AddAttributeSchemaRequired().attributeKey(attributeKey));
+    return this;
+  }
+
+  /**
+   * Add Required Entity Attribute.
+   *
+   * @param key {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return AddClassificationRequestBuilder
+   */
+  public AddClassificationRequestBuilder addRequiredEntityAttribute(final String key,
+      final String entityTypeId, final String entityId) {
+    schemaAttributes.addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key)
+        .defaultEntityTypeId(entityTypeId).defaultEntityId(entityId));
     return this;
   }
 

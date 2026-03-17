@@ -50,6 +50,7 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetClassificationsResponse;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetClassificationRequest;
@@ -62,9 +63,12 @@ import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.schemas.AddClassificationRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import org.jetbrains.annotations.NotNull;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -75,6 +79,7 @@ import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqAttributeService.createEntityAttribute;
 import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
 import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
 import static com.formkiq.testutils.aws.FkqSchemaService.createSchemaAttributes;
@@ -129,6 +134,11 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
         .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
   }
 
+  private String addEntityType(final String siteId, final String name) throws ApiException {
+    return new AddEntityTypeRequestBuilder().setEntityType(name, EntityTypeNamespace.CUSTOM)
+        .submit(client, siteId).throwIfError().response().getEntityTypeId();
+  }
+
   private void assertDocumentAttributes(final DocumentAttribute da,
       final String expectedAttributeKey, final String expectedStringValue) {
     assertEquals(expectedAttributeKey, da.getKey());
@@ -137,13 +147,29 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     assertNotNull(da.getUserId());
   }
 
+  private void assertException(final ApiException ex, final String errorMessage) {
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getCode());
+    assertEquals(errorMessage, ex.getResponseBody());
+  }
+
   private AddDocumentAttribute createAttribute(final String attributeKey,
       final String stringValue) {
     return new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(attributeKey).stringValue(stringValue));
   }
 
-  private @NotNull List<SearchResultDocument> search(final String siteId,
+  private AddDocumentAttribute createAttributeClassification(final String classificationId) {
+    return new AddDocumentAttribute(
+        new AddDocumentAttributeClassification().classificationId(classificationId));
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId) throws ApiException {
+    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
+        .getAttributes());
+  }
+
+  private List<SearchResultDocument> search(final String siteId,
       final DocumentSearchAttribute... items) throws ApiException {
     DocumentSearch ds = new DocumentSearch();
     for (DocumentSearchAttribute item : items) {
@@ -383,6 +409,55 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
+   * POST /sites/{siteId}/classifications - with EntityTypeId and EntityId invalid / valid.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddClassificationsEntityTypeAndEntityId() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+      // when - missing entityType / entityId
+      var resp = new AddClassificationRequestBuilder("doc")
+          .addRequiredEntityAttribute("company", null, null).submit(client, siteId);
+
+      // then
+      assertException(resp.exception(), "{\"errors\":[{\"key\":\"entityTypeId\","
+          + "\"error\":\"'entityTypeId' is required\"}]}");
+
+      // when - invalid entityType is setup
+      resp = new AddClassificationRequestBuilder("doc")
+          .addRequiredEntityAttribute("company", ID.uuid(), null).submit(client, siteId);
+
+      // then
+      assertException(resp.exception(), "{\"errors\":[{\"key\":\"entityTypeId\","
+          + "\"error\":\"EntityTypeId does not exist\"}]}");
+
+      // given
+      var entityTypeId = addEntityType(siteId, "Company");
+
+      // when - add valid required classification entityType
+      resp = new AddClassificationRequestBuilder("doc")
+          .addRequiredEntityAttribute("company", entityTypeId, null).submit(client, siteId)
+          .throwIfError();
+
+      // given
+      var entityId = new AddEntityRequestBuilder(entityTypeId).name("test123")
+          .submit(client, siteId).throwIfError().response().getEntityId();
+
+      // when - add valid required classification entityType / entityId
+      new AddClassificationRequestBuilder("doc2")
+          .addRequiredEntityAttribute("company", entityTypeId, entityId).submit(client, siteId)
+          .throwIfError();
+    }
+  }
+
+  /**
    * Add document with classification.
    */
   @Test
@@ -407,8 +482,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(2, documentAttributes.size());
 
       assertEquals("Classification", documentAttributes.get(0).getKey());
@@ -486,8 +560,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       String documentId = addDocument(siteId, List.of(new AddDocumentAttribute(classification)));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(2, documentAttributes.size());
 
       assertEquals("Classification", documentAttributes.get(0).getKey());
@@ -544,8 +617,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           List.of(new AddDocumentAttribute(classification), attribute0, attribute1));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 3;
       assertEquals(expected, documentAttributes.size());
@@ -593,8 +665,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           List.of(new AddDocumentAttribute(classification), attribute0, attribute1));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 4;
       assertEquals(expected, documentAttributes.size());
@@ -651,8 +722,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           List.of(new AddDocumentAttribute(classification), attribute0, attribute1, attribute2));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 5;
       assertEquals(expected, documentAttributes.size());
@@ -739,8 +809,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           addDocument(siteId, List.of(new AddDocumentAttribute(classification), attribute));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 2;
       assertEquals(expected, documentAttributes.size());
@@ -773,8 +842,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       String documentId = addDocument(siteId, List.of(attribute));
 
       // then
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, documentAttributes.size());
       assertEquals("reviewByDate", documentAttributes.get(0).getKey());
 
@@ -833,8 +901,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       final int expected = 6;
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(expected, documentAttributes.size());
 
       // given
@@ -898,6 +965,65 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals(2, documentAttributes.size());
       assertEquals("invoiceNumber", documentAttributes.get(0).getKey());
       assertEquals("retentionPeriodInDays2", documentAttributes.get(1).getKey());
+    }
+  }
+
+  /**
+   * Add document with entity classification, entity type only.
+   */
+  @Test
+  void testAddDocumentWithEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+      var entityTypeId = addEntityType(siteId, "Company");
+
+      var entityId = new AddEntityRequestBuilder(entityTypeId).name("doc2").submit(client, siteId)
+          .throwIfError().response().getEntityId();
+
+      var resp = new AddClassificationRequestBuilder("doc")
+          .addRequiredEntityAttribute("company", entityTypeId, null).submit(client, siteId)
+          .throwIfError();
+      var classificationId = resp.response().getClassificationId();
+
+      AddDocumentAttribute attribute = createEntityAttribute("company", entityTypeId, entityId);
+
+      // when
+      String documentId =
+          addDocument(siteId, List.of(createAttributeClassification(classificationId), attribute));
+
+      // then
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(2, documentAttributes.size());
+
+      assertDocumentAttributes(documentAttributes.get(0), "Classification", classificationId);
+      assertEquals(AttributeValueType.CLASSIFICATION, documentAttributes.get(0).getValueType());
+
+      assertDocumentAttributes(documentAttributes.get(1), "company", entityTypeId + "#" + entityId);
+      assertEquals(AttributeValueType.ENTITY, documentAttributes.get(1).getValueType());
+
+      // given
+      var entityTypeId2 = addEntityType(siteId, "Company2");
+      var entityId2 = new AddEntityRequestBuilder(entityTypeId2).name("doc2").submit(client, siteId)
+          .throwIfError().response().getEntityId();
+      attribute = createEntityAttribute("company", entityTypeId2, entityId2);
+
+      // when - add document with invalid entitytypeid
+      try {
+        addDocument(siteId, List.of(createAttributeClassification(classificationId), attribute));
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(HttpStatus.BAD_REQUEST, e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"company\","
+            + "\"error\":\"attribute 'company' must use entityTypeId '" + entityTypeId + "'\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 
@@ -1113,8 +1239,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertNotNull(documentId);
 
       // when
-      List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
 
       final int expected = 3;
       assertEquals(expected, documentAttributes.size());
@@ -1300,6 +1425,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("d", classification.getName());
     }
   }
+
 
   /**
    * Set Document Classification, missing required attributes.

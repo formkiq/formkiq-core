@@ -13783,6 +13783,10 @@ Resources:
             AddAttributeSchemaRequired:
               type: "object"
               properties:
+                defaultEntityTypeId:
+                  type: "string"
+                defaultEntityId:
+                  type: "string"
                 minNumberOfValues:
                   type: "number"
                   description: "The minimum number of attribute values"
@@ -13836,6 +13840,10 @@ Resources:
             AddAttributeSchemaOptional:
               type: "object"
               properties:
+                defaultEntityTypeId:
+                  type: "string"
+                defaultEntityId:
+                  type: "string"
                 minNumberOfValues:
                   type: "number"
                   description: "The minimum number of attribute values"

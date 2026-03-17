@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -43,6 +44,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * {@link Function} to create Required {@link DocumentAttributeRecord} with default values from a
@@ -93,9 +95,13 @@ public class SchemaRequiredDefaultValueKeyGenerator {
     return missingRequiredAttributes.stream().filter(r -> {
       AttributeRecord rr = attributeRecordMap.get(r.getAttributeKey());
       return AttributeDataType.KEY_ONLY.equals(rr.getDataType()) || r.getDefaultValue() != null
-          || !notNull(r.getDefaultValues()).isEmpty();
+          || !notNull(r.getDefaultValues()).isEmpty() || isValidEntity(r);
     }).flatMap(r -> createDefaultValues(attributeRecordMap.get(r.getAttributeKey()), r, documentId,
         username).stream()).toList();
+  }
+
+  private boolean isValidEntity(final SchemaAttributesRequired sa) {
+    return !isEmpty(sa.getDefaultEntityTypeId()) && !isEmpty(sa.getDefaultEntityId());
   }
 
   private Collection<DocumentAttributeRecord> createDefaultValues(
@@ -106,6 +112,11 @@ public class SchemaRequiredDefaultValueKeyGenerator {
 
     if (AttributeDataType.KEY_ONLY.equals(attributeRecord.getDataType())) {
       list.add(createDocumentAttributeRecord(documentId, attributeRecord, null, username));
+    } else if (AttributeDataType.ENTITY.equals(attributeRecord.getDataType())) {
+      String entityValue =
+          new DocumentAttributeEntityKeyValue(r.getDefaultEntityTypeId(), r.getDefaultEntityId())
+              .getStringValue();
+      list.add(createDocumentAttributeRecord(documentId, attributeRecord, entityValue, username));
     } else {
       if (r.getDefaultValue() != null) {
         list.add(createDocumentAttributeRecord(documentId, attributeRecord, r.getDefaultValue(),
@@ -135,6 +146,10 @@ public class SchemaRequiredDefaultValueKeyGenerator {
       case BOOLEAN -> {
         r.setValueType(DocumentAttributeValueType.BOOLEAN);
         r.setBooleanValue(Boolean.valueOf(defaultValue));
+      }
+      case ENTITY -> {
+        r.setValueType(DocumentAttributeValueType.ENTITY);
+        r.setStringValue(defaultValue);
       }
       case KEY_ONLY -> r.setValueType(DocumentAttributeValueType.KEY_ONLY);
       case NUMBER -> {

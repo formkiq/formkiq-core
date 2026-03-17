@@ -64,9 +64,11 @@ import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.jetbrains.annotations.NotNull;
@@ -137,6 +139,19 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
     assertNotNull(documentId);
     return documentId;
+  }
+
+  private String addEntityTypeCustom(final String siteId, final String entityTypeName)
+      throws ApiException {
+    String entityTypeId1 =
+        new AddEntityTypeRequestBuilder().setEntityType(entityTypeName, EntityTypeNamespace.CUSTOM)
+            .submit(client, siteId).throwIfError().response().getEntityTypeId();
+    assertNotNull(entityTypeId1);
+    return entityTypeId1;
+  }
+
+  private String addEntityTypeCustomCompany(final String siteId) throws ApiException {
+    return addEntityTypeCustom(siteId, "Company");
   }
 
   private void assertAttributeSchemaRequired(final AttributeSchemaRequired r,
@@ -214,9 +229,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     return new AddAttributeSchemaRequired().attributeKey(attributeKey);
   }
 
-  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId,
-      final String attributeKey) throws ApiException {
-    return new GetDocumentAttributeRequestBuilder(documentId, attributeKey).submit(client, siteId)
+  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId)
+      throws ApiException {
+    return new GetDocumentAttributeRequestBuilder(documentId, "strings").submit(client, siteId)
         .throwIfError().response().getAttribute();
   }
 
@@ -664,10 +679,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", AttributeDataType.ENTITY);
       addAttribute(siteId, "address", AttributeDataType.STRING);
 
-      String entityTypeId0 =
-          new AddEntityTypeRequestBuilder().setEntityType("Company", EntityTypeNamespace.CUSTOM)
-              .submit(client, siteId).throwIfError().response().getEntityTypeId();
-      assertNotNull(entityTypeId0);
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
 
       for (String entityTypeId : List.of(entityTypeId0, "Company")) {
         AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
@@ -696,7 +708,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals(1, documentAttributes.size());
 
         DocumentAttribute da0 = documentAttributes.get(0);
-        DocumentAttribute da1 = getDocumentAttribute(siteId, documentId, "strings");
+        DocumentAttribute da1 = getDocumentAttribute(siteId, documentId);
 
         List.of(da0, da1).forEach(da -> {
           assertEquals(AttributeValueType.ENTITY, da.getValueType());
@@ -704,6 +716,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           assertDocumentAttributeEquals(da, "strings", stringValue, null);
           assertEntity(da, entityTypeId0, entityId);
 
+          assertNotNull(da.getEntity());
           List<EntityAttribute> attributes = notNull(da.getEntity().getAttributes());
           assertEquals(1, attributes.size());
           assertEquals("address", attributes.get(0).getKey());
@@ -906,6 +919,186 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
             + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents with site schema required entity type constraint.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentMissingRequiredEntity() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityTypeAttribute("company", entityTypeId0).submit(client, siteId)
+          .throwIfError();
+
+      // when - missing required entity attribute
+      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      ApiException e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"company\",\"error\":\"missing required attribute 'company'\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with site schema optional entity type constraint.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentOptionalEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+      String entityTypeId1 = addEntityTypeCustom(siteId, "Vendor");
+
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+          .addAttribute("address", "123").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+      assertNotNull(entityId0);
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId1).name("My Vendor")
+          .addAttribute("address", "abc").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+      assertNotNull(entityId1);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addOptionalEntityTypeAttribute("company", entityTypeId0).submit(client, siteId)
+          .throwIfError();
+
+      // when - optional entity attribute is omitted
+      String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(0, attributes.size());
+
+      // when - wrong entity type
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId1, entityId1, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"company\","
+          + "\"error\":\"attribute 'company' must use entityTypeId '" + entityTypeId0 + "'\"}]}",
+          e.getResponseBody());
+
+      // when - matching entity type
+      documentId = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId0, entityId0, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+      attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.get(0);
+      assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+      assertDocumentAttributeEquals(attribute, "company", entityTypeId0 + "#" + entityId0, null);
+      assertEntity(attribute, entityTypeId0, entityId0);
+
+      assertNotNull(attribute.getEntity());
+      List<EntityAttribute> entityAttributes = notNull(attribute.getEntity().getAttributes());
+      assertEquals(1, entityAttributes.size());
+      assertEquals("address", entityAttributes.get(0).getKey());
+      assertEquals("123", entityAttributes.get(0).getStringValue());
+    }
+  }
+
+  /**
+   * POST /documents with site schema required entity type constraint. Test valid / invalid
+   * entityTypeId
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentValidInvalidEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+
+      String entityTypeId1 = addEntityTypeCustom(siteId, "Vendor");
+
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+          .addAttribute("address", "123").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+      assertNotNull(entityId0);
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId1).name("My Vendor")
+          .addAttribute("address", "abc").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+      assertNotNull(entityId1);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityTypeAttribute("company", entityTypeId0).submit(client, siteId)
+          .throwIfError();
+
+      // when - wrong entity type
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId1, entityId1, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"company\","
+          + "\"error\":\"attribute 'company' must use entityTypeId '" + entityTypeId0 + "'\"}]}",
+          e.getResponseBody());
+
+      // when - matching entity type
+      String documentId = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId0, entityId0, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.get(0);
+      assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+      assertDocumentAttributeEquals(attribute, "company", entityTypeId0 + "#" + entityId0, null);
+      assertEntity(attribute, entityTypeId0, entityId0);
+
+      assertNotNull(attribute.getEntity());
+      List<EntityAttribute> entityAttributes = notNull(attribute.getEntity().getAttributes());
+      assertEquals(1, entityAttributes.size());
+      assertEquals("address", entityAttributes.get(0).getKey());
+      assertEquals("123", entityAttributes.get(0).getStringValue());
     }
   }
 
@@ -3165,6 +3358,58 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"compositeKeys\",\"error\":\"duplicate compositeKey\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document entity attributes require only defaultEntityTypeId.
+   *
+   */
+  @Test
+  public void testSetSitesSchema11() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+      // when - only defaultEntityTypeId is set
+      var resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", ID.uuid(), null).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"}]}",
+          e.getResponseBody());
+
+      // when - defaultEntityId is set without defaultEntityTypeId
+      resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", null, ID.uuid()).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"}]}",
+          e.getResponseBody());
+
+      // when - entityTypeId and entityId are invalid
+      resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", ID.uuid(), ID.uuid()).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          e.getResponseBody());
     }
   }
 
