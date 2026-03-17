@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -104,6 +105,23 @@ public enum ActionType {
         final Map<String, Object> parameters, final String chatGptApiKey,
         final String notificationsEmail, final Collection<ValidationError> errors) {
 
+    }
+  },
+  /** Checksum. */
+  CHECKSUM {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+      String checksumType = parameters != null ? (String) parameters.get("checksumType") : null;
+
+      if (!hasValue(parameters, "checksumType")) {
+        errors.add(new ValidationErrorImpl().key("parameters.checksumType")
+            .error("'checksumType' parameter is required"));
+      } else if (!VALID_CHECKSUM_TYPES.contains(checksumType.toUpperCase(Locale.ROOT))) {
+        errors.add(new ValidationErrorImpl().key("parameters.checksumType")
+            .error("'checksumType' parameter must be one of " + VALID_CHECKSUM_TYPES));
+      }
     }
   },
   /** Intelligent Document Processing. */
@@ -344,6 +362,8 @@ public enum ActionType {
   /** Valid image formats for resize action. */
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
+  /** Valid checksum types for checksum action. */
+  private static final List<String> VALID_CHECKSUM_TYPES = List.of("SHA1", "SHA256");
 
   private static boolean hasValue(final Map<String, Object> parameters, final String key) {
     return parameters != null && parameters.containsKey(key)

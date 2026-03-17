@@ -78,6 +78,7 @@ public class AddActionsToAction implements Function<AddAction, Action> {
       put(map, "tags", parameters.tags());
       put(map, "mappingId", parameters.mappingId());
       put(map, "eventBusName", parameters.eventBusName());
+      put(map, "checksumType", parameters.checksumType());
       put(map, "width", parameters.width());
       put(map, "height", parameters.height());
       put(map, "path", parameters.path());

@@ -9,6 +9,7 @@
 
 		<subpackage name="s3">
 
+            <allow pkg="java.security" />
 			<allow pkg="org.mockserver.mock.action" />
 			<allow pkg="org.mockserver.model" />
 
