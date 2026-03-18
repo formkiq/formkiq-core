@@ -89,6 +89,10 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     return this;
   }
 
+  public AddEntityRequestBuilder addAttribute(final String attributeKey, final int numberValue) {
+    return addAttribute(attributeKey, new BigDecimal(numberValue));
+  }
+
   public AddEntityRequestBuilder name(final String entityName) {
     addEntity.name(entityName);
     return this;

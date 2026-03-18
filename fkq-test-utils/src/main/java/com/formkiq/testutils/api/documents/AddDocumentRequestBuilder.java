@@ -27,12 +27,14 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -152,6 +154,19 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
     AddDocumentAttribute attr = new AddDocumentAttribute(new AddDocumentAttributeEntity().key(key)
         .entityTypeId(entityTypeId).entityId(entityId).namespace(namespace));
     this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Checksum Action.
+   *
+   * @param type {@link DocumentActionType}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addChecksumAction(final ChecksumType type) {
+    AddAction action = new AddAction().type(DocumentActionType.CHECKSUM)
+        .parameters(new AddActionParameters().checksumType(type));
+    this.request.addActionsItem(action);
     return this;
   }
 

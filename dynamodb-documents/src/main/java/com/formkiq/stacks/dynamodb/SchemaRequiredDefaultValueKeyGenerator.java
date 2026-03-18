@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
@@ -93,11 +94,30 @@ public class SchemaRequiredDefaultValueKeyGenerator {
         this.attributeservice.getAttributes(siteId, attributeKeys);
 
     return missingRequiredAttributes.stream().filter(r -> {
-      AttributeRecord rr = attributeRecordMap.get(r.getAttributeKey());
-      return AttributeDataType.KEY_ONLY.equals(rr.getDataType()) || r.getDefaultValue() != null
-          || !notNull(r.getDefaultValues()).isEmpty() || isValidEntity(r);
-    }).flatMap(r -> createDefaultValues(attributeRecordMap.get(r.getAttributeKey()), r, documentId,
-        username).stream()).toList();
+      AttributeDataType dataType = findDataType(r, attributeRecordMap);
+      return AttributeDataType.KEY_ONLY.equals(dataType) || hasDefaultValue(r) || isValidEntity(r);
+    }).flatMap(r -> createDefaultValues(attributeRecordMap, r, documentId, username).stream())
+        .toList();
+  }
+
+  private AttributeDataType findDataType(final SchemaAttributesRequired r,
+      final Map<String, AttributeRecord> attributeRecordMap) {
+    AttributeDataType dataType = null;
+    AttributeRecord ar = attributeRecordMap.get(r.getAttributeKey());
+    if (ar != null) {
+      dataType = ar.getDataType();
+    } else {
+      AttributeKeyReserved attributeKeyReserved = AttributeKeyReserved.find(r.getAttributeKey());
+      if (attributeKeyReserved != null) {
+        dataType = attributeKeyReserved.getDataType();
+      }
+    }
+
+    return dataType;
+  }
+
+  private boolean hasDefaultValue(final SchemaAttributesRequired r) {
+    return r.getDefaultValue() != null || !notNull(r.getDefaultValues()).isEmpty();
   }
 
   private boolean isValidEntity(final SchemaAttributesRequired sa) {
@@ -105,26 +125,29 @@ public class SchemaRequiredDefaultValueKeyGenerator {
   }
 
   private Collection<DocumentAttributeRecord> createDefaultValues(
-      final AttributeRecord attributeRecord, final SchemaAttributesRequired r,
+      final Map<String, AttributeRecord> attributeRecordMap, final SchemaAttributesRequired r,
       final String documentId, final String username) {
 
+    String attributeKey = r.getAttributeKey();
+    AttributeDataType dataType = findDataType(r, attributeRecordMap);
     Collection<DocumentAttributeRecord> list = new ArrayList<>();
 
-    if (AttributeDataType.KEY_ONLY.equals(attributeRecord.getDataType())) {
-      list.add(createDocumentAttributeRecord(documentId, attributeRecord, null, username));
-    } else if (AttributeDataType.ENTITY.equals(attributeRecord.getDataType())) {
+    if (AttributeDataType.KEY_ONLY.equals(dataType)) {
+      list.add(createDocumentAttributeRecord(documentId, attributeKey, dataType, null, username));
+    } else if (AttributeDataType.ENTITY.equals(dataType)) {
       String entityValue =
           new DocumentAttributeEntityKeyValue(r.getDefaultEntityTypeId(), r.getDefaultEntityId())
               .getStringValue();
-      list.add(createDocumentAttributeRecord(documentId, attributeRecord, entityValue, username));
+      list.add(
+          createDocumentAttributeRecord(documentId, attributeKey, dataType, entityValue, username));
     } else {
       if (r.getDefaultValue() != null) {
-        list.add(createDocumentAttributeRecord(documentId, attributeRecord, r.getDefaultValue(),
-            username));
+        list.add(createDocumentAttributeRecord(documentId, attributeKey, dataType,
+            r.getDefaultValue(), username));
       }
 
-      notNull(r.getDefaultValues()).forEach(
-          v -> list.add(createDocumentAttributeRecord(documentId, attributeRecord, v, username)));
+      notNull(r.getDefaultValues()).forEach(v -> list
+          .add(createDocumentAttributeRecord(documentId, attributeKey, dataType, v, username)));
     }
 
     // override attributes created from default Schem values
@@ -134,15 +157,16 @@ public class SchemaRequiredDefaultValueKeyGenerator {
   }
 
   private DocumentAttributeRecord createDocumentAttributeRecord(final String documentId,
-      final AttributeRecord attributeRecord, final String defaultValue, final String username) {
+      final String attributeKey, final AttributeDataType dataType, final String defaultValue,
+      final String username) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord();
-    r.setKey(attributeRecord.getKey());
+    r.setKey(attributeKey);
     r.setDocumentId(documentId);
     r.setInsertedDate(this.now);
     r.setUserId(username);
 
-    switch (attributeRecord.getDataType()) {
+    switch (dataType) {
       case BOOLEAN -> {
         r.setValueType(DocumentAttributeValueType.BOOLEAN);
         r.setBooleanValue(Boolean.valueOf(defaultValue));
@@ -168,8 +192,7 @@ public class SchemaRequiredDefaultValueKeyGenerator {
         r.setValueType(DocumentAttributeValueType.RELATIONSHIPS);
         r.setStringValue(defaultValue);
       }
-      default -> throw new IllegalArgumentException(
-          "Unsupported AttributeDataType: " + attributeRecord.getDataType());
+      default -> throw new IllegalArgumentException("Unsupported AttributeDataType: " + dataType);
     }
 
 
