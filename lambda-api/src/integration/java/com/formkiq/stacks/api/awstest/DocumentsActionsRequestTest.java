@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentActionsApi;
@@ -37,6 +38,7 @@ import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRetryResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AttributeValueType;
+import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
@@ -47,6 +49,8 @@ import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 import com.google.gson.Gson;
@@ -68,6 +72,7 @@ import software.amazon.awssdk.utils.IoUtils;
 
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -339,5 +344,31 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     assertNotNull(docActions.get(0).getStartDate());
     assertNotNull(docActions.get(0).getInsertedDate());
     assertNotNull(docActions.get(0).getCompletedDate());
+  }
+
+  /**
+   * Test Checksum Action.
+   * 
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  @Test
+  void testChecksum() throws ApiException, InterruptedException {
+    // given
+    for (var siteId : Arrays.asList(null, ID.uuid())) {
+      var apiClients = getApiClients(siteId);
+      var apiClient = apiClients.get(0);
+      var content = "this is some content!!!";
+
+      // when
+      var documentId =
+          new AddDocumentRequestBuilder().content(content).addChecksumAction(ChecksumType.SHA256)
+              .submit(apiClient, siteId).throwIfError().response().getDocumentId();
+
+      // then
+      var expectedChecksum = "fa62e088957a82578d690bce3c04296575bb7bd37b1ce5660e3609bcf3a085bd";
+      new GetDocumentRequestBuilder(documentId).submitUntil(apiClient, siteId,
+          (resp) -> expectedChecksum.equals(resp.response().getChecksum()));
+    }
   }
 }

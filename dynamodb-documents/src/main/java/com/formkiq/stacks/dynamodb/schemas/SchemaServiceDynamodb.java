@@ -33,6 +33,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.PaginationResults;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResponseToPagination;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
@@ -733,8 +734,11 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     for (String attributeKey : attributeKeys) {
 
       if (!attributes.containsKey(attributeKey)) {
-        String errorMsg = "attribute '" + attributeKey + "' not found";
-        errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+
+        if (AttributeKeyReserved.find(attributeKey) == null) {
+          String errorMsg = "attribute '" + attributeKey + "' not found";
+          errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+        }
       }
     }
   }
@@ -839,13 +843,27 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
     notNull(schema.getAttributes().getRequired()).forEach(sar -> {
 
+      AttributeDataType dataType = null;
       String attributeKey = sar.getAttributeKey();
       AttributeRecord ar = attributes.get(attributeKey);
 
-      switch (ar.getDataType()) {
-        case KEY_ONLY -> validateKeyOnlySchemaAttribute(sar, attributeKey, errors);
-        case ENTITY -> validateEntitySchemaAttribute(siteId, sar, errors);
-        default -> { // ignore
+      if (ar != null) {
+        dataType = ar.getDataType();
+      } else {
+        AttributeKeyReserved attributeKeyReserved = AttributeKeyReserved.find(attributeKey);
+        if (attributeKeyReserved != null) {
+          dataType = attributeKeyReserved.getDataType();
+        } else {
+          errors.add(new ValidationErrorImpl().key(attributeKey).error("attribute not found"));
+        }
+      }
+
+      if (dataType != null) {
+        switch (dataType) {
+          case KEY_ONLY -> validateKeyOnlySchemaAttribute(sar, attributeKey, errors);
+          case ENTITY -> validateEntitySchemaAttribute(siteId, sar, errors);
+          default -> { // ignore
+          }
         }
       }
     });

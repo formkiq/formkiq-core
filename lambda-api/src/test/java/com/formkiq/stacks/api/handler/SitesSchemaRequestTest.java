@@ -923,6 +923,92 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/attributes. Add Preset Retention Entity attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentPresetAttribute() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var entityTypeId = new AddEntityTypeRequestBuilder()
+          .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
+          .throwIfError().response().getEntityTypeId();
+
+      var entityId = new AddEntityRequestBuilder(entityTypeId).name("My Retention Policy")
+          .addAttribute("RetentionPeriodInDays", 5)
+          .addAttribute("RetentionStartDateSourceType", "DATE_INSERTED").submit(client, siteId)
+          .throwIfError().response().getEntityId();
+
+      new SetSchemaDocumentRequestBuilder("test4")
+          .addRequiredEntityAttribute("RetentionPolicy", entityTypeId, entityId)
+          .submit(client, siteId).throwIfError();
+
+      // when
+      var documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      // then
+      var documentAttributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, documentAttributes.size());
+      assertDocumentAttributeEquals(documentAttributes.get(0), "RetentionPolicy",
+          entityTypeId + "#" + entityId, null);
+      assertEquals(AttributeValueType.ENTITY, documentAttributes.get(0).getValueType());
+
+      // addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+      // addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      // String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+      //
+      // for (String entityTypeId : List.of(entityTypeId0, "Company")) {
+      // AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      // String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      // assertNotNull(documentId);
+      //
+      // String entityId = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+      // .addAttribute("address", "123").submit(client, siteId).throwIfError().response()
+      // .getEntityId();
+      // assertNotNull(entityId);
+      //
+      // AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings")
+      // .entityId(entityId).entityTypeId(entityTypeId).namespace(EntityTypeNamespace.CUSTOM);
+      // AddDocumentAttributesRequest attrReq =
+      // new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+      //
+      // // when
+      // AddResponse addResponse =
+      // this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+      //
+      // // then
+      // assertEquals("added attributes to documentId '" + documentId + "'",
+      // addResponse.getMessage());
+      //
+      // List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
+      // assertEquals(1, documentAttributes.size());
+      //
+      // DocumentAttribute da0 = documentAttributes.get(0);
+      // DocumentAttribute da1 = getDocumentAttribute(siteId, documentId);
+      //
+      // List.of(da0, da1).forEach(da -> {
+      // assertEquals(AttributeValueType.ENTITY, da.getValueType());
+      // String stringValue = entityTypeId0 + "#" + entityId;
+      // assertDocumentAttributeEquals(da, "strings", stringValue, null);
+      // assertEntity(da, entityTypeId0, entityId);
+      //
+      // assertNotNull(da.getEntity());
+      // List<EntityAttribute> attributes = notNull(da.getEntity().getAttributes());
+      // assertEquals(1, attributes.size());
+      // assertEquals("address", attributes.get(0).getKey());
+      // assertEquals("123", attributes.get(0).getStringValue());
+      // });
+      // }
+    }
+  }
+
+  /**
    * POST /documents with site schema required entity type constraint.
    *
    * @throws ApiException an error has occurred
