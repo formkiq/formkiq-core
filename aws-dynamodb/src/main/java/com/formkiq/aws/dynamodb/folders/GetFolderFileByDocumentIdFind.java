@@ -36,8 +36,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
  */
 public class GetFolderFileByDocumentIdFind implements DynamoDbFind<FolderIndexRecord, String> {
 
-  @Override
-  public QueryRequest build(final String tableName, final String siteId, final String documentId) {
+  private QueryRequest build(final String tableName, final String siteId, final String documentId) {
 
     var shardKey = new FolderIndexRecord().parentDocumentId("").documentId(documentId)
         .type(FolderType.FILE.getValue()).path("").buildKey(siteId);

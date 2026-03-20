@@ -26,14 +26,14 @@ package com.formkiq.testutils.api.workflows;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.SetWorkflowRequest;
-import com.formkiq.client.model.DeleteWorkflowResponse;
+import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
  * Builder for {@link SetWorkflowRequest}.
  */
-public class DeleteWorkflowRequestBuilder implements HttpRequestBuilder<DeleteWorkflowResponse> {
+public class DeleteWorkflowRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
 
   /** Workflow. */
   private final String workflow;
@@ -52,10 +52,9 @@ public class DeleteWorkflowRequestBuilder implements HttpRequestBuilder<DeleteWo
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return DeleteWorkflowResponse
+   * @return DeleteResponse
    */
-  public ApiHttpResponse<DeleteWorkflowResponse> submit(final ApiClient apiClient,
-      final String siteId) {
+  public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(
         () -> new DocumentWorkflowsApi(apiClient).deleteWorkflow(workflow, siteId));
   }

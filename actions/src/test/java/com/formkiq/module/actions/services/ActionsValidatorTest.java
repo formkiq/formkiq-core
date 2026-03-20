@@ -212,7 +212,8 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation09() {
-    Action action = new Action().type(ActionType.DATA_CLASSIFICATION).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.DATA_CLASSIFICATION).userId("joe")
+        .documentId(ID.uuid()).indexUlid().build((String) null);
     testTemplate(action, "parameters.llmPromptEntityName",
         "'llmPromptEntityName' parameter is required");
   }
@@ -222,29 +223,33 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation10() {
-    Action action = new Action().type(ActionType.METADATA_EXTRACTION).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.METADATA_EXTRACTION).userId("joe")
+        .documentId(ID.uuid()).indexUlid().build((String) null);
     testTemplate(action, "parameters.llmPromptEntityName",
         "'llmPromptEntityName' parameter is required");
   }
 
   @Test
   void testValidation11() {
-    Action action = new Action().type(ActionType.CHECKSUM).userId("joe");
+    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
+        .documentId(ID.uuid()).indexUlid().build((String) null);
     testTemplate(action, "parameters.checksumType", "'checksumType' parameter is required");
   }
 
   @Test
   void testValidation12() {
-    Action action = new Action().type(ActionType.CHECKSUM).userId("joe")
-        .parameters(Map.of("checksumType", "md5"));
+    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
+        .parameters(Map.of("checksumType", "md5")).documentId(ID.uuid()).indexUlid()
+        .build((String) null);
     testTemplate(action, "parameters.checksumType",
         "'checksumType' parameter must be one of [SHA1, SHA256]");
   }
 
   @Test
   void testValidation13() {
-    Action action = new Action().type(ActionType.CHECKSUM).userId("joe")
-        .parameters(Map.of("checksumType", "sha256"));
+    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
+        .parameters(Map.of("checksumType", "sha256")).documentId(ID.uuid()).indexUlid()
+        .build((String) null);
     testTemplate(action, null, null);
   }
 

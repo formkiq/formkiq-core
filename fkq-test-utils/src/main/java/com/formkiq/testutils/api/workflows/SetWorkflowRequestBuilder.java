@@ -26,8 +26,8 @@ package com.formkiq.testutils.api.workflows;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetWorkflowRequest;
-import com.formkiq.client.model.SetWorkflowResponse;
 import com.formkiq.client.model.AddWorkflowStep;
 import com.formkiq.client.model.AddWorkflowStepDecision;
 import com.formkiq.client.model.AddWorkflowStepQueue;
@@ -43,7 +43,7 @@ import java.util.Map;
 /**
  * Builder for {@link SetWorkflowRequest}.
  */
-public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetWorkflowResponse> {
+public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link SetWorkflowRequest}. */
   private final SetWorkflowRequest request;
@@ -140,8 +140,7 @@ public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetWorkflow
    * @param siteId Site ID
    * @return SetWorkflowResponse
    */
-  public ApiHttpResponse<SetWorkflowResponse> submit(final ApiClient apiClient,
-      final String siteId) {
+  public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(
         () -> new DocumentWorkflowsApi(apiClient).setWorkflow(workflow, this.request, siteId));
   }

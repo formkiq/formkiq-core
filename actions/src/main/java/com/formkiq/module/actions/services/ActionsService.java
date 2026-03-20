@@ -34,7 +34,7 @@ import com.formkiq.module.actions.ActionStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * 
+ *
  * FormKiQ Actions Service.
  *
  */
@@ -42,14 +42,14 @@ public interface ActionsService {
 
   /**
    * Delete {@link Action}.
-   * 
+   *
    * @param actions {@link Collection} {@link Action}
    */
   void deleteActions(Collection<Action> actions);
 
   /**
    * Delete Document Actions.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    */
@@ -57,7 +57,7 @@ public interface ActionsService {
 
   /**
    * Find Document in Queue.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param queueId {@link String}
@@ -67,7 +67,7 @@ public interface ActionsService {
 
   /**
    * Find Documents in Queue.
-   * 
+   *
    * @param siteId {@link String}
    * @param queueId {@link String}
    * @param nextToken {@link String}
@@ -79,7 +79,7 @@ public interface ActionsService {
 
   /**
    * Find Documents with FAILED status.
-   * 
+   *
    * @param siteId {@link String}
    * @param status {@link ActionStatus}
    * @param nextToken {@link String}
@@ -91,7 +91,7 @@ public interface ActionsService {
 
   /**
    * Get List of {@link Action} by {@link ActionStatus}.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param status {@link ActionStatus}
@@ -101,7 +101,7 @@ public interface ActionsService {
 
   /**
    * Get {@link List} {@link Action} for a document.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link List} {@link Action}
@@ -110,7 +110,7 @@ public interface ActionsService {
 
   /**
    * Get {@link List} {@link Action} for a document.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param nextToken {@link String}
@@ -121,7 +121,7 @@ public interface ActionsService {
 
   /**
    * Whether SiteId / DocumentId combination has any actions.
-   * 
+   *
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
@@ -130,7 +130,7 @@ public interface ActionsService {
 
   /**
    * Insert {@link Action}.
-   * 
+   *
    * @param siteId {@link String}
    * @param currentAction {@link Action}
    * @param insertedAction {@link ActionBuilder}
@@ -139,7 +139,7 @@ public interface ActionsService {
 
   /**
    * Get Previous Index.
-   * 
+   *
    * @param index {@link String}
    * @return {@link String}
    */
@@ -155,14 +155,14 @@ public interface ActionsService {
 
   /**
    * Update {@link Action}.
-   * 
+   *
    * @param action {@link Action}
    */
   void updateAction(Action action);
 
   /**
    * Update {@link Collection} {@link Action}.
-   * 
+   *
    * @param actions {@link Collection} {@link Action}
    */
   void updateActions(Collection<Action> actions);

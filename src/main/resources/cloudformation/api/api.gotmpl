@@ -26,6 +26,22 @@ Parameters:
     Type: String
     Description: The Cognito User Pool Client Id
 
+  CertificateStackNameHttpApiDomain:
+    Type: String
+    Description: Certificate Http Api Domain
+
+Conditions:
+
+  HasCertificateStackNameHttpApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameHttpApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameHttpApiDomain
+              - "_"
+
 Resources:
 
   DocumentsHttpApi:
@@ -43,4 +59,10 @@ Outputs:
   DocumentsHttpApiUrl:
     Description: "The endpoint url for the HTTP API"
     Value:
-      Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Fn::If:
+        - HasCertificateStackNameHttpApiDomain
+        - Fn::Join:
+            - ''
+            - - 'https://'
+              - Ref: CertificateStackNameHttpApiDomain
+        - Fn::Sub: "https://${DocumentsHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

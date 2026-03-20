@@ -74,7 +74,6 @@ import com.formkiq.aws.dynamodb.documents.GetDocumentFind;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.aws.dynamodb.attributes.AttributeType;
