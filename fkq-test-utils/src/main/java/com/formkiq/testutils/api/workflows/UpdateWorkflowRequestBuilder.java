@@ -25,8 +25,8 @@ package com.formkiq.testutils.api.workflows;
 
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.client.model.UpdateWorkflowRequest;
-import com.formkiq.client.model.UpdateWorkflowResponse;
 import com.formkiq.client.model.WorkflowStatus;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -34,7 +34,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 /**
  * Builder for {@link UpdateWorkflowRequest}.
  */
-public class UpdateWorkflowRequestBuilder implements HttpRequestBuilder<UpdateWorkflowResponse> {
+public class UpdateWorkflowRequestBuilder implements HttpRequestBuilder<UpdateResponse> {
 
   /** {@link UpdateWorkflowRequest}. */
   private final UpdateWorkflowRequest request;
@@ -89,10 +89,9 @@ public class UpdateWorkflowRequestBuilder implements HttpRequestBuilder<UpdateWo
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return UpdateWorkflowResponse
+   * @return UpdateResponse
    */
-  public ApiHttpResponse<UpdateWorkflowResponse> submit(final ApiClient apiClient,
-      final String siteId) {
+  public ApiHttpResponse<UpdateResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(
         () -> new DocumentWorkflowsApi(apiClient).updateWorkflow(workflow, this.request, siteId));
   }

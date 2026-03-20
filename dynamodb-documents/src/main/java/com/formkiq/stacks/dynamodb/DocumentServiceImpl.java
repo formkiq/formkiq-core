@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DeleteResults;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -434,8 +435,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       var index = new GetFolderFileByDocumentIdFind().find(dbService, dbService.getTableName(),
           siteId, documentId);
       if (index != null) {
-        boolean del = dbService.deleteItem(index.buildKey(siteId).key());
-        deleted = new DeleteResults(del, Collections.emptyList());
+        DeleteResult del = dbService.deleteItem(index.buildKey(siteId).key());
+        deleted = new DeleteResults(del.isDelete(), Collections.emptyList());
       }
     }
 

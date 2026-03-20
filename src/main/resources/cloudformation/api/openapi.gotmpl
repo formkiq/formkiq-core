@@ -1287,6 +1287,12 @@ paths:
 
         Returns a unique **documentId** used in subsequent operations.
         
+        **Content Type Detection**
+        If the document **Content-Type** is not specified during upload, the service will determine it
+        asynchronously after the upload completes.
+
+        This may result in a **temporary delay** before the content type and related metadata are available.
+
         See POST /documents/{documentId}/tags for adding tags to document schema
         
         See POST /documents/{documentId}/actions for adding actions to document schema
@@ -1955,7 +1961,15 @@ paths:
     post:
       operationId: AddDocumentUpload
       summary: Add large document
-      description: Returns a URL that can be used to upload document content and create a new document, while allowing metadata to also be sent; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB. The POST endpoint allow the adding of document metadata at the same time as the document is created.
+      description: |-
+        Returns a URL that can be used to upload document content and create a new document.
+        This endpoint is required for uploading content larger than 5 MB and allows document metadata
+        to be provided at creation time.
+
+        **Content Type Detection**
+        If the document **Content-Type** is not specified during upload, the service will determine it
+        asynchronously after the upload completes.
+        This may result in a **temporary delay** before the content type and related metadata are available.
       tags:
         - Documents
       parameters:
@@ -3353,7 +3367,7 @@ paths:
       summary: Get document's data classification
       description: Retrieve an document's data classification; available as an Add-On Module
       tags:
-        - Document Data Classification
+        - Intelligent Document Processing
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdParam'
@@ -3375,7 +3389,7 @@ paths:
       summary: Set document's data classification
       description: Generate Data Classfication attributes within a document; available as an Add-On Module
       tags:
-        - Document Data Classification
+        - Intelligent Document Processing
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdParam'
@@ -3396,6 +3410,95 @@ paths:
 {{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
+  /documents/{documentId}/metadataExtractionResults:
+    get:
+      operationId: GetAllDocumentMetadataExtractionResults
+      summary: Get all document's metadata extraction results
+      description: Retrieve all document's metadata extraction; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentMetadataExtractionResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+  /documents/{documentId}/metadataExtractionResults/{llmPromptEntityName}:
+    get:
+      operationId: GetDocumentMetadataExtractionResults
+      summary: Get document's metadata extraction results
+      description: Retrieve an document's metadata extraction; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentMetadataExtractionResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+    post:
+      operationId: AddDocumentMetadataExtractionResult
+      summary: Add document's metadata extraction result
+      description: Create a document Metadatq Extraction Result attributes within a document; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentMetadataExtractionResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
   /userActivities:
     get:
       operationId: GetUserActivities
@@ -3458,6 +3561,15 @@ paths:
         - $ref: '#/components/parameters/entityTypeIdQuery'
         - $ref: '#/components/parameters/namespaceParam'
         - $ref: '#/components/parameters/entityIdQuery'
+        - $ref: '#/components/parameters/rulesetIdQuery'
+        - $ref: '#/components/parameters/ruleIdQuery'
+        - $ref: '#/components/parameters/workflowIdQuery'
+        - $ref: '#/components/parameters/attributeKeyQuery'
+        - $ref: '#/components/parameters/schemaQuery'
+        - $ref: '#/components/parameters/classificationIdQuery'
+        - $ref: '#/components/parameters/mappingIdQuery'
+        - $ref: '#/components/parameters/apiKeyQuery'
+        - $ref: '#/components/parameters/controlPolicyQuery'
         - $ref: '#/components/parameters/startParam'
         - $ref: '#/components/parameters/endParam'
         - $ref: '#/components/parameters/sortParam'
@@ -5457,6 +5569,25 @@ paths:
           $ref: '#/components/responses/200CorsDeleteResponse'
 {{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
 {{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
+  /entities/{entityTypeId}/{entityId}/attributes/{attributeKey}:
+    delete:
+      operationId: DeleteEntityAttribute
+      description: Deletes Entity Attribute
+      summary: Deletes Entity Attribute
+      tags:
+      - Entity
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/entityTypeIdParam'
+      - $ref: '#/components/parameters/entityIdParam'
+      - $ref: '#/components/parameters/attributeKeyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
 components:
   headers:
     AccessControlAllowOrigin:
@@ -5613,6 +5744,73 @@ components:
       name: entityId
       in: query
       description: Entity Identifier
+      required: false
+      schema:
+        type: string
+    rulesetIdQuery:
+      name: rulesetId
+      in: query
+      description: RulesetId Identifier
+      required: false
+      schema:
+        type: string
+    ruleIdQuery:
+      name: ruleId
+      in: query
+      description: RuleId Identifier
+      required: false
+      schema:
+        type: string
+    workflowIdQuery:
+      name: workflowId
+      in: query
+      description: Workflow Identifier
+      required: false
+      schema:
+        type: string
+    attributeKeyQuery:
+      name: attributeKey
+      in: query
+      description: Attribute Key
+      required: false
+      schema:
+        type: string
+    schemaQuery:
+      name: schema
+      in: query
+      description: Schema Type
+      required: false
+      schema:
+        type: string
+        enum:
+          - document
+    controlPolicyQuery:
+      name: controlPolicy
+      in: query
+      description: Control Policy
+      required: false
+      schema:
+        type: string
+        enum:
+          - opa
+    classificationIdQuery:
+      name: classificationId
+      in: query
+      description: Classification Id
+      required: false
+      schema:
+        type: string
+    mappingIdQuery:
+      name: mappingId
+      in: query
+      description: Mapping Id
+      required: false
+      schema:
+        type: string
+    apiKeyQuery:
+      name: apiKey
+      in: query
+      description: Api Key
       required: false
       schema:
         type: string
@@ -5875,6 +6073,13 @@ components:
       name: documentId
       in: path
       description: Document Identifier
+      required: true
+      schema:
+        type: string
+    llmPromptEntityNameParam:
+      name: llmPromptEntityName
+      in: path
+      description: LlmPrompt Entity Name
       required: true
       schema:
         type: string
@@ -7308,6 +7513,8 @@ components:
           description: "User who added attribute"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
+        entity:
+          $ref: '#/components/schemas/Entity'
     DocumentTag:
       type: "object"
       properties:
@@ -7401,6 +7608,10 @@ components:
     DocumentFulltextResponse:
       type: "object"
       properties:
+        totalCount:
+          type: integer
+          description: |
+            Total number of documents that matched the search query. When the number of matches exceeds 10,000, this value will be reported as 10,000+ unless the search request explicitly enables exact total hit tracking.
         documents:
           type: "array"
           description: "List of search result documents"
@@ -7628,6 +7839,17 @@ components:
           type: "string"
           description: "Name of the LLM Prompt Entity"
 
+    AddDocumentMetadataExtractionResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Result content
+        attributes:
+          description: Attributes extracted from result content
+          type: array
+          items:
+            $ref: '#/components/schemas/DataClassificationAttribute'
     SetDocumentDataClassificationResponse:
       type: "object"
       properties:
@@ -7671,6 +7893,46 @@ components:
           type: "string"
           description: "Data Classification Attribute Value"
 
+    MetadataExtractionAttribute:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Data Classification Attribute Key
+        value:
+          type: string
+          description: Data Classification Attribute Value
+    MetadataExtraction:
+      type: object
+      properties:
+        llmPromptEntityName:
+          type: string
+          description: Name of the LLM Prompt Entity
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        content:
+          type: string
+          description: Result content
+        userId:
+          type: string
+          description: UserId that created Result
+        attributes:
+          description: Attributes extracted from result content
+          type: array
+          items:
+            $ref: '#/components/schemas/MetadataExtractionAttribute'
+    GetDocumentMetadataExtractionResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        metadataExtractions:
+          type: array
+          description: List of Metadata Extractions
+          items:
+            $ref: '#/components/schemas/MetadataExtraction'
     GetDocumentDataClassificationResponse:
       type: "object"
       properties:
@@ -7708,15 +7970,17 @@ components:
             $ref: "#/components/schemas/UserActivity"
     UserActivityType:
       type: string
-      description:  "The type of the activity"
+      description: The type of the activity
       enum:
-        - VIEW
-        - CREATE
-        - UPDATE
-        - DELETE
-        - SOFT_DELETE
-        - RESTORE
-        - NEW_VERSION
+      - VIEW
+      - DOWNLOAD
+      - CREATE
+      - UPDATE
+      - DELETE
+      - SOFT_DELETE
+      - RESTORE
+      - NEW_VERSION
+      - UPDATE_VERSION
     UserActivity:
       type: "object"
       properties:
@@ -7753,41 +8017,65 @@ components:
         - UNAUTHORIZED
 
     Activity:
-      type: "object"
+      type: object
       properties:
         resource:
-          type: "string"
-          description: "Resource of Activity"
+          type: string
+          description: Resource of Activity
         type:
-          type: "string"
-          description: "Type of Activity"
+          type: string
+          description: Type of Activity
         source:
-          type: "string"
-          description: "The Source of the activity"
+          type: string
+          description: The Source of the activity
         sourceIpAddress:
-          type: "string"
-          description: "The Source IP address of the user"
+          type: string
+          description: The Source IP address of the user
         message:
-          type: "string"
-          description: "The activity message"
+          type: string
+          description: The activity message
         status:
           $ref: '#/components/schemas/ActivityStatus'
         insertedDate:
-          type: "string"
-          description: "Inserted Timestamp"
+          type: string
+          description: Inserted Timestamp
         userId:
-          type: "string"
-          description: "User who added document"
+          type: string
+          description: User who added document
         documentId:
-          description: "Document Identifier"
+          description: Document Identifier
         attributeKey:
-          description: "Document Attribute Key"
+          description: Document Attribute Key
         entityTypeId:
-          type: "string"
-          description: "Entity Type Identifier"
+          type: string
+          description: Entity Type Identifier
         entityId:
-          type: "string"
-          description: "Entity Identifier"
+          type: string
+          description: Entity Identifier
+        apiKey:
+          type: string
+          description: API Key
+        rulesetId:
+          type: string
+          description: Ruleset Identifier
+        schema:
+          type: string
+          description: Schema Identifier
+        mappingId:
+          type: string
+          description: Mapping Identifier
+        classificationId:
+          type: string
+          description: Classification Identifier
+        ruleId:
+          type: string
+          description: Ruleset Rule Identifier
+        workflowId:
+          type: string
+          description: Workflow Identifier
+        controlPolicy:
+          type: string
+          description: Control Policy Type
         changes:
           type: object
           additionalProperties:
@@ -10848,17 +11136,22 @@ components:
       type: object
       properties:
         username:
-          type: "string"
-          description: "Username of request caller"
+          type: string
+          description: Username of request caller
         roles:
-          type: "array"
+          type: array
           items:
-            type: "string"
+            type: string
+        samlGroups:
+          type: array
+          description: List of User Saml Groups
+          items:
+            type: string
         sites:
-          type: "array"
-          description: "List of sites"
+          type: array
+          description: List of sites
           items:
-            $ref: "#/components/schemas/Site"
+            $ref: '#/components/schemas/Site'
     Site:
       type: "object"
       properties:
@@ -11172,29 +11465,33 @@ components:
           items:
             type: "string"
     AddAttributeSchemaRequired:
-      type: "object"
+      type: object
       properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
         minNumberOfValues:
-          type: "number"
-          description: "The minimum number of attribute values"
+          type: number
+          description: The minimum number of attribute values
         maxNumberOfValues:
-          type: "number"
-          description: "The maximum number of attribute values"
+          type: number
+          description: The maximum number of attribute values
         attributeKey:
-          type: "string"
+          type: string
         defaultValue:
-          type: "string"
-          description: "Default value"
+          type: string
+          description: Default value
         defaultValues:
-          type: "array"
-          description: "Default values"
+          type: array
+          description: Default values
           items:
-            type: "string"
+            type: string
         allowedValues:
-          type: "array"
-          description: "Only valid string values"
+          type: array
+          description: Only valid string values
           items:
-            type: "string"
+            type: string
     AttributeSchemaRequired:
       type: "object"
       properties:
@@ -11225,21 +11522,25 @@ components:
             type: string
 
     AddAttributeSchemaOptional:
-      type: "object"
+      type: object
       properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
         minNumberOfValues:
-          type: "number"
-          description: "The minimum number of attribute values"
+          type: number
+          description: The minimum number of attribute values
         maxNumberOfValues:
-          type: "number"
-          description: "The maximum number of attribute values"
+          type: number
+          description: The maximum number of attribute values
         attributeKey:
-          type: "string"
+          type: string
         allowedValues:
-          type: "array"
-          description: "Only valid string values"
+          type: array
+          description: Only valid string values
           items:
-            type: "string"
+            type: string
     AttributeSchemaOptional:
       type: "object"
       properties:

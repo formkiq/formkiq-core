@@ -9,11 +9,6 @@ Parameters:
     Default: ""
     Description: (Optional) ARN of the AWS WAF WebACL to associate with the CloudFront distribution. Leave empty to disable.
 
-  DistributionBucket:
-    Type: String
-    Description: FormKiQ Distribution BucketName
-    Default: "formkiq-distribution-console"
-
   AdminEmail:
     Type: String
     Description: Administrator Email
@@ -427,14 +422,14 @@ Resources:
         Variables:
           CONSOLE_VERSION:
             Fn::Sub: "${ConsoleVersion}"
-          DISTRIBUTION_BUCKET:
-            Fn::Sub: "${DistributionBucket}"
           REGION:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET:
             Fn::Sub: "${WebUiConsole}"
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
+          CONSOLE_ZIP_URL:
+            Fn::Sub: "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
           API_URL:
             Ref: ApiUrl
           API_IAM_URL:
@@ -553,15 +548,6 @@ Resources:
                       - ''
                       - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
                         - Ref: CognitoConfigBucket
-                        - '/*'
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - Fn::Join:
-                      - ''
-                      - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                        - Ref: DistributionBucket
                         - '/*'
               - Effect: Allow
                 Action:

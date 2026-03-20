@@ -67,7 +67,6 @@ import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
-import com.formkiq.stacks.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
@@ -682,9 +681,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      List<Action> actions = List.of(new Action().type(ActionType.CHECKSUM).userId("joe")
-          .parameters(Map.of("checksumType", "SHA256")));
-      actionsService.saveNewActions(siteId, documentId, actions);
+      List<Action> actions =
+          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").documentId(documentId)
+              .indexUlid().parameters(Map.of("checksumType", "SHA256")).build(siteId));
+      actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1671,9 +1671,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
-        List<Action> actions = List.of(new Action().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-        actionsService.saveNewActions(siteId, documentId, actions);
+        List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")).documentId(documentId)
+            .indexUlid().build(siteId));
+        actionsService.saveNewActions(actions);
 
         AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 
@@ -1722,9 +1723,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         String documentId = createDocument2(siteId, "application/pdf");
 
-        List<Action> actions = List.of(new Action().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "Myprompt")));
-        actionsService.saveNewActions(siteId, documentId, actions);
+        List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")).documentId(documentId)
+            .indexUlid().build(siteId));
+        actionsService.saveNewActions(actions);
 
         AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
 

@@ -47,7 +47,6 @@ import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.stacks.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.validation.ValidationBuilder;

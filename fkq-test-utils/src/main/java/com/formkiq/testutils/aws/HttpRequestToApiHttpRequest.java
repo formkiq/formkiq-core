@@ -88,6 +88,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     boolean sigv4 = isSigV4(headers);
     String group = getGroup(sigv4, httpRequest, decoder);
+    String samlGroups = getSamlGroups(decoder);
     Map<String, List<String>> permissions = !sigv4 ? getPermissions(decoder) : null;
 
     Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
