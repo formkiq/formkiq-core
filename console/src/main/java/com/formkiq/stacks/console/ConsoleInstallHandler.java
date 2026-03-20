@@ -143,7 +143,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   /**
    * Customize Cognito Email Templates.
-   * 
+   *
    * @param logger {@link LambdaLogger}
    * @throws IOException IOException
    */
@@ -228,10 +228,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   /**
    * Get console zip URL.
    *
-   * @param consoleversion {@link String}
    * @return {@link String}
    */
-  protected String getConsoleZipUrl(final String consoleversion) {
+  protected String getConsoleZipUrl() {
     return this.environmentMap.get("CONSOLE_ZIP_URL");
   }
 
@@ -365,7 +364,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
     String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
-    String consoleZipUrl = getConsoleZipUrl(consoleversion);
+    String consoleZipUrl = getConsoleZipUrl();
     logger.log("unpacking " + consoleZipUrl + " to bucket " + destinationBucket);
 
     try (InputStream stream = getConsoleZipInputStream(consoleZipUrl)) {

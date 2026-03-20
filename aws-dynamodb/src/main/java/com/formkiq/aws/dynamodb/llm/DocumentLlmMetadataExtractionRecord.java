@@ -139,12 +139,17 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
     }
 
     @Override
+    public DocumentLlmMetadataExtractionRecord build(final DynamoDbKey key) {
+      return new DocumentLlmMetadataExtractionRecord(key, documentId, llmPromptEntityName, content,
+          insertedDate, attributes, userId);
+    }
+
+    @Override
     public DocumentLlmMetadataExtractionRecord build(final String siteId) {
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       DynamoDbKey key = buildKey(siteId);
-      return new DocumentLlmMetadataExtractionRecord(key, documentId, llmPromptEntityName, content,
-          insertedDate, attributes, userId);
+      return build(key);
     }
 
     @Override

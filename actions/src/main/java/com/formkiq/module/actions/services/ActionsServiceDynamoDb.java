@@ -45,6 +45,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -200,6 +201,14 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     return new Pagination<>(list, response != null ? response.lastEvaluatedKey() : null);
 
+  }
+
+  @Override
+  public List<Action> getAction(final String siteId, final String documentId,
+      final ActionStatus status) {
+    var results = new FindDocumentActionByStatus(documentId, status.name()).query(db,
+        db.getTableName(), siteId, null, 2);
+    return results.items().stream().map(Action::fromAttributeMap).toList();
   }
 
   @Override

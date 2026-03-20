@@ -107,10 +107,6 @@ Parameters:
     Type: String
     Description: "VPC Https Security Group"
 
-  ConsoleUrl:
-    Type: String
-    Description: The URL for the FormKiQ Console
-
 Conditions:
 
   IsOperationalModeActive:

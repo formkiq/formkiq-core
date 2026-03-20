@@ -28,7 +28,6 @@ import com.formkiq.aws.dynamodb.DynamoDbFind;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import java.util.Map;
 
@@ -36,11 +35,6 @@ import java.util.Map;
  * Get {@link DocumentRecord}.
  */
 public class GetDocumentFind implements DynamoDbFind<DocumentRecord, String>, DbKeys {
-
-  @Override
-  public QueryRequest build(final String tableName, final String siteId, final String documentId) {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public DocumentRecord find(final DynamoDbService db, final String tableName, final String siteId,

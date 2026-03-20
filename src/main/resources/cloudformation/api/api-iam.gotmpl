@@ -18,6 +18,22 @@ Parameters:
     Description: Lambda to invoke for Object examine endpoints
     Type: String
 
+  CertificateStackNameIamApiDomain:
+    Type: String
+    Description: Certificate IAM Api Domain
+
+Conditions:
+
+  HasCertificateStackNameIamApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameIamApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameIamApiDomain
+              - "_"
+
 Resources:
 
   DocumentsIamApi:
@@ -35,4 +51,10 @@ Outputs:
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value:
-      Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Fn::If:
+        - HasCertificateStackNameIamApiDomain
+        - Fn::Join:
+            - ''
+            - - 'https://'
+              - Ref: CertificateStackNameIamApiDomain
+        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"

@@ -59,11 +59,25 @@ Parameters:
     Type: String
     Description: FormKiQ VPC Stack Name
 
+  CertificateStackNameKeyApiDomain:
+    Type: String
+    Description: Certificate Key Api Domain
+
 Conditions:
   IsLogFormatJSON: 
     Fn::Equals:
       - Ref: LogFormat
       - JSON
+
+  HasCertificateStackNameKeyApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameKeyApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameKeyApiDomain
+              - "_"
 
 Resources:
 
@@ -200,4 +214,10 @@ Outputs:
   DocumentsKeyApiUrl:
     Description: "The endpoint url for the Key API"
     Value:
-      Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Fn::If:
+        - HasCertificateStackNameKeyApiDomain
+        - Fn::Join:
+            - ''
+            - - 'https://'
+              - Ref: CertificateStackNameKeyApiDomain
+        - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"

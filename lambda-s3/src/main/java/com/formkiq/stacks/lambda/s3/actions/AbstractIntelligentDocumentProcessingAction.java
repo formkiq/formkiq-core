@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
@@ -88,9 +89,9 @@ public abstract class AbstractIntelligentDocumentProcessingAction implements Doc
     if (!MimeType.isPlainText(item.getContentType())
         && actions.stream().noneMatch(a -> a.type().equals(ActionType.OCR))) {
 
-      Action ocrAction = new Action().userId("System").type(ActionType.OCR)
-          .parameters(Map.of("ocrEngine", "tesseract"));
-      this.actionsService.insertBeforeAction(siteId, documentId, action, ocrAction);
+      ActionBuilder ocrAction = new ActionBuilder().userId("System").type(ActionType.OCR)
+          .documentId(documentId).indexUlid().parameters(Map.of("ocrEngine", "tesseract"));
+      this.actionsService.insertBeforeAction(siteId, action, ocrAction);
       status = ActionStatus.PENDING;
 
     } else {

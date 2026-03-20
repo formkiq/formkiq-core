@@ -30,6 +30,7 @@ import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
 import com.formkiq.client.model.AddMappingResponse;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -40,7 +41,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingResponse> {
 
   /** {@link AddMappingRequest}. */
-  private AddMappingRequest req;
+  private final AddMappingRequest req;
 
   /**
    * constructor.
@@ -51,7 +52,7 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
 
   /**
    * Add Mapping.
-   * 
+   *
    * @param name {@link String}
    * @param attributeKey {@link String}
    * @param defaultValue {@link String}
@@ -68,12 +69,21 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
 
   /**
    * Add Mapping.
-   * 
+   *
    * @param mapping {@link AddMapping}
    * @return {@link AddMappingRequestBuilder}
    */
   public AddMappingRequestBuilder addMapping(final AddMapping mapping) {
     this.req.setMapping(mapping);
+    return this;
+  }
+
+  public AddMappingRequestBuilder addMapping(final String name, final String description,
+      final String attributeKey, final MappingAttributeSourceType sourceType,
+      final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
+    addMapping(new AddMapping().name(name).description(description)
+        .addAttributesItem(new MappingAttribute().attributeKey(attributeKey).sourceType(sourceType)
+            .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText)));
     return this;
   }
 
