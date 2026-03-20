@@ -1,14 +1,14 @@
 name: OWASP Dependency Check
 
 on:
-  pull_request:
+  #pull_request:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
-  schedule:
-    - cron: '0 6 * * 1'
+  #push:
+  #  branches:
+  #    - main
+  #    - master
+  #schedule:
+  #  - cron: '0 6 * * 1'
 
 jobs:
   dependency-check:
