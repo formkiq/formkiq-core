@@ -527,6 +527,8 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                   - s3:ListBucket
+                  - s3:ListBucketVersions
+                  - s3:DeleteObjectVersion
                 Resource:
                   - Fn::Join:
                       - ''
@@ -542,6 +544,8 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                   - s3:ListBucket
+                  - s3:ListBucketVersions
+                  - s3:DeleteObjectVersion
                 Resource:
                   - Fn::Join:
                       - ''
