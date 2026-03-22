@@ -64,6 +64,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
@@ -71,6 +72,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.GetDocumentFind;
+import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
@@ -659,6 +661,40 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(service.findDocument(siteId, documentId));
       assertEquals(0,
           service.findDocumentTags(siteId, documentId, null, MAX_RESULTS).getResults().size());
+    }
+  }
+
+  /**
+   * Delete Document when path is missing.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testDeleteDocument04() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      Date now = new Date();
+      String userId = "jsmith";
+
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
+      item.setPath("a/test.txt");
+
+      // when
+      service.saveDocument(siteId, item, null);
+
+      // when
+      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.getPath());
+
+      // then
+      assertEquals(2, indexRecords.size());
+
+      // given
+      FolderIndexRecord ir = indexRecords.get(1);
+      DynamoDbKey key = new DynamoDbKey(ir.pk(siteId), ir.sk(), null, null, null, null);
+
+      // when
+      db.deleteItem(key);
+      assertTrue(service.deleteDocument(siteId, item.getDocumentId(), false));
     }
   }
 

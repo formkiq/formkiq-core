@@ -121,11 +121,15 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
         String path = DynamoDbTypes.toString(o.get().get("path"));
         new ValidateDocumentFolderPermissions(db, ApiPermission.DELETE).apply(siteId, path);
 
-        var folderIndexs = new PathToFolderIndexRecords(db).apply(siteId, path);
-        var folderIndex = last(folderIndexs);
-        if (folderIndex != null) {
-          var folderIndexKey = folderIndex.buildKey(siteId);
-          items.add(folderIndexKey.toMap());
+        try {
+          var folderIndexs = new PathToFolderIndexRecords(db).apply(siteId, path);
+          var folderIndex = last(folderIndexs);
+          if (folderIndex != null) {
+            var folderIndexKey = folderIndex.buildKey(siteId);
+            items.add(folderIndexKey.toMap());
+          }
+        } catch (IllegalArgumentException e) {
+          // cannot delete file path, ignore
         }
       }
     }
