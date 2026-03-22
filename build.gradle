@@ -139,8 +139,8 @@ ytt {
     }
 
     console {
-      from("src/main/resources/cloudformation/console/template-install.yaml")
-      into("console/template-install.yaml")
+      from("src/main/resources/cloudformation/console/template.yaml")
+      into("console/template.yaml")
       hash "sha256"
     }
 
@@ -201,7 +201,7 @@ distributions {
         exclude "api/**"
         exclude "typesense/**"
         exclude "storage/**"
-        exclude "console/template-install.yaml"
+        exclude "console/template.yaml"
         exclude "template.yaml"
       }
       from 'build/ytt'
