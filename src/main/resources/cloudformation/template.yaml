@@ -334,6 +334,8 @@ Resources:
 
   Cognito:
     Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreStorage
     Properties:
       Location: cognito/template.yaml
       Parameters:
