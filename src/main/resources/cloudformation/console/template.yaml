@@ -259,7 +259,7 @@ Resources:
     Properties:
       DistributionConfig:
         Comment:
-          Fn::Sub: "FormKiQ WebUi Console ${ConsoleVersion}"
+          Fn::Sub: "FormKiQ ${AppEnvironment} - Web UI (${ConsoleVersion})"
         Origins:
         - DomainName:
             Fn::GetAtt:
@@ -375,6 +375,7 @@ Resources:
     Type: "AWS::S3::BucketPolicy"
     DependsOn:
     - WebUiConsole
+    - CloudFrontDistribution
     Properties:
       Bucket:
         Ref: WebUiConsole
@@ -400,7 +401,13 @@ Resources:
               Fn::Sub: 'arn:aws:s3:::${WebUiConsole}/*'
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+                AWS:SourceArn:
+                  Fn::Join:
+                    - ""
+                    - - "arn:aws:cloudfront::"
+                      - Ref: AWS::AccountId
+                      - ":distribution/"
+                      - Ref: CloudFrontDistribution
 
   ConsoleInstaller:
     Type: AWS::Serverless::Function
