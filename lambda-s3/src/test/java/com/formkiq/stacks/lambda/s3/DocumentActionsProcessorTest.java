@@ -1303,6 +1303,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNull(action.completedDate());
+
+      List<Action> runningActions =
+          actionsService.getAction(siteId, documentId, ActionStatus.RUNNING);
+      assertEquals(1, runningActions.size());
+      assertEquals(ActionType.OCR, runningActions.get(0).type());
     }
   }
 

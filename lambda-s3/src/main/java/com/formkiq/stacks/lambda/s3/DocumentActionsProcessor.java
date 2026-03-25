@@ -404,8 +404,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
         Action action = o.get();
 
-        Action runningAction = new ActionBuilder().status(ActionStatus.RUNNING)
-            .startDate(new Date()).build(action.key());
+        Action runningAction = new ActionBuilder().action(action).status(ActionStatus.RUNNING)
+            .startDate(new Date()).build(siteId);
         actionsService.updateAction(runningAction);
 
         try {
