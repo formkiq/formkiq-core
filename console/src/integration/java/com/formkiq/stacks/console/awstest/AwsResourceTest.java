@@ -201,6 +201,6 @@ public class AwsResourceTest {
     assertEquals("v4.0.33",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
-        .contains(appenvironment + "-console-"));
+        .contains(appenvironment + "-web-ui-"));
   }
 }
