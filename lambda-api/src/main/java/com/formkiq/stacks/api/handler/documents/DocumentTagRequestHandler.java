@@ -44,6 +44,7 @@ import com.formkiq.validation.ValidationException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -108,16 +109,16 @@ public class DocumentTagRequestHandler
       throw new ValidationException(tagErrors);
     }
 
-    // ApiDocumentTagItemResponse resp = new ApiDocumentTagItemResponse();
-    // resp.setKey(tagKey);
-    // resp.setValue(tag.getValue());
-    // resp.setValues(tag.getValues());
-    // resp.setInsertedDate(tag.getInsertedDate());
-    // resp.setUserId(tag.getUserId());
-    // resp.setType(tag.getType() != null ? tag.getType().name().toLowerCase() : null);
-    // resp.setDocumentId(tag.getDocumentId());
+    Map<String, Object> values = new HashMap<>();
+    values.put("key", tagKey);
+    values.put("value", tag.getValue());
+    values.put("values", tag.getValues());
+    values.put("insertedDate", tag.getInsertedDate());
+    values.put("userId", tag.getUserId());
+    values.put("type", tag.getType() != null ? tag.getType().name().toLowerCase() : null);
+    values.put("documentId", tag.getDocumentId());
 
-    return ApiRequestHandlerResponse.builder().ok().body(tag).build();
+    return ApiRequestHandlerResponse.builder().ok().body(values).build();
   }
 
   @Override
