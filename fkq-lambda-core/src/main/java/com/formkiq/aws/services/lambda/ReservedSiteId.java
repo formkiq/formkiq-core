@@ -32,7 +32,7 @@ import java.util.Optional;
 public enum ReservedSiteId {
 
   /** Global Site. */
-  GLOBAL("GLOBAL"),
+  GLOBAL("global"),
   /** API Key. */
   API_KEY("API_KEY");
 

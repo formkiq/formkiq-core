@@ -845,10 +845,10 @@ class ApiAuthorizationBuilderTest {
 
     // then
     assertEquals("global", api0.getSiteId());
-    assertEquals("", String.join(",", api0.getSiteIds()));
-    assertEquals("",
-        api0.getAllPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("global", String.join(",", api0.getSiteIds()));
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE", api0.getAllPermissions().stream().map(Enum::name)
+        .sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: global (ADMIN,DELETE,GOVERN,READ,WRITE)", api0.getAccessSummary());
     assertEquals("Admins", String.join(",", api0.getRoles()));
   }
 
@@ -1003,6 +1003,28 @@ class ApiAuthorizationBuilderTest {
           String.join(",", api.getRoles()));
       assertEquals("oktaidp_test@formkiq.com", api.getUsername());
     }
+  }
+
+  /**
+   * Test global "/forgotPassword" url.
+   */
+  @Test
+  void testForgotPassword() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/forgotPassword");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
   }
 
   @Test
