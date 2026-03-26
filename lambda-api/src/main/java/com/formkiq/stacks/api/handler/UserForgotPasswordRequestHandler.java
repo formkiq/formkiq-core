@@ -33,7 +33,11 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +50,41 @@ public class UserForgotPasswordRequestHandler
 
   /** {@link UserForgotPasswordRequestHandler} URL. */
   public static final String URL = "/forgotPassword";
+  /** Temporary password length. */
+  private static final int TEMP_PASSWORD_LENGTH = 32;
+  /** Lowercase chars. */
+  private static final String LOWERCASE = "abcdefghijkmnopqrstuvwxyz";
+  /** Uppercase chars. */
+  private static final String UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  /** Numeric chars. */
+  private static final String NUMBERS = "23456789";
+  /** Symbol chars. */
+  private static final String SYMBOLS = "!@#$%^&*()-_=+[]{}";
+  /** Allowed chars. */
+  private static final String ALL = LOWERCASE + UPPERCASE + NUMBERS + SYMBOLS;
+  /** Secure random generator. */
+  private static final SecureRandom RANDOM = new SecureRandom();
+
+  private String generateTemporaryPassword() {
+    List<Character> chars = new ArrayList<>();
+    chars.add(randomChar(LOWERCASE));
+    chars.add(randomChar(UPPERCASE));
+    chars.add(randomChar(NUMBERS));
+    chars.add(randomChar(SYMBOLS));
+
+    while (chars.size() < TEMP_PASSWORD_LENGTH) {
+      chars.add(randomChar(ALL));
+    }
+
+    Collections.shuffle(chars, RANDOM);
+
+    StringBuilder sb = new StringBuilder(TEMP_PASSWORD_LENGTH);
+    for (Character c : chars) {
+      sb.append(c.charValue());
+    }
+
+    return sb.toString();
+  }
 
   @Override
   public String getRequestUrl() {
@@ -69,9 +108,27 @@ public class UserForgotPasswordRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     String username = (String) map.get("username");
-    service.forgotPassword(username);
+    sendPasswordReset(service, username);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Password reset sent").build();
+  }
+
+  private char randomChar(final String chars) {
+    return chars.charAt(RANDOM.nextInt(chars.length()));
+  }
+
+  private void sendPasswordReset(final CognitoIdentityProviderService service,
+      final String username) {
+    try {
+      String userStatus = service.getUser(username).userStatusAsString();
+      if ("FORCE_CHANGE_PASSWORD".equals(userStatus)) {
+        service.setUserPassword(username, generateTemporaryPassword(), true);
+      }
+
+      service.forgotPassword(username);
+    } catch (UserNotFoundException e) {
+      // ignore
+    }
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {
