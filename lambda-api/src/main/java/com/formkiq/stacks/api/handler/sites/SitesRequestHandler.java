@@ -38,7 +38,6 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,15 +136,15 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     updateUploadEmail(awsservice, authorization, sites);
 
     String userId = authorization.getUsername();
-    Map<String, Object> map =
-        Map.of("username", userId, "roles", authorization.getRoles(), "sites", sites);
+    Map<String, Object> map = new HashMap<>(
+        Map.of("username", userId, "roles", authorization.getRoles(), "sites", sites));
 
-    Collection<String> samlGroups =
-        !Objects.notNull(authorization.getSamlGroups()).isEmpty() ? authorization.getSamlGroups()
-            : null;
-    if (samlGroups != null) {
-      map = new HashMap<>(map);
-      map.put("samlGroups", samlGroups);
+    if (!Objects.notNull(authorization.getSamlGroups()).isEmpty()) {
+      map.put("samlGroups", authorization.getSamlGroups());
+    }
+
+    if (!Objects.notNull(authorization.getJwtClaims()).isEmpty()) {
+      map.put("jwtClaims", authorization.getJwtClaims());
     }
 
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
@@ -197,6 +196,10 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    if ("get".equalsIgnoreCase(method)) {
+      return Optional.of(Boolean.TRUE);
+    }
+
     return !authorization.getSiteIds().isEmpty() ? Optional.of(Boolean.TRUE) : Optional.empty();
   }
 
