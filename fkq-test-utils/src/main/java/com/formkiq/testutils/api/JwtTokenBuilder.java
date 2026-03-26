@@ -51,13 +51,34 @@ public class JwtTokenBuilder {
   }
 
   /**
+   * Build Token.
+   *
+   * @return {@link String}
+   */
+  public String build() {
+    return jwt.compact();
+  }
+
+  /**
    * Build Token and add Authorization Header.
    * 
    * @param client {@link ApiClient}
    */
   public void build(final ApiClient client) {
-    String token = jwt.compact();
+    String token = build();
     client.addDefaultHeader("Authorization", token);
+  }
+
+  /**
+   * Add claim.
+   *
+   * @param key {@link String}
+   * @param value {@link Object}
+   * @return {@link JwtTokenBuilder}
+   */
+  public JwtTokenBuilder claim(final String key, final Object value) {
+    jwt.claim(key, value);
+    return this;
   }
 
   /**

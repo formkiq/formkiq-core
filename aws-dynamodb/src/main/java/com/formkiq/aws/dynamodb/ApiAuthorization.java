@@ -96,6 +96,11 @@ public class ApiAuthorization {
   private Collection<String> roles;
 
   /**
+   * JWT custom claims.
+   */
+  private Map<String, Object> jwtClaims;
+
+  /**
    * Authorization Saml Groups.
    */
   private Collection<String> samlGroups;
@@ -180,6 +185,15 @@ public class ApiAuthorization {
    */
   public <T> T getCacheObject(final String key) {
     return (T) this.cache.get(key);
+  }
+
+  /**
+   * Get JWT custom claims.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, Object> getJwtClaims() {
+    return this.jwtClaims;
   }
 
   /**
@@ -272,6 +286,17 @@ public class ApiAuthorization {
   public boolean isAdminOrGovern(final String siteId) {
     Collection<ApiPermission> permissions = getPermissions(siteId);
     return permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+  }
+
+  /**
+   * Set JWT custom claims.
+   *
+   * @param claims {@link Map}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization jwtClaims(final Map<String, Object> claims) {
+    this.jwtClaims = claims;
+    return this;
   }
 
   /**

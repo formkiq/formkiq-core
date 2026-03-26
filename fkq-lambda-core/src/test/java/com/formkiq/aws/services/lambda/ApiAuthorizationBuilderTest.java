@@ -25,9 +25,12 @@ package com.formkiq.aws.services.lambda;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -957,6 +960,26 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * JWT custom claims are added to authorization.
+   */
+  @Test
+  void testApiAuthorizerJwtClaims() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getJwtEvent("[default]");
+    event.addHeader("Authorization",
+        toJwt(Map.of("sub", "1234", "tenant", "acme", "profile", Map.of("department", "sales"))));
+
+    // when
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertNotNull(authorization.getJwtClaims());
+    assertEquals("acme", authorization.getJwtClaims().get("tenant"));
+    assertEquals(Map.of("department", "sales"), authorization.getJwtClaims().get("profile"));
+    assertNull(authorization.getJwtClaims().get("sub"));
+  }
+
+  /**
    * trying to access random site id.
    */
   @Test
@@ -1070,5 +1093,13 @@ class ApiAuthorizationBuilderTest {
         .stream().map(Enum::name).sorted().collect(Collectors.joining(","))));
     assertEquals("DELETE,READ,WRITE", String.join(",", api.getPermissions("default").stream()
         .map(Enum::name).sorted().collect(Collectors.joining(","))));
+  }
+
+  private String toJwt(final Map<String, Object> claims) {
+    String header = Base64.getUrlEncoder().withoutPadding()
+        .encodeToString("{\"alg\":\"none\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
+    String payload = Base64.getUrlEncoder().withoutPadding()
+        .encodeToString(this.gson.toJson(claims).getBytes(StandardCharsets.UTF_8));
+    return header + "." + payload + ".";
   }
 }

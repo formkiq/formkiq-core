@@ -11147,6 +11147,11 @@ components:
           description: List of User Saml Groups
           items:
             type: string
+        jwtClaims:
+          type: object
+          description: Map of custom JWT claims
+          additionalProperties:
+            type: object
         sites:
           type: array
           description: List of sites

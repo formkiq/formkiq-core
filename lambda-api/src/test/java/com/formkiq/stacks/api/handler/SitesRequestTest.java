@@ -30,20 +30,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.SiteConfig;
 import com.formkiq.client.model.SiteUsage;
+import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.ocr.DocumentOcrService;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import com.formkiq.testutils.api.JwtTokenBuilder;
+import com.formkiq.testutils.api.SetBearerPermissionMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.aws.ssm.SsmService;
@@ -65,6 +71,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   private static final String EMAIL = "[abcdefghijklmnopqrstuvwxyz0123456789]{8}";
   /** {@link SsmService}. */
   private static SsmService ssm;
+  /** {@link HttpService}. */
+  private final HttpService http = new HttpServiceJdk11();
 
   /**
    * BeforeEach.
@@ -78,6 +86,46 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
 
     configService = awsServices.getExtension(ConfigService.class);
     ssm = awsServices.getExtension(SsmService.class);
+  }
+
+  @Test
+  void testGetSitesWithEmptyPermissionsMap() throws ApiException {
+    // given
+    new SetBearerPermissionMap().apply(this.client, List.of("default", "qa"), Map.of());
+
+    // when
+    GetSitesResponse response = this.systemApi.getSites(null);
+
+    // then
+    assertNotNull(response);
+    assertEquals("joesmith", response.getUsername());
+    assertEquals("default,qa",
+        notNull(response.getRoles()).stream().sorted().collect(Collectors.joining(",")));
+    assertEquals(0, notNull(response.getSamlGroups()).size());
+    assertEquals(0, notNull(response.getJwtClaims()).size());
+    assertEquals(0, notNull(response.getSites()).size());
+  }
+
+  @Test
+  void testGetSitesWithJwtCustomClaims() throws IOException {
+    // given
+    String jwt = new JwtTokenBuilder("bill").group("test").claim("tenant", "acme")
+        .claim("profile", Map.of("department", "sales")).build();
+
+    String url = server.getBasePath() + "/sites";
+
+    // when
+    HttpResponse<String> response = this.http.get(url,
+        Optional.of(new HttpHeaders().add("Authorization", jwt)), Optional.empty());
+    Map<String, Object> body = fromJson(response.body(), Map.class);
+    Map<String, Object> jwtClaims = (Map<String, Object>) body.get("jwtClaims");
+
+    // then
+    assertEquals(200, response.statusCode());
+    assertNotNull(jwtClaims);
+    assertEquals("acme", jwtClaims.get("tenant"));
+    assertEquals(Map.of("department", "sales"), jwtClaims.get("profile"));
+    assertNull(jwtClaims.get("cognito:groups"));
   }
 
   @Test
@@ -271,19 +319,22 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testHandleGetSites05() {
+  public void testHandleGetSites05() throws ApiException {
     // given
     String siteId = "authentication_only";
     setBearerToken(siteId);
 
     // when
-    try {
-      this.systemApi.getSites(null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
+    GetSitesResponse response = this.systemApi.getSites(null);
+
+    // then
+    assertNotNull(response);
+    assertEquals("joesmith", response.getUsername());
+    assertEquals("authentication_only",
+        notNull(response.getRoles()).stream().sorted().collect(Collectors.joining(",")));
+    assertEquals(0, notNull(response.getSamlGroups()).size());
+    assertEquals(0, notNull(response.getJwtClaims()).size());
+    assertEquals(0, notNull(response.getSites()).size());
   }
 
   /**
