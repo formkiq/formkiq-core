@@ -27,10 +27,13 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.strings.Strings.isEmpty;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +47,8 @@ import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * 
@@ -52,6 +57,10 @@ import com.google.gson.GsonBuilder;
  */
 public class ApiAuthorizationBuilder {
 
+  /** Standard and Cognito-managed claims to exclude. */
+  private static final Set<String> EXCLUDED_CLAIMS =
+      Set.of("sub", "cognito:groups", "iss", "client_id", "origin_jti", "event_id", "token_use",
+          "scope", "auth_time", "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
   /** Cognito Admin Group Name. */
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
@@ -175,9 +184,10 @@ public class ApiAuthorizationBuilder {
     Collection<String> roles = getRoles(event);
 
     Collection<String> samlGroups = getSamlGroups(event);
+    Map<String, Object> jwtClaims = getJwtCustomClaims(event);
 
     ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
-        .username(getUsername(event)).samlGroups(samlGroups).roles(roles);
+        .username(getUsername(event)).samlGroups(samlGroups).roles(roles).jwtClaims(jwtClaims);
 
     addPermissions(event, authorization, groups, admin);
 
@@ -319,6 +329,46 @@ public class ApiAuthorizationBuilder {
    */
   private Collection<String> getGroups(final ApiGatewayRequestEvent event) {
     return loadJwtGroups(event);
+  }
+
+  /**
+   * Return custom claims from a JWT as a map.
+   *
+   * @param event JWT token
+   * @return Map of custom claims, or empty map if JWT is invalid
+   */
+  private Map<String, Object> getJwtCustomClaims(final ApiGatewayRequestEvent event) {
+
+    String jwt = event != null ? event.getHeaderValue("authorization") : null;
+    if (jwt == null) {
+      jwt = event != null ? event.getHeaderValue("Authorization") : null;
+    }
+    Map<String, Object> customClaims = Collections.emptyMap();
+
+    try {
+      String[] parts = jwt != null ? jwt.split("\\.") : new String[0];
+      if (parts.length >= 2) {
+        String payload =
+            new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+        Map<String, Object> claims =
+            gson.fromJson(payload, new TypeToken<Map<String, Object>>() {}.getType());
+
+        if (claims != null) {
+          Map<String, Object> result = new LinkedHashMap<>();
+          for (Map.Entry<String, Object> entry : claims.entrySet()) {
+            if (!EXCLUDED_CLAIMS.contains(entry.getKey())) {
+              result.put(entry.getKey(), entry.getValue());
+            }
+          }
+          customClaims = result;
+        }
+      }
+    } catch (IllegalArgumentException | JsonSyntaxException e) {
+      // ignore
+    }
+
+    return customClaims;
   }
 
   private String getPath(final ApiGatewayRequestEvent event) {
