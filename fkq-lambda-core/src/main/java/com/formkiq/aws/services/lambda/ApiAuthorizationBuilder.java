@@ -184,10 +184,10 @@ public class ApiAuthorizationBuilder {
     Collection<String> roles = getRoles(event);
 
     Collection<String> samlGroups = getSamlGroups(event);
-    Map<String, Object> jwtClaims = getJwtCustomClaims(event);
+    Map<String, Object> userClaims = getUserCustomClaims(event);
 
     ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
-        .username(getUsername(event)).samlGroups(samlGroups).roles(roles).jwtClaims(jwtClaims);
+        .username(getUsername(event)).samlGroups(samlGroups).roles(roles).userClaims(userClaims);
 
     addPermissions(event, authorization, groups, admin);
 
@@ -331,46 +331,6 @@ public class ApiAuthorizationBuilder {
     return loadJwtGroups(event);
   }
 
-  /**
-   * Return custom claims from a JWT as a map.
-   *
-   * @param event JWT token
-   * @return Map of custom claims, or empty map if JWT is invalid
-   */
-  private Map<String, Object> getJwtCustomClaims(final ApiGatewayRequestEvent event) {
-
-    String jwt = event != null ? event.getHeaderValue("authorization") : null;
-    if (jwt == null) {
-      jwt = event != null ? event.getHeaderValue("Authorization") : null;
-    }
-    Map<String, Object> customClaims = Collections.emptyMap();
-
-    try {
-      String[] parts = jwt != null ? jwt.split("\\.") : new String[0];
-      if (parts.length >= 2) {
-        String payload =
-            new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-
-        Map<String, Object> claims =
-            gson.fromJson(payload, new TypeToken<Map<String, Object>>() {}.getType());
-
-        if (claims != null) {
-          Map<String, Object> result = new LinkedHashMap<>();
-          for (Map.Entry<String, Object> entry : claims.entrySet()) {
-            if (!EXCLUDED_CLAIMS.contains(entry.getKey())) {
-              result.put(entry.getKey(), entry.getValue());
-            }
-          }
-          customClaims = result;
-        }
-      }
-    } catch (IllegalArgumentException | JsonSyntaxException e) {
-      // ignore
-    }
-
-    return customClaims;
-  }
-
   private String getPath(final ApiGatewayRequestEvent event) {
     return event != null && !isEmpty(event.getPath()) ? event.getPath() : "";
   }
@@ -421,6 +381,46 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
+  }
+
+  /**
+   * Return custom claims from a JWT as a map.
+   *
+   * @param event JWT token
+   * @return Map of custom claims, or empty map if JWT is invalid
+   */
+  private Map<String, Object> getUserCustomClaims(final ApiGatewayRequestEvent event) {
+
+    String jwt = event != null ? event.getHeaderValue("authorization") : null;
+    if (jwt == null) {
+      jwt = event != null ? event.getHeaderValue("Authorization") : null;
+    }
+    Map<String, Object> customClaims = Collections.emptyMap();
+
+    try {
+      String[] parts = jwt != null ? jwt.split("\\.") : new String[0];
+      if (parts.length >= 2) {
+        String payload =
+            new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+        Map<String, Object> claims =
+            gson.fromJson(payload, new TypeToken<Map<String, Object>>() {}.getType());
+
+        if (claims != null) {
+          Map<String, Object> result = new LinkedHashMap<>();
+          for (Map.Entry<String, Object> entry : claims.entrySet()) {
+            if (!EXCLUDED_CLAIMS.contains(entry.getKey())) {
+              result.put(entry.getKey(), entry.getValue());
+            }
+          }
+          customClaims = result;
+        }
+      }
+    } catch (IllegalArgumentException | JsonSyntaxException e) {
+      // ignore
+    }
+
+    return customClaims;
   }
 
   /**

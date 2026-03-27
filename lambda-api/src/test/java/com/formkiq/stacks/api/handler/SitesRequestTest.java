@@ -102,7 +102,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals("default,qa",
         notNull(response.getRoles()).stream().sorted().collect(Collectors.joining(",")));
     assertEquals(0, notNull(response.getSamlGroups()).size());
-    assertEquals(0, notNull(response.getJwtClaims()).size());
+    assertEquals(0, notNull(response.getUserClaims()).size());
     assertEquals(0, notNull(response.getSites()).size());
   }
 
@@ -118,7 +118,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     HttpResponse<String> response = this.http.get(url,
         Optional.of(new HttpHeaders().add("Authorization", jwt)), Optional.empty());
     Map<String, Object> body = fromJson(response.body(), Map.class);
-    Map<String, Object> jwtClaims = (Map<String, Object>) body.get("jwtClaims");
+    Map<String, Object> jwtClaims = (Map<String, Object>) body.get("userClaims");
 
     // then
     assertEquals(200, response.statusCode());
@@ -333,7 +333,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     assertEquals("authentication_only",
         notNull(response.getRoles()).stream().sorted().collect(Collectors.joining(",")));
     assertEquals(0, notNull(response.getSamlGroups()).size());
-    assertEquals(0, notNull(response.getJwtClaims()).size());
+    assertEquals(0, notNull(response.getUserClaims()).size());
     assertEquals(0, notNull(response.getSites()).size());
   }
 

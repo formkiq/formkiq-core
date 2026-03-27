@@ -12211,6 +12211,9 @@ components:
         matchUsername:
           type: boolean
           description: Match Input Username
+        matchUserClaim:
+          type: string
+          description: Matches user claim name to match against the Attribute Key value
     OpaPolicyItem:
       type: object
       properties:
@@ -12879,7 +12882,7 @@ components:
           description: List of User Saml Groups
           items:
             type: string
-        jwtClaims:
+        userClaims:
           type: object
           description: Map of custom JWT claims
           additionalProperties:

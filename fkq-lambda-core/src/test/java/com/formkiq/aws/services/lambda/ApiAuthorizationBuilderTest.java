@@ -973,10 +973,10 @@ class ApiAuthorizationBuilderTest {
     ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
 
     // then
-    assertNotNull(authorization.getJwtClaims());
-    assertEquals("acme", authorization.getJwtClaims().get("tenant"));
-    assertEquals(Map.of("department", "sales"), authorization.getJwtClaims().get("profile"));
-    assertNull(authorization.getJwtClaims().get("sub"));
+    assertNotNull(authorization.getUserClaims());
+    assertEquals("acme", authorization.getUserClaims().get("tenant"));
+    assertEquals(Map.of("department", "sales"), authorization.getUserClaims().get("profile"));
+    assertNull(authorization.getUserClaims().get("sub"));
   }
 
   /**
