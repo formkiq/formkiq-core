@@ -70,7 +70,8 @@ public class VersionRequestTest extends AbstractApiClientRequestTest {
     // given
     new SetBearerPermissionMap().apply(client, List.of("default", "qa"),
         Map.of("default", List.of("write", "read", "delete"), "LoanAgency",
-            List.of("write", "read", "delete", "govern")));
+            List.of("write", "read", "delete", "govern")),
+        Map.of());
     SystemManagementApi api = new SystemManagementApi(client);
 
     // when
@@ -89,7 +90,8 @@ public class VersionRequestTest extends AbstractApiClientRequestTest {
     // given
     new SetBearerPermissionMap().apply(client, List.of("SRSGroup"),
         Map.of("mergesacquisitions", List.of("write", "read", "delete"), "LoanAgency",
-            List.of("write", "read", "delete", "govern")));
+            List.of("write", "read", "delete", "govern")),
+        Map.of());
     SystemManagementApi api = new SystemManagementApi(client);
 
     // when

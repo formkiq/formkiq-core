@@ -254,6 +254,11 @@ public class ApiHttpRequest {
     return this;
   }
 
+  public ApiHttpRequest roleSiteMap(final Map<String, String> roleSiteMap) {
+    getClaims().put("roleSiteMap", roleSiteMap);
+    return this;
+  }
+
   /**
    * Set Saml Group.
    *

@@ -52,13 +52,16 @@ public class JwtTokenEncoder {
    *
    * @param groups {@link List} {@link String}
    * @param permissions {@link Map}
+   * @param roleSiteMap {@link Map}
    * @param username {@link String}
    * @return {@link String}
    */
   public static String encodeExplicitSites(final List<String> groups,
-      final Map<String, List<String>> permissions, final String username) {
-    Map<String, Object> sitesClaims =
-        Map.of("cognito:groups", groups.toArray(new String[0]), "permissionsMap", permissions);
+      final Map<String, List<String>> permissions, final Map<String, String> roleSiteMap,
+      final String username) {
+
+    Map<String, Object> sitesClaims = Map.of("cognito:groups", groups.toArray(new String[0]),
+        "roleSiteMap", roleSiteMap, "permissionsMap", permissions);
     return Jwts.builder().subject("FormKiQ").claim("sitesClaims", sitesClaims)
         .claim("cognito:username", username).compact();
   }

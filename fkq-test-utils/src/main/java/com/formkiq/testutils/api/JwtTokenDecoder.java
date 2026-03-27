@@ -39,6 +39,8 @@ public final class JwtTokenDecoder {
 
   /** {@link List} Saml Groups. */
   private final List<String> samlGroups;
+  /** Role Site Map. */
+  private Map<String, String> roleSiteMap;
   /** Groups. */
   private List<String> groups;
   /** Username. */
@@ -63,6 +65,7 @@ public final class JwtTokenDecoder {
     if (map.containsKey("sitesClaims")) {
       map = (Map<String, Object>) map.get("sitesClaims");
       this.permissions = (Map<String, List<String>>) map.get("permissionsMap");
+      this.roleSiteMap = (Map<String, String>) map.get("roleSiteMap");
     }
 
     this.groups = (List<String>) map.get("cognito:groups");
@@ -85,6 +88,16 @@ public final class JwtTokenDecoder {
    */
   public Map<String, List<String>> getPermissions() {
     return this.permissions;
+  }
+
+
+  /**
+   * Get Role Site {@link Map}.
+   *
+   * @return Map
+   */
+  public Map<String, String> getRoleSiteMap() {
+    return this.roleSiteMap;
   }
 
   /**

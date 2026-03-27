@@ -12909,6 +12909,11 @@ components:
           enum:
           - READ_WRITE
           - READ_ONLY
+        roles:
+          type: array
+          description: List of roles used to get permissions
+          items:
+            type: string
         permissions:
           type: array
           items:
