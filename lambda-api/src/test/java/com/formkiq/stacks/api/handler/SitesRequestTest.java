@@ -91,7 +91,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
   @Test
   void testGetSitesWithEmptyPermissionsMap() throws ApiException {
     // given
-    new SetBearerPermissionMap().apply(this.client, List.of("default", "qa"), Map.of());
+    new SetBearerPermissionMap().apply(this.client, List.of("default", "qa"), Map.of(), Map.of());
 
     // when
     GetSitesResponse response = this.systemApi.getSites(null);

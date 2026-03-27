@@ -56,15 +56,16 @@ public class SetBearerPermissionMap {
 
   /**
    * Set Permissions Map.
-   * 
+   *
    * @param client {@link ApiClient}
    * @param groups {@link String}
    * @param permissions {@link Map}
+   * @param roleSiteMap {@link Map}
    * @return {@link Void}
    */
   public Void apply(final ApiClient client, final List<String> groups,
-      final Map<String, List<String>> permissions) {
-    String jwt = JwtTokenEncoder.encodeExplicitSites(groups, permissions, user);
+      final Map<String, List<String>> permissions, final Map<String, String> roleSiteMap) {
+    String jwt = JwtTokenEncoder.encodeExplicitSites(groups, permissions, roleSiteMap, user);
     client.addDefaultHeader("Authorization", jwt);
     return null;
   }

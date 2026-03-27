@@ -99,6 +99,10 @@ public class ApiAuthorization {
    * custom user claims.
    */
   private Map<String, Object> userClaims;
+  /**
+   * role to site mapping from sitesClaims.
+   */
+  private Map<String, String> roleSiteMap;
 
   /**
    * Authorization Saml Groups.
@@ -206,6 +210,15 @@ public class ApiAuthorization {
   }
 
   /**
+   * Get roleSiteMap.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getRoleSiteMap() {
+    return this.roleSiteMap;
+  }
+
+  /**
    * Get Roles.
    * 
    * @return {@link Collection} {@link String}
@@ -286,6 +299,17 @@ public class ApiAuthorization {
   public boolean isAdminOrGovern(final String siteId) {
     Collection<ApiPermission> permissions = getPermissions(siteId);
     return permissions.contains(ApiPermission.ADMIN) || permissions.contains(ApiPermission.GOVERN);
+  }
+
+  /**
+   * Set roleSiteMap.
+   *
+   * @param map {@link Map}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization roleSiteMap(final Map<String, String> map) {
+    this.roleSiteMap = map;
+    return this;
   }
 
   /**
