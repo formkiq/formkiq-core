@@ -96,9 +96,9 @@ public class ApiAuthorization {
   private Collection<String> roles;
 
   /**
-   * JWT custom claims.
+   * custom user claims.
    */
-  private Map<String, Object> jwtClaims;
+  private Map<String, Object> userClaims;
 
   /**
    * Authorization Saml Groups.
@@ -188,15 +188,6 @@ public class ApiAuthorization {
   }
 
   /**
-   * Get JWT custom claims.
-   *
-   * @return {@link Map}
-   */
-  public Map<String, Object> getJwtClaims() {
-    return this.jwtClaims;
-  }
-
-  /**
    * Get {@link ApiPermission}.
    * 
    * @param siteId {@link String}
@@ -253,6 +244,15 @@ public class ApiAuthorization {
   }
 
   /**
+   * Get custom user claims.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, Object> getUserClaims() {
+    return this.userClaims;
+  }
+
+  /**
    * Get Calling Username.
    * 
    * @return {@link String}
@@ -289,17 +289,6 @@ public class ApiAuthorization {
   }
 
   /**
-   * Set JWT custom claims.
-   *
-   * @param claims {@link Map}
-   * @return {@link ApiAuthorization}
-   */
-  public ApiAuthorization jwtClaims(final Map<String, Object> claims) {
-    this.jwtClaims = claims;
-    return this;
-  }
-
-  /**
    * Set Roles.
    * 
    * @param apiRoles {@link Collection} {@link String}
@@ -329,6 +318,17 @@ public class ApiAuthorization {
    */
   public ApiAuthorization siteId(final String siteId) {
     this.defaultSiteId = siteId;
+    return this;
+  }
+
+  /**
+   * Set JWT custom claims.
+   *
+   * @param claims {@link Map}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization userClaims(final Map<String, Object> claims) {
+    this.userClaims = claims;
     return this;
   }
 
