@@ -90,6 +90,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     String group = getGroup(sigv4, httpRequest, decoder);
     String samlGroups = getSamlGroups(decoder);
     Map<String, List<String>> permissions = !sigv4 ? getPermissions(decoder) : null;
+    Map<String, String> roleSiteMap = !sigv4 ? getRoleSiteMap(decoder) : null;
 
     Map<String, String> httpHeaders = httpRequest.getHeaders().getEntries().stream().collect(
         Collectors.toMap(h -> h.getName().getValue(), h -> h.getValues().get(0).getValue()));
@@ -97,7 +98,7 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     return new ApiHttpRequest().headers(httpHeaders).httpMethod(httpRequest.getMethod().getValue())
         .resource(resource).path(path).pathParameters(pathParameters)
         .queryParameters(queryParameters).user(getUsername(decoder)).group(group)
-        .samlGroups(samlGroups).permissions(permissions).body(body);
+        .samlGroups(samlGroups).permissions(permissions).roleSiteMap(roleSiteMap).body(body);
   }
 
   /**
@@ -202,6 +203,10 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
   private Map<String, List<String>> getPermissions(final JwtTokenDecoder decoder) {
     return decoder != null ? decoder.getPermissions() : Map.of();
+  }
+
+  private Map<String, String> getRoleSiteMap(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getRoleSiteMap() : Map.of();
   }
 
   private String getSamlGroups(final JwtTokenDecoder decoder) {

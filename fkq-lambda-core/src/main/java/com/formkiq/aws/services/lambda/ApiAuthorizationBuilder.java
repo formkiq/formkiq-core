@@ -184,10 +184,12 @@ public class ApiAuthorizationBuilder {
     Collection<String> roles = getRoles(event);
 
     Collection<String> samlGroups = getSamlGroups(event);
+    Map<String, String> roleSiteMap = getRoleSiteMap(event);
     Map<String, Object> userClaims = getUserCustomClaims(event);
 
-    ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
-        .username(getUsername(event)).samlGroups(samlGroups).roles(roles).userClaims(userClaims);
+    ApiAuthorization authorization =
+        new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event))
+            .samlGroups(samlGroups).roles(roles).roleSiteMap(roleSiteMap).userClaims(userClaims);
 
     addPermissions(event, authorization, groups, admin);
 
@@ -341,6 +343,17 @@ public class ApiAuthorizationBuilder {
     Map<String, List<String>> map = null;
     if (claims.containsKey("permissionsMap")) {
       map = (Map<String, List<String>>) claims.get("permissionsMap");
+    }
+
+    return map;
+  }
+
+  private Map<String, String> getRoleSiteMap(final ApiGatewayRequestEvent event) {
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    Map<String, String> map = null;
+    if (claims.containsKey("roleSiteMap")) {
+      map = (Map<String, String>) claims.get("roleSiteMap");
     }
 
     return map;
