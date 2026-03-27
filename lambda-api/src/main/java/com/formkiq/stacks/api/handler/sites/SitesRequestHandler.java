@@ -143,8 +143,8 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       map.put("samlGroups", authorization.getSamlGroups());
     }
 
-    if (!Objects.notNull(authorization.getJwtClaims()).isEmpty()) {
-      map.put("jwtClaims", authorization.getJwtClaims());
+    if (!Objects.notNull(authorization.getUserClaims()).isEmpty()) {
+      map.put("userClaims", authorization.getUserClaims());
     }
 
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
