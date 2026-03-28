@@ -26,6 +26,7 @@ package com.formkiq.module.ocr;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -364,7 +365,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
         actions.stream().filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
     o.ifPresent(a -> {
-      var action = new ActionBuilder().action(a).status(actionStatus).build(siteId);
+      var action = new ActionBuilder().action(a).status(actionStatus).completedDate(new Date())
+          .build(siteId);
       service.updateAction(action);
     });
 
