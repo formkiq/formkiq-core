@@ -9530,6 +9530,9 @@ components:
     FulltextAttribute:
       type: object
       properties:
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
         stringValues:
           type: array
           description: Attribute with string values
