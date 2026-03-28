@@ -288,6 +288,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(1, attributes.size());
         assertEquals(key1, attributes.get(0).getKey());
         assertEquals(value, attributes.get(0).getStringValue());
+        assertNotNull(attributes.get(0).getInsertedDate());
 
         DocumentAttribute attribute =
             api.getDocumentAttribute(documentId, key1, siteId).getAttribute();
