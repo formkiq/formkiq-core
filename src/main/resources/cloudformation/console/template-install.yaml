@@ -40,10 +40,15 @@ Conditions:
     Fn::Not:
       - Condition: IsEmptyOrUnderscore
 
+  HasHostedZoneIdAndCertificateStackName:
+    Fn::And:
+      - Condition: HasHostedZoneId
+      - Condition: HasCertificateStackName
+
 Resources:
 
   CloudFrontDistributionRecordSet:
-    Condition: HasHostedZoneId
+    Condition: HasHostedZoneIdAndCertificateStackName
     Type: 'AWS::Route53::RecordSetGroup'
     Properties:
       HostedZoneId:
