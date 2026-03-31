@@ -23,5 +23,5 @@
  */
 package com.formkiq.stacks.lambda.s3.cognito;
 
-public record CustomMessageConfig(String cognitoHttpApiUrl, String subject, String consoleUrl) {
+public record CustomMessageConfig(String userAuthApiUrl, String subject, String consoleUrl) {
 }
