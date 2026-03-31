@@ -209,25 +209,26 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /confirmRegistration:
-            post:
+            get:
               summary: Confirm Registration
               description: |
-                Confirm a new user's registration using a confirmation code.  The request body must contain the user's username and the confirmation code.
-              requestBody:
-                description: Username and confirmation code for registration confirmation.
+                Confirm a new user's registration using a confirmation code. The request must include the user's username and confirmation code as query string parameters.
+              parameters:
+              - in: query
+                name: username
                 required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      required:
-                      - username
-                      - code
-                      properties:
-                        username:
-                          type: string
-                        code:
-                          type: string
+                schema:
+                  type: string
+              - in: query
+                name: code
+                required: true
+                schema:
+                  type: string
+              - in: query
+                name: userStatus
+                required: false
+                schema:
+                  type: string
               responses:
                 "200":
                   description: Registration confirmed successfully.
@@ -238,8 +239,17 @@
                         properties:
                           message:
                             type: string
-                            example: User registration confirmed successfully
+                            example: User registration confirmed
+                          success:
+                            type: boolean
+                            example: true
+                          username:
+                            type: string
+                          userStatus:
+                            type: string
                           challengeName:
+                            type: string
+                          session:
                             type: string
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'

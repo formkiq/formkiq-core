@@ -87,7 +87,7 @@ public class CustomMessageHandlerTest {
     s3.createBucket("aws-cognito");
 
     ssm = awsServices.getExtension(SsmService.class);
-    ssm.putParameter("/formkiq/cognito/test/CognitoHttpApiUrl", "http://localhost");
+    ssm.putParameter("/formkiq/dev/api/UserAuthApiUrl", "http://localhost");
     ssm.putParameter("/formkiq/dev/console/Url", "http://localhost");
 
     handler = new CustomMessageHandler(awsServices);
