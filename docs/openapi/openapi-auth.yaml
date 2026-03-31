@@ -253,6 +253,44 @@
                             type: string
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /respondToAuthChallenge:
+            post:
+              summary: Respond To Auth Challenge
+              description: |
+                Respond to a Cognito authentication challenge such as NEW_PASSWORD_REQUIRED.
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - userStatus
+                      - session
+                      - password
+                      - username
+                      properties:
+                        userStatus:
+                          type: string
+                        session:
+                          type: string
+                        password:
+                          type: string
+                        username:
+                          type: string
+              responses:
+                "200":
+                  description: Challenge completed successfully.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: Change Password
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:
           securitySchemes:
             ApiAuthorization:

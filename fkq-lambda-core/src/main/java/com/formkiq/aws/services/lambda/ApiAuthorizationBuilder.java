@@ -68,8 +68,9 @@ public class ApiAuthorizationBuilder {
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
   /** Global Site Urls. */
-  private static final Collection<String> GLOBAL_SITE_URLS = Set.of("/changePassword",
-      "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm", "/login");
+  private static final Collection<String> GLOBAL_SITE_URLS =
+      Set.of("/changePassword", "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm",
+          "/login", "/respondToAuthChallenge");
 
   private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();

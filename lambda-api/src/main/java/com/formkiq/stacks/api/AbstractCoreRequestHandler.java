@@ -62,6 +62,7 @@ import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordConfirmRequestHandler;
 import com.formkiq.stacks.api.handler.UserForgotPasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UserLoginRequestHandler;
+import com.formkiq.stacks.api.handler.UserRespondToAuthChallengeRequestHandler;
 import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeRequestHandler;
@@ -211,6 +212,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new UserForgotPasswordRequestHandler());
     addRequestHandler(new UserForgotPasswordConfirmRequestHandler());
     addRequestHandler(new UserConfirmRegistrationRequestHandler());
+    addRequestHandler(new UserRespondToAuthChallengeRequestHandler());
   }
 
   private static void addMappingRequestHandlers() {
