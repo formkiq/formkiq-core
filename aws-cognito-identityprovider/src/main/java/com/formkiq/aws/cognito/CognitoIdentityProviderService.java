@@ -526,6 +526,29 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Respond to a Cognito auth challenge.
+   *
+   * @param username {@link String}
+   * @param challengeName {@link String}
+   * @param session {@link String}
+   * @param newPassword {@link String}
+   * @return {@link AdminRespondToAuthChallengeResponse}
+   */
+  public AdminRespondToAuthChallengeResponse respondToAuthChallenge(final String username,
+      final String challengeName, final String session, final String newPassword) {
+
+    Map<String, String> challengeResponses =
+        Map.of("NEW_PASSWORD", newPassword, "USERNAME", username);
+
+    AdminRespondToAuthChallengeRequest request =
+        AdminRespondToAuthChallengeRequest.builder().clientId(this.clientId)
+            .challengeName(ChallengeNameType.fromValue(challengeName)).session(session)
+            .challengeResponses(challengeResponses).userPoolId(this.userPoolId).build();
+
+    return this.cognitoProvider.adminRespondToAuthChallenge(request);
+  }
+
+  /**
    * Change User Password.
    * 
    * @param accessToken {@link String}
