@@ -453,6 +453,17 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Login User and return the full auth response, including challenge/session details.
+   *
+   * @param email {@link String}
+   * @param password {@link String}
+   * @return {@link AdminInitiateAuthResponse}
+   */
+  public AdminInitiateAuthResponse loginResponse(final String email, final String password) {
+    return loginInternal(email, password);
+  }
+
+  /**
    * Login User in NEW_PASSWORD_REQUIRED status.
    * 
    * @param email {@link String}

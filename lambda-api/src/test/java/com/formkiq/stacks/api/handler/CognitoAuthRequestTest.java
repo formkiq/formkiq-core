@@ -99,6 +99,39 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /confirmRegistration partial and blank parameters.
+   *
+   */
+  @Test
+  public void testConfirmRegistration02() throws IOException {
+    // given
+    String url = server.getBasePath() + "/confirmRegistration";
+
+    // when
+    HttpResponse<String> post =
+        http.post(url, Optional.empty(), Optional.empty(), "{\"username\":\"user@test.com\"}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username' and 'code' are required\"}]}", post.body());
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), "{\"code\":\"123456\"}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username' and 'code' are required\"}]}", post.body());
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(),
+        "{\"username\":\"\",\"code\":\"123456\",\"userStatus\":\"FORCE_CHANGE_PASSWORD\"}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"errors\":[{\"error\":\"'username' and 'code' are required\"}]}", post.body());
+  }
+
+  /**
    * POST /forgotPassword missing parameters.
    *
    */
