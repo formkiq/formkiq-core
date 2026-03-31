@@ -389,6 +389,7 @@ Resources:
               - cognito-idp:AdminGetUser
               - cognito-idp:AdminListGroupsForUser
               - cognito-idp:AdminInitiateAuth
+              - cognito-idp:AdminRespondToAuthChallenge
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow
