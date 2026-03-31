@@ -35,6 +35,7 @@ import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -65,13 +66,35 @@ public class UserConfirmRegistrationRequestHandler
     Map<String, Object> map = JsonToObject.fromJson(awsservice, event, Map.class);
     validate(map);
 
+    String username = (String) map.get("username");
+    Map<String, Object> response = new HashMap<>();
+    response.put("message", "User registration confirmed");
+    response.put("success", Boolean.TRUE);
+    response.put("username", username);
+
+    String userStatus = (String) map.get("userStatus");
+    if (!isEmpty(userStatus)) {
+      response.put("userStatus", userStatus);
+    }
+
     CognitoIdentityProviderService service =
         awsservice.getExtension(CognitoIdentityProviderService.class);
+    String code = (String) map.get("code");
+    var auth = service.loginResponse(username, code);
+    if (auth.challengeName() != null) {
+      String challengeName = auth.challengeName().name();
+      response.put("challengeName", challengeName);
 
-    service.initiateAuth((String) map.get("username"), (String) map.get("code"));
+      if ("NEW_PASSWORD_REQUIRED".equals(challengeName)) {
+        response.put("userStatus", challengeName);
+      }
+    }
 
-    return ApiRequestHandlerResponse.builder().ok().body("message", "User registration confirmed")
-        .build();
+    if (!isEmpty(auth.session())) {
+      response.put("session", auth.session());
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body(response).build();
   }
 
   private void validate(final Map<String, Object> map) throws ValidationException {

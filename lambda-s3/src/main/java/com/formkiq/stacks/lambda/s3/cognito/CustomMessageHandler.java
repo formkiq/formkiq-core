@@ -124,7 +124,7 @@ public class CustomMessageHandler
 
     String link = null;
     String trigger = event.triggerSource();
-    String cognitoHttpApiUrl = config.cognitoHttpApiUrl();
+    String userAuthApiUrl = config.userAuthApiUrl();
     String userName = event.userName();
     String region = event.region();
     String clientId = getClientId(event);
@@ -133,9 +133,9 @@ public class CustomMessageHandler
 
     if ("CustomMessage_SignUp".equals(trigger)) {
 
-      link = cognitoHttpApiUrl + "/confirmSignUp?userStatus=" + userStatus + "&code="
-          + codeParameter + "&username=" + userName + "&clientId=" + clientId + "&region=" + region
-          + "&email=" + email;
+      link = userAuthApiUrl + "/confirmSignUp?userStatus=" + userStatus + "&code=" + codeParameter
+          + "&username=" + userName + "&clientId=" + clientId + "&region=" + region + "&email="
+          + email;
 
     } else if ("CustomMessage_ForgotPassword".equals(trigger)) {
 
@@ -146,7 +146,7 @@ public class CustomMessageHandler
     } else if ("CustomMessage_AdminCreateUser".equals(trigger)) {
 
       // Node uses usernameParameter as the email query param (kept the same)
-      link = cognitoHttpApiUrl + "/confirmRegistration?userStatus=" + userStatus + "&code="
+      link = userAuthApiUrl + "/confirmRegistration?userStatus=" + userStatus + "&code="
           + codeParameter + "&username=" + userName + "&clientId=" + clientId + "&region=" + region
           + "&email=" + usernameParameter;
     }
@@ -185,19 +185,21 @@ public class CustomMessageHandler
 
     String domain = requireEnv("DOMAIN");
     String trigger = event.triggerSource();
-    String urlParamName = "/formkiq/cognito/" + domain + "/CognitoHttpApiUrl";
+    String userAuthApiParam =
+        "/formkiq/" + serviceCache.environment("APP_ENVIRONMENT") + "/api/UserAuthApiUrl";
     String subjectParamName = "/formkiq/cognito/" + domain + "/" + trigger + "/Subject";
     String consoleUrlParam =
         "/formkiq/" + serviceCache.environment("APP_ENVIRONMENT") + "/console/Url";
 
-    Map<String, String> parameters = getParameters(urlParamName, subjectParamName, consoleUrlParam);
+    Map<String, String> parameters =
+        getParameters(userAuthApiParam, subjectParamName, consoleUrlParam);
     String subject = parameters.getOrDefault(subjectParamName, defaultFor(trigger, "Subject"));
     String consoleUrl = parameters.get(consoleUrlParam);
-    var config = new CustomMessageConfig(parameters.get(urlParamName), subject, consoleUrl);
+    var config = new CustomMessageConfig(parameters.get(userAuthApiParam), subject, consoleUrl);
 
-    // if (config.cognitoHttpApiUrl() == null) {
-    // throw new IllegalStateException("Missing required SSM parameter: " + urlParamName);
-    // }
+    if (config.userAuthApiUrl() == null) {
+      throw new IllegalStateException("Missing required SSM parameter: " + userAuthApiParam);
+    }
 
     if (config.consoleUrl() == null) {
       throw new IllegalStateException("Missing required SSM parameter: " + consoleUrlParam);
