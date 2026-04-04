@@ -133,6 +133,11 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  CertificateStackNameShortlinksApiDomain:
+    Type: String
+    Description: Certificate Shortlinks Api Domain
+    Default: ""
+
   CertificateStackNameHttpApiDomain:
     Type: String
     Description: Certificate Http Api Domain
