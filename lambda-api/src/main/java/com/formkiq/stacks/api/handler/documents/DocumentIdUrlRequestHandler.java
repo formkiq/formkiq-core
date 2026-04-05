@@ -75,6 +75,8 @@ public class DocumentIdUrlRequestHandler
   private static final String S3_PREFIX = "s3://";
   /** S3 Pattern. */
   private static final Pattern S3_PATTERN = Pattern.compile("s3://([^/]+)/(.*)");
+  /** Short URL Format. */
+  private static final String URL_FORMAT_SHORT = "short";
 
   /**
    * constructor.
@@ -102,6 +104,9 @@ public class DocumentIdUrlRequestHandler
     String documentId = event.getPathParameter("documentId");
     String siteId = authorization.getSiteId();
     String versionKey = getVersionKey(event);
+    boolean shortFormat = isShortFormat(event);
+
+    validateShortFormat(awsservice, shortFormat);
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, documentId, versionKey);
@@ -325,5 +330,18 @@ public class DocumentIdUrlRequestHandler
 
   private boolean isDeepLink(final String deepLinkPath) {
     return !isEmpty(deepLinkPath) && !deepLinkPath.startsWith(S3_PREFIX);
+  }
+
+  private boolean isShortFormat(final ApiGatewayRequestEvent event) {
+    return URL_FORMAT_SHORT.equals(getParameter(event, "format"));
+  }
+
+  private void validateShortFormat(final AwsServiceCache awsservice, final boolean shortFormat)
+      throws ValidationException {
+
+    if (shortFormat && !"true".equalsIgnoreCase(awsservice.environment("MODULE_shortlinks"))) {
+      throw new ValidationException(
+          List.of(new ValidationErrorImpl().key("format").error("format=short is not supported")));
+    }
   }
 }
