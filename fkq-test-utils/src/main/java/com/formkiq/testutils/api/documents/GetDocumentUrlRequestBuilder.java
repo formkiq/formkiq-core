@@ -36,6 +36,8 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
 
   /** {@link String}. */
   private final String id;
+  /** Url Format. */
+  private String urlFormat;
 
   /**
    * constructor.
@@ -46,10 +48,15 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
     this.id = documentId;
   }
 
+  public GetDocumentUrlRequestBuilder setFormat(final String format) {
+    this.urlFormat = format;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentUrl(this.id, siteId, null,
-        null, null, null, null));
+        null, null, null, null, urlFormat));
   }
 }
