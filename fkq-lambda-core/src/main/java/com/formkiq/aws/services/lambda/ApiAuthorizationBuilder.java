@@ -70,7 +70,7 @@ public class ApiAuthorizationBuilder {
   /** Global Site Urls. */
   private static final Collection<String> GLOBAL_SITE_URLS =
       Set.of("/changePassword", "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm",
-          "/login", "/respondToAuthChallenge");
+          "/login", "/respondToAuthChallenge", "/s/{slug}");
 
   private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();
@@ -173,7 +173,8 @@ public class ApiAuthorizationBuilder {
    */
   public ApiAuthorization build(final ApiGatewayRequestEvent event) throws Exception {
 
-    if (GLOBAL_SITE_URLS.contains(getPath(event))) {
+    if (GLOBAL_SITE_URLS.contains(getPath(event))
+        || GLOBAL_SITE_URLS.contains(getResource(event))) {
       return new ApiAuthorization().siteId(ReservedSiteId.GLOBAL.getSiteId());
     }
 
@@ -347,6 +348,10 @@ public class ApiAuthorizationBuilder {
     }
 
     return map;
+  }
+
+  private String getResource(final ApiGatewayRequestEvent event) {
+    return event != null && !isEmpty(event.getResource()) ? event.getResource() : "";
   }
 
   private Map<String, String> getRoleSiteMap(final ApiGatewayRequestEvent event) {

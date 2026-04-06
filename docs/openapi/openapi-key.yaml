@@ -2425,7 +2425,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddResponse'
+                $ref: '#/components/schemas/AddShortlinkResponse'
         "400":
           description: 400 OK
           content:
@@ -13097,6 +13097,12 @@ components:
         slug:
           type: string
           description: Shortlink slug
+    AddShortlinkResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Shortlink URL
     GetSitesSchemaResponse:
       type: object
       properties:
