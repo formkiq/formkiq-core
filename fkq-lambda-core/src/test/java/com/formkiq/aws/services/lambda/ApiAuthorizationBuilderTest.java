@@ -1095,6 +1095,28 @@ class ApiAuthorizationBuilderTest {
         .map(Enum::name).sorted().collect(Collectors.joining(","))));
   }
 
+  /**
+   * Test global "/s/{slug}" url.
+   */
+  @Test
+  void testShortlinks() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setResource("/s/{slug}");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
+  }
+
   private String toJwt(final Map<String, Object> claims) {
     String header = Base64.getUrlEncoder().withoutPadding()
         .encodeToString("{\"alg\":\"none\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
