@@ -86,7 +86,7 @@ class IntegrationTest {
     waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, null, null).getContent());
+        this.documentsApi.getDocumentContent(documentId, null, null, null, null).getContent());
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), Objects.requireNonNull(response.getContentLength()).intValue());

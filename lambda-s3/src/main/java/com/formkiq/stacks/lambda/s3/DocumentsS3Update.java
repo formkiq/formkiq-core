@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getS3KeyParts;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteIdName;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -53,7 +53,8 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Base64ToMap;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -257,31 +258,31 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   private void buildAttributes(final Map<String, AttributeValue> current,
-      final Map<String, Object> prev, final DocumentItem item, final S3ObjectMetadata resp,
+      final Map<String, Object> prev, final DocumentRecord item, final S3ObjectMetadata resp,
       final String contentType, final Long contentLength) {
 
     if (!Strings.isEmpty(contentType)) {
       current.put("contentType", AttributeValue.fromS(contentType));
-      prev.put("contentType", item.getContentType());
+      prev.put("contentType", item.contentType());
     }
 
     String checksum = resp.getChecksum();
     current.put("checksum", AttributeValue.fromS(checksum));
-    prev.put("checksum", item.getChecksum());
+    prev.put("checksum", item.checksum());
 
     if (resp.getChecksumType() != null) {
       current.put("checksumType", AttributeValue.fromS(resp.getChecksumType()));
-      prev.put("checksumType", item.getChecksumType());
+      prev.put("checksumType", item.checksumType());
     }
 
     if (contentLength != null) {
       current.put("contentLength", AttributeValue.fromN("" + contentLength));
-      prev.put("contentLength", item.getContentLength());
+      prev.put("contentLength", item.contentLength());
     }
 
     if (resp.getVersionId() != null) {
       current.put(S3VERSION_ATTRIBUTE, AttributeValue.fromS(resp.getVersionId()));
-      prev.put(S3VERSION_ATTRIBUTE, item.getVersion());
+      prev.put(S3VERSION_ATTRIBUTE, item.version());
     }
   }
 
@@ -290,19 +291,21 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    * 
    * @param eventType {@link String}
    * @param siteId {@link String}
-   * @param doc {@link DocumentItem}
+   * @param doc {@link DocumentRecord}
    * @param s3Bucket {@link String}
    * @param s3Key {@link String}
    * @param contentType {@link String}
    * @return {@link DocumentEvent}
    */
   private DocumentEvent buildDocumentEvent(final String eventType, final String siteId,
-      final DocumentItem doc, final String s3Bucket, final String s3Key, final String contentType) {
+      final DocumentRecord doc, final String s3Bucket, final String s3Key,
+      final String contentType) {
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
-    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
+    String documentId = resetDatabaseKey(siteId, doc.documentId());
 
     return new DocumentEvent().siteId(site).documentId(documentId).s3bucket(s3Bucket).s3key(s3Key)
-        .type(eventType).userId(doc.getUserId()).contentType(contentType).path(doc.getPath());
+        .artifactId(doc.artifactId()).type(eventType).userId(doc.userId()).contentType(contentType)
+        .path(doc.path());
   }
 
   /**
@@ -344,23 +347,23 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return metadata;
   }
 
-  private String findContentType(final DocumentItem item, final String contentType) {
+  private String findContentType(final DocumentRecord item, final String contentType) {
 
     MimeType mimeType = MimeType.fromContentType(contentType);
     if (contentType != null && contentType.endsWith("/octet-stream")) {
 
-      if (!com.formkiq.strings.Strings.isEmpty(item.getContentType())) {
-        mimeType = MimeType.fromContentType(item.getContentType());
-      } else if (!com.formkiq.strings.Strings.isEmpty(item.getPath())) {
-        mimeType = MimeType.findByPath(item.getPath());
+      if (!com.formkiq.strings.Strings.isEmpty(item.contentType())) {
+        mimeType = MimeType.fromContentType(item.contentType());
+      } else if (!com.formkiq.strings.Strings.isEmpty(item.path())) {
+        mimeType = MimeType.findByPath(item.path());
       }
     }
 
     return MimeType.MIME_UNKNOWN.equals(mimeType) ? contentType : mimeType.getContentType();
   }
 
-  private DocumentItem findDocument(final String siteId, final String documentId) {
-    return service.findDocument(siteId, documentId);
+  private DocumentRecord findDocument(final String siteId, final DocumentArtifact document) {
+    return service.findDocument(siteId, document);
   }
 
   private String getContent(final DocumentEvent event) {
@@ -571,8 +574,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     if (!objectExist) {
 
-      String siteId = getSiteId(key);
-      String documentId = resetDatabaseKey(siteId, key);
+      SiteIdKeyGenerator.S3KeyParts parts = getS3KeyParts(key);
+      String siteId = parts.siteId();
+      String documentId = parts.documentId();
+      String artifactId = parts.artifactId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
       boolean moduleOcr = serviceCache.hasModule("ocr");
       boolean moduleFulltext = serviceCache.hasModule("opensearch");
@@ -603,13 +609,13 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-      DocumentItem item = service.findDocument(siteId, documentId);
+      DocumentRecord item = service.findDocument(siteId, document);
       if (item != null) {
-        service.deleteDocument(siteId, documentId, false);
+        service.deleteDocument(siteId, document, false);
       }
 
-      DocumentEvent event =
-          new DocumentEvent().siteId(getSiteIdName(siteId)).documentId(documentId).type(DELETE);
+      DocumentEvent event = new DocumentEvent().siteId(getSiteIdName(siteId)).documentId(documentId)
+          .artifactId(artifactId).type(DELETE);
       sendSnsMessage(event);
     }
   }
@@ -634,9 +640,11 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     logger.info(s);
 
     String key = urlDecode(s3key);
-
-    String siteId = getSiteId(key);
-    String documentId = resetDatabaseKey(siteId, key);
+    SiteIdKeyGenerator.S3KeyParts parts = getS3KeyParts(key);
+    String siteId = parts.siteId();
+    String documentId = parts.documentId();
+    String artifactId = parts.artifactId();
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
     S3ObjectMetadata resp = s3service.getObjectMetadata(s3bucket, key, null);
 
@@ -647,7 +655,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     String contentType = resp.getContentType();
     Long contentLength = resp.getContentLength();
 
-    DocumentItem item = findDocument(siteId, documentId);
+    DocumentRecord item = findDocument(siteId, document);
 
     if (item != null) {
 
@@ -655,7 +663,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
       if (logger.isLogged(LogLevel.TRACE)) {
         s = LogMessageBuilder.title("updating document").property("metadata", resp.getMetadata())
-            .property("checksum", resp.getChecksum()).property("path", item.getPath())
+            .property("checksum", resp.getChecksum()).property("path", item.path())
             .property("contentType", resp.getContentType()).property("s3 version id", s3VersionId)
             .property("s3 file version id", resp.getVersionId()).build();
         logger.trace(s);
@@ -668,10 +676,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       // if the event and s3 version id match, then correct event to process
       if (s3VersionId == null || s3VersionId.equals(resp.getVersionId())) {
 
-        service.updateDocument(siteId, documentId, attributes);
+        service.updateDocument(siteId, document, attributes);
 
         List<DocumentTag> tags = getObjectTags(s3bucket, key);
-        service.addTags(siteId, documentId, tags, null);
+        service.addTags(siteId, document, tags, null);
 
         service.deleteDocumentFormats(siteId, documentId);
       }

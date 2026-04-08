@@ -33,6 +33,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
@@ -264,18 +265,19 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * @param logger {@link Logger}
    * @param type {@link String}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    */
   private void logAction(final Logger logger, final String type, final String siteId,
-      final String documentId, final Action action) {
+      final DocumentArtifact document, final Action action) {
 
     if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
-          "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"actionType\":\"%s\","
-              + "\"actionStatus\":\"%s\",\"userId\":\"%s\",\"parameters\": \"%s\"}",
-          type, siteId, documentId, action.type(), action.status(), action.userId(),
-          action.parameters());
+          "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\","
+              + "\"actionType\":\"%s\",\"actionStatus\":\"%s\",\"userId\":\"%s\","
+              + "\"parameters\": \"%s\"}",
+          type, siteId, document.documentId(), document.artifactId(), action.type(),
+          action.status(), action.userId(), action.parameters());
 
       logger.debug(s);
     }
@@ -286,27 +288,27 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void processAction(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action)
+  private void processAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
       throws IOException, InterruptedException, ValidationException {
 
-    logAction(logger, "action start", siteId, documentId, action);
+    logAction(logger, "action start", siteId, document, action);
 
-    ProcessActionStatus actionStatus = performAction(logger, siteId, documentId, actions, action);
+    ProcessActionStatus actionStatus = performAction(logger, siteId, document, actions, action);
 
-    logAction(logger, "action complete", siteId, documentId, action);
+    logAction(logger, "action complete", siteId, document, action);
 
-    updateComplete(logger, siteId, documentId, action, actionStatus);
+    updateComplete(logger, siteId, document, action, actionStatus);
   }
 
   private ProcessActionStatus performAction(final Logger logger, final String siteId,
-      final String documentId, final List<Action> actions, final Action action)
+      final DocumentArtifact document, final List<Action> actions, final Action action)
       throws IOException, InterruptedException {
     ProcessActionStatus actionStatus;
     switch (action.type()) {
@@ -314,62 +316,63 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       case DOCUMENTTAGGING -> {
         DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
-        actionStatus = dtAction.run(logger, siteId, documentId, actions, action);
+        actionStatus = dtAction.run(logger, siteId, document, actions, action);
       }
 
       case OCR -> actionStatus =
-          new AddOcrAction(serviceCache).run(logger, siteId, documentId, actions, action);
+          new AddOcrAction(serviceCache).run(logger, siteId, document, actions, action);
 
       case FULLTEXT -> actionStatus =
-          new FullTextAction(serviceCache).run(logger, siteId, documentId, actions, action);
+          new FullTextAction(serviceCache).run(logger, siteId, document, actions, action);
 
       case CHECKSUM -> actionStatus =
-          new ChecksumAction(serviceCache).run(logger, siteId, documentId, actions, action);
+          new ChecksumAction(serviceCache).run(logger, siteId, document, actions, action);
 
       case ANTIVIRUS, MALWARE_SCAN -> {
         new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-            "/documents/" + documentId + "/malwareScan", "");
+            "/documents/" + document.documentId() + "/malwareScan", "");
         actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
       }
 
-      case WEBHOOK -> actionStatus = sendWebhook(siteId, documentId, action);
+      case WEBHOOK -> actionStatus = sendWebhook(siteId, document, action);
 
       case NOTIFICATION -> {
         DocumentAction da = new NotificationAction(siteId, serviceCache);
-        actionStatus = da.run(logger, siteId, documentId, actions, action);
+        actionStatus = da.run(logger, siteId, document, actions, action);
       }
 
       case IDP -> {
         DocumentAction da = new IdpAction(serviceCache);
-        actionStatus = da.run(logger, siteId, documentId, actions, action);
+        actionStatus = da.run(logger, siteId, document, actions, action);
       }
 
       case PUBLISH -> {
         DocumentAction da = new PublishAction(serviceCache);
-        actionStatus = da.run(logger, siteId, documentId, actions, action);
+        actionStatus = da.run(logger, siteId, document, actions, action);
       }
 
       case PDFEXPORT -> {
         DocumentAction da = new PdfExportAction(serviceCache);
-        actionStatus = da.run(logger, siteId, documentId, actions, action);
+        actionStatus = da.run(logger, siteId, document, actions, action);
       }
 
       case EVENTBRIDGE -> {
         DocumentAction da = new EventBridgeAction(serviceCache);
-        actionStatus = da.run(logger, siteId, documentId, actions, action);
+        actionStatus = da.run(logger, siteId, document, actions, action);
       }
 
       case RESIZE -> actionStatus =
-          new ResizeAction(serviceCache).run(logger, siteId, documentId, actions, action);
+          new ResizeAction(serviceCache).run(logger, siteId, document, actions, action);
 
       case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
-          .run(logger, siteId, documentId, actions, action);
+          .run(logger, siteId, document, actions, action);
 
       case METADATA_EXTRACTION -> actionStatus = new AddMetadataExtractionAction(serviceCache)
-          .run(logger, siteId, documentId, actions, action);
+          .run(logger, siteId, document, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }
+
     return actionStatus;
   }
 
@@ -387,6 +390,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       String siteId = event.siteId();
       String documentId = event.documentId();
+      String artifactId = event.artifactId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
       List<Action> actions = actionsService.getActions(siteId, documentId);
 
@@ -410,11 +415,11 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
         try {
 
-          processAction(logger, siteId, documentId, actions, action);
+          processAction(logger, siteId, document, actions, action);
 
         } catch (Throwable e) {
 
-          handleException(logger, siteId, documentId, action, e);
+          handleException(logger, siteId, document, action, e);
         }
 
       } else {
@@ -426,10 +431,10 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
-  private void handleException(final Logger logger, final String siteId, final String documentId,
-      final Action action, final Throwable e) {
+  private void handleException(final Logger logger, final String siteId,
+      final DocumentArtifact document, final Action action, final Throwable e) {
     ActionBuilder builder = new ActionBuilder().status(ActionStatus.FAILED).userId(action.userId())
-        .documentId(documentId).index(action.index()).type(action.type());
+        .document(document).index(action.index()).type(action.type());
 
     boolean isRetry = e instanceof HttpRetryException;
     if (isRetry) {
@@ -460,7 +465,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
 
     WriteRequestBuilder wrb = new WriteRequestBuilder();
-    updateDocumentWorkflow(wrb, siteId, documentId, action, builder.status());
+    updateDocumentWorkflow(wrb, siteId, document, action, builder.status());
 
     Action updateAction = builder.build(siteId);
     logger.debug(String.format("Updating Action Status to %s", updateAction.status()));
@@ -505,6 +510,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     if (newImage != null) {
       String siteId = newImage.siteId().s();
       String documentId = newImage.documentId().s();
+      String artifactId = newImage.artifactId().s();
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
       Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
 
       DetailTypeResolver resolver = new DetailTypeResolver();
@@ -516,13 +523,12 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
           String pk = dynamodb.keys().pk().s();
           String sk = dynamodb.keys().sk().s();
-          String s = String.format(
-              "{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-                  + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"type\":\"%s\"}",
-              eventName, pk, sk, siteId, documentId, detailType);
+          String s = String.format("{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\",\"type\":\"%s\"}",
+              eventName, pk, sk, siteId, documentId, artifactId, detailType);
           logger.info(s);
 
-          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId,
+          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, document,
               activity.stream().map(new AttributeValueToMap()).toList());
 
           String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
@@ -575,18 +581,18 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * Sends Webhook.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    * @return {@link ProcessActionStatus}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private ProcessActionStatus sendWebhook(final String siteId, final String documentId,
+  private ProcessActionStatus sendWebhook(final String siteId, final DocumentArtifact document,
       final Action action) throws IOException, InterruptedException {
 
     String url = (String) action.parameters().get("url");
 
-    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, documentId);
+    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, document);
 
     try {
 
@@ -619,17 +625,18 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    * @param processStatus {@link ProcessActionStatus}
    */
-  private void updateComplete(final Logger logger, final String siteId, final String documentId,
-      final Action action, final ProcessActionStatus processStatus) throws IOException {
+  private void updateComplete(final Logger logger, final String siteId,
+      final DocumentArtifact document, final Action action, final ProcessActionStatus processStatus)
+      throws IOException {
 
     WriteRequestBuilder wrb = new WriteRequestBuilder();
 
     ActionBuilder builder = new ActionBuilder().type(action.type())
-        .status(processStatus.actionStatus()).queueId(action.queueId()).documentId(documentId)
+        .status(processStatus.actionStatus()).queueId(action.queueId()).document(document)
         .index(action.index()).userId(action.userId());
 
     switch (processStatus.actionStatus()) {
@@ -637,45 +644,45 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         // skip
       }
       case IN_QUEUE -> {
-        updateDocumentWorkflow(wrb, siteId, documentId, action, processStatus.actionStatus());
+        updateDocumentWorkflow(wrb, siteId, document, action, processStatus.actionStatus());
 
         wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
         wrb.transactWriteItems(getDb().getClient());
       }
       case PENDING -> {
         getActionsService().updateAction(builder.build(siteId));
-        getNotificationService().publishNextActionEvent(siteId, documentId);
+        getNotificationService().publishNextActionEvent(siteId, document);
       }
 
       default -> {
 
-        logger.trace(
-            String.format("updating status of %s to %s", documentId, processStatus.actionStatus()));
+        logger.trace(String.format("updating status of %s to %s", document.documentId(),
+            processStatus.actionStatus()));
 
         builder.completedDate(new Date());
 
-        updateDocumentWorkflow(wrb, siteId, documentId, action, processStatus.actionStatus());
+        updateDocumentWorkflow(wrb, siteId, document, action, processStatus.actionStatus());
         wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
 
         wrb.transactWriteItems(getDb().getClient());
 
-        sendWorkflowDecisionIfNeeded(siteId, documentId, action, processStatus);
+        sendWorkflowDecisionIfNeeded(siteId, document, action, processStatus);
 
-        getNotificationService().publishNextActionEvent(siteId, documentId);
+        getNotificationService().publishNextActionEvent(siteId, document);
       }
     }
   }
 
-  private void sendWorkflowDecisionIfNeeded(final String siteId, final String documentId,
+  private void sendWorkflowDecisionIfNeeded(final String siteId, final DocumentArtifact document,
       final Action action, final ProcessActionStatus processStatus) throws IOException {
 
     if (ActionStatus.COMPLETE.equals(processStatus.actionStatus())
         && !isEmpty(action.workflowId())) {
       HttpService http = serviceCache.getExtension(HttpService.class);
       String url = serviceCache.environment("documentsIamUrl");
-      HttpResponse<String> response = http.post(
-          url + "/documents/" + documentId + "/workflow/" + action.workflowId() + "/decisions",
-          Optional.empty(), Optional.of(Map.of("siteId", siteId)), "{}");
+      HttpResponse<String> response =
+          http.post(url + "/documents/" + document.documentId() + "/workflow/" + action.workflowId()
+              + "/decisions", Optional.empty(), Optional.of(Map.of("siteId", siteId)), "{}");
       if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
         throw new IOException(
             "Error sending workflow decision: " + response.statusCode() + ":" + response.body());
@@ -684,8 +691,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
   }
 
   private void updateDocumentWorkflow(final WriteRequestBuilder wrb, final String siteId,
-      final String documentId, final Action action, final ActionStatus newStatus) {
-    new DocumentWorkflowStatusUpdate(getDb().getTableName(), siteId, documentId, action, newStatus)
+      final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
+    new DocumentWorkflowStatusUpdate(getDb().getTableName(), siteId, document, action, newStatus)
         .appendTo(wrb);
   }
 

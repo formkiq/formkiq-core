@@ -36,6 +36,8 @@ public class SetDocumentCheckoutLegalHoldRequestBuilder implements HttpRequestBu
 
   /** Document Id. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -46,9 +48,14 @@ public class SetDocumentCheckoutLegalHoldRequestBuilder implements HttpRequestBu
     this.document = documentId;
   }
 
+  public SetDocumentCheckoutLegalHoldRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).setDocumentCheckoutLegalHold(document, siteId));
+    return executeApiCall(() -> new DocumentsApi(apiClient).setDocumentCheckoutLegalHold(document,
+        siteId, this.artifactId));
   }
 }

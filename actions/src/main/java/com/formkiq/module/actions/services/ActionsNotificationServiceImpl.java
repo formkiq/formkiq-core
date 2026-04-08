@@ -28,6 +28,8 @@ import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.util.List;
 import java.util.Optional;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.events.EventService;
@@ -77,7 +79,7 @@ public final class ActionsNotificationServiceImpl implements ActionsNotification
       o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.PENDING)).findFirst();
 
       if (o.isPresent()) {
-        publishedEvent = publishNextActionEvent(siteId, documentId);
+        publishedEvent = publishNextActionEvent(siteId, documentId, null);
       }
     }
 
@@ -85,9 +87,18 @@ public final class ActionsNotificationServiceImpl implements ActionsNotification
   }
 
   @Override
-  public boolean publishNextActionEvent(final String siteId, final String documentId) {
+  public boolean publishNextActionEvent(final String siteId,
+      final DocumentArtifact documentArtifact) {
+    return publishNextActionEvent(siteId, documentArtifact.documentId(),
+        documentArtifact.artifactId());
+  }
+
+  @Override
+  public boolean publishNextActionEvent(final String siteId, final String documentId,
+      final String artifactId) {
     String site = !isEmpty(siteId) ? siteId : DEFAULT_SITE_ID;
-    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId).type(ACTIONS);
+    DocumentEvent event = new DocumentEvent().siteId(site).documentId(documentId)
+        .artifactId(artifactId).type(ACTIONS);
     this.documentEventService.publish(this.log, event);
     return true;
   }

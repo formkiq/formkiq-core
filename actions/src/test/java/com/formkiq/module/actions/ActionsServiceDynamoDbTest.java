@@ -38,6 +38,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,8 +81,12 @@ public class ActionsServiceDynamoDbTest {
         new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
   }
 
+  private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
+    return new ActionBuilder().document(document).indexUlid().type(actionType).userId("joe");
+  }
+
   private ActionBuilder createAction(final String documentId, final ActionType actionType) {
-    return new ActionBuilder().documentId(documentId).indexUlid().type(actionType).userId("joe");
+    return createAction(DocumentArtifact.of(documentId, null), actionType);
   }
 
   /**
@@ -123,7 +128,7 @@ public class ActionsServiceDynamoDbTest {
       service.saveNewActions(List.of(action0));
 
       // when
-      documentService.deleteDocument(siteId, documentId, false);
+      documentService.deleteDocument(siteId, DocumentArtifact.of(documentId, null), false);
 
       // then
       List<Action> actions = service.getActions(siteId, documentId);
@@ -320,7 +325,8 @@ public class ActionsServiceDynamoDbTest {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String docId = ID.uuid();
-      Action action0 = new ActionBuilder().documentId(docId).index("0").type(ActionType.QUEUE)
+      DocumentArtifact document = DocumentArtifact.of(docId, null);
+      Action action0 = new ActionBuilder().document(document).index("0").type(ActionType.QUEUE)
           .userId("joe").queueId("A").build(siteId);
 
       // when
@@ -332,11 +338,11 @@ public class ActionsServiceDynamoDbTest {
       assertEquals("0", actions.get(0).index());
 
       // given - Ulid index
-      Action ulid0 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.OCR)
+      Action ulid0 = new ActionBuilder().document(document).indexUlid().type(ActionType.OCR)
           .userId("joe").insertedDate(new Date()).build(siteId);
-      Action ulid1 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.IDP)
+      Action ulid1 = new ActionBuilder().document(document).indexUlid().type(ActionType.IDP)
           .userId("joe").insertedDate(new Date()).build(siteId);
-      Action ulid2 = new ActionBuilder().documentId(docId).indexUlid().type(ActionType.FULLTEXT)
+      Action ulid2 = new ActionBuilder().document(document).indexUlid().type(ActionType.FULLTEXT)
           .userId("joe").insertedDate(new Date()).build(siteId);
 
       // when

@@ -189,7 +189,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     while (true) {
 
       try {
-        return api.getDocument(documentId, null, null);
+        return api.getDocument(documentId, null, null, null);
       } catch (ApiException e) {
         Thread.sleep(ONE_SECOND);
       }
@@ -218,7 +218,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.deleteDocument(documentId, null, Boolean.FALSE);
+        api.deleteDocument(documentId, null, null, Boolean.FALSE);
         fail();
       } catch (ApiException e) {
         // then
@@ -395,7 +395,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new UpdateDocumentRequest().addTagsItem(new AddDocumentTag().key(tagKey).value("myvalue"));
 
     // when - patch document
-    api.updateDocument(documentId, updateReq, siteId, null);
+    api.updateDocument(documentId, updateReq, siteId, null, null);
 
     // then
     waitForDocumentTag(client, siteId, documentId, tagKey);
@@ -451,7 +451,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(documentId);
       waitForDocumentLength(client, null, documentId);
 
-      GetDocumentResponse document = api.getDocument(documentId, null, null);
+      GetDocumentResponse document = api.getDocument(documentId, null, null, null);
       assertEquals("9", java.util.Objects.requireNonNull(document.getContentLength()).toString());
 
       // given
@@ -459,12 +459,12 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           new UpdateDocumentRequest().content("dummy data").contentType("application/pdf");
 
       // when - patch document
-      api.updateDocument(documentId, updateReq, null, null);
+      api.updateDocument(documentId, updateReq, null, null, null);
 
       // then - check content type changed
       while (true) {
         // map = fetchDocument(client, documentId);
-        document = api.getDocument(documentId, null, null);
+        document = api.getDocument(documentId, null, null, null);
 
         if ("application/pdf".equals(document.getContentType())) {
           assertNotEquals("9.0",
@@ -483,10 +483,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       throws ApiException {
 
     DocumentsApi api = new DocumentsApi(client);
-    api.deleteDocument(documentId, null, Boolean.FALSE);
+    api.deleteDocument(documentId, null, null, Boolean.FALSE);
 
     try {
-      api.getDocument(documentId, null, null);
+      api.getDocument(documentId, null, null, null);
     } catch (ApiException e) {
       assertEquals(STATUS_NOT_FOUND, e.getCode());
     }
@@ -701,7 +701,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // when - fetch document
         GetDocumentTagsResponse tags =
-            tagApi.getDocumentTags(documentId, null, null, null, null, null);
+            tagApi.getDocumentTags(documentId, null, null, null, null, null, null);
 
         // then
         assertNotNull(tags.getTags());
@@ -717,7 +717,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(1, notNull(s.getDocuments()).size());
         assertEquals(documentId, s.getDocuments().get(0).getDocumentId());
 
-        GetDocumentResponse documentc = api.getDocument(documentId, null, null);
+        GetDocumentResponse documentc = api.getDocument(documentId, null, null, null);
         assertNotNull(documentc.getDocuments());
         assertEquals(1, documentc.getDocuments().size());
         assertEquals(response.getDocuments().get(0).getDocumentId(),
@@ -728,7 +728,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(documentId);
 
         // when
-        GetDocumentResponse document = api.getDocument(documentId, null, null);
+        GetDocumentResponse document = api.getDocument(documentId, null, null, null);
 
         // then
         assertNotNull(document);
@@ -827,7 +827,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           .addTagsItem(new AddDocumentTag().key("person").value("555"));
 
       // when - patch document
-      api.updateDocument(documentId, updateDoc, null, null);
+      api.updateDocument(documentId, updateDoc, null, null, null);
 
       // then - check path changed
       while (true) {
@@ -842,7 +842,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentTagsApi tagApi = new DocumentTagsApi(client);
       GetDocumentTagsResponse tags =
-          tagApi.getDocumentTags(documentId, null, null, null, null, null);
+          tagApi.getDocumentTags(documentId, null, null, null, null, null, null);
       assertEquals("555", java.util.Objects.requireNonNull(tags.getTags()).stream()
           .filter(t -> java.util.Objects.equals(t.getKey(), "person")).findAny().get().getValue());
       assertEquals("thing", tags.getTags().stream().filter(t -> "some".equals(t.getKey())).findAny()
@@ -881,7 +881,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         waitForDocumentContent(client, siteId, documentId, content);
 
         // then
-        GetDocumentResponse document = api.getDocument(documentId, siteId, null);
+        GetDocumentResponse document = api.getDocument(documentId, siteId, null, null);
         assertNotNull(document);
 
         List<DocumentMetadata> metadata =
@@ -924,12 +924,12 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(response.getDocumentId());
         assertEquals(siteId, response.getSiteId());
 
-        GetDocumentResponse site = api.getDocument(response.getDocumentId(), siteId, null);
+        GetDocumentResponse site = api.getDocument(response.getDocumentId(), siteId, null, null);
         assertEquals("text/plain", site.getContentType());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
-        assertEquals(content,
-            api.getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+        assertEquals(content, api
+            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
       }
     }
   }
@@ -968,7 +968,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         // then
         DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
         List<DocumentAttribute> attributes = notNull(documentAttributesApi
-            .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+            .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
         final int expected = 1;
         assertEquals(expected, attributes.size());
@@ -1012,8 +1012,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     // then
     String documentId = response.getDocumentId();
     assertNotNull(documentId);
-    assertEquals("mysite", api.getDocument(documentId, "mysite", null).getSiteId());
-    assertEquals("mysite", api.getDocument(documentId, null, null).getSiteId());
+    assertEquals("mysite", api.getDocument(documentId, "mysite", null, null).getSiteId());
+    assertEquals("mysite", api.getDocument(documentId, null, null, null).getSiteId());
   }
 
   /**
@@ -1053,7 +1053,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         waitForDocumentLength(client, siteId, documentId);
-        GetDocumentResponse site = api.getDocument(documentId, siteId, null);
+        GetDocumentResponse site = api.getDocument(documentId, siteId, null, null);
         assertEquals("text/plain", site.getContentType());
         assertEquals(ChecksumType.SHA256, site.getChecksumType());
         assertEquals(checksum, site.getChecksum());
@@ -1118,7 +1118,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     while (true) {
 
       try {
-        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null, null);
         if (response.getContentLength() != null) {
           return;
         }

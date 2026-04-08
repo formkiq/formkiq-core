@@ -42,7 +42,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.module.actions.Action;
@@ -100,9 +101,9 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   private String createChatGptPrompt(final Logger logger, final String siteId,
-      final String documentId) throws IOException {
+      final DocumentArtifact document) throws IOException {
 
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    DocumentRecord item = this.documentService.findDocument(siteId, document);
 
     DocumentContentFunction docContentFucn = new DocumentContentFunction(this.serviceCache);
     List<String> contentUrls = docContentFucn.getContentUrls(logger, siteId, item);
@@ -152,7 +153,7 @@ public class DocumentTaggingAction implements DocumentAction {
     return Arrays.asList(getTags(action).split(","));
   }
 
-  private void parseChatGptResponse(final String siteId, final String documentId,
+  private void parseChatGptResponse(final String siteId, final DocumentArtifact document,
       final Action action, final HttpResponse<String> httpResponse) throws IOException {
 
     List<String> paramTags = getTagsAsList(action);
@@ -187,8 +188,8 @@ public class DocumentTaggingAction implements DocumentAction {
 
         if (!list.isEmpty()) {
 
-          DocumentTag tag = new DocumentTag(documentId, e.getKey(), list.get(0).toString(),
-              new Date(), "System", DocumentTagType.USERDEFINED);
+          DocumentTag tag = new DocumentTag(document.documentId(), e.getKey(),
+              list.get(0).toString(), new Date(), "System", DocumentTagType.USERDEFINED);
 
           if (list.size() > 1) {
             tag.setValue(null);
@@ -201,7 +202,7 @@ public class DocumentTaggingAction implements DocumentAction {
     }
 
     if (!tags.isEmpty()) {
-      this.documentService.addTags(siteId, documentId, tags, null);
+      this.documentService.addTags(siteId, document, tags, null);
     }
   }
 
@@ -239,12 +240,13 @@ public class DocumentTaggingAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException {
 
     String engine = (String) action.parameters().get("engine");
     if ("chatgpt".equalsIgnoreCase(engine)) {
-      runChatGpt(logger, siteId, documentId, action);
+      runChatGpt(logger, siteId, document, action);
     } else {
       throw new IOException("Unknown engine: " + engine);
     }
@@ -257,11 +259,11 @@ public class DocumentTaggingAction implements DocumentAction {
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    * @throws IOException IOException
    */
-  private void runChatGpt(final Logger logger, final String siteId, final String documentId,
+  private void runChatGpt(final Logger logger, final String siteId, final DocumentArtifact document,
       final Action action) throws IOException {
 
     SiteConfiguration configs = this.configsService.get(siteId);
@@ -273,7 +275,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
     Map<String, Object> payload = new HashMap<>();
 
-    String prompt = createChatGptPrompt(logger, siteId, documentId);
+    String prompt = createChatGptPrompt(logger, siteId, document);
 
     Map<String, Object> schema = generateOpenApiSchema(action);
 
@@ -297,7 +299,7 @@ public class DocumentTaggingAction implements DocumentAction {
         "chatgpt", response.statusCode(), response.body()));
 
     if (is2XX(response)) {
-      parseChatGptResponse(siteId, documentId, action, response);
+      parseChatGptResponse(siteId, document, action, response);
     } else {
       throw new IOException("ChatGpt status " + response.statusCode() + " " + response.body());
     }

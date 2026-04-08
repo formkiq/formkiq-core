@@ -33,7 +33,10 @@ import java.util.Map;
 
 /**
  * Get {@link DocumentRecord}.
+ * 
+ * @deprecated Use {@link FindDocumentById} instead
  */
+@Deprecated
 public class GetDocumentFind implements DynamoDbFind<DocumentRecord, String>, DbKeys {
 
   @Override

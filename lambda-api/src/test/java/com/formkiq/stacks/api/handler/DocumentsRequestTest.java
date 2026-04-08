@@ -67,6 +67,8 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
 import com.formkiq.urls.HttpStatus;
@@ -85,6 +87,7 @@ import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -389,13 +392,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(siteId, responseSiteId.getSiteId());
 
       GetDocumentResponse noSite =
-          this.documentsApi.getDocument(responseNoSiteId.getDocumentId(), siteId, null);
+          this.documentsApi.getDocument(responseNoSiteId.getDocumentId(), siteId, null, null);
       assertEquals("application/pdf", noSite.getContentType());
       assertNotNull(noSite.getPath());
       assertNotNull(noSite.getDocumentId());
 
       GetDocumentResponse site =
-          this.documentsApi.getDocument(responseSiteId.getDocumentId(), siteId, null);
+          this.documentsApi.getDocument(responseSiteId.getDocumentId(), siteId, null, null);
       assertEquals("application/pdf", site.getContentType());
       assertNotNull(site.getPath());
       assertNotNull(site.getDocumentId());
@@ -449,7 +452,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(documentId);
       assertNull(response.getUploadUrl());
 
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("https://google.com", document.getDeepLinkPath());
       assertNull(document.getLastModifiedDate());
       assertNull(document.getContentLength());
@@ -492,25 +495,25 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(childDocumentId);
 
       List<ChildDocument> documents1 =
-          notNull(this.documentsApi.getDocument(documentId, siteId, null).getDocuments());
+          notNull(this.documentsApi.getDocument(documentId, siteId, null, null).getDocuments());
       assertEquals(1, documents1.size());
       assertEquals(childDocumentId, documents1.get(0).getDocumentId());
       assertEquals("application/json", documents1.get(0).getContentType());
       assertEquals(documentId, documents1.get(0).getBelongsToDocumentId());
 
       List<DocumentTag> tags = notNull(
-          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags());
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags());
 
       assertEquals(1, tags.size());
       assertEquals("formName", tags.get(0).getKey());
       assertEquals("Job Application Form", tags.get(0).getValue());
 
-      tags = notNull(
-          this.tagsApi.getDocumentTags(childDocumentId, siteId, null, null, null, null).getTags());
+      tags = notNull(this.tagsApi
+          .getDocumentTags(childDocumentId, siteId, null, null, null, null, null).getTags());
       assertEquals(0, tags.size());
 
       GetDocumentResponse childDocument =
-          this.documentsApi.getDocument(childDocumentId, null, null);
+          this.documentsApi.getDocument(childDocumentId, null, null, null);
       assertTrue(Objects.notNull(childDocument.getDocuments()).isEmpty());
       assertEquals(documentId, childDocument.getBelongsToDocumentId());
     }
@@ -541,7 +544,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertNotNull(document);
       List<DocumentMetadata> metadata = notNull(document.getMetadata());
       assertEquals(2, metadata.size());
@@ -551,7 +554,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("category", metadata.get(1).getValue());
 
       assertEquals(content,
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
     }
   }
 
@@ -592,7 +595,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
@@ -638,7 +641,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"test\","
                 + "\"error\":\"invalid attribute value 'test', only allowed values are abc\"}]}",
@@ -668,7 +671,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           fail();
         } catch (ApiException e) {
           // then
-          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
           assertEquals("{\"errors\":[{\"key\":\"deepLinkPath\"," + "\"error\":\"DeepLinkPath '"
               + deepLinkPath + "' is not a valid URL\"}]}", e.getResponseBody());
         }
@@ -697,7 +700,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(documentId, response.getDocumentId());
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("application/pdf", document.getContentType());
 
       // when - duplicate send
@@ -734,9 +737,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"invalid documentId '" + documentId + "'\"}",
-            e.getResponseBody());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"invalid documentId '"
+            + documentId + "'\"}]}", e.getResponseBody());
       }
     }
   }
@@ -771,7 +774,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         String documentId = response.getDocumentId();
         assertNotNull(documentId);
 
-        GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+        GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals(e.getValue(), doc.getContentType());
 
         // given
@@ -782,7 +785,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
         // then
         assertNotNull(documentId);
-        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals("application/pdf", doc.getContentType());
       }
     }
@@ -845,7 +848,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(deepLink, document.getDeepLinkPath());
     }
   }
@@ -874,7 +877,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
             e.getResponseBody());
@@ -911,14 +914,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(siteId, response.getSiteId());
 
         GetDocumentResponse site =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
         assertEquals("text/plain", site.getContentType());
         assertEquals(ChecksumType.SHA1, site.getChecksumType());
         assertEquals(reqChecksum, site.getChecksum());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
         assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
       }
     }
   }
@@ -946,7 +949,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertTrue(e.getResponseBody()
             .startsWith("{\"message\":\"<?xml version='1.0' encoding='utf-8'?>\\n"
                 + "<Error><Code>InvalidRequest</Code>"));
@@ -983,7 +986,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotNull(documentId);
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       final int expected = 1;
       assertEquals(expected, attributes.size());
@@ -1013,7 +1016,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"path\","
                 + "\"error\":\"invalid Path contains multiple '//' characters\"}]}",
@@ -1042,7 +1045,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
             e.getResponseBody());
       }
@@ -1068,7 +1071,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"width\","
                 + "\"error\":\"invalid 'width' must be numeric or 'auto'\"}]}",
@@ -1140,6 +1143,93 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents with artifacts=true requires documentId.
+   */
+  @Test
+  public void testPostArtifactsRequiresDocumentId() {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().artifacts(true).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"documentId\","
+              + "\"error\":\"'documentId' is required when 'artifacts' is true\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true.
+   */
+  @Test
+  public void testPostArtifactsWithDocumentId() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+      var path0 = ID.ulid() + ".txt";
+      var path1 = ID.ulid() + ".txt";
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().path(path0).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertNotNull(resp.response());
+      String documentId = resp.response().getDocumentId();
+
+      // when
+      resp = new AddDocumentRequestBuilder().content("mycontent").path(path1).artifacts(true)
+          .documentId(documentId).submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals(documentId, resp.response().getDocumentId());
+      String artifactId = resp.response().getArtifactId();
+      assertNotNull(artifactId);
+
+      var doc = new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId)
+          .submit(client, siteId).throwIfError();
+      assertEquals(path1, doc.response().getPath());
+      assertEquals(artifactId, doc.response().getArtifactId());
+
+      // when
+      var artifacts =
+          new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId).throwIfError();
+
+      // then
+      assertNotNull(artifacts.response());
+      List<Document> documents = notNull(artifacts.response().getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(path1, documents.get(0).getPath());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true with invalid documentId.
+   */
+  @Test
+  public void testPostArtifactsWithInvalidDocumentId() {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var documentId = ID.uuid();
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().artifacts(true).documentId(documentId)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + documentId
+          + "' does not exist\"}]}", resp.exception().getResponseBody());
+    }
+  }
+
+  /**
    * Save new File with valid SHA-256.
    *
    * @throws ApiException ApiException
@@ -1167,14 +1257,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(siteId, response.getSiteId());
 
         GetDocumentResponse site =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
         assertEquals("text/plain", site.getContentType());
         assertEquals(ChecksumType.SHA256, site.getChecksumType());
         assertEquals(reqChecksum, site.getChecksum());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
         assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null).getContent());
+            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
       }
     }
   }
@@ -1203,7 +1293,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"checksumType\","
                 + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
@@ -1322,7 +1412,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       S3Service s3 = awsServices.getExtension(S3Service.class);
       S3ObjectMetadata objectMetadata = s3.getObjectMetadata(BUCKET_NAME,
-          SiteIdKeyGenerator.createS3Key(siteId, documentId), null);
+          SiteIdKeyGenerator.createS3Key(siteId, documentId, null), null);
       String s3version = objectMetadata.getVersionId();
 
       DocumentService service = awsServices.getExtension(DocumentService.class);
@@ -1340,7 +1430,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
 
       // when
-      documentsApi.deletePublishedDocumentContent(documentId, siteId);
+      documentsApi.deletePublishedDocumentContent(documentId, siteId, null);
 
       // then
       try {

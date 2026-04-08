@@ -125,7 +125,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       final AddDocumentAttributesRequest req) {
     ApiException error = null;
     try {
-      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
       fail();
     } catch (ApiException e) {
       error = e;
@@ -237,8 +237,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
   private @NotNull List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
-    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
-        .getAttributes());
+    return notNull(this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
   }
 
   /**
@@ -368,7 +368,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddResponse response =
-          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
@@ -408,7 +408,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"strings\","
@@ -451,7 +451,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("documentType").stringValue("invoice")))
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key("category").stringValue("doc")));
-      this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+      this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
@@ -473,7 +473,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddResponse addResponse =
-          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq1, siteId);
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq1, siteId, null);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", addResponse.getMessage());
@@ -509,7 +509,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").stringValue("1234")));
 
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -549,7 +549,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddResponse response =
-          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
@@ -590,7 +590,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -606,7 +606,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -652,7 +652,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
         // when
         AddResponse addResponse =
-            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
         // then
         assertEquals("added attributes to documentId '" + documentId + "'",
@@ -698,7 +698,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
         // when
         AddResponse addResponse =
-            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+            this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
         // then
         assertEquals("added attributes to documentId '" + documentId + "'",
@@ -753,7 +753,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -861,7 +861,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -877,7 +877,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddResponse addResponse =
-          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+          this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", addResponse.getMessage());
@@ -911,7 +911,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.addDocumentAttributes(documentId, attrReq, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1626,7 +1626,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1719,7 +1719,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         this.documentAttributesApi.deleteDocumentAttributeAndValue(documentId, "strings", "1",
-            siteId);
+            siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1749,7 +1749,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         this.documentAttributesApi.deleteDocumentAttributeAndValue(documentId, "category", "value",
-            siteId);
+            siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1781,7 +1781,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       DeleteResponse response = this.documentAttributesApi
-          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId);
+          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId, null);
 
       // then
       assertEquals(
@@ -1818,7 +1818,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       DeleteResponse response = this.documentAttributesApi
-          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId);
+          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId, null);
 
       // then
       assertEquals(
@@ -1846,7 +1846,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1878,7 +1878,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       DeleteResponse response =
-          this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
 
       // then
       assertEquals("attribute 'strings' removed from document '" + documentId + "'",
@@ -1913,7 +1913,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId);
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1969,7 +1969,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         this.documentAttributesApi.setDocumentAttributeValue(documentId, attributeKey, setReq,
-            siteId);
+            siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2002,8 +2002,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
 
       // when
-      this.documentAttributesApi.setDocumentAttributeValue(documentId, attributeKey, setReq,
-          siteId);
+      this.documentAttributesApi.setDocumentAttributeValue(documentId, attributeKey, setReq, siteId,
+          null);
 
       // then
       List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
@@ -2043,7 +2043,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       SetResponse response = this.documentAttributesApi.setDocumentAttributeValue(documentId,
-          "category", setReq, siteId);
+          "category", setReq, siteId, null);
 
       // then
       assertEquals("Updated attribute 'category' on document '" + documentId + "'",
@@ -2085,7 +2085,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.setDocumentAttributeValue(documentId, "strings", setReq, siteId);
+        this.documentAttributesApi.setDocumentAttributeValue(documentId, "strings", setReq, siteId,
+            null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2128,7 +2129,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       SetResponse response = this.documentAttributesApi.setDocumentAttributeValue(documentId,
-          "strings", setReq, siteId);
+          "strings", setReq, siteId, null);
 
       // then
       assertEquals("Updated attribute 'strings' on document '" + documentId + "'",
@@ -2831,7 +2832,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       SetResponse response =
-          this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
+          this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
@@ -2871,7 +2872,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
+        this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"strings\","
@@ -2922,7 +2923,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
           .addAttributesItem(createStringAttribute("documentType", "invoice"))
           .addAttributesItem(createStringAttribute("category", "doc"));
-      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
+      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       attributes = getDocumentAttributes(siteId, documentId);
@@ -2983,7 +2984,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       SetDocumentAttributesRequest attrReq = new SetDocumentAttributesRequest()
           .addAttributesItem(createStringAttribute("documentType", "invoice"))
           .addAttributesItem(createStringAttribute("category", "doc"));
-      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId);
+      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
 
       // then
       attributes = getDocumentAttributes(siteId, documentId);
@@ -3079,7 +3080,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       SetResponse setResponse =
-          this.documentAttributesApi.setDocumentAttributes(documentId, setAttr, siteId);
+          this.documentAttributesApi.setDocumentAttributes(documentId, setAttr, siteId, null);
 
       // then
       assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
@@ -3524,7 +3525,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -3563,7 +3564,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"strings\","
@@ -3598,10 +3599,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").stringValue("test")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("asd.txt", document.getPath());
     }
   }
@@ -3637,10 +3638,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("user").stringValue("1234")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("asd.txt", document.getPath());
     }
   }
@@ -3670,7 +3671,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then

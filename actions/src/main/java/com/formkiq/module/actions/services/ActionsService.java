@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
@@ -93,11 +94,11 @@ public interface ActionsService {
    * Get List of {@link Action} by {@link ActionStatus}.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param status {@link ActionStatus}
    * @return {@link List} {@link ActionStatus}
    */
-  List<Action> getAction(String siteId, String documentId, ActionStatus status);
+  List<Action> getAction(String siteId, DocumentArtifact document, ActionStatus status);
 
   /**
    * Get {@link List} {@link Action} for a document.

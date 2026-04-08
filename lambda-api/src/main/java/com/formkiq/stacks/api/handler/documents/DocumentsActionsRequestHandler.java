@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -64,8 +65,10 @@ public class DocumentsActionsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
-    DocumentItem item = getDocument(awsservice, siteId, documentId);
+    DocumentRecord item = getDocument(awsservice, siteId, document);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -107,10 +110,10 @@ public class DocumentsActionsRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 
-  private DocumentItem getDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) {
+  private DocumentRecord getDocument(final AwsServiceCache awsservice, final String siteId,
+      final DocumentArtifact document) {
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    return documentService.findDocument(siteId, documentId);
+    return documentService.findDocument(siteId, document);
   }
 
   @Override
@@ -124,15 +127,17 @@ public class DocumentsActionsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
-    DocumentItem item = getDocument(awsservice, siteId, documentId);
+    DocumentRecord item = getDocument(awsservice, siteId, document);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
     AddDocumentActionsRequest body =
         JsonToObject.fromJson(awsservice, event, AddDocumentActionsRequest.class);
 
     List<Action> actions = body.actions().stream()
-        .map(a -> new AddActionsToAction().apply(siteId, documentId, a)).toList();
+        .map(a -> new AddActionsToAction().apply(siteId, document, a)).toList();
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
     validateActions(awsservice, config, siteId, actions);
@@ -142,7 +147,7 @@ public class DocumentsActionsRequestHandler
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);
-    notificationService.publishNextActionEvent(actions, siteId, documentId);
+    notificationService.publishNextActionEvent(siteId, documentId, artifactId);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Actions saved").build();
   }

@@ -29,8 +29,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 
 /**
  * Convert {@link AddDocumentRequest} to {@link DocumentItem}.
@@ -43,7 +47,7 @@ public class AddDocumentRequestToDocumentItem
   /** User Id. */
   private final String userId;
   /** {@link DocumentItem}. */
-  private final DocumentItem existing;
+  private final DocumentRecord existing;
 
   /**
    * constructor.
@@ -52,7 +56,7 @@ public class AddDocumentRequestToDocumentItem
    * @param username {@link String}
    * @param parentDocumentId {@link String}
    */
-  public AddDocumentRequestToDocumentItem(final DocumentItem existingDocument,
+  public AddDocumentRequestToDocumentItem(final DocumentRecord existingDocument,
       final String username, final String parentDocumentId) {
     this.belongsToDocumentId = parentDocumentId;
     this.userId = username;
@@ -80,7 +84,9 @@ public class AddDocumentRequestToDocumentItem
 
   private DocumentItem convert(final AddDocumentRequest r) {
 
-    DocumentItem item = this.existing != null ? this.existing : new DocumentItemDynamoDb();
+    DocumentItem item =
+        this.existing != null ? new DocumentRecordToDynamicDocumentItem().apply(this.existing)
+            : new DocumentItemDynamoDb();
 
     item.setBelongsToDocumentId(this.belongsToDocumentId);
 
@@ -111,6 +117,7 @@ public class AddDocumentRequestToDocumentItem
     item.setHeight(r.getHeight());
     item.setChecksum(r.getChecksum());
     item.setChecksumType(r.getChecksumType());
+    item.setArtifactId(r.isArtifacts() ? ID.ulid() : null);
 
     return item;
   }

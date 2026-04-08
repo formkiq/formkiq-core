@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -40,12 +42,12 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class DocumentVersionServiceNoVersioning implements DocumentVersionService {
 
   @Override
-  public void deleteAllVersionIds(final String siteId, final String documentId) {
+  public void deleteAllVersionIds(final String siteId, final DocumentArtifact document) {
     // empty
   }
 
   @Override
-  public Map<String, AttributeValue> get(final String siteId, final String documentId,
+  public Map<String, AttributeValue> get(final String siteId, final DocumentArtifact document,
       final String versionKey) {
     return Collections.emptyMap();
   }
@@ -57,9 +59,10 @@ public class DocumentVersionServiceNoVersioning implements DocumentVersionServic
 
   @Override
   public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
-      final String documentId, final String versionKey,
+      final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) {
-    return documentService.findDocument(siteId, documentId);
+    DocumentRecord r = documentService.findDocument(siteId, document);
+    return new DocumentRecordToDynamicDocumentItem().apply(r);
   }
 
   @Override

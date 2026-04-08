@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.builder.MapToAttributeValue;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -231,7 +232,9 @@ public interface DbKeys {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return {@link Map}
+   * @deprecated use {@link DocumentRecordBuilder#buildKey(String)}}
    */
+  @Deprecated
   default Map<String, AttributeValue> keysDocument(String siteId, String documentId) {
     return keysDocument(siteId, documentId, Optional.empty());
   }

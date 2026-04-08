@@ -25,11 +25,9 @@ package com.formkiq.aws.dynamodb.documents;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbDeleteQuery;
-import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.QueryResult;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
@@ -37,31 +35,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
-
 /**
  * {@link DynamoDbDeleteQuery} to delete a soft deleted document.
  */
 public class DeleteSoftDeletedDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
-  /** Document Id. */
-  private final String id;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public DeleteSoftDeletedDocumentQuery(final String documentId) {
-    this.id = documentId;
+  public DeleteSoftDeletedDocumentQuery(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
 
-    var pk = SOFT_DELETE + DynamoDbTypes.toString(keysDocument(siteId, this.id).get(PK));
-    return DynamoDbQueryBuilder.builder().pk(pk).limit(limit).build(tableName);
+    var key = new DocumentRecordBuilder().document(this.document).buildSoftDeleteKey(siteId);
+    return DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit).build(tableName);
   }
 
   @Override
@@ -72,9 +68,7 @@ public class DeleteSoftDeletedDocumentQuery implements DynamoDbDeleteQuery, DbKe
     List<Map<String, AttributeValue>> items = new ArrayList<>(result.items());
 
     // delete document softdelete record
-    String pk = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null).get(PK).s();
-    String sk = SOFT_DELETE + "document#" + this.id;
-    var key = new DynamoDbKey(pk, sk, null, null, null, null);
+    var key = new DocumentRecordBuilder().document(this.document).buildSoftDeleteKey(siteId);
     Map<String, AttributeValue> attr = db.get(key);
     if (!attr.isEmpty()) {
       items.add(attr);

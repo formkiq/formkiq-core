@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -45,7 +46,7 @@ public class SchemaMissingRequiredAttributes
     implements Function<Collection<DocumentAttributeRecord>, Collection<DocumentAttributeRecord>> {
 
   /** Document Id. */
-  private final String docId;
+  private final DocumentArtifact document;
   /** {@link SchemaAttributes}. */
   private final SchemaAttributes attributes;
   /** {@link AttributeService}. */
@@ -59,11 +60,12 @@ public class SchemaMissingRequiredAttributes
    * @param attributeService {@link AttributeService}
    * @param schemaAttributes {@link SchemaAttributes}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
   public SchemaMissingRequiredAttributes(final AttributeService attributeService,
-      final SchemaAttributes schemaAttributes, final String siteId, final String documentId) {
-    this.docId = documentId;
+      final SchemaAttributes schemaAttributes, final String siteId,
+      final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
     this.attributes = schemaAttributes;
     this.service = attributeService;
     this.site = siteId;
@@ -100,7 +102,8 @@ public class SchemaMissingRequiredAttributes
 
                   String attributeKey = a.getAttributeKey();
                   AttributeDataType dataType = attributeMap.get(attributeKey).getDataType();
-                  return createRequiredAttributes(a, this.docId, attributeKey, dataType).stream();
+                  return createRequiredAttributes(a, this.document, attributeKey, dataType)
+                      .stream();
                 }).toList();
       }
     }
@@ -117,8 +120,8 @@ public class SchemaMissingRequiredAttributes
   }
 
   private Collection<DocumentAttributeRecord> createRequiredAttributes(
-      final SchemaAttributesRequired attribute, final String documentId, final String attributeKey,
-      final AttributeDataType dataType) {
+      final SchemaAttributesRequired attribute, final DocumentArtifact documentArtifact,
+      final String attributeKey, final AttributeDataType dataType) {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
@@ -135,7 +138,7 @@ public class SchemaMissingRequiredAttributes
           AttributeDataType.NUMBER.equals(dataType) ? convertToDouble(value) : null;
 
       DocumentAttributeRecord a = new DocumentAttributeRecord().setKey(attributeKey)
-          .setDocumentId(documentId).setStringValue(stringValue).setBooleanValue(booleanValue)
+          .setDocument(documentArtifact).setStringValue(stringValue).setBooleanValue(booleanValue)
           .setNumberValue(numberValue);
       a.updateValueType();
 

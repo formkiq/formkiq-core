@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -51,7 +52,6 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.time.Duration;
@@ -122,7 +122,7 @@ public class DocumentsUploadRequestHandler
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request);
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, item);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     service.saveDocument(siteId, item, tags, documentAttributes, options);
@@ -134,7 +134,7 @@ public class DocumentsUploadRequestHandler
     if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =
           awsservice.getExtension(ActionsNotificationService.class);
-      notificationService.publishNextActionEvent(siteId, documentId);
+      notificationService.publishNextActionEvent(siteId, documentId, item.getArtifactId());
     }
 
     return ApiRequestHandlerResponse.builder().created().body(map);
@@ -310,24 +310,29 @@ public class DocumentsUploadRequestHandler
       final AddDocumentRequest request)
       throws ConflictException, BadException, ValidationException {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    ValidationBuilder vb = new ValidationBuilder();
 
     if (!isEmpty(request.getChecksumType())) {
+      vb.isRequired("checksum", request.getChecksum());
+    }
 
-      if (isEmpty(request.getChecksum())) {
-        errors.add(new ValidationErrorImpl().key("checksum").error("'checksum' is required"));
+    if (request.isArtifacts()) {
+
+      var documentId = request.getDocumentId();
+
+      if (isEmpty(documentId)) {
+        vb.addError("documentId", "'documentId' is required when 'artifacts' is true");
       }
     }
 
-    validateDocumentIds(awsservice, siteId, request);
+    validateDocumentIds(awsservice, vb, siteId, request);
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    vb.check();
   }
 
-  private void validateDocumentIds(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request) throws ConflictException, BadException {
+  private void validateDocumentIds(final AwsServiceCache awsservice, final ValidationBuilder vb,
+      final String siteId, final AddDocumentRequest request)
+      throws ConflictException, BadException {
 
     List<String> documentIds = new ArrayList<>();
     if (!isEmpty(request.getDocumentId())) {
@@ -343,10 +348,15 @@ public class DocumentsUploadRequestHandler
     for (String documentId : documentIds) {
 
       if (!Strings.isUuid(documentId)) {
-        throw new BadException("invalid documentId '" + documentId + "'");
+        vb.addError("documentId", "invalid documentId '" + documentId + "'");
       }
 
-      if (service.exists(siteId, documentId)) {
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      var documentExists = service.exists(siteId, document);
+
+      if (request.isArtifacts() && !documentExists) {
+        vb.addError("documentId", "Document '" + documentId + "' does not exist");
+      } else if (!request.isArtifacts() && documentExists) {
         throw new ConflictException("documentId '" + documentId + "' already exists");
       }
     }

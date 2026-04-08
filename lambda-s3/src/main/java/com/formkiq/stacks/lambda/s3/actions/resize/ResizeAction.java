@@ -26,6 +26,8 @@ package com.formkiq.stacks.lambda.s3.actions.resize;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.actions.Action;
@@ -56,7 +58,8 @@ import java.util.Map;
  */
 public class ResizeAction implements DocumentAction {
   private static DocumentItem createDocumentItem(final Image resImage, final String username) {
-    DocumentItem item = new DocumentItemDynamoDb(resImage.documentId(), new Date(), username);
+    DocumentItem item =
+        new DocumentItemDynamoDb(resImage.document().documentId(), new Date(), username);
     item.setPath(resImage.path());
     item.setWidth(Integer.toString(resImage.getWidth()));
     item.setHeight(Integer.toString(resImage.getHeight()));
@@ -125,59 +128,63 @@ public class ResizeAction implements DocumentAction {
     byte[] imageData = ImageUtils.bufferedImageToByteArray(resizedImage, format);
     // sometimes library fails to create image with desired format
     if (imageData.length == 0) {
-      throw new IOException(
-          "While converting <" + srcImage.documentId() + "> we got empty resulting image.");
+      throw new IOException("While converting <" + srcImage.document().documentId()
+          + "> we got empty resulting image.");
     }
 
     String path = getResPath(srcImage, parameters, resizedImage, format);
 
-    return new Image(srcImage.siteId(), ID.uuid(), imageData, resizedImage, format, path);
+    return new Image(srcImage.siteId(), DocumentArtifact.of(ID.uuid(), null), imageData,
+        resizedImage, format, path);
   }
 
-  private Image createSrcImage(final String siteId, final String documentId) throws IOException {
-    byte[] imageData = getImageData(siteId, documentId);
+  private Image createSrcImage(final String siteId, final DocumentArtifact document)
+      throws IOException {
+    byte[] imageData = getImageData(siteId, document);
     BufferedImage bufferedImage = ImageUtils.bufferedImageFromByteArray(imageData);
     String imageFormat = ImageUtils.getImageFormat(imageData);
 
-    return new Image(siteId, documentId, imageData, bufferedImage, imageFormat,
-        getPath(siteId, documentId));
+    return new Image(siteId, document, imageData, bufferedImage, imageFormat,
+        getPath(siteId, document));
   }
 
-  private byte[] getImageData(final String siteId, final String documentId) {
-    String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+  private byte[] getImageData(final String siteId, final DocumentArtifact document) {
+    String s3key = SiteIdKeyGenerator.createS3Key(siteId, document);
 
     return s3Service.getContentAsBytes(documentsBucket, s3key);
   }
 
-  private String getPath(final String siteId, final String documentId) {
-    DocumentItem item = documentService.findDocument(siteId, documentId);
+  private String getPath(final String siteId, final DocumentArtifact document) {
+    DocumentRecord item = documentService.findDocument(siteId, document);
 
     if (item == null) {
-      throw new IllegalArgumentException("Document not found: " + documentId);
+      throw new IllegalArgumentException("Document not found: " + document.documentId());
     }
 
-    return item.getPath();
+    return item.path();
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
-    Image srcImage = createSrcImage(siteId, documentId);
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, ValidationException {
+    Image srcImage = createSrcImage(siteId, document);
     Image resImage = createResImage(srcImage, action.parameters());
-    saveResImage(resImage, srcImage.documentId());
+    saveResImage(resImage, srcImage.document().documentId());
     return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
   private void saveData(final Image resImage) {
-    String s3key = SiteIdKeyGenerator.createS3Key(resImage.siteId(), resImage.documentId());
+    String s3key = SiteIdKeyGenerator.createS3Key(resImage.siteId(), resImage.document());
     s3Service.putObject(documentsBucket, s3key, resImage.data(),
         "image/" + imageFormatToMimeType(resImage.format()));
   }
 
   private void saveDocumentItem(final Image resImage, final String sourceDocumentId,
       final DocumentItem item) throws ValidationException {
-    Collection<DocumentAttributeRecord> documentAttributes = new DocumentAttributeRecordBuilder()
-        .apply(sourceDocumentId, resImage.documentId(), DocumentRelationshipType.RENDITION, null);
+    Collection<DocumentAttributeRecord> documentAttributes =
+        new DocumentAttributeRecordBuilder().apply(DocumentArtifact.of(sourceDocumentId, null),
+            resImage.document(), DocumentRelationshipType.RENDITION, null);
     SaveDocumentOptions options =
         new SaveDocumentOptions().validationAccess(AttributeValidationAccess.ADMIN_CREATE);
     documentService.saveDocument(resImage.siteId(), item, null, documentAttributes, options);

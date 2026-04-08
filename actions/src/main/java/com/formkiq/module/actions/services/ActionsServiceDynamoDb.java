@@ -49,6 +49,7 @@ import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionIndexComparator;
@@ -181,8 +182,8 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     // DUMMY value
     ActionType type = ActionType.OCR;
-    DynamoDbKey key = new ActionBuilder().status(status).documentId("").queueId("").type(type)
-        .index("").buildKey(siteId);
+    DynamoDbKey key = new ActionBuilder().status(status).document(DocumentArtifact.of("", null))
+        .queueId("").type(type).index("").buildKey(siteId);
     // String pk = a.pkGsi2(siteId);
     String sk = "action#";
 
@@ -204,9 +205,9 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public List<Action> getAction(final String siteId, final String documentId,
+  public List<Action> getAction(final String siteId, final DocumentArtifact document,
       final ActionStatus status) {
-    var results = new FindDocumentActionByStatus(documentId, status.name()).query(db,
+    var results = new FindDocumentActionByStatus(document, status.name()).query(db,
         db.getTableName(), siteId, null, 2);
     return results.items().stream().map(Action::fromAttributeMap).toList();
   }
@@ -274,8 +275,8 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
 
     // DUMMY VALUE
     var actionType = ActionType.OCR;
-    DynamoDbKey key =
-        new ActionBuilder().documentId(documentId).indexUlid().type(actionType).buildKey(siteId);
+    DynamoDbKey key = new ActionBuilder().document(DocumentArtifact.of(documentId, null))
+        .indexUlid().type(actionType).buildKey(siteId);
     String sk = "action" + TAG_DELIMINATOR;
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";

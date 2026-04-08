@@ -34,6 +34,8 @@ import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -182,10 +184,10 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       for (DynamicDocumentItem item : results) {
 
         DocumentAttributeRecord sr = new DocumentAttributeRecord();
-        sr.setDocumentId(item.getDocumentId());
+        sr.setDocument(DocumentArtifact.of(item.getDocumentId(), null));
 
         QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
-            .projectionExpression("#key,valueType,stringValue,numberValue,booleanValue")
+            .projectionExpression("#key,valueType,stringValue,numberValue,booleanValue,documentId")
             .expressionAttributeNames(Map.of("#key", "key"));
 
         AttributeValue pk = sr.fromS(sr.pk(siteId));
@@ -430,7 +432,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
    * @param siteId DynamoDB siteId Key
    * @param query {@link SearchQuery}
    * @param key {@link String}
-   * @param nextToken {@link PaginationMapToken}
+   * @param nextToken {@link String}
    * @param maxresults int
    * @param projectionExpression {@link String}
    * @return {@link Pagination}
@@ -684,9 +686,14 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         Map<String, Object> map = this.folderIndexProcesor.getIndex(siteId, meta.path());
         String documentId = (String) map.get("documentId");
 
-        DocumentItem item = this.docService.findDocument(siteId, documentId);
+        DocumentRecord item =
+            this.docService.findDocument(siteId, DocumentArtifact.of(documentId, null));
 
-        DynamicDocumentItem result = new DocumentItemToDynamicDocumentItem().apply(item);
+        // AttributeValueToMapConfig config =
+        // AttributeValueToMapConfig.builder().removeDbKeys(true).build();
+        // Map<String, Object> values = new AttributeValueToMap(config).apply(item.getAttributes());
+
+        DynamicDocumentItem result = new DocumentRecordToDynamicDocumentItem().apply(item);
         results = new Pagination<>(Collections.singletonList(result));
 
       } catch (IOException e) {
@@ -777,7 +784,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       List<Map<String, AttributeValue>> keyList = eqs.stream().map(eq -> {
         DocumentAttributeRecord sr = new DocumentAttributeRecord().setKey(key)
             .setValueType(DocumentAttributeValueType.STRING).setStringValue(eq)
-            .setDocumentId(documentId);
+            .setDocument(DocumentArtifact.of(documentId, null));
         return Map.of(PK, sr.fromS(sr.pk(siteId)), SK, sr.fromS(sr.sk()));
       }).toList();
       keys.addAll(keyList);
@@ -814,7 +821,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     for (String documentId : documentIds) {
 
-      sr.setDocumentId(documentId);
+      sr.setDocument(DocumentArtifact.of(documentId, null));
 
       AttributeValue pk = sr.fromS(sr.pk(siteId));
       String sk =

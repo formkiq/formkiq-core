@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.ActionBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,8 @@ class ActionsValidatorTest {
 
   private static void testDimensionTemplate(final Map<String, Object> parameters,
       final String errorKey, final String errorMessage) {
-    Action action = new ActionBuilder().documentId(ID.uuid()).indexUlid().type(ActionType.RESIZE)
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().document(document).indexUlid().type(ActionType.RESIZE)
         .userId("joe").parameters(parameters).build((String) null);
     testTemplate(action, errorKey, errorMessage);
   }
@@ -146,13 +148,14 @@ class ActionsValidatorTest {
   @Test
   void testValidation02() {
     Action action = new Action(null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null);
+        null, null, null, null, null, null, null, null);
     testTemplate(action, "type", "action 'type' is required");
   }
 
   @Test
   void testValidation03() {
-    Action action = new ActionBuilder().type(ActionType.WEBHOOK).userId("joe").documentId(ID.uuid())
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.WEBHOOK).userId("joe").document(document)
         .indexUlid().build((String) null);
     testTemplate(action, "parameters.url", "action 'url' parameter is required");
   }
@@ -161,7 +164,7 @@ class ActionsValidatorTest {
   void testValidation04() {
     // given
     Action action = new Action(null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null);
+        null, null, null, null, null, null, null, null);
     List<Action> actions = List.of(action);
 
     // when
@@ -178,21 +181,24 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation05() {
-    Action action = new ActionBuilder().type(ActionType.OCR).documentId(ID.uuid()).indexUlid()
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.OCR).document(document).indexUlid()
         .userId("joe").build((String) null);
     testTemplate(action, null, null);
   }
 
   @Test
   void testValidation06() {
-    Action action = new ActionBuilder().type(ActionType.QUEUE).documentId(ID.uuid()).indexUlid()
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.QUEUE).document(document).indexUlid()
         .userId("joe").build((String) null);
     testTemplate(action, "queueId", "'queueId' is required");
   }
 
   @Test
   void testValidation07() {
-    Action action = new ActionBuilder().type(ActionType.QUEUE).documentId(ID.uuid()).indexUlid()
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.QUEUE).document(document).indexUlid()
         .queueId("Testqueue").userId("joe").build((String) null);
     testTemplate(action, "queueId", "'queueId' does not exist");
   }
@@ -202,8 +208,9 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation08() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.EVENTBRIDGE).userId("joe")
-        .documentId(ID.uuid()).indexUlid().build((String) null);
+        .document(document).indexUlid().build((String) null);
     testTemplate(action, "parameters.eventBusName", "'eventBusName' parameter is required");
   }
 
@@ -212,8 +219,9 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation09() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.DATA_CLASSIFICATION).userId("joe")
-        .documentId(ID.uuid()).indexUlid().build((String) null);
+        .document(document).indexUlid().build((String) null);
     testTemplate(action, "parameters.llmPromptEntityName",
         "'llmPromptEntityName' parameter is required");
   }
@@ -223,23 +231,26 @@ class ActionsValidatorTest {
    */
   @Test
   void testValidation10() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.METADATA_EXTRACTION).userId("joe")
-        .documentId(ID.uuid()).indexUlid().build((String) null);
+        .document(document).indexUlid().build((String) null);
     testTemplate(action, "parameters.llmPromptEntityName",
         "'llmPromptEntityName' parameter is required");
   }
 
   @Test
   void testValidation11() {
-    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
-        .documentId(ID.uuid()).indexUlid().build((String) null);
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document)
+        .indexUlid().build((String) null);
     testTemplate(action, "parameters.checksumType", "'checksumType' parameter is required");
   }
 
   @Test
   void testValidation12() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
-        .parameters(Map.of("checksumType", "md5")).documentId(ID.uuid()).indexUlid()
+        .parameters(Map.of("checksumType", "md5")).document(document).indexUlid()
         .build((String) null);
     testTemplate(action, "parameters.checksumType",
         "'checksumType' parameter must be one of [SHA1, SHA256]");
@@ -247,8 +258,9 @@ class ActionsValidatorTest {
 
   @Test
   void testValidation13() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
-        .parameters(Map.of("checksumType", "sha256")).documentId(ID.uuid()).indexUlid()
+        .parameters(Map.of("checksumType", "sha256")).document(document).indexUlid()
         .build((String) null);
     testTemplate(action, null, null);
   }

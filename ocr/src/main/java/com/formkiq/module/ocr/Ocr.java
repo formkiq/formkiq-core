@@ -49,6 +49,8 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Document Id. */
   private String documentId;
+  /** Artifact Id. */
+  private String artifactId;
   /** {@link OcrEngine}. */
   private OcrEngine engine;
   /** Record inserted date. */
@@ -86,6 +88,26 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
    */
   public Ocr addPdfDetectedCharactersAsText(final boolean bool) {
     this.addPdfDetectedCharactersAsText = bool;
+    return this;
+  }
+
+  /**
+   * Get Artifact Id.
+   *
+   * @return {@link String}
+   */
+  public String artifactId() {
+    return this.artifactId;
+  }
+
+  /**
+   * Set Artifact Id.
+   *
+   * @param id {@link String}
+   * @return {@link Ocr}
+   */
+  public Ocr artifactId(final String id) {
+    this.artifactId = id;
     return this;
   }
 
@@ -158,6 +180,7 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     addS(pkvalues, SK, sk());
 
     addS(pkvalues, "documentId", documentId());
+    addS(pkvalues, "artifactId", artifactId());
 
     String fulldate = this.df.format(new Date());
     addS(pkvalues, "insertedDate", fulldate);
@@ -184,8 +207,9 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   @Override
   public Ocr getFromAttributes(final String siteId, final Map<String, AttributeValue> attrs) {
 
-    Ocr ocr = new Ocr().documentId(ss(attrs, "documentId")).userId(ss(attrs, "userId"))
-        .contentType(ss(attrs, "contentType")).jobId(ss(attrs, "jobId"));
+    Ocr ocr = new Ocr().documentId(ss(attrs, "documentId")).artifactId(ss(attrs, "artifactId"))
+        .userId(ss(attrs, "userId")).contentType(ss(attrs, "contentType"))
+        .jobId(ss(attrs, "jobId"));
 
     if (attrs.containsKey("ocrEngine")) {
       ocr.engine(OcrEngine.valueOf(ss(attrs, "ocrEngine").toUpperCase()));

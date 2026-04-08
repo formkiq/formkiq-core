@@ -57,7 +57,7 @@ public class ObjectExaminePdfHandler
     String id = ID.uuid();
 
     String bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
-    String s3key = String.format("tempfiles/%s", createS3Key(siteId, id));
+    String s3key = String.format("tempfiles/%s", createS3Key(siteId, id, null));
 
     URL url = service.presignPutUrl(bucket, s3key, Duration.ofDays(1), null, null, Optional.empty(),
         null);

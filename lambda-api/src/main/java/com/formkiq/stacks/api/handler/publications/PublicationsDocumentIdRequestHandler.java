@@ -73,13 +73,14 @@ public class PublicationsDocumentIdRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentPublicationRecord item = documentService.findPublishDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    String s3key = createS3Key(siteId, documentId);
+    String s3key = createS3Key(siteId, documentId, artifactId);
     String s3VersionKey = item.getS3version();
 
     String contentType =

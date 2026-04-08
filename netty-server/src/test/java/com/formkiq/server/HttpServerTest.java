@@ -122,7 +122,7 @@ public class HttpServerTest {
     waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, null, null).getContent());
+        this.documentsApi.getDocumentContent(documentId, null, null, null, null).getContent());
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), response.getContentLength().intValue());

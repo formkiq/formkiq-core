@@ -36,11 +36,11 @@ import java.util.Objects;
 /**
  * DocumentRecord representing a document item, with its DynamoDB key structure and metadata.
  */
-public record DocumentRecord(DynamoDbKey key, String documentId, String belongsToDocumentId,
-    String path, String deepLinkPath, String contentType, Long contentLength, String checksum,
-    String checksumType, String s3version, String userId, String version, String width,
-    String height, String timeToLive, Date insertedDate, Date lastModifiedDate,
-    Collection<DocumentMetadata> metadata) {
+public record DocumentRecord(DynamoDbKey key, String documentId, String artifactId,
+    String belongsToDocumentId, String path, String deepLinkPath, String contentType,
+    Long contentLength, String checksum, String checksumType, String s3version, String userId,
+    String version, String width, String height, String timeToLive, Date insertedDate,
+    Date lastModifiedDate, Collection<DocumentMetadata> metadata) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
@@ -77,6 +77,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String belongsT
         new AttributeValueToDocumentMetadata().apply(attributes);
 
     return new DocumentRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
+        DynamoDbTypes.toString(attributes.get("artifactId")),
         DynamoDbTypes.toString(attributes.get("belongsToDocumentId")),
         DynamoDbTypes.toString(attributes.get("path")),
         DynamoDbTypes.toString(attributes.get("deepLinkPath")),
@@ -108,14 +109,15 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String belongsT
         new DocumentMetadataToAttributeValue().apply(metadata);
 
     DynamoDbAttributeMapBuilder map = key.getAttributesBuilder()
-        .withString("documentId", documentId).withString("belongsToDocumentId", belongsToDocumentId)
-        .withString("path", path).withString("deepLinkPath", deepLinkPath)
-        .withString("contentType", contentType).withLong("contentLength", contentLength)
-        .withString("checksum", checksum).withString("checksumType", checksumType)
-        .withString("s3version", s3version).withString("userId", userId)
-        .withString("version", version).withString("width", width).withString("height", height)
-        .withNumber("TimeToLive", timeToLive).withDate("inserteddate", insertedDate)
-        .withDate("lastModifiedDate", lastModifiedDate).withMap(metadataAttrs);
+        .withString("documentId", documentId).withString("artifactId", artifactId)
+        .withString("belongsToDocumentId", belongsToDocumentId).withString("path", path)
+        .withString("deepLinkPath", deepLinkPath).withString("contentType", contentType)
+        .withLong("contentLength", contentLength).withString("checksum", checksum)
+        .withString("checksumType", checksumType).withString("s3version", s3version)
+        .withString("userId", userId).withString("version", version).withString("width", width)
+        .withString("height", height).withNumber("TimeToLive", timeToLive)
+        .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate)
+        .withMap(metadataAttrs);
 
     return map.build();
   }
