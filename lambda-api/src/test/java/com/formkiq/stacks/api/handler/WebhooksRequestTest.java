@@ -415,9 +415,12 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     DynamicObject obj = webhookService.findWebhook(null, webhookId);
 
     long epoch = Long.parseLong(obj.getString("TimeToLive"));
-    ZonedDateTime ld = Instant.ofEpochMilli(epoch * TO_MILLIS).atZone(ZoneOffset.UTC);
-    ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC).plusDays(1);
-    assertEquals(now.getDayOfMonth(), ld.getDayOfMonth());
+    long nowEpoch = Instant.now().getEpochSecond();
+    long actualTtl = epoch - nowEpoch;
+    long expectedTtl = Long.parseLong(ttl);
+    long tolerance = 5L;
+    assertTrue(Math.abs(expectedTtl - actualTtl) <= tolerance, "expected TTL to be within "
+        + tolerance + " seconds of " + expectedTtl + " but was " + actualTtl);
 
     // given
     ttl = "-87400";
