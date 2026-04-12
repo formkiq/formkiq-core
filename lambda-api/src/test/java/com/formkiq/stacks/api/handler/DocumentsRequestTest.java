@@ -57,6 +57,7 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -70,6 +71,7 @@ import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,6 +135,11 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
     awsServices.register(DocumentService.class, new DocumentServiceExtension());
     awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     return awsServices.getExtension(DocumentService.class);
+  }
+
+  private List<SearchResultDocument> getFilesInFolder(final String siteId, final String folder) {
+    return notNull(new GetFoldersRequestBuilder().path(folder).submit(client, siteId).response()
+        .getDocuments());
   }
 
   /**
@@ -1170,8 +1177,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   public void testPostArtifactsWithDocumentId() throws ApiException {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
-      var path0 = ID.ulid() + ".txt";
-      var path1 = ID.ulid() + ".txt";
+      var folder0 = ID.ulid();
+      var folder1 = ID.ulid();
+      var path0 = folder0 + "/" + ID.ulid() + ".txt";
+      var path1 = folder1 + "/" + ID.ulid() + ".txt";
 
       // when
       var resp = new AddDocumentRequestBuilder().content().path(path0).submit(client, siteId)
@@ -1204,6 +1213,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       List<Document> documents = notNull(artifacts.response().getDocuments());
       assertEquals(1, documents.size());
       assertEquals(path1, documents.get(0).getPath());
+
+      var baseFolderDocuments = getFilesInFolder(siteId, folder0);
+      assertEquals(1, baseFolderDocuments.size());
+      assertEquals(path0, baseFolderDocuments.get(0).getPath());
+
+      var artifactFolderDocuments = getFilesInFolder(siteId, folder1);
+      assertTrue(artifactFolderDocuments.isEmpty());
     }
   }
 

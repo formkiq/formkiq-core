@@ -1651,7 +1651,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
 
     WriteRequestBuilder txWriter = new WriteRequestBuilder();
-    if (isPathChanged(document, previous)) {
+    if (item.getArtifactId() == null && isPathChanged(document, previous)) {
       FolderIndexRecord pathRecord = createFolders(siteId, documentId, builder, document.path());
       txWriter.append(this.documentTableName, pathRecord.getAttributes(siteId));
 
