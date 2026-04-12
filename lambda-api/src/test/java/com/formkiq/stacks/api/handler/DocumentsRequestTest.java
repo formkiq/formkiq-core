@@ -1224,6 +1224,39 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents with artifacts=true does not allow child documents.
+   */
+  @Test
+  public void testPostArtifactsWithDocumentIdAndChildDocuments() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var createResponse =
+          new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
+      var documentId = createResponse.response().getDocumentId();
+
+      var req = new AddDocumentRequest().documentId(documentId).artifacts(true)
+          .content("artifact content").addDocumentsItem(
+              new AddChildDocument().content("{\"child\":true}").contentType("application/json"));
+
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"documents\","
+                + "\"error\":\"'documents' are not allowed when 'artifacts' is true\"}]}",
+            e.getResponseBody());
+      }
+
+      var artifacts =
+          new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId).throwIfError();
+      assertTrue(notNull(artifacts.response().getDocuments()).isEmpty());
+    }
+  }
+
+  /**
    * POST /documents with artifacts=true with invalid documentId.
    */
   @Test
