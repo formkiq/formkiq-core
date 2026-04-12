@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -121,7 +121,7 @@ public class AddDocumentRequestToPresignedUrls
     map.put("artifactId", item.getArtifactId());
 
     if (isEmpty(req.getDeepLinkPath())) {
-      String docUrl = generatePresignedUrl(req);
+      String docUrl = generatePresignedUrl(req, item);
       addHeaders(map, req);
       map.put("url", docUrl);
     }
@@ -136,7 +136,7 @@ public class AddDocumentRequestToPresignedUrls
       m.put("documentId", docid);
 
       if (isEmpty(o.getDeepLinkPath())) {
-        String url = generatePresignedUrl(o);
+        String url = generatePresignedUrl(o, item);
         m.put("url", url);
       }
 
@@ -150,10 +150,11 @@ public class AddDocumentRequestToPresignedUrls
     return map;
   }
 
-  private String generatePresignedUrl(final AddDocumentRequest o) {
+  private String generatePresignedUrl(final AddDocumentRequest o, final DocumentItem item) {
 
-    String documentId = o.getDocumentId();
-    String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
+    // String documentId = o.getDocumentId();
+    String key = createS3Key(siteId, item.getDocumentId(), item.getArtifactId());
+    // String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
     String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
     final int cacheInDays = 7;

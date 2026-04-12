@@ -102,7 +102,7 @@ public class DocumentIdContentRequestHandler
 
     ApiRequestHandlerResponse.Builder response;
 
-    String s3key = createS3Key(siteId, documentId, artifactId);
+    String s3key = createS3Key(siteId, document);
     if (!exists(awsservice, s3key)) {
       throw new DocumentNotFoundException(item.getDocumentId());
     }

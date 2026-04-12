@@ -431,7 +431,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     DeleteResults deleted = query.delete(dbService, siteId);
 
-    if (!softDelete && deleted.deleted()) {
+    if (!softDelete && deleted.deleted() && document.artifactId() == null) {
       this.versionsService.deleteAllVersionIds(siteId, document);
     }
 

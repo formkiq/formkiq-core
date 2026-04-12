@@ -80,7 +80,6 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
       final int limit) {
 
     var key = new DocumentRecordBuilder().document(document).buildKey(siteId);
-    // var pk = DynamoDbTypes.toString(keysDocument(siteId, this.id).get(PK));
     return DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit).build(tableName);
   }
 
@@ -111,6 +110,12 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
     var result = DynamoDbDeleteQuery.super.query(db, tableName, siteId, nextToken, limit);
     List<Map<String, AttributeValue>> items = result.items();
+
+    if (document.artifactId() != null) {
+      items = items.stream()
+          .filter(a -> document.artifactId().equals(DynamoDbTypes.toString(a.get("artifactId"))))
+          .toList();
+    }
 
     if (nextToken == null) {
 

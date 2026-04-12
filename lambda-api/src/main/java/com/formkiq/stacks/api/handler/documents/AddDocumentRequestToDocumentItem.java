@@ -117,7 +117,10 @@ public class AddDocumentRequestToDocumentItem
     item.setHeight(r.getHeight());
     item.setChecksum(r.getChecksum());
     item.setChecksumType(r.getChecksumType());
-    item.setArtifactId(r.isArtifacts() ? ID.ulid() : null);
+
+    if (r.isArtifacts() && item.getArtifactId() == null) {
+      item.setArtifactId(ID.ulid());
+    }
 
     return item;
   }
