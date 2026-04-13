@@ -115,7 +115,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.sqs.model.Message;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
@@ -188,9 +187,14 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType)
       throws InterruptedException {
-    ReceiveMessageResponse response = eventQueue.get();
-    assertEquals(1, response.messages().size());
-    Message m = response.messages().get(0);
+    assertCreateDocumentSnsMessage(siteId, eventType, 1);
+  }
+
+  private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType,
+      final int expected) throws InterruptedException {
+    List<Message> messages = eventQueue.get(List.of("\\\"type\\\":\\\"" + eventType + "\\\""));
+    assertEquals(expected, messages.size());
+    Message m = messages.get(0);
 
     Map<String, String> map = GSON.fromJson(m.body(), Map.class);
     String message = map.get("Message");
@@ -756,8 +760,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           .setType(DocumentTagType.USERDEFINED).setDocumentId(itemchild.documentId()),
           tags.getResults().get(0));
 
-      assertCreateDocumentSnsMessage(siteId, "create");
-      assertCreateDocumentSnsMessage(siteId, "create");
+      assertCreateDocumentSnsMessage(siteId, "create", 2);
     }
   }
 
