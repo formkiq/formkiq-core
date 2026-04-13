@@ -1262,6 +1262,7 @@ public class StagingS3CreateTest implements DbKeys {
   void testFkB64Extension10() throws IOException {
 
     final String documentId = "12345";
+    final DocumentArtifact document = new DocumentArtifact(documentId, null);
     Map<String, Object> data = new HashMap<>();
     data.put("documentId", documentId);
     data.put("userId", "joesmith");
@@ -1293,7 +1294,7 @@ public class StagingS3CreateTest implements DbKeys {
       // then
       assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
 
-      List<Action> actions = actionsService.getActions(siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(2, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
@@ -1319,7 +1320,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(map);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals("OCR", actions.get(0).type().name());
       assertEquals("PENDING", actions.get(0).status().name());
@@ -1456,7 +1457,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEqualsTag(tags.get(i), Map.of("documentId", documentId, "key", "playerId", "value",
           "1234", "type", "USERDEFINED", "userId", userId));
 
-      List<Action> actions = actionsService.getActions(siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(2, actions.size());
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
       assertEquals(ActionType.FULLTEXT, actions.get(0).type());

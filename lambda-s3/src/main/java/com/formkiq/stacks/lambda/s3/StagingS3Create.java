@@ -565,7 +565,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
     if (existingDocument != null && !hasContent) {
 
-      List<Action> actions = actionsService.getActions(siteId, item.getDocumentId());
+      List<Action> actions = actionsService.getActions(siteId, document);
       List<Action> syncs = actions.stream().filter(a -> ActionType.FULLTEXT.equals(a.type()))
           .map(a -> new ActionBuilder().action(a).insertedDate(new Date()).indexUlid()
               .status(ActionStatus.PENDING).build(siteId))
@@ -733,7 +733,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     if (doc.containsKey("actions")) {
 
       DocumentArtifact document = DocumentArtifact.of(doc.getDocumentId(), doc.getArtifactId());
-      actionsService.deleteActions(siteId, doc.getDocumentId());
+      actionsService.deleteActions(siteId, document);
 
       DynamicObjectToAction transform = new DynamicObjectToAction();
       List<DynamicObject> list = doc.getList("actions");

@@ -80,7 +80,7 @@ public class DocumentsActionsRequestHandler
     String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    Pagination<Action> results = service.getActions(siteId, documentId, nextToken, limit);
+    Pagination<Action> results = service.getActions(siteId, document, nextToken, limit);
 
     List<Map<String, Object>> list = new ArrayList<>();
     for (Action action : results.getResults()) {

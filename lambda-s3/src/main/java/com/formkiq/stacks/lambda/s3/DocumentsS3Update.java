@@ -73,7 +73,6 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
@@ -719,11 +718,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     String eventType = event.type();
     String siteId = event.siteId();
-    String documentId = event.documentId();
+    DocumentArtifact document = DocumentArtifact.of(event.documentId(), event.artifactId());
 
     if (CREATE.equals(eventType)) {
-      List<Action> actions = actionsService.getActions(siteId, documentId);
-      notificationService.publishNextActionEvent(actions, siteId, documentId);
+      notificationService.publishNextActionEvent(siteId, document);
     }
   }
 

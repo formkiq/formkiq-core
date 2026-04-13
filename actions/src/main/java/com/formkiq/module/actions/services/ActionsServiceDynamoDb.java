@@ -123,10 +123,10 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public void deleteActions(final String siteId, final String documentId) {
+  public void deleteActions(final String siteId, final DocumentArtifact document) {
 
     List<Action> actions =
-        queryActions(siteId, documentId, Arrays.asList(PK, SK, "type"), null, null).getResults();
+        queryActions(siteId, document, Arrays.asList(PK, SK, "type"), null, null).getResults();
 
     for (Action action : actions) {
       deleteAction(action);
@@ -134,10 +134,13 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public Action findActionInQueue(final String siteId, final String documentId,
+  public Action findActionInQueue(final String siteId, final DocumentArtifact document,
       final String queueName) {
-    String pk = createDatabaseKey(siteId, "action#" + ActionType.QUEUE + "#" + queueName);
-    String sk = "action#" + documentId + "#";
+
+    var key = new ActionBuilder().document(document).queueId(queueName).type(ActionType.QUEUE)
+        .status(ActionStatus.IN_QUEUE).index("0").buildKey(siteId);
+    String pk = key.gsi1Pk();
+    String sk = key.gsi1Sk().substring(0, key.gsi1Sk().lastIndexOf("#") + 1);
 
     QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
     QueryResponse response = this.db.queryBeginsWith(config, fromS(pk), fromS(sk), null, 1);
@@ -213,20 +216,19 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public List<Action> getActions(final String siteId, final String documentId) {
-    return queryActions(siteId, documentId, null, null, null).getResults();
+  public List<Action> getActions(final String siteId, final DocumentArtifact document) {
+    return queryActions(siteId, document, null, null, null).getResults();
   }
 
   @Override
-  public Pagination<Action> getActions(final String siteId, final String documentId,
+  public Pagination<Action> getActions(final String siteId, final DocumentArtifact document,
       final String nextToken, final int limit) {
-    return queryActions(siteId, documentId, null, nextToken, limit);
+    return queryActions(siteId, document, null, nextToken, limit);
   }
 
   @Override
-  public boolean hasActions(final String siteId, final String documentId) {
-    List<Action> actions =
-        queryActions(siteId, documentId, List.of(PK, SK), null, null).getResults();
+  public boolean hasActions(final String siteId, final DocumentArtifact document) {
+    List<Action> actions = queryActions(siteId, document, List.of(PK, SK), null, null).getResults();
     return !actions.isEmpty();
   }
 
@@ -264,19 +266,19 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
    * Query Document Actions.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param projectionExpression {@link List} {@link String}
    * @param limit {@link Integer}
    * @param nextToken {@link String}
    * @return {@link Pagination} {@link Action}
    */
-  private Pagination<Action> queryActions(final String siteId, final String documentId,
+  private Pagination<Action> queryActions(final String siteId, final DocumentArtifact document,
       final List<String> projectionExpression, final String nextToken, final Integer limit) {
 
     // DUMMY VALUE
     var actionType = ActionType.OCR;
-    DynamoDbKey key = new ActionBuilder().document(DocumentArtifact.of(documentId, null))
-        .indexUlid().type(actionType).buildKey(siteId);
+    DynamoDbKey key =
+        new ActionBuilder().document(document).indexUlid().type(actionType).buildKey(siteId);
     String sk = "action" + TAG_DELIMINATOR;
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";

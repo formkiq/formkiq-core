@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -119,9 +120,10 @@ public class AddDocumentRequestToPresignedUrls
     String documentId = req.getDocumentId();
     map.put("documentId", documentId);
     map.put("artifactId", item.getArtifactId());
+    DocumentArtifact document = DocumentArtifact.of(documentId, item.getArtifactId());
 
     if (isEmpty(req.getDeepLinkPath())) {
-      String docUrl = generatePresignedUrl(req, item);
+      String docUrl = generatePresignedUrl(req, document);
       addHeaders(map, req);
       map.put("url", docUrl);
     }
@@ -134,9 +136,10 @@ public class AddDocumentRequestToPresignedUrls
 
       String docid = o.getDocumentId();
       m.put("documentId", docid);
+      document = DocumentArtifact.of(docid, null);
 
       if (isEmpty(o.getDeepLinkPath())) {
-        String url = generatePresignedUrl(o, item);
+        String url = generatePresignedUrl(o, document);
         m.put("url", url);
       }
 
@@ -150,10 +153,10 @@ public class AddDocumentRequestToPresignedUrls
     return map;
   }
 
-  private String generatePresignedUrl(final AddDocumentRequest o, final DocumentItem item) {
+  private String generatePresignedUrl(final AddDocumentRequest o, final DocumentArtifact document) {
 
     // String documentId = o.getDocumentId();
-    String key = createS3Key(siteId, item.getDocumentId(), item.getArtifactId());
+    String key = createS3Key(siteId, document);
     // String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
     String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;

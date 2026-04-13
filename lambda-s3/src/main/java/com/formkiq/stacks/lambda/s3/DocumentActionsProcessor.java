@@ -393,7 +393,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       String artifactId = event.artifactId();
       DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-      List<Action> actions = actionsService.getActions(siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, document);
 
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();

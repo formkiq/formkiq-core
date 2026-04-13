@@ -918,7 +918,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       handleRequest(siteId, BUCKET_KEY, map);
 
       // then
-      List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
@@ -983,7 +983,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       handleRequest(siteId, documentId, map);
 
       // then
-      List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.RUNNING, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());

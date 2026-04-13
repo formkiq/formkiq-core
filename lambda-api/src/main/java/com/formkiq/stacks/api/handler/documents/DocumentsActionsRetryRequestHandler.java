@@ -81,7 +81,7 @@ public class DocumentsActionsRetryRequestHandler
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = service.getActions(siteId, documentId);
+    List<Action> actions = service.getActions(siteId, document);
 
     var toUpdatePred = new ActionStatusPredicate(ActionStatus.RUNNING,
         ActionStatus.MAX_RETRIES_REACHED, ActionStatus.WAITING_FOR_RETRY);

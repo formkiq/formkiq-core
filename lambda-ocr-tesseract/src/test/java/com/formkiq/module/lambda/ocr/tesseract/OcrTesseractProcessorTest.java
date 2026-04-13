@@ -185,7 +185,7 @@ class OcrTesseractProcessorTest {
       Ocr obj = ocrService.get(siteId, document);
       assertEquals("FAILED", obj.status().name());
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
       assertEquals("unsupported Content-Type: MIME_JPEG", actions.get(0).message());
     }
@@ -233,7 +233,7 @@ class OcrTesseractProcessorTest {
       String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertEquals(OCR_TEXT, s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -273,7 +273,7 @@ class OcrTesseractProcessorTest {
       Ocr obj = ocrService.get(siteId, document);
       assertEquals("FAILED", obj.status().name());
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
     }
   }
@@ -319,7 +319,7 @@ class OcrTesseractProcessorTest {
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
           .contains("Vestibulum neque massa"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -365,7 +365,7 @@ class OcrTesseractProcessorTest {
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
           .contains("Vestibulum neque massa"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -410,7 +410,7 @@ class OcrTesseractProcessorTest {
       String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -455,7 +455,7 @@ class OcrTesseractProcessorTest {
       String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -504,7 +504,7 @@ class OcrTesseractProcessorTest {
       assertEquals("BufferedImage: this is test data\nBufferedImage: this is test data",
           s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -562,7 +562,7 @@ class OcrTesseractProcessorTest {
       int pos = text.indexOf(match);
       assertFalse(text.substring(pos + match.length()).contains(match));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -609,7 +609,7 @@ class OcrTesseractProcessorTest {
       assertTrue(text.contains("Quarterly Sales Overview"));
       assertTrue(text.contains("Sales Breakdown"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -656,7 +656,7 @@ class OcrTesseractProcessorTest {
       assertTrue(text.contains("Product\tRegion"));
       assertTrue(text.contains("Accessories\tWest"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }

@@ -322,7 +322,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
       logger.error(e);
 
       ActionsService actionsService = serviceCache.getExtension(ActionsService.class);
-      List<Action> actions = actionsService.getActions(siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, document);
       Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
           .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 
