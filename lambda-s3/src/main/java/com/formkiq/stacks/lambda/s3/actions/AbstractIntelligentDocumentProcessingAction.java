@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
@@ -77,20 +78,21 @@ public abstract class AbstractIntelligentDocumentProcessingAction implements Doc
    */
   protected abstract String getMethod();
 
-  protected abstract String getUrl(String documentId, Action action);
+  protected abstract String getUrl(DocumentArtifact document, Action action);
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException {
 
     ActionStatus status = ActionStatus.COMPLETE;
 
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
-    if (!MimeType.isPlainText(item.getContentType())
+    DocumentRecord item = this.documentService.findDocument(siteId, document);
+    if (!MimeType.isPlainText(item.contentType())
         && actions.stream().noneMatch(a -> a.type().equals(ActionType.OCR))) {
 
       ActionBuilder ocrAction = new ActionBuilder().userId("System").type(ActionType.OCR)
-          .documentId(documentId).indexUlid().parameters(Map.of("ocrEngine", "tesseract"));
+          .document(document).indexUlid().parameters(Map.of("ocrEngine", "tesseract"));
       this.actionsService.insertBeforeAction(siteId, action, ocrAction);
       status = ActionStatus.PENDING;
 
@@ -99,7 +101,7 @@ public abstract class AbstractIntelligentDocumentProcessingAction implements Doc
       Map<String, Object> payload = buildPayload(action);
       String json = this.gson.toJson(payload);
       String method = getMethod();
-      String url = getUrl(documentId, action);
+      String url = getUrl(document, action);
 
       if (logger.isLogged(LogLevel.DEBUG)) {
         String s =

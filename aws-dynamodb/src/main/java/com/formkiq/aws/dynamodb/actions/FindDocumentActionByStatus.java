@@ -26,29 +26,32 @@ package com.formkiq.aws.dynamodb.actions;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * Find Document by action by status.
  */
 public class FindDocumentActionByStatus implements DynamoDbQuery, DbKeys {
 
-  /** Document Id. */
-  private final String id;
   /** Action Status. */
   private final String status;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param actionStatus {@link String}
    */
-  public FindDocumentActionByStatus(final String documentId, final String actionStatus) {
-    this.id = documentId;
+  public FindDocumentActionByStatus(final DocumentArtifact documentArtifact,
+      final String actionStatus) {
+    this.document = documentArtifact;
     this.status = actionStatus;
   }
 
@@ -56,7 +59,9 @@ public class FindDocumentActionByStatus implements DynamoDbQuery, DbKeys {
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
     String pk = createDatabaseKey(siteId, "actions#" + this.status + "#");
-    String sk = "action#" + this.id;
+    String sk = !isEmpty(document.artifactId())
+        ? "action_art#" + this.document.documentId() + "#" + this.document.artifactId()
+        : "action#" + this.document.documentId();
     return DynamoDbQueryBuilder.builder().indexName(GSI2).pk(pk).eq(sk).build(tableName);
   }
 }

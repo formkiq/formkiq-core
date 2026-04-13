@@ -37,6 +37,8 @@ public class GetDocumentAttributesRequestBuilder
 
   /** {@link String}. */
   private final String docId;
+  /** Artifact Id. */
+  private String artifactId;
   /** Limit Results. */
   private String limit;
   /** Next Token. */
@@ -73,10 +75,15 @@ public class GetDocumentAttributesRequestBuilder
     return this;
   }
 
+  public GetDocumentAttributesRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentAttributesResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .getDocumentAttributes(this.docId, siteId, limit, next));
+        .getDocumentAttributes(this.docId, siteId, this.artifactId, limit, next));
   }
 }

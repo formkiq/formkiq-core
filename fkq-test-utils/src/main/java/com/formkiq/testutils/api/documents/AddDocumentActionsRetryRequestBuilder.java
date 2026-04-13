@@ -37,6 +37,8 @@ public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder
 
   /** Document Id. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -47,6 +49,11 @@ public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder
     this.id = documentId;
   }
 
+  public AddDocumentActionsRetryRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -55,7 +62,7 @@ public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentActionsApi(apiClient).addDocumentRetryAction(this.id, siteId));
+    return executeApiCall(() -> new DocumentActionsApi(apiClient).addDocumentRetryAction(this.id,
+        siteId, this.artifactId));
   }
 }

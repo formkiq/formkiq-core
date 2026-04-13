@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -63,46 +65,48 @@ public interface DocumentService {
   void addFolderIndex(String siteId, String path, String userId) throws IOException;
 
   /**
+   * Add Tags to Document.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentArtifact}
+   * @param tags {@link Collection} {@link DocumentTag}
+   * @param timeToLive {@link String}
+   */
+  void addTags(String siteId, DocumentArtifact document, Collection<DocumentTag> tags,
+      String timeToLive);
+
+  /**
    * Add Tags to {@link Collection} of Documents.
    * 
    * @param siteId Optional Grouping siteId
    * @param tags {@link Map} {@link Collection} {@link DocumentTag}
    * @param timeToLive {@link String}
    */
-  void addTags(String siteId, Map<String, Collection<DocumentTag>> tags, String timeToLive);
-
-  /**
-   * Add Tags to Document.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @param timeToLive {@link String}
-   */
-  void addTags(String siteId, String documentId, Collection<DocumentTag> tags, String timeToLive);
+  void addTags(String siteId, Map<DocumentArtifact, Collection<DocumentTag>> tags,
+      String timeToLive);
 
   /**
    * Delete Document.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param softDelete Whether to soft delete document
    * @return boolean whether a document was deleted
    */
-  boolean deleteDocument(String siteId, String documentId, boolean softDelete);
+  boolean deleteDocument(String siteId, DocumentArtifact document, boolean softDelete);
 
   /**
    * Delete Document Attribute.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributeKey {@link String}
    * @param validation {@link AttributeValidationType}
    * @param validationAccess {@link AttributeValidationAccess}
    * @return {@link List} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
-  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, String documentId,
+  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, DocumentArtifact document,
       String attributeKey, AttributeValidationType validation,
       AttributeValidationAccess validationAccess) throws ValidationException;
 
@@ -110,15 +114,16 @@ public interface DocumentService {
    * Delete Document Attribute Value.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributeKey {@link String}
    * @param attributeValue {@link String}
    * @param validationAccess {@link AttributeValidationAccess}
    * @return boolean
    * @throws ValidationException ValidationException
    */
-  boolean deleteDocumentAttributeValue(String siteId, String documentId, String attributeKey,
-      String attributeValue, AttributeValidationAccess validationAccess) throws ValidationException;
+  boolean deleteDocumentAttributeValue(String siteId, DocumentArtifact document,
+      String attributeKey, String attributeValue, AttributeValidationAccess validationAccess)
+      throws ValidationException;
 
   /**
    * Delete Document Format.
@@ -136,25 +141,27 @@ public interface DocumentService {
    * 
    * @param siteId Optional Grouping siteId
    * @param documentId {@link String}
+   * @deprecated method to be deleted
    */
+  @Deprecated
   void deleteDocumentFormats(String siteId, String documentId);
 
   /**
    * Delete {@link DocumentTag} by TagKey.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param tagKey {@link String}
    */
-  void deleteDocumentTag(String siteId, String documentId, String tagKey);
+  void deleteDocumentTag(String siteId, DocumentArtifact document, String tagKey);
 
   /**
    * Delete Document Tags.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    */
-  void deleteDocumentTags(String siteId, String documentId);
+  void deleteDocumentTags(String siteId, DocumentArtifact document);
 
   /**
    * Delete Preset by id and type.
@@ -210,79 +217,78 @@ public interface DocumentService {
    * Returns whether document exists.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return boolean
    */
-  boolean exists(String siteId, String documentId);
+  boolean exists(String siteId, DocumentArtifact document);
 
   /**
    * Whether Document Attribute exists.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributeKey {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
-  boolean existsDocumentAttribute(String siteId, String documentId, String attributeKey);
+  boolean existsDocumentAttribute(String siteId, DocumentArtifact document, String attributeKey);
 
   /**
    * Find {@link DocumentItem}.
-   * 
+   *
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * 
+   * @param document {@link DocumentArtifact}
    * @return {@link DocumentItem}
    */
-  DocumentItem findDocument(String siteId, String documentId);
+  DocumentRecord findDocument(String siteId, DocumentArtifact document);
 
   /**
    * Find {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param includeChildDocuments boolean
    * @param nextToken {@link String}
    * @param limit int
    * @return {@link Pagination} {@link DocumentItem}
    */
-  Pagination<DocumentItem> findDocument(String siteId, String documentId,
+  Pagination<DocumentItem> findDocument(String siteId, DocumentArtifact document,
       boolean includeChildDocuments, String nextToken, int limit);
 
   /**
    * Find Document Attribute.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributeKey {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
-  List<DocumentAttributeRecord> findDocumentAttribute(String siteId, String documentId,
+  List<DocumentAttributeRecord> findDocumentAttribute(String siteId, DocumentArtifact document,
       String attributeKey);
 
   /**
    * Find {@link DocumentAttributeRecord}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param nextToken {@link String}
    * @param limit int
    * @return {@link Pagination} {@link DocumentAttributeRecord}
    */
-  Pagination<DocumentAttributeRecord> findDocumentAttributes(String siteId, String documentId,
-      String nextToken, int limit);
+  Pagination<DocumentAttributeRecord> findDocumentAttributes(String siteId,
+      DocumentArtifact document, String nextToken, int limit);
 
   /**
    * Find {@link DocumentAttributeRecord} by Type.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param valueType {@link DocumentAttributeValueType}
    * @param nextToken {@link String}
    * @param limit int
    * @return {@link Pagination} {@link DocumentAttributeRecord}
    */
-  Pagination<DocumentAttributeRecord> findDocumentAttributesByType(String siteId, String documentId,
-      DocumentAttributeValueType valueType, String nextToken, int limit);
+  Pagination<DocumentAttributeRecord> findDocumentAttributesByType(String siteId,
+      DocumentArtifact document, DocumentAttributeValueType valueType, String nextToken, int limit);
 
   /**
    * Get Document Format.
@@ -291,7 +297,9 @@ public interface DocumentService {
    * @param documentId {@link String}
    * @param contentType {@link String}
    * @return {@link Optional} {@link DocumentFormat}
+   * @deprecated method to be deleted
    */
+  @Deprecated
   Optional<DocumentFormat> findDocumentFormat(String siteId, String documentId, String contentType);
 
   /**
@@ -302,7 +310,9 @@ public interface DocumentService {
    * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link Pagination} {@link DocumentFormat}
+   * @deprecated method to be deleted
    */
+  @Deprecated
   Pagination<DocumentFormat> findDocumentFormats(String siteId, String documentId, String nextToken,
       int maxresults);
 
@@ -310,24 +320,24 @@ public interface DocumentService {
    * Find Document Tag Value.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param tagKey {@link String}
    * 
    * @return {@link DocumentTag}
    */
-  DocumentTag findDocumentTag(String siteId, String documentId, String tagKey);
+  DocumentTag findDocumentTag(String siteId, DocumentArtifact document, String tagKey);
 
   /**
    * Find Tags for {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param nextToken {@link String}
    * @param maxresults int
    * @return {@link Pagination} {@link DocumentTag}
    */
-  Pagination<DocumentTag> findDocumentTags(String siteId, String documentId, String nextToken,
-      int maxresults);
+  Pagination<DocumentTag> findDocumentTags(String siteId, DocumentArtifact document,
+      String nextToken, int maxresults);
 
   /**
    * Find {@link DocumentItem}.
@@ -465,38 +475,39 @@ public interface DocumentService {
    * Reindex Document Attributes.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    */
-  void reindexDocumentAttributes(String siteId, String documentId) throws ValidationException;
+  void reindexDocumentAttributes(String siteId, DocumentArtifact document)
+      throws ValidationException;
 
   /**
    * Remove Tag from Document.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param tagKey {@link String}
    * @param tagValue {@link String}
    * @return boolean
    */
-  boolean removeTag(String siteId, String documentId, String tagKey, String tagValue);
+  boolean removeTag(String siteId, DocumentArtifact document, String tagKey, String tagValue);
 
   /**
    * Remove Tags from Document.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param tags Tag Names.
    */
-  void removeTags(String siteId, String documentId, Collection<String> tags);
+  void removeTags(String siteId, DocumentArtifact document, Collection<String> tags);
 
   /**
    * Restore Soft Deleted Documents.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return boolean
    */
-  boolean restoreSoftDeletedDocument(String siteId, String documentId);
+  boolean restoreSoftDeletedDocument(String siteId, DocumentArtifact document);
 
   /**
    * Save Document and Tags.
@@ -527,13 +538,13 @@ public interface DocumentService {
    * Save Document Attributes.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributes {@link Collection} {@link DocumentAttributeRecord}
    * @param validation {@link AttributeValidationType}
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
-  void saveDocumentAttributes(String siteId, String documentId,
+  void saveDocumentAttributes(String siteId, DocumentArtifact document,
       Collection<DocumentAttributeRecord> attributes, AttributeValidationType validation,
       AttributeValidationAccess validationAccess) throws ValidationException;
 
@@ -543,7 +554,9 @@ public interface DocumentService {
    * @param siteId {@link String}
    * @param format {@link DocumentFormat}
    * @return {@link DocumentFormat}
+   * @deprecated method to be deleted
    */
+  @Deprecated
   DocumentFormat saveDocumentFormat(String siteId, DocumentFormat format);
 
   /**
@@ -575,8 +588,9 @@ public interface DocumentService {
    * Update Document Attributes.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributes {@link Map}
    */
-  void updateDocument(String siteId, String documentId, Map<String, AttributeValue> attributes);
+  void updateDocument(String siteId, DocumentArtifact document,
+      Map<String, AttributeValue> attributes);
 }

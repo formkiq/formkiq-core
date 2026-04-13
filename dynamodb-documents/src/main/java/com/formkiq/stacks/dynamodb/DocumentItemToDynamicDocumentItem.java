@@ -66,6 +66,7 @@ public class DocumentItemToDynamicDocumentItem
     map.put("checksumType", item.getChecksumType());
     map.put("contentLength", item.getContentLength());
     map.put("contentType", item.getContentType());
+    map.put("artifactId", item.getArtifactId());
     map.put("documentId", item.getDocumentId());
     map.put("insertedDate", item.getInsertedDate());
     map.put("lastModifiedDate", item.getLastModifiedDate());

@@ -38,6 +38,8 @@ public class GetDocumentWorkflowsRequestBuilder
 
   /** Document Id. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -46,6 +48,11 @@ public class GetDocumentWorkflowsRequestBuilder
    */
   public GetDocumentWorkflowsRequestBuilder(final String documentId) {
     this.document = documentId;
+  }
+
+  public GetDocumentWorkflowsRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
   }
 
   /**
@@ -57,7 +64,7 @@ public class GetDocumentWorkflowsRequestBuilder
    */
   public ApiHttpResponse<GetDocumentWorkflowsResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentWorkflowsApi(apiClient).getDocumentWorkflows(this.document, siteId));
+    return executeApiCall(() -> new DocumentWorkflowsApi(apiClient)
+        .getDocumentWorkflows(this.document, siteId, this.artifactId));
   }
 }

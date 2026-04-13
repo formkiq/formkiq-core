@@ -52,6 +52,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getArtifactId() {
+    return getString("artifactId");
+  }
+
+  @Override
   public String getBelongsToDocumentId() {
     return getString("belongsToDocumentId");
   }
@@ -158,6 +163,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public String getWidth() {
     return getString("width");
+  }
+
+  @Override
+  public void setArtifactId(final String artifactId) {
+    put("artifactId", artifactId);
   }
 
   @Override

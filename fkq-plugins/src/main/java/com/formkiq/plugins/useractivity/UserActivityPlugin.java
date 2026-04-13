@@ -23,6 +23,7 @@
  */
 package com.formkiq.plugins.useractivity;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 
 import java.util.Collection;
@@ -38,21 +39,22 @@ public interface UserActivityPlugin {
    *
    * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param record {@link Map}
    */
-  void addDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
-      Map<String, Object> record);
+  void addDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
 
   /**
    * Add User Activity View.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param versionKey {@link String}
    * @param inline Is new inline
    */
-  void addDocumentViewActivity(String siteId, String documentId, String versionKey, boolean inline);
+  void addDocumentViewActivity(String siteId, DocumentArtifact document, String versionKey,
+      boolean inline);
 
   /**
    * Add User Activity.
@@ -74,43 +76,43 @@ public interface UserActivityPlugin {
    *
    * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param record {@link Map}
    */
-  void deleteDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
-      Map<String, Object> record);
+  void deleteDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
 
   /**
    * Add soft delete Document Activity.
    *
    * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param record {@link Map}
    */
   void deleteSoftDocumentActivity(ActivityResourceType resourceType, String siteId,
-      String documentId, Map<String, Object> record);
+      DocumentArtifact document, Map<String, Object> record);
 
   /**
    * Restore Soft Delete Document Activity.
    *
    * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param record {@link Map}
    */
   void restoreSoftDeletedDocumentActivity(ActivityResourceType resourceType, String siteId,
-      String documentId, Map<String, Object> record);
+      DocumentArtifact document, Map<String, Object> record);
 
   /**
    * Add update Document Activity.
    *
    * @param resourceType {@link ActivityResourceType}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param current {@link Map}
    * @param previous {@link Map}
    */
-  void updateDocumentActivity(ActivityResourceType resourceType, String siteId, String documentId,
-      Map<String, Object> current, Map<String, Object> previous);
+  void updateDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> current, Map<String, Object> previous);
 }

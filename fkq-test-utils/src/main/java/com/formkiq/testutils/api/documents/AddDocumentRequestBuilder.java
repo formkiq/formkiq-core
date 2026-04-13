@@ -195,6 +195,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Set Artifacts.
+   *
+   * @param createArtifacts boolean
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder artifacts(final boolean createArtifacts) {
+    this.request.setArtifacts(Boolean.valueOf(createArtifacts));
+    return this;
+  }
+
+  /**
    * Set Random Content.
    *
    * @return AddDocumentRequestBuilder
@@ -246,6 +257,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    */
   public AddDocumentRequestBuilder deepLink(final String deepLink) {
     this.request.setDeepLinkPath(deepLink);
+    return this;
+  }
+
+  /**
+   * Set Document Id.
+   *
+   * @param id {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder documentId(final String id) {
+    this.request.setDocumentId(id);
     return this;
   }
 

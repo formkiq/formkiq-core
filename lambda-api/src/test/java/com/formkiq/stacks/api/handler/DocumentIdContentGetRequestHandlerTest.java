@@ -70,7 +70,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -101,7 +101,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
 
       // then
       assertNull(response.getContent());
@@ -139,7 +139,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -193,11 +193,11 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       assertNotNull(documentId);
 
       S3Service s3 = getAwsServices().getExtension(S3Service.class);
-      s3.deleteObject(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, documentId), null);
+      s3.deleteObject(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, documentId, null), null);
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -230,7 +230,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
 
       // then
       assertNull(response.getContent());
@@ -261,7 +261,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -290,7 +290,7 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null);
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
 
       // then
       assertEquals(content, response.getContent());

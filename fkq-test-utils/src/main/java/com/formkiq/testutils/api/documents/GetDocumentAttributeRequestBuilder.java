@@ -37,6 +37,8 @@ public class GetDocumentAttributeRequestBuilder
 
   /** {@link String}. */
   private final String docId;
+  /** Artifact Id. */
+  private String artifactId;
   /** {@link String}. */
   private final String key;
 
@@ -51,10 +53,15 @@ public class GetDocumentAttributeRequestBuilder
     this.key = attributeKey;
   }
 
+  public GetDocumentAttributeRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentAttributeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .getDocumentAttribute(this.docId, this.key, siteId));
+        .getDocumentAttribute(this.docId, this.key, siteId, this.artifactId));
   }
 }

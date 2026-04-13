@@ -38,6 +38,8 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -61,10 +63,10 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   private DynamoDbService db;
 
   @Override
-  public void deleteAllVersionIds(final String siteId, final String documentId) {
+  public void deleteAllVersionIds(final String siteId, final DocumentArtifact document) {
 
     Map<String, AttributeValue> startkey = null;
-    String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
+    String pk = createDatabaseKey(siteId, PREFIX_DOCS + document.documentId());
 
     do {
 
@@ -83,7 +85,7 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public Map<String, AttributeValue> get(final String siteId, final String documentId,
+  public Map<String, AttributeValue> get(final String siteId, final DocumentArtifact document,
       final String versionKey) {
 
     Map<String, AttributeValue> attrs = Collections.emptyMap();
@@ -91,7 +93,7 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
     if (!isEmpty(documentVersionsTable) && !isEmpty(versionKey)) {
 
-      String pk = createDatabaseKey(siteId, PREFIX_DOCS + documentId);
+      String pk = createDatabaseKey(siteId, PREFIX_DOCS + document.documentId());
       attrs = this.db.get(AttributeValue.fromS(pk), AttributeValue.fromS(versionKey));
     }
 
@@ -105,16 +107,19 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
 
   @Override
   public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
-      final String documentId, final String versionKey,
+      final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) {
 
     DocumentItem item;
 
     if (!Strings.isEmpty(versionKey)) {
       item = new DynamicDocumentItem(new AttributeValueToMap().apply(versionAttributes));
-      item.setDocumentId(documentId);
+      item.setDocumentId(document.documentId());
+      item.setArtifactId(document.artifactId());
     } else {
-      item = documentService.findDocument(siteId, documentId);
+      DocumentRecord r = documentService.findDocument(siteId, document);
+      item = new DocumentRecordToDynamicDocumentItem().apply(r);
+
     }
 
     return item;

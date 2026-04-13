@@ -32,7 +32,8 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
 import com.formkiq.aws.dynamodb.base64.Pagination;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -95,6 +96,7 @@ public class DocumentsSyncsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    DocumentArtifact document = new DocumentArtifact(documentId, null);
 
     DocumentSyncService sync = awsservice.getExtension(DocumentSyncService.class);
     Pagination<DocumentSyncRecord> syncs = sync.getSyncs(siteId, documentId, nextToken, limit);
@@ -104,7 +106,7 @@ public class DocumentsSyncsRequestHandler
         syncs.getResults().stream().map(new DynamodbRecordToMap()).toList();
 
     if (list.isEmpty()) {
-      verifyDocument(awsservice, siteId, documentId);
+      verifyDocument(awsservice, siteId, document);
     }
 
     ApiPagination current =
@@ -124,10 +126,10 @@ public class DocumentsSyncsRequestHandler
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws Exception {
+      final DocumentArtifact document) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = ds.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    DocumentRecord item = ds.findDocument(siteId, document);
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
   }
 
   @Override
@@ -141,13 +143,15 @@ public class DocumentsSyncsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    verifyDocument(awsservice, siteId, documentId);
+    DocumentArtifact document = new DocumentArtifact(documentId, null);
+
+    verifyDocument(awsservice, siteId, document);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
 
     if (DocumentSyncType.CONTENT.equals(sync.getType()) && isActionService(sync.getService())) {
 
-      actionsService.saveNewActions(List.of(new ActionBuilder().indexUlid().documentId(documentId)
+      actionsService.saveNewActions(List.of(new ActionBuilder().indexUlid().document(document)
           .type(ActionType.FULLTEXT).userId(authorization.getUsername()).build(siteId)));
 
     } else {

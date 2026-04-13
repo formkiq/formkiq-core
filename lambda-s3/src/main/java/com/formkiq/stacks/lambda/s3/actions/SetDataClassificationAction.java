@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -56,7 +57,7 @@ public class SetDataClassificationAction extends AbstractIntelligentDocumentProc
   }
 
   @Override
-  protected String getUrl(final String documentId, final Action action) {
-    return String.format("/documents/%s/dataClassification", documentId);
+  protected String getUrl(final DocumentArtifact document, final Action action) {
+    return String.format("/documents/%s/dataClassification", document.documentId());
   }
 }

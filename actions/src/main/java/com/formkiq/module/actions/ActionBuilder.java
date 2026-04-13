@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.validation.ValidationBuilder;
 
@@ -41,6 +42,8 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
 
+  /** Artifact Id. */
+  private String artifactId;
   /** DocumentId. */
   private String documentId;
   /** Index. */
@@ -86,6 +89,7 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
 
     if (action != null) {
       documentId = action.documentId();
+      artifactId = action.artifactId();
       index = action.index();
       type = action.type();
       status = action.status();
@@ -109,8 +113,8 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
 
   @Override
   public Action build(final DynamoDbKey key) {
-    return new Action(key, documentId, index, type, status, userId, message, queueId, workflowId,
-        workflowLastStep, workflowStepId, metadata, parameters, retryCount, maxRetries,
+    return new Action(key, documentId, artifactId, index, type, status, userId, message, queueId,
+        workflowId, workflowLastStep, workflowStepId, metadata, parameters, retryCount, maxRetries,
         insertedDate, startDate, completedDate);
   }
 
@@ -133,7 +137,7 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
   }
 
   public Action buildForWorkflowStep() {
-    return new Action(null, null, null, type, null, userId, null, queueId, workflowId,
+    return new Action(null, null, null, null, type, null, userId, null, queueId, workflowId,
         workflowLastStep, workflowStepId, null, parameters, null, null, null, null, null);
   }
 
@@ -152,15 +156,26 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
 
     DynamoDbKey.Builder b = DynamoDbKey.builder().pk(siteId, pk).sk(sk);
 
-    b = b.gsi1Pk(siteId,
-        ActionStatus.IN_QUEUE.equals(status) ? "action#" + type + "#" + queueId : null);
-    b.gsi1Sk(ActionStatus.IN_QUEUE.equals(status)
-        ? "action#" + documentId + "#" + DateUtil.getIsoDateFormatter().format(new Date())
-        : null);
+    if (hasGsi1()) {
+      b = b.gsi1Pk(siteId, "action#" + type + "#" + queueId);
 
-    b.gsi2Pk(siteId,
-        !ActionStatus.COMPLETE.equals(this.status) ? "actions#" + this.status + "#" : null);
-    b.gsi2Sk(!ActionStatus.COMPLETE.equals(this.status) ? "action#" + this.documentId : null);
+      if (!isEmpty(artifactId)) {
+        b.gsi1Sk("action_art#" + documentId + "#" + artifactId + "#"
+            + DateUtil.getIsoDateFormatter().format(new Date()));
+      } else {
+        b.gsi1Sk("action#" + documentId + "#" + DateUtil.getIsoDateFormatter().format(new Date()));
+      }
+    }
+
+    if (hasGsi2()) {
+      b.gsi2Pk(siteId, "actions#" + this.status + "#");
+
+      if (!isEmpty(artifactId)) {
+        b.gsi2Sk("action_art#" + this.documentId + "#" + this.artifactId);
+      } else {
+        b.gsi2Sk("action#" + this.documentId);
+      }
+    }
 
     return b.build();
   }
@@ -177,14 +192,23 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
   }
 
   /**
-   * Sets document id.
+   * Sets {@link DocumentArtifact}.
    *
-   * @param id document id
+   * @param document {@link DocumentArtifact}
    * @return this {@link ActionBuilder}
    */
-  public ActionBuilder documentId(final String id) {
-    this.documentId = id;
+  public ActionBuilder document(final DocumentArtifact document) {
+    this.documentId = document.documentId();
+    this.artifactId = document.artifactId();
     return this;
+  }
+
+  private boolean hasGsi1() {
+    return ActionStatus.IN_QUEUE.equals(status);
+  }
+
+  private boolean hasGsi2() {
+    return !ActionStatus.COMPLETE.equals(this.status);
   }
 
   /**
@@ -352,7 +376,7 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
       vb.isRequired("index", index, "'index' is required");
     }
 
-    if (ActionStatus.IN_QUEUE.equals(status)) {
+    if (hasGsi1()) {
       vb.isRequired("queueId", queueId);
     }
 
@@ -369,7 +393,7 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
     vb.isNotNull("type", type);
     vb.isNotNull("index", index);
 
-    if (ActionStatus.IN_QUEUE.equals(status)) {
+    if (hasGsi1()) {
       vb.isNotNull("queueId", queueId);
     }
 

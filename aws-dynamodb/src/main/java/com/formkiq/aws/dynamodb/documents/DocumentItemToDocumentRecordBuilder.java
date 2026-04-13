@@ -56,12 +56,13 @@ public class DocumentItemToDocumentRecordBuilder
     ValidationChecks.checkNotNull("documentId", item.getDocumentId());
 
     return DocumentRecord.builder().parentDocumentId(parentDocumentId)
-        .documentId(item.getDocumentId()).belongsToDocumentId(item.getBelongsToDocumentId())
-        .path(item.getPath()).deepLinkPath(item.getDeepLinkPath())
-        .contentType(item.getContentType()).contentLength(item.getContentLength())
-        .checksum(item.getChecksum()).checksumType(item.getChecksumType())
-        .s3version(item.getS3version()).userId(item.getUserId()).version(item.getVersion())
-        .width(item.getWidth()).height(item.getHeight()).timeToLive(item.getTimeToLive())
+        .documentId(item.getDocumentId()).artifactId(item.getArtifactId())
+        .belongsToDocumentId(item.getBelongsToDocumentId()).path(item.getPath())
+        .deepLinkPath(item.getDeepLinkPath()).contentType(item.getContentType())
+        .contentLength(item.getContentLength()).checksum(item.getChecksum())
+        .checksumType(item.getChecksumType()).s3version(item.getS3version())
+        .userId(item.getUserId()).version(item.getVersion()).width(item.getWidth())
+        .height(item.getHeight()).timeToLive(item.getTimeToLive())
         .insertedDate(item.getInsertedDate()).lastModifiedDate(item.getLastModifiedDate())
         .metadata(item.getMetadata());
   }

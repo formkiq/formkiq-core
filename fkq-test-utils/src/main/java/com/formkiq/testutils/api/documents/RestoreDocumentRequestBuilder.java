@@ -29,18 +29,28 @@ import com.formkiq.client.model.SetDocumentRestoreResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
-/**
- * Builder for Restore Document Request.
- *
- * @param documentId {@link String}.
- */
-public record RestoreDocumentRequestBuilder(
-    String documentId) implements HttpRequestBuilder<SetDocumentRestoreResponse> {
+/** Builder for Restore Document Request. */
+public class RestoreDocumentRequestBuilder
+    implements HttpRequestBuilder<SetDocumentRestoreResponse> {
+
+  /** Document Id. */
+  private final String id;
+  /** Artifact Id. */
+  private String artifactId;
+
+  public RestoreDocumentRequestBuilder(final String documentId) {
+    this.id = documentId;
+  }
+
+  public RestoreDocumentRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
 
   @Override
   public ApiHttpResponse<SetDocumentRestoreResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
-        () -> new DocumentsApi(apiClient).setDocumentRestore(this.documentId, siteId));
+        () -> new DocumentsApi(apiClient).setDocumentRestore(this.id, siteId, this.artifactId));
   }
 }

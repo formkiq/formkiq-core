@@ -24,8 +24,11 @@
 package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -46,7 +49,8 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  *
  */
 @Reflectable
-public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttributeRecord>, DbKeys {
+public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAttributeRecord>,
+    DynamodbRecord<DocumentAttributeRecord>, DbKeys {
 
   /** Attribute constant. */
   public static final String ATTR = "attr#";
@@ -56,6 +60,8 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   private Boolean booleanValue;
   /** Attribute Document Id. */
   private String documentId;
+  /** Artifact Id. */
+  private String artifactId;
   /** Key of Attribute. */
   private String key;
   /** Number value. */
@@ -123,16 +129,9 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
 
     Map<String, AttributeValue> map = new HashMap<>(getDataAttributes());
 
-    map.put(DbKeys.PK, fromS(pk(siteId)));
-    map.put(DbKeys.SK, fromS(sk()));
-    map.put(DbKeys.GSI1_PK, fromS(pkGsi1(siteId)));
-    map.put(DbKeys.GSI1_SK, fromS(skGsi1()));
-
-    String pkGsi2 = pkGsi2(siteId);
-    if (!isEmpty(pkGsi2)) {
-      map.put(DbKeys.GSI2_PK, fromS(pkGsi2(siteId)));
-      map.put(DbKeys.GSI2_SK, fromS(skGsi2()));
-    }
+    DynamoDbKey dbKey = buildKey(siteId);
+    Map<String, AttributeValue> keyMap = dbKey.getAttributesBuilder().build();
+    map.putAll(keyMap);
 
     return map;
   }
@@ -145,6 +144,10 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     map.put("valueType", fromS(this.valueType.name()));
     map.put("documentId", fromS(this.documentId));
     map.put("userId", fromS(this.userId));
+
+    if (this.artifactId != null) {
+      map.put("artifactId", fromS(this.artifactId));
+    }
 
     if (this.booleanValue != null) {
       map.put("booleanValue", AttributeValue.fromBool(this.booleanValue));
@@ -174,7 +177,8 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     if (!attrs.isEmpty()) {
 
       record = new DocumentAttributeRecord().setUserId(ss(attrs, "userId"))
-          .setDocumentId(ss(attrs, "documentId")).setKey(ss(attrs, "key"))
+          .setDocument(DocumentArtifact.of(ss(attrs, "documentId"), ss(attrs, "artifactId")))
+          .setKey(ss(attrs, "key"))
           .setValueType(DocumentAttributeValueType.valueOf(ss(attrs, "valueType")));
 
       if (attrs.containsKey("stringValue")) {
@@ -233,6 +237,9 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     }
 
     String sk = ATTR + this.key + "#";
+    if (artifactId != null) {
+      sk = "attr_art#" + artifactId + "#" + this.key + "#";
+    }
 
     sk = getSkValue(sk);
 
@@ -323,13 +330,23 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
   }
 
   /**
-   * Set Document Id.
+   * Get Artifact Id.
    *
-   * @param document {@link String}
+   * @return {@link String}
+   */
+  public String getArtifactId() {
+    return this.artifactId;
+  }
+
+  /**
+   * Set {@link DocumentArtifact}.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
    * @return {@link DocumentAttributeRecord}
    */
-  public DocumentAttributeRecord setDocumentId(final String document) {
-    this.documentId = document;
+  public DocumentAttributeRecord setDocument(final DocumentArtifact documentArtifact) {
+    this.documentId = documentArtifact.documentId();
+    this.artifactId = documentArtifact.artifactId();
     return this;
   }
 
@@ -441,6 +458,37 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     return new Builder();
   }
 
+  @Override
+  public DocumentAttributeRecord build(final DynamoDbKey dbKey) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocumentAttributeRecord build(final String siteId) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DynamoDbKey buildKey(final String siteId) {
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+
+    if (this.key == null) {
+      throw new IllegalArgumentException("'key' is required");
+    }
+
+    var dbKey = DynamoDbKey.builder().pk(siteId, PREFIX_DOCS + this.documentId).sk(sk())
+        .gsi1Pk(siteId, PREFIX_DOCS + ATTR + this.key).gsi1Sk(skGsi1());
+
+    String pkGsi2 = pkGsi2(siteId);
+    if (!isEmpty(pkGsi2)) {
+      dbKey.gsi2Pk(siteId, PREFIX_DOCS + this.documentId).gsi2Sk(skGsi2());
+    }
+
+    return dbKey.build();
+  }
+
   public static class Builder {
     /** User Id. */
     private String userId;
@@ -450,6 +498,8 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     private String key;
     /** Document Id. */
     private String documentId;
+    /** Artifact Id. */
+    private String artifactId;
     /** String Value. */
     private String stringValue;
     /** Boolean Value. */
@@ -480,7 +530,7 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
       r.setUserId(userId);
       r.setValueType(valueType);
       r.setKey(key);
-      r.setDocumentId(documentId);
+      r.setDocument(DocumentArtifact.of(documentId, artifactId));
       r.setStringValue(stringValue);
       r.setBooleanValue(booleanValue);
       r.setNumberValue(numberValue);
@@ -489,13 +539,14 @@ public class DocumentAttributeRecord implements DynamodbRecord<DocumentAttribute
     }
 
     /**
-     * Set Document Id.
+     * Set {@link DocumentArtifact}.
      * 
      * @param attributeDocumentId {@link String}
      * @return Builder
      */
-    public Builder documentId(final String attributeDocumentId) {
-      this.documentId = attributeDocumentId;
+    public Builder document(final DocumentArtifact attributeDocumentId) {
+      this.documentId = attributeDocumentId.documentId();
+      this.artifactId = attributeDocumentId.artifactId();
       return this;
     }
 

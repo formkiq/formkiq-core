@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -78,7 +79,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       assertEquals("{\"message\":\"Folder moved\"}", m.get("body"));
 
       assertEquals("a/b/c/test.pdf",
-          getDocumentService().findDocument(siteId, documentId).getPath());
+          getDocumentService().findDocument(siteId, DocumentArtifact.of(documentId, null)).path());
     }
   }
 
@@ -208,7 +209,8 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
         assertCorsHeaders((Map<String, Object>) m.get("headers"));
         assertEquals("{\"message\":\"Folder moved\"}", m.get("body"));
 
-        assertEquals("test.pdf", getDocumentService().findDocument(siteId, documentId).getPath());
+        assertEquals("test.pdf", getDocumentService()
+            .findDocument(siteId, DocumentArtifact.of(documentId, null)).path());
       }
     }
   }

@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbGet;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.validation.ValidationBuilder;
 
 import java.util.ArrayList;
@@ -79,8 +80,8 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
 
     this.documents.forEach(documentId -> {
 
-      DocumentAttributeRecord r =
-          new DocumentAttributeRecord().setDocumentId(documentId).setKey(attributeKey);
+      DocumentAttributeRecord r = new DocumentAttributeRecord()
+          .setDocument(DocumentArtifact.of(documentId, null)).setKey(attributeKey);
 
       if (value instanceof String s) {
         r.setStringValue(s);

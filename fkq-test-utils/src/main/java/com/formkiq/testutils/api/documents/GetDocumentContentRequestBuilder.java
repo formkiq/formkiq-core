@@ -37,6 +37,8 @@ public class GetDocumentContentRequestBuilder
 
   /** {@link String}. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
   /** Version Key. */
   private String versionKey;
 
@@ -49,11 +51,16 @@ public class GetDocumentContentRequestBuilder
     this.document = documentId;
   }
 
+  public GetDocumentContentRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(this.document,
-        siteId, this.versionKey, null));
+        siteId, this.artifactId, this.versionKey, null));
   }
 
   /**

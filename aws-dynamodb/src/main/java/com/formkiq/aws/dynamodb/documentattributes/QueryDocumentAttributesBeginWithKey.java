@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 /**
@@ -33,25 +34,26 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 public class QueryDocumentAttributesBeginWithKey implements DynamoDbQuery {
 
   /** Document Id. */
-  private final String document;
+  private final DocumentArtifact document;
   /** Attribute Key. */
   private final String key;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param attributeKey {@link String}
    */
-  public QueryDocumentAttributesBeginWithKey(final String documentId, final String attributeKey) {
-    this.document = documentId;
+  public QueryDocumentAttributesBeginWithKey(final DocumentArtifact documentArtifact,
+      final String attributeKey) {
+    this.document = documentArtifact;
     this.key = attributeKey;
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
-    DocumentAttributeRecord r = new DocumentAttributeRecord().setKey(key).setDocumentId(document)
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setKey(key).setDocument(document)
         .setValueType(DocumentAttributeValueType.KEY_ONLY);
     String pk = r.pk(siteId);
     String sk = DocumentAttributeRecord.ATTR + this.key;

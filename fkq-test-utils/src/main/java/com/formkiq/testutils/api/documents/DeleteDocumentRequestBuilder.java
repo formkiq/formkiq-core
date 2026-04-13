@@ -36,6 +36,8 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
 
   /** {@link String}. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
   /** Soft Delete. */
   private Boolean softDelete;
 
@@ -46,6 +48,11 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
    */
   public DeleteDocumentRequestBuilder(final String documentId) {
     this.id = documentId;
+  }
+
+  public DeleteDocumentRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
   }
 
   /**
@@ -61,7 +68,7 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
 
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).deleteDocument(this.id, siteId, softDelete));
+    return executeApiCall(() -> new DocumentsApi(apiClient).deleteDocument(this.id, siteId,
+        this.artifactId, softDelete));
   }
 }

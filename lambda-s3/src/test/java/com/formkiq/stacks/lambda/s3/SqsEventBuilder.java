@@ -44,6 +44,19 @@ public class SqsEventBuilder {
     private String siteId;
     /** Document Id. */
     private String documentId;
+    /** Artifact Id. */
+    private String artifactId;
+
+    /**
+     * Sets the eventArtifactId to include in the SNS message.
+     *
+     * @param eventArtifactId {@link String}
+     * @return Builder
+     */
+    public Builder artifactId(final String eventArtifactId) {
+      this.artifactId = eventArtifactId;
+      return this;
+    }
 
     /**
      * Builds and returns the event payload as a Map.
@@ -97,6 +110,9 @@ public class SqsEventBuilder {
   /** Document Id. */
   private final String documentId;
 
+  /** Artifact Id. */
+  private final String artifactId;
+
   /**
    * constructor.
    * 
@@ -105,6 +121,7 @@ public class SqsEventBuilder {
   private SqsEventBuilder(final Builder b) {
     this.siteId = b.siteId;
     this.documentId = b.documentId;
+    this.artifactId = b.artifactId;
   }
 
   /**
@@ -130,6 +147,7 @@ public class SqsEventBuilder {
     Map<String, String> inner = new LinkedHashMap<>();
     inner.put("siteId", siteId);
     inner.put("documentId", documentId);
+    inner.put("artifactId", artifactId);
     inner.put("type", "actions");
     sns.put("Message", GSON.toJson(inner));
 

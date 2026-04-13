@@ -47,6 +47,17 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
   }
 
   /**
+   * Set Artifacts.
+   *
+   * @param createArtifacts boolean
+   * @return AddDocumentUploadRequestBuilder
+   */
+  public AddDocumentUploadRequestBuilder artifacts(final boolean createArtifacts) {
+    this.request.setArtifacts(Boolean.valueOf(createArtifacts));
+    return this;
+  }
+
+  /**
    * Set Document content type.
    * 
    * @param contentType {@link String}

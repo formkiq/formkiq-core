@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
@@ -259,8 +260,8 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // given
       Date insertedDate = Date.from(Instant.now().plus(20, ChronoUnit.DAYS));
 
-      DocumentRecord document =
-          new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentId);
+      DocumentRecord document = new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId,
+          new DocumentArtifact(documentId, null));
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(insertedDate).lastModifiedDate(new Date()).build(siteId);
       // document = new DocumentRecord(document.key(), documentId, insertedDate, new Date());
@@ -325,8 +326,8 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // given
       Date lastModifiedDate = Date.from(Instant.now().plus(20, ChronoUnit.DAYS));
 
-      DocumentRecord document =
-          new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentId);
+      DocumentRecord document = new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId,
+          new DocumentArtifact(documentId, null));
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(new Date()).lastModifiedDate(lastModifiedDate).build(siteId);
       // document = new DocumentRecord(document.key(), documentId, new Date(), lastModifiedDate);

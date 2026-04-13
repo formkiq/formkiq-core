@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -53,6 +54,9 @@ public class DocumentAttributesValueRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     String attributeKey = event.getPathParameter("attributeKey");
     String attributeValue = event.getPathParameter("attributeValue");
 
@@ -60,7 +64,7 @@ public class DocumentAttributesValueRequestHandler
         getAttributeValidationAccessDelete(authorization, siteId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    if (!documentService.deleteDocumentAttributeValue(siteId, documentId, attributeKey,
+    if (!documentService.deleteDocumentAttributeValue(siteId, document, attributeKey,
         attributeValue, validationAccess)) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");

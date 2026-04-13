@@ -36,6 +36,8 @@ public class DeleteDocumentAttributeRequestBuilder implements HttpRequestBuilder
 
   /** {@link String}. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
   /** Attribute Key. */
   private final String key;
 
@@ -50,9 +52,14 @@ public class DeleteDocumentAttributeRequestBuilder implements HttpRequestBuilder
     this.key = attributeKey;
   }
 
+  public DeleteDocumentAttributeRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentAttributesApi(apiClient).deleteDocumentAttribute(this.id, key, siteId));
+    return executeApiCall(() -> new DocumentAttributesApi(apiClient)
+        .deleteDocumentAttribute(this.id, key, siteId, this.artifactId));
   }
 }

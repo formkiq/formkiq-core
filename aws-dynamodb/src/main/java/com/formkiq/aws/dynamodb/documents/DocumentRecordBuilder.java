@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.removeQuotes;
 import static com.formkiq.strings.Strings.isEmpty;
@@ -53,6 +54,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private String documentId;
   /** Belongs To Document Id. */
   private String belongsToDocumentId;
+  /** Artifact Id. */
+  private String artifactId;
   /** Document Path. */
   private String path;
   /** Deep Link Path. */
@@ -91,6 +94,17 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private DocumentRecord defaultValues;
 
   /**
+   * Set Artifact Id.
+   *
+   * @param id {@link String}
+   * @return {@link DocumentRecordBuilder}
+   */
+  public DocumentRecordBuilder artifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
+  /**
    * Set Belongs To Document Id.
    *
    * @param id {@link String}
@@ -112,13 +126,13 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         defaultValues != null ? defaultValues.getAttributes() : Collections.emptyMap();
 
     String cs = ps(checksum, prev, "checksum");
-    return new DocumentRecord(key, documentId, ps(belongsToDocumentId, prev, "belongsToDocumentId"),
-        ps(path, prev, "path"), deepLinkPath, ps(contentType, prev, "contentType"),
-        ps(contentLength, prev, "contentLength"), cs != null ? removeQuotes(cs) : null,
-        ps(checksumType, prev, "checksumType"), ps(s3version, prev, "s3version"),
-        ps(userId, prev, "userId"), ps(version, prev, "version"), ps(width, prev, "width"),
-        ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"), insertedDate,
-        lastModifiedDate, documentMetadata);
+    return new DocumentRecord(key, documentId, ps(artifactId, prev, "artifactId"),
+        ps(belongsToDocumentId, prev, "belongsToDocumentId"), ps(path, prev, "path"), deepLinkPath,
+        ps(contentType, prev, "contentType"), ps(contentLength, prev, "contentLength"),
+        cs != null ? removeQuotes(cs) : null, ps(checksumType, prev, "checksumType"),
+        ps(s3version, prev, "s3version"), ps(userId, prev, "userId"), ps(version, prev, "version"),
+        ps(width, prev, "width"), ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"),
+        insertedDate, lastModifiedDate, documentMetadata);
   }
 
   @Override
@@ -135,6 +149,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
    * <ul>
    * <li>PK: {@code document#<documentId>}</li>
    * <li>SK: {@code document}</li>
+   * <li>SK for artifacts: {@code document#art#<artifactId>}</li>
    * </ul>
    *
    * If your existing schema differs (e.g., uses {@code documents#} or has GSIs), adjust
@@ -148,7 +163,17 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
     String pk =
         parentDocumentId != null ? PREFIX_DOCS + parentDocumentId : PREFIX_DOCS + documentId;
-    String sk = parentDocumentId != null ? "document" + TAG_DELIMINATOR + documentId : "document";
+    String sk;
+    if (parentDocumentId != null && !isEmpty(this.artifactId)) {
+      sk = "document" + TAG_DELIMINATOR + documentId + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR
+          + this.artifactId;
+    } else if (!isEmpty(this.artifactId)) {
+      sk = "document" + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR + this.artifactId;
+    } else if (parentDocumentId != null) {
+      sk = "document" + TAG_DELIMINATOR + documentId;
+    } else {
+      sk = "document";
+    }
 
     DynamoDbKey.Builder builder = DynamoDbKey.builder().pk(siteId, pk).sk(sk);
 
@@ -164,6 +189,21 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     }
 
     return builder.build();
+  }
+
+  /**
+   * Build Soft Delete Key.
+   * 
+   * @param siteId {@link String}
+   * @return {@link DynamoDbKey}
+   */
+  public DynamoDbKey buildSoftDeleteKey(final String siteId) {
+    Objects.requireNonNull(documentId, "documentId must not be null");
+    String pk = SOFT_DELETE + PREFIX_DOCS;
+    String sk = artifactId != null
+        ? "softdelete#document" + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR + this.artifactId
+        : "softdelete#document#" + documentId;
+    return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
   }
 
   public DocumentRecordBuilder checksum(final String cs) {
@@ -188,6 +228,18 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
   public DocumentRecordBuilder deepLinkPath(final String dl) {
     this.deepLinkPath = dl;
+    return this;
+  }
+
+  /**
+   * Add {@link DocumentArtifact}.
+   * 
+   * @param document {@link DocumentArtifact}
+   * @return DocumentRecordBuilder
+   */
+  public DocumentRecordBuilder document(final DocumentArtifact document) {
+    this.documentId = document.documentId();
+    this.artifactId = document.artifactId();
     return this;
   }
 

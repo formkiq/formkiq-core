@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,7 +68,8 @@ public class AddEntityAttributeToRecordTransformer
 
   private DocumentAttributeRecord.Builder convert(final AddEntityAttribute attr) {
     String username = ApiAuthorization.getAuthorization().getUsername();
-    return DocumentAttributeRecord.builder().key(attr.key()).userId(username);
+    DocumentArtifact document = DocumentArtifact.of("", null);
+    return DocumentAttributeRecord.builder().key(attr.key()).userId(username).document(document);
   }
 
   private DocumentAttributeRecord convert(final AddEntityAttribute attr,

@@ -106,7 +106,7 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
     String actionTags = "organization,location,person,subject,sentiment,document type";
 
     // when
-    api.addDocumentActions(documentId, null,
+    api.addDocumentActions(documentId, null, null,
         new AddDocumentActionsRequest()
             .actions(Arrays.asList(new AddAction().type(DocumentActionType.OCR),
                 new AddAction().type(DocumentActionType.DOCUMENTTAGGING).parameters(
@@ -118,12 +118,12 @@ public class ChatGptRequestTest extends AbstractAwsIntegrationTest {
     DocumentTagsApi tagsApi = new DocumentTagsApi(client);
 
     List<DocumentTag> tags1 =
-        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
+        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null, null).getTags());
     assertFalse(tags1.isEmpty());
 
     waitForDocumentTag(client, null, documentId, "organization");
     List<DocumentTag> tags =
-        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
+        notNull(tagsApi.getDocumentTags(documentId, null, null, null, null, null, null).getTags());
 
     assertTrue(tags.stream().filter(r -> "untagged".equals(r.getKey())).findFirst().isEmpty());
 

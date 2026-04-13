@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
@@ -65,6 +66,8 @@ public class DocumentAttributeRequestHandler
       final String tableName, final DocumentRecord document,
       final DocumentAttributeRecordToMap toMap) {
 
+    final DocumentArtifact documentArtifact =
+        DocumentArtifact.of(document.documentId(), document.artifactId());
     Collection<Map<String, Object>> map = Collections.emptyList();
 
     var attribute = AttributeKeyReserved.find(attributeKey);
@@ -76,9 +79,10 @@ public class DocumentAttributeRequestHandler
         var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey);
         if (derivedAttribute.isPresent()) {
 
+
           var documentAttributes =
-              new QueryDocumentAttributesByKey(documentId, presetEntity.get().getName()).query(db,
-                  tableName, siteId, null, 1);
+              new QueryDocumentAttributesByKey(documentArtifact, presetEntity.get().getName())
+                  .query(db, tableName, siteId, null, 1);
 
           if (!documentAttributes.items().isEmpty()) {
 
@@ -119,13 +123,15 @@ public class DocumentAttributeRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
     String attributeKey = event.getPathParameter("attributeKey");
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccessDelete(authorization, siteId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    if (documentService.deleteDocumentAttribute(siteId, documentId, attributeKey,
+    if (documentService.deleteDocumentAttribute(siteId, document, attributeKey,
         AttributeValidationType.FULL, validationAccess).isEmpty()) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
@@ -140,16 +146,19 @@ public class DocumentAttributeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact documentArtifact = new DocumentArtifact(documentId, artifactId);
+
     String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
-    DocumentRecord document = verifyDocument(awsservice, siteId, documentId);
+    DocumentRecord document = verifyDocument(awsservice, siteId, documentId, artifactId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     List<DocumentAttributeRecord> list =
-        documentService.findDocumentAttribute(siteId, documentId, attributeKey);
+        documentService.findDocumentAttribute(siteId, documentArtifact, attributeKey);
 
     var toMap = new DocumentAttributeRecordToMap(true, true, db, tableName, document);
     Collection<Map<String, Object>> map = toMap.apply(siteId, list);
@@ -207,10 +216,13 @@ public class DocumentAttributeRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, documentId, artifactId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
@@ -221,7 +233,7 @@ public class DocumentAttributeRequestHandler
         getAttributeValidationAccess(authorization, siteId);
 
     AttributeValidationType type = getValidationType(documentAttributes);
-    documentService.saveDocumentAttributes(siteId, documentId, documentAttributes, type,
+    documentService.saveDocumentAttributes(siteId, document, documentAttributes, type,
         validationAccess);
 
     return ApiRequestHandlerResponse.builder().ok().body("message",
@@ -229,12 +241,13 @@ public class DocumentAttributeRequestHandler
   }
 
   private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) {
+      final String documentId, final String artifactId) {
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
-    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentId);
+    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId,
+        new DocumentArtifact(documentId, artifactId));
     if (document == null) {
       throw new DocumentNotFoundException(documentId);
     }

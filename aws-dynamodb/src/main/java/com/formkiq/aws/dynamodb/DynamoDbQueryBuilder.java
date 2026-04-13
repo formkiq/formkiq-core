@@ -212,6 +212,20 @@ public class DynamoDbQueryBuilder implements DbKeys {
   }
 
   /**
+   * Set Query results limit.
+   *
+   * @param resultsLimit int
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder limit(final Integer resultsLimit) {
+    if (resultsLimit != null) {
+      this.limit = resultsLimit;
+    }
+
+    return this;
+  }
+
+  /**
    * Set Start Key from Next token.
    *
    * @param s {@link String}
@@ -231,17 +245,6 @@ public class DynamoDbQueryBuilder implements DbKeys {
       this.limit = MAX_RESULTS;
     }
 
-    return this;
-  }
-
-  /**
-   * Set Query results limit.
-   *
-   * @param resultsLimit int
-   * @return this builder
-   */
-  public DynamoDbQueryBuilder limit(final int resultsLimit) {
-    this.limit = resultsLimit;
     return this;
   }
 

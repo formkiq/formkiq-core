@@ -112,7 +112,18 @@ public class DynamicObject extends HashMap<String, Object> {
    * @return {@link Long}
    */
   public Long getLong(final String key) {
-    return (Long) getOrDefault(key, null);
+    Object obj = getOrDefault(key, null);
+    Long value = null;
+
+    if (obj instanceof Long l) {
+      value = l;
+    } else if (obj instanceof Number n) {
+      value = Long.valueOf(n.longValue());
+    } else if (obj != null) {
+      value = Long.valueOf(obj.toString());
+    }
+
+    return value;
   }
 
   /**

@@ -26,6 +26,7 @@ package com.formkiq.stacks.lambda.s3;
 import java.io.IOException;
 import java.util.List;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ValidationException;
@@ -42,13 +43,13 @@ public interface DocumentAction {
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param actions {@link List} {@link Action}
    * @param action {@link Action}
    * @return ProcessActionStatus
    * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
-  ProcessActionStatus run(Logger logger, String siteId, String documentId, List<Action> actions,
-      Action action) throws IOException, ValidationException;
+  ProcessActionStatus run(Logger logger, String siteId, DocumentArtifact document,
+      List<Action> actions, Action action) throws IOException, ValidationException;
 }

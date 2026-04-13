@@ -32,6 +32,7 @@ import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION
 import java.io.IOException;
 import java.util.List;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -72,8 +73,9 @@ public class NotificationAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException {
 
     String cc = (String) action.parameters().get(PARAMETER_NOTIFICATION_TO_CC);
     String bcc = (String) action.parameters().get(PARAMETER_NOTIFICATION_TO_BCC);

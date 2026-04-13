@@ -39,6 +39,8 @@ import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -98,6 +100,8 @@ public class DocumentIdRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     awsservice.getLogger()
         .debug("deleting object " + documentId + " from bucket '" + documentBucket + "'");
@@ -111,7 +115,7 @@ public class DocumentIdRequestHandler
       if (!softDelete) {
         S3Service s3Service = awsservice.getExtension(S3Service.class);
 
-        String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+        String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, artifactId);
         S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
 
         if (md.isObjectExists()) {
@@ -119,13 +123,13 @@ public class DocumentIdRequestHandler
         }
       }
 
-      if (!service.deleteDocument(siteId, documentId, softDelete)) {
+      if (!service.deleteDocument(siteId, document, softDelete)) {
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
       if (softDelete) {
         DocumentEvent docEve = new DocumentEvent().siteId(getSiteIdName(siteId))
-            .documentId(documentId).type(SOFT_DELETE);
+            .documentId(documentId).artifactId(artifactId).type(SOFT_DELETE);
         EventService documentEventService = awsservice.getExtension(EventService.class);
         documentEventService.publish(awsservice.getLogger(), docEve);
       }
@@ -155,11 +159,14 @@ public class DocumentIdRequestHandler
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     ApiPagination pagination = getPagination(cacheService, event);
     String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     Pagination<DocumentItem> presult =
-        documentService.findDocument(siteId, documentId, true, nextToken, limit);
+        documentService.findDocument(siteId, document, true, nextToken, limit);
 
     DocumentItem item =
         !notNull(presult.getResults()).isEmpty() ? presult.getResults().get(0) : null;
@@ -212,12 +219,14 @@ public class DocumentIdRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
     request.setDocumentId(documentId);
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
-    DocumentItem existingItem = docService.findDocument(siteId, documentId);
+    DocumentRecord existingItem = docService.findDocument(siteId, document);
     if (existingItem == null) {
       throw new DocumentNotFoundException(documentId);
     }
@@ -227,7 +236,7 @@ public class DocumentIdRequestHandler
             .apply(request);
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
-    validatePatch(awsservice, config, siteId, documentId, item, request);
+    validatePatch(awsservice, config, siteId, document, item, request);
 
     awsservice.getLogger()
         .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
@@ -248,7 +257,7 @@ public class DocumentIdRequestHandler
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
             Optional.empty());
 
-    Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request);
+    Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request, item);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
@@ -258,7 +267,7 @@ public class DocumentIdRequestHandler
     if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =
           awsservice.getExtension(ActionsNotificationService.class);
-      notificationService.publishNextActionEvent(siteId, documentId);
+      notificationService.publishNextActionEvent(siteId, documentId, artifactId);
     }
 
     uploadUrls.put("siteId", siteId);
@@ -271,21 +280,21 @@ public class DocumentIdRequestHandler
    * @param awsservice {@link AwsServiceCache}
    * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param doc {@link DocumentItem}
    * @param request {@link AddDocumentRequest}
    * @throws Exception Exception
    */
   private void validatePatch(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final String documentId, final DocumentItem doc,
+      final String siteId, final DocumentArtifact document, final DocumentItem doc,
       final AddDocumentRequest request) throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = docService.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    DocumentRecord item = docService.findDocument(siteId, document);
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
 
     Collection<DocumentMetadata> metadata =
-        item.getMetadata() != null ? new ArrayList<>(item.getMetadata()) : new ArrayList<>();
+        item.metadata() != null ? new ArrayList<>(item.metadata()) : new ArrayList<>();
     if (doc.getMetadata() != null) {
       metadata.addAll(doc.getMetadata());
     }
@@ -296,7 +305,7 @@ public class DocumentIdRequestHandler
 
     this.documentValidator.validateContentType(config, request.getContentType(), vb);
 
-    boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.getDeepLinkPath());
+    boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.deepLinkPath());
     boolean emptyContent = isEmpty(request.getContent());
 
     if (!emptyDeepLink && !emptyContent) {

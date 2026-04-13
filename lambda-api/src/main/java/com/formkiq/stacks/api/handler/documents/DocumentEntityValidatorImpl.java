@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
@@ -86,11 +88,12 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
       final Collection<ValidationError> errors) {
 
     initActionsValidator(awsservice);
+    DocumentArtifact document =
+        DocumentArtifact.of(item.getDocumentId(), item.isArtifacts() ? ID.ulid() : null);
 
     List<Action> actions = notNull(item.getActions()).stream()
         .map(a -> new ActionBuilder().action(a).status(ActionStatus.PENDING)
-            .userId(authorization.getUsername()).documentId(item.getDocumentId()).indexUlid()
-            .build(siteId))
+            .userId(authorization.getUsername()).document(document).indexUlid().build(siteId))
         .toList();
 
     if (!actions.isEmpty()) {

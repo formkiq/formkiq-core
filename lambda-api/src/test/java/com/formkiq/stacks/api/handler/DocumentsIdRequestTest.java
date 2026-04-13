@@ -27,9 +27,11 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -41,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -69,6 +72,13 @@ import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,12 +105,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
   }
 
-  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest req)
-      throws ApiException {
+  private DocumentArtifact addDocumentUpload(final String siteId,
+      final AddDocumentUploadRequest req) throws ApiException {
     GetDocumentUrlResponse response =
         this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
     assertNotNull(response.getDocumentId());
-    return response.getDocumentId();
+    return DocumentArtifact.of(response.getDocumentId(), response.getArtifactId());
   }
 
   @BeforeEach
@@ -133,6 +143,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
             .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
     this.schemasApi.setSitesSchema(siteId, sitesSchema);
+  }
+
+  private ApiHttpResponse<GetDocumentResponse> getDocument(final String siteId,
+      final String documentId, final String artifactId) {
+    return new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId).submit(client,
+        siteId);
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
@@ -180,6 +196,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
   }
 
+
   /**
    * DELETE /documents/{documentId} request.
    *
@@ -193,10 +210,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
+          Boolean.FALSE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -206,7 +224,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, documents.size());
     }
   }
-
 
   /**
    * DELETE /documents/{documentId} deeplink document request.
@@ -222,10 +239,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
+          Boolean.FALSE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -250,21 +268,23 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath("https://www.google.com");
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
+      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
+          Boolean.TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
-      assertEquals(documentId, softDeletedDocuments.get(0).getDocumentId());
+      assertEquals(document.documentId(), softDeletedDocuments.get(0).getDocumentId());
 
       List<Document> documents = getDocuments(siteId);
       assertEquals(0, documents.size());
 
       // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
+          Boolean.FALSE);
 
       // then
       softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -289,7 +309,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.deleteDocument(documentId, siteId, Boolean.FALSE);
+        this.documentsApi.deleteDocument(documentId, siteId, null, Boolean.FALSE);
         fail();
       } catch (ApiException e) {
         // then
@@ -299,6 +319,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
+
 
   /**
    * DELETE /documents/{documentId} soft delete with attributes.
@@ -319,12 +340,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest req0 = new AddDocumentUploadRequest().path("test.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key(attributeKey).stringValue("111")));
-      final String documentId0 = addDocumentUpload(siteId, req0);
+      final DocumentArtifact document0 = addDocumentUpload(siteId, req0);
 
       AddDocumentUploadRequest req1 = new AddDocumentUploadRequest().path("test.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key(attributeKey).stringValue("222")));
-      final String documentId1 = addDocumentUpload(siteId, req1);
+      final DocumentArtifact document1 = addDocumentUpload(siteId, req1);
 
       List<SearchResultDocument> docs = searchDocumentAttribute(siteId, attributeKey, "2");
       assertEquals(2, docs.size());
@@ -332,7 +353,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(docs.get(1).getDocumentId());
 
       // when
-      this.documentsApi.deleteDocument(documentId0, siteId, Boolean.TRUE);
+      this.documentsApi.deleteDocument(document0.documentId(), siteId, document0.artifactId(),
+          Boolean.TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -343,17 +365,16 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       docs = searchDocumentAttribute(siteId, attributeKey, "1");
       assertEquals(1, docs.size());
-      assertEquals(documentId1, docs.get(0).getDocumentId());
+      assertEquals(document1.documentId(), docs.get(0).getDocumentId());
 
       // when - restore document
-      this.documentsApi.setDocumentRestore(documentId0, siteId);
+      this.documentsApi.setDocumentRestore(document0.documentId(), siteId, document0.artifactId());
 
       // then
       docs = searchDocumentAttribute(siteId, attributeKey, "2");
       assertEquals(2, docs.size());
     }
   }
-
 
   /**
    * POST /documents request, deeplink.
@@ -378,7 +399,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNull(response.getUploadUrl());
       assertNotNull(response.getDocumentId());
       String documentId = response.getDocumentId();
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("sample.pdf", document.getPath());
       assertEquals("https://google.com/test/sample.pdf", document.getDeepLinkPath());
       assertEquals("application/pdf", document.getContentType());
@@ -423,10 +444,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath("s3://test.txt");
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
+          siteId, documentArtifact.artifactId(), null);
 
       // then
       assertEquals("s3://test.txt", document.getDeepLinkPath());
@@ -447,10 +469,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().deepLinkPath(deepLink);
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
+          siteId, documentArtifact.artifactId(), null);
 
       // then
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -472,10 +495,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String deepLink = "https://docs.google.com/document/d/sdflhsdfjeiwrwr";
       AddDocumentUploadRequest req =
           new AddDocumentUploadRequest().deepLinkPath(deepLink).path("apath.txt");
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
+          siteId, documentArtifact.artifactId(), null);
 
       // then
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -501,14 +525,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String path = ID.uuid() + ".txt";
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path(path);
-      String documentId = addDocumentUpload(siteId, req);
+      DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
-      Action action = new ActionBuilder().documentId(documentId).type(ActionType.OCR)
+      Action action = new ActionBuilder().document(documentArtifact).type(ActionType.OCR)
           .status(ActionStatus.RUNNING).indexUlid().userId("joe").build(siteId);
       as.saveNewActions(List.of(action));
 
       // when
-      this.documentsApi.deleteDocument(documentId, siteId, Boolean.TRUE);
+      this.documentsApi.deleteDocument(documentArtifact.documentId(), siteId,
+          documentArtifact.artifactId(), Boolean.TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -519,7 +544,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, documents.size());
 
       // when
-      SetDocumentRestoreResponse restore = this.documentsApi.setDocumentRestore(documentId, siteId);
+      SetDocumentRestoreResponse restore = this.documentsApi
+          .setDocumentRestore(documentArtifact.documentId(), siteId, documentArtifact.artifactId());
 
       // then
       assertEquals("document restored", restore.getMessage());
@@ -546,7 +572,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.setDocumentRestore(documentId, siteId);
+        this.documentsApi.setDocumentRestore(documentId, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -582,9 +608,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
       assertEquals(content0,
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
 
-      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null);
+      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("100", doc.getWidth());
       assertEquals("200", doc.getHeight());
 
@@ -593,13 +619,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           new UpdateDocumentRequest().content(content1).width("300").height("400");
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
       assertEquals(content1,
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
 
-      doc = this.documentsApi.getDocument(documentId, siteId, null);
+      doc = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("300", doc.getWidth());
       assertEquals("400", doc.getHeight());
     }
@@ -627,18 +653,18 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
       assertEquals(content0,
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
 
       // given
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
           .addActionsItem(new AddAction().type(DocumentActionType.FULLTEXT));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
       List<DocumentAction> actions = notNull(this.documentActionsApi
-          .getDocumentActions(documentId, siteId, null, null, null).getActions());
+          .getDocumentActions(documentId, siteId, null, null, null, null).getActions());
       assertEquals(1, actions.size());
       assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
     }
@@ -671,7 +697,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -706,7 +732,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -747,7 +773,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -788,11 +814,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
@@ -837,11 +863,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("userId").stringValue("123")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
       List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       final int expected = 5;
       int i = 0;
@@ -889,7 +915,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       AddDocumentResponse updateResponse =
-          this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+          this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
       assertNull(updateResponse.getUploadUrl());
@@ -923,7 +949,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -963,14 +989,14 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertEquals(siteId, response.getSiteId());
 
         GetDocumentResponse doc =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum0, doc.getChecksum());
         assertNotNull(doc.getPath());
         assertNotNull(doc.getDocumentId());
-        assertEquals(content0,
-            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+        assertEquals(content0, this.documentsApi
+            .getDocumentContent(documentId, siteId, null, null, null).getContent());
 
         // given
         String content1 = "new content";
@@ -979,15 +1005,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
             .contentType("text/plain").checksum(checksum1).checksumType(ChecksumType.SHA256);
 
         // when
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
         // then
-        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum1, doc.getChecksum());
-        assertEquals(content1,
-            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+        assertEquals(content1, this.documentsApi
+            .getDocumentContent(documentId, siteId, null, null, null).getContent());
       }
     }
   }
@@ -1020,14 +1046,14 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertEquals(siteId, response.getSiteId());
 
         GetDocumentResponse doc =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null);
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum0, doc.getChecksum());
         assertNotNull(doc.getPath());
         assertNotNull(doc.getDocumentId());
-        assertEquals(content0,
-            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+        assertEquals(content0, this.documentsApi
+            .getDocumentContent(documentId, siteId, null, null, null).getContent());
 
         // given
         String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
@@ -1035,7 +1061,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
             new UpdateDocumentRequest().checksum(checksum1).checksumType(ChecksumType.SHA256);
 
         // when
-        response = this.documentsApi.updateDocument(documentId, updateReq, siteId, null);
+        response = this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
         // then
         assertNotNull(response);
@@ -1049,12 +1075,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         putS3Request(response.getUploadUrl(), response.getHeaders(), content1);
 
         // then
-        doc = this.documentsApi.getDocument(documentId, siteId, null);
+        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum1, doc.getChecksum());
-        assertEquals(content1,
-            this.documentsApi.getDocumentContent(documentId, siteId, null, null).getContent());
+        assertEquals(content1, this.documentsApi
+            .getDocumentContent(documentId, siteId, null, null, null).getContent());
       }
     }
   }
@@ -1088,8 +1114,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(doc0);
       assertNotNull(doc1);
       assertNotEquals(doc0, doc1);
-      assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null).getPath());
-      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
+      assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
+      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null, null).getPath());
 
       List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(2, docs.size());
@@ -1098,10 +1124,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path);
 
       // when
-      this.documentsApi.updateDocument(doc1, updateReq, siteId, null);
+      this.documentsApi.updateDocument(doc1, updateReq, siteId, null, null);
 
       // then
-      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null).getPath());
+      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null, null).getPath());
 
       docs = search(siteId, sreq);
       assertEquals(2, docs.size());
@@ -1136,7 +1162,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNotNull(doc0);
-      assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+      assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
 
       List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(1, docs.size());
@@ -1146,14 +1172,105 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path1);
 
       // when
-      this.documentsApi.updateDocument(doc0, updateReq, siteId, null);
+      this.documentsApi.updateDocument(doc0, updateReq, siteId, null, null);
 
       // then
-      assertEquals(path1, this.documentsApi.getDocument(doc0, siteId, null).getPath());
+      assertEquals(path1, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
 
       docs = search(siteId, sreq);
       assertEquals(1, docs.size());
       assertEquals(path1, docs.get(0).getPath());
+    }
+  }
+
+  /**
+   * Update artifact document.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdateArtifactDocument() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var documentId0 =
+          new AddDocumentRequestBuilder().content("A").path("a1.txt").contentType("text/plain")
+              .submit(client, siteId).throwIfError().response().getDocumentId();
+
+      var resp = new AddDocumentRequestBuilder().documentId(documentId0).content("B")
+          .contentType("text/plain").path("b1.txt").artifacts(true).submit(client, siteId)
+          .throwIfError().response();
+
+      // when
+      new UpdateDocumentRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+          .content("BB").path("b2.txt").submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals(documentId0, resp.getDocumentId());
+
+      var doc = getDocument(siteId, documentId0, null).throwIfError().response();
+      assertEquals("a1.txt", doc.getPath());
+      assertEquals("A", new GetDocumentContentRequestBuilder(documentId0).submit(client, siteId)
+          .throwIfError().response().getContent());
+
+      doc = getDocument(siteId, documentId0, resp.getArtifactId()).throwIfError().response();
+      assertEquals("b2.txt", doc.getPath());
+      assertEquals("BB",
+          new GetDocumentContentRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+              .submit(client, siteId).throwIfError().response().getContent());
+
+      // when
+      var resp0 = new GetDocumentUrlRequestBuilder(documentId0).submit(client, siteId)
+          .throwIfError().response();
+      var resp1 = new GetDocumentUrlRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertNotNull(resp0.getUrl());
+      assertFalse(resp0.getUrl().contains("/artifacts/"));
+      assertNotNull(resp1.getUrl());
+      assertTrue(resp1.getUrl().contains("/artifacts/"));
+
+      // when
+      new DeleteDocumentRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+          .submit(client, siteId).throwIfError();
+
+      // then
+      assertNotNull(getDocument(siteId, documentId0, null).response());
+      assertNotNull(getDocument(siteId, documentId0, resp.getArtifactId()).exception());
+    }
+  }
+
+  /**
+   * Update Document with invalid artifactId.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdateWithInvalidArtifactIdReturnsNotFound() throws Exception {
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
+
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().content("updated");
+
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, ID.ulid(), null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
     }
   }
 }

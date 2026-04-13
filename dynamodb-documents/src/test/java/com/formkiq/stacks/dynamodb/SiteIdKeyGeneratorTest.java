@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getDocumentId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getS3KeyParts;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,9 +63,15 @@ public class SiteIdKeyGeneratorTest {
   public void testCreateS3Key01() {
     String siteId = ID.uuid();
     String id = ID.uuid();
-    assertEquals(id, createS3Key(null, id));
-    assertEquals(id, createS3Key(DEFAULT_SITE_ID, id));
-    assertEquals(siteId + "/" + id, createS3Key(siteId, id));
+    assertEquals(id, createS3Key(null, id, null));
+    assertEquals(id, createS3Key(DEFAULT_SITE_ID, id, null));
+    assertEquals(siteId + "/" + id, createS3Key(siteId, id, null));
+
+    String artifactId = ID.ulid();
+    assertEquals(id + "/artifacts/" + artifactId, createS3Key(null, id, artifactId));
+    assertEquals(id + "/artifacts/" + artifactId, createS3Key(DEFAULT_SITE_ID, id, artifactId));
+    assertEquals(siteId + "/" + id + "/artifacts/" + artifactId,
+        createS3Key(siteId, id, artifactId));
   }
 
   /**
@@ -75,9 +82,25 @@ public class SiteIdKeyGeneratorTest {
     String contentType = "application/pdf";
     String siteId = ID.uuid();
     String id = ID.uuid();
-    assertEquals(id + "/application/pdf", createS3Key(null, id, contentType));
-    assertEquals(id + "/application/pdf", createS3Key(DEFAULT_SITE_ID, id, contentType));
-    assertEquals(siteId + "/" + id + "/application/pdf", createS3Key(siteId, id, contentType));
+    assertEquals(id + "/artifacts/application/pdf", createS3Key(null, id, contentType));
+    assertEquals(id + "/artifacts/application/pdf", createS3Key(DEFAULT_SITE_ID, id, contentType));
+    assertEquals(siteId + "/" + id + "/artifacts/application/pdf",
+        createS3Key(siteId, id, contentType));
+  }
+
+  /**
+   * Test create S3 Key with Artifact Id.
+   */
+  @Test
+  public void testCreateS3Key03() {
+    String artifactId = ID.ulid();
+    String siteId = ID.uuid();
+    String id = ID.uuid();
+    assertEquals(id + "/" + artifactId, SiteIdKeyGenerator.createS3Key(null, id, artifactId, null));
+    assertEquals(id + "/" + artifactId,
+        SiteIdKeyGenerator.createS3Key(DEFAULT_SITE_ID, id, artifactId, null));
+    assertEquals(siteId + "/" + id + "/" + artifactId,
+        SiteIdKeyGenerator.createS3Key(siteId, id, artifactId, null));
   }
 
   /**
@@ -91,6 +114,42 @@ public class SiteIdKeyGeneratorTest {
     assertEquals(id, getDocumentId(id));
     assertEquals(id, getDocumentId(siteId + "/" + id));
     assertEquals(id, getDocumentId(DEFAULT_SITE_ID + "/" + id));
+  }
+
+  /**
+   * Test get S3 key parts.
+   */
+  @Test
+  public void testGetS3KeyParts01() {
+    String siteId = ID.uuid();
+    String documentId = ID.uuid();
+    String artifactId = ID.ulid();
+
+    SiteIdKeyGenerator.S3KeyParts parts0 = getS3KeyParts(null);
+    assertNull(parts0.siteId());
+    assertNull(parts0.documentId());
+    assertNull(parts0.artifactId());
+
+    SiteIdKeyGenerator.S3KeyParts parts1 = getS3KeyParts(createS3Key(null, documentId, null));
+    assertNull(parts1.siteId());
+    assertEquals(documentId, parts1.documentId());
+    assertNull(parts1.artifactId());
+
+    SiteIdKeyGenerator.S3KeyParts parts2 = getS3KeyParts(createS3Key(null, documentId, artifactId));
+    assertNull(parts2.siteId());
+    assertEquals(documentId, parts2.documentId());
+    assertEquals(artifactId, parts2.artifactId());
+
+    SiteIdKeyGenerator.S3KeyParts parts3 =
+        getS3KeyParts(createS3Key(siteId, documentId, artifactId));
+    assertEquals(siteId, parts3.siteId());
+    assertEquals(documentId, parts3.documentId());
+    assertEquals(artifactId, parts3.artifactId());
+
+    SiteIdKeyGenerator.S3KeyParts parts4 = getS3KeyParts(createS3Key("my", documentId, null));
+    assertEquals("my", parts4.siteId());
+    assertEquals(documentId, parts4.documentId());
+    assertNull(parts4.artifactId());
   }
 
   /**

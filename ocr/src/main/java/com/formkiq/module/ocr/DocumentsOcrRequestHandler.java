@@ -24,7 +24,8 @@
 package com.formkiq.module.ocr;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
@@ -99,11 +100,13 @@ public class DocumentsOcrRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameters().get("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    ocrService.delete(siteId, documentId);
+    ocrService.delete(siteId, document);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Deleted OCR for DocumentId '" + documentId + "'").build();
@@ -116,8 +119,10 @@ public class DocumentsOcrRequestHandler
     ApiResponseStatus status = SC_OK;
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     final boolean contentUrl = isContentUrl(event);
     final boolean textOnly = isTextOnly(event);
@@ -126,7 +131,7 @@ public class DocumentsOcrRequestHandler
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
 
-    Ocr obj = ocrService.get(siteId, documentId);
+    Ocr obj = ocrService.get(siteId, document);
 
     Map<String, Object> map = buildGetResponse(obj, documentId);
 
@@ -138,7 +143,7 @@ public class DocumentsOcrRequestHandler
 
         String jobId = obj.jobId();
 
-        List<String> s3Keys = ocrService.getOcrS3Keys(siteId, documentId, jobId);
+        List<String> s3Keys = ocrService.getOcrS3Keys(siteId, document, jobId);
         if (s3Keys.isEmpty()) {
           throw new NotFoundException("OCR results not found");
         }
@@ -284,8 +289,10 @@ public class DocumentsOcrRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     OcrRequest request = JsonToObject.fromJson(awsservice, event, OcrRequest.class);
     validate(request);
@@ -293,7 +300,7 @@ public class DocumentsOcrRequestHandler
     String userId = authorization.getUsername();
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    if (!ocrService.convert(awsservice, request, siteId, documentId, userId)) {
+    if (!ocrService.convert(awsservice, request, siteId, document, userId)) {
       throw new BadException("Maximum number of OCRs reached");
     }
 
@@ -307,8 +314,10 @@ public class DocumentsOcrRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     String userId = authorization.getUsername();
 
@@ -321,7 +330,7 @@ public class DocumentsOcrRequestHandler
     }
 
     DocumentOcrService ocrService = awsservice.getExtension(DocumentOcrService.class);
-    ocrService.set(awsservice, siteId, documentId, userId, content, contentType);
+    ocrService.set(awsservice, siteId, document, userId, content, contentType);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Set OCR for documentId '" + documentId + "'").build();
@@ -360,9 +369,9 @@ public class DocumentsOcrRequestHandler
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws Exception {
+      final DocumentArtifact document) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = ds.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    DocumentRecord item = ds.findDocument(siteId, document);
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
   }
 }

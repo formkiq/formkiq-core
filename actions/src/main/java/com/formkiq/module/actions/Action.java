@@ -39,12 +39,14 @@ import java.util.stream.Collectors;
  * Record representing an Action, with its DynamoDB key structure and metadata.
  */
 @Reflectable
-public record Action(DynamoDbKey key, String documentId, String index, ActionType type,
-    ActionStatus status, String userId, String message, String queueId, String workflowId,
-    String workflowLastStep, String workflowStepId, Map<String, String> metadata,
+public record Action(DynamoDbKey key, String documentId, String artifactId, String index,
+    ActionType type, ActionStatus status, String userId, String message, String queueId,
+    String workflowId, String workflowLastStep, String workflowStepId, Map<String, String> metadata,
     Map<String, Object> parameters, Integer retryCount, Integer maxRetries, Date insertedDate,
     Date startDate, Date completedDate) {
 
+  /** DynamoDB attribute name for artifact id. */
+  private static final String ATTR_ARTIFACT_ID = "artifactId";
   /** DynamoDB attribute name for document id. */
   private static final String ATTR_DOCUMENT_ID = "documentId";
   /** DynamoDB attribute name for type. */
@@ -105,6 +107,7 @@ public record Action(DynamoDbKey key, String documentId, String index, ActionTyp
     if (attributes != null && !attributes.isEmpty()) {
       DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
+      String artifactId = DynamoDbTypes.toString(attributes.get(ATTR_ARTIFACT_ID));
       String documentId = DynamoDbTypes.toString(attributes.get(ATTR_DOCUMENT_ID));
       String userId = DynamoDbTypes.toString(attributes.get(ATTR_USER_ID));
       String message = DynamoDbTypes.toString(attributes.get(ATTR_MESSAGE));
@@ -141,9 +144,9 @@ public record Action(DynamoDbKey key, String documentId, String index, ActionTyp
 
       String index = calculateIndex(attributes);
 
-      return new Action(key, documentId, index, type, status, userId, message, queueId, workflowId,
-          workflowLastStep, workflowStepId, metadata, parameters, retryCount, maxRetries,
-          insertedDate, startDate, completedDate);
+      return new Action(key, documentId, artifactId, index, type, status, userId, message, queueId,
+          workflowId, workflowLastStep, workflowStepId, metadata, parameters, retryCount,
+          maxRetries, insertedDate, startDate, completedDate);
     }
 
     return null;
@@ -175,7 +178,8 @@ public record Action(DynamoDbKey key, String documentId, String index, ActionTyp
    */
   public Map<String, AttributeValue> getAttributes() {
     var b = key.getAttributesBuilder().withString(ATTR_DOCUMENT_ID, documentId)
-        .withString(ATTR_USER_ID, userId).withString(ATTR_TYPE, type != null ? type.name() : null)
+        .withString(ATTR_ARTIFACT_ID, artifactId).withString(ATTR_USER_ID, userId)
+        .withString(ATTR_TYPE, type != null ? type.name() : null)
         .withString(ATTR_STATUS, status.name()).withString(ATTR_MESSAGE, message)
         .withString(ATTR_QUEUE_ID, queueId).withString(ATTR_WORKFLOW_ID, workflowId)
         .withString(ATTR_WORKFLOW_LAST_STEP, workflowLastStep)

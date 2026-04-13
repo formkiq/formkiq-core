@@ -25,6 +25,7 @@ package com.formkiq.module.actions.workflows;
 
 import com.formkiq.aws.dynamodb.WriteRequestAppender;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.DocumentWorkflowRecord;
@@ -74,14 +75,14 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
    * 
    * @param tableName {@link String}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    * @param newStatus {@link ActionStatus}
    */
   public DocumentWorkflowStatusUpdate(final String tableName, final String siteId,
-      final String documentId, final Action action, final ActionStatus newStatus) {
+      final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
     this.dynamodbTableName = tableName;
-    attributes = updateDocumentWorkflow(siteId, documentId, action, newStatus);
+    attributes = updateDocumentWorkflow(siteId, document, action, newStatus);
   }
 
   @Override
@@ -92,26 +93,26 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
   }
 
   private Map<String, AttributeValue> updateDocumentWorkflow(final String siteId,
-      final String documentId, final Action action, final ActionStatus newStatus) {
+      final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
 
     if (!isEmpty(action.workflowId()) && !isEmpty(action.workflowStepId())) {
-      return updateDocumentWorkflowStatus(siteId, documentId, action, newStatus);
+      return updateDocumentWorkflowStatus(siteId, document, action, newStatus);
     }
 
     return null;
   }
 
   private Map<String, AttributeValue> updateDocumentWorkflowStatus(final String siteId,
-      final String documentId, final Action action, final ActionStatus newStatus) {
+      final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
 
     String workflowId = action.workflowId();
     String stepId = action.workflowStepId();
 
-    DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(documentId)
+    DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(document.documentId())
         .workflowName("").workflowId(workflowId).build(siteId);
 
     DocumentWorkflowRecord.Builder dwr =
-        DocumentWorkflowRecord.builder().documentId(documentId).workflowId(workflowId)
+        DocumentWorkflowRecord.builder().documentId(document.documentId()).workflowId(workflowId)
             .currentStepId(stepId).actionPk(action.key().pk()).actionSk(action.key().sk());
 
     dwr.status(newStatus.name());

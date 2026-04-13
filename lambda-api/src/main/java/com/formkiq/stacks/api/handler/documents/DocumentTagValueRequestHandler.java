@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -53,15 +54,18 @@ public class DocumentTagValueRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     String tagKey = event.getPathParameter("tagKey");
     String tagValue = event.getPathParameter("tagValue");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = documentService.findDocument(siteId, documentId);
+    DocumentRecord item = documentService.findDocument(siteId, document);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    boolean removed = documentService.removeTag(siteId, documentId, tagKey, tagValue);
+    boolean removed = documentService.removeTag(siteId, document, tagKey, tagValue);
     if (!removed) {
       throw new NotFoundException("Tag/Value combination not found.");
     }

@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -115,14 +116,14 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
   @Override
   public boolean convert(final AwsServiceCache awsservice, final OcrRequest request,
-      final String siteId, final String documentId, final String userId) {
+      final String siteId, final DocumentArtifact document, final String userId) {
 
     boolean valid =
         isValidOcrConfiguration(awsservice.getExtension(ConfigService.class), siteId, request);
 
     if (valid) {
 
-      String s3key = createS3Key(siteId, documentId);
+      String s3key = createS3Key(siteId, document);
 
       String contentType = getS3FileContentType(this.documentsBucket, s3key);
 
@@ -136,7 +137,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
           log.trace(msg);
         }
 
-        updatePlainText(awsservice, siteId, documentId, userId, s3key, contentType);
+        updatePlainText(awsservice, siteId, document, userId, s3key, contentType);
 
       } else {
 
@@ -148,11 +149,12 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
           log.trace(msg);
         }
 
-        String jobId = convertDocument(awsservice, request, siteId, documentId, s3key,
+        String jobId = convertDocument(awsservice, request, siteId, document, s3key,
             documentS3toConvert, contentType);
 
-        Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(request))
-            .status(OcrScanStatus.REQUESTED).contentType(APPLICATION_JSON).userId(userId)
+        Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId())
+            .jobId(jobId).engine(getOcrEngine(request)).status(OcrScanStatus.REQUESTED)
+            .contentType(APPLICATION_JSON).userId(userId)
             .addPdfDetectedCharactersAsText(request.isAddPdfDetectedCharactersAsText())
             .ocrOutputType(request.getOcrOutputType());
 
@@ -169,20 +171,21 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    * @param awsservice {@link AwsServiceCache}
    * @param request {@link OcrRequest}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param s3key original s3 key
    * @param documentS3toConvert Document S3 Key to convert.
    * @param contentType {@link String}
    * @return {@link String}
    */
   protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
-      final String siteId, final String documentId, final String s3key,
+      final String siteId, final DocumentArtifact document, final String s3key,
       final String documentS3toConvert, final String contentType) {
 
     String jobId = ID.uuid();
 
-    OcrSqsMessage msg = new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(documentId)
-        .contentType(contentType).request(request);
+    OcrSqsMessage msg =
+        new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(document.documentId())
+            .artifactId(document.artifactId()).contentType(contentType).request(request);
 
     String json = this.gson.toJson(msg);
 
@@ -194,21 +197,21 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public void delete(final String siteId, final String documentId) {
+  public void delete(final String siteId, final DocumentArtifact document) {
 
-    String prefix = getS3Key(siteId, documentId, null);
+    String prefix = getS3Key(siteId, document, null);
 
     ListObjectsResponse response = this.s3.listObjects(this.ocrBucket, prefix);
     response.contents().forEach(resp -> this.s3.deleteObject(this.ocrBucket, resp.key(), null));
 
-    Map<String, AttributeValue> map = keysDocumentOcr(siteId, documentId);
+    Map<String, AttributeValue> map = keysDocumentOcr(siteId, document);
     this.db.deleteItem(map.get(PK), map.get(SK));
   }
 
   @Override
-  public Ocr get(final String siteId, final String documentId) {
+  public Ocr get(final String siteId, final DocumentArtifact document) {
 
-    Ocr ocr = new Ocr().documentId(documentId);
+    Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId());
 
     AttributeValue pk = AttributeValue.fromS(ocr.pk(siteId));
     AttributeValue sk = AttributeValue.fromS(ocr.sk());
@@ -236,10 +239,10 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public List<String> getOcrS3Keys(final String siteId, final String documentId,
+  public List<String> getOcrS3Keys(final String siteId, final DocumentArtifact document,
       final String jobId) {
 
-    String prefix = getS3Key(siteId, documentId, jobId);
+    String prefix = getS3Key(siteId, document, jobId);
 
     ListObjectsResponse list = this.s3.listObjects(this.ocrBucket, prefix);
 
@@ -262,8 +265,8 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public String getS3Key(final String siteId, final String documentId, final String jobId) {
-    return SiteIdKeyGenerator.createS3Key(siteId, documentId);
+  public String getS3Key(final String siteId, final DocumentArtifact document, final String jobId) {
+    return SiteIdKeyGenerator.createS3Key(siteId, document);
   }
 
   private boolean isValidOcrConfiguration(final ConfigService configService, final String siteId,
@@ -298,12 +301,12 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    * Document Formats Key {@link AttributeValue}.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return {@link Map}
    */
   private Map<String, AttributeValue> keysDocumentOcr(final String siteId,
-      final String documentId) {
-    Ocr ocr = new Ocr().documentId(documentId);
+      final DocumentArtifact document) {
+    Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId());
     return Map.of(PK, AttributeValue.fromS(ocr.pk(siteId)), SK, AttributeValue.fromS(ocr.sk()));
   }
 
@@ -313,23 +316,25 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
   }
 
   @Override
-  public void set(final AwsServiceCache awsservice, final String siteId, final String documentId,
-      final String userId, final String content, final String contentType) {
+  public void set(final AwsServiceCache awsservice, final String siteId,
+      final DocumentArtifact document, final String userId, final String content,
+      final String contentType) {
 
-    this.delete(siteId, documentId);
+    this.delete(siteId, document);
 
     String jobId = ID.uuid();
-    String s3Key = getS3Key(siteId, documentId, jobId);
+    String s3Key = getS3Key(siteId, document, jobId);
 
     this.s3.putObject(this.ocrBucket, s3Key, content.getBytes(StandardCharsets.UTF_8), contentType,
         null);
 
-    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.MANUAL)
-        .status(OcrScanStatus.SUCCESSFUL).contentType(contentType).userId(userId);
+    Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId())
+        .jobId(jobId).engine(OcrEngine.MANUAL).status(OcrScanStatus.SUCCESSFUL)
+        .contentType(contentType).userId(userId);
 
     save(siteId, ocr);
 
-    updateOcrScanStatus(awsservice, siteId, documentId, OcrScanStatus.SUCCESSFUL);
+    updateOcrScanStatus(awsservice, siteId, document, OcrScanStatus.SUCCESSFUL);
   }
 
   @Override
@@ -351,15 +356,15 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
   @Override
   public void updateOcrScanStatus(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final OcrScanStatus status) {
+      final DocumentArtifact document, final OcrScanStatus status) {
 
-    updateOcrScanStatus(siteId, documentId, status);
+    updateOcrScanStatus(siteId, document, status);
 
     ActionStatus actionStatus = OcrScanStatus.FAILED.equals(status) ? ActionStatus.FAILED
         : OcrScanStatus.SKIPPED.equals(status) ? ActionStatus.SKIPPED : ActionStatus.COMPLETE;
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = service.getAction(siteId, documentId, ActionStatus.RUNNING);
+    List<Action> actions = service.getAction(siteId, document, ActionStatus.RUNNING);
 
     Optional<Action> o =
         actions.stream().filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
@@ -372,14 +377,14 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
     ActionsNotificationService notificationService =
         awsservice.getExtension(ActionsNotificationService.class);
-    notificationService.publishNextActionEvent(siteId, documentId);
+    notificationService.publishNextActionEvent(siteId, document);
   }
 
   @Override
-  public void updateOcrScanStatus(final String siteId, final String documentId,
+  public void updateOcrScanStatus(final String siteId, final DocumentArtifact document,
       final OcrScanStatus status) {
 
-    Map<String, AttributeValue> pkvalues = keysDocumentOcr(siteId, documentId);
+    Map<String, AttributeValue> pkvalues = keysDocumentOcr(siteId, document);
     Map<String, AttributeValue> attributeValues =
         Map.of("ocrStatus", AttributeValue.builder().s(status.name().toLowerCase()).build());
 
@@ -391,29 +396,31 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param userId {@link String}
    * @param s3Key {@link S3Object}
    * @param contentType {@link String}
    */
   private void updatePlainText(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final String userId, final String s3Key, final String contentType) {
+      final DocumentArtifact document, final String userId, final String s3Key,
+      final String contentType) {
 
     String jobId = ID.uuid();
 
     String content = this.s3.getContentAsString(this.documentsBucket, s3Key, null);
 
-    String ocrS3Key = getS3Key(siteId, documentId, jobId);
+    String ocrS3Key = getS3Key(siteId, document, jobId);
     this.s3.putObject(this.ocrBucket, ocrS3Key, content.getBytes(StandardCharsets.UTF_8),
         contentType, null);
 
     OcrScanStatus status = OcrScanStatus.SKIPPED;
 
-    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(getOcrEngine(null))
-        .status(status).contentType(contentType).userId(userId);
+    Ocr ocr =
+        new Ocr().documentId(document.documentId()).artifactId(document.artifactId()).jobId(jobId)
+            .engine(getOcrEngine(null)).status(status).contentType(contentType).userId(userId);
 
     save(siteId, ocr);
 
-    updateOcrScanStatus(awsservice, siteId, documentId, status);
+    updateOcrScanStatus(awsservice, siteId, document, status);
   }
 }

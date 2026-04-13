@@ -71,7 +71,8 @@ public class UpdateDocumentMatchingRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    String key = createS3Key(siteId, "patch_documents_tags_" + UUID.randomUUID() + FORMKIQ_DOC_EXT);
+    String key =
+        createS3Key(siteId, "patch_documents_tags_" + UUID.randomUUID() + FORMKIQ_DOC_EXT, null);
     String stageS3Bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
 
     S3Service s3 = awsservice.getExtension(S3Service.class);

@@ -47,6 +47,8 @@ import java.util.TimeZone;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeAll;
@@ -245,7 +247,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("active", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(prefix, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -304,7 +307,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertNotNull(s.getPath());
         assertEquals("status", s.getMap("matchedTag").get("key"));
         assertEquals("active", s.getMap("matchedTag").get("value"));
-        DocumentItem i = this.service.findDocument(prefix, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -387,7 +391,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertNotNull(s.getPath());
         assertEquals("status", s.getMap("matchedTag").get("key"));
         assertEquals("notactive", s.getMap("matchedTag").get("value"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -428,7 +433,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
 
@@ -483,7 +489,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertNotNull(s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -551,7 +558,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -621,7 +629,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("thing", s.getMap("matchedTag").get("value"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
 
@@ -689,7 +698,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertNotNull(s.getInsertedDate());
         assertNotNull(s.getPath());
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
 
@@ -744,7 +754,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("category", s.getMap("matchedTag").get("key"));
         assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
         assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentItem i = this.service.findDocument(siteId, s.getDocumentId());
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
         assertNotNull(i);
       });
     }
@@ -870,7 +881,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .build();
 
       // when
-      this.service.deleteDocument(siteId, doc0.getDocumentId(), false);
+      this.service.deleteDocument(siteId, DocumentArtifact.of(doc0.getDocumentId(), null), false);
 
       // then
       results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);

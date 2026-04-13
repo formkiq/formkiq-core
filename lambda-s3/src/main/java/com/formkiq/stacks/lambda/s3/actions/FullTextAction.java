@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
@@ -90,13 +91,13 @@ public class FullTextAction implements DocumentAction {
     this.http = new SendHttpRequest(serviceCache);
   }
 
-  private void debug(final Logger logger, final String siteId, final DocumentItem item) {
+  private void debug(final Logger logger, final String siteId, final DocumentRecord item) {
     if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format(
           "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"path\": \"%s\",\"userId\": \"%s\","
               + "\"s3Version\": \"%s\",\"contentType\": \"%s\"}",
-          siteId, item.getDocumentId(), item.getPath(), item.getUserId(), item.getS3version(),
-          item.getContentType());
+          siteId, item.documentId(), item.path(), item.userId(), item.s3version(),
+          item.contentType());
 
       logger.debug(s);
     }
@@ -130,11 +131,12 @@ public class FullTextAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException {
 
     ActionStatus status = ActionStatus.PENDING;
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
+    DocumentRecord item = this.documentService.findDocument(siteId, document);
     debug(logger, siteId, item);
 
     List<String> contentUrls = this.documentContentFunc.getContentUrls(logger, siteId, item);
@@ -144,7 +146,7 @@ public class FullTextAction implements DocumentAction {
       if (this.moduleFulltext) {
 
         try {
-          updateOpensearchFulltext(siteId, documentId, contentUrls);
+          updateOpensearchFulltext(siteId, document, contentUrls);
         } catch (InterruptedException e) {
           throw new IOException(e);
         }
@@ -153,7 +155,7 @@ public class FullTextAction implements DocumentAction {
       }
 
       if (this.moduleTypesense) {
-        updateTypesense(this.documentContentFunc, siteId, documentId, action, contentUrls);
+        updateTypesense(this.documentContentFunc, siteId, document, action, contentUrls);
         status = ActionStatus.COMPLETE;
       }
 
@@ -163,7 +165,7 @@ public class FullTextAction implements DocumentAction {
 
     } else if (actions.stream().filter(a -> a.type().equals(ActionType.OCR)).findAny().isEmpty()) {
 
-      ActionBuilder ocrAction = new ActionBuilder().documentId(documentId).userId("System")
+      ActionBuilder ocrAction = new ActionBuilder().document(document).userId("System")
           .type(ActionType.OCR).parameters(Map.of("ocrEngine", "tesseract"));
       this.actionsService.insertBeforeAction(siteId, action, ocrAction);
 
@@ -178,16 +180,17 @@ public class FullTextAction implements DocumentAction {
    * Update Document Content to Opensearch.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param contentUrls {@link List} {@link String}
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
-  private void updateOpensearchFulltext(final String siteId, final String documentId,
+  private void updateOpensearchFulltext(final String siteId, final DocumentArtifact document,
       final List<String> contentUrls) throws IOException, InterruptedException {
 
     final int sleep = 500;
     Map<String, Object> payload = Map.of("contentUrls", contentUrls);
+    String documentId = document.documentId();
 
     try {
       this.http.sendRequest(siteId, "patch", "/documents/" + documentId + "/fulltext",
@@ -223,13 +226,13 @@ public class FullTextAction implements DocumentAction {
    *
    * @param dcFunc {@link DocumentContentFunction}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param action {@link Action}
    * @param contentUrls {@link List} {@link String}
    * @throws IOException IOException
    */
   private void updateTypesense(final DocumentContentFunction dcFunc, final String siteId,
-      final String documentId, final Action action, final List<String> contentUrls)
+      final DocumentArtifact documentArtifact, final Action action, final List<String> contentUrls)
       throws IOException {
 
     try {
@@ -240,7 +243,7 @@ public class FullTextAction implements DocumentAction {
       Map<String, Object> document = new DocumentMapToDocument().apply(data);
 
       HttpResponse<String> response =
-          this.typesense.addOrUpdateDocument(siteId, documentId, document);
+          this.typesense.addOrUpdateDocument(siteId, documentArtifact.documentId(), document);
 
       if (!is2XX(response)) {
         throw new IOException(response.body());

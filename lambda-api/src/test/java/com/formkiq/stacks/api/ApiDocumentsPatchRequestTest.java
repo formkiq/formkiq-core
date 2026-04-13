@@ -41,10 +41,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -156,9 +157,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      DocumentItem document = getDocumentService().findDocument(siteId, documentId);
-      assertEquals("application/pdf", document.getContentType());
-      assertEquals("/documents/test2.txt", document.getPath());
+      DocumentRecord document =
+          getDocumentService().findDocument(siteId, DocumentArtifact.of(documentId, null));
+      assertEquals("application/pdf", document.contentType());
+      assertEquals("/documents/test2.txt", document.path());
     }
   }
 
@@ -214,10 +216,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      DocumentItem doc = getDocumentService().findDocument(siteId, documentId);
-      assertEquals("/documents/test2.txt", doc.getPath());
-      assertEquals("jsmith", doc.getUserId());
-      assertNotEquals(doc.getLastModifiedDate(), doc.getInsertedDate());
+      DocumentRecord doc =
+          getDocumentService().findDocument(siteId, DocumentArtifact.of(documentId, null));
+      assertEquals("/documents/test2.txt", doc.path());
+      assertEquals("jsmith", doc.userId());
+      assertNotEquals(doc.lastModifiedDate(), doc.insertedDate());
     }
   }
 
@@ -262,6 +265,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // given
       String userId = "jsmith";
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       getDocumentService().saveDocument(siteId,
           new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
@@ -279,7 +283,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assert200Response(siteId, response);
 
       List<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, 2).getResults();
+          getDocumentService().findDocumentTags(siteId, document, null, 2).getResults();
       assertEquals(1, tags.size());
 
       assertEquals("USERDEFINED", tags.get(0).getType().name());
@@ -300,6 +304,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // given
       String userId = "jsmith";
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
       doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something", null),
@@ -317,8 +322,8 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       // then
       assert200Response(siteId, response);
 
-      DocumentItem item = getDocumentService().findDocument(siteId, documentId);
-      Collection<DocumentMetadata> metadata = item.getMetadata();
+      DocumentRecord item = getDocumentService().findDocument(siteId, document);
+      Collection<DocumentMetadata> metadata = item.metadata();
 
       assertEquals(2, metadata.size());
 

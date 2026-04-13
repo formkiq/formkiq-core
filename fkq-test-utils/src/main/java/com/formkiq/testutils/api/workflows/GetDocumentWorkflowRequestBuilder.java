@@ -38,6 +38,8 @@ public class GetDocumentWorkflowRequestBuilder
 
   /** Document Id. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
   /** Workflow Id. */
   private final String workflow;
 
@@ -52,6 +54,11 @@ public class GetDocumentWorkflowRequestBuilder
     this.workflow = workflowId;
   }
 
+  public GetDocumentWorkflowRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -62,6 +69,6 @@ public class GetDocumentWorkflowRequestBuilder
   public ApiHttpResponse<GetDocumentWorkflowResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentWorkflowsApi(apiClient)
-        .getDocumentWorkflow(this.document, this.workflow, siteId));
+        .getDocumentWorkflow(this.document, this.workflow, siteId, this.artifactId));
   }
 }

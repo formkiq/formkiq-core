@@ -34,6 +34,7 @@ public record AwsEventDynamodbNewImage(
     @SerializedName("SK") DynamodbAttributeValue sk,
     @SerializedName("siteId") DynamodbAttributeValue siteId,
     @SerializedName("documentId") DynamodbAttributeValue documentId,
+    @SerializedName("artifactId") DynamodbAttributeValue artifactId,
     @SerializedName("type") DynamodbAttributeValue type,
     @SerializedName("PK") DynamodbAttributeValue pk) {
 }

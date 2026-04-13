@@ -102,10 +102,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   private void assertDocumentSync(final DocumentSync sync, final DocumentSyncService service,
-      final DocumentSyncStatus status, final DocumentSyncType type) {
+      final DocumentSyncStatus status) {
     assertEquals(service, sync.getService());
     assertEquals(status, sync.getStatus());
-    assertEquals(type, sync.getType());
+    assertEquals(DocumentSyncType.METADATA, sync.getType());
     if (DocumentSyncStatus.PENDING.equals(status)) {
       assertNull(sync.getSyncDate());
     } else {
@@ -114,13 +114,12 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   }
 
   private DocumentSyncRecord createSyncRecord(final String documentId,
-      final DocumentSyncServiceType service,
-      final com.formkiq.aws.dynamodb.model.DocumentSyncStatus status,
-      final com.formkiq.aws.dynamodb.model.DocumentSyncType type, final LocalDate localDate) {
+      final com.formkiq.aws.dynamodb.model.DocumentSyncStatus status, final LocalDate localDate) {
     ZoneId zone = ZoneId.of("UTC");
     Date date = Date.from(localDate.atStartOfDay(zone).toInstant());
-    return new DocumentSyncRecord().setDocumentId(documentId).setService(service).setStatus(status)
-        .setInsertedDate(date).setType(type).setSyncDate(date);
+    return new DocumentSyncRecord().setDocumentId(documentId)
+        .setService(DocumentSyncServiceType.TYPESENSE).setStatus(status).setInsertedDate(date)
+        .setType(com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA).setSyncDate(date);
   }
 
 
@@ -129,12 +128,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
     final int days = 3;
     List<DocumentSyncRecord> records = List.of(
-        createSyncRecord(documentId, DocumentSyncServiceType.TYPESENSE,
-            com.formkiq.aws.dynamodb.model.DocumentSyncStatus.FAILED,
-            com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, date.plusDays(days)),
-        createSyncRecord(documentId, DocumentSyncServiceType.TYPESENSE,
-            com.formkiq.aws.dynamodb.model.DocumentSyncStatus.COMPLETE,
-            com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, date.plusDays(days - 1)));
+        createSyncRecord(documentId, com.formkiq.aws.dynamodb.model.DocumentSyncStatus.FAILED,
+            date.plusDays(days)),
+        createSyncRecord(documentId, com.formkiq.aws.dynamodb.model.DocumentSyncStatus.COMPLETE,
+            date.plusDays(days - 1)));
 
     db.putItems(records.stream().map(r -> r.getAttributes(null)).toList());
   }
@@ -142,7 +139,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   private List<DocumentAction> getDocumentActions(final String siteId, final String documentId)
       throws ApiException {
     GetDocumentActionsResponse response =
-        this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null);
+        this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null, null);
     return notNull(response.getActions());
   }
 
@@ -392,10 +389,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
     // then
     assertEquals(2, syncs.size());
-    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED,
-        DocumentSyncType.METADATA);
-    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
-        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED);
+    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE);
 
     List<Document> docs = notNull(this.documentsApi.getDocuments(null, null,
         "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null, null).getDocuments());
@@ -413,10 +408,9 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     syncs = notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
     assertEquals(2, syncs.size());
 
-    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED_RETRY,
-        DocumentSyncType.METADATA);
-    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE,
-        DocumentSyncType.METADATA);
+    assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE,
+        DocumentSyncStatus.FAILED_RETRY);
+    assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE);
 
     docs = notNull(this.documentsApi.getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null,
         null, null, null, null, null, null).getDocuments());
@@ -468,9 +462,9 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       final int expected = 2;
       assertEquals(expected, list.size());
       assertDocumentSync(list.get(0), com.formkiq.client.model.DocumentSyncService.TYPESENSE,
-          com.formkiq.client.model.DocumentSyncStatus.FAILED, DocumentSyncType.METADATA);
+          com.formkiq.client.model.DocumentSyncStatus.FAILED);
       assertDocumentSync(list.get(1), com.formkiq.client.model.DocumentSyncService.OPENSEARCH,
-          DocumentSyncStatus.COMPLETE, DocumentSyncType.METADATA);
+          DocumentSyncStatus.COMPLETE);
     }
   }
 

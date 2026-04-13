@@ -96,7 +96,8 @@ public class DocumentCompressor {
     for (Map.Entry<DocumentItem, Long> docSizePair : documentSizeMap.entrySet()) {
       DocumentItem document = docSizePair.getKey();
       Long objectSize = docSizePair.getValue();
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId());
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId(),
+          document.getArtifactId());
       ZipEntry zipEntry = new ZipEntry(document.getPath());
 
       zipOutputStream.putNextEntry(zipEntry);
@@ -148,10 +149,11 @@ public class DocumentCompressor {
 
     List<DocumentItem> documents = this.documentService.findDocuments(siteId, documentIds);
 
-    return documents.stream().collect(Collectors.toMap(item -> item,
-        item -> this.s3.getObjectMetadata(bucket,
-            SiteIdKeyGenerator.createS3Key(siteId, item.getDocumentId()), null)
-            .getContentLength()));
+    return documents.stream()
+        .collect(Collectors.toMap(item -> item,
+            item -> this.s3.getObjectMetadata(bucket,
+                SiteIdKeyGenerator.createS3Key(siteId, item.getDocumentId(), item.getArtifactId()),
+                null).getContentLength()));
   }
 
   private void transferObjectToZip(final ZipOutputStream outputStream, final String bucket,

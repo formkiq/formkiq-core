@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -123,18 +124,19 @@ public class AddOcrAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException {
     Map<String, Object> payload = buildAddOcrPayload(action);
     String json = this.gson.toJson(payload);
 
     if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
-          "ocr", "POST", "/documents/" + documentId + "/ocr", json);
+          "ocr", "POST", "/documents/" + document.documentId() + "/ocr", json);
       logger.debug(s);
     }
 
-    this.http.sendRequest(siteId, "post", "/documents/" + documentId + "/ocr", json);
+    this.http.sendRequest(siteId, "post", "/documents/" + document.documentId() + "/ocr", json);
     return new ProcessActionStatus(ActionStatus.RUNNING);
   }
 }

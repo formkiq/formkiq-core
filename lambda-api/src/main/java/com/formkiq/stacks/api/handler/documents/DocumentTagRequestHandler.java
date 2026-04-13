@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -66,21 +67,24 @@ public class DocumentTagRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact documentArtifact = new DocumentArtifact(documentId, artifactId);
+
     String tagKey = event.getPathParameter("tagKey");
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentTag docTag = documentService.findDocumentTag(siteId, documentId, tagKey);
+    DocumentTag docTag = documentService.findDocumentTag(siteId, documentArtifact, tagKey);
     if (docTag == null) {
       throw new NotFoundException("Tag '" + tagKey + "' not found.");
     }
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
+    DocumentRecord document = documentService.findDocument(siteId, documentArtifact);
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     List<String> tags = List.of(tagKey);
 
-    documentService.removeTags(siteId, documentId, tags);
+    documentService.removeTags(siteId, documentArtifact, tags);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Removed '" + tagKey + "' from document '" + documentId + "'.").build();
@@ -91,14 +95,17 @@ public class DocumentTagRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     String tagKey = event.getPathParameter("tagKey");
     String siteId = authorization.getSiteId();
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = documentService.findDocument(siteId, documentId);
+    DocumentRecord item = documentService.findDocument(siteId, document);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
+    DocumentTag tag = documentService.findDocumentTag(siteId, document, tagKey);
 
     if (tag == null) {
       throw new NotFoundException("Tag " + tagKey + " not found.");
@@ -144,6 +151,9 @@ public class DocumentTagRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     final String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact documentArtifact = new DocumentArtifact(documentId, artifactId);
+
     final String tagKey = event.getPathParameter("tagKey");
 
     Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
@@ -158,15 +168,15 @@ public class DocumentTagRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem document = documentService.findDocument(siteId, documentId);
+    DocumentRecord document = documentService.findDocument(siteId, documentArtifact);
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
-    DocumentTag tag = documentService.findDocumentTag(siteId, documentId, tagKey);
+    DocumentTag tag = documentService.findDocumentTag(siteId, documentArtifact, tagKey);
     throwIfNull(document, new NotFoundException("Tag " + tagKey + " not found."));
 
     // if trying to change from tag VALUE to VALUES or VALUES to VALUE
     if (isTagValueTypeChanged(tag, value, values)) {
-      documentService.removeTags(siteId, documentId, List.of(tagKey));
+      documentService.removeTags(siteId, documentArtifact, List.of(tagKey));
     }
 
     Date now = new Date();
@@ -182,7 +192,7 @@ public class DocumentTagRequestHandler
 
     validateTags(tags);
 
-    documentService.addTags(siteId, documentId, tags, null);
+    documentService.addTags(siteId, documentArtifact, tags, null);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Updated tag '" + tagKey + "' on document '" + documentId + "'.").build();

@@ -42,8 +42,9 @@ public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute
 
   default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
       DocumentRecord document) {
-    return new DocumentAttributeRecord().setDocumentId(document.documentId()).setUserId("System")
-        .setKey(getAttributeKey()).setStringValue(calculate(entityRecord, document))
-        .updateValueType();
+    return new DocumentAttributeRecord()
+        .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
+        .setUserId("System").setKey(getAttributeKey())
+        .setStringValue(calculate(entityRecord, document)).updateValueType();
   }
 }

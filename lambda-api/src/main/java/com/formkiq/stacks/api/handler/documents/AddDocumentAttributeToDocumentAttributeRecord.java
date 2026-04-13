@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
@@ -138,25 +139,22 @@ public class AddDocumentAttributeToDocumentAttributeRecord
   private void addRelationship(final AddDocumentAttributeRelationship a,
       final Collection<DocumentAttributeRecord> c) {
 
+    DocumentArtifact fromDocumentId = DocumentArtifact.of(this.docId, null);
+    DocumentArtifact toDocumentId = DocumentArtifact.of(a.documentId(), null);
+
     Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder()
-        .apply(this.docId, a.documentId(), a.relationship(), a.inverseRelationship());
+        .apply(fromDocumentId, toDocumentId, a.relationship(), a.inverseRelationship());
     c.addAll(records);
   }
 
   private void addToList(final Collection<DocumentAttributeRecord> list,
-      final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
-    addToList(list, this.docId, valueType, key, stringValue, boolValue, numberValue);
-  }
-
-  private void addToList(final Collection<DocumentAttributeRecord> list, final String documentId,
-      final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
+      final DocumentArtifact document, final DocumentAttributeValueType valueType, final String key,
+      final String stringValue, final Boolean boolValue, final Double numberValue) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
-    a.setDocumentId(documentId);
+    a.setDocument(document);
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);
@@ -164,6 +162,14 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     a.setUserId(username);
 
     list.add(a);
+  }
+
+  private void addToList(final Collection<DocumentAttributeRecord> list,
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue) {
+
+    DocumentArtifact fromDocumentId = DocumentArtifact.of(this.docId, null);
+    addToList(list, fromDocumentId, valueType, key, stringValue, boolValue, numberValue);
   }
 
   @Override

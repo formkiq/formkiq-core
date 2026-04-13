@@ -23,10 +23,12 @@
  */
 package com.formkiq.stacks.lambda.s3.actions.resize;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+
 import java.awt.image.BufferedImage;
 
-public record Image(String siteId, String documentId, byte[] data, BufferedImage bufferedImage,
-    String format, String path) {
+public record Image(String siteId, DocumentArtifact document, byte[] data,
+    BufferedImage bufferedImage, String format, String path) {
   public int getWidth() {
     return bufferedImage.getWidth();
   }

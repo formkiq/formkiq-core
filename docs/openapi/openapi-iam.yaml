@@ -1744,6 +1744,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/shareKeyParam'
       responses:
         "200":
@@ -1772,6 +1773,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/shareKeyParam'
       requestBody:
         required: true
@@ -1838,6 +1840,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - name: softDelete
         in: query
         description: Whether to soft delete document
@@ -1860,6 +1863,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
@@ -1877,6 +1881,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/versionKeyParam'
       - $ref: '#/components/parameters/shareKeyParam'
       responses:
@@ -1899,6 +1904,36 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/artifacts:
+    get:
+      operationId: GetDocumentArtifacts
+      summary: Get document artifacts
+      description: Returns the list of artifact documents associated with the specified document
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/attributes:
     get:
       operationId: GetDocumentAttributes
@@ -1909,6 +1944,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
       responses:
@@ -1938,6 +1974,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -1964,6 +2001,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -1987,6 +2025,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/attributeKeyParam'
       responses:
         "200":
@@ -2015,6 +2054,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/attributeKeyParam'
       requestBody:
         required: true
@@ -2038,6 +2078,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/attributeKeyParam'
       responses:
         "200":
@@ -2056,6 +2097,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/attributeKeyParam'
       - $ref: '#/components/parameters/attributeValueParam'
       responses:
@@ -2075,6 +2117,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/shareKeyParam'
       - $ref: '#/components/parameters/nextParam'
@@ -2110,6 +2153,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -2157,6 +2201,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -2196,6 +2241,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -2236,6 +2282,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/tagkeyParam'
       - $ref: '#/components/parameters/shareKeyParam'
       responses:
@@ -2265,6 +2312,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/tagkeyParam'
       requestBody:
         required: true
@@ -2288,6 +2336,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/tagkeyParam'
       responses:
         "200":
@@ -2306,6 +2355,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/tagkeyParam'
       - $ref: '#/components/parameters/tagvalueParam'
       - $ref: '#/components/parameters/shareKeyParam'
@@ -2359,6 +2409,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/versionKeyParam'
       - $ref: '#/components/parameters/durationParam'
       - $ref: '#/components/parameters/shareKeyParam'
@@ -2538,6 +2589,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/checksumTypeParam'
       - $ref: '#/components/parameters/checksumParam'
       - $ref: '#/components/parameters/contentLengthParam'
@@ -2571,6 +2623,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       description: Restores a soft deleted document
       tags:
       - Documents
@@ -2985,6 +3038,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/ocrOutputTypeParam'
       - $ref: '#/components/parameters/contentUrlParam'
       - $ref: '#/components/parameters/textParam'
@@ -3016,6 +3070,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: false
         content:
@@ -3049,6 +3104,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: false
         content:
@@ -3082,6 +3138,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
@@ -3099,6 +3156,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/shareKeyParam'
       - $ref: '#/components/parameters/nextParam'
@@ -3129,6 +3187,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -3169,6 +3228,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/versionKeyPath'
       - $ref: '#/components/parameters/shareKeyParam'
       responses:
@@ -3189,6 +3249,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -3218,6 +3279,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -3246,6 +3308,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
@@ -3706,6 +3769,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 CREATED
@@ -3746,6 +3810,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -3793,6 +3858,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/workflowIdParam'
       responses:
         "200":
@@ -3835,6 +3901,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/workflowIdParam'
       requestBody:
         required: true
@@ -3883,6 +3950,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/shareKeyParam'
       requestBody:
         required: false
@@ -3918,6 +3986,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/nextParam'
       - $ref: '#/components/parameters/limitParam'
       responses:
@@ -3961,6 +4030,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: false
         content:
@@ -4252,6 +4322,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
       responses:
@@ -4281,6 +4352,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: false
         content:
@@ -4315,6 +4387,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
       responses:
@@ -4345,6 +4418,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/llmPromptEntityNameParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
@@ -4375,6 +4449,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/llmPromptEntityNameParam'
       responses:
         "200":
@@ -4439,6 +4514,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/nextParam'
       - $ref: '#/components/parameters/limitParam'
       responses:
@@ -4929,6 +5005,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -4969,6 +5046,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/docusignEnvelopeIdParam'
       requestBody:
         required: true
@@ -5589,6 +5667,7 @@ paths:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/caseIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -5745,6 +5824,7 @@ paths:
       - $ref: '#/components/parameters/caseIdParam'
       - $ref: '#/components/parameters/taskIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -5901,6 +5981,7 @@ paths:
       - $ref: '#/components/parameters/caseIdParam'
       - $ref: '#/components/parameters/nigoIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -6633,6 +6714,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
@@ -6655,6 +6737,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -6695,6 +6778,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -6738,6 +6822,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -7069,6 +7154,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/shareKeyParam'
       - $ref: '#/components/parameters/nextParam'
@@ -7133,6 +7219,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: false
         content:
@@ -7173,6 +7260,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           description: 200 OK
@@ -7210,6 +7298,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:
@@ -7975,6 +8064,13 @@ components:
       required: true
       schema:
         type: string
+    artifactIdParam:
+      name: artifactId
+      in: query
+      description: Artifact Document Identifier
+      required: false
+      schema:
+        type: string
     llmPromptEntityNameParam:
       name: llmPromptEntityName
       in: path
@@ -8467,6 +8563,9 @@ components:
         documentId:
           type: string
           description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
         siteId:
           type: string
           description: Site Identifier
@@ -8501,6 +8600,9 @@ components:
         documentId:
           type: string
           description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
         url:
           type: string
           description: Document content url
@@ -8513,6 +8615,9 @@ components:
       - documentId
       type: object
       properties:
+        artifactId:
+          type: string
+          description: Artifact Identifier
         siteId:
           type: string
           description: Site Identifier
@@ -8872,6 +8977,9 @@ components:
         documentId:
           type: string
           description: optional Document Identifier, if skipped one will be assigned
+        artifacts:
+          type: boolean
+          description: Whether the document supports artifact documents
         path:
           type: string
           description: Path or Name of document
@@ -8921,6 +9029,9 @@ components:
         documentId:
           type: string
           description: optional Document Identifier (Version 4 UUID), if skipped one will be assigned
+        artifacts:
+          type: boolean
+          description: Whether the document supports artifact documents
         path:
           type: string
           description: Path or Name of document
@@ -10036,6 +10147,9 @@ components:
         documentId:
           type: string
           description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
         contentType:
           type: string
           description: Document Content-Type

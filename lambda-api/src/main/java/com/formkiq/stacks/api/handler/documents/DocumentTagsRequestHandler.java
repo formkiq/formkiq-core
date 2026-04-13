@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -77,14 +78,16 @@ public class DocumentTagsRequestHandler
         pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
 
     String nextToken = event.getQueryStringParameter("next");
-    // PaginationMapToken ptoken = pagination != null ? pagination.getStartkey() : null;
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    verifyDocument(awsservice, siteId, documentId);
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    verifyDocument(awsservice, siteId, document);
 
     Pagination<DocumentTag> results =
-        documentService.findDocumentTags(siteId, documentId, nextToken, limit);
+        documentService.findDocumentTags(siteId, document, nextToken, limit);
 
     results.getResults().forEach(r -> r.setDocumentId(null));
 
@@ -145,18 +148,20 @@ public class DocumentTagsRequestHandler
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
 
     validate(tags);
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     updateTagsMetadata(authorization, tags);
 
     validateTags(tags);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.addTags(siteId, documentId, tags.getTags(), null);
+    documentService.addTags(siteId, document, tags.getTags(), null);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Updated Tags").build();
   }
@@ -167,6 +172,8 @@ public class DocumentTagsRequestHandler
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameter("documentId");
+    final String artifactId = event.getQueryStringParameter("artifactId");
+    final DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     DocumentTag tag = JsonToObject.fromJson(awsservice, event, DocumentTag.class);
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
@@ -195,11 +202,11 @@ public class DocumentTagsRequestHandler
     validateTags(tags);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
 
-    documentService.addTags(siteId, documentId, allTags, null);
+    documentService.addTags(siteId, document, allTags, null);
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", tagsValid ? "Created Tags." : "Created Tag '" + tag.getKey() + "'.")
@@ -212,19 +219,21 @@ public class DocumentTagsRequestHandler
 
     final String siteId = authorization.getSiteId();
     final String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     DocumentTags tags = JsonToObject.fromJson(awsservice, event, DocumentTags.class);
     validate(tags);
 
-    verifyDocument(awsservice, siteId, documentId);
+    verifyDocument(awsservice, siteId, document);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.deleteDocumentTags(siteId, documentId);
+    documentService.deleteDocumentTags(siteId, document);
     updateTagsMetadata(authorization, tags);
 
     validateTags(tags);
 
-    documentService.addTags(siteId, documentId, tags.getTags(), null);
+    documentService.addTags(siteId, document, tags.getTags(), null);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Set Tags").build();
   }
@@ -275,11 +284,11 @@ public class DocumentTagsRequestHandler
     }
   }
 
-  private DocumentItem verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws Exception {
+  private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final DocumentArtifact document) throws Exception {
     DocumentService ds = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = ds.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    DocumentRecord item = ds.findDocument(siteId, document);
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
     return item;
   }
 }

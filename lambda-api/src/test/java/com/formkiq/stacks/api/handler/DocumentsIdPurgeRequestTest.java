@@ -66,7 +66,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<S3Object> getS3Files(final String siteId, final String documentId) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
     S3Service s3Service = getAwsServices().getExtension(S3Service.class);
     return notNull(s3Service.listObjects(BUCKET_NAME, s3Key).contents());
   }
@@ -105,7 +105,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(1, s3Files.size());
 
         // when
-        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId);
+        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
 
         // then
         assertEquals("'" + documentId + "' object deleted all versions",
@@ -133,7 +133,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.purgeDocument(documentId, siteId);
+        this.documentsApi.purgeDocument(documentId, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -166,7 +166,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(0, s3Files.size());
 
         // when
-        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId);
+        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
 
         // then
         assertEquals("'" + documentId + "' object deleted all versions",

@@ -230,7 +230,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
       List<DocumentAttribute> documentAttributes = notNull(documentAttributesApi
-          .getDocumentAttributes(documentId, null, null, null).getAttributes());
+          .getDocumentAttributes(documentId, null, null, null, null).getAttributes());
       assertEquals(1, documentAttributes.size());
       DocumentAttribute documentAttribute = documentAttributes.get(0);
       assertEquals("Relationships", documentAttribute.getKey());
@@ -240,7 +240,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
 
       String renditionDocId = documentAttribute.getStringValue().substring("RENDITION#".length());
       DocumentsApi api = new DocumentsApi(client);
-      GetDocumentResponse item = api.getDocument(renditionDocId, null, null);
+      GetDocumentResponse item = api.getDocument(renditionDocId, null, null, null);
       assertEquals("100", item.getWidth());
       assertEquals("56", item.getHeight());
     }
@@ -278,7 +278,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
 
     // when
-    AddResponse retryResponse = actionsApi.addDocumentRetryAction(documentId, null);
+    AddResponse retryResponse = actionsApi.addDocumentRetryAction(documentId, null, null);
 
     // then
     assertEquals("Actions retrying", retryResponse.getMessage());

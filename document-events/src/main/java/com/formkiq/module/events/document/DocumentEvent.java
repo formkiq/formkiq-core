@@ -41,6 +41,9 @@ public class DocumentEvent {
   /** Document Id. */
   @Reflectable
   private String documentId;
+  /** Artifact Id. */
+  @Reflectable
+  private String artifactId;
   /** S3 Key. */
   @Reflectable
   private String s3key;
@@ -73,6 +76,26 @@ public class DocumentEvent {
    */
   public DocumentEvent() {
 
+  }
+
+  /**
+   * Get Artifact Id.
+   *
+   * @return {@link String}
+   */
+  public String artifactId() {
+    return this.artifactId;
+  }
+
+  /**
+   * Set Artifact Id.
+   *
+   * @param id {@link String}
+   * @return {@link DocumentEvent}
+   */
+  public DocumentEvent artifactId(final String id) {
+    this.artifactId = id;
+    return this;
   }
 
   /**

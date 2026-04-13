@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -57,6 +58,8 @@ public class DocumentIdPurgeRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     awsservice.getLogger().debug(
         "deleting ALL VERSIONS of object " + documentId + " from bucket '" + documentBucket + "'");
@@ -65,10 +68,10 @@ public class DocumentIdPurgeRequestHandler
 
     try {
 
-      boolean deleted = service.deleteDocument(siteId, documentId, false);
+      boolean deleted = service.deleteDocument(siteId, document, false);
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, artifactId);
       int deletedTotal = s3Service.deleteAllVersionsOfFile(documentBucket, s3Key);
 
       if (deletedTotal == 0 && !deleted) {

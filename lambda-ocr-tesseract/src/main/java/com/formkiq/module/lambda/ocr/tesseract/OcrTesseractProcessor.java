@@ -42,6 +42,7 @@ import java.util.Optional;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -228,10 +229,11 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     String siteId = sqsMessage.siteId();
     String documentId = sqsMessage.documentId();
+    String artifactId = sqsMessage.artifactId();
 
     String tmpDirectory =
         new File("/tmp").exists() ? "/tmp/" : System.getProperty("java.io.tmpdir") + "\\";
-    String documentS3Key = createS3Key(siteId, documentId);
+    String documentS3Key = createS3Key(siteId, documentId, artifactId);
     File file =
         new File(tmpDirectory + documentS3Key.replaceAll("/", "_") + "." + mt.getExtension());
 
@@ -248,14 +250,16 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
   }
 
   private void logProcessRecord(final Logger logger, final OcrSqsMessage sqsMessage,
-      final String siteId, final String documentId, final String jobId, final String contentType) {
+      final String siteId, final DocumentArtifact document, final String jobId,
+      final String contentType) {
 
     List<String> parseTypes = getParserTypes(sqsMessage);
 
     String s = String.format(
-        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"jobId\": \"%s\",\"contentType\":\"%s\","
-            + "\"parseTypes\":\"%s\"}",
-        siteId, documentId, jobId, contentType, String.join(", ", parseTypes));
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"artifactId\": \"%s\","
+            + "\"jobId\": \"%s\",\"contentType\":\"%s\",\"parseTypes\":\"%s\"}",
+        siteId, document.documentId(), document.artifactId(), jobId, contentType,
+        String.join(", ", parseTypes));
     logger.info(s);
   }
 
@@ -264,10 +268,12 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     String siteId = sqsMessage.siteId();
     String documentId = sqsMessage.documentId();
+    String artifactId = sqsMessage.artifactId();
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
     String jobId = sqsMessage.jobId();
     String contentType = sqsMessage.contentType();
 
-    logProcessRecord(logger, sqsMessage, siteId, documentId, jobId, contentType);
+    logProcessRecord(logger, sqsMessage, siteId, document, jobId, contentType);
 
     try {
 
@@ -289,7 +295,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         if (result.text() != null) {
 
           S3Service s3Service = serviceCache.getExtension(S3Service.class);
-          String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+          String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
 
           String ocrDocumentsBucket = awsServices.environment("OCR_S3_BUCKET");
 
@@ -298,8 +304,7 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
         }
 
         if (OcrScanStatus.SUCCESSFUL.equals(result.status())) {
-          ocrService.updateOcrScanStatus(serviceCache, siteId, documentId,
-              OcrScanStatus.SUCCESSFUL);
+          ocrService.updateOcrScanStatus(serviceCache, siteId, document, OcrScanStatus.SUCCESSFUL);
         }
 
       } finally {
@@ -311,13 +316,13 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
 
     } catch (Throwable e) {
 
-      ocrService.updateOcrScanStatus(siteId, documentId, OcrScanStatus.FAILED);
+      ocrService.updateOcrScanStatus(siteId, document, OcrScanStatus.FAILED);
 
       logger.error(String.format("setting OCR Scan Status: %s", OcrScanStatus.FAILED));
       logger.error(e);
 
       ActionsService actionsService = serviceCache.getExtension(ActionsService.class);
-      List<Action> actions = actionsService.getActions(siteId, documentId);
+      List<Action> actions = actionsService.getActions(siteId, document);
       Optional<Action> o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING))
           .filter(new ActionTypePredicate(ActionType.OCR)).findFirst();
 

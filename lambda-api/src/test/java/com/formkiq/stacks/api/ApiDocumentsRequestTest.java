@@ -26,6 +26,8 @@ package com.formkiq.stacks.api;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
@@ -94,11 +96,12 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       getDocumentService().saveDocument(siteId, item, null);
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       getS3().putObject(BUCKET_NAME, s3Key, "testdata".getBytes(StandardCharsets.UTF_8), null);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid01.json");
@@ -117,7 +120,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
       assertFalse(getS3().getObjectMetadata(BUCKET_NAME, s3Key, null).isObjectExists());
-      assertNull(getDocumentService().findDocument(siteId, documentId));
+      assertNull(getDocumentService().findDocument(siteId, document));
     }
   }
 
@@ -131,10 +134,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
       getDocumentService().saveDocument(siteId, item, null);
-      assertNotNull(getDocumentService().findDocument(siteId, documentId));
+      assertNotNull(getDocumentService().findDocument(siteId, document));
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
       addParameter(event, "siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -144,7 +148,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String response = handleRequest(event);
 
       // then
-      assertNull(getDocumentService().findDocument(siteId, documentId));
+      assertNull(getDocumentService().findDocument(siteId, document));
 
       Map<String, String> m = fromJson(response, Map.class);
       assertEquals("200.0", String.valueOf(m.get("statusCode")));
@@ -406,6 +410,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
       item.setContentLength(contentLength);
 
@@ -415,7 +421,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
       actions.saveNewActions(List.of(new ActionBuilder().index("0").type(ActionType.OCR)
-          .documentId(documentId).userId("joe").build(siteId)));
+          .document(document).userId("joe").build(siteId)));
 
       // when
       String response = handleRequest(event);
@@ -528,10 +534,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNull(o.getString("previous"));
 
       String documentId = o.getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
 
-      DocumentItem item = getDocumentService().findDocument(siteId, documentId);
-      assertEquals("joesmith", item.getUserId());
+      DocumentRecord item = getDocumentService().findDocument(siteId, document);
+      assertEquals("joesmith", item.userId());
 
       String content = getS3().getContentAsString(BUCKET_NAME, key, null);
       assertEquals("this is a test", content);
@@ -570,7 +577,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String key = siteId != null ? siteId + "/" + resp.get("documentId")
           : resp.get("documentId").toString();
 
-      assertNotNull(getDocumentService().findDocument(siteId, resp.getString("documentId")));
+      assertNotNull(getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(resp.getString("documentId"), null)));
       assertNotNull(UUID.fromString(resp.getString("documentId")));
 
       assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
@@ -730,11 +738,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
     DynamicObject resp = new DynamicObject(fromJson((String) m.get("body"), Map.class));
 
     String documentId = resp.get("documentId").toString();
+    final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
     assertNull(resp.get("next"));
     assertNull(resp.get("previous"));
 
     assertNotNull(UUID.fromString(documentId));
-    assertNotNull(getDocumentService().findDocument(null, documentId));
+    assertNotNull(getDocumentService().findDocument(null, document));
 
     assertTrue(getS3().getObjectMetadata(BUCKET_NAME, documentId, null).isObjectExists());
   }
@@ -798,7 +808,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(documents.get(i).getString("documentId"));
 
       String documentId = documents.get(0).getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
     }
   }
@@ -833,12 +843,14 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNull(documents.get(0).getString("uploadUrl"));
       assertNotNull(documents.get(0).getString("documentId"));
 
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documents.get(0).getString("documentId"));
+      String key =
+          SiteIdKeyGenerator.createS3Key(siteId, documents.get(0).getString("documentId"), null);
       assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
 
-      assertNotNull(getDocumentService().findDocument(siteId, body.getString("documentId")));
-      assertNotNull(
-          getDocumentService().findDocument(siteId, documents.get(0).getString("documentId")));
+      assertNotNull(getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(body.getString("documentId"), null)));
+      assertNotNull(getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(documents.get(0).getString("documentId"), null)));
     }
   }
 
@@ -867,8 +879,9 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertEquals("[]", body.getList("documents").toString());
 
       String documentId = body.getString("documentId");
-      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
-      assertNotNull(getDocumentService().findDocument(siteId, documentId));
+      String key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      assertNotNull(
+          getDocumentService().findDocument(siteId, DocumentArtifact.of(documentId, null)));
 
       assertEquals("application/octet-stream",
           getS3().getObjectMetadata(BUCKET_NAME, key, null).getContentType());

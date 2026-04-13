@@ -37,6 +37,7 @@ import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
@@ -74,7 +75,7 @@ public class DocumentsCompressRequestHandler
   }
 
   private String getS3Key(final String siteId, final String compressionId, final boolean isZip) {
-    final String key = String.format("tempfiles/%s", createS3Key(siteId, compressionId));
+    final String key = String.format("tempfiles/%s", createS3Key(siteId, compressionId, null));
     final String fileType = isZip ? ".zip" : ".json";
     return key + fileType;
   }
@@ -171,7 +172,7 @@ public class DocumentsCompressRequestHandler
         errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
       } else {
         for (String documentId : documentIds) {
-          if (!documentService.exists(siteId, documentId)) {
+          if (!documentService.exists(siteId, DocumentArtifact.of(documentId, null))) {
             errors.add(new ValidationErrorImpl().key("documentId")
                 .error(String.format("Document '%s' does not exist", documentId)));
           }

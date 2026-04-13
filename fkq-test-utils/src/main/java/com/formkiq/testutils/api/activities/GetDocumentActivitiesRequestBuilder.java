@@ -37,6 +37,8 @@ public class GetDocumentActivitiesRequestBuilder
 
   /** {@link String}. */
   private String documentId;
+  /** Artifact Id. */
+  private String artifactId;
   /** Next. */
   private String next;
   /** Limit. */
@@ -73,6 +75,11 @@ public class GetDocumentActivitiesRequestBuilder
     return this;
   }
 
+  public GetDocumentActivitiesRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   /**
    * Submit Get Document Activities.
    * 
@@ -83,6 +90,6 @@ public class GetDocumentActivitiesRequestBuilder
   public ApiHttpResponse<GetUserActivitesResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient)
-        .getDocumentUserActivities(this.documentId, siteId, next, limit));
+        .getDocumentUserActivities(this.documentId, siteId, this.artifactId, next, limit));
   }
 }

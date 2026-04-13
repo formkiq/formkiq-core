@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.actions.ActionStatus;
@@ -51,19 +52,19 @@ public interface ActionsService {
    * Delete Document Actions.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    */
-  void deleteActions(String siteId, String documentId);
+  void deleteActions(String siteId, DocumentArtifact document);
 
   /**
    * Find Document in Queue.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param queueId {@link String}
    * @return {@link Action}
    */
-  Action findActionInQueue(String siteId, String documentId, String queueId);
+  Action findActionInQueue(String siteId, DocumentArtifact document, String queueId);
 
   /**
    * Find Documents in Queue.
@@ -93,40 +94,41 @@ public interface ActionsService {
    * Get List of {@link Action} by {@link ActionStatus}.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param status {@link ActionStatus}
    * @return {@link List} {@link ActionStatus}
    */
-  List<Action> getAction(String siteId, String documentId, ActionStatus status);
+  List<Action> getAction(String siteId, DocumentArtifact document, ActionStatus status);
 
   /**
    * Get {@link List} {@link Action} for a document.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return {@link List} {@link Action}
    */
-  List<Action> getActions(String siteId, String documentId);
+  List<Action> getActions(String siteId, DocumentArtifact document);
 
   /**
    * Get {@link List} {@link Action} for a document.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param nextToken {@link String}
    * @param limit int
    * @return {@link Pagination} {@link Action}
    */
-  Pagination<Action> getActions(String siteId, String documentId, String nextToken, int limit);
+  Pagination<Action> getActions(String siteId, DocumentArtifact document, String nextToken,
+      int limit);
 
   /**
    * Whether SiteId / DocumentId combination has any actions.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return boolean
    */
-  boolean hasActions(String siteId, String documentId);
+  boolean hasActions(String siteId, DocumentArtifact document);
 
   /**
    * Insert {@link Action}.

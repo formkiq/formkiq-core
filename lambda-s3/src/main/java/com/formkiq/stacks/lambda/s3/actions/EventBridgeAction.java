@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.eventbridge.EventBridgeMessage;
 import com.formkiq.aws.eventbridge.EventBridgeService;
@@ -61,8 +62,9 @@ public class EventBridgeAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, ValidationException {
 
     String eventBusName = (String) action.parameters().get("eventBusName");
 
@@ -71,7 +73,7 @@ public class EventBridgeAction implements DocumentAction {
     }
 
     String detailType = "Document Action Event";
-    String detail = this.systemExport.apply(siteId, documentId);
+    String detail = this.systemExport.apply(siteId, document);
 
     EventBridgeMessage msg =
         new EventBridgeMessageBuilder().build(this.appEnvironment, detailType, detail);

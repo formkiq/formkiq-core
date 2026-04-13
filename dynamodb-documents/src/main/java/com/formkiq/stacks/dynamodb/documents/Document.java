@@ -36,6 +36,8 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class Document implements DocumentItem {
 
+  /** Artifact Id. */
+  private String artifactId;
   /** Belongs to document id. */
   private String belongsToDocumentId;
   /** Checksum. */
@@ -77,6 +79,11 @@ public class Document implements DocumentItem {
    * constructor.
    */
   public Document() {}
+
+  @Override
+  public String getArtifactId() {
+    return this.artifactId;
+  }
 
   @Override
   public String getBelongsToDocumentId() {
@@ -166,6 +173,11 @@ public class Document implements DocumentItem {
   @Override
   public String getWidth() {
     return this.width;
+  }
+
+  @Override
+  public void setArtifactId(final String id) {
+    this.artifactId = id;
   }
 
   @Override

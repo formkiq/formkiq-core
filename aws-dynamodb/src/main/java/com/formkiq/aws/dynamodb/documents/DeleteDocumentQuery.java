@@ -48,39 +48,39 @@ import static com.formkiq.aws.dynamodb.objects.Objects.last;
  */
 public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
-  /** Document Id. */
-  private final String id;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** {@link DeleteSoftDeletedDocumentQuery}. */
   private final DeleteSoftDeletedDocumentQuery deleteSoft;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public DeleteDocumentQuery(final String documentId) {
-    this(documentId, true);
+  public DeleteDocumentQuery(final DocumentArtifact documentArtifact) {
+    this(documentArtifact, true);
   }
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param deleteSoftDeletedDocumentQuery {@link DeleteSoftDeletedDocumentQuery}
    */
-  public DeleteDocumentQuery(final String documentId,
+  public DeleteDocumentQuery(final DocumentArtifact documentArtifact,
       final boolean deleteSoftDeletedDocumentQuery) {
-    this.id = documentId;
+    this.document = documentArtifact;
     this.deleteSoft =
-        deleteSoftDeletedDocumentQuery ? new DeleteSoftDeletedDocumentQuery(documentId) : null;
+        deleteSoftDeletedDocumentQuery ? new DeleteSoftDeletedDocumentQuery(document) : null;
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
 
-    var pk = DynamoDbTypes.toString(keysDocument(siteId, this.id).get(PK));
-    return DynamoDbQueryBuilder.builder().pk(pk).limit(limit).build(tableName);
+    var key = new DocumentRecordBuilder().document(document).buildKey(siteId);
+    return DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit).build(tableName);
   }
 
   @Override
@@ -98,10 +98,10 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
   /**
    * Get Document Id.
    * 
-   * @return {@link String}
+   * @return {@link DocumentArtifact}
    */
-  public String getDocumentId() {
-    return this.id;
+  public DocumentArtifact getDocument() {
+    return this.document;
   }
 
   @Override
@@ -110,6 +110,12 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
     var result = DynamoDbDeleteQuery.super.query(db, tableName, siteId, nextToken, limit);
     List<Map<String, AttributeValue>> items = result.items();
+
+    if (document.artifactId() != null) {
+      items = items.stream()
+          .filter(a -> document.artifactId().equals(DynamoDbTypes.toString(a.get("artifactId"))))
+          .toList();
+    }
 
     if (nextToken == null) {
 

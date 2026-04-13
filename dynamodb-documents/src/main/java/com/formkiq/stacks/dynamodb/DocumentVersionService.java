@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -43,19 +44,19 @@ public interface DocumentVersionService {
    * Delete all document versions.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    */
-  void deleteAllVersionIds(String siteId, String documentId);
+  void deleteAllVersionIds(String siteId, DocumentArtifact document);
 
   /**
    * Get Version Record.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param versionKey {@link String}
    * @return Map
    */
-  Map<String, AttributeValue> get(String siteId, String documentId, String versionKey);
+  Map<String, AttributeValue> get(String siteId, DocumentArtifact document, String versionKey);
 
   /**
    * Get {@link DynamoDbService}.
@@ -69,13 +70,13 @@ public interface DocumentVersionService {
    * 
    * @param documentService {@link DocumentService}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param versionKey {@link String}
    * @param versionAttributes {@link Map}
    * @return DocumentItem
    */
-  DocumentItem getDocumentItem(DocumentService documentService, String siteId, String documentId,
-      String versionKey, Map<String, AttributeValue> versionAttributes);
+  DocumentItem getDocumentItem(DocumentService documentService, String siteId,
+      DocumentArtifact document, String versionKey, Map<String, AttributeValue> versionAttributes);
 
   /**
    * Get DynamoDB Documents Versions Table Name.

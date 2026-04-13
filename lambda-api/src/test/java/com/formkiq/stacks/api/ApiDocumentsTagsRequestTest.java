@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
@@ -172,6 +173,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -189,8 +191,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag1 = new DocumentTag(documentId, tagKey + "2", tagKey, now, userId);
       tag1.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(tag0, tag1), null);
-      assertEquals(2, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, Arrays.asList(tag0, tag1), null);
+      assertEquals(2, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -209,7 +211,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("category2", tags.getResults().get(0).getKey());
     }
@@ -226,6 +228,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -240,8 +243,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, null, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -260,7 +263,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
   }
@@ -276,6 +279,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -291,8 +295,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -311,7 +315,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
   }
@@ -327,6 +331,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String tagValue = "person";
       final String userId = "jsmith";
@@ -344,8 +349,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag tag = new DocumentTag(documentId, tagKey, tagValue, now, userId);
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -364,7 +369,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
   }
@@ -380,6 +385,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -397,8 +403,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -417,7 +423,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals("abc", tags.getResults().get(0).getValue());
       assertNull(tags.getResults().get(0).getValues());
@@ -435,6 +441,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // given
       final Date now = new Date();
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey = "category";
       final String userId = "jsmith";
 
@@ -452,8 +459,8 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       tag.setValues(Arrays.asList("abc", "xyz"));
       tag.setInsertedDate(new Date());
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
-      assertEquals(1, getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS)
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
+      assertEquals(1, getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS)
           .getResults().size());
 
       // when
@@ -472,7 +479,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertNull(resp.get("previous"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertNull(tags.getResults().get(0).getValue());
       assertEquals("[abc, xyz]", tags.getResults().get(0).getValues().toString());
@@ -491,6 +498,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       String userId = "jsmith";
       Date date = new Date();
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String tagname = "category";
       String tagvalue = ID.uuid();
 
@@ -499,7 +507,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       DocumentTag tag = new DocumentTag(documentId, tagname, tagvalue, date, userId);
 
-      getDocumentService().addTags(siteId, documentId, List.of(tag), null);
+      getDocumentService().addTags(siteId, document, List.of(tag), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags00.json");
@@ -543,6 +551,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       Date now = new Date();
       String userId = "jsmith";
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       getDocumentService().saveDocument(siteId, item, null);
@@ -550,7 +559,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag item0 = new DocumentTag(documentId, "category0", "person", now, userId);
       DocumentTag item1 = new DocumentTag(documentId, "category1", "thing", now, userId);
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(item0, item1), null);
+      getDocumentService().addTags(siteId, document, Arrays.asList(item0, item1), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags02.json");
@@ -596,6 +605,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       Date now = new Date();
       String userId = "jsmith";
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       getDocumentService().saveDocument(siteId, item, null);
@@ -605,7 +615,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       DocumentTag item1 = new DocumentTag(documentId, "category1", null, now, userId);
       item1.setValues(Arrays.asList("bbb", "ccc"));
 
-      getDocumentService().addTags(siteId, documentId, Arrays.asList(item0, item1), null);
+      getDocumentService().addTags(siteId, document, Arrays.asList(item0, item1), null);
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-documentid-tags02.json");
@@ -808,6 +818,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey0 = "category";
       final String tagValue0 = "job";
       final String tagKey1 = "type";
@@ -838,7 +849,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       int i = 0;
       final int expectedCount = 3;
       Pagination<DocumentTag> results =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedCount, results.getResults().size());
       assertEquals(tagKey0, results.getResults().get(i).getKey());
       assertEquals(tagValue0, results.getResults().get(i).getValue());
@@ -891,6 +902,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagname = "category";
       final String tagvalue = "job";
 
@@ -914,7 +926,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
@@ -932,6 +944,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = "test" + ID.uuid() + ".pdf";
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagname = "category";
       final String tagvalue = "";
 
@@ -952,7 +965,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
@@ -969,6 +982,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagname = "category";
       final String tagvalue = "somevalue";
 
@@ -990,7 +1004,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
@@ -1010,6 +1024,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = "test" + ID.uuid() + ".pdf";
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       String username = UUID.randomUUID() + "@formkiq.com";
 
@@ -1018,7 +1033,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       getDocumentService().saveDocumentItemWithTag(siteId, doc);
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
 
       final String tagname = "category";
@@ -1037,7 +1052,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
 
-      tags = getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      tags = getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertEquals(tagvalue, tags.getResults().get(0).getValue());
@@ -1054,6 +1069,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagname = "category";
       final String expected =
           "{\\\"message\\\":\\\"Created Tag 'category'.\\\"}\",\"statusCode\":201}";
@@ -1072,7 +1088,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagname, tags.getResults().get(0).getKey());
       assertNull(tags.getResults().get(0).getValue());
@@ -1091,6 +1107,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String expected = "{\\\"message\\\":\\\"Created Tags.\\\"}\",\"statusCode\":201}";
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
@@ -1112,7 +1129,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
 
       final int count = 3;
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(count, tags.getResults().size());
       assertEquals("caseId", tags.getResults().get(0).getKey());
       assertNull(tags.getResults().get(0).getValue());
@@ -1141,6 +1158,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String expected =
           "\"body\":\"{\\\"message\\\":\\\"invalid JSON body\\\"}\"" + ",\"statusCode\":400}";
 
@@ -1155,7 +1173,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
     }
   }
@@ -1258,6 +1276,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       final String tagKey0 = "category";
       final String tagValue0 = "job";
       final String tagKey1 = "type";
@@ -1279,7 +1298,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       Pagination<DocumentTag> results =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
       assertEquals(tagKey1, results.getResults().get(0).getKey());
       assertEquals(tagValue1, results.getResults().get(0).getValue());
@@ -1297,6 +1316,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String userId = "jsmith";
       String tagKey = "category";
 
@@ -1318,7 +1338,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       assertTrue(response.contains(expected));
 
       assertEquals("active",
-          getDocumentService().findDocumentTag(siteId, documentId, tagKey).getValue());
+          getDocumentService().findDocumentTag(siteId, document, tagKey).getValue());
     }
   }
 
@@ -1407,6 +1427,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String userId = "jsmith";
 
       final String expected =
@@ -1427,7 +1448,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagKey, tags.getResults().get(0).getKey());
       assertNull(tags.getResults().get(0).getValue());
@@ -1446,6 +1467,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String userId = "jsmith";
 
       final String expected =
@@ -1467,7 +1489,7 @@ public class ApiDocumentsTagsRequestTest extends AbstractRequestHandler {
       // then
       assertTrue(response.contains(expected));
       Pagination<DocumentTag> tags =
-          getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertEquals(tagKey, tags.getResults().get(0).getKey());
       assertEquals("active", tags.getResults().get(0).getValue());

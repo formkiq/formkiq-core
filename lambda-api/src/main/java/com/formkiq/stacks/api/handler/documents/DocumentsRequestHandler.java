@@ -280,7 +280,6 @@ public class DocumentsRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    // ApiMapResponse apiMapResponse;
     ApiRequestHandlerResponse.Builder builder = ApiRequestHandlerResponse.builder().created();
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
@@ -296,7 +295,6 @@ public class DocumentsRequestHandler
       if (!docService.isFolderExists(siteId, request.getPath())) {
         docService.addFolderIndex(siteId, request.getPath(), authorization.getUsername());
         builder.body("message", "folder created");
-        // apiMapResponse = new ApiMapResponse(Map.of("message", "folder created"));
 
       } else {
         throw new ValidationException(Collections

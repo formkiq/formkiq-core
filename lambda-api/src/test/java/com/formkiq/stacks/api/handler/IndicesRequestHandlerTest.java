@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddDocumentRequest;
@@ -101,10 +102,12 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId(), false);
+      documentService.deleteDocument(siteId, document, false);
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
@@ -256,10 +259,12 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setPath("x/z/test.pdf");
       documentService.saveDocument(siteId, item, null);
-      documentService.deleteDocument(siteId, item.getDocumentId(), false);
+      documentService.deleteDocument(siteId, document, false);
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();

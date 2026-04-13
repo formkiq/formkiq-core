@@ -31,6 +31,8 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -328,6 +330,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     sqsService = new SqsServiceImpl(sqsBuilder);
   }
 
+  private static AwsEvent buildAwsEvent(final String siteId, final DocumentArtifact document) {
+    return SqsEventBuilder.builder().siteId(siteId).documentId(document.documentId())
+        .artifactId(document.artifactId()).build();
+  }
+
   private static Map<String, String> buildEnvironment(final String module,
       final String chatgptUrl) {
     Map<String, String> env = new HashMap<>();
@@ -413,9 +420,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
-      final String documentId) {
+      final DocumentArtifact document) {
     return notNull(
-        documentService.findDocumentAttributes(siteId, documentId, null, LIMIT).getResults());
+        documentService.findDocumentAttributes(siteId, document, null, LIMIT).getResults());
   }
 
   private static String getResizedImageKey(final String s3Key) {
@@ -455,8 +462,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
   }
 
-  private static void verifyAction(final String siteId, final String documentId) {
-    Action action = actionsService.getActions(siteId, documentId).get(0);
+  private static void verifyAction(final String siteId, final DocumentArtifact document) {
+    Action action = actionsService.getActions(siteId, document).get(0);
 
     assertEquals(ActionType.RESIZE, action.type());
     assertEquals(ActionStatus.COMPLETE, action.status());
@@ -481,16 +488,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static void verifyMetadata(final int expectedWidth, final int expectedHeight,
       final String imageKey, final String path) {
     String[] splitted = imageKey.split("/");
-    DocumentItem item = documentService.findDocument(splitted[0], splitted[1]);
+    DocumentArtifact document = new DocumentArtifact(splitted[1], null);
+    DocumentRecord item = documentService.findDocument(splitted[0], document);
 
-    assertEquals(path, item.getPath());
-    assertEquals(Integer.toString(expectedWidth), item.getWidth());
-    assertEquals(Integer.toString(expectedHeight), item.getHeight());
+    assertEquals(path, item.path());
+    assertEquals(Integer.toString(expectedWidth), item.width());
+    assertEquals(Integer.toString(expectedHeight), item.height());
   }
 
   private String addPdfToBucket(final String siteId) {
 
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, DOCUMENT_ID_OCR_KEY_VALUE);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, DOCUMENT_ID_OCR_KEY_VALUE, null);
     s3Service.putObject(BUCKET_NAME, s3Key, "abc".getBytes(StandardCharsets.UTF_8),
         "application/pdf");
 
@@ -500,7 +508,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private String addTextToBucket(final String siteId, final String text) {
     String documentId = ID.uuid();
 
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
     s3Service.putObject(BUCKET_NAME, s3Key, text.getBytes(StandardCharsets.UTF_8), "text/plain");
 
     return documentId;
@@ -553,21 +561,21 @@ public class DocumentActionsProcessorTest implements DbKeys {
     s3Service.deleteAllFiles(BUCKET_NAME);
   }
 
-  private ActionBuilder createAction(final String documentId, final ActionType actionType) {
-    return new ActionBuilder().type(actionType).documentId(documentId).indexUlid().userId("joe");
+  private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
+    return new ActionBuilder().type(actionType).document(document).indexUlid().userId("joe");
   }
 
-  private String createDocument2(final String siteId, final String contentType) {
-    String documentId = ID.uuid();
-    return createDocument2(siteId, documentId, contentType);
-  }
-
-  private String createDocument2(final String siteId, final String documentId,
+  private DocumentArtifact createDocument2(final String siteId, final DocumentArtifact document,
       final String contentType) {
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
     item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
-    return documentId;
+    return document;
+  }
+
+  private DocumentArtifact createDocument2(final String siteId, final String contentType) {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    return createDocument2(siteId, document, contentType);
   }
 
   private String createEventBus(final String sqsQueueArn) {
@@ -613,36 +621,36 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return response;
   }
 
-  private void processIdpRequest(final String siteId, final String documentId,
+  private void processIdpRequest(final String siteId, final DocumentArtifact document,
       final String contentType, final MappingRecord mappingRecord) throws ValidationException {
-    createDocument2(siteId, documentId, contentType);
+    createDocument2(siteId, document, contentType);
 
-    List<Action> actions = List.of(createAction(documentId, ActionType.IDP)
+    List<Action> actions = List.of(createAction(document, ActionType.IDP)
         .parameters(Map.of("mappingId", mappingRecord.getDocumentId())).build(siteId));
     actionsService.saveNewActions(actions);
 
-    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+    AwsEvent map = buildAwsEvent(siteId, document);
 
     // when
     processor.handleRequest(map, null);
   }
 
   // Helper method to create and process a resize action.
-  private void processResizeAction(final String siteId, final String documentId,
+  private void processResizeAction(final String siteId, final DocumentArtifact document,
       final Map<String, Object> parameters) {
     List<Action> actions =
-        List.of(createAction(documentId, ActionType.RESIZE).parameters(parameters).build(siteId));
+        List.of(createAction(document, ActionType.RESIZE).parameters(parameters).build(siteId));
     actionsService.saveNewActions(actions);
 
-    AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+    AwsEvent map = buildAwsEvent(siteId, document);
 
     processor.handleRequest(map, null);
   }
 
+
   private void removeAllS3Objects() {
     s3Service.deleteAllFiles(BUCKET_NAME);
   }
-
 
   // Helper method to set up an image document for testing.
   private String setupImageDocument(final String siteId, final String imageFormat)
@@ -651,7 +659,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     String documentId = ID.uuid();
 
     // Save test image to S3 bucket
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
     try (InputStream is = new FileInputStream("src/test/resources/resize/input." + imageFormat)) {
       byte[] imageBytes = IoUtils.toByteArray(is);
       s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
@@ -675,31 +683,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String content = "this is some data";
-      String documentId = createDocument2(siteId, "text/plain");
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       List<Action> actions =
-          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").documentId(documentId)
+          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document)
               .indexUlid().parameters(Map.of("checksumType", "SHA256")).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.CHECKSUM, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      DocumentItem item = documentService.findDocument(siteId, documentId);
-      assertEquals("SHA256", item.getChecksumType());
+      DocumentRecord item = documentService.findDocument(siteId, document);
+      assertEquals("SHA256", item.checksumType());
       assertEquals("dff90087e2a95f1c093cf40e7be6ef4e998e21b4ea38d0b494ea2fdb2576fcfe",
-          item.getChecksum());
+          item.checksum());
     }
   }
 
@@ -712,9 +720,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -726,7 +735,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
+      List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(1, list.size());
       assertEquals(ActionStatus.FAILED, list.get(0).status());
       assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
@@ -739,29 +748,29 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testDocumentTaggingAction02() {
-
+    // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
       SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      final DocumentArtifact document = new DocumentArtifact(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -775,10 +784,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -812,9 +821,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "unknown", "tags",
                       "organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -826,7 +837,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
+      List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(1, list.size());
       assertEquals(ActionStatus.FAILED, list.get(0).status());
       assertEquals("Unknown engine: unknown", list.get(0).message());
@@ -848,22 +859,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "Organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -877,10 +889,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -923,22 +935,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "Organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -952,10 +965,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -996,22 +1009,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -1025,10 +1039,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -1065,20 +1079,21 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.DOCUMENTTAGGING)
+      List<Action> actions = List.of(createAction(document, ActionType.DOCUMENTTAGGING)
           .parameters(Map.of("engine", "chatgpt", "tags",
               "document type,meeting date,chairperson,secretary,board members,resolutions"))
           .build(siteId));
@@ -1092,10 +1107,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -1138,22 +1153,23 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, documentId, List.of(new DocumentTag(documentId, "untagged",
-          "", new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
+          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
 
       List<Action> actions =
           List.of(
-              createAction(documentId, ActionType.DOCUMENTTAGGING)
+              createAction(document, ActionType.DOCUMENTTAGGING)
                   .parameters(Map.of("engine", "chatgpt", "tags",
                       "Organization,location,person,subject,sentiment,document type"))
                   .build(siteId));
@@ -1167,10 +1183,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       Pagination<DocumentTag> tags =
-          documentService.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(expectedSize, tags.getResults().size());
 
       int i = 0;
@@ -1211,18 +1227,19 @@ public class DocumentActionsProcessorTest implements DbKeys {
           AttributeDataType.STRING, AttributeType.STANDARD);
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
-      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocumentId(documentId)
+      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocument(document)
           .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
 
-      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocumentId(documentId)
+      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocument(document)
           .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
 
       List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
       documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.EVENTBRIDGE)
+      List<Action> actions = List.of(createAction(document, ActionType.EVENTBRIDGE)
           .parameters(Map.of("eventBusName", eventBusName)).build(siteId));
       actionsService.saveNewActions(actions);
 
@@ -1232,15 +1249,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.EVENTBRIDGE, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
       Message message = getMessage(sqsDocumentQueueUrl);
 
-      Map<String, Object> document = assertEventBridgeMessage(message);
+      Map<String, Object> documentMessage = assertEventBridgeMessage(message);
 
-      validateAttributes(document);
+      validateAttributes(documentMessage);
     }
   }
 
@@ -1249,9 +1266,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   @Test
   public void testGetOcrParseTypes01() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     AddOcrAction ocrAction = new AddOcrAction(serviceCache);
     ActionBuilder action =
-        new ActionBuilder().documentId(ID.uuid()).userId("joe").indexUlid().type(ActionType.OCR);
+        new ActionBuilder().document(document).userId("joe").indexUlid().type(ActionType.OCR);
     assertEquals("[TEXT]", ocrAction.getOcrParseTypes(action.build((String) null)).toString());
 
     // invalid
@@ -1275,12 +1293,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions =
-          List.of(
-              createAction(documentId, ActionType.OCR)
-                  .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages",
-                      "2", "ocrOutputType", "CSV"))
-                  .documentId(documentId).indexUlid().build(siteId));
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      List<Action> actions = List.of(createAction(document, ActionType.OCR)
+          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2",
+              "ocrOutputType", "CSV"))
+          .document(document).indexUlid().build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1298,14 +1315,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
       assertEquals("CSV", resultmap.get("ocrOutputType").toString());
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNull(action.completedDate());
 
       List<Action> runningActions =
-          actionsService.getAction(siteId, documentId, ActionStatus.RUNNING);
+          actionsService.getAction(siteId, document, ActionStatus.RUNNING);
       assertEquals(1, runningActions.size());
       assertEquals(ActionType.OCR, runningActions.get(0).type());
     }
@@ -1320,11 +1337,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "text/plain");
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
@@ -1335,7 +1352,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1354,11 +1371,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = createDocument2(siteId, DOCUMENT_ID_OCR, "application/pdf");
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_OCR, null), "application/pdf");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
@@ -1369,7 +1388,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1386,7 +1405,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1395,12 +1416,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       Action action = actions.get(0);
       assertEquals(ActionStatus.FAILED, action.status());
-      assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.model."
-          + "DocumentItem.getDocumentId()\" because \"item\" is null", action.message());
+      assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.documents."
+          + "DocumentRecord.documentId()\" because \"item\" is null", action.message());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
@@ -1416,37 +1437,37 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle05() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.WEBHOOK)
+      List<Action> actions = List.of(createAction(document, ActionType.WEBHOOK)
           .parameters(Map.of("url", URL + "/callback")).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
 
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-      Map<String, String> document = (Map<String, String>) resultmap.get("document");
+      Map<String, String> documentMap = (Map<String, String>) resultmap.get("document");
 
-      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), documentMap.get("siteId"));
 
-      assertEquals(documentId, document.get("documentId"));
-      assertEquals("application/pdf", document.get("contentType"));
-      assertEquals("joe", document.get("userId"));
-      assertNotNull(document.get("insertedDate"));
-      assertNotNull(document.get("lastModifiedDate"));
-      assertNotNull(document.get("url"));
+      assertEquals(document.documentId(), documentMap.get("documentId"));
+      assertEquals("application/pdf", documentMap.get("contentType"));
+      assertEquals("joe", documentMap.get("userId"));
+      assertNotNull(documentMap.get("insertedDate"));
+      assertNotNull(documentMap.get("lastModifiedDate"));
+      assertNotNull(documentMap.get("url"));
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1464,6 +1485,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       Collection<DocumentTag> tags = Arrays.asList(
@@ -1474,10 +1496,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       documentService.saveDocument(siteId, item, tags);
 
       List<Action> actions = Arrays.asList(
-          createAction(documentId, ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE)
+          createAction(documentArtifact, ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE)
               .build(siteId),
-          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback"))
-              .build(siteId));
+          createAction(documentArtifact, ActionType.WEBHOOK)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1486,7 +1508,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, documentArtifact);
       assertEquals(2, actions.size());
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
       assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
@@ -1502,7 +1524,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("CLEAN", document.get("status"));
       assertEquals("2022-01-01", document.get("timestamp"));
 
-      Action action = actionsService.getActions(siteId, documentId).get(1);
+      Action action = actionsService.getActions(siteId, documentArtifact).get(1);
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1525,16 +1547,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setContentType("text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1547,7 +1570,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNull(lastRequest);
 
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, documentId).get(0).status());
+          actionsService.getActions(siteId, document).get(0).status());
 
       HttpResponse<String> response = typesense.getDocument(siteId, documentId);
       assertEquals("200", String.valueOf(response.statusCode()));
@@ -1567,22 +1590,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle08() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          createAction(documentId, ActionType.WEBHOOK).status(ActionStatus.RUNNING)
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.RUNNING)
               .parameters(Map.of("url", URL + "/callback")).build(siteId),
-          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
               .build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(2, actions.size());
       assertEquals(ActionStatus.RUNNING, actions.get(0).status());
       assertEquals(ActionStatus.PENDING, actions.get(1).status());
@@ -1601,22 +1624,22 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandle09() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          createAction(documentId, ActionType.WEBHOOK).status(ActionStatus.FAILED)
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.FAILED)
               .parameters(Map.of("url", URL + "/callback")).build(siteId),
-          createAction(documentId, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
               .build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
 
       assertEquals(2, actions.size());
       Action action = actions.get(0);
@@ -1645,18 +1668,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        String documentId = createDocument2(siteId, "application/pdf");
+        DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
-        List<Action> actions = List.of(createAction(documentId, type).build(siteId));
+        List<Action> actions = List.of(createAction(document, type).build(siteId));
         actionsService.saveNewActions(actions);
 
-        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        AwsEvent map = buildAwsEvent(siteId, document);
 
         // when
         processor.handleRequest(map, null);
 
         // then
-        List<Action> list = actionsService.getActions(siteId, documentId);
+        List<Action> list = actionsService.getActions(siteId, document);
         assertEquals(1, list.size());
         assertEquals(type, list.get(0).type());
         assertEquals(ActionStatus.RUNNING, list.get(0).status());
@@ -1672,16 +1695,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleDataClassification01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "text/plain");
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
 
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
         List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "Myprompt")).documentId(documentId)
-            .indexUlid().build(siteId));
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")).document(document).indexUlid()
+            .build(siteId));
         actionsService.saveNewActions(actions);
 
-        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        AwsEvent map = buildAwsEvent(siteId, document);
 
         // when
         processor.handleRequest(map, null);
@@ -1698,13 +1721,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         } else {
           assertEquals("POST", lastRequest.getMethod().getValue());
-          assertTrue(lastRequest.getPath().toString()
-              .endsWith("/documents/" + documentId + "/metadataExtractionResults/Myprompt"));
+          assertTrue(lastRequest.getPath().toString().endsWith(
+              "/documents/" + document.documentId() + "/metadataExtractionResults/Myprompt"));
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
           assertTrue(resultmap.isEmpty());
         }
 
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertNotNull(action.startDate());
         assertNotNull(action.insertedDate());
@@ -1726,20 +1749,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // given
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
-        String documentId = createDocument2(siteId, "application/pdf");
+        DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
         List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "Myprompt")).documentId(documentId)
-            .indexUlid().build(siteId));
+            .parameters(Map.of("llmPromptEntityName", "Myprompt")).document(document).indexUlid()
+            .build(siteId));
         actionsService.saveNewActions(actions);
 
-        AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+        AwsEvent map = buildAwsEvent(siteId, document);
 
         // when
         processor.handleRequest(map, null);
 
         // then
-        List<Action> list = actionsService.getActions(siteId, documentId);
+        List<Action> list = actionsService.getActions(siteId, document);
         assertEquals(2, list.size());
         assertEquals(ActionType.OCR, list.get(0).type());
         assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
@@ -1759,18 +1782,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
+      List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(2, list.size());
       assertEquals(ActionType.OCR, list.get(0).type());
       assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
@@ -1789,20 +1812,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "application/pdf");
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = Arrays.asList(
-          createAction(documentId, ActionType.OCR).status(ActionStatus.COMPLETE).build(siteId),
-          createAction(documentId, ActionType.FULLTEXT).build(siteId));
+          createAction(document, ActionType.OCR).status(ActionStatus.COMPLETE).build(siteId),
+          createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      List<Action> list = actionsService.getActions(siteId, documentId);
+      List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(2, list.size());
       assertEquals(ActionType.OCR, list.get(0).type());
       assertNull(list.get(0).parameters());
@@ -1823,11 +1846,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext03() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, DOCUMENT_ID_404, "text/plain");
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_404, null), "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
@@ -1838,7 +1863,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1855,18 +1880,20 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testHandleFulltext04() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, DOCUMENT_ID_429, "text/plain");
-      List<Action> actions = List.of(createAction(documentId, ActionType.FULLTEXT).build(siteId));
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_429, null), "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       for (int i = 1; i <= 5; i++) {
         // when
         processor.handleRequest(map, null);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertRetryAction(action, i);
       }
 
@@ -1874,7 +1901,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(5, action.retryCount());
       assertEquals(5, action.maxRetries());
       assertEquals(ActionStatus.MAX_RETRIES_REACHED, action.status());
@@ -1898,7 +1925,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Map<String, Object>> queries =
           List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
       String documentId = ID.uuid();
-      List<Action> actions = List.of(createAction(documentId, ActionType.OCR)
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.OCR)
           .parameters(
               Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries))
           .build(siteId));
@@ -1918,7 +1947,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
           resultmap.get("textractQueries").toString());
 
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.RUNNING, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1939,6 +1968,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
             null);
@@ -1949,10 +1979,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
         // when
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -1960,7 +1990,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
       }
@@ -1980,6 +2010,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (FileInputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
             AttributeDataType.NUMBER, null);
@@ -1989,10 +2020,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2000,7 +2031,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", null, "6.200041751E9");
       }
@@ -2020,6 +2051,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (FileInputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
             AttributeDataType.NUMBER, null);
@@ -2029,10 +2061,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2040,7 +2072,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(0, results.size());
       }
     }
@@ -2059,6 +2091,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
             AttributeDataType.STRING, null);
@@ -2069,10 +2102,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2080,7 +2113,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "somevalue", null);
       }
@@ -2100,6 +2133,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice",
             AttributeDataType.STRING, null);
@@ -2110,10 +2144,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2121,7 +2155,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(2, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "123", null);
         assertDocumentAttributeEquals(results.get(1), "invoice", "abc", null);
@@ -2142,6 +2176,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
             null);
@@ -2151,10 +2186,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 MappingAttributeSourceType.CONTENT, null, null, null);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2162,7 +2197,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
       }
@@ -2183,6 +2218,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "path", null, null);
 
@@ -2191,10 +2227,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
             MappingAttributeMetadataField.USERNAME);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2202,7 +2238,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "path", "joe", null);
       }
@@ -2231,6 +2267,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       for (String validationRegex : Arrays.asList(null, "INV-\\d+")) {
 
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         Mapping mapping =
             createMapping("invoice", "invoice", MappingAttributeLabelMatchingType.FUZZY,
@@ -2238,10 +2275,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         mapping.getAttributes().get(0).setValidationRegex(validationRegex);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2249,7 +2286,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         DocumentAttributeRecord record = results.get(0);
         assertEquals("invoice", record.getKey());
@@ -2276,6 +2313,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       try (InputStream is = new FileInputStream("src/test/resources/text/text02.txt")) {
         String text = IoUtils.toUtf8String(is);
         String documentId = addTextToBucket(siteId, text);
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId,
             "certificate_number", null, null);
@@ -2287,10 +2325,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "text/plain", mappingRecord);
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2298,7 +2336,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "certificate_number", "100232", null);
       }
@@ -2315,6 +2353,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           null, null);
@@ -2327,10 +2366,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       // run twice
       for (int i = 0; i < 2; i++) {
-        processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+        processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
         assertNull(action.message());
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertEquals(ActionType.IDP, action.type());
@@ -2338,7 +2377,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
         assertDocumentAttributeEquals(results.get(0), "certificate_number", "28937423", null);
       }
@@ -2355,6 +2394,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           null, null);
@@ -2365,10 +2405,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2376,7 +2416,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", "54", null);
     }
@@ -2392,6 +2432,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           null, null);
@@ -2402,10 +2443,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2413,7 +2454,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(0, results.size());
     }
   }
@@ -2428,6 +2469,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           null, null);
@@ -2437,10 +2479,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2448,7 +2490,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       final int expected = 3;
       assertEquals(expected, results.size());
@@ -2470,6 +2512,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.KEY_ONLY, null);
@@ -2479,10 +2522,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2490,7 +2533,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
@@ -2506,20 +2549,21 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testIdpMalwareScan() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "malwareStatus",
           AttributeDataType.STRING, null);
 
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       Mapping mapping = createMapping("malwareStatus", null, null,
           MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2527,7 +2571,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "malwareStatus", "CLEAN", null);
@@ -2547,15 +2591,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
           AttributeDataType.STRING, null);
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       Mapping mapping = createMapping("malwareStatus", null, null,
           MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals("No Malware Scans found", action.message());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2563,7 +2609,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       assertEquals(0, results.size());
     }
@@ -2579,6 +2625,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
@@ -2588,10 +2635,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2599,7 +2646,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
     }
@@ -2622,6 +2669,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)) {
 
         String documentId = ID.uuid();
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         Mapping mapping =
             createMapping("certificate_number", null, null, sourceType, null, null, null);
@@ -2633,10 +2681,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+        processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, documentId).get(0);
+        Action action = actionsService.getActions(siteId, document).get(0);
 
         if (metadata) {
           assertEquals("No Metadata Extraction Result found", action.message());
@@ -2649,7 +2697,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertNotNull(action.insertedDate());
         assertNotNull(action.completedDate());
 
-        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(0, results.size());
       }
     }
@@ -2665,6 +2713,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "someattr",
           AttributeDataType.STRING, null);
@@ -2674,10 +2723,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2685,7 +2734,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(0, results.size());
     }
   }
@@ -2700,6 +2749,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
@@ -2710,10 +2760,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, documentId, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2721,7 +2771,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(action.insertedDate());
       assertNotNull(action.completedDate());
 
-      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, documentId);
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
     }
@@ -2756,18 +2806,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPdfExportAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "text/plain");
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("Google Workload Identity is not configured", action.message());
@@ -2786,18 +2836,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
       SiteConfiguration siteConfig = SiteConfiguration.builder().google(google).build(siteId);
       configService.save(siteId, siteConfig);
 
-      String documentId = createDocument2(siteId, "text/plain");
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("PdfExport only supports Google DeepLink", action.message());
@@ -2817,12 +2867,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
       item.setDeepLinkPath(
           "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
       documentService.saveDocument(siteId, item, null);
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.PDFEXPORT).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -2831,7 +2883,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -2854,30 +2906,31 @@ public class DocumentActionsProcessorTest implements DbKeys {
   public void testPublishAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createDocument2(siteId, "text/plain");
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
 
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
       String content = "this is some data";
       s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      List<Action> actions = List.of(createAction(documentId, ActionType.PUBLISH).build(siteId));
+      List<Action> actions = List.of(createAction(document, ActionType.PUBLISH).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, documentId).get(0);
+      Action action = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionType.PUBLISH, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
-      DocumentPublicationRecord pv = documentService.findPublishDocument(siteId, documentId);
-      assertEquals(documentId, pv.getDocumentId());
+      DocumentPublicationRecord pv =
+          documentService.findPublishDocument(siteId, document.documentId());
+      assertEquals(document.documentId(), pv.getDocumentId());
       assertEquals("text/plain", pv.getContentType());
-      assertEquals(documentId, pv.getPath());
+      assertEquals(document.documentId(), pv.getPath());
       assertEquals("joe", pv.getUserId());
       assertNotNull(pv.getS3version());
 
@@ -2903,9 +2956,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
       String name = "testqueue#" + documentId;
 
-      Action action = createAction(documentId, ActionType.QUEUE).queueId(name).build(siteId);
+      Action action = createAction(document, ActionType.QUEUE).queueId(name).build(siteId);
       List<Action> actions = List.of(action);
       actionsService.saveNewActions(actions);
 
@@ -2915,7 +2970,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      var raction = actionsService.getActions(siteId, documentId).get(0);
+      var raction = actionsService.getActions(siteId, document).get(0);
       assertEquals(ActionStatus.IN_QUEUE, raction.status());
       assertEquals(SiteIdKeyGenerator.createDatabaseKey(siteId, "actions#IN_QUEUE#"),
           raction.key().gsi2Pk());
@@ -2950,13 +3005,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
     // given
     String siteId = ID.uuid();
     String documentId = setupImageDocument(siteId, srcImageFormat);
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
 
     // when
-    processResizeAction(siteId, documentId, parameters);
+    processResizeAction(siteId, document, parameters);
 
     // then
-    verifySuccessfulResize(siteId, documentId, s3Key, expectedWidth, expectedHeight, srcImageFormat,
+    verifySuccessfulResize(siteId, document, s3Key, expectedWidth, expectedHeight, srcImageFormat,
         parameters);
     removeAllS3Objects();
   }
@@ -3005,9 +3062,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals("[other, person]", attrMap.get("stringValues").toString());
   }
 
-  private void verifyDocumentAttributes(final String siteId, final String documentId) {
+  private void verifyDocumentAttributes(final String siteId, final DocumentArtifact document) {
     List<DocumentAttributeRecord> attributes =
-        documentService.findDocumentAttributes(siteId, documentId, null, 2).getResults();
+        documentService.findDocumentAttributes(siteId, document, null, 2).getResults();
     assertEquals(1, attributes.size());
     DocumentAttributeRecord attribute = attributes.get(0);
     assertEquals("Relationships", attribute.getKey());
@@ -3015,14 +3072,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   // Helper method to verify successful resize operation.
-  private void verifySuccessfulResize(final String siteId, final String documentId,
+  private void verifySuccessfulResize(final String siteId, final DocumentArtifact document,
       final String s3Key, final int expectedWidth, final int expectedHeight,
       final String srcImageFormat, final Map<String, Object> parameters) throws IOException {
     String imageKey = getResizedImageKey(s3Key);
     String resImageFormat = (String) parameters.getOrDefault("outputType", srcImageFormat);
 
-    verifyAction(siteId, documentId);
-    verifyDocumentAttributes(siteId, documentId);
+    verifyAction(siteId, document);
+    verifyDocumentAttributes(siteId, document);
     verifyData(expectedWidth, expectedHeight, imageKey, resImageFormat);
 
     String path = (String) parameters.getOrDefault("path",

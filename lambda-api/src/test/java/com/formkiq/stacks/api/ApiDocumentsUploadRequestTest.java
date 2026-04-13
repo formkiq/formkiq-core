@@ -24,7 +24,8 @@
 package com.formkiq.stacks.api;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
@@ -232,11 +233,11 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
         assertFalse(url.contains("/testbucket/default"));
       }
 
-      DocumentItem item =
-          getDocumentService().findDocument(siteId, resp.get("documentId").toString());
+      DocumentRecord item = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(resp.get("documentId").toString(), null));
       assertEquals(
           "AROAZB6IP7U6SDBIQTEUX:formkiq-docstack-unittest-api-ApiGatewayInvokeRole-IKJY8XKB0IUK",
-          item.getUserId());
+          item.userId());
 
       assertNotNull(getDocumentService().findMostDocumentDate());
     }

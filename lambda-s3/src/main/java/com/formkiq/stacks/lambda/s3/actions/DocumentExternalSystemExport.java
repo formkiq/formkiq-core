@@ -25,13 +25,15 @@ package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -47,7 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
@@ -57,7 +58,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 /**
  * Export {@link DocumentItem} to External System.
  */
-public class DocumentExternalSystemExport implements BiFunction<String, String, String> {
+public class DocumentExternalSystemExport implements DocumentExternalSystem {
 
   private static Map<Object, List<Map<String, Object>>> getAttributeKeyMap(
       final Collection<Map<String, Object>> activities) {
@@ -181,12 +182,12 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
   }
 
   private Map<String, Map<String, Object>> addDocumentAttributes(final String siteId,
-      final String documentId) {
+      final DocumentArtifact document) {
 
     final int limit = 100;
 
     Pagination<DocumentAttributeRecord> results =
-        this.documentService.findDocumentAttributes(siteId, documentId, null, limit);
+        this.documentService.findDocumentAttributes(siteId, document, null, limit);
 
     Collection<Map<String, Object>> list =
         new DocumentAttributeRecordToMap(true).apply(siteId, results.getResults());
@@ -205,14 +206,15 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     return map;
   }
 
-  private void addDocumentTags(final String siteId, final String documentId,
+  private void addDocumentTags(final String siteId, final DocumentArtifact document,
       final DynamicDocumentItem item) {
 
-    Map<String, Collection<DocumentTag>> tagMap = this.documentService.findDocumentsTags(siteId,
-        List.of(documentId), Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
+    Map<String, Collection<DocumentTag>> tagMap =
+        this.documentService.findDocumentsTags(siteId, List.of(document.documentId()),
+            Arrays.asList("CLAMAV_SCAN_STATUS", "CLAMAV_SCAN_TIMESTAMP"));
 
     Map<String, String> values = new HashMap<>();
-    Collection<DocumentTag> tags = tagMap.get(documentId);
+    Collection<DocumentTag> tags = tagMap.get(document.documentId());
     for (DocumentTag tag : tags) {
       values.put(tag.getKey(), tag.getValue());
     }
@@ -225,35 +227,29 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
   }
 
   @Override
-  public String apply(final String siteId, final String documentId) {
-    return apply(siteId, documentId, null);
+  public String apply(final String siteId, final DocumentArtifact document) {
+    return apply(siteId, document, null);
   }
 
-  /**
-   * Convert {@link DocumentItem} to JSON.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param activities {@link Collection}
-   * @return {@link String}
-   */
-  public String apply(final String siteId, final String documentId,
+  @Override
+  public String apply(final String siteId, final DocumentArtifact document,
       final Collection<Map<String, Object>> activities) {
 
-    DocumentItem result = this.documentService.findDocument(siteId, documentId);
-    if (result == null) {
-      result = new DynamicDocumentItem(Map.of("documentId", documentId));
+    DynamicDocumentItem item = null;
+    DocumentRecord record = this.documentService.findDocument(siteId, document);
+    if (record != null) {
+      item = new DocumentRecordToDynamicDocumentItem().apply(record);
+    } else {
+      item = new DynamicDocumentItem(Map.of("documentId", document.documentId()));
     }
-
-    DynamicDocumentItem item = new DocumentItemToDynamicDocumentItem().apply(result);
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
     item.put("siteId", site);
 
-    URL s3Url = getS3Url(siteId, documentId, item);
+    URL s3Url = getS3Url(siteId, document, item);
     item.put("url", s3Url);
 
-    Map<String, Map<String, Object>> attributes = addDocumentAttributes(siteId, documentId);
+    Map<String, Map<String, Object>> attributes = addDocumentAttributes(siteId, document);
     if (!attributes.isEmpty()) {
       item.put("attributes", attributes);
     }
@@ -261,7 +257,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
     addChanged(activities, item);
     addChangedAttributes(activities, item);
 
-    addDocumentTags(siteId, documentId, item);
+    addDocumentTags(siteId, document, item);
 
     return this.gson.toJson(Map.of("document", item));
   }
@@ -270,11 +266,12 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
    * Get Document S3 Url.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param item {@link DocumentItem}
    * @return {@link URL}
    */
-  private URL getS3Url(final String siteId, final String documentId, final DocumentItem item) {
+  private URL getS3Url(final String siteId, final DocumentArtifact document,
+      final DocumentItem item) {
 
     URL url = null;
 
@@ -282,7 +279,7 @@ public class DocumentExternalSystemExport implements BiFunction<String, String, 
       Duration duration = Duration.ofDays(1);
       PresignGetUrlConfig config =
           new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
-      String s3key = createS3Key(siteId, documentId);
+      String s3key = createS3Key(siteId, document);
       url = s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
     }
 

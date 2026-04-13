@@ -34,6 +34,9 @@ import com.formkiq.graalvm.annotations.Reflectable;
 @Reflectable
 public class DocumentItemDynamoDb implements DocumentItem {
 
+  /** Artifact Id. */
+  @Reflectable
+  private String artifactId;
   /** Belongs To Document Id. */
   @Reflectable
   private String belongsToDocumentId;
@@ -104,6 +107,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
     setDocumentId(docid);
     setInsertedDate(date);
     setUserId(username);
+  }
+
+  @Override
+  public String getArtifactId() {
+    return this.artifactId;
   }
 
   @Override
@@ -194,6 +202,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public String getWidth() {
     return this.width;
+  }
+
+  @Override
+  public void setArtifactId(final String id) {
+    this.artifactId = id;
   }
 
   @Override

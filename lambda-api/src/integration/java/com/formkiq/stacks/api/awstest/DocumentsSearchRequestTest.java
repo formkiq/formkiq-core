@@ -184,7 +184,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
 
-      tagApi.addDocumentTags(documentId, addTagReq, null);
+      tagApi.addDocumentTags(documentId, addTagReq, null, null);
 
       DocumentSearchRequest req =
           new DocumentSearchRequest().responseFields(new SearchResponseFields().addTagsItem("test"))
@@ -238,7 +238,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentTagsRequest addTagReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key("test").value("somevalue"));
 
-      tagApi.addDocumentTags(documentId, addTagReq, null);
+      tagApi.addDocumentTags(documentId, addTagReq, null, null);
 
       DocumentSearchApi api = new DocumentSearchApi(client);
 
@@ -290,7 +290,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       AddDocumentTagsRequest addReq = new AddDocumentTagsRequest()
           .addTagsItem(new AddDocumentTag().key(tagKey).value("somevalue"));
-      tagApi.addDocumentTags(documentId, addReq, null);
+      tagApi.addDocumentTags(documentId, addReq, null, null);
 
       DocumentSearchRequest req = new DocumentSearchRequest().query(
           new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue")));
@@ -366,7 +366,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
         DocumentsApi docApi = new DocumentsApi(client);
 
         // when
-        docApi.deleteDocument(documentId, null, Boolean.FALSE);
+        docApi.deleteDocument(documentId, null, null, Boolean.FALSE);
 
         // then
         while (o.isPresent()) {

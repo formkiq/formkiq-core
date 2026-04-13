@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.LogType;
@@ -60,7 +61,7 @@ public class ActionsNotificationServiceImplTest {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       List<Action> actions = List.of(new ActionBuilder().userId("J").indexUlid()
-          .documentId(documentId).type(ActionType.OCR).build(siteId));
+          .document(DocumentArtifact.of(documentId, null)).type(ActionType.OCR).build(siteId));
 
       // when
       SERVICE.publishNextActionEvent(actions, siteId, documentId);
@@ -84,8 +85,9 @@ public class ActionsNotificationServiceImplTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       String documentId = ID.uuid();
-      List<Action> actions = List.of(new ActionBuilder().documentId(documentId).type(ActionType.OCR)
-          .status(ActionStatus.FAILED).userId("J").indexUlid().build(siteId));
+      List<Action> actions = List.of(
+          new ActionBuilder().document(DocumentArtifact.of(documentId, null)).type(ActionType.OCR)
+              .status(ActionStatus.FAILED).userId("J").indexUlid().build(siteId));
 
       // when
       SERVICE.publishNextActionEvent(actions, siteId, documentId);
@@ -103,10 +105,11 @@ public class ActionsNotificationServiceImplTest {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       List<Action> actions = Arrays.asList(
-          new ActionBuilder().documentId(documentId).type(ActionType.OCR).userId("J").indexUlid()
+          new ActionBuilder().document(document).type(ActionType.OCR).userId("J").indexUlid()
               .status(ActionStatus.RUNNING).build(siteId),
-          new ActionBuilder().documentId(documentId).type(ActionType.OCR).userId("J").indexUlid()
+          new ActionBuilder().document(document).type(ActionType.OCR).userId("J").indexUlid()
               .status(ActionStatus.PENDING).build(siteId));
 
       // when

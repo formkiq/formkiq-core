@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler.publications;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -73,13 +74,15 @@ public class PublicationsDocumentIdRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     DocumentPublicationRecord item = documentService.findPublishDocument(siteId, documentId);
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
-    String s3key = createS3Key(siteId, documentId);
+    String s3key = createS3Key(siteId, documentId, artifactId);
     String s3VersionKey = item.getS3version();
 
     String contentType =
@@ -96,7 +99,7 @@ public class PublicationsDocumentIdRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addDocumentViewActivity(siteId, documentId, s3VersionKey, false);
+      plugin.addDocumentViewActivity(siteId, document, s3VersionKey, false);
     }
 
     return ApiRequestHandlerResponse.builder().status(SC_TEMPORARY_REDIRECT)

@@ -24,14 +24,17 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
@@ -59,7 +62,10 @@ public class DocumentsIdUploadRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String documentId = event.getPathParameter("documentId");
+    final String documentId = event.getPathParameter("documentId");
+    final String artifactId = event.getQueryStringParameter("artifactId");
+    final DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
     AddDocumentRequest o = new AddDocumentRequest();
     o.setDocumentId(documentId);
     o.setChecksum(event.getQueryStringParameter("checksum"));
@@ -70,14 +76,15 @@ public class DocumentsIdUploadRequestHandler
     validate(o);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
-    DocumentItem item = service.findDocument(siteId, documentId);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    DocumentRecord ditem = service.findDocument(siteId, document);
+    throwIfNull(ditem, new DocumentNotFoundException(documentId));
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
             Optional.empty());
 
-    final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o);
+    DynamicDocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(ditem);
+    final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, item);
 
     item.setChecksum(o.getChecksum());
     item.setChecksumType(o.getChecksumType());

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.lambda.s3;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.ChecksumCalculator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.actions.Action;
@@ -81,17 +82,18 @@ public class ChecksumAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, ValidationException {
 
-    String s3key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    String s3key = SiteIdKeyGenerator.createS3Key(siteId, document);
     byte[] bytes = this.s3.getContentAsBytes(this.documentsS3Bucket, s3key);
 
     String checksumType =
         action.parameters().get("checksumType").toString().toUpperCase(Locale.ROOT);
     String checksum = calculateChecksum(checksumType, bytes);
 
-    this.documentService.updateDocument(siteId, documentId, Map.of("checksum",
+    this.documentService.updateDocument(siteId, document, Map.of("checksum",
         AttributeValue.fromS(checksum), "checksumType", AttributeValue.fromS(checksumType)));
 
     return new ProcessActionStatus(ActionStatus.COMPLETE);
