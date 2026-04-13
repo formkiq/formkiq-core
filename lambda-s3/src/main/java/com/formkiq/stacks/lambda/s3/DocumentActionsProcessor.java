@@ -510,7 +510,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     if (newImage != null) {
       String siteId = newImage.siteId().s();
       String documentId = newImage.documentId().s();
-      String artifactId = newImage.artifactId().s();
+      String artifactId = newImage.artifactId() != null ? newImage.artifactId().s() : null;
       DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
       Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
 
