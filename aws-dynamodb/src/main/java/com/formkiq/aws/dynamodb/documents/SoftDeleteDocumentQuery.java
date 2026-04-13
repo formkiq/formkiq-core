@@ -26,7 +26,6 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.QueryResult;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 /**
@@ -37,18 +36,19 @@ public class SoftDeleteDocumentQuery extends DeleteDocumentQuery {
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public SoftDeleteDocumentQuery(final String documentId) {
-    super(documentId, false);
+  public SoftDeleteDocumentQuery(final DocumentArtifact documentArtifact) {
+    super(documentArtifact, false);
   }
 
   @Override
   public QueryRequest build(final String tableName, final String siteId, final String nextToken,
       final int limit) {
 
-    var pk = DynamoDbTypes.toString(keysDocument(siteId, getDocumentId()).get(PK));
-    var builder = DynamoDbQueryBuilder.builder().pk(pk).limit(limit);
+    var key = new DocumentRecordBuilder().document(getDocument()).buildKey(siteId);
+    // var pk = DynamoDbTypes.toString(keysDocument(siteId, getDocumentId()).get(PK));
+    var builder = DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit);
     return builder.build(tableName);
   }
 
@@ -56,6 +56,6 @@ public class SoftDeleteDocumentQuery extends DeleteDocumentQuery {
   public boolean deleteItems(final DynamoDbService db, final String tableName, final String siteId,
       final QueryResult result) {
     return db.moveItems(result.items(),
-        new DocumentDeleteMoveAttributeFunction(siteId, getDocumentId()));
+        new DocumentDeleteMoveAttributeFunction(siteId, getDocument()));
   }
 }

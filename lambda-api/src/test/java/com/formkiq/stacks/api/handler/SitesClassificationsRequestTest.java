@@ -125,13 +125,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   private void addDocumentAttributes(final String siteId, final String documentId,
       final List<AddDocumentAttribute> attributes) throws ApiException {
     AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId);
+    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
   }
 
   private void addDocumentClassification(final String siteId, final String documentId,
       final AddDocumentAttributeClassification classification) throws ApiException {
     this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute(classification)), siteId);
+        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
   }
 
   private String addEntityType(final String siteId, final String name) throws ApiException {
@@ -165,8 +165,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
-    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
-        .getAttributes());
+    return notNull(this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
   }
 
   private List<SearchResultDocument> search(final String siteId,
@@ -855,7 +855,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       final int expected = 2;
       assertEquals(expected, documentAttributes.size());
@@ -913,7 +913,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // then
       documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
 
       int i = 0;
       assertEquals(expected + 1, documentAttributes.size());
@@ -1250,14 +1250,14 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       DeleteResponse deleteResponse =
-          this.documentAttributesApi.deleteDocumentAttribute(documentId, "test1", siteId);
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "test1", siteId, null);
 
       // then
       assertEquals("attribute 'test1' removed from document '" + documentId + "'",
           deleteResponse.getMessage());
 
       documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null).getAttributes());
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
       assertEquals(1, documentAttributes.size());
       assertDocumentAttributes(documentAttributes.get(0), "test2", "333");
     }
@@ -1458,7 +1458,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       for (SetDocumentAttributesRequest setReq : List.of(setReq0, setReq1)) {
         // when
         try {
-          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId);
+          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId, null);
           fail();
         } catch (ApiException e) {
           // then
@@ -1480,7 +1480,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // when
       try {
         this.documentAttributesApi.setDocumentAttributeValue(documentId,
-            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId);
+            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId, null);
         fail();
       } catch (ApiException e) {
         // then

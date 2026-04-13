@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.reindex;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -60,6 +61,8 @@ public class ReindexDocumentsRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
     Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
 
@@ -70,7 +73,7 @@ public class ReindexDocumentsRequestHandler
     }
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.reindexDocumentAttributes(siteId, documentId);
+    documentService.reindexDocumentAttributes(siteId, document);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message",

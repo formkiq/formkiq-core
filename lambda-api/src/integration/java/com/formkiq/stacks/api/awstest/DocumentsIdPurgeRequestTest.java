@@ -65,7 +65,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(documentId);
 
       // when
-      DeleteResponse deleteResponse = api.purgeDocument(documentId, siteId);
+      DeleteResponse deleteResponse = api.purgeDocument(documentId, siteId, null);
 
       // then
       assertEquals("'" + documentId + "' object deleted all versions", deleteResponse.getMessage());
@@ -89,7 +89,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractAwsIntegrationTest {
       String documentId = addDocument(client, siteId, null, content, "text/plain", null);
 
       // when
-      DeleteResponse deleteResponse = api.purgeDocument(documentId, siteId);
+      DeleteResponse deleteResponse = api.purgeDocument(documentId, siteId, null);
 
       // then
       assertEquals("'" + documentId + "' object deleted all versions", deleteResponse.getMessage());
@@ -114,7 +114,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.purgeDocument(documentId, siteId);
+        api.purgeDocument(documentId, siteId, null);
         fail();
       } catch (ApiException e) {
         // then

@@ -49,6 +49,8 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   private final UpdateDocumentRequest request;
   /** Document Id. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -181,6 +183,11 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
     return this;
   }
 
+  public UpdateDocumentRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -191,7 +198,7 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   public ApiHttpResponse<AddDocumentResponse> submit(final ApiClient apiClient,
       final String siteId) {
     Objects.requireNonNull(id, "documentId must not be null");
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).updateDocument(id, this.request, siteId, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).updateDocument(id, this.request, siteId,
+        this.artifactId, null));
   }
 }

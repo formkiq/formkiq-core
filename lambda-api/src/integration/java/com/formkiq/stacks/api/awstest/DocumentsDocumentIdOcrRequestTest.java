@@ -80,7 +80,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     AddDocumentOcrRequest req = new AddDocumentOcrRequest().ocrEngine(OcrEngine.TESSERACT);
 
     // when
-    AddDocumentOcrResponse response = api.addDocumentOcr(documentId, siteId, req);
+    AddDocumentOcrResponse response = api.addDocumentOcr(documentId, siteId, null, req);
 
     // then
     assertEquals("OCR request submitted", response.getMessage());
@@ -102,7 +102,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
             .type(DocumentActionType.OCR)));
 
     // when
-    AddResponse response = actionsApi.addDocumentActions(documentId, siteId, req);
+    AddResponse response = actionsApi.addDocumentActions(documentId, siteId, null, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
@@ -110,12 +110,12 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
 
     DocumentOcrApi api = new DocumentOcrApi(client);
     GetDocumentOcrResponse documentOcr =
-        api.getDocumentOcr(documentId, siteId, null, null, null, null);
+        api.getDocumentOcr(documentId, siteId, null, null, null, null, null);
     assertNotNull(documentOcr.getData());
     assertTrue(documentOcr.getData().contains("East Repair"));
 
-    List<DocumentAction> actions =
-        notNull(actionsApi.getDocumentActions(documentId, siteId, null, null, null).getActions());
+    List<DocumentAction> actions = notNull(
+        actionsApi.getDocumentActions(documentId, siteId, null, null, null, null).getActions());
     assertEquals(1, actions.size());
     assertEquals(DocumentActionStatus.COMPLETE, Objects.requireNonNull(actions.get(0).getStatus()));
   }
@@ -134,11 +134,11 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
       final String documentId) throws InterruptedException, ApiException {
 
     GetDocumentOcrResponse documentOcr =
-        api.getDocumentOcr(documentId, siteId, null, null, null, null);
+        api.getDocumentOcr(documentId, siteId, null, null, null, null, null);
 
     while (documentOcr == null || documentOcr.getData() == null) {
       try {
-        documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null, null);
+        documentOcr = api.getDocumentOcr(documentId, siteId, null, null, null, null, null);
       } catch (ApiException e) {
         // ignore
       }
@@ -220,7 +220,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
             new AddActionParameters().ocrEngine(OcrEngine.TESSERACT).ocrNumberOfPages("2"))));
 
     // when
-    AddResponse response = actionsApi.addDocumentActions(documentId, null, req);
+    AddResponse response = actionsApi.addDocumentActions(documentId, null, null, req);
 
     // then
     assertEquals("Actions saved", response.getMessage());
@@ -228,7 +228,7 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
 
     DocumentOcrApi api = new DocumentOcrApi(client);
     GetDocumentOcrResponse documentOcr =
-        api.getDocumentOcr(documentId, null, null, null, null, null);
+        api.getDocumentOcr(documentId, null, null, null, null, null, null);
 
     String text = documentOcr.getData();
     assertNotNull(text);
@@ -237,8 +237,8 @@ public class DocumentsDocumentIdOcrRequestTest extends AbstractAwsIntegrationTes
     assertFalse(text.contains("3/9"));
     assertFalse(text.contains("Current process"));
 
-    List<DocumentAction> actions =
-        notNull(actionsApi.getDocumentActions(documentId, null, null, null, null).getActions());
+    List<DocumentAction> actions = notNull(
+        actionsApi.getDocumentActions(documentId, null, null, null, null, null).getActions());
     assertEquals(1, actions.size());
     assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
   }

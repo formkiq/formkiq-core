@@ -74,7 +74,7 @@ public class ObjectExaminePdfIdHandler
 
     Map<String, Object> fields = new HashMap<>();
     String bucket = awsservice.environment("STAGE_DOCUMENTS_S3_BUCKET");
-    String s3key = String.format("tempfiles/%s", createS3Key(siteId, id));
+    String s3key = String.format("tempfiles/%s", createS3Key(siteId, id, null));
 
     S3Service s3 = awsservice.getExtension(S3Service.class);
 

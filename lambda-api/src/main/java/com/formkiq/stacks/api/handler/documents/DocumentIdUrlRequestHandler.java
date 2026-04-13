@@ -40,6 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -102,6 +103,8 @@ public class DocumentIdUrlRequestHandler
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
     String siteId = authorization.getSiteId();
     String versionKey = getVersionKey(event);
     boolean shortFormat = isShortFormat(event);
@@ -109,9 +112,9 @@ public class DocumentIdUrlRequestHandler
     validateShortFormat(awsservice, shortFormat);
 
     Map<String, AttributeValue> versionAttributes =
-        getVersionAttributes(awsservice, siteId, documentId, versionKey);
+        getVersionAttributes(awsservice, siteId, document, versionKey);
     DocumentItem item =
-        getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
+        getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     boolean inline = "true".equals(getParameter(event, "inline"));
@@ -121,7 +124,7 @@ public class DocumentIdUrlRequestHandler
     if (url != null) {
       if (awsservice.containsExtension(UserActivityPlugin.class)) {
         UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-        plugin.addDocumentViewActivity(siteId, documentId, versionKey, inline);
+        plugin.addDocumentViewActivity(siteId, document, versionKey, inline);
       }
     }
 
@@ -131,15 +134,15 @@ public class DocumentIdUrlRequestHandler
   }
 
   private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final String versionKey,
+      final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) throws Exception {
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
+    DocumentItem item = versionService.getDocumentItem(documentService, siteId, document,
         versionKey, versionAttributes);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
     return item;
   }
 
@@ -220,7 +223,8 @@ public class DocumentIdUrlRequestHandler
 
       String filename = getFilename(item);
       String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
-      String s3Key = createS3Key(siteId, documentId);
+      String s3Key = createS3Key(siteId, documentId, item.getArtifactId());
+      final DocumentArtifact document = new DocumentArtifact(documentId, item.getArtifactId());
 
       Matcher matcher = S3_PATTERN.matcher(deepLinkPath);
       if (matcher.matches()) {
@@ -236,7 +240,7 @@ public class DocumentIdUrlRequestHandler
       Duration duration = Duration.ofHours(hours);
       url = getUrl(awsservice, item, versionId, s3Bucket, s3Key, duration, config);
 
-      boolean hasWatermark = hasWatermark(awsservice, siteId, documentId, bypassWatermark);
+      boolean hasWatermark = hasWatermark(awsservice, siteId, document, bypassWatermark);
       if (hasWatermark) {
 
         String base64 = new StringToBase64Encoder().apply(url.toString());
@@ -272,9 +276,9 @@ public class DocumentIdUrlRequestHandler
   }
 
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
-      final String siteId, final String documentId, final String versionKey) {
+      final String siteId, final DocumentArtifact document, final String versionKey) {
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    return versionService.get(siteId, documentId, versionKey);
+    return versionService.get(siteId, document, versionKey);
   }
 
   private String getVersionId(final AwsServiceCache awsservice,
@@ -302,13 +306,13 @@ public class DocumentIdUrlRequestHandler
   }
 
   private boolean hasWatermark(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final boolean bypassWatermark) {
+      final DocumentArtifact document, final boolean bypassWatermark) {
 
     String watermarkUrl = awsservice.environment("WATERMARK_FUNCTION_URL");
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     return !bypassWatermark && !isEmpty(watermarkUrl)
-        && !documentService.findDocumentAttributesByType(siteId, documentId,
+        && !documentService.findDocumentAttributesByType(siteId, document,
             DocumentAttributeValueType.WATERMARK, null, 1).getResults().isEmpty();
   }
 

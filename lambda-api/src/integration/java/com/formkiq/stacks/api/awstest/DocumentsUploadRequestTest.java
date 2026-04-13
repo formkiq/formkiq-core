@@ -325,7 +325,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       DocumentTagsApi tagApi = new DocumentTagsApi(client);
       List<DocumentTag> tags =
-          notNull(tagApi.getDocumentTags(documentId, null, null, null, null, null).getTags());
+          notNull(tagApi.getDocumentTags(documentId, null, null, null, null, null, null).getTags());
       assertEquals(1, tags.size());
       assertEquals("test", tags.get(0).getKey());
       assertEquals("this", tags.get(0).getValue());
@@ -417,10 +417,11 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       assertEquals(STATUS_OK, httpResponse.statusCode());
       waitForDocumentContent(client, siteId, documentId, content);
       waitForDocumentContentType(client, siteId, documentId, "text/html");
-      assertEquals("text/html", api.getDocument(documentId, siteId, null).getContentType());
+      assertEquals("text/html", api.getDocument(documentId, siteId, null, null).getContentType());
 
       // given
-      url = api.getDocumentIdUpload(documentId, siteId, null, null, null, null, null).getUrl();
+      url =
+          api.getDocumentIdUpload(documentId, siteId, null, null, null, null, null, null).getUrl();
       content = "some test data";
 
       // when
@@ -430,7 +431,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       assertEquals(STATUS_OK, httpResponse.statusCode());
       waitForDocumentContent(client, siteId, documentId, content);
       waitForDocumentContentType(client, siteId, documentId, "text/plain");
-      assertEquals("text/plain", api.getDocument(documentId, siteId, null).getContentType());
+      assertEquals("text/plain", api.getDocument(documentId, siteId, null, null).getContentType());
     }
   }
 }

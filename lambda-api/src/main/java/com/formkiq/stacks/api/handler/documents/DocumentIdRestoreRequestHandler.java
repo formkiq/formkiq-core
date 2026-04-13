@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -53,11 +54,13 @@ public class DocumentIdRestoreRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     boolean restoreSoftDeletedDocument =
-        documentService.restoreSoftDeletedDocument(siteId, documentId);
+        documentService.restoreSoftDeletedDocument(siteId, document);
 
     if (!restoreSoftDeletedDocument) {
       throw new DocumentNotFoundException(documentId);

@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.lambda.ocr.docx.PptxFormatConverter;
 import com.formkiq.module.lambda.ocr.docx.XlsxFormatConverter;
@@ -126,16 +127,16 @@ class OcrTesseractProcessorTest {
     actionsService = services.getExtension(ActionsService.class);
   }
 
-  private static void createOcrRecord(final String siteId, final String documentId,
+  private static void createOcrRecord(final String siteId, final DocumentArtifact document,
       final String jobId) {
-    Ocr ocr = new Ocr().documentId(documentId).jobId(jobId).engine(OcrEngine.TESSERACT)
-        .status(OcrScanStatus.REQUESTED);
+    Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId())
+        .jobId(jobId).engine(OcrEngine.TESSERACT).status(OcrScanStatus.REQUESTED);
     ocrService.save(siteId, ocr);
   }
 
   private static void putFileInS3(final String siteId, final String documentId, final String name,
       final MimeType mimeXlsx) throws IOException {
-    String documentS3Key = createS3Key(siteId, documentId);
+    String documentS3Key = createS3Key(siteId, documentId, null);
     try (InputStream is = LambdaContextRecorder.class.getResourceAsStream(name)) {
       s3.putObject(BUCKET_NAME, documentS3Key, is, mimeXlsx.getContentType());
     }
@@ -145,8 +146,8 @@ class OcrTesseractProcessorTest {
   private final Context context = new LambdaContextRecorder();
 
   private ActionBuilder createAction(final String documentId) {
-    return new ActionBuilder().documentId(documentId).indexUlid().userId("joe")
-        .type(ActionType.OCR);
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+    return new ActionBuilder().document(document).indexUlid().userId("joe").type(ActionType.OCR);
   }
 
   /**
@@ -161,12 +162,13 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
       actionsService.saveNewActions(actions);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
@@ -180,10 +182,10 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("FAILED", obj.status().name());
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
       assertEquals("unsupported Content-Type: MIME_JPEG", actions.get(0).message());
     }
@@ -200,17 +202,18 @@ class OcrTesseractProcessorTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String jobId = ID.uuid();
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
       actionsService.saveNewActions(actions);
 
-      String documentS3Key = createS3Key(siteId, documentId);
+      String documentS3Key = createS3Key(siteId, documentId, null);
       s3.putObject(BUCKET_NAME, documentS3Key, "testdata".getBytes(StandardCharsets.UTF_8),
           "text/plain");
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -224,13 +227,13 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertEquals(OCR_TEXT, s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -247,12 +250,13 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
       actionsService.saveNewActions(actions);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record =
           new SqsMessageRecord().eventSource("aws:sqs").body(GSON.toJson(Map.of("siteId", siteId,
@@ -266,10 +270,10 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("FAILED", obj.status().name());
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.FAILED, actions.get(0).status());
     }
   }
@@ -286,6 +290,7 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
@@ -293,7 +298,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/file-sample_100kB.docx", MimeType.MIME_DOCX);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -307,14 +312,14 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
           .contains("Vestibulum neque massa"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -331,6 +336,7 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
@@ -338,7 +344,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/file-sample_100kB.doc", MimeType.MIME_DOC);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -352,14 +358,14 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null)
           .contains("Vestibulum neque massa"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -376,6 +382,7 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
@@ -383,7 +390,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/sample.pdf", MimeType.MIME_PDF);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -397,13 +404,13 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -420,6 +427,7 @@ class OcrTesseractProcessorTest {
 
       String documentId = ID.uuid();
       String jobId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       List<Action> actions =
           List.of(createAction(documentId).status(ActionStatus.RUNNING).build(siteId));
@@ -427,7 +435,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/collection.pdf", MimeType.MIME_PDF);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -441,13 +449,13 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -465,6 +473,7 @@ class OcrTesseractProcessorTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String jobId = ID.uuid();
 
       List<Action> actions =
@@ -473,7 +482,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/multipage_example.tif", MimeType.MIME_TIF);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -488,14 +497,14 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       assertEquals("BufferedImage: this is test data\nBufferedImage: this is test data",
           s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -513,6 +522,7 @@ class OcrTesseractProcessorTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String jobId = ID.uuid();
 
       List<Action> actions =
@@ -521,7 +531,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/multipage_example.pdf", MimeType.MIME_PDF);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -536,10 +546,10 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
 
       String match = "Weekly sales report creation";
@@ -552,7 +562,7 @@ class OcrTesseractProcessorTest {
       int pos = text.indexOf(match);
       assertFalse(text.substring(pos + match.length()).contains(match));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -568,6 +578,7 @@ class OcrTesseractProcessorTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String jobId = ID.uuid();
 
       List<Action> actions =
@@ -576,7 +587,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/example.pptx", MimeType.MIME_PPTX);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -590,15 +601,15 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
       assertTrue(text.contains("Quarterly Sales Overview"));
       assertTrue(text.contains("Sales Breakdown"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }
@@ -614,6 +625,7 @@ class OcrTesseractProcessorTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
       String jobId = ID.uuid();
 
       List<Action> actions =
@@ -622,7 +634,7 @@ class OcrTesseractProcessorTest {
 
       putFileInS3(siteId, documentId, "/example.xlsx", MimeType.MIME_XLSX);
 
-      createOcrRecord(siteId, documentId, jobId);
+      createOcrRecord(siteId, document, jobId);
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
@@ -636,15 +648,15 @@ class OcrTesseractProcessorTest {
       processor.handleRequest(is, null, this.context);
 
       // then
-      Ocr obj = ocrService.get(siteId, documentId);
+      Ocr obj = ocrService.get(siteId, document);
       assertEquals("SUCCESSFUL", obj.status().name());
 
-      String ocrS3Key = ocrService.getS3Key(siteId, documentId, jobId);
+      String ocrS3Key = ocrService.getS3Key(siteId, document, jobId);
       String text = s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null);
       assertTrue(text.contains("Product\tRegion"));
       assertTrue(text.contains("Accessories\tWest"));
 
-      actions = actionsService.getActions(siteId, documentId);
+      actions = actionsService.getActions(siteId, document);
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
     }
   }

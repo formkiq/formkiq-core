@@ -180,7 +180,7 @@ public class DocumentCompressorTest {
     item.setInsertedDate(new Date());
     final String documentId = item.getDocumentId();
     documentService.saveDocument(siteId, item, null);
-    final String key = createS3Key(siteId, documentId);
+    final String key = createS3Key(siteId, documentId, null);
     s3.putObject(BUCKET_NAME, key, content, null, null);
     return item.getDocumentId();
   }

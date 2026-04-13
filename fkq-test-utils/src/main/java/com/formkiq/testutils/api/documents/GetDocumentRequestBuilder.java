@@ -36,6 +36,8 @@ public class GetDocumentRequestBuilder implements HttpRequestBuilder<GetDocument
 
   /** {@link String}. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -46,9 +48,15 @@ public class GetDocumentRequestBuilder implements HttpRequestBuilder<GetDocument
     this.id = documentId;
   }
 
+  public GetDocumentRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocument(this.id, siteId, null));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocument(this.id, siteId, this.artifactId, null));
   }
 }

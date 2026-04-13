@@ -40,6 +40,8 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
   private final AddDocumentTagsRequest request;
   /** Document Id. */
   private String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -57,6 +59,11 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    */
   public AddDocumentTagRequestBuilder addTag(final String key, final String stringValue) {
     this.request.addTagsItem(new AddDocumentTag().key(key).value(stringValue));
+    return this;
+  }
+
+  public AddDocumentTagRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
     return this;
   }
 
@@ -79,7 +86,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentTagsApi(apiClient).addDocumentTags(this.id, this.request, siteId));
+    return executeApiCall(() -> new DocumentTagsApi(apiClient).addDocumentTags(this.id,
+        this.request, siteId, this.artifactId));
   }
 }

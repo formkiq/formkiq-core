@@ -28,6 +28,7 @@ import static com.formkiq.module.ocr.DocumentOcrService.CONFIG_OCR_COUNT;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
@@ -126,7 +127,7 @@ public class DocumentOcrServiceTesseractTest {
     OcrRequest request = new OcrRequest().setOcrNumberOfPages(numberOfPages);
 
     // when
-    service.convert(serviceCache, request, siteId, documentId, userId);
+    service.convert(serviceCache, request, siteId, DocumentArtifact.of(documentId, null), userId);
     return request;
   }
 
@@ -149,14 +150,16 @@ public class DocumentOcrServiceTesseractTest {
       OcrRequest request = new OcrRequest();
 
       // when
-      boolean result = service.convert(serviceCache, request, siteId, documentId, userId);
+      boolean result = service.convert(serviceCache, request, siteId,
+          DocumentArtifact.of(documentId, null), userId);
 
       // then
       assertTrue(result);
       assertEquals(1, configService.getIncrement(siteId, CONFIG_OCR_COUNT));
 
       // when
-      result = service.convert(serviceCache, request, siteId, documentId, userId);
+      result = service.convert(serviceCache, request, siteId, DocumentArtifact.of(documentId, null),
+          userId);
 
       // then
       assertFalse(result);

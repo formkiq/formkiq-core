@@ -30,6 +30,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
@@ -88,18 +89,20 @@ public class DocumentIdContentRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
     String versionKey = event.getQueryStringParameter("versionKey");
 
     Map<String, AttributeValue> versionAttributes =
-        getVersionAttributes(awsservice, siteId, documentId, versionKey);
+        getVersionAttributes(awsservice, siteId, document, versionKey);
 
     DocumentItem item =
-        getDocumentItem(awsservice, siteId, documentId, versionKey, versionAttributes);
+        getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     ApiRequestHandlerResponse.Builder response;
 
-    String s3key = createS3Key(siteId, documentId);
+    String s3key = createS3Key(siteId, document);
     if (!exists(awsservice, s3key)) {
       throw new DocumentNotFoundException(item.getDocumentId());
     }
@@ -120,7 +123,7 @@ public class DocumentIdContentRequestHandler
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
       UserActivityPlugin plugin = awsservice.getExtension(UserActivityPlugin.class);
-      plugin.addDocumentViewActivity(siteId, documentId, versionKey, false);
+      plugin.addDocumentViewActivity(siteId, document, versionKey, false);
     }
 
     authorization.addCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name(), item);
@@ -147,15 +150,15 @@ public class DocumentIdContentRequestHandler
   }
 
   private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final String versionKey,
+      final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) throws Exception {
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = versionService.getDocumentItem(documentService, siteId, documentId,
+    DocumentItem item = versionService.getDocumentItem(documentService, siteId, document,
         versionKey, versionAttributes);
-    throwIfNull(item, new DocumentNotFoundException(documentId));
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
     return item;
   }
 
@@ -165,9 +168,9 @@ public class DocumentIdContentRequestHandler
   }
 
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,
-      final String siteId, final String documentId, final String versionKey) {
+      final String siteId, final DocumentArtifact document, final String versionKey) {
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
-    return versionService.get(siteId, documentId, versionKey);
+    return versionService.get(siteId, document, versionKey);
   }
 
   private String getVersionId(final AwsServiceCache awsservice,

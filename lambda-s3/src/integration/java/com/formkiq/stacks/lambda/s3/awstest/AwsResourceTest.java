@@ -24,6 +24,9 @@
 package com.formkiq.stacks.lambda.s3.awstest;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -32,7 +35,7 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.google.gson.Gson;
@@ -220,7 +223,10 @@ public class AwsResourceTest extends AbstractAwsTest {
     final Long contentLength = 36L;
     String key = ID.uuid();
     String contentType = "text/plain";
-    DocumentItem item = new DocumentItemDynamoDb(key, new Date(), "test");
+    DocumentRecord record = new DocumentRecordBuilder().build((String) null);
+    DocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(record);
+
+    // new DocumentItemDynamoDb(key, new Date(), "test");
 
     // when
     getDocumentService().saveDocument(null, item, null);
@@ -229,17 +235,17 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     verifyFileExistsInDocumentsS3(key, contentType);
 
-    item = getDocumentService().findDocument(null, key);
+    record = getDocumentService().findDocument(null, DocumentArtifact.of(key, null));
 
     while (true) {
-      if (contentType.equals(item.getContentType())) {
-        assertEquals(contentType, item.getContentType());
-        assertEquals(contentLength, item.getContentLength());
+      if (contentType.equals(record.contentType())) {
+        assertEquals(contentType, record.contentType());
+        assertEquals(contentLength, record.contentLength());
 
         break;
       }
 
-      item = getDocumentService().findDocument(null, key);
+      record = getDocumentService().findDocument(null, DocumentArtifact.of(key, null));
     }
 
     getS3Service().deleteObject(getDocumentsbucketname(), key, null);
@@ -460,13 +466,15 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, result.getResults().size());
     assertSnsMessage(documentSnsQueue, "create");
     String documentId = result.getResults().get(0).getDocumentId();
-    DocumentItem item = getDocumentService().findDocument(siteId, documentId);
-    assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
+
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+    DocumentRecord item = getDocumentService().findDocument(siteId, document);
+    assertEquals(item.insertedDate(), item.lastModifiedDate());
 
     // given
     Collection<DocumentTag> tags =
         List.of(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
-    getDocumentService().addTags(siteId, documentId, tags, null);
+    getDocumentService().addTags(siteId, document, tags, null);
 
     // when
     getS3Service().putObject(getStagingdocumentsbucketname(), siteId + "/" + path,
@@ -479,12 +487,12 @@ public class AwsResourceTest extends AbstractAwsTest {
         getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
     assertSnsMessage(documentSnsQueue, "create");
     Pagination<DocumentTag> list =
-        getDocumentService().findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+        getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
     assertEquals("[status]",
         list.getResults().stream().map(DocumentTag::getKey).toList().toString());
 
-    item = getDocumentService().findDocument(siteId, documentId);
-    assertNotEquals(item.getInsertedDate(), item.getLastModifiedDate());
+    item = getDocumentService().findDocument(siteId, document);
+    assertNotEquals(item.insertedDate(), item.lastModifiedDate());
   }
 
   /**

@@ -33,6 +33,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import org.junit.jupiter.api.Test;
@@ -51,12 +52,13 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       Map<String, AttributeValue> attrs = keysDocument(siteId, documentId);
 
       // when
       DocumentDeleteMoveAttributeFunction fn =
-          new DocumentDeleteMoveAttributeFunction(siteId, documentId);
+          new DocumentDeleteMoveAttributeFunction(siteId, document);
       Map<String, AttributeValue> result = fn.transform(attrs);
 
       // then
@@ -94,6 +96,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       Map<String, AttributeValue> attrs = new HashMap<>();
       attrs.put(PK, fromS(createDatabaseKey(siteId, "docs#" + documentId)));
@@ -103,7 +106,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
 
       // when
       DocumentDeleteMoveAttributeFunction fn =
-          new DocumentDeleteMoveAttributeFunction(siteId, documentId);
+          new DocumentDeleteMoveAttributeFunction(siteId, document);
       Map<String, AttributeValue> result = fn.transform(attrs);
 
       // then

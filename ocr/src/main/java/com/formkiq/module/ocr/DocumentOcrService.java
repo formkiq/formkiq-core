@@ -23,6 +23,7 @@
  */
 package com.formkiq.module.ocr;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.util.List;
@@ -46,49 +47,49 @@ public interface DocumentOcrService {
    * @param awsservice {@link AwsServiceCache}
    * @param request {@link OcrRequest}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param userId {@link String}
    * @return boolean
    */
-  boolean convert(AwsServiceCache awsservice, OcrRequest request, String siteId, String documentId,
-      String userId);
+  boolean convert(AwsServiceCache awsservice, OcrRequest request, String siteId,
+      DocumentArtifact document, String userId);
 
   /**
    * Delete Document OCR.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    */
-  void delete(String siteId, String documentId);
+  void delete(String siteId, DocumentArtifact document);
 
   /**
    * Get Document OCR.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @return {@link Ocr}
    */
-  Ocr get(String siteId, String documentId);
+  Ocr get(String siteId, DocumentArtifact document);
 
   /**
    * Get / Find OCR Document S3 Key.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param jobId {@link String}
    * @return {@link List} {@link String}
    */
-  List<String> getOcrS3Keys(String siteId, String documentId, String jobId);
+  List<String> getOcrS3Keys(String siteId, DocumentArtifact document, String jobId);
 
   /**
    * Get S3 Key for OCR document.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param jobId {@link String}
    * @return {@link String}
    */
-  String getS3Key(String siteId, String documentId, String jobId);
+  String getS3Key(String siteId, DocumentArtifact document, String jobId);
 
   /**
    * Save {@link Ocr}.
@@ -103,12 +104,12 @@ public interface DocumentOcrService {
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param userId {@link String}
    * @param content {@link String}
    * @param contentType {@link String}
    */
-  void set(AwsServiceCache awsservice, String siteId, String documentId, String userId,
+  void set(AwsServiceCache awsservice, String siteId, DocumentArtifact document, String userId,
       String content, String contentType);
 
   /**
@@ -140,18 +141,18 @@ public interface DocumentOcrService {
    * 
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param status {@link OcrScanStatus}
    */
-  void updateOcrScanStatus(AwsServiceCache awsservice, String siteId, String documentId,
+  void updateOcrScanStatus(AwsServiceCache awsservice, String siteId, DocumentArtifact document,
       OcrScanStatus status);
 
   /**
    * Update OCR Scan Status.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param status {@link OcrScanStatus}
    */
-  void updateOcrScanStatus(String siteId, String documentId, OcrScanStatus status);
+  void updateOcrScanStatus(String siteId, DocumentArtifact document, OcrScanStatus status);
 }

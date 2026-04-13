@@ -45,6 +45,8 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
   private final AddDocumentAttributesRequest request;
   /** Document Id. */
   private String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -97,6 +99,11 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
     return this;
   }
 
+  public AddDocumentAttributeRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   /**
    * Set Document Id.
    *
@@ -117,6 +124,6 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient).addDocumentAttributes(this.id,
-        this.request, siteId));
+        this.request, siteId, this.artifactId));
   }
 }

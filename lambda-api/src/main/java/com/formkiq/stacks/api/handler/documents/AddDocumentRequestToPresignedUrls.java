@@ -26,6 +26,8 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -41,9 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
-import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -51,7 +53,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  * Transforms {@link AddDocumentRequest} to a list of Presigned Urls.
  */
 public class AddDocumentRequestToPresignedUrls
-    implements Function<AddDocumentRequest, Map<String, Object>> {
+    implements BiFunction<AddDocumentRequest, DocumentItem, Map<String, Object>> {
 
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3PresignerService;
@@ -111,30 +113,33 @@ public class AddDocumentRequestToPresignedUrls
   }
 
   @Override
-  public Map<String, Object> apply(final AddDocumentRequest item) {
+  public Map<String, Object> apply(final AddDocumentRequest req, final DocumentItem item) {
 
     Map<String, Object> map = new HashMap<>();
 
-    String documentId = item.getDocumentId();
+    String documentId = req.getDocumentId();
     map.put("documentId", documentId);
+    map.put("artifactId", item.getArtifactId());
+    DocumentArtifact document = DocumentArtifact.of(documentId, item.getArtifactId());
 
-    if (isEmpty(item.getDeepLinkPath())) {
-      String docUrl = generatePresignedUrl(item);
-      addHeaders(map, item);
+    if (isEmpty(req.getDeepLinkPath())) {
+      String docUrl = generatePresignedUrl(req, document);
+      addHeaders(map, req);
       map.put("url", docUrl);
     }
 
     List<Map<String, String>> child = new ArrayList<>();
 
-    for (AddDocumentRequest o : notNull(item.getDocuments())) {
+    for (AddDocumentRequest o : notNull(req.getDocuments())) {
 
       Map<String, String> m = new HashMap<>();
 
       String docid = o.getDocumentId();
       m.put("documentId", docid);
+      document = DocumentArtifact.of(docid, null);
 
       if (isEmpty(o.getDeepLinkPath())) {
-        String url = generatePresignedUrl(o);
+        String url = generatePresignedUrl(o, document);
         m.put("url", url);
       }
 
@@ -148,10 +153,11 @@ public class AddDocumentRequestToPresignedUrls
     return map;
   }
 
-  private String generatePresignedUrl(final AddDocumentRequest o) {
+  private String generatePresignedUrl(final AddDocumentRequest o, final DocumentArtifact document) {
 
-    String documentId = o.getDocumentId();
-    String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
+    // String documentId = o.getDocumentId();
+    String key = createS3Key(siteId, document);
+    // String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
     String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
     final int cacheInDays = 7;
