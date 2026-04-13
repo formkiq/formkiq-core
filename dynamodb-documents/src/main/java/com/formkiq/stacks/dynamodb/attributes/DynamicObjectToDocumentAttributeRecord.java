@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -78,7 +79,7 @@ public class DynamicObjectToDocumentAttributeRecord
 
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
-    a.setDocumentId(this.attributeDocumentId);
+    a.setDocument(DocumentArtifact.of(this.attributeDocumentId, null));
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);
@@ -173,7 +174,7 @@ public class DynamicObjectToDocumentAttributeRecord
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
       r.setKey(compositeKey);
-      r.setDocumentId(this.attributeDocumentId);
+      r.setDocument(DocumentArtifact.of(this.attributeDocumentId, null));
       r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
       r.setStringValue(stringValue);
       r.setUserId(this.user);

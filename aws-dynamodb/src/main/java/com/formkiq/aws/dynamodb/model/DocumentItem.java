@@ -33,6 +33,13 @@ import java.util.List;
 public interface DocumentItem {
 
   /**
+   * Get Artifact Id.
+   *
+   * @return {@link String}
+   */
+  String getArtifactId();
+
+  /**
    * Gets Belongs To DocumentId.
    * 
    * @return {@link String}
@@ -157,6 +164,13 @@ public interface DocumentItem {
    * @return {@link String}
    */
   String getWidth();
+
+  /**
+   * Set Artifact Id.
+   *
+   * @param artifactId {@link String}
+   */
+  void setArtifactId(String artifactId);
 
   /**
    * Sets Belongs To DocumentId.

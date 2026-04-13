@@ -96,7 +96,7 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
 
     // when
     try {
-      api.getDocumentContent(documentId, null, null, null);
+      api.getDocumentContent(documentId, null, null, null, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -125,7 +125,8 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
     waitForDocumentContentType(client, null, documentId, "text/plain");
 
     // when
-    GetDocumentContentResponse response = api.getDocumentContent(documentId, null, null, null);
+    GetDocumentContentResponse response =
+        api.getDocumentContent(documentId, null, null, null, null);
 
     // then
     assertNotNull(response.getContent());

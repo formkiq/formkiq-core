@@ -236,7 +236,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
         assertNotNull(list.get(0).getDocumentId());
 
       } finally {
-        api.deleteDocument(documentId, siteId, Boolean.FALSE);
+        api.deleteDocument(documentId, siteId, null, Boolean.FALSE);
       }
     }
   }

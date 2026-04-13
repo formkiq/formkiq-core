@@ -33,6 +33,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.base64.Pagination;
@@ -81,10 +82,12 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    DocumentRecord document = verifyDocument(awsservice, siteId, documentId);
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact documentArtifact = new DocumentArtifact(documentId, artifactId);
+    DocumentRecord document = verifyDocument(awsservice, siteId, documentArtifact);
 
     Pagination<DocumentAttributeRecord> results =
-        documentService.findDocumentAttributes(siteId, documentId, nextToken, limit);
+        documentService.findDocumentAttributes(siteId, documentArtifact, nextToken, limit);
 
     Collection<Map<String, Object>> list =
         new DocumentAttributeRecordToMap(true, true, db, tableName, document).apply(siteId,
@@ -142,7 +145,10 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    verifyDocument(awsservice, siteId, documentId);
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    verifyDocument(awsservice, siteId, document);
 
     List<DocumentAttributeRecord> attributes =
         getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
@@ -151,7 +157,7 @@ public class DocumentAttributesRequestHandler
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.saveDocumentAttributes(siteId, documentId, attributes,
+    documentService.saveDocumentAttributes(siteId, document, attributes,
         AttributeValidationType.FULL, validationAccess);
 
     return ApiRequestHandlerResponse.builder().created()
@@ -164,7 +170,10 @@ public class DocumentAttributesRequestHandler
 
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
-    verifyDocument(awsservice, siteId, documentId);
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    verifyDocument(awsservice, siteId, document);
 
     List<DocumentAttributeRecord> attributes =
         getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
@@ -174,7 +183,7 @@ public class DocumentAttributesRequestHandler
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
 
-    documentService.saveDocumentAttributes(siteId, documentId, attributes,
+    documentService.saveDocumentAttributes(siteId, document, attributes,
         AttributeValidationType.FULL, validationAccess);
 
     return ApiRequestHandlerResponse.builder().created()
@@ -182,13 +191,13 @@ public class DocumentAttributesRequestHandler
   }
 
   private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final String documentId) {
+      final DocumentArtifact documentArtifact) {
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
-    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentId);
+    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentArtifact);
     if (document == null) {
-      throw new DocumentNotFoundException(documentId);
+      throw new DocumentNotFoundException(documentArtifact.documentId());
     }
 
     return document;

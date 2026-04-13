@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,10 +74,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
   private void deleteDocumentTag(final ApiClient client, final String documentId,
       final String tagKey) throws ApiException {
     DocumentTagsApi api = new DocumentTagsApi(client);
-    api.deleteDocumentTag(documentId, tagKey, null);
+    api.deleteDocumentTag(documentId, tagKey, null, null);
 
     try {
-      api.getDocumentTag(documentId, tagKey, null, null);
+      api.getDocumentTag(documentId, tagKey, null, null, null);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -103,11 +104,11 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId);
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // when
         GetDocumentTagsResponse response =
-            api.getDocumentTags(documentId, siteId, null, null, null, null);
+            api.getDocumentTags(documentId, siteId, null, null, null, null, null);
 
         // then
         List<DocumentTag> list = response.getTags();
@@ -145,12 +146,12 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId);
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // given
         // when
         GetDocumentTagsResponse response =
-            api.getDocumentTags(documentId, siteId, null, null, null, null);
+            api.getDocumentTags(documentId, siteId, null, null, null, null, null);
 
         // then
         List<DocumentTag> list = response.getTags();
@@ -190,10 +191,11 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId);
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
+        GetDocumentTagResponse response =
+            api.getDocumentTag(documentId, "category", siteId, null, null);
         assertEquals("category", response.getKey());
         assertEquals("somevalue", response.getValue());
         assertNotNull(response.getUserId());
@@ -206,10 +208,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
             .addTagsItem(new AddDocumentTag().key("category").value("This is a sample"));
 
         // when
-        api.updateDocumentTags(documentId, tags, siteId);
+        api.updateDocumentTags(documentId, tags, siteId, null);
 
         // then
-        response = api.getDocumentTag(documentId, "category", siteId, null);
+        response = api.getDocumentTag(documentId, "category", siteId, null, null);
 
         assertEquals("category", response.getKey());
         assertEquals("This is a sample", response.getValue());
@@ -245,10 +247,11 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId);
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
+        GetDocumentTagResponse response =
+            api.getDocumentTag(documentId, "category", siteId, null, null);
 
         assertEquals("category", response.getKey());
         assertEquals("somevalue0,somevalue1",
@@ -264,10 +267,10 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
             .addTagsItem(new AddDocumentTag().key("category").value("This is a sample"));
 
         // when
-        api.updateDocumentTags(documentId, updatereq, siteId);
+        api.updateDocumentTags(documentId, updatereq, siteId, null);
 
         // then
-        response = api.getDocumentTag(documentId, "category", siteId, null);
+        response = api.getDocumentTag(documentId, "category", siteId, null, null);
 
         assertEquals("category", response.getKey());
         assertEquals("This is a sample", response.getValue());
@@ -303,20 +306,20 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       try {
         // when
-        api.addDocumentTags(documentId, req, siteId);
+        api.addDocumentTags(documentId, req, siteId, null);
 
         // then
-        GetDocumentTagResponse response = api.getDocumentTag(documentId, "category", siteId, null);
+        GetDocumentTagResponse response =
+            api.getDocumentTag(documentId, "category", siteId, null, null);
 
-        assertEquals("somevalue0,somevalue1",
-            response.getValues().stream().collect(Collectors.joining(",")));
+        assertEquals("somevalue0,somevalue1", String.join(",", notNull(response.getValues())));
 
         // when
-        api.deleteDocumentTagAndValue(documentId, "category", "somevalue1", siteId, null);
+        api.deleteDocumentTagAndValue(documentId, "category", "somevalue1", siteId, null, null);
 
         // then
-        response = api.getDocumentTag(documentId, "category", siteId, null);
-        assertEquals("somevalue0", response.getValue().toString());
+        response = api.getDocumentTag(documentId, "category", siteId, null, null);
+        assertEquals("somevalue0", response.getValue());
 
       } finally {
         deleteDocumentTag(client, documentId, "category");
@@ -346,11 +349,11 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
           .addTagsItem(new AddDocumentTag().key("test3").values(Arrays.asList("abc", "xyz")));
 
       // when
-      api.addDocumentTags(documentId, req, siteId);
+      api.addDocumentTags(documentId, req, siteId, null);
 
       // then
       GetDocumentTagsResponse response =
-          api.getDocumentTags(documentId, siteId, null, null, null, null);
+          api.getDocumentTags(documentId, siteId, null, null, null, null, null);
 
       List<DocumentTag> list = response.getTags();
       assertEquals(req.getTags().size(), list.size());
@@ -406,7 +409,7 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
       waitForDocumentContent(client, siteId, documentId);
 
       assertEquals("person",
-          tagsApi.getDocumentTag(documentId, "category", siteId, null).getValue());
+          tagsApi.getDocumentTag(documentId, "category", siteId, null, null).getValue());
 
       // given
       AddDocumentTagsRequest updateTagReq = new AddDocumentTagsRequest()
@@ -414,14 +417,14 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
           .addTagsItem(new AddDocumentTag().key("category").values(Arrays.asList("c0", "c1")));
 
       // when
-      tagsApi.updateDocumentTags(documentId, updateTagReq, siteId);
+      tagsApi.updateDocumentTags(documentId, updateTagReq, siteId, null);
 
       // then
       int i = 0;
       final int expected = 3;
 
       List<DocumentTag> taglist =
-          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+          tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags();
       assertEquals(expected, taglist.size());
       assertEquals("category", taglist.get(i).getKey());
       assertEquals("c0,c1", Strings.join(taglist.get(i++).getValues(), ","));
@@ -435,11 +438,11 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
       AddDocumentTagsRequest setTagsReq = new AddDocumentTagsRequest().tags(tags);
 
       // when
-      tagsApi.setDocumentTags(documentId, setTagsReq, siteId);
+      tagsApi.setDocumentTags(documentId, setTagsReq, siteId, null);
 
       // then
       i = 0;
-      taglist = tagsApi.getDocumentTags(documentId, siteId, null, null, null, null).getTags();
+      taglist = tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags();
       assertEquals(2, taglist.size());
       assertEquals("category", taglist.get(i).getKey());
       assertEquals("person", taglist.get(i++).getValue());

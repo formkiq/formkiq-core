@@ -38,6 +38,8 @@ public class AddDocumentRequest {
   private List<Action> actions;
   /** Document Attribute. */
   private List<AddDocumentAttribute> attributes;
+  /** Create artifacts. */
+  private boolean artifacts;
   /** Document content. */
   private String content;
   /** Content Type. */
@@ -199,6 +201,15 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Create Artifacts.
+   *
+   * @return boolean
+   */
+  public boolean isArtifacts() {
+    return this.artifacts;
+  }
+
+  /**
    * Is Base 64.
    *
    * @return boolean
@@ -214,6 +225,15 @@ public class AddDocumentRequest {
    */
   public void setActions(final List<Action> documentActions) {
     this.actions = documentActions;
+  }
+
+  /**
+   * Set Artifacts.
+   *
+   * @param createArtifacts boolean
+   */
+  public void setArtifacts(final boolean createArtifacts) {
+    this.artifacts = createArtifacts;
   }
 
   /**

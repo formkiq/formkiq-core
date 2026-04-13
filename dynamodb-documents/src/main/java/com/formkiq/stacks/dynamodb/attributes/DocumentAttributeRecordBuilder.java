@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentRelationshipType;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,34 +38,37 @@ import java.util.Date;
  */
 public class DocumentAttributeRecordBuilder {
 
-  public Collection<DocumentAttributeRecord> apply(final String fromDocumentId,
-      final String toDocumentId, final DocumentRelationshipType toRelationship,
+  public Collection<DocumentAttributeRecord> apply(final DocumentArtifact fromDocumentId,
+      final DocumentArtifact toDocumentId, final DocumentRelationshipType toRelationship,
       final DocumentRelationshipType inverseRelationship) {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
-    String eq = toRelationship + "#" + toDocumentId;
-    DocumentAttributeRecord dar0 = new DocumentAttributeRecord();
-    dar0.setDocumentId(fromDocumentId);
-    dar0.setStringValue(eq);
-    records.add(dar0);
+    if (fromDocumentId != null && toDocumentId != null) {
 
-    if (inverseRelationship != null && fromDocumentId != null) {
-      String eqInverse = inverseRelationship + "#" + fromDocumentId;
-      DocumentAttributeRecord dar1 = new DocumentAttributeRecord();
-      dar1.setDocumentId(toDocumentId);
-      dar1.setStringValue(eqInverse);
-      records.add(dar1);
+      String eq = toRelationship + "#" + toDocumentId.documentId();
+      DocumentAttributeRecord dar0 = new DocumentAttributeRecord();
+      dar0.setDocument(fromDocumentId);
+      dar0.setStringValue(eq);
+      records.add(dar0);
+
+      if (inverseRelationship != null) {
+        String eqInverse = inverseRelationship + "#" + fromDocumentId.documentId();
+        DocumentAttributeRecord dar1 = new DocumentAttributeRecord();
+        dar1.setDocument(toDocumentId);
+        dar1.setStringValue(eqInverse);
+        records.add(dar1);
+      }
+
+      Date now = new Date();
+      String username = ApiAuthorization.getAuthorization().getUsername();
+      records.forEach(r -> {
+        r.setKey(AttributeKeyReserved.RELATIONSHIPS.getKey());
+        r.setUserId(username);
+        r.setInsertedDate(now);
+        r.updateValueType();
+      });
     }
-
-    Date now = new Date();
-    String username = ApiAuthorization.getAuthorization().getUsername();
-    records.forEach(r -> {
-      r.setKey(AttributeKeyReserved.RELATIONSHIPS.getKey());
-      r.setUserId(username);
-      r.setInsertedDate(now);
-      r.updateValueType();
-    });
 
     return records;
   }

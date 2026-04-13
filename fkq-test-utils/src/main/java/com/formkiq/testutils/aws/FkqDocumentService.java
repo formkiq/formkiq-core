@@ -212,7 +212,7 @@ public class FkqDocumentService {
       final String documentId, final List<AddDocumentAttribute> attributes) throws ApiException {
     DocumentAttributesApi api = new DocumentAttributesApi(apiClient);
     AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    api.addDocumentAttributes(documentId, req, siteId);
+    api.addDocumentAttributes(documentId, req, siteId, null);
   }
 
   /**
@@ -231,7 +231,7 @@ public class FkqDocumentService {
     DocumentTagsApi api = new DocumentTagsApi(apiClient);
     AddDocumentTagsRequest req = new AddDocumentTagsRequest()
         .addTagsItem(new com.formkiq.client.model.AddDocumentTag().key(key).value(value));
-    api.addDocumentTags(documentId, req, siteId);
+    api.addDocumentTags(documentId, req, siteId, null);
   }
 
   /**
@@ -298,7 +298,7 @@ public class FkqDocumentService {
   public static DocumentAttribute getDocumentAttribute(final ApiClient client, final String siteId,
       final String documentId, final String attributeKey) throws ApiException {
     DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
-    return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
+    return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId, null)
         .getAttribute();
   }
 
@@ -314,7 +314,7 @@ public class FkqDocumentService {
   public static List<DocumentAttribute> getDocumentAttributes(final ApiClient client,
       final String siteId, final String documentId) throws ApiException {
     DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(client);
-    return documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null)
+    return documentAttributesApi.getDocumentAttributes(documentId, siteId, null, null, null)
         .getAttributes();
   }
 
@@ -379,7 +379,7 @@ public class FkqDocumentService {
     while (o.isEmpty()) {
 
       try {
-        response = api.getDocumentActions(documentId, siteId, null, null, null);
+        response = api.getDocumentActions(documentId, siteId, null, null, null, null);
 
         o = notNull(response.getActions()).stream()
             .filter(a -> actionStatus.contains(a.getStatus())).toList();
@@ -418,7 +418,7 @@ public class FkqDocumentService {
     while (o.isEmpty()) {
 
       try {
-        response = api.getDocumentActions(documentId, siteId, null, null, null);
+        response = api.getDocumentActions(documentId, siteId, null, null, null, null);
 
         List<DocumentAction> actions = notNull(response.getActions());
         o = actions.stream().filter(a -> actionStatus.contains(a.getStatus()))
@@ -503,7 +503,7 @@ public class FkqDocumentService {
       if (e.getMessage().contains(DocumentActionStatus.FAILED.name())) {
 
         DocumentActionsApi api = new DocumentActionsApi(client);
-        api.addDocumentRetryAction(documentId, siteId);
+        api.addDocumentRetryAction(documentId, siteId, null);
         TimeUnit.SECONDS.sleep(1);
         response = waitForActions(client, siteId, documentId, actionStatus);
 
@@ -532,7 +532,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        return api.getDocument(documentId, siteId, null);
+        return api.getDocument(documentId, siteId, null, null);
 
       } catch (ApiException e) {
         // ignore error
@@ -560,7 +560,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId)
+        return documentAttributesApi.getDocumentAttribute(documentId, attributeKey, siteId, null)
             .getAttribute();
       } catch (ApiException e) {
         // ignore
@@ -661,7 +661,7 @@ public class FkqDocumentService {
 
       try {
         GetDocumentContentResponse response =
-            api.getDocumentContent(documentId, siteId, null, null);
+            api.getDocumentContent(documentId, siteId, null, null, null);
         if ((contentType.equals(response.getContentType()))) {
           return response;
         }
@@ -692,7 +692,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null, null);
         if (response.getContentLength() != null) {
           return response;
         }
@@ -724,7 +724,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        GetDocumentResponse response = api.getDocument(documentId, siteId, null);
+        GetDocumentResponse response = api.getDocument(documentId, siteId, null, null);
         if ((contentType.equals(response.getContentType()))) {
           return response;
         }
@@ -818,7 +818,7 @@ public class FkqDocumentService {
     while (true) {
 
       try {
-        return api.getDocumentTag(documentId, tagKey, siteId, null);
+        return api.getDocumentTag(documentId, tagKey, siteId, null, null);
       } catch (ApiException e) {
         // tag not found
       }
@@ -847,7 +847,7 @@ public class FkqDocumentService {
 
       try {
         GetDocumentVersionsResponse response =
-            api.getDocumentVersions(documentId, siteId, "100", null, null);
+            api.getDocumentVersions(documentId, siteId, null, "100", null, null);
         if (notNull(response.getDocuments()).size() == expectedNumbeOfVersions) {
           return response;
         }

@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
@@ -59,16 +60,16 @@ public class SchemaCompositeKeyGenerator {
    * CompositeKeys.
    * 
    * @param schemaAttributes {@link Collection} {@link SchemaAttributes}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param allDocumentAttributeRecords {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   public Collection<DocumentAttributeRecord> apply(
-      final Collection<SchemaAttributes> schemaAttributes, final String documentId,
+      final Collection<SchemaAttributes> schemaAttributes, final DocumentArtifact document,
       final Collection<DocumentAttributeRecord> allDocumentAttributeRecords) {
 
     return notNull(schemaAttributes).stream()
-        .flatMap(s -> createCompositeKeys(s, documentId, allDocumentAttributeRecords).stream())
+        .flatMap(s -> createCompositeKeys(s, document, allDocumentAttributeRecords).stream())
         .toList();
   }
 
@@ -76,12 +77,12 @@ public class SchemaCompositeKeyGenerator {
    * Create Composite Keys from {@link Collection} {@link DocumentAttributeRecord}.
    *
    * @param schemaAttributes {@link SchemaAttributes}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param allDocumentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   private Collection<DocumentAttributeRecord> createCompositeKeys(
-      final SchemaAttributes schemaAttributes, final String documentId,
+      final SchemaAttributes schemaAttributes, final DocumentArtifact document,
       final Collection<DocumentAttributeRecord> allDocumentAttributes) {
 
     Map<String, List<DocumentAttributeRecord>> documentAttributeKeys = allDocumentAttributes
@@ -93,7 +94,7 @@ public class SchemaCompositeKeyGenerator {
     notNull(schemaAttributes.getCompositeKeys()).forEach(a -> {
 
       Collection<DocumentAttributeRecord> keys =
-          createCompositeKeys(a, documentId, documentAttributeKeys);
+          createCompositeKeys(a, document, documentAttributeKeys);
       compositeKeys.addAll(keys);
     });
 
@@ -104,13 +105,13 @@ public class SchemaCompositeKeyGenerator {
    * Create Composite Keys from {@link SchemaAttributesCompositeKey}.
    *
    * @param schemaAttributes {@link SchemaAttributesCompositeKey}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param documentAttributeKeys {@link Map}
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   @SuppressWarnings("boxing")
   private Collection<DocumentAttributeRecord> createCompositeKeys(
-      final SchemaAttributesCompositeKey schemaAttributes, final String documentId,
+      final SchemaAttributesCompositeKey schemaAttributes, final DocumentArtifact document,
       final Map<String, List<DocumentAttributeRecord>> documentAttributeKeys) {
 
     Collection<DocumentAttributeRecord> compositeKeys = new ArrayList<>();
@@ -160,7 +161,7 @@ public class SchemaCompositeKeyGenerator {
           }
         }
 
-        compositeKeys.addAll(createCompositeKeys(documentId, newCompositeKeys, newCompositeValues));
+        compositeKeys.addAll(createCompositeKeys(document, newCompositeKeys, newCompositeValues));
       }
     }
 
@@ -170,12 +171,12 @@ public class SchemaCompositeKeyGenerator {
   /**
    * Create Composite Keys from Keys and Values.
    *
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param compositeKeys {@link List} {@link String}
    * @param compositeValues {@link List} {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
-  private List<DocumentAttributeRecord> createCompositeKeys(final String documentId,
+  private List<DocumentAttributeRecord> createCompositeKeys(final DocumentArtifact document,
       final List<List<String>> compositeKeys, final List<List<String>> compositeValues) {
 
     String username = getUsername();
@@ -188,7 +189,7 @@ public class SchemaCompositeKeyGenerator {
 
       DocumentAttributeRecord r = new DocumentAttributeRecord();
       r.setKey(compositeKey);
-      r.setDocumentId(documentId);
+      r.setDocument(document);
       r.setValueType(DocumentAttributeValueType.COMPOSITE_STRING);
       r.setStringValue(stringValue);
       r.setInsertedDate(this.now);

@@ -87,7 +87,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         UpdateDocumentRequest updateReq = new UpdateDocumentRequest();
 
         // when
-        AddDocumentResponse response = api.updateDocument(documentId, updateReq, siteId, null);
+        AddDocumentResponse response =
+            api.updateDocument(documentId, updateReq, siteId, null, null);
 
         // then
         String newContent = "new content";
@@ -126,7 +127,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
             new UpdateDocumentRequest().checksum(newContentHash).checksumType(ChecksumType.SHA256);
 
         // when
-        response = api.updateDocument(documentId, updateReq, siteId, null);
+        response = api.updateDocument(documentId, updateReq, siteId, null, null);
 
         // then
         assertNotNull(response.getUploadUrl());
@@ -196,7 +197,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       String documentId = response.getDocumentId();
 
       // when
-      api.deleteDocument(documentId, siteId, Boolean.TRUE);
+      api.deleteDocument(documentId, siteId, null, Boolean.TRUE);
 
       // then
       List<Document> softDeletedDocuments = notNull(
@@ -205,7 +206,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       assertFalse(softDeletedDocuments.isEmpty());
 
       try {
-        api.getDocument(documentId, siteId, null);
+        api.getDocument(documentId, siteId, null, null);
         fail();
       } catch (ApiException e) {
         assertEquals(SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -224,11 +225,11 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       }
 
       // when
-      SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId);
+      SetDocumentRestoreResponse restore = api.setDocumentRestore(documentId, siteId, null);
 
       // then
       assertEquals("document restored", restore.getMessage());
-      assertNotNull(api.getDocument(documentId, siteId, null));
+      assertNotNull(api.getDocument(documentId, siteId, null, null));
     }
   }
 }

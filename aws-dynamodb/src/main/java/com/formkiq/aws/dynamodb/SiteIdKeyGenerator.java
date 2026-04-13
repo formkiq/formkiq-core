@@ -23,7 +23,11 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * 
@@ -34,6 +38,9 @@ public final class SiteIdKeyGenerator {
 
   /** Default Site Id. */
   public static final String DEFAULT_SITE_ID = "default";
+  /** S3 key parts with site id. */
+  private static final int S3_KEY_PARTS_WITH_SITE_ID = 3;
+
   /**
    * {@link Pattern} to split a {@link String} instead SiteId / DocumentId. (?<!/) # assert that the
    * previous character is not a colon / # match a literal : character (?!/) # assert that the next
@@ -54,13 +61,13 @@ public final class SiteIdKeyGenerator {
 
   /**
    * Create S3 Key.
-   * 
+   *
    * @param siteId {@link String}
-   * @param id {@link String}
+   * @param document {@link DocumentArtifact}
    * @return {@link String}
    */
-  public static String createS3Key(final String siteId, final String id) {
-    return createDatabaseKey(siteId, id);
+  public static String createS3Key(final String siteId, final DocumentArtifact document) {
+    return createS3Key(siteId, document.documentId(), document.artifactId());
   }
 
   /**
@@ -68,11 +75,32 @@ public final class SiteIdKeyGenerator {
    * 
    * @param siteId {@link String}
    * @param id {@link String}
-   * @param contentType {@link String}
+   * @param artifactId {@link String}
    * @return {@link String}
    */
-  public static String createS3Key(final String siteId, final String id, final String contentType) {
-    return createDatabaseKey(siteId, id + "/" + contentType);
+  public static String createS3Key(final String siteId, final String id, final String artifactId) {
+    String key = artifactId != null ? id + "/artifacts/" + artifactId : id;
+    return createDatabaseKey(siteId, key);
+  }
+
+  /**
+   * Create S3 Key.
+   * 
+   * @param siteId {@link String}
+   * @param id {@link String}
+   * @param artifactId {@link String}
+   * @param contentType {@link String}
+   * @return {@link String}
+   * @deprecated use {@link #createS3Key(String, String, String)}
+   */
+  @Deprecated
+  public static String createS3Key(final String siteId, final String id, final String artifactId,
+      final String contentType) {
+    String key = artifactId != null ? id + "/" + artifactId : id;
+    if (contentType != null) {
+      key += "/" + contentType;
+    }
+    return createDatabaseKey(siteId, key);
   }
 
   /**
@@ -96,6 +124,42 @@ public final class SiteIdKeyGenerator {
   public static String getDocumentId(final String s) {
     String[] split = split(s);
     return split[1];
+  }
+
+  /**
+   * Parse S3 Key into parts.
+   *
+   * @param key {@link String}
+   * @return {@link S3KeyParts}
+   */
+  public static S3KeyParts getS3KeyParts(final String key) {
+    String siteId = null;
+    String documentId = null;
+    String artifactId = null;
+
+    if (key != null) {
+
+      boolean hasArtifacts = key.contains("/artifacts/");
+      String[] ss = key.split("/");
+      List<String> parts = Stream.of(ss).filter(s -> !"artifacts".equals(s)).toList();
+      int len = parts.size();
+
+      if (len == S3_KEY_PARTS_WITH_SITE_ID) {
+        siteId = parts.get(0);
+        documentId = parts.get(1);
+        artifactId = parts.get(2);
+      } else if (hasArtifacts && len == 2) {
+        documentId = parts.get(0);
+        artifactId = parts.get(1);
+      } else if (len == 2) {
+        siteId = parts.get(0);
+        documentId = parts.get(1);
+      } else if (len == 1) {
+        documentId = parts.get(0);
+      }
+    }
+
+    return new S3KeyParts(siteId, documentId, artifactId);
   }
 
   /**
@@ -199,4 +263,14 @@ public final class SiteIdKeyGenerator {
    * private constructor.
    */
   private SiteIdKeyGenerator() {}
+
+  /**
+   * S3 key parts.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param artifactId {@link String}
+   */
+  public record S3KeyParts(String siteId, String documentId, String artifactId) {
+  }
 }

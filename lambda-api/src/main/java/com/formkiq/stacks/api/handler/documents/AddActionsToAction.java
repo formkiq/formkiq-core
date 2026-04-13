@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.module.ocr.AwsTextractQuery;
@@ -46,16 +47,17 @@ public class AddActionsToAction {
    * Convert {@link AddAction} to {@link Action}.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param addAction {@link AddAction}
    * @return {@link Action}
    */
-  public Action apply(final String siteId, final String documentId, final AddAction addAction) {
+  public Action apply(final String siteId, final DocumentArtifact document,
+      final AddAction addAction) {
 
     String userId = ApiAuthorization.getAuthorization().getUsername();
 
     Map<String, Object> parameters = createMap(addAction.parameters());
-    return new ActionBuilder().documentId(documentId).indexUlid().queueId(addAction.queueId())
+    return new ActionBuilder().document(document).indexUlid().queueId(addAction.queueId())
         .type(addAction.type()).parameters(parameters).userId(userId).build(siteId);
   }
 

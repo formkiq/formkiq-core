@@ -88,19 +88,19 @@ public class DocumentsFulltextRequestTest extends AbstractAwsIntegrationTest {
           .addActionsItem(new AddAction().type(DocumentActionType.FULLTEXT));
 
       // when
-      api.addDocumentActions(documentId, siteId, req);
+      api.addDocumentActions(documentId, siteId, null, req);
 
       // then
       waitForActionsComplete(client, siteId, documentId);
 
       DocumentOcrApi ocrApi = new DocumentOcrApi(client);
       GetDocumentOcrResponse response =
-          ocrApi.getDocumentOcr(documentId, siteId, null, null, null, null);
+          ocrApi.getDocumentOcr(documentId, siteId, null, null, null, null, null);
 
       assertTrue(response.getData().contains("This is a small demonstration"));
 
       GetDocumentActionsResponse actions =
-          api.getDocumentActions(documentId, siteId, null, null, null);
+          api.getDocumentActions(documentId, siteId, null, null, null, null);
       assertEquals(2, actions.getActions().size());
       assertEquals("OCR", actions.getActions().get(0).getType().name());
       assertEquals("COMPLETE", actions.getActions().get(0).getStatus().name());

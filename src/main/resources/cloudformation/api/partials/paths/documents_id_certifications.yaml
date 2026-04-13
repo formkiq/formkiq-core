@@ -16,6 +16,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
       requestBody:
         required: true
         content:

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
@@ -53,7 +54,8 @@ public class AddMetadataExtractionAction extends AbstractIntelligentDocumentProc
   }
 
   @Override
-  protected String getUrl(final String documentId, final Action action) {
+  protected String getUrl(final DocumentArtifact document, final Action action) {
+    String documentId = document.documentId();
     String llmPromptEntityName = (String) action.parameters().get("llmPromptEntityName");
     return String.format("/documents/%s/metadataExtractionResults/%s", documentId,
         llmPromptEntityName);

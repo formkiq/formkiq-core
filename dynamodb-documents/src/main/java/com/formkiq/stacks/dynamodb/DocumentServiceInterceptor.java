@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+
 import java.util.Map;
 
 /**
@@ -34,62 +36,63 @@ public interface DocumentServiceInterceptor {
    * Delete Document Interceptor.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param softDelete boolean
    * @param current {@link Map}
    */
-  void deleteDocument(String siteId, String documentId, boolean softDelete,
+  void deleteDocument(String siteId, DocumentArtifact document, boolean softDelete,
       Map<String, Object> current);
 
   /**
    * Delete Document Attribute Interceptor.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param softDelete boolean
    * @param current {@link Map}
    */
-  void deleteDocumentAttribute(String siteId, String documentId, boolean softDelete,
+  void deleteDocumentAttribute(String siteId, DocumentArtifact document, boolean softDelete,
       Map<String, Object> current);
 
   /**
    * Restore Soft Deleted Document Inteerceptor.
    * 
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param current {@link Map}
    */
-  void restoreSoftDeletedDocument(String siteId, String documentId, Map<String, Object> current);
+  void restoreSoftDeletedDocument(String siteId, DocumentArtifact document,
+      Map<String, Object> current);
 
   /**
    * Restore Soft Deleted Document Attribute Inteerceptor.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param current {@link Map}
    */
-  void restoreSoftDeletedDocumentAttribute(String siteId, String documentId,
+  void restoreSoftDeletedDocumentAttribute(String siteId, DocumentArtifact document,
       Map<String, Object> current);
 
   /**
    * Save Document Interceptor.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param current {@link Map}
    * @param previous {@link Map}
    */
-  void saveDocument(String siteId, String documentId, Map<String, Object> current,
+  void saveDocument(String siteId, DocumentArtifact document, Map<String, Object> current,
       Map<String, Object> previous);
 
   /**
    * Save Document Attributes Interceptor.
    *
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param current {@link Map}
    * @param previous {@link Map}
    */
-  void saveDocumentAttribute(String siteId, String documentId, Map<String, Object> current,
+  void saveDocumentAttribute(String siteId, DocumentArtifact document, Map<String, Object> current,
       Map<String, Object> previous);
 }

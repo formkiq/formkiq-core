@@ -37,6 +37,8 @@ public class GetDocumentActionsRequestBuilder
 
   /** {@link String}. */
   private final String docId;
+  /** Artifact Id. */
+  private String artifactId;
   /** Limit. */
   private String queryLimit;
   /** Next Token. */
@@ -73,10 +75,15 @@ public class GetDocumentActionsRequestBuilder
     return this;
   }
 
+  public GetDocumentActionsRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentActionsResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentActionsApi(apiClient).getDocumentActions(this.docId,
-        siteId, queryLimit, null, queryNext));
+        siteId, this.artifactId, queryLimit, null, queryNext));
   }
 }

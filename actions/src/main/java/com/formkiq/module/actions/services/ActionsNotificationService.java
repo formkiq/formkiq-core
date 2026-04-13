@@ -24,6 +24,8 @@
 package com.formkiq.module.actions.services;
 
 import java.util.List;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 
 /**
@@ -40,17 +42,27 @@ public interface ActionsNotificationService {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @return boolean
-   * @deprecated use {@link #publishNextActionEvent(String, String)}
+   * @deprecated use {@link #publishNextActionEvent(String, String, String)}
    */
   @Deprecated
   boolean publishNextActionEvent(List<Action> actions, String siteId, String documentId);
 
   /**
    * Publishes Next Action Event, if there's another action to process.
+   *
+   * @param siteId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
+   * @return boolean
+   */
+  boolean publishNextActionEvent(String siteId, DocumentArtifact documentArtifact);
+
+  /**
+   * Publishes Next Action Event, if there's another action to process.
    * 
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param artifactId {@link String}
    * @return boolean
    */
-  boolean publishNextActionEvent(String siteId, String documentId);
+  boolean publishNextActionEvent(String siteId, String documentId, String artifactId);
 }

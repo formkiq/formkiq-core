@@ -36,6 +36,8 @@ public class DeleteDocumentPurgeRequestBuilder implements HttpRequestBuilder<Del
 
   /** {@link String}. */
   private final String id;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -46,8 +48,14 @@ public class DeleteDocumentPurgeRequestBuilder implements HttpRequestBuilder<Del
     this.id = documentId;
   }
 
+  public DeleteDocumentPurgeRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).purgeDocument(this.id, siteId));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).purgeDocument(this.id, siteId, this.artifactId));
   }
 }

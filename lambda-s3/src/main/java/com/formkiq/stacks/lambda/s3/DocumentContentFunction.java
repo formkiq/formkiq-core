@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -84,13 +85,13 @@ public class DocumentContentFunction {
    *
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
   public List<Map<String, Object>> findContentKeyValues(final Logger logger, final String siteId,
-      final DocumentItem item) throws IOException {
-    Map<String, Object> map = findDocumentOcr(logger, siteId, item.getDocumentId(), true);
+      final DocumentRecord item) throws IOException {
+    Map<String, Object> map = findDocumentOcr(logger, siteId, item.documentId(), true);
     return (List<Map<String, Object>>) map.getOrDefault("keyValues", Collections.emptyList());
   }
 
@@ -99,23 +100,23 @@ public class DocumentContentFunction {
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */
   private List<String> findContentUrls(final Logger logger, final String siteId,
-      final DocumentItem item) throws IOException {
+      final DocumentRecord item) throws IOException {
 
     List<String> urls = Collections.emptyList();
-    String documentId = item.getDocumentId();
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId);
+    String documentId = item.documentId();
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, item.artifactId());
 
-    logger.trace("content type: " + item.getContentType());
+    logger.trace("content type: " + item.contentType());
 
-    if (MimeType.isPlainText(item.getContentType())) {
+    if (MimeType.isPlainText(item.contentType())) {
 
       PresignGetUrlConfig config = new PresignGetUrlConfig()
-          .contentDispositionByPath(item.getPath(), false).contentType(item.getContentType());
+          .contentDispositionByPath(item.path(), false).contentType(item.contentType());
 
       String url = this.s3Service
           .presignGetUrl(this.documentsBucket, s3Key, Duration.ofHours(1), null, config).toString();
@@ -192,7 +193,7 @@ public class DocumentContentFunction {
    * @throws IOException IOException
    */
   public List<String> getContentUrls(final Logger logger, final String siteId,
-      final DocumentItem item) throws IOException {
+      final DocumentRecord item) throws IOException {
 
     List<String> contentUrls = findContentUrls(logger, siteId, item);
     logger.trace("FOUND: " + contentUrls.size() + " content urls");

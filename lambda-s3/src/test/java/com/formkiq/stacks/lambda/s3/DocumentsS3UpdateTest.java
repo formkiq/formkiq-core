@@ -59,6 +59,8 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
@@ -113,7 +115,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.sqs.model.Message;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
@@ -186,9 +187,14 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType)
       throws InterruptedException {
-    ReceiveMessageResponse response = eventQueue.get();
-    assertEquals(1, response.messages().size());
-    Message m = response.messages().get(0);
+    assertCreateDocumentSnsMessage(siteId, eventType, 1);
+  }
+
+  private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType,
+      final int expected) throws InterruptedException {
+    List<Message> messages = eventQueue.get(List.of("\\\"type\\\":\\\"" + eventType + "\\\""));
+    assertEquals(expected, messages.size());
+    Message m = messages.get(0);
 
     Map<String, String> map = GSON.fromJson(m.body(), Map.class);
     String message = map.get("Message");
@@ -272,14 +278,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
     eventQueue = new SqsMessageReceiver(awsServices, eventSnsQueue);
   }
 
-  private static ActionBuilder createAction(final String documentId) {
-    return new ActionBuilder().documentId(documentId).type(ActionType.OCR).indexUlid()
-        .userId("joe");
+  private static ActionBuilder createAction(final DocumentArtifact document) {
+    return new ActionBuilder().document(document).type(ActionType.OCR).indexUlid().userId("joe");
   }
 
   private static Map<String, Object> createS3Map(final String siteId,
       final DynamicDocumentItem doc) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId());
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId(), doc.getArtifactId());
     return new S3EventJsonBuilder()
         .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put").withS3(
             new S3EventJsonBuilder.S3Builder().withBucket("example-bucket").withObject(s3Key)))
@@ -351,10 +356,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       Map<String, Object> map = createS3Map(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, documentId, map);
+      DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
-      assertEquals(expectedContentType, item.getContentType());
+      assertEquals(expectedContentType, item.contentType());
     }
   }
 
@@ -446,7 +451,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @param map {@link Map}
    * @return {@link DocumentItem}
    */
-  private DocumentItem handleRequest(final String siteId, final String documentId,
+  private DocumentRecord handleRequest(final String siteId, final String documentId,
       final Map<String, Object> map) {
 
     // when
@@ -454,7 +459,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
     // then
     login();
-    return service.findDocument(siteId, documentId);
+    return service.findDocument(siteId, DocumentArtifact.of(documentId, null));
   }
 
   private void login() {
@@ -481,20 +486,20 @@ public class DocumentsS3UpdateTest implements DbKeys {
       Map<String, Object> map = createS3Map(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+      DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
-      assertEquals("text/plain", item.getContentType());
-      assertEquals(content.length(), item.getContentLength());
-      assertNotNull(item.getS3version());
-      assertEquals("joe", item.getUserId());
+      assertEquals("text/plain", item.contentType());
+      assertEquals(content.length(), item.contentLength());
+      assertNotNull(item.s3version());
+      assertEquals("joe", item.userId());
 
-      assertFalse(item.getChecksum().startsWith("\""));
-      assertFalse(item.getChecksum().endsWith("\""));
-      assertNotNull(item.getS3version());
+      assertFalse(item.checksum().startsWith("\""));
+      assertFalse(item.checksum().endsWith("\""));
+      assertNotNull(item.s3version());
 
-      Pagination<DocumentTag> tags =
-          service.findDocumentTags(siteId, BUCKET_KEY, null, MAX_RESULTS);
+      Pagination<DocumentTag> tags = service.findDocumentTags(siteId,
+          DocumentArtifact.of(BUCKET_KEY, null), null, MAX_RESULTS);
 
       assertEquals(0, tags.getResults().size());
 
@@ -543,13 +548,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
       TimeUnit.SECONDS.sleep(1);
 
       // when
-      final DocumentItem item = handleRequest(siteId, documentId, map);
+      final DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
-      assertEquals(item.getInsertedDate(), item.getLastModifiedDate());
+      assertEquals(item.insertedDate(), item.lastModifiedDate());
 
-      Pagination<DocumentTag> tags =
-          service.findDocumentTags(siteId, documentId, null, MAX_RESULTS);
+      Pagination<DocumentTag> tags = service.findDocumentTags(siteId,
+          DocumentArtifact.of(documentId, null), null, MAX_RESULTS);
 
       final int size = 3;
       int i = 0;
@@ -601,7 +606,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+      DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
       assertNotNull(item);
@@ -635,7 +640,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, documentId, map);
+      DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
       assertNull(item);
@@ -677,12 +682,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      final DocumentItem item = handleRequest(siteId, child.getDocumentId(), map);
+      final DocumentRecord item = handleRequest(siteId, child.getDocumentId(), map);
 
       // then
-      assertNotNull(item.getBelongsToDocumentId());
+      DocumentArtifact childDocument = new DocumentArtifact(childDocumentId, null);
+      assertNotNull(item.belongsToDocumentId());
       Pagination<DocumentTag> tags =
-          service.findDocumentTags(siteId, childDocumentId, null, MAX_RESULTS);
+          service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
 
       try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m =
@@ -697,7 +703,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           .getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
 
-      tags = service.findDocumentTags(siteId, childDocumentId, null, MAX_RESULTS);
+      tags = service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
 
       assertNotNull(service.findMostDocumentDate());
@@ -716,6 +722,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       // given
       Date now = new Date();
       DynamicDocumentItem doc = createSubDocuments(now);
+      final DocumentArtifact document = new DocumentArtifact(doc.getDocumentId(), null);
       service.saveDocumentItemWithTag(siteId, doc);
 
       String key = createDatabaseKey(siteId, doc.getDocumentId());
@@ -725,8 +732,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      DocumentItem item = handleRequest(siteId, doc.getDocumentId(), map);
-      DocumentItem itemchild =
+      DocumentRecord item = handleRequest(siteId, doc.getDocumentId(), map);
+      DocumentRecord itemchild =
           handleRequest(siteId, doc.getDocuments().get(0).getDocumentId(), map);
 
       // then
@@ -736,25 +743,24 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       Map<String, AttributeValue> mchild =
           db.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-              .key(keysDocument(siteId, itemchild.getDocumentId())).build()).item();
+              .key(keysDocument(siteId, itemchild.documentId())).build()).item();
       assertNull(mchild.get(GSI1_PK));
 
-      assertEquals(doc.getDocumentId(), item.getDocumentId());
-      Pagination<DocumentTag> tags =
-          service.findDocumentTags(siteId, doc.getDocumentId(), null, MAX_RESULTS);
+      assertEquals(doc.getDocumentId(), item.documentId());
+      Pagination<DocumentTag> tags = service.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
           .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
           tags.getResults().get(0));
 
-      tags = service.findDocumentTags(siteId, itemchild.getDocumentId(), null, MAX_RESULTS);
+      DocumentArtifact childDocument = new DocumentArtifact(itemchild.documentId(), null);
+      tags = service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category1").setValue("")
-          .setType(DocumentTagType.USERDEFINED).setDocumentId(itemchild.getDocumentId()),
+          .setType(DocumentTagType.USERDEFINED).setDocumentId(itemchild.documentId()),
           tags.getResults().get(0));
 
-      assertCreateDocumentSnsMessage(siteId, "create");
-      assertCreateDocumentSnsMessage(siteId, "create");
+      assertCreateDocumentSnsMessage(siteId, "create", 2);
     }
   }
 
@@ -779,7 +785,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "text/plain", false, "testdata");
 
       // when
-      final DocumentItem item = handleRequest(siteId, documentId, map);
+      final DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "8");
@@ -809,7 +815,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "text/plain", false, content);
 
       // when
-      final DocumentItem item = handleRequest(siteId, documentId, map);
+      final DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
@@ -840,7 +846,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "text/plain", false, content);
 
       // when
-      final DocumentItem item = handleRequest(siteId, documentId, map);
+      final DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
       verifyDocumentSaved(siteId, item, "text/plain", "" + content.length());
@@ -876,10 +882,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      DocumentItem item = handleRequest(siteId, documentId, map);
+      DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
-      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
+      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.documentId()))
           .tableName(DOCUMENTS_TABLE).build();
 
       Map<String, AttributeValue> result = db.getItem(r).item();
@@ -905,8 +911,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
       DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
+      DocumentArtifact document = new DocumentArtifact(doc.getDocumentId(), null);
       actionsService.saveNewActions(
-          List.of(createAction(doc.getDocumentId()).status(ActionStatus.COMPLETE).build(siteId)));
+          List.of(createAction(document).status(ActionStatus.COMPLETE).build(siteId)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -914,7 +921,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       handleRequest(siteId, BUCKET_KEY, map);
 
       // then
-      List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
@@ -946,7 +953,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocumentItemWithTag(siteId, doc);
 
       // when
-      DocumentItem item = handleRequest(siteId, BUCKET_KEY, map);
+      DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
       assertNull(item);
@@ -967,8 +974,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       String key = createDatabaseKey(siteId, documentId);
 
       DynamicDocumentItem doc = createDocument(siteId, documentId, "test.txt", null);
+      DocumentArtifact document = new DocumentArtifact(documentId, null);
       actionsService.saveNewActions(
-          List.of(createAction(doc.getDocumentId()).status(ActionStatus.RUNNING).build(siteId)));
+          List.of(createAction(document).status(ActionStatus.RUNNING).build(siteId)));
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -978,7 +986,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       handleRequest(siteId, documentId, map);
 
       // then
-      List<Action> actions = actionsService.getActions(siteId, doc.getDocumentId());
+      List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
       assertEquals(ActionStatus.RUNNING, actions.get(0).status());
       assertEquals(ActionType.OCR, actions.get(0).type());
@@ -1022,13 +1030,13 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @param contentType {@link String}
    * @param contentLength {@link String}
    */
-  private void verifyDocumentSaved(final String siteId, final DocumentItem item,
+  private void verifyDocumentSaved(final String siteId, final DocumentRecord item,
       final String contentType, final String contentLength) {
 
-    assertEquals(contentType, item.getContentType());
-    assertEquals(contentLength, item.getContentLength().toString());
+    assertEquals(contentType, item.contentType());
+    assertEquals(contentLength, item.contentLength().toString());
 
-    s3service.deleteAllObjectTags("example-bucket", item.getDocumentId());
-    service.deleteDocumentTags(siteId, item.getDocumentId());
+    s3service.deleteAllObjectTags("example-bucket", item.documentId());
+    service.deleteDocumentTags(siteId, DocumentArtifact.of(item.documentId(), null));
   }
 }

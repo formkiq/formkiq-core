@@ -36,6 +36,8 @@ public class SetDocumentCheckoutRequestBuilder implements HttpRequestBuilder<Set
 
   /** Document Id. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -46,8 +48,14 @@ public class SetDocumentCheckoutRequestBuilder implements HttpRequestBuilder<Set
     this.document = documentId;
   }
 
+  public SetDocumentCheckoutRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).setDocumentCheckout(document, siteId));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).setDocumentCheckout(document, siteId, this.artifactId));
   }
 }

@@ -34,16 +34,14 @@ import java.util.Map;
 /**
  * Find Document by Id.
  */
-public class FindDocumentById implements DynamoDbFind<DocumentRecord, String>, DbKeys {
+public class FindDocumentById implements DynamoDbFind<DocumentRecord, DocumentArtifact>, DbKeys {
 
   @Override
   public DocumentRecord find(final DynamoDbService db, final String tableName, final String siteId,
-      final String documentId) {
-    Map<String, AttributeValue> map = keysDocument(siteId, documentId);
+      final DocumentArtifact document) {
 
-    DynamoDbKey key = new DynamoDbKey(map.get(PK).s(), map.get(SK).s(), null, null, null, null);
+    DynamoDbKey key = new DocumentRecordBuilder().document(document).buildKey(siteId);
     Map<String, AttributeValue> attributes = db.get(key);
-
     return attributes.isEmpty() ? null : DocumentRecord.fromAttributeMap(attributes);
   }
 }

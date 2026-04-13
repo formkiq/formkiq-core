@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
@@ -628,8 +629,8 @@ class FolderIndexProcessorTest implements DbKeys {
         doc = results.getResults().get(0);
         assertEquals("directory1/test2.pdf", doc.get("path"));
 
-        service.deleteDocument(siteId, item0.getDocumentId(), false);
-        service.deleteDocument(siteId, item1.getDocumentId(), false);
+        service.deleteDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null), false);
+        service.deleteDocument(siteId, DocumentArtifact.of(item1.getDocumentId(), null), false);
 
         List<Message> messages = getMessagesFromSqs(sqsQueueUrl);
         assertEquals(0, messages.size());

@@ -23,7 +23,8 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionStatus;
@@ -90,14 +91,16 @@ public class PdfExportAction implements DocumentAction {
   }
 
   @Override
-  public ProcessActionStatus run(final Logger logger, final String siteId, final String documentId,
-      final List<Action> actions, final Action action) throws IOException, ValidationException {
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, ValidationException {
 
-    DocumentItem item = this.documentService.findDocument(siteId, documentId);
-    String deepLink = item.getDeepLinkPath();
+    DocumentRecord item = this.documentService.findDocument(siteId, document);
+    String deepLink = item.deepLinkPath();
 
     if (isValid(siteId, deepLink)) {
 
+      String documentId = document.documentId();
       String url = String.format("/integrations/google/drive/documents/%s/export", documentId);
       this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}");
     } else {

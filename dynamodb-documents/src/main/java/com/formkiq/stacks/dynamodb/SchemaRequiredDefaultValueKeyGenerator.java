@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -73,13 +74,13 @@ public class SchemaRequiredDefaultValueKeyGenerator {
    * 
    * @param schemaAttributes {@link Collection} {@link SchemaAttributes}
    * @param siteId {@link String}
-   * @param documentId {@link String}
+   * @param document {@link DocumentArtifact}
    * @param attributesWithValues Attributes with values.
    * @return {@link Collection} {@link DocumentAttributeRecord}
    */
   public Collection<DocumentAttributeRecord> apply(
       final Collection<SchemaAttributes> schemaAttributes, final String siteId,
-      final String documentId, final Collection<String> attributesWithValues) {
+      final DocumentArtifact document, final Collection<String> attributesWithValues) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
 
@@ -96,7 +97,7 @@ public class SchemaRequiredDefaultValueKeyGenerator {
     return missingRequiredAttributes.stream().filter(r -> {
       AttributeDataType dataType = findDataType(r, attributeRecordMap);
       return AttributeDataType.KEY_ONLY.equals(dataType) || hasDefaultValue(r) || isValidEntity(r);
-    }).flatMap(r -> createDefaultValues(attributeRecordMap, r, documentId, username).stream())
+    }).flatMap(r -> createDefaultValues(attributeRecordMap, r, document, username).stream())
         .toList();
   }
 
@@ -126,28 +127,28 @@ public class SchemaRequiredDefaultValueKeyGenerator {
 
   private Collection<DocumentAttributeRecord> createDefaultValues(
       final Map<String, AttributeRecord> attributeRecordMap, final SchemaAttributesRequired r,
-      final String documentId, final String username) {
+      final DocumentArtifact document, final String username) {
 
     String attributeKey = r.getAttributeKey();
     AttributeDataType dataType = findDataType(r, attributeRecordMap);
     Collection<DocumentAttributeRecord> list = new ArrayList<>();
 
     if (AttributeDataType.KEY_ONLY.equals(dataType)) {
-      list.add(createDocumentAttributeRecord(documentId, attributeKey, dataType, null, username));
+      list.add(createDocumentAttributeRecord(document, attributeKey, dataType, null, username));
     } else if (AttributeDataType.ENTITY.equals(dataType)) {
       String entityValue =
           new DocumentAttributeEntityKeyValue(r.getDefaultEntityTypeId(), r.getDefaultEntityId())
               .getStringValue();
       list.add(
-          createDocumentAttributeRecord(documentId, attributeKey, dataType, entityValue, username));
+          createDocumentAttributeRecord(document, attributeKey, dataType, entityValue, username));
     } else {
       if (r.getDefaultValue() != null) {
-        list.add(createDocumentAttributeRecord(documentId, attributeKey, dataType,
+        list.add(createDocumentAttributeRecord(document, attributeKey, dataType,
             r.getDefaultValue(), username));
       }
 
       notNull(r.getDefaultValues()).forEach(v -> list
-          .add(createDocumentAttributeRecord(documentId, attributeKey, dataType, v, username)));
+          .add(createDocumentAttributeRecord(document, attributeKey, dataType, v, username)));
     }
 
     // override attributes created from default Schem values
@@ -156,13 +157,13 @@ public class SchemaRequiredDefaultValueKeyGenerator {
     return list;
   }
 
-  private DocumentAttributeRecord createDocumentAttributeRecord(final String documentId,
+  private DocumentAttributeRecord createDocumentAttributeRecord(final DocumentArtifact document,
       final String attributeKey, final AttributeDataType dataType, final String defaultValue,
       final String username) {
 
     DocumentAttributeRecord r = new DocumentAttributeRecord();
     r.setKey(attributeKey);
-    r.setDocumentId(documentId);
+    r.setDocument(document);
     r.setInsertedDate(this.now);
     r.setUserId(username);
 

@@ -97,8 +97,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
-    return notNull(this.documentAttributesApi.getDocumentAttributes(documentId, siteId, "100", null)
-        .getAttributes());
+    return notNull(this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, "100", null).getAttributes());
   }
 
   private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
@@ -123,7 +123,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        reindexApi.addReindexDocument(documentId, req, siteId);
+        reindexApi.addReindexDocument(documentId, req, siteId, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -159,7 +159,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId);
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -217,7 +217,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId);
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -265,7 +265,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId);
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -310,7 +310,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId);
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",

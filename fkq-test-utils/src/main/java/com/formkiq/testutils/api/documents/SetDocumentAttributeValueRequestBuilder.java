@@ -40,6 +40,8 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
   private final SetDocumentAttributeRequest request;
   /** Document Id. */
   private String id;
+  /** Artifact Id. */
+  private String artifactId;
   /** Attribute Key. */
   private String key;
 
@@ -48,6 +50,11 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
    */
   public SetDocumentAttributeValueRequestBuilder() {
     this.request = new SetDocumentAttributeRequest();
+  }
+
+  public SetDocumentAttributeValueRequestBuilder setArtifactId(final String artifact) {
+    this.artifactId = artifact;
+    return this;
   }
 
   /**
@@ -92,6 +99,6 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
    */
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .setDocumentAttributeValue(this.id, this.key, this.request, siteId));
+        .setDocumentAttributeValue(this.id, this.key, this.request, siteId, this.artifactId));
   }
 }

@@ -37,6 +37,8 @@ public class DeleteDocumentCheckoutLegalHoldRequestBuilder
 
   /** Document Id. */
   private final String document;
+  /** Artifact Id. */
+  private String artifactId;
 
   /**
    * constructor.
@@ -47,9 +49,14 @@ public class DeleteDocumentCheckoutLegalHoldRequestBuilder
     this.document = documentId;
   }
 
+  public DeleteDocumentCheckoutLegalHoldRequestBuilder setArtifactId(final String id) {
+    this.artifactId = id;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).deleteDocumentCheckoutLegalHold(document, siteId));
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .deleteDocumentCheckoutLegalHold(document, siteId, this.artifactId));
   }
 }
