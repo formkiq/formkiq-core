@@ -11270,6 +11270,9 @@ components:
         documentId:
           type: string
           description: Document Identifier of the data source document
+        artifactId:
+          type: string
+          description: Document Artifact Identifier of the data source document
     DocumentGenerateDataSource:
       type: object
       required:
@@ -11281,6 +11284,9 @@ components:
         documentId:
           type: string
           description: Document Identifier of the data source document
+        artifactId:
+          type: string
+          description: Document Artifact Identifier of the data source document
         dataRoot:
           type: string
           description: The default JSON object path for the data object
@@ -13884,16 +13890,10 @@ components:
           items:
             $ref: '#/components/schemas/DocumentCertification'
     DocumentCertificationTarget:
-      type: object
-      required:
-      - type
-      properties:
-        type:
-          type: string
-          enum:
-          - DOWNLOAD
-          - NEW_VERSION
-          - NEW_DOCUMENT
+      type: string
+      description: Type of supported certificate targets
+      enum:
+      - DOWNLOAD
     DocumentCertification:
       type: object
       required:
@@ -13903,24 +13903,27 @@ components:
         alias:
           type: string
           description: Certificate alias.
-        type:
-          type: string
-          enum:
-          - AWS_SSM_PARAMETER_STORE
-        parameterStore:
-          $ref: '#/components/schemas/DocumentCertificationParameterStore'
-    DocumentCertificationParameterStore:
+        sourceType:
+          $ref: '#/components/schemas/DocumentCertificationType'
+        awsSecretsManager:
+          $ref: '#/components/schemas/DocumentCertificationAwsSecretsManager'
+    DocumentCertificationType:
+      type: string
+      description: Type of supported certificate datastores
+      enum:
+      - AWS_SECRETS_MANAGER
+    DocumentCertificationAwsSecretsManager:
       type: object
       required:
-      - pkcs12BundleParam
-      - pkcs12PasswordParam
+      - certificateArn
+      - passwordArn
       properties:
-        pkcs12BundleParam:
+        certificateArn:
           type: string
-          description: SSM Parameter Store Key containing the PKCS#12/PFX bundle.
-        pkcs12PasswordParam:
+          description: Aws Secrets Manager Certificate ARN
+        passwordArn:
           type: string
-          description: SSM Parameter Store Key containing the PKCS#12/PFX password.
+          description: Aws Secrets Manager Password ARN
     AddDocumentCertificationResponse:
       type: object
       properties:
