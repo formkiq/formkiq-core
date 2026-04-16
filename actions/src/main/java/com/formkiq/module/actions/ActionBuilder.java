@@ -152,7 +152,10 @@ public class ActionBuilder implements DynamoDbEntityBuilder<Action>, DbKeys {
     validateKeyFields();
 
     String pk = PREFIX_DOCS + documentId;
-    String sk = "action" + TAG_DELIMINATOR + index + TAG_DELIMINATOR + type.name();
+    String sk = artifactId != null
+        ? "action_art" + TAG_DELIMINATOR + artifactId + TAG_DELIMINATOR + index + TAG_DELIMINATOR
+            + type.name()
+        : "action" + TAG_DELIMINATOR + index + TAG_DELIMINATOR + type.name();
 
     DynamoDbKey.Builder b = DynamoDbKey.builder().pk(siteId, pk).sk(sk);
 
