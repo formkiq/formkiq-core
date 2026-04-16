@@ -270,7 +270,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
-assertNotNull(documentId);
+      assertNotNull(documentId);
 
       // when
       GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
@@ -281,39 +281,6 @@ assertNotNull(documentId);
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
-    }
-  }
-
-  /**
-   * Get Request Upload Document Url for Artifact.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testGetUploadArtifact01() throws Exception {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      // when
-      String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError().response()
-          .getDocumentId();
-
-      String artifactId = new AddDocumentRequestBuilder().content().documentId(documentId).artifacts(true).submit(client, siteId).throwIfError().response()
-          .getArtifactId();
-
-      // then
-      assertNotNull(documentId);
-      assertNotNull(artifactId);
-
-      // when
-      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
-          artifactId, null, null, 1, null, null);
-
-      // then
-      assertNotNull(response.getUrl());
-      assertEquals(documentId, response.getDocumentId());
-      assertTrue(response.getUrl().contains("/artifacts/"));
     }
   }
 
@@ -330,7 +297,7 @@ assertNotNull(documentId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
-assertNotNull(documentId);
+      assertNotNull(documentId);
 
       // when
       try {
@@ -363,7 +330,7 @@ assertNotNull(documentId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
-assertNotNull(documentId);
+      assertNotNull(documentId);
 
       // when
       GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
@@ -419,6 +386,39 @@ assertNotNull(documentId);
 
       HttpResponse<String> put = putS3Request(response, content);
       assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * Get Request Upload Document Url for Artifact.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUploadArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      String artifactId = new AddDocumentRequestBuilder().content().documentId(documentId)
+          .artifacts(true).submit(client, siteId).throwIfError().response().getArtifactId();
+
+      // then
+      assertNotNull(documentId);
+      assertNotNull(artifactId);
+
+      // when
+      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
+          artifactId, null, null, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(documentId, response.getDocumentId());
+      assertTrue(response.getUrl().contains("/artifacts/"));
     }
   }
 
