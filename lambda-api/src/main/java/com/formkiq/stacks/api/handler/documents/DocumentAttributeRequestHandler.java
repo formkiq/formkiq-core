@@ -192,7 +192,8 @@ public class DocumentAttributeRequestHandler
 
   private Collection<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final String documentId, final String attributeKey) throws BadException, ValidationException {
+      final String documentId, final String artifactId, final String attributeKey)
+      throws BadException, ValidationException {
 
     DocumentAttributeValueRequest request =
         JsonToObject.fromJson(awsservice, event, DocumentAttributeValueRequest.class);
@@ -202,8 +203,8 @@ public class DocumentAttributeRequestHandler
     AddDocumentAttribute addAttribute = new AddDocumentAttributeStandard(attributeKey,
         a.stringValue(), a.stringValues(), a.numberValue(), a.numberValues(), a.booleanValue());
 
-    return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId)
-        .apply(addAttribute);
+    return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId,
+        artifactId).apply(addAttribute);
   }
 
   @Override
@@ -226,8 +227,8 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    Collection<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, attributeKey);
+    Collection<DocumentAttributeRecord> documentAttributes = getDocumentAttributesFromRequest(event,
+        awsservice, siteId, documentId, artifactId, attributeKey);
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);

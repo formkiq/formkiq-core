@@ -101,12 +101,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         "ASD".getBytes(StandardCharsets.UTF_8), contentType);
   }
 
-  private void addS3File(final String siteId, final String documentId, final String artifactId,
-      final String contentType) {
-    getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId, artifactId),
-        "ASD".getBytes(StandardCharsets.UTF_8), contentType);
-  }
-
   private void assertS3Url(final GetDocumentUrlResponse resp, final String siteId,
       final String documentId) {
     assertS3Url(resp.getUrl(), siteId, documentId);

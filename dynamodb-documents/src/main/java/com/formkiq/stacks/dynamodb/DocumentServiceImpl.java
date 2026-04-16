@@ -825,12 +825,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public Pagination<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
       final DocumentArtifact document, final String nextToken, final int limit) {
 
-    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document).setKey("")
+        .setStringValue("").updateValueType();
+    DynamoDbKey key = r.buildKey(siteId);
+    String sk = key.skSubstring(document.artifactId() != null ? 2 : 1) + "#";
     Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
     QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)),
-        r.fromS(AttributeRecord.ATTR), startkey, limit);
+        fromS(sk)/* r.fromS(AttributeRecord.ATTR) */, startkey, limit);
 
     List<DocumentAttributeRecord> list = response.items().stream()
         .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
@@ -1621,7 +1624,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes, final SaveDocumentOptions options)
       throws ValidationException {
 
-    DocumentArtifact documentArtifact = DocumentArtifact.of(item.getDocumentId(), null);
+    DocumentArtifact documentArtifact =
+        DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
 
     DocumentRecordBuilder builder = new DocumentItemToDocumentRecordBuilder()
         .apply(parentDocumentId, item).timeToLive(options.timeToLive());
