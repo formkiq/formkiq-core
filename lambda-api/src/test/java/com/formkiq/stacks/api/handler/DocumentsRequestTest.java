@@ -1488,7 +1488,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
 
       // when
-      documentsApi.deletePublishedDocumentContent(documentId, siteId, null);
+      documentsApi.deletePublishedDocumentContent(documentId, siteId);
 
       // then
       try {

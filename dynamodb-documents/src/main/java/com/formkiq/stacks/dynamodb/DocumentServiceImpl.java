@@ -1255,22 +1255,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       tagRecords.addAll(r);
     });
 
-    // List<DocumentTagRecord> tagRecords = notNull(tags).stream().filter(predicate)
-    // .map(t -> {
-    // return builder.tag(t).build(siteId);
-    // }).toList();
-
-    // DocumentTagToAttributeValueMap mapper =
-    // new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, document);
-
-    // List<Map<String, AttributeValue>> items =
-    // notNull(tags).stream().filter(predicate).map(mapper)
-    // .flatMap(List::stream).collect(Collectors.toList());
-
-    // if (timeToLive != null) {
-    // items.forEach(v -> addN(v, "TimeToLive", timeToLive));
-    // }
-
     return tagRecords.stream().map(DocumentTagRecord::getAttributes).toList();
   }
 

@@ -27,7 +27,7 @@ import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
-import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * Builder for {@link AddDocumentTagsRequest}.
  */
-public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddResponse> {
+public class SetDocumentTagsRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link AddDocumentTagsRequest}. */
   private final AddDocumentTagsRequest request;
@@ -50,7 +50,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * 
    * @param documentId {@link String}
    */
-  public AddDocumentTagRequestBuilder(final String documentId) {
+  public SetDocumentTagsRequestBuilder(final String documentId) {
     this.id = documentId;
     this.request = new AddDocumentTagsRequest();
   }
@@ -61,7 +61,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @param key {@link String}
    * @return AddDocumentTagsRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key) {
+  public SetDocumentTagsRequestBuilder addTag(final String key) {
     this.request.addTagsItem(new AddDocumentTag().key(key));
     return this;
   }
@@ -73,7 +73,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @param stringValues {@link List} {@link String}
    * @return AddDocumentTagsRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key, final List<String> stringValues) {
+  public SetDocumentTagsRequestBuilder addTag(final String key, final List<String> stringValues) {
     this.request.addTagsItem(new AddDocumentTag().key(key).values(stringValues));
     return this;
   }
@@ -85,12 +85,12 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @param stringValue {@link String}
    * @return AddDocumentTagsRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key, final String stringValue) {
+  public SetDocumentTagsRequestBuilder addTag(final String key, final String stringValue) {
     this.request.addTagsItem(new AddDocumentTag().key(key).value(stringValue));
     return this;
   }
 
-  public AddDocumentTagRequestBuilder setArtifactId(final String artifact) {
+  public SetDocumentTagsRequestBuilder setArtifactId(final String artifact) {
     this.artifactId = artifact;
     return this;
   }
@@ -102,8 +102,8 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @param siteId Site ID
    * @return AddDocumentResponse
    */
-  public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentTagsApi(apiClient).addDocumentTags(this.id,
+  public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new DocumentTagsApi(apiClient).setDocumentTags(this.id,
         this.request, siteId, this.artifactId));
   }
 }
