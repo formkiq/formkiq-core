@@ -34,16 +34,86 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
+  /** Document checksum. */
+  private String checksum;
+
+  /** Document checksum type. */
+  private String checksumType;
+
+  /** Document content length. */
+  private Integer contentLength;
+
+  /** URL duration in hours. */
+  private Integer duration;
+
+  /** Document path. */
+  private String path;
+
   /**
    * constructor.
    *
    */
   public GetDocumentUploadRequestBuilder() {}
 
+  /**
+   * Set checksum.
+   *
+   * @param documentChecksum {@link String}
+   * @return GetDocumentUploadRequestBuilder
+   */
+  public GetDocumentUploadRequestBuilder checksum(final String documentChecksum) {
+    this.checksum = documentChecksum;
+    return this;
+  }
+
+  /**
+   * Set checksum type.
+   *
+   * @param type {@link String}
+   * @return GetDocumentUploadRequestBuilder
+   */
+  public GetDocumentUploadRequestBuilder checksumType(final String type) {
+    this.checksumType = type;
+    return this;
+  }
+
+  /**
+   * Set content length.
+   *
+   * @param length {@link Integer}
+   * @return GetDocumentUploadRequestBuilder
+   */
+  public GetDocumentUploadRequestBuilder contentLength(final Integer length) {
+    this.contentLength = length;
+    return this;
+  }
+
+  /**
+   * Set duration.
+   *
+   * @param hours {@link Integer}
+   * @return GetDocumentUploadRequestBuilder
+   */
+  public GetDocumentUploadRequestBuilder duration(final Integer hours) {
+    this.duration = hours;
+    return this;
+  }
+
+  /**
+   * Set path.
+   *
+   * @param documentPath {@link String}
+   * @return GetDocumentUploadRequestBuilder
+   */
+  public GetDocumentUploadRequestBuilder path(final String documentPath) {
+    this.path = documentPath;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentUpload(null, siteId, null,
-        null, null, null, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentUpload(this.path, siteId,
+        this.checksumType, this.checksum, this.contentLength, this.duration, null));
   }
 }

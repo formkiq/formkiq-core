@@ -42,6 +42,7 @@ import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -124,6 +125,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertNotNull(response.getUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
@@ -182,6 +184,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
 
@@ -217,6 +220,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("SHA1", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
 
@@ -266,6 +270,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
@@ -292,6 +297,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       try {
@@ -324,6 +330,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
@@ -361,6 +368,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
       String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
 
       // when
       GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
@@ -378,6 +386,39 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       HttpResponse<String> put = putS3Request(response, content);
       assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * Get Request Upload Document Url for Artifact.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGetUploadArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      String artifactId = new AddDocumentRequestBuilder().content().documentId(documentId)
+          .artifacts(true).submit(client, siteId).throwIfError().response().getArtifactId();
+
+      // then
+      assertNotNull(documentId);
+      assertNotNull(artifactId);
+
+      // when
+      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
+          artifactId, null, null, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(documentId, response.getDocumentId());
+      assertTrue(response.getUrl().contains("/artifacts/"));
     }
   }
 
@@ -433,6 +474,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertNotNull(response.getUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
@@ -461,6 +503,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // then
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       assertNotNull(response.getUrl());
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
@@ -539,6 +582,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
 
@@ -602,6 +646,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("SHA256", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
 
@@ -639,6 +684,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertEquals("SHA1", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
 
@@ -673,6 +719,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
           siteId != null ? url.contains("/testbucket/" + siteId) : url.contains("/testbucket/"));
 
       String documentId = response.getDocumentId();
+      assertNotNull(documentId);
       List<DocumentAction> actions = notNull(this.documentActionsApi
           .getDocumentActions(documentId, siteId, null, null, null, null).getActions());
       assertEquals(1, actions.size());

@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/tags/{tagKey}". */
@@ -172,7 +173,7 @@ public class DocumentTagRequestHandler
     throwIfNull(document, new DocumentNotFoundException(documentId));
 
     DocumentTag tag = documentService.findDocumentTag(siteId, documentArtifact, tagKey);
-    throwIfNull(document, new NotFoundException("Tag " + tagKey + " not found."));
+    throwIfNull(tag, new NotFoundException("Tag " + tagKey + " not found."));
 
     // if trying to change from tag VALUE to VALUES or VALUES to VALUE
     if (isTagValueTypeChanged(tag, value, values)) {
@@ -183,7 +184,7 @@ public class DocumentTagRequestHandler
     String userId = authorization.getUsername();
 
     tag = new DocumentTag(null, tagKey, value, now, userId);
-    if (values != null) {
+    if (!notNull(values).isEmpty()) {
       tag.setValue(null);
       tag.setValues(values);
     }

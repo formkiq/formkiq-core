@@ -1792,7 +1792,7 @@ paths:
                       values: ["111", "222"]
       responses:
         '200':
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsUpdateResponse'
 {{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
 {{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     put:
@@ -1828,7 +1828,7 @@ paths:
                       values: ["111", "222"]
       responses:
         '200':
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsSetResponse'
 {{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
 {{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/tags/{tagKey}:
@@ -1873,7 +1873,7 @@ paths:
               $ref: '#/components/schemas/SetDocumentTagKeyRequest'
       responses:
         '200':
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsUpdateResponse'
 {{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
 {{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
     delete:
@@ -5349,7 +5349,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'

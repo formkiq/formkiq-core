@@ -59,6 +59,7 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.urls.UrlParser;
 import com.formkiq.urls.UrlParts;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,6 +106,11 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     assertS3Url(resp.getUrl(), siteId, documentId);
   }
 
+  private void assertS3Url(final GetDocumentUrlResponse resp, final String siteId,
+      final String documentId, final String artifactId) {
+    assertS3Url(resp.getUrl(), siteId, documentId, artifactId);
+  }
+
   private void assertS3Url(final String url, final String siteId, final String documentId) {
     assertNotNull(url);
     assertTrue(url.contains(com.formkiq.testutils.aws.TestServices.BUCKET_NAME));
@@ -112,6 +118,17 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertTrue(url.contains("/" + siteId + "/" + documentId));
     } else {
       assertTrue(url.contains("/" + documentId));
+    }
+  }
+
+  private void assertS3Url(final String url, final String siteId, final String documentId,
+      final String artifactId) {
+    assertNotNull(url);
+    assertTrue(url.contains(com.formkiq.testutils.aws.TestServices.BUCKET_NAME));
+    if (siteId != null) {
+      assertTrue(url.contains("/" + siteId + "/" + documentId + "/artifacts/" + artifactId));
+    } else {
+      assertTrue(url.contains("/" + documentId + "/artifacts/" + artifactId));
     }
   }
 
@@ -592,6 +609,36 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertNotNull(resp);
       assertNotNull(resp.getUrl());
       assertEquals("https://www.google.com", resp.getUrl());
+    }
+  }
+
+  /**
+   * /documents/{documentId}/url request for artifact.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentContentArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      assertNotNull(documentId);
+
+      String artifactId = new AddDocumentRequestBuilder().content().documentId(documentId)
+          .artifacts(true).submit(client, siteId).throwIfError().response().getArtifactId();
+
+      // when
+      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, artifactId,
+          null, null, null, null, null, null);
+
+      // then
+      assertNotNull(resp);
+      assertNotNull(resp.getUrl());
+      assertTrue(resp.getUrl().contains("/artifacts/"));
+      assertS3Url(resp, siteId, documentId, artifactId);
     }
   }
 

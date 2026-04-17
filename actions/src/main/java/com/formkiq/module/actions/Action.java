@@ -26,8 +26,8 @@ package com.formkiq.module.actions;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.strings.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Date;
@@ -142,7 +142,7 @@ public record Action(DynamoDbKey key, String documentId, String artifactId, Stri
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().s()));
       }
 
-      String index = calculateIndex(attributes);
+      String index = calculateIndex(key, attributes);
 
       return new Action(key, documentId, artifactId, index, type, status, userId, message, queueId,
           workflowId, workflowLastStep, workflowStepId, metadata, parameters, retryCount,
@@ -154,20 +154,18 @@ public record Action(DynamoDbKey key, String documentId, String artifactId, Stri
 
   /**
    * index is encoded in SK as: action|index|type.
-   * 
+   *
+   * @param key {@link DynamoDbKey}
    * @param attributes {@link Map}
    * @return {@link String}
    */
-  private static String calculateIndex(final Map<String, AttributeValue> attributes) {
-    String index = null;
-    if (attributes.containsKey(DbKeys.SK)) {
-      String[] parts =
-          DynamoDbTypes.toString(attributes.get(DbKeys.SK)).split(DbKeys.TAG_DELIMINATOR);
-      if (parts.length > 1) {
-        index = parts[1];
-      }
-    }
-    return index;
+  private static String calculateIndex(final DynamoDbKey key,
+      final Map<String, AttributeValue> attributes) {
+
+    String artifactId = DynamoDbTypes.toString(attributes.get(ATTR_ARTIFACT_ID));
+    int count = artifactId != null ? 2 : 1;
+    String[] parts = Strings.splitByChar(key.sk(), '#');
+    return parts.length > count ? parts[count] : null;
   }
 
   /**

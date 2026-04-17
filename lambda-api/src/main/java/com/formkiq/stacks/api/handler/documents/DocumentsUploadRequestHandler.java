@@ -96,7 +96,6 @@ public class DocumentsUploadRequestHandler
    * @param siteId {@link String}
    * @param request {@link AddDocumentRequest}
    * @param tags {@link List} {@link DocumentTag}
-   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link ApiRequestHandlerResponse.Builder}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
@@ -104,8 +103,7 @@ public class DocumentsUploadRequestHandler
   private ApiRequestHandlerResponse.Builder buildPresignedResponse(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest request,
-      final List<DocumentTag> tags, final Collection<DocumentAttributeRecord> documentAttributes)
-      throws BadException, ValidationException {
+      final List<DocumentTag> tags) throws BadException, ValidationException {
 
     String documentId = request.getDocumentId();
 
@@ -123,6 +121,14 @@ public class DocumentsUploadRequestHandler
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, item);
+
+    AddDocumentAttributeToDocumentAttributeRecord tr =
+        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId,
+            item.getArtifactId());
+
+    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
+    List<DocumentAttributeRecord> documentAttributes =
+        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     service.saveDocument(siteId, item, tags, documentAttributes, options);
@@ -215,8 +221,9 @@ public class DocumentsUploadRequestHandler
     validateMaxDocuments(vb, awsservice, config, siteId);
     vb.check();
 
-    ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
-        siteId, item, new ArrayList<>(), null).ok().build();
+    ApiRequestHandlerResponse response =
+        buildPresignedResponse(event, authorization, awsservice, siteId, item, new ArrayList<>())
+            .ok().build();
 
     if (!Strings.isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
@@ -278,16 +285,6 @@ public class DocumentsUploadRequestHandler
       }
     });
 
-    String documentId = request.getDocumentId();
-
-    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
-
-    AddDocumentAttributeToDocumentAttributeRecord tr =
-        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId);
-
-    List<DocumentAttributeRecord> documentAttributes =
-        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
-
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get(siteId);
 
@@ -296,8 +293,8 @@ public class DocumentsUploadRequestHandler
 
     validatePost(awsservice, config, siteId, request);
 
-    ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
-        siteId, request, tags, documentAttributes).build();
+    ApiRequestHandlerResponse response =
+        buildPresignedResponse(event, authorization, awsservice, siteId, request, tags).build();
 
     if (!isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);

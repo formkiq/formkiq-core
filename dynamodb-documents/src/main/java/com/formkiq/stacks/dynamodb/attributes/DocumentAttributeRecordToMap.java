@@ -178,6 +178,7 @@ public class DocumentAttributeRecordToMap implements
 
         lastValues = new DynamodbRecordToMap().apply(a);
         lastValues.remove("documentId");
+        lastValues.remove("artifactId");
 
         if (lastValues.containsKey("inserteddate")) {
           lastValues.put("insertedDate", lastValues.get("inserteddate"));
