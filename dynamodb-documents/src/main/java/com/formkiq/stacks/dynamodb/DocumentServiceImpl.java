@@ -1065,8 +1065,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     var key = new DocumentTagRecordBuilder().documentId(document.documentId())
         .artifactId(document.artifactId()).tagKey("").buildKey(siteId);
-    Map<String, AttributeValue> keys = Map.of(PK, fromS(key.pk()), SK, fromS(PREFIX_TAGS));
-    // Map<String, AttributeValue> keys = keysDocumentTag(siteId, document, null);
+
+    int count = document.artifactId() != null ? 2 : 1;
+    String sk = key.skSubstring(count) + "#";
+    Map<String, AttributeValue> keys = Map.of(PK, fromS(key.pk()), SK, fromS(sk));
 
     Pagination<DocumentTag> tags =
         findAndTransform(keys, nextToken, limit, new AttributeValueToDocumentTag(siteId));

@@ -26,9 +26,11 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.SetResponse;
@@ -64,6 +66,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
 
+  private List<DocumentTag> getDocumentTags(final String siteId, final DocumentArtifact document)
+      throws ApiException {
+    return getDocumentTags(siteId, document, null);
+  }
+
+  private List<DocumentTag> getDocumentTags(final String siteId, final DocumentArtifact document,
+      final String limit) throws ApiException {
+    return notNull(new GetDocumentTagsRequestBuilder(document.documentId())
+        .setArtifactId(document.artifactId()).limit(limit).submit(client, siteId).throwIfError()
+        .response().getTags());
+  }
+
   private List<DocumentTag> getDocumentTags(final String siteId, final String documentId)
       throws ApiException {
     return getDocumentTags(siteId, documentId, null);
@@ -73,6 +87,13 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       final String limit) throws ApiException {
     return notNull(new GetDocumentTagsRequestBuilder(documentId).limit(limit).submit(client, siteId)
         .throwIfError().response().getTags());
+  }
+
+  private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
+      throws ApiException {
+    AddDocumentResponse resp = new AddDocumentRequestBuilder().content().documentId(documentId)
+        .artifacts(true).submit(client, siteId).throwIfError().response();
+    return DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
   }
 
   /**
@@ -156,6 +177,45 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       List<DocumentTag> tags = getDocumentTags(siteId, documentId);
       assertEquals(0, tags.size());
     }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/tags/{tagKey} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDeleteTagDocumentArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactonly", "value").submit(client, siteId).throwIfError();
+
+      // when
+      var message = new DeleteDocumentTagRequestBuilder(documentId, "artifactonly")
+          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response()
+          .getMessage();
+
+      // then
+      assertEquals("Removed 'artifactonly' from document '" + documentId + "'.", message);
+
+      List<DocumentTag>  tags = getDocumentTags(siteId, documentId);
+      assertTagEquals(tags.get(0), "category", "base");
+
+      tags = getDocumentTags(siteId, artifact);
+      assertEquals(0, tags.size());
+    }
+  }
+
+  private void assertTagEquals(final DocumentTag tag, final String key, final String value) {
+    assertEquals(key, tag.getKey());
+    assertEquals(value, tag.getValue());
   }
 
   /**
@@ -247,6 +307,41 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /documents/{documentId}/tags/{tagKey}/{tagValue} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleDeleteTagValueArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactvalues", List.of("abc", "xyz")).submit(client, siteId).throwIfError();
+
+      // when
+      var message = new DeleteDocumentTagValueRequestBuilder(documentId, "artifactvalues", "xyz")
+          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response()
+          .getMessage();
+
+      // then
+      assertEquals("Removed Tag value from document '" + documentId + "'.", message);
+      List<DocumentTag> tags = getDocumentTags(siteId, documentId);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "category", "base");
+
+      tags = getDocumentTags(siteId, artifact);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "artifactvalues", "abc");
+    }
+  }
+
+  /**
    * Get /documents/{documentId}/tags tags request.
    *
    * @throws Exception an error has occurred
@@ -329,6 +424,35 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("joesmith", tags.get(0).getUserId());
       assertNull(tags.get(0).getValue());
       assertEquals("abc,xyz", String.join(",", notNull(tags.get(0).getValues())));
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/tags request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactcategory", "artifact").submit(client, siteId).throwIfError();
+
+      // when
+      var resp = new GetDocumentTagsRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      List<DocumentTag> tags = notNull(resp.getTags());
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "artifactcategory", "artifact");
     }
   }
 
@@ -447,6 +571,34 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * GET /documents/{documentId}/tags/{tagKey} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("category", "artifact").submit(client, siteId).throwIfError();
+
+      // when
+      var resp = new GetDocumentTagRequestBuilder(documentId, "category")
+          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("category", resp.getKey());
+      assertEquals("artifact", resp.getValue());
+    }
+  }
+
+  /**
    * PATCH /documents/{documentId}/tags tags request.
    *
    * @throws Exception an error has occurred
@@ -488,6 +640,40 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(tagKey1, tags.get(i).getKey());
       assertEquals(tagValue1, tags.get(i).getValue());
       assertEquals("joesmith", tags.get(i).getUserId());
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId}/tags request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePatchDocumentTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactcategory", "artifact0").submit(client, siteId).throwIfError();
+
+      // when
+      var resp = new UpdateDocumentTagsRequestBuilder(documentId)
+          .setArtifactId(artifact.artifactId()).addTag("artifactcategory", "artifact1")
+          .addTag("artifactonly", "value").submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("Updated Tags", resp.getMessage());
+      assertEquals("base", getDocumentTags(siteId, documentId).get(0).getValue());
+
+      List<DocumentTag> tags = getDocumentTags(siteId, artifact);
+      assertEquals(2, tags.size());
+      assertTagEquals(tags.get(0), "artifactcategory", "artifact1");
+      assertTagEquals(tags.get(1), "artifactonly", "value");
     }
   }
 
@@ -623,6 +809,38 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/tags request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      // when
+      var message = new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactcategory", "artifact").submit(client, siteId).throwIfError().response()
+          .getMessage();
+
+      // then
+      assertEquals("Created Tags.", message);
+      List<DocumentTag> tags = getDocumentTags(siteId, documentId);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "category", "base");
+
+      tags = getDocumentTags(siteId, artifact);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "artifactcategory", "artifact");
+    }
+  }
+
+  /**
    * POST/PATCH/PUT /documents/{documentId}/tags with Document Missing.
    *
    */
@@ -751,6 +969,41 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(tagKey1, tags.get(0).getKey());
       assertEquals(tagValue1, tags.get(0).getValue());
       assertEquals("joesmith", tags.get(0).getUserId());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/tags request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutDocumentTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactold", "value0").submit(client, siteId).throwIfError();
+
+      // when
+      var resp = new SetDocumentTagsRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("artifactnew", "value1").submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("Set Tags", resp.getMessage());
+
+      List<DocumentTag> tags = getDocumentTags(siteId, documentId);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "category", "base");
+
+      tags = getDocumentTags(siteId, artifact);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "artifactnew", "value1");
     }
   }
 
@@ -933,6 +1186,43 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(
           "{\"errors\":[{\"key\":\"CLAMAV_SCAN_STATUS\",\"error\":\"unallowed tag key\"}]}",
           resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/tags/{tagKey} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutTagsArtifact01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId = new AddDocumentRequestBuilder().content().addTag("category", "base")
+          .submit(client, siteId).throwIfError().response().getDocumentId();
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
+          .addTag("category", "artifact0").submit(client, siteId).throwIfError();
+
+      // when
+      var resp = new SetDocumentTagValueRequestBuilder(documentId, "category")
+          .setArtifactId(artifact.artifactId()).value("artifact1").submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertEquals("Updated tag 'category' on document '" + documentId + "'.",
+          resp.response().getMessage());
+
+      List<DocumentTag> tags = getDocumentTags(siteId, documentId);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "category", "base");
+
+      tags = getDocumentTags(siteId, artifact);
+      assertEquals(1, tags.size());
+      assertTagEquals(tags.get(0), "category", "artifact1");
     }
   }
 }
