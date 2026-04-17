@@ -8,6 +8,7 @@ dependencies {
   implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
   implementation group: 'com.github.f4b6a3', name: 'ulid-creator', version: '5.2.4'
 
+  implementation project(':strings')
   implementation project(':aws-dynamodb')
   implementation project(':aws-sns')
   implementation project(':document-events')

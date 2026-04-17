@@ -34,6 +34,7 @@ import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.EntityTypeNamespace;
@@ -191,6 +192,41 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    */
   public AddDocumentRequestBuilder addMetadata(final String key, final String value) {
     this.request.addMetadataItem(new AddDocumentMetadata().key(key).value(value));
+    return this;
+  }
+
+  /**
+   * Add Document Tag.
+   *
+   * @param key {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addTag(final String key) {
+    this.request.addTagsItem(new AddDocumentTag().key(key));
+    return this;
+  }
+
+  /**
+   * Add Document Tag.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addTag(final String key, final List<String> values) {
+    this.request.addTagsItem(new AddDocumentTag().key(key).values(values));
+    return this;
+  }
+
+  /**
+   * Add Document Tag.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addTag(final String key, final String value) {
+    this.request.addTagsItem(new AddDocumentTag().key(key).value(value));
     return this;
   }
 

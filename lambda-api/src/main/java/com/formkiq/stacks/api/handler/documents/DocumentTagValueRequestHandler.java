@@ -71,7 +71,7 @@ public class DocumentTagValueRequestHandler
     }
 
     return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "Removed Tag from document '" + documentId + "'.").build();
+        .body("message", "Removed Tag value from document '" + documentId + "'.").build();
   }
 
   @Override

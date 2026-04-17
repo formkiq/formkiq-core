@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -133,5 +134,61 @@ public class StringsTest {
     assertEquals("adsa add", String.join(" ", Strings.splitByChar("adsa:add", ':')));
     assertEquals("adsa:add", String.join(" ", Strings.splitByChar("adsa:add", '!')));
     assertEquals("", String.join(" ", Strings.splitByChar(null, '!')));
+  }
+
+  @Test
+  void testSubstringHandlesNullValue() {
+    assertNull(Strings.substring(null, '#', 1));
+  }
+
+  @Test
+  void testSubstringReturnsEmptyWhenDelimiterAtBeginning() {
+    assertEquals("", Strings.substring("#a#b#c", '#', 1));
+  }
+
+  @Test
+  void testSubstringReturnsOriginalWhenDelimiterDoesNotExist() {
+    assertEquals("abcd", Strings.substring("abcd", '#', 1));
+  }
+
+  @Test
+  void testSubstringReturnsOriginalWhenDelimiterNotFoundEnoughTimes() {
+    assertEquals("a#b", Strings.substring("a#b", '#', 3));
+  }
+
+  @Test
+  void testSubstringThrowsExceptionWhenCountIsNegative() {
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> Strings.substring("a#b#c", '#', -1));
+
+    assertEquals("count must be greater than 0", e.getMessage());
+  }
+
+  @Test
+  void testSubstringThrowsExceptionWhenCountIsZero() {
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> Strings.substring("a#b#c", '#', 0));
+
+    assertEquals("count must be greater than 0", e.getMessage());
+  }
+
+  @Test
+  void testSubstringToFirstDelimiter() {
+    assertEquals("a", Strings.substring("a#b#c#d", '#', 1));
+  }
+
+  @Test
+  void testSubstringToSecondDelimiter() {
+    assertEquals("a#b", Strings.substring("a#b#c#d", '#', 2));
+  }
+
+  @Test
+  void testSubstringToThirdDelimiter() {
+    assertEquals("a#b#c", Strings.substring("a#b#c#d", '#', 3));
+  }
+
+  @Test
+  void testSubstringWithDifferentDelimiter() {
+    assertEquals("a/b", Strings.substring("a/b/c/d", '/', 2));
   }
 }

@@ -279,7 +279,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     var actionType = ActionType.OCR;
     DynamoDbKey key =
         new ActionBuilder().document(document).indexUlid().type(actionType).buildKey(siteId);
-    String sk = "action" + TAG_DELIMINATOR;
+    String sk = key.skSubstring(document.artifactId() != null ? 2 : 1) + "#";
 
     String expression = PK + " = :pk and begins_with(" + SK + ", :sk)";
     Map<String, AttributeValue> values = Map.of(":pk", AttributeValue.builder().s(key.pk()).build(),

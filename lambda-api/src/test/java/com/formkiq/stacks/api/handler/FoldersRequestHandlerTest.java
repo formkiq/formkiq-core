@@ -1045,7 +1045,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // add tag
     AddDocumentTagRequestBuilder addTagReq =
-        new AddDocumentTagRequestBuilder().setDocumentId(documentId).addTag("myTag", "111");
+        new AddDocumentTagRequestBuilder(documentId).addTag("myTag", "111");
     submit("student", addTagReq, siteId, true);
     submit("teacher", addTagReq, siteId, false);
 

@@ -97,8 +97,13 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
+    return getDocumentAttributes(siteId, documentId, null);
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId, final String artifactId) throws ApiException {
     return notNull(this.documentAttributesApi
-        .getDocumentAttributes(documentId, siteId, null, "100", null).getAttributes());
+        .getDocumentAttributes(documentId, siteId, artifactId, "100", null).getAttributes());
   }
 
   private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
@@ -319,6 +324,56 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, documentAttributes.size());
 
       assertDocumentAttributes(documentAttributes.get(0), "documentType", "other");
+    }
+  }
+
+  /**
+   * POST /reindex/documents/{documentId} with artifactId reindexes artifact attributes only.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddReindexDocumentsAttributes06() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "invoice");
+      addAttribute(siteId, "date");
+
+      String documentId = addDocument(siteId, Collections.emptyList());
+
+      AddDocumentRequest artifactRequest = new AddDocumentRequest().documentId(documentId)
+          .artifacts(Boolean.TRUE).content("artifact-content").contentType("text/plain").attributes(
+              List.of(createAttribute("invoice", "INV0001"), createAttribute("date", "20240101")));
+      String artifactId =
+          this.documentsApi.addDocument(artifactRequest, siteId, null).getArtifactId();
+
+      List<DocumentAttribute> documentAttributes =
+          getDocumentAttributes(siteId, documentId, artifactId);
+      assertEquals(2, documentAttributes.size());
+
+      setSiteSchema(siteId, createSiteSchema(new List[] {List.of("invoice", "date")}));
+
+      AddReindexDocumentRequest req =
+          new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
+
+      // when
+      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, artifactId);
+
+      // then
+      assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
+          addResponse.getMessage());
+
+      documentAttributes = getDocumentAttributes(siteId, documentId, artifactId);
+      assertEquals(3, documentAttributes.size());
+
+      int i = 0;
+      assertDocumentAttributes(documentAttributes.get(i++), "date", "20240101");
+      assertDocumentAttributes(documentAttributes.get(i++), "invoice", "INV0001");
+      assertDocumentAttributes(documentAttributes.get(i), "invoice::date", "INV0001::20240101");
+
+      assertEquals(0, getDocumentAttributes(siteId, documentId).size());
     }
   }
 }

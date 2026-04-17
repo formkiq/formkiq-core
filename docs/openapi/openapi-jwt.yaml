@@ -2227,7 +2227,7 @@ paths:
                     - "222"
       responses:
         "200":
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsUpdateResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -2267,7 +2267,7 @@ paths:
                     - "222"
       responses:
         "200":
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsSetResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -2322,7 +2322,7 @@ paths:
               $ref: '#/components/schemas/SetDocumentTagKeyRequest'
       responses:
         "200":
-          $ref: '#/components/responses/200Cors'
+          $ref: '#/components/responses/200CorsUpdateResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -6714,7 +6714,6 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'

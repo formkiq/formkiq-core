@@ -7,6 +7,7 @@
 
 	<subpackage name="actions">
 
+		<allow pkg="com.formkiq.strings" />
 		<allow pkg="com.formkiq.validation" />
 
 		<allow pkg="com.formkiq.aws.dynamodb" />

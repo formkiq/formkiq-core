@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -37,6 +38,7 @@ import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.Attribute;
@@ -72,7 +74,13 @@ import com.formkiq.client.model.WatermarkPositionXAnchor;
 import com.formkiq.client.model.WatermarkPositionYAnchor;
 import com.formkiq.client.model.WatermarkScale;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentAttributeValueRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
@@ -178,6 +186,14 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     docReq.addAttributesItem(new AddDocumentAttribute(o));
 
     return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+  }
+
+  private void addDocumentAttribute(final String siteId, final DocumentArtifact document,
+      final AddDocumentAttribute attribute) throws ApiException {
+    AddDocumentAttributesRequest req =
+        new AddDocumentAttributesRequest().addAttributesItem(attribute);
+    this.documentAttributesApi.addDocumentAttributes(document.documentId(), req, siteId,
+        document.artifactId());
   }
 
   private void addDocumentAttribute(final String siteId, final String documentId,
@@ -290,12 +306,35 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     return this.attributesApi.getAttribute("security", siteId).getAttribute();
   }
 
+  private DocumentAttribute getDocumentAttribute(final String siteId,
+      final DocumentArtifact document, final String key) throws ApiException {
+    DocumentAttribute response = new GetDocumentAttributeRequestBuilder(document.documentId(), key)
+        .setArtifactId(document.artifactId()).submit(client, siteId).throwIfError().response()
+        .getAttribute();
+    assertNotNull(response);
+    return response;
+  }
+
   private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId,
       final String key) throws ApiException {
     DocumentAttribute response = this.documentAttributesApi
         .getDocumentAttribute(documentId, key, siteId, null).getAttribute();
     assertNotNull(response);
     return response;
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final DocumentArtifact document) throws ApiException {
+    return notNull(new GetDocumentAttributesRequestBuilder(document.documentId())
+        .setArtifactId(document.artifactId()).submit(client, siteId).throwIfError().response()
+        .getAttributes());
+  }
+
+  private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
+      throws ApiException {
+    AddDocumentResponse resp = new AddDocumentRequestBuilder().content().documentId(documentId)
+        .artifacts(true).submit(client, siteId).throwIfError().response();
+    return DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
   }
 
   /**
@@ -731,9 +770,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"key\",\"error\":\"'key' is missing from attribute\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"message\":\"'key' is required\"}", e.getResponseBody());
       }
     }
   }
@@ -799,9 +836,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"key\",\"error\":\"'key' is missing from attribute\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"message\":\"'key' is required\"}", e.getResponseBody());
       }
     }
   }
@@ -1167,6 +1202,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /documents/{documentId}/attributes with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testAddDocumentAttributeArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "security", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      // when
+      AddResponse response = new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
+          .setArtifactId(artifact.artifactId()).addAttribute("security", "artifact")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());
+
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
+      assertEquals(1, documentAttributes.size());
+      assertAttributeValues(documentAttributes.get(0), "security", "artifact", null, null, null,
+          null);
+    }
+  }
+
+  /**
    * POST /documents/upload, POST /search attributes 'eq' stringValue.
    *
    * @throws ApiException ApiException
@@ -1223,6 +1288,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
+
   /**
    * POST /documents/upload, POST /search attributes 'eq' booleanValue.
    *
@@ -1264,7 +1330,6 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
-
 
   /**
    * POST /documents/upload, POST /search attributes 'eq' numberValue.
@@ -1710,11 +1775,10 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * Test Add relationship when missing linking document.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  void testAddRelationshipMissingDocument() throws ApiException {
+  void testAddRelationshipMissingDocument() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
       setBearerToken(siteId);
@@ -2068,6 +2132,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey} with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testDeleteDocumentAttributeArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "security", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact, new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("security").stringValue("artifact")));
+      assertEquals(1, getDocumentAttributes(siteId, artifact).size());
+
+      // when
+      DeleteResponse response = new DeleteDocumentAttributeRequestBuilder(documentId, "security")
+          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("attribute 'security' removed from document '" + documentId + "'",
+          response.getMessage());
+      assertEquals(0, getDocumentAttributes(siteId, artifact).size());
+    }
+  }
+
+  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} with OPA.
    *
    * @throws ApiException ApiException
@@ -2111,6 +2205,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
             "{\"message\":\"attribute 'security' not found on document '" + documentId + "'\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testDeleteDocumentAttributeValueArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.STRING, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact,
+          createStringsAttribute("strings", Arrays.asList("abc", "xyz")));
+
+      // when
+      DeleteResponse response = this.documentAttributesApi.deleteDocumentAttributeAndValue(
+          documentId, "strings", "abc", siteId, artifact.artifactId());
+
+      // then
+      assertEquals(
+          "attribute value 'abc' removed from attribute 'strings', document '" + documentId + "'",
+          response.getMessage());
+      assertEquals("xyz", getDocumentAttribute(siteId, artifact, "strings").getStringValue());
     }
   }
 
@@ -2203,6 +2327,32 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       a = getDocumentAttribute(siteId, documentId, "strings");
       assertEquals("strings", Objects.requireNonNull(a).getKey());
       assertEquals("123,abc,xyz", String.join(",", Objects.requireNonNull(a.getStringValues())));
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/attributes/{attributeKey} with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testGetDocumentAttributeArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "security", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact, new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("security").stringValue("artifact")));
+
+      // when
+      DocumentAttribute attribute = getDocumentAttribute(siteId, artifact, "security");
+
+      // then
+      assertAttributeValues(attribute, "security", "artifact", null, null, null, null);
     }
   }
 
@@ -2359,6 +2509,33 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"document attribute 'security' already exists\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * GET /documents/{documentId}/attributes with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testGetDocumentUploadAttributeArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "security", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact, new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("security").stringValue("artifact")));
+
+      // when
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, artifact);
+
+      // then
+      assertEquals(1, attributes.size());
+      assertAttributeValues(attributes.get(0), "security", "artifact", null, null, null, null);
     }
   }
 
@@ -2603,6 +2780,70 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(c0);
       assertEquals("c0", c0.getKey());
       assertEquals("111", c0.getStringValue());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttributeArtifact01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "security", null, null);
+      addAttribute(siteId, "strings", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact, new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("security").stringValue("artifact")));
+
+      // when
+      SetResponse response = new SetDocumentAttributeRequestBuilder().setDocumentId(documentId)
+          .setArtifactId(artifact.artifactId()).addAttribute("strings", "123")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
+      assertEquals(1, documentAttributes.size());
+      assertAttributeValues(documentAttributes.get(0), "strings", "123", null, null, null, null);
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with artifactId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPutDocumentAttributeArtifactValue01() throws ApiException {
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      // given
+      setBearerToken(siteId);
+      addAttribute(siteId, "c0", null, null);
+
+      String documentId = addDocument(siteId);
+      DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+      addDocumentAttribute(siteId, artifact, new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("c0").stringValue("111")));
+
+      // when
+      SetResponse response = new SetDocumentAttributeValueRequestBuilder().setDocumentId(documentId)
+          .setArtifactId(artifact.artifactId()).setKey("c0").stringValue("123")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals("Updated attribute 'c0' on document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
+      assertEquals(1, documentAttributes.size());
+      assertAttributeValues(documentAttributes.get(0), "c0", "123", null, null, null, null);
     }
   }
 

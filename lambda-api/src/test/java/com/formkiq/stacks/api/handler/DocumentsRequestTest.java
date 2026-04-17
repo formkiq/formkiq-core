@@ -69,6 +69,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
@@ -1191,8 +1192,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String documentId = resp.response().getDocumentId();
 
       // when
-      resp = new AddDocumentRequestBuilder().content("mycontent").path(path1).artifacts(true)
-          .documentId(documentId).submit(client, siteId).throwIfError();
+      resp =
+          new AddDocumentRequestBuilder().content("mycontent").path(path1).contentType("text/plain")
+              .artifacts(true).documentId(documentId).submit(client, siteId).throwIfError();
 
       // then
       assertEquals(documentId, resp.response().getDocumentId());
@@ -1203,6 +1205,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError();
       assertEquals(path1, doc.response().getPath());
       assertEquals(artifactId, doc.response().getArtifactId());
+
+      // when
+      var content = new GetDocumentContentRequestBuilder(documentId).setArtifactId(artifactId)
+          .submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals("mycontent", content.response().getContent());
 
       // when
       var artifacts =
@@ -1479,7 +1488,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
 
       // when
-      documentsApi.deletePublishedDocumentContent(documentId, siteId, null);
+      documentsApi.deletePublishedDocumentContent(documentId, siteId);
 
       // then
       try {

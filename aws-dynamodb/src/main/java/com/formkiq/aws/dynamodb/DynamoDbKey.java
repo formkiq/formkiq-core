@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.strings.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
@@ -64,6 +65,19 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
    */
   public Map<String, AttributeValue> toMap() {
     return Map.of(PK, fromS(pk), SK, fromS(sk));
+  }
+
+  /**
+   * Returns the substring from index {@code 0} up to, but not including, the {@code count}-th
+   * occurrence of the given delimiter.
+   *
+   * @param count the occurrence count to stop at; must be greater than {@code 0}
+   * @return the substring up to the {@code count}-th delimiter, or the original string if fewer
+   *         than {@code count} delimiters are present; returns {@code null} if {@code value} is
+   *         {@code null}
+   */
+  public String skSubstring(final int count) {
+    return Strings.substring(sk, '#', count);
   }
 
   /**

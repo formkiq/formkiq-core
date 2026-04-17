@@ -808,10 +808,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private List<DocumentAttributeRecord> findDocumentAttribute(final String siteId,
       final DocumentArtifact document, final String attributeKey, final int limit) {
 
-    DocumentAttributeRecord r =
-        new DocumentAttributeRecord().setDocument(document).setKey(attributeKey);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document)
+        .setKey(attributeKey).setValueType(DocumentAttributeValueType.KEY_ONLY);
+    String sk = r.buildKey(siteId).sk();
 
-    String sk = ATTR + attributeKey + "#";
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
 
     QueryResponse response =
@@ -825,12 +825,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public Pagination<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
       final DocumentArtifact document, final String nextToken, final int limit) {
 
-    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document).setKey("")
+        .setStringValue("").updateValueType();
+    DynamoDbKey key = r.buildKey(siteId);
+    String sk = key.skSubstring(document.artifactId() != null ? 2 : 1) + "#";
     Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
 
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
     QueryResponse response = this.dbService.queryBeginsWith(config, r.fromS(r.pk(siteId)),
-        r.fromS(AttributeRecord.ATTR), startkey, limit);
+        fromS(sk)/* r.fromS(AttributeRecord.ATTR) */, startkey, limit);
 
     List<DocumentAttributeRecord> list = response.items().stream()
         .map(a -> new DocumentAttributeRecord().getFromAttributes(siteId, a)).toList();
@@ -1062,8 +1065,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     var key = new DocumentTagRecordBuilder().documentId(document.documentId())
         .artifactId(document.artifactId()).tagKey("").buildKey(siteId);
-    Map<String, AttributeValue> keys = Map.of(PK, fromS(key.pk()), SK, fromS(PREFIX_TAGS));
-    // Map<String, AttributeValue> keys = keysDocumentTag(siteId, document, null);
+
+    int count = document.artifactId() != null ? 2 : 1;
+    String sk = key.skSubstring(count) + "#";
+    Map<String, AttributeValue> keys = Map.of(PK, fromS(key.pk()), SK, fromS(sk));
 
     Pagination<DocumentTag> tags =
         findAndTransform(keys, nextToken, limit, new AttributeValueToDocumentTag(siteId));
@@ -1251,22 +1256,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           .artifactId(document.artifactId()).build(siteId);
       tagRecords.addAll(r);
     });
-
-    // List<DocumentTagRecord> tagRecords = notNull(tags).stream().filter(predicate)
-    // .map(t -> {
-    // return builder.tag(t).build(siteId);
-    // }).toList();
-
-    // DocumentTagToAttributeValueMap mapper =
-    // new DocumentTagToAttributeValueMap(this.df, PREFIX_DOCS, siteId, document);
-
-    // List<Map<String, AttributeValue>> items =
-    // notNull(tags).stream().filter(predicate).map(mapper)
-    // .flatMap(List::stream).collect(Collectors.toList());
-
-    // if (timeToLive != null) {
-    // items.forEach(v -> addN(v, "TimeToLive", timeToLive));
-    // }
 
     return tagRecords.stream().map(DocumentTagRecord::getAttributes).toList();
   }
@@ -1621,7 +1610,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> attributes, final SaveDocumentOptions options)
       throws ValidationException {
 
-    DocumentArtifact documentArtifact = DocumentArtifact.of(item.getDocumentId(), null);
+    DocumentArtifact documentArtifact =
+        DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
 
     DocumentRecordBuilder builder = new DocumentItemToDocumentRecordBuilder()
         .apply(parentDocumentId, item).timeToLive(options.timeToLive());

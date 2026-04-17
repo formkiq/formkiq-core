@@ -315,4 +315,39 @@ public class Strings {
 
   public record SplitResult(String before, String after) {
   }
+
+  /**
+   * Returns the substring from index {@code 0} up to, but not including, the {@code count}-th
+   * occurrence of the given delimiter.
+   * <p>
+   * If the delimiter does not occur {@code count} times, the original string is returned.
+   *
+   * @param value the input string
+   * @param delimiter the delimiter character to search for
+   * @param count the occurrence count to stop at; must be greater than {@code 0}
+   * @return the substring up to the {@code count}-th delimiter, or the original string if fewer
+   *         than {@code count} delimiters are present; returns {@code null} if {@code value} is
+   *         {@code null}
+   * @throws IllegalArgumentException if {@code count} is less than {@code 1}
+   */
+  public static String substring(final String value, final char delimiter, final int count) {
+    if (count < 1) {
+      throw new IllegalArgumentException("count must be greater than 0");
+    }
+
+    int fromIndex = 0;
+    int index = -1;
+
+    if (value != null) {
+      for (int i = 0; i < count; i++) {
+        index = value.indexOf(delimiter, fromIndex);
+        if (index < 0) {
+          return value;
+        }
+        fromIndex = index + 1;
+      }
+    }
+
+    return index != -1 ? value.substring(0, index) : null;
+  }
 }

@@ -28,13 +28,15 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -49,15 +51,23 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /documents/{documentId}/purge. */
 public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
 
   private GetDocumentUrlResponse addDocument(final String siteId) throws ApiException {
-    AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-    return this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+    return new GetDocumentUploadRequestBuilder().path("test.txt").submit(client, siteId)
+        .throwIfError().response();
+  }
+
+  private boolean exists(final String siteId, final String documentId, final String artifactId) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, artifactId);
+    S3Service s3Service = getAwsServices().getExtension(S3Service.class);
+    return s3Service.exists(BUCKET_NAME, s3Key);
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
@@ -108,7 +118,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
 
         // then
-        assertEquals("'" + documentId + "' object deleted all versions",
+        assertEquals("Deleted document '" + documentId + "' permanently",
             deleteResponse.getMessage());
         List<Document> documents = getDocuments(siteId);
         assertEquals(0, documents.size());
@@ -169,7 +179,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
 
         // then
-        assertEquals("'" + documentId + "' object deleted all versions",
+        assertEquals("Deleted document '" + documentId + "' permanently",
             deleteResponse.getMessage());
         List<Document> documents = getDocuments(siteId);
         assertEquals(0, documents.size());
@@ -177,6 +187,57 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         s3Files = getS3Files(siteId, documentId);
         assertEquals(0, s3Files.size());
       }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete04() throws Exception {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // given
+      setBearerToken(siteId);
+      String path0 = ID.ulid() + ".txt";
+      String path1 = ID.ulid() + ".txt";
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().path(path0).submit(client, siteId)
+          .throwIfError().response();
+      var documentId = document.getDocumentId();
+
+      var artifact = new AddDocumentRequestBuilder().documentId(documentId).content().path(path1)
+          .artifacts(true).submit(client, siteId).throwIfError().response();
+
+      // then
+      String artifactId = artifact.getArtifactId();
+
+      assertNotNull(documentId);
+      assertNotNull(artifactId);
+      assertTrue(exists(siteId, documentId, null));
+      assertTrue(exists(siteId, documentId, artifactId));
+
+      // given
+      setBearerToken(siteId + "_govern");
+
+      // when
+      DeleteResponse deleteResponse =
+          this.documentsApi.purgeDocument(documentId, siteId, artifactId);
+
+      // then
+      assertEquals(
+          "Deleted artifact '" + artifactId + "' from document '" + documentId + "' permanently",
+          deleteResponse.getMessage());
+      assertNotNull(new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError()
+          .response());
+      assertNotNull(new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId)
+          .submit(client, siteId).exception());
+      assertTrue(exists(siteId, documentId, null));
+      assertFalse(exists(siteId, documentId, artifactId));
     }
   }
 }

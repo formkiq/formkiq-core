@@ -25,18 +25,19 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
-import com.formkiq.client.model.AddResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Builder for {@link AddDocumentTagsRequest}.
  */
-public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddResponse> {
+public class UpdateDocumentTagsRequestBuilder implements HttpRequestBuilder<UpdateResponse> {
 
   /** {@link AddDocumentTagsRequest}. */
   private final AddDocumentTagsRequest request;
@@ -47,10 +48,10 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
 
   /**
    * constructor.
-   * 
+   *
    * @param documentId {@link String}
    */
-  public AddDocumentTagRequestBuilder(final String documentId) {
+  public UpdateDocumentTagsRequestBuilder(final String documentId) {
     this.id = documentId;
     this.request = new AddDocumentTagsRequest();
   }
@@ -59,9 +60,9 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * Add Document Tag.
    *
    * @param key {@link String}
-   * @return AddDocumentTagsRequestBuilder
+   * @return UpdateDocumentRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key) {
+  public UpdateDocumentTagsRequestBuilder addTag(final String key) {
     this.request.addTagsItem(new AddDocumentTag().key(key));
     return this;
   }
@@ -70,27 +71,27 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * Add Document Tag.
    *
    * @param key {@link String}
-   * @param stringValues {@link List} {@link String}
-   * @return AddDocumentTagsRequestBuilder
+   * @param values {@link List} {@link String}
+   * @return UpdateDocumentRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key, final List<String> stringValues) {
-    this.request.addTagsItem(new AddDocumentTag().key(key).values(stringValues));
+  public UpdateDocumentTagsRequestBuilder addTag(final String key, final List<String> values) {
+    this.request.addTagsItem(new AddDocumentTag().key(key).values(values));
     return this;
   }
 
   /**
    * Add Document Tag.
-   * 
+   *
    * @param key {@link String}
-   * @param stringValue {@link String}
-   * @return AddDocumentTagsRequestBuilder
+   * @param value {@link String}
+   * @return UpdateDocumentRequestBuilder
    */
-  public AddDocumentTagRequestBuilder addTag(final String key, final String stringValue) {
-    this.request.addTagsItem(new AddDocumentTag().key(key).value(stringValue));
+  public UpdateDocumentTagsRequestBuilder addTag(final String key, final String value) {
+    this.request.addTagsItem(new AddDocumentTag().key(key).value(value));
     return this;
   }
 
-  public AddDocumentTagRequestBuilder setArtifactId(final String artifact) {
+  public UpdateDocumentTagsRequestBuilder setArtifactId(final String artifact) {
     this.artifactId = artifact;
     return this;
   }
@@ -100,10 +101,11 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return AddDocumentResponse
+   * @return UpdateResponse
    */
-  public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentTagsApi(apiClient).addDocumentTags(this.id,
-        this.request, siteId, this.artifactId));
+  public ApiHttpResponse<UpdateResponse> submit(final ApiClient apiClient, final String siteId) {
+    Objects.requireNonNull(id, "documentId must not be null");
+    return executeApiCall(() -> new DocumentTagsApi(apiClient).updateDocumentTags(id, this.request,
+        siteId, this.artifactId));
   }
 }

@@ -195,14 +195,16 @@ public class DocumentIdRequestHandler
    * @param request {@link AddDocumentRequest}
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
+   * @param artifactId {@link String}
    * @return {@link List} {@link DocumentAttributeRecord}
    */
   private List<DocumentAttributeRecord> getDocumentAttributeRecords(
-      final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId) {
+      final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId,
+      final String artifactId) {
 
     AddDocumentAttributeToDocumentAttributeRecord tr =
         new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-            request.getDocumentId());
+            request.getDocumentId(), artifactId);
 
     List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
     return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
@@ -247,7 +249,7 @@ public class DocumentIdRequestHandler
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
     List<DocumentAttributeRecord> documentAttributes =
-        getDocumentAttributeRecords(request, awsservice, siteId);
+        getDocumentAttributeRecords(request, awsservice, siteId, artifactId);
 
     SaveDocumentOptions options = new SaveDocumentOptions()
         .validationAccess(getAttributeValidationAccess(authorization, siteId));
