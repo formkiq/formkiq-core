@@ -808,10 +808,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private List<DocumentAttributeRecord> findDocumentAttribute(final String siteId,
       final DocumentArtifact document, final String attributeKey, final int limit) {
 
-    DocumentAttributeRecord r =
-        new DocumentAttributeRecord().setDocument(document).setKey(attributeKey);
+    DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document)
+        .setKey(attributeKey).setValueType(DocumentAttributeValueType.KEY_ONLY);
+    String sk = r.buildKey(siteId).sk();
 
-    String sk = ATTR + attributeKey + "#";
     QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
 
     QueryResponse response =
