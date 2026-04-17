@@ -114,16 +114,15 @@ public class DocumentAttributesRequestHandler
 
   private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
       final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
-      final String documentId) throws BadException, ValidationException {
+      final String documentId, final String artifactId) throws BadException, ValidationException {
 
     AddDocumentAttributesRequest request =
         JsonToObject.fromJson(awsservice, event, AddDocumentAttributesRequest.class);
     request.validate();
 
     List<DocumentAttributeRecord> records = request.attributes().stream()
-        .flatMap(
-            a -> new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, documentId)
-                .apply(a).stream())
+        .flatMap(a -> new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+            documentId, artifactId).apply(a).stream())
         .toList();
 
     if (notNull(records).isEmpty()) {
@@ -151,7 +150,7 @@ public class DocumentAttributesRequestHandler
     verifyDocument(awsservice, siteId, document);
 
     List<DocumentAttributeRecord> attributes =
-        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, artifactId);
 
     AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
         AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
@@ -176,7 +175,7 @@ public class DocumentAttributesRequestHandler
     verifyDocument(awsservice, siteId, document);
 
     List<DocumentAttributeRecord> attributes =
-        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId);
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, artifactId);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 

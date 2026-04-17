@@ -50,14 +50,14 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class AddDocumentAttributeToDocumentAttributeRecord
     implements Function<AddDocumentAttribute, Collection<DocumentAttributeRecord>> {
 
-  /** Document Id. */
-  private final String docId;
   /** Site Id. */
   private final String site;
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
   /** Documents Table Name. */
   private final String tableName;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact fromDocument;
 
   /**
    * constructor.
@@ -65,10 +65,11 @@ public class AddDocumentAttributeToDocumentAttributeRecord
    * @param serviceCache {@link AwsServiceCache}
    * @param siteId {@link String}
    * @param documentId {@link String}
+   * @param artifactId {@link String}
    */
   public AddDocumentAttributeToDocumentAttributeRecord(final AwsServiceCache serviceCache,
-      final String siteId, final String documentId) {
-    this.docId = documentId;
+      final String siteId, final String documentId, final String artifactId) {
+    fromDocument = DocumentArtifact.of(documentId, artifactId);
     this.site = siteId;
     this.db = serviceCache.getExtension(DynamoDbService.class);
     this.tableName = serviceCache.environment("DOCUMENTS_TABLE");
@@ -139,11 +140,10 @@ public class AddDocumentAttributeToDocumentAttributeRecord
   private void addRelationship(final AddDocumentAttributeRelationship a,
       final Collection<DocumentAttributeRecord> c) {
 
-    DocumentArtifact fromDocumentId = DocumentArtifact.of(this.docId, null);
-    DocumentArtifact toDocumentId = DocumentArtifact.of(a.documentId(), null);
+    DocumentArtifact toDocument = DocumentArtifact.of(a.documentId(), null);
 
     Collection<DocumentAttributeRecord> records = new DocumentAttributeRecordBuilder()
-        .apply(fromDocumentId, toDocumentId, a.relationship(), a.inverseRelationship());
+        .apply(fromDocument, toDocument, a.relationship(), a.inverseRelationship());
     c.addAll(records);
   }
 
@@ -168,8 +168,7 @@ public class AddDocumentAttributeToDocumentAttributeRecord
       final DocumentAttributeValueType valueType, final String key, final String stringValue,
       final Boolean boolValue, final Double numberValue) {
 
-    DocumentArtifact fromDocumentId = DocumentArtifact.of(this.docId, null);
-    addToList(list, fromDocumentId, valueType, key, stringValue, boolValue, numberValue);
+    addToList(list, fromDocument, valueType, key, stringValue, boolValue, numberValue);
   }
 
   @Override

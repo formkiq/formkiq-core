@@ -78,8 +78,11 @@ public class DocumentIdPurgeRequestHandler
         throw new NotFoundException("Document " + documentId + " not found.");
       }
 
-      return ApiRequestHandlerResponse.builder().ok()
-          .body("message", "'" + documentId + "' object deleted all versions").build();
+      String message = artifactId != null
+          ? "Deleted artifact '" + artifactId + "' from document '" + documentId + "' permanently"
+          : "Deleted document '" + documentId + "' permanently";
+
+      return ApiRequestHandlerResponse.builder().ok().body("message", message).build();
 
     } catch (S3Exception e) {
 
