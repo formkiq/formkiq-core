@@ -76,7 +76,7 @@ public class AttributeValueToDocumentArtifactTest {
     String artifactId = "artifact456";
 
     DocumentArtifact artifact = MAPPER.apply(Map.of("documentId", AttributeValue.fromS(documentId),
-        "SK", AttributeValue.fromS("document#art#" + artifactId)));
+        "SK", AttributeValue.fromS("document_art#" + artifactId)));
 
     assertEquals(documentId, artifact.documentId());
     assertEquals(artifactId, artifact.artifactId());

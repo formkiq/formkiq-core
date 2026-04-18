@@ -165,10 +165,9 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         parentDocumentId != null ? PREFIX_DOCS + parentDocumentId : PREFIX_DOCS + documentId;
     String sk;
     if (parentDocumentId != null && !isEmpty(this.artifactId)) {
-      sk = "document" + TAG_DELIMINATOR + documentId + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR
-          + this.artifactId;
+      sk = "document" + TAG_DELIMINATOR + documentId + "_art" + TAG_DELIMINATOR + this.artifactId;
     } else if (!isEmpty(this.artifactId)) {
-      sk = "document" + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR + this.artifactId;
+      sk = "document_art" + TAG_DELIMINATOR + this.artifactId;
     } else if (parentDocumentId != null) {
       sk = "document" + TAG_DELIMINATOR + documentId;
     } else {

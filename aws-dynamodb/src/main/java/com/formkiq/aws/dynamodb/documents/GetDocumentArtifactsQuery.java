@@ -49,6 +49,6 @@ public class GetDocumentArtifactsQuery implements DynamoDbQuery {
       final int limit) {
     var key = new DocumentRecordBuilder().documentId(this.id).buildKey(siteId);
     return DynamoDbQueryBuilder.builder().scanIndexForward(Boolean.TRUE).pk(key.pk())
-        .beginsWith("document#art#").nextToken(nextToken).limit(limit).build(tableName);
+        .beginsWith("document_art#").nextToken(nextToken).limit(limit).build(tableName);
   }
 }

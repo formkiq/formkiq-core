@@ -181,8 +181,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     this.schemasApi.setSitesSchema(siteId, sitesSchema);
   }
 
-  private String getAttributeValue(final String siteId, final DocumentArtifact artifact)
-      throws ApiException {
+  private String getAttributeValue(final String siteId, final DocumentArtifact artifact) {
     var resp = new GetDocumentAttributeRequestBuilder(artifact, "myattr").submit(client, siteId);
     return resp.exception() != null ? null
         : Objects.requireNonNull(resp.response().getAttribute()).getStringValue();
@@ -216,8 +215,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         .getDocuments(siteId, null, null, TRUE, null, null, null, null, null, null).getDocuments());
   }
 
-  private String getTagValue(final String siteId, final DocumentArtifact artifact)
-      throws ApiException {
+  private String getTagValue(final String siteId, final DocumentArtifact artifact) {
     var resp = new GetDocumentTagRequestBuilder(artifact, "mytag").submit(client, siteId);
     return resp.exception() != null ? null : Objects.requireNonNull(resp.response().getValue());
   }

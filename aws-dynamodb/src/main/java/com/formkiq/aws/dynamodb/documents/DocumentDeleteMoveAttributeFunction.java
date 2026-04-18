@@ -63,7 +63,7 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
     String pk = a.get(PK).s();
     String sk = a.get(SK).s();
 
-    if ("document".equals(sk) || sk.startsWith("document#art#")) {
+    if ("document".equals(sk) || sk.startsWith("document_art#")) {
 
       var key = new DocumentRecordBuilder().document(this.document).buildSoftDeleteKey(this.siteId);
 

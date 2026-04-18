@@ -137,7 +137,7 @@ public class AttributeValueToDocumentItem
 
   private boolean isDocument(final Map<String, AttributeValue> i) {
     String sk = DynamoDbTypes.toString(i.get("SK"));
-    return "document".equals(sk) || (sk != null && sk.startsWith("document#art#"));
+    return "document".equals(sk) || (sk != null && sk.startsWith("document_art#"));
   }
 
 
