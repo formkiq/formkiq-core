@@ -63,6 +63,7 @@ import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.OCR_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -189,6 +190,37 @@ public class DocumentOcrServiceTesseractTest {
 
       // then
       assertEquals("3", request.getOcrNumberOfPages());
+    }
+  }
+
+  /**
+   * Test base document OCR and artifact OCR use separate keys.
+   */
+  @Test
+  void testSaveGetArtifactUsesDifferentSk() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      String artifactId = ID.ulid();
+
+      Ocr baseOcr = new Ocr().documentId(documentId).jobId(ID.uuid()).engine(OcrEngine.TESSERACT)
+          .status(OcrScanStatus.REQUESTED).contentType("application/json").userId("joe");
+      Ocr artifactOcr = new Ocr().documentId(documentId).artifactId(artifactId).jobId(ID.uuid())
+          .engine(OcrEngine.TESSERACT).status(OcrScanStatus.SUCCESSFUL)
+          .contentType("application/json").userId("joe");
+
+      service.save(siteId, baseOcr);
+      service.save(siteId, artifactOcr);
+
+      Ocr foundBase = service.get(siteId, DocumentArtifact.of(documentId, null));
+      Ocr foundArtifact = service.get(siteId, DocumentArtifact.of(documentId, artifactId));
+
+      assertNotNull(foundBase);
+      assertNotNull(foundArtifact);
+      assertEquals(baseOcr.jobId(), foundBase.jobId());
+      assertEquals(artifactOcr.jobId(), foundArtifact.jobId());
+      assertEquals("ocr#", foundBase.sk());
+      assertEquals("ocr_art#" + artifactId + "#", foundArtifact.sk());
     }
   }
 }
