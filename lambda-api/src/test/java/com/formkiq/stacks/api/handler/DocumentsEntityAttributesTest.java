@@ -118,9 +118,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
-  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId)
-      throws ApiException {
-    var resp = new GetDocumentAttributeRequestBuilder(documentId, "RetentionEffectiveStatus")
+  private DocumentAttribute getDocumentAttribute(final String siteId,
+      final DocumentArtifact document) throws ApiException {
+    var resp = new GetDocumentAttributeRequestBuilder(document, "RetentionEffectiveStatus")
         .submit(client, siteId).throwIfError().response();
     return resp.getAttribute();
   }
@@ -170,15 +170,16 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .submit(client, siteId).throwIfError();
 
       // then
-      String documentId = resp.response().getDocumentId();
-      verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
-      assertEquals("IN_EFFECT", getDocumentAttribute(siteId, documentId).getStringValue());
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      verifyAttributes(siteId, document, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
+      assertEquals("IN_EFFECT", getDocumentAttribute(siteId, document).getStringValue());
 
       // given
       new SetBearer().apply(client, siteId);
 
       // when
-      var delete = new DeleteDocumentAttributeRequestBuilder(documentId, "RetentionPolicy")
+      var delete = new DeleteDocumentAttributeRequestBuilder(document, "RetentionPolicy")
           .submit(client, siteId);
 
       // then
@@ -193,8 +194,8 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       new SetBearer().apply(client, siteId + "_govern");
 
       // when
-      delete = new DeleteDocumentAttributeRequestBuilder(documentId, "RetentionPolicy")
-          .submit(client, siteId);
+      delete = new DeleteDocumentAttributeRequestBuilder(document, "RetentionPolicy").submit(client,
+          siteId);
 
       // then
       assertNotNull(delete.response());
@@ -222,11 +223,12 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .submit(client, siteId).throwIfError();
 
       // then
-      String documentId = resp.response().getDocumentId();
-      verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      verifyAttributes(siteId, document, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
 
       // when
-      new DeleteDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
+      new DeleteDocumentRequestBuilder(document).submit(client, siteId).throwIfError();
     }
   }
 
@@ -255,13 +257,14 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       assertAttribute(Objects.requireNonNull(getAttribute.response().getAttribute()),
           "RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY);
 
-      String documentId = resp.response().getDocumentId();
+      DocumentArtifact documentArtifact =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
 
       // given
       Date insertedDate = Date.from(Instant.now().plus(20, ChronoUnit.DAYS));
 
-      DocumentRecord document = new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId,
-          new DocumentArtifact(documentId, null));
+      DocumentRecord document =
+          new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentArtifact);
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(insertedDate).lastModifiedDate(new Date()).build(siteId);
       // document = new DocumentRecord(document.key(), documentId, insertedDate, new Date());
@@ -270,7 +273,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       db.putItem(document.getAttributes());
 
       // then
-      verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_INSERTED",
+      verifyAttributes(siteId, documentArtifact, entityTypeId, entityId, "DATE_INSERTED",
           "NOT_IN_EFFECT");
     }
   }
@@ -295,9 +298,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .submit(client, siteId).throwIfError();
 
       // then
-      String documentId = resp.response().getDocumentId();
-      verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_LAST_MODIFIED",
-          "IN_EFFECT");
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      verifyAttributes(siteId, document, entityTypeId, entityId, "DATE_LAST_MODIFIED", "IN_EFFECT");
     }
   }
 
@@ -321,13 +324,14 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .submit(client, siteId).throwIfError();
 
       // then
-      String documentId = resp.response().getDocumentId();
+      DocumentArtifact documentArtifact =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
 
       // given
       Date lastModifiedDate = Date.from(Instant.now().plus(20, ChronoUnit.DAYS));
 
-      DocumentRecord document = new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId,
-          new DocumentArtifact(documentId, null));
+      DocumentRecord document =
+          new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentArtifact);
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(new Date()).lastModifiedDate(lastModifiedDate).build(siteId);
       // document = new DocumentRecord(document.key(), documentId, new Date(), lastModifiedDate);
@@ -336,7 +340,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       db.putItem(document.getAttributes());
 
       // then
-      verifyAttributes(siteId, documentId, entityTypeId, entityId, "DATE_LAST_MODIFIED",
+      verifyAttributes(siteId, documentArtifact, entityTypeId, entityId, "DATE_LAST_MODIFIED",
           "NOT_IN_EFFECT");
     }
   }
@@ -449,11 +453,11 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
-  private void verifyAttributes(final String siteId, final String documentId,
+  private void verifyAttributes(final String siteId, final DocumentArtifact document,
       final String entityTypeId, final String entityId, final String sourceType,
       final String retentionEffectiveStatus) throws ApiException {
 
-    var attr = new GetDocumentAttributeRequestBuilder(documentId, "RetentionPolicy")
+    var attr = new GetDocumentAttributeRequestBuilder(document, "RetentionPolicy")
         .submit(client, siteId).throwIfError().response().getAttribute();
 
     assertNotNull(attr);

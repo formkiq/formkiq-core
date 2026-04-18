@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttributeValue;
@@ -38,34 +39,19 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
 
   /** {@link SetDocumentAttributeRequest}. */
   private final SetDocumentAttributeRequest request;
-  /** Document Id. */
-  private String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** Attribute Key. */
   private String key;
 
   /**
    * constructor.
+   * 
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public SetDocumentAttributeValueRequestBuilder() {
+  public SetDocumentAttributeValueRequestBuilder(final DocumentArtifact documentArtifact) {
     this.request = new SetDocumentAttributeRequest();
-  }
-
-  public SetDocumentAttributeValueRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
-  }
-
-  /**
-   * Set Document Id.
-   *
-   * @param documentId {@link String}
-   * @return SetDocumentAttributeValueRequestBuilder
-   */
-  public SetDocumentAttributeValueRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
-    return this;
+    this.document = documentArtifact;
   }
 
   /**
@@ -98,7 +84,7 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .setDocumentAttributeValue(this.id, this.key, this.request, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentAttributesApi(apiClient).setDocumentAttributeValue(
+        this.document.documentId(), this.key, this.request, siteId, this.document.artifactId()));
   }
 }

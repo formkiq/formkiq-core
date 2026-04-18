@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentAttributesApi;
@@ -104,7 +106,9 @@ public class FkqDocumentService {
     resp.throwIfError();
 
     String documentId = resp.response().getDocumentId();
-    var get = new GetDocumentRequestBuilder(documentId).submit(apiClient, siteId);
+    DocumentArtifact document =
+        DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+    var get = new GetDocumentRequestBuilder(document).submit(apiClient, siteId);
     get.throwIfError();
 
     if (content.isEmpty()) {

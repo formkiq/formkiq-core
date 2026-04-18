@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.workflows;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentWorkflowRequest;
@@ -37,26 +38,20 @@ public class GetDocumentWorkflowRequestBuilder
     implements HttpRequestBuilder<GetDocumentWorkflowResponse> {
 
   /** Document Id. */
-  private final String document;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
   /** Workflow Id. */
   private final String workflow;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param workflowId {@link String}
    */
-  public GetDocumentWorkflowRequestBuilder(final String documentId, final String workflowId) {
-    this.document = documentId;
+  public GetDocumentWorkflowRequestBuilder(final DocumentArtifact documentArtifact,
+      final String workflowId) {
+    this.document = documentArtifact;
     this.workflow = workflowId;
-  }
-
-  public GetDocumentWorkflowRequestBuilder setArtifactId(final String id) {
-    this.artifactId = id;
-    return this;
   }
 
   /**
@@ -68,7 +63,7 @@ public class GetDocumentWorkflowRequestBuilder
    */
   public ApiHttpResponse<GetDocumentWorkflowResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentWorkflowsApi(apiClient)
-        .getDocumentWorkflow(this.document, this.workflow, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentWorkflowsApi(apiClient).getDocumentWorkflow(
+        this.document.documentId(), this.workflow, siteId, this.document.artifactId()));
   }
 }

@@ -2148,8 +2148,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       assertEquals(1, getDocumentAttributes(siteId, artifact).size());
 
       // when
-      DeleteResponse response = new DeleteDocumentAttributeRequestBuilder(documentId, "security")
-          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response();
+      DeleteResponse response = new DeleteDocumentAttributeRequestBuilder(artifact, "security")
+          .submit(client, siteId).throwIfError().response();
 
       // then
       assertEquals("attribute 'security' removed from document '" + documentId + "'",
@@ -2800,9 +2800,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentAttributeStandard().key("security").stringValue("artifact")));
 
       // when
-      SetResponse response = new SetDocumentAttributeRequestBuilder().setDocumentId(documentId)
-          .setArtifactId(artifact.artifactId()).addAttribute("strings", "123")
-          .submit(client, siteId).throwIfError().response();
+      SetResponse response = new SetDocumentAttributeRequestBuilder(artifact)
+          .addAttribute("strings", "123").submit(client, siteId).throwIfError().response();
 
       // then
       assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
@@ -2831,9 +2830,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentAttributeStandard().key("c0").stringValue("111")));
 
       // when
-      SetResponse response = new SetDocumentAttributeValueRequestBuilder().setDocumentId(documentId)
-          .setArtifactId(artifact.artifactId()).setKey("c0").stringValue("123")
-          .submit(client, siteId).throwIfError().response();
+      SetResponse response = new SetDocumentAttributeValueRequestBuilder(artifact).setKey("c0")
+          .stringValue("123").submit(client, siteId).throwIfError().response();
 
       // then
       assertEquals("Updated attribute 'c0' on document '" + documentId + "'",
