@@ -114,15 +114,17 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
 
     DynamoDbKey key = new DocumentRecordBuilder().document(document).buildKey(siteId);
 
-    // String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, PREFIX_DOCS +
-    // document.documentId());
     attr.put(PK, AttributeValue.fromS(key.pk()));
     attr.put(SK, AttributeValue.fromS(key.sk() + TAG_DELIMINATOR + fulldate));
 
     S3ObjectMetadata resp = s3.getObjectMetadata(bucket, s3Key, version.versionId());
 
     attr.put("documentId", AttributeValue.fromS(document.documentId()));
-    attr.put("artifactId", AttributeValue.fromS(document.artifactId()));
+
+    if (document.artifactId() != null) {
+      attr.put("artifactId", AttributeValue.fromS(document.artifactId()));
+    }
+
     attr.put("insertedDate", AttributeValue.fromS(fulldate));
     attr.put("userId", AttributeValue.fromS(username));
     attr.put("contentType", AttributeValue.fromS(resp.getContentType()));
