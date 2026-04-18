@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3MultipartUploader;
@@ -131,25 +132,25 @@ public class DocumentCompressor {
    * @param docsBucket {@link String}
    * @param archiveBucket {@link String}
    * @param archiveKey {@link String}
-   * @param documentIds {@link List} {@link String}
+   * @param documents {@link List} {@link DocumentArtifact}
    * @throws IOException IOException
    */
   public void compressDocuments(final String siteId, final String docsBucket,
-      final String archiveBucket, final String archiveKey, final List<String> documentIds)
+      final String archiveBucket, final String archiveKey, final List<DocumentArtifact> documents)
       throws IOException {
 
     Map<DocumentItem, Long> documentContentSize =
-        getDocumentContentSizeMap(siteId, docsBucket, documentIds);
+        getDocumentContentSizeMap(siteId, docsBucket, documents);
 
     archiveS3Objects(siteId, docsBucket, archiveBucket, archiveKey, documentContentSize);
   }
 
   private Map<DocumentItem, Long> getDocumentContentSizeMap(final String siteId,
-      final String bucket, final List<String> documentIds) {
+      final String bucket, final List<DocumentArtifact> documents) {
 
-    List<DocumentItem> documents = this.documentService.findDocuments(siteId, documentIds);
+    List<DocumentItem> items = this.documentService.findDocuments(siteId, documents);
 
-    return documents.stream()
+    return items.stream()
         .collect(Collectors.toMap(item -> item,
             item -> this.s3.getObjectMetadata(bucket,
                 SiteIdKeyGenerator.createS3Key(siteId, item.getDocumentId(), item.getArtifactId()),

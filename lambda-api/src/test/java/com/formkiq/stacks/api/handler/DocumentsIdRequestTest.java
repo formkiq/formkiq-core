@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -75,9 +77,12 @@ import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
+import com.formkiq.testutils.api.documents.RestoreDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,9 +118,40 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     return DocumentArtifact.of(response.getDocumentId(), response.getArtifactId());
   }
 
+  private void assertExists(final String siteId, final DocumentArtifact document) {
+    var resp = getDocument(siteId, document.documentId(), document.artifactId());
+    assertNotNull(resp.response());
+    assertNull(resp.exception());
+  }
+
+  private void assertNotExists(final String siteId, final DocumentArtifact document) {
+    var resp = getDocument(siteId, document.documentId(), document.artifactId());
+    assertNull(resp.response());
+    assertNotNull(resp.exception());
+    assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), resp.exception().getCode());
+  }
+
   @BeforeEach
   void beforeEach() {
     clearSqsMessages();
+  }
+
+  private DocumentArtifact createDocumentAndArtifact(final String siteId, final String documentPath,
+      final String artifactPath) throws ApiException {
+
+    addAttribute(siteId, "myattr");
+
+    AddDocumentResponse addDocument = new AddDocumentRequestBuilder().content().path(documentPath)
+        .addAttribute("myattr", "123").submit(client, siteId).throwIfError().response();
+
+    String documentId = addDocument.getDocumentId();
+
+    AddDocumentResponse addArtifact =
+        new AddDocumentRequestBuilder().documentId(documentId).content().path(artifactPath)
+            .artifacts(true).addAction(DocumentActionType.OCR).addTag("mytag", "444")
+            .addAttribute("myattr", "555").submit(client, siteId).throwIfError().response();
+
+    return DocumentArtifact.of(addArtifact.getDocumentId(), addArtifact.getArtifactId());
   }
 
   private void createSiteSchema(final String siteId, final String attributeKey0,
@@ -145,6 +181,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     this.schemasApi.setSitesSchema(siteId, sitesSchema);
   }
 
+  private String getAttributeValue(final String siteId, final DocumentArtifact artifact)
+      throws ApiException {
+    var resp = new GetDocumentAttributeRequestBuilder(artifact, "myattr").submit(client, siteId);
+    return resp.exception() != null ? null
+        : Objects.requireNonNull(resp.response().getAttribute()).getStringValue();
+  }
+
   private ApiHttpResponse<GetDocumentResponse> getDocument(final String siteId,
       final String documentId, final String artifactId) {
     return new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId).submit(client,
@@ -167,10 +210,16 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     return documents;
   }
 
+
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null, null)
-        .getDocuments());
+        .getDocuments(siteId, null, null, TRUE, null, null, null, null, null, null).getDocuments());
+  }
+
+  private String getTagValue(final String siteId, final DocumentArtifact artifact)
+      throws ApiException {
+    var resp = new GetDocumentTagRequestBuilder(artifact, "mytag").submit(client, siteId);
+    return resp.exception() != null ? null : Objects.requireNonNull(resp.response().getValue());
   }
 
   private void putS3Request(final String presignedUrl, final Map<String, Object> headerMap,
@@ -189,13 +238,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
   }
 
+
   private List<SearchResultDocument> searchDocumentAttribute(final String siteId,
       final String attributeKey, final String limit) throws ApiException {
     DocumentSearchRequest sreq = new DocumentSearchRequest().query(
         new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
     return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
   }
-
 
   /**
    * DELETE /documents/{documentId} request.
@@ -271,8 +320,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
-          Boolean.TRUE);
+      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(), TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -320,7 +368,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     }
   }
 
-
   /**
    * DELETE /documents/{documentId} soft delete with attributes.
    *
@@ -354,7 +401,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       this.documentsApi.deleteDocument(document0.documentId(), siteId, document0.artifactId(),
-          Boolean.TRUE);
+          TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -373,6 +420,120 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       docs = searchDocumentAttribute(siteId, attributeKey, "2");
       assertEquals(2, docs.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} request with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete06() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String path0 = ID.ulid() + ".txt";
+      String path1 = ID.ulid() + ".txt";
+
+      AddDocumentResponse document = new AddDocumentRequestBuilder().content().path(path0)
+          .submit(client, siteId).throwIfError().response();
+
+      AddDocumentResponse artifact =
+          new AddDocumentRequestBuilder().documentId(document.getDocumentId()).content().path(path1)
+              .artifacts(true).submit(client, siteId).throwIfError().response();
+
+      assertNotNull(document.getDocumentId());
+      assertNotNull(artifact.getArtifactId());
+      assertNotNull(getDocument(siteId, document.getDocumentId(), null).throwIfError().response());
+      assertNotNull(getDocument(siteId, document.getDocumentId(), artifact.getArtifactId())
+          .throwIfError().response());
+
+      // when
+      this.documentsApi.deleteDocument(document.getDocumentId(), siteId, artifact.getArtifactId(),
+          Boolean.FALSE);
+
+      // then
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+
+      assertNotNull(getDocument(siteId, document.getDocumentId(), null).throwIfError().response());
+
+      ApiHttpResponse<GetDocumentResponse> artifactResponse =
+          getDocument(siteId, document.getDocumentId(), artifact.getArtifactId());
+      assertNotNull(artifactResponse.exception());
+      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(),
+          artifactResponse.exception().getCode());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} soft delete with artifactId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete07() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String path0 = ID.ulid() + ".txt";
+      String path1 = ID.ulid() + ".txt";
+
+      // when
+      DocumentArtifact artifact = createDocumentAndArtifact(siteId, path0, path1);
+
+      // then
+      DocumentArtifact document = DocumentArtifact.of(artifact.documentId(), null);
+      assertExists(siteId, document);
+      assertExists(siteId, artifact);
+      assertEquals("444", getTagValue(siteId, artifact));
+      assertEquals("555", getAttributeValue(siteId, artifact));
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact).softDelete(true).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertExists(siteId, document);
+      assertNotExists(siteId, artifact);
+
+      assertNull(getTagValue(siteId, artifact));
+      assertNull(getAttributeValue(siteId, artifact));
+
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+      assertEquals(artifact.documentId(), softDeletedDocuments.get(0).getDocumentId());
+      assertEquals(artifact.artifactId(), softDeletedDocuments.get(0).getArtifactId());
+
+
+      // when
+      List<SearchResultDocument> list = searchDocumentAttribute(siteId, "myattr", null);
+
+      // then
+      assertEquals(1, list.size());
+      assertEquals(document.documentId(), list.get(0).getDocumentId());
+      assertNull(list.get(0).getArtifactId());
+
+      // when
+      new RestoreDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
+
+      // then
+      assertExists(siteId, document);
+      assertExists(siteId, artifact);
+
+      softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(0, softDeletedDocuments.size());
+
+      assertEquals("444", getTagValue(siteId, artifact));
+      assertEquals("555", getAttributeValue(siteId, artifact));
+
+      list = searchDocumentAttribute(siteId, "myattr", null);
+      assertEquals(2, list.size());
     }
   }
 
@@ -533,7 +694,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       this.documentsApi.deleteDocument(documentArtifact.documentId(), siteId,
-          documentArtifact.artifactId(), Boolean.TRUE);
+          documentArtifact.artifactId(), TRUE);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -1234,7 +1395,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertTrue(resp1.getUrl().contains("/artifacts/"));
 
       // when
-      new DeleteDocumentRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+      new DeleteDocumentRequestBuilder(DocumentArtifact.of(documentId0, resp.getArtifactId()))
           .submit(client, siteId).throwIfError();
 
       // then
