@@ -10227,6 +10227,9 @@ components:
         documentId:
           type: string
           description: Document Identifier
+        artifactId:
+          type: string
+          description: Document Artifact Identifier
         contentType:
           type: string
           description: Document Content-Type

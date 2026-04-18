@@ -45,6 +45,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -198,10 +199,12 @@ public class DocumentCompressorTest {
     }
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
+    List<DocumentArtifact> documents =
+        documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
 
     this.compressor = new DocumentCompressor(serviceCache);
     this.compressor.compressDocuments(DEFAULT_SITE_ID, BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
-        documentIds);
+        documents);
 
     try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
       // Check that all files are present and content checksum is the same
@@ -222,9 +225,11 @@ public class DocumentCompressorTest {
     }
     final String archiveKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
     final ArrayList<String> documentIds = new ArrayList<>(fileChecksums.keySet());
+    List<DocumentArtifact> documents =
+        documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
 
     this.compressor.compressDocuments(DEFAULT_SITE_ID, BUCKET_NAME, STAGE_BUCKET_NAME, archiveKey,
-        documentIds);
+        documents);
 
     try (InputStream zipContent = s3.getContentAsInputStream(STAGE_BUCKET_NAME, archiveKey)) {
       validateZipContent(zipContent, fileChecksums);

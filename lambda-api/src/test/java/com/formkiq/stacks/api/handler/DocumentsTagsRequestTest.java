@@ -589,8 +589,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .addTag("category", "artifact").submit(client, siteId).throwIfError();
 
       // when
-      var resp = new GetDocumentTagRequestBuilder(documentId, "category")
-          .setArtifactId(artifact.artifactId()).submit(client, siteId).throwIfError().response();
+      var resp = new GetDocumentTagRequestBuilder(artifact, "category").submit(client, siteId)
+          .throwIfError().response();
 
       // then
       assertEquals("category", resp.getKey());

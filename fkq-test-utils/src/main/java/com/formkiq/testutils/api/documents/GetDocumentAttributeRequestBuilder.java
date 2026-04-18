@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetDocumentAttributeResponse;
@@ -35,12 +36,22 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class GetDocumentAttributeRequestBuilder
     implements HttpRequestBuilder<GetDocumentAttributeResponse> {
 
-  /** {@link String}. */
-  private final String docId;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** {@link String}. */
   private final String key;
+
+  /**
+   * constructor.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
+   * @param attributeKey {@link String}
+   */
+  public GetDocumentAttributeRequestBuilder(final DocumentArtifact documentArtifact,
+      final String attributeKey) {
+    this.document = documentArtifact;
+    this.key = attributeKey;
+  }
 
   /**
    * constructor.
@@ -49,19 +60,13 @@ public class GetDocumentAttributeRequestBuilder
    * @param attributeKey {@link String}
    */
   public GetDocumentAttributeRequestBuilder(final String documentId, final String attributeKey) {
-    this.docId = documentId;
-    this.key = attributeKey;
-  }
-
-  public GetDocumentAttributeRequestBuilder setArtifactId(final String id) {
-    this.artifactId = id;
-    return this;
+    this(DocumentArtifact.of(documentId, null), attributeKey);
   }
 
   @Override
   public ApiHttpResponse<GetDocumentAttributeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .getDocumentAttribute(this.docId, this.key, siteId, this.artifactId));
+        .getDocumentAttribute(document.documentId(), this.key, siteId, document.artifactId()));
   }
 }

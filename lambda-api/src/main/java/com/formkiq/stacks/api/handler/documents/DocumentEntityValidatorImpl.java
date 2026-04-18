@@ -30,8 +30,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -73,7 +71,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     Collection<ValidationError> errors = new ArrayList<>();
     List<DocumentTag> tags = validateTagSchema(item, userId);
     validateTags(tags, errors);
-    validateActions(awsservice, config, siteId, item, authorization, errors);
+    validateActions(awsservice, config, siteId, item, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
@@ -84,7 +82,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   // TODO merge with ApiValidator validateActions
   private void validateActions(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final AddDocumentRequest item, final ApiAuthorization authorization,
+      final String siteId, final AddDocumentRequest item,
       final Collection<ValidationError> errors) {
 
     initActionsValidator(awsservice);
@@ -92,13 +90,9 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
         DocumentArtifact.of(item.getDocumentId(), item.isArtifacts() ? ID.ulid() : null);
 
     List<Action> actions = notNull(item.getActions()).stream()
-        .map(a -> new ActionBuilder().action(a).status(ActionStatus.PENDING)
-            .userId(authorization.getUsername()).document(document).indexUlid().build(siteId))
-        .toList();
+        .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
 
     if (!actions.isEmpty()) {
-
-      item.setActions(actions);
 
       for (Action action : actions) {
         errors.addAll(this.actionsValidator.validation(siteId, action, config.chatGptApiKey(),

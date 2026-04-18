@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
@@ -53,8 +54,8 @@ public class AttributeValueToDocumentItem
   public DocumentItem apply(final List<Map<String, AttributeValue>> items) {
 
     DocumentItem item = null;
-    Optional<Map<String, AttributeValue>> r = items.stream()
-        .filter(i -> i.containsKey("SK") && "document".equals(i.get("SK").s())).findFirst();
+    Optional<Map<String, AttributeValue>> r =
+        items.stream().filter(i -> i.containsKey("SK") && isDocument(i)).findFirst();
 
     if (r.isPresent()) {
 
@@ -132,6 +133,11 @@ public class AttributeValueToDocumentItem
 
   private String getString(final AttributeValue value) {
     return value != null ? value.s() : null;
+  }
+
+  private boolean isDocument(final Map<String, AttributeValue> i) {
+    String sk = DynamoDbTypes.toString(i.get("SK"));
+    return "document".equals(sk) || (sk != null && sk.startsWith("document#art#"));
   }
 
 

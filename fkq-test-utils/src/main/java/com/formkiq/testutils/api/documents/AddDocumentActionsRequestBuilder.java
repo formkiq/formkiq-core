@@ -26,30 +26,34 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.GetDocumentActionsResponse;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.AddDocumentAttributesRequest;
+import com.formkiq.client.model.AddResponse;
+import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Builder for Get Document Actions Request.
+ * Builder for {@link AddDocumentAttributesRequest}.
  */
-public class GetDocumentActionsRequestBuilder
-    implements HttpRequestBuilder<GetDocumentActionsResponse> {
+public class AddDocumentActionsRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
-  /** {@link String}. */
-  private final DocumentArtifact document;
-  /** Limit. */
-  private String queryLimit;
-  /** Next Token. */
-  private String queryNext;
+  /** Document Id. */
+  private final String id;
+  /** Artifact Id. */
+  private String artifactId;
+  /** {@link AddDocumentActionsRequest}. */
+  private AddDocumentActionsRequest request;
 
   /**
    * constructor.
    *
-   * @param artifact {@link DocumentArtifact}
+   * @param document {@link DocumentArtifact}
    */
-  public GetDocumentActionsRequestBuilder(final DocumentArtifact artifact) {
-    this.document = artifact;
+  public AddDocumentActionsRequestBuilder(final DocumentArtifact document) {
+    this(document.documentId());
+    this.artifactId = document.artifactId();
   }
 
   /**
@@ -57,37 +61,31 @@ public class GetDocumentActionsRequestBuilder
    *
    * @param documentId {@link String}
    */
-  public GetDocumentActionsRequestBuilder(final String documentId) {
-    this(DocumentArtifact.of(documentId, null));
+  public AddDocumentActionsRequestBuilder(final String documentId) {
+    this.id = documentId;
+    this.request = new AddDocumentActionsRequest();
   }
 
   /**
-   * Set Limit.
+   * Add Action.
    * 
-   * @param limit {@link String}
-   * @return {@link GetDocumentActionsRequestBuilder}
+   * @param type {@link DocumentActionType}
+   * @return {@link AddDocumentActionsRequestBuilder}
    */
-  public GetDocumentActionsRequestBuilder limit(final String limit) {
-    this.queryLimit = limit;
+  public AddDocumentActionsRequestBuilder addAction(final DocumentActionType type) {
+    this.request.addActionsItem(new AddAction().type(type));
     return this;
   }
 
   /**
-   * Set Next.
-   * 
-   * @param next {@link String}
-   * @return {@link GetDocumentActionsRequestBuilder}
+   * Optionally run the request using the FormKiQ API.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return AddDocumentResponse
    */
-  public GetDocumentActionsRequestBuilder next(final String next) {
-    this.queryNext = next;
-    return this;
-  }
-
-  @Override
-  public ApiHttpResponse<GetDocumentActionsResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(
-        () -> new DocumentActionsApi(apiClient).getDocumentActions(this.document.documentId(),
-            siteId, this.document.artifactId(), queryLimit, null, queryNext));
+  public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new DocumentActionsApi(apiClient).addDocumentActions(this.id,
+        siteId, this.artifactId, this.request));
   }
 }

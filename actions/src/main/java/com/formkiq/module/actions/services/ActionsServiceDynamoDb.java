@@ -48,7 +48,7 @@ import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.actions.FindDocumentActionByStatus;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
 import com.formkiq.module.actions.ActionBuilder;
@@ -180,8 +180,8 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
   }
 
   @Override
-  public Pagination<String> findDocumentsWithStatus(final String siteId, final ActionStatus status,
-      final String nextToken, final int limit) {
+  public Pagination<DocumentArtifact> findDocumentsWithStatus(final String siteId,
+      final ActionStatus status, final String nextToken, final int limit) {
 
     // DUMMY value
     ActionType type = ActionType.OCR;
@@ -191,7 +191,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
     String sk = "action#";
 
     QueryResponse response = null;
-    List<String> list = Collections.emptyList();
+    List<DocumentArtifact> list = Collections.emptyList();
 
     if (key.gsi2Pk() != null) {
 
@@ -199,8 +199,7 @@ public final class ActionsServiceDynamoDb implements ActionsService, DbKeys {
           .scanIndexForward(true).nextToken(nextToken).limit(limit).build(db.getTableName());
       response = this.db.query(q);
 
-      list =
-          response.items().stream().map(i -> DynamoDbTypes.toString(i.get("documentId"))).toList();
+      list = response.items().stream().map(new AttributeValueToDocumentArtifact()).toList();
     }
 
     return new Pagination<>(list, response != null ? response.lastEvaluatedKey() : null);

@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
@@ -33,24 +34,21 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class RestoreDocumentRequestBuilder
     implements HttpRequestBuilder<SetDocumentRestoreResponse> {
 
-  /** Document Id. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** Document. */
+  private final DocumentArtifact document;
 
-  public RestoreDocumentRequestBuilder(final String documentId) {
-    this.id = documentId;
+  public RestoreDocumentRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
-  public RestoreDocumentRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
+  public RestoreDocumentRequestBuilder(final String documentId) {
+    this(DocumentArtifact.of(documentId, null));
   }
 
   @Override
   public ApiHttpResponse<SetDocumentRestoreResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).setDocumentRestore(this.id, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .setDocumentRestore(document.documentId(), siteId, document.artifactId()));
   }
 }

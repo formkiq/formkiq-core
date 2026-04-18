@@ -343,10 +343,10 @@ public interface DocumentService {
    * Find {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
-   * @param documentIds {@link List} {@link String}
+   * @param documents {@link List} {@link DocumentArtifact}
    * @return {@link List} {@link DocumentItem}
    */
-  List<DocumentItem> findDocuments(String siteId, List<String> documentIds);
+  List<DocumentItem> findDocuments(String siteId, List<DocumentArtifact> documents);
 
   /**
    * Find {@link DocumentItem} by Inserted Date. Order in descending order.

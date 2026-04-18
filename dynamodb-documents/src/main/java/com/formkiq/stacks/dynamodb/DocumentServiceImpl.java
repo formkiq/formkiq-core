@@ -42,7 +42,7 @@ import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentItemToDocumentRecordBuilder;
@@ -785,8 +785,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         var childDocuments = new GetChildDocumentsQuery(document.documentId()).query(dbService,
             dbService.getTableName(), siteId, nextToken, limit);
 
-        var childDocumentIds = childDocuments.items().stream()
-            .map(a -> DynamoDbTypes.toString(a.get("documentId"))).toList();
+        var childDocumentIds =
+            childDocuments.items().stream().map(new AttributeValueToDocumentArtifact()).toList();
 
         List<DocumentItem> childDocs = findDocuments(siteId, childDocumentIds);
         item.setDocuments(childDocs);
@@ -882,16 +882,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public List<DocumentItem> findDocuments(final String siteId, final List<String> ids) {
+  public List<DocumentItem> findDocuments(final String siteId,
+      final List<DocumentArtifact> documents) {
 
     List<DocumentItem> results = Collections.emptyList();
 
     BatchGetConfig config = new BatchGetConfig();
 
-    if (!ids.isEmpty()) {
+    if (!documents.isEmpty()) {
 
-      List<Map<String, AttributeValue>> keys = ids.stream()
-          .map(documentId -> keysDocument(siteId, documentId)).collect(Collectors.toList());
+      List<Map<String, AttributeValue>> keys =
+          documents.stream().map(doc -> new DocumentRecordBuilder().document(doc).buildKey(siteId))
+              .map(DynamoDbKey::toMap).toList();
 
       Collection<List<Map<String, AttributeValue>>> values = getBatch(config, keys).values();
       List<Map<String, AttributeValue>> result =
@@ -899,9 +901,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
       List<DocumentItem> items =
-          result.stream().map(a -> toDocumentItem.apply(Collections.singletonList(a)))
-              .collect(Collectors.toList());
-      items = sortByIds(ids, items);
+          result.stream().map(a -> toDocumentItem.apply(Collections.singletonList(a))).toList();
+
+      items = sortByIds(documents, items);
 
       if (!items.isEmpty()) {
         results = items;
@@ -1366,10 +1368,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }).collect(Collectors.toList());
 
     if (!list.isEmpty()) {
-      List<String> documentIds =
-          list.stream().map(DocumentItem::getDocumentId).collect(Collectors.toList());
+      List<DocumentArtifact> documents = list.stream()
+          .map(d -> DocumentArtifact.of(d.getDocumentId(), d.getArtifactId())).toList();
 
-      list = findDocuments(siteId, documentIds);
+      list = findDocuments(siteId, documents);
     }
 
     return new Pagination<>(list, result.lastEvaluatedKey());
@@ -1483,7 +1485,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       } while (startkey != null && !startkey.isEmpty());
 
       restored = this.dbService.moveItems(list,
-          new DocumentRestoreMoveAttributeFunction(siteId, documentId));
+          new DocumentRestoreMoveAttributeFunction(siteId, document));
 
       if (this.interceptor != null) {
         AttributeValueToMap toMap = new AttributeValueToMap();
@@ -1497,18 +1499,20 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         this.interceptor.restoreSoftDeletedDocument(siteId, document, toMap.apply(attr));
       }
 
-      String path = attr.get("path").s();
-      String userId = attr.get("userId").s();
+      if (document.artifactId() == null) {
+        String path = attr.get("path").s();
+        String userId = attr.get("userId").s();
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      item.setPath(path);
+        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+        item.setPath(path);
 
-      FolderIndexRecord record = createDocumentPath(siteId, item);
+        FolderIndexRecord record = createDocumentPath(siteId, item);
 
-      WriteRequestBuilder writeBuilder =
-          new WriteRequestBuilder().append(this.documentTableName, record.getAttributes(siteId));
+        WriteRequestBuilder writeBuilder =
+            new WriteRequestBuilder().append(this.documentTableName, record.getAttributes(siteId));
 
-      writeBuilder.batchWriteItem(this.dbClient);
+        writeBuilder.batchWriteItem(this.dbClient);
+      }
     }
 
     return restored;
@@ -2092,10 +2096,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param documents {@link List} {@link DocumentItem}
    * @return {@link List} {@link DocumentItem}
    */
-  private List<DocumentItem> sortByIds(final List<String> documentIds,
+  private List<DocumentItem> sortByIds(final List<DocumentArtifact> documentIds,
       final List<DocumentItem> documents) {
-    Map<String, DocumentItem> map = documents.stream()
-        .collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()));
+    Map<DocumentArtifact, DocumentItem> map = documents.stream().collect(Collectors.toMap(
+        a -> DocumentArtifact.of(a.getDocumentId(), a.getArtifactId()), Function.identity()));
     return documentIds.stream().map(map::get).filter(java.util.Objects::nonNull)
         .collect(Collectors.toList());
   }

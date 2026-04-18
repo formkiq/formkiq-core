@@ -63,6 +63,7 @@ import com.formkiq.client.model.OcrOutputType;
 import com.formkiq.client.model.TextractQuery;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.documents.AddDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
@@ -155,8 +156,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
   private List<DocumentAction> getDocumentActions(final String siteId,
       final DocumentArtifact document, final String next) {
-    var resp = new GetDocumentActionsRequestBuilder(document.documentId())
-        .setArtifactId(document.artifactId()).limit(null).next(next).submit(client, siteId);
+    var resp = new GetDocumentActionsRequestBuilder(document).limit(null).next(next).submit(client,
+        siteId);
     assertFalse(resp.isError());
     return notNull(resp.response().getActions());
   }
@@ -660,9 +661,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       String documentId = saveDocument(siteId);
       DocumentArtifact document = saveArtifactDocument(siteId, documentId);
 
-      this.service.saveNewActions(List.of(
-          createAction(documentId, ActionType.FULLTEXT).status(ActionStatus.COMPLETE).build(siteId),
-          createAction(document, ActionType.OCR).status(ActionStatus.COMPLETE).build(siteId)));
+      new AddDocumentActionsRequestBuilder(documentId).addAction(DocumentActionType.FULLTEXT)
+          .submit(client, siteId).throwIfError();
+
+      new AddDocumentActionsRequestBuilder(document).addAction(DocumentActionType.OCR)
+          .submit(client, siteId).throwIfError();
 
       // when
       final List<DocumentAction> actions0 = getDocumentActions(siteId, documentId);
@@ -671,11 +674,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(1, actions0.size());
       assertEquals(DocumentActionType.FULLTEXT, actions0.get(0).getType());
-      assertEquals(DocumentActionStatus.COMPLETE, actions0.get(0).getStatus());
+      assertEquals(PENDING, actions0.get(0).getStatus());
 
       assertEquals(1, actions1.size());
       assertEquals(DocumentActionType.OCR, actions1.get(0).getType());
-      assertEquals(DocumentActionStatus.COMPLETE, actions1.get(0).getStatus());
+      assertEquals(PENDING, actions1.get(0).getStatus());
     }
   }
 

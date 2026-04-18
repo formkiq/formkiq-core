@@ -134,7 +134,7 @@ public class DocumentsUploadRequestHandler
     service.saveDocument(siteId, item, tags, documentAttributes, options);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = notNull(request.getActions());
+    List<Action> actions = createActions(siteId, request, item);
     actionsService.saveNewActions(actions);
 
     if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
@@ -198,6 +198,13 @@ public class DocumentsUploadRequestHandler
     }
 
     return contentLength != null ? Optional.of(contentLength) : Optional.empty();
+  }
+
+  private List<Action> createActions(final String siteId, final AddDocumentRequest request,
+      final DocumentItem item) {
+    DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+    return notNull(request.getActions()).stream()
+        .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
   }
 
   @Override

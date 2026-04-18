@@ -26,7 +26,6 @@ package com.formkiq.stacks.api.handler.documents;
 import java.util.List;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.actions.Action;
 
 /**
  * Add Document Request holder.
@@ -35,7 +34,7 @@ import com.formkiq.module.actions.Action;
 public class AddDocumentRequest {
 
   /** Document Actions. */
-  private List<Action> actions;
+  private List<AddAction> actions;
   /** Document Attribute. */
   private List<AddDocumentAttribute> attributes;
   /** Create artifacts. */
@@ -77,9 +76,9 @@ public class AddDocumentRequest {
   /**
    * Get Document Actions.
    * 
-   * @return {@link List} {@link Action}
+   * @return {@link List} {@link AddAction}
    */
-  public List<Action> getActions() {
+  public List<AddAction> getActions() {
     return this.actions;
   }
 
@@ -221,9 +220,9 @@ public class AddDocumentRequest {
   /**
    * Set Document Actions.
    *
-   * @param documentActions {@link List} {@link Action}
+   * @param documentActions {@link List} {@link AddAction}
    */
-  public void setActions(final List<Action> documentActions) {
+  public void setActions(final List<AddAction> documentActions) {
     this.actions = documentActions;
   }
 

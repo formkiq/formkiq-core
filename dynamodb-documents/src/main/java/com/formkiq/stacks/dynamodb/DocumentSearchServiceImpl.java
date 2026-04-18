@@ -33,7 +33,7 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
@@ -621,9 +621,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       QueryResult result = new GetFolderFilesByNameQuery(false, query.filename().beginsWith())
           .query(db, db.getTableName(), siteId, nextToken, limit);
 
-      List<String> documentIds =
-          result.items().stream().map(i -> DynamoDbTypes.toString(i.get("documentId")))
-              .filter(java.util.Objects::nonNull).toList();
+      List<DocumentArtifact> documentIds = result.items().stream()
+          .map(new AttributeValueToDocumentArtifact()).filter(java.util.Objects::nonNull).toList();
 
       DocumentItemToDynamicDocumentItem transform = new DocumentItemToDynamicDocumentItem();
       var items = docService.findDocuments(siteId, documentIds).stream().map(transform).toList();
@@ -713,7 +712,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private Pagination<DynamicDocumentItem> searchByDocumentIds(final String siteId,
       final Collection<String> documentIds) {
 
-    List<DocumentItem> list = this.docService.findDocuments(siteId, new ArrayList<>(documentIds));
+    List<DocumentArtifact> documents =
+        documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documents);
 
     List<DynamicDocumentItem> results = list != null
         ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList()
@@ -911,14 +912,14 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       items = response.items();
     }
 
-    List<String> documentIds =
-        items.stream().map(i -> i.get("documentId").s()).distinct().collect(Collectors.toList());
+    List<DocumentArtifact> documentArtifacts =
+        items.stream().map(new AttributeValueToDocumentArtifact()).distinct().toList();
 
-    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documentArtifacts);
 
-    List<DynamicDocumentItem> results =
-        list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
-            .collect(Collectors.toList()) : Collections.emptyList();
+    List<DynamicDocumentItem> results = list != null
+        ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList()
+        : Collections.emptyList();
 
     addMatchAttributes(items, results);
 
@@ -997,7 +998,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
       List<String> fetchDocumentIds = new ArrayList<>(filteredDocs.keySet());
 
-      List<DocumentItem> list = this.docService.findDocuments(siteId, fetchDocumentIds);
+      List<DocumentArtifact> documents =
+          fetchDocumentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
+      List<DocumentItem> list = this.docService.findDocuments(siteId, documents);
 
       List<DynamicDocumentItem> results =
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
@@ -1043,8 +1046,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     Pagination<DynamicDocumentItem> searchByTag =
         searchByTag(siteId, query, criteria, nextToken, maxresults, projectionExpression);
 
-    List<String> documentIds = searchByTag.getResults().stream().map(m -> m.getString("documentId"))
-        .collect(Collectors.toList());
+    List<String> documentIds =
+        searchByTag.getResults().stream().map(m -> m.getString("documentId")).toList();
 
     return new Pagination<>(documentIds, searchByTag.getNextToken());
   }
@@ -1063,8 +1066,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     String projectionExpression = q.projectionExpression();
     QueryResponse result = this.dbClient.query(q);
 
-    List<String> documentIds = result.items().stream().map(i -> i.get("documentId").s()).distinct()
-        .collect(Collectors.toList());
+    List<DocumentArtifact> documents =
+        result.items().stream().map(new AttributeValueToDocumentArtifact())
+            .filter(java.util.Objects::nonNull).distinct().toList();
 
     Map<String, DocumentTag> tags = transformToDocumentTagMap(result);
 
@@ -1072,7 +1076,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     if (!"documentId".equals(projectionExpression)) {
 
-      List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+      List<DocumentItem> list = this.docService.findDocuments(siteId, documents);
 
       List<DynamicDocumentItem> results =
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
@@ -1092,8 +1096,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else {
 
-      List<DynamicDocumentItem> results = documentIds.stream()
-          .map(d -> new DynamicDocumentItem(Map.of("documentId", d))).collect(Collectors.toList());
+      List<DynamicDocumentItem> results =
+          documents.stream().map(d -> new DynamicDocumentItem(Map.of("documentId", d.documentId())))
+              .collect(Collectors.toList());
 
       ret = new Pagination<>(results, result.lastEvaluatedKey());
     }
@@ -1114,10 +1119,11 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     QueryResponse result = this.dbClient.query(q);
 
-    List<String> documentIds = result.items().stream().filter(r -> r.containsKey("documentId"))
-        .map(r -> r.get("documentId").s()).distinct().collect(Collectors.toList());
+    List<DocumentArtifact> documents =
+        result.items().stream().filter(r -> r.containsKey("documentId"))
+            .map(new AttributeValueToDocumentArtifact()).distinct().toList();
 
-    List<DocumentItem> list = this.docService.findDocuments(siteId, documentIds);
+    List<DocumentItem> list = this.docService.findDocuments(siteId, documents);
 
     Map<String, DocumentItem> documentMap = list != null
         ? list.stream().collect(Collectors.toMap(DocumentItem::getDocumentId, Function.identity()))

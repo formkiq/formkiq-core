@@ -998,15 +998,17 @@ public class DocumentServiceImplTest implements DbKeys {
 
       createTestData("finance");
 
-      List<String> documentIds =
-          Arrays.asList(d0.getDocumentId(), d1.getDocumentId(), d2.getDocumentId());
+      List<DocumentArtifact> documents =
+          Arrays.asList(DocumentArtifact.of(d0.getDocumentId(), null),
+              DocumentArtifact.of(d1.getDocumentId(), null),
+              DocumentArtifact.of(d2.getDocumentId(), null));
 
       // when
-      List<DocumentItem> items = service.findDocuments(siteId, documentIds);
+      List<DocumentItem> items = service.findDocuments(siteId, documents);
 
       // then
       int i = 0;
-      assertEquals(items.size(), documentIds.size());
+      assertEquals(items.size(), documents.size());
       assertEquals(d0.getDocumentId(), items.get(i).getDocumentId());
       assertNotNull(items.get(i).getInsertedDate());
       assertNotNull(items.get(i).getLastModifiedDate());
@@ -1030,14 +1032,14 @@ public class DocumentServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData("finance");
-      List<String> documentIds = createTestData(siteId).stream().map(DocumentItem::getDocumentId)
-          .collect(Collectors.toList());
+      List<DocumentArtifact> documents = createTestData(siteId).stream()
+          .map(d -> DocumentArtifact.of(d.getDocumentId(), d.getArtifactId())).toList();
 
       // when
-      List<DocumentItem> items = service.findDocuments(siteId, documentIds);
+      List<DocumentItem> items = service.findDocuments(siteId, documents);
 
       // then
-      assertEquals(items.size(), documentIds.size());
+      assertEquals(items.size(), documents.size());
       assertNotNull(items.get(0).getDocumentId());
       assertNotNull(items.get(0).getInsertedDate());
       assertNotNull(items.get(0).getLastModifiedDate());

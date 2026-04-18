@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.DeleteResponse;
@@ -44,15 +45,20 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
   /**
    * constructor.
    *
+   * @param document {@link DocumentArtifact}
+   */
+  public DeleteDocumentRequestBuilder(final DocumentArtifact document) {
+    this.id = document.documentId();
+    this.artifactId = document.artifactId();
+  }
+
+  /**
+   * constructor.
+   *
    * @param documentId {@link String}
    */
   public DeleteDocumentRequestBuilder(final String documentId) {
     this.id = documentId;
-  }
-
-  public DeleteDocumentRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
   }
 
   /**

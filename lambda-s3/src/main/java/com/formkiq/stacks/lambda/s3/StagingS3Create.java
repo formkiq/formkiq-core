@@ -411,8 +411,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     final List<String> documentIds =
         this.gson.fromJson(content.get("documentIds").toString(), jsonStringList);
 
+    List<DocumentArtifact> documents =
+        documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
+
     DocumentCompressor documentCompressor = new DocumentCompressor(serviceCache);
-    documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documentIds);
+    documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documents);
   }
 
   /**

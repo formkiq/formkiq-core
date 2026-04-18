@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -238,8 +239,10 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
           awsservice.environment("TYPESENSE_API_KEY"), region, awsCredentials);
 
       List<String> documentIds = ts.searchFulltext(siteId, text, limit);
+      List<DocumentArtifact> documents =
+          documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
 
-      List<DocumentItem> list = docService.findDocuments(siteId, documentIds);
+      List<DocumentItem> list = docService.findDocuments(siteId, documents);
 
       List<DynamicDocumentItem> docs =
           list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))

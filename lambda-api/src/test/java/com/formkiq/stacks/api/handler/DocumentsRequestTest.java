@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
@@ -52,6 +53,8 @@ import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
@@ -68,6 +71,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
@@ -141,6 +145,40 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   private List<SearchResultDocument> getFilesInFolder(final String siteId, final String folder) {
     return notNull(new GetFoldersRequestBuilder().path(folder).submit(client, siteId).response()
         .getDocuments());
+  }
+
+  @Test
+  public void testHandleGetDocumentActionsArtifact01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId =
+          new AddDocumentRequestBuilder().content().addAction(DocumentActionType.FULLTEXT)
+              .submit(client, siteId).throwIfError().response().getDocumentId();
+
+      String artifactId = new AddDocumentRequestBuilder().content()
+          .addAction(DocumentActionType.OCR).documentId(documentId).artifacts(true)
+          .submit(client, siteId).throwIfError().response().getArtifactId();
+
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+
+      // when
+      final List<DocumentAction> actions0 = notNull(new GetDocumentActionsRequestBuilder(documentId)
+          .submit(client, siteId).throwIfError().response().getActions());
+      final List<DocumentAction> actions1 = notNull(new GetDocumentActionsRequestBuilder(artifact)
+          .submit(client, siteId).throwIfError().response().getActions());
+
+      // then
+      assertEquals(1, actions0.size());
+      assertEquals(DocumentActionType.FULLTEXT, actions0.get(0).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions0.get(0).getStatus());
+
+      assertEquals(1, actions1.size());
+      assertEquals(DocumentActionType.OCR, actions1.get(0).getType());
+      assertEquals(DocumentActionStatus.PENDING, actions1.get(0).getStatus());
+    }
   }
 
   /**

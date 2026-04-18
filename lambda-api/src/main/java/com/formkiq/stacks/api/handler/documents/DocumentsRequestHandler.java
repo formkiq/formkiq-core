@@ -40,6 +40,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -151,7 +152,7 @@ public class DocumentsRequestHandler
 
     ActionsService actions = awsservice.getExtension(ActionsService.class);
 
-    Pagination<String> results =
+    Pagination<DocumentArtifact> results =
         actions.findDocumentsWithStatus(siteId, actionStatus, nextToken, limit);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);

@@ -47,7 +47,6 @@ public class SoftDeleteDocumentQuery extends DeleteDocumentQuery {
       final int limit) {
 
     var key = new DocumentRecordBuilder().document(getDocument()).buildKey(siteId);
-    // var pk = DynamoDbTypes.toString(keysDocument(siteId, getDocumentId()).get(PK));
     var builder = DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit);
     return builder.build(tableName);
   }
