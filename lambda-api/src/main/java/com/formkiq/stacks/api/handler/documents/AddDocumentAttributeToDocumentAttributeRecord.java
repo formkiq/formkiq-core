@@ -64,12 +64,11 @@ public class AddDocumentAttributeToDocumentAttributeRecord
    *
    * @param serviceCache {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param artifactId {@link String}
+   * @param document {@link DocumentArtifact}
    */
   public AddDocumentAttributeToDocumentAttributeRecord(final AwsServiceCache serviceCache,
-      final String siteId, final String documentId, final String artifactId) {
-    fromDocument = DocumentArtifact.of(documentId, artifactId);
+      final String siteId, final DocumentArtifact document) {
+    fromDocument = document;
     this.site = siteId;
     this.db = serviceCache.getExtension(DynamoDbService.class);
     this.tableName = serviceCache.environment("DOCUMENTS_TABLE");

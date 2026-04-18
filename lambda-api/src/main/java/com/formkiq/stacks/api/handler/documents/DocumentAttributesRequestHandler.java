@@ -122,7 +122,7 @@ public class DocumentAttributesRequestHandler
 
     List<DocumentAttributeRecord> records = request.attributes().stream()
         .flatMap(a -> new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-            documentId, artifactId).apply(a).stream())
+            DocumentArtifact.of(documentId, artifactId)).apply(a).stream())
         .toList();
 
     if (notNull(records).isEmpty()) {

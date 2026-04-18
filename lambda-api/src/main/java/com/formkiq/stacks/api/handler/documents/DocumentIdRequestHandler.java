@@ -211,7 +211,7 @@ public class DocumentIdRequestHandler
 
     AddDocumentAttributeToDocumentAttributeRecord tr =
         new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-            request.getDocumentId(), artifactId);
+            DocumentArtifact.of(request.getDocumentId(), artifactId));
 
     List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
     return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
