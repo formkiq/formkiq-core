@@ -26,11 +26,13 @@ package com.formkiq.aws.dynamodb.useractivities;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,5 +139,28 @@ public class ActivityRecordTest {
       assertTrue(key.gsi2Sk().startsWith("activity#"));
       assertTrue(key.gsi2Sk().contains("#" + entityTypeId + "#"));
     }
+  }
+
+  @Test
+  void testBuildKey() {
+    String documentId = ID.uuid();
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+    DynamoDbKey key = DocumentActivityEventRecord.builder().document(document)
+        .activityKeys(List.of()).buildKey(null);
+
+    assertTrue(key.sk().startsWith("event#docs#activities#"));
+    assertTrue(key.sk().contains("#" + documentId + "#"));
+  }
+
+  @Test
+  void testBuildKeyWithArtifactId() {
+    String documentId = ID.uuid();
+    String artifactId = ID.ulid();
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
+    DynamoDbKey key = DocumentActivityEventRecord.builder().document(document)
+        .activityKeys(List.of()).buildKey(null);
+
+    assertTrue(key.sk().startsWith("event#docs#activities#"));
+    assertTrue(key.sk().contains("#" + documentId + "_art#"));
   }
 }
