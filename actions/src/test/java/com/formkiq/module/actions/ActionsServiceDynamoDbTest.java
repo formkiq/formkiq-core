@@ -386,7 +386,7 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, document).get(0).status());
-      Pagination<String> results =
+      Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(0, results.getResults().size());
     }
@@ -421,10 +421,10 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(queueId, docs.getResults().get(0).queueId());
       assertNotNull(service.findActionInQueue(siteId, document, queueId));
 
-      Pagination<String> results =
+      Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.IN_QUEUE, null, LIMIT);
       assertEquals(1, results.getResults().size());
-      assertEquals(documentId, results.getResults().get(0));
+      assertEquals(documentId, results.getResults().get(0).documentId());
 
       // given
       Action a = new ActionBuilder().action(action0).status(ActionStatus.COMPLETE).build(siteId);
@@ -471,10 +471,10 @@ public class ActionsServiceDynamoDbTest {
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, document, name));
 
-      Pagination<String> results =
+      Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(1, results.getResults().size());
-      assertEquals(documentId, results.getResults().get(0));
+      assertEquals(documentId, results.getResults().get(0).documentId());
 
       results = service.findDocumentsWithStatus(siteId, ActionStatus.PENDING, null, LIMIT);
       assertEquals(0, results.getResults().size());
