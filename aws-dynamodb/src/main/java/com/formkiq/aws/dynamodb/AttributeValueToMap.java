@@ -80,8 +80,8 @@ public class AttributeValueToMap
       }
 
       addValues(result);
-      removeKeys(result);
       renameKeys(result);
+      removeKeys(result);
       deleteKeys(result);
     }
 

@@ -61,7 +61,7 @@ public class DocumentRecordBuilderTest {
           .buildKey(siteId);
 
       assertKeyEquals(siteId, "docs#" + documentId, key.pk());
-      assertEquals("document#art#" + artifactId, key.sk());
+      assertEquals("document_art#" + artifactId, key.sk());
     }
   }
 
@@ -90,7 +90,7 @@ public class DocumentRecordBuilderTest {
           .parentDocumentId(parentDocumentId).artifactId(artifactId).buildKey(siteId);
 
       assertKeyEquals(siteId, "docs#" + parentDocumentId, key.pk());
-      assertEquals("document#" + documentId + "#art#" + artifactId, key.sk());
+      assertEquals("document#" + documentId + "_art#" + artifactId, key.sk());
     }
   }
 

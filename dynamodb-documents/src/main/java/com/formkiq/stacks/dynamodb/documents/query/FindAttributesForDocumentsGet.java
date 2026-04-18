@@ -41,11 +41,18 @@ import java.util.Map;
 public class FindAttributesForDocumentsGet implements DynamoDbGet {
 
   /** {@link Collection} {@link String}. */
-  private Collection<String> documents;
+  private final Collection<DocumentArtifact> documents;
   /** {@link Map}. */
-  private final Map<String, Collection<DocumentAttributeRecord>> eq = new HashMap<>();
+  private final Map<DocumentArtifact, Collection<DocumentAttributeRecord>> eq = new HashMap<>();
 
-  public FindAttributesForDocumentsGet() {}
+  /**
+   * constructor.
+   * 
+   * @param documentArtifacts {@link Collection} {@link DocumentArtifact}
+   */
+  public FindAttributesForDocumentsGet(final Collection<DocumentArtifact> documentArtifacts) {
+    this.documents = documentArtifacts;
+  }
 
   @Override
   public Collection<DynamoDbKey> build(final String siteId) {
@@ -59,17 +66,6 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
   }
 
   /**
-   * Set the folder path to retrieve documents from.
-   * 
-   * @param documentIds {@link Collection} {@link String}
-   * @return this builder
-   */
-  public FindAttributesForDocumentsGet documentIds(final Collection<String> documentIds) {
-    this.documents = documentIds;
-    return this;
-  }
-
-  /**
    * Add eq clause.
    * 
    * @param attributeKey {@link String}
@@ -78,10 +74,10 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
    */
   public FindAttributesForDocumentsGet eq(final String attributeKey, final Object value) {
 
-    this.documents.forEach(documentId -> {
+    this.documents.forEach(document -> {
 
-      DocumentAttributeRecord r = new DocumentAttributeRecord()
-          .setDocument(DocumentArtifact.of(documentId, null)).setKey(attributeKey);
+      DocumentAttributeRecord r =
+          new DocumentAttributeRecord().setDocument(document).setKey(attributeKey);
 
       if (value instanceof String s) {
         r.setStringValue(s);
@@ -93,7 +89,7 @@ public class FindAttributesForDocumentsGet implements DynamoDbGet {
 
       r.updateValueType();
 
-      eq.computeIfAbsent(documentId, k -> new ArrayList<>()).add(r);
+      eq.computeIfAbsent(document, k -> new ArrayList<>()).add(r);
     });
 
     return this;
