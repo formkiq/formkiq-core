@@ -1159,12 +1159,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNull(response.exception());
-      String documentId = response.response().getDocumentId();
-      assertNotNull(documentId);
+      DocumentArtifact document = DocumentArtifact.of(response.response().getDocumentId(),
+          response.response().getArtifactId());
 
       // when - update content-type
-      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
-          .submit(client, siteId);
+      response = new UpdateDocumentRequestBuilder(document).contentType("text/plain").submit(client,
+          siteId);
 
       // then
       assertNotNull(response.exception());
@@ -1238,9 +1238,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(documentId, resp.response().getDocumentId());
       String artifactId = resp.response().getArtifactId();
       assertNotNull(artifactId);
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
 
-      var doc = new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId)
-          .submit(client, siteId).throwIfError();
+      var doc = new GetDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
       assertEquals(path1, doc.response().getPath());
       assertEquals(artifactId, doc.response().getArtifactId());
 
@@ -1431,12 +1431,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertNull(response.exception());
-      String documentId = response.response().getDocumentId();
-      assertNotNull(documentId);
+      DocumentArtifact document = DocumentArtifact.of(response.response().getDocumentId(),
+          response.response().getArtifactId());
 
       // when - update content-type
-      response = new UpdateDocumentRequestBuilder(documentId).contentType("text/plain")
-          .submit(client, siteId);
+      response = new UpdateDocumentRequestBuilder(document).contentType("text/plain").submit(client,
+          siteId);
 
       // then
       assertNotNull(response.exception());

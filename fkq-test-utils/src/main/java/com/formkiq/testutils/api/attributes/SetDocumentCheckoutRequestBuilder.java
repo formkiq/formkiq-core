@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.attributes;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.SetResponse;
@@ -35,27 +36,20 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class SetDocumentCheckoutRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** Document Id. */
-  private final String document;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public SetDocumentCheckoutRequestBuilder(final String documentId) {
-    this.document = documentId;
-  }
-
-  public SetDocumentCheckoutRequestBuilder setArtifactId(final String id) {
-    this.artifactId = id;
-    return this;
+  public SetDocumentCheckoutRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
   @Override
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).setDocumentCheckout(document, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .setDocumentCheckout(document.documentId(), siteId, document.artifactId()));
   }
 }

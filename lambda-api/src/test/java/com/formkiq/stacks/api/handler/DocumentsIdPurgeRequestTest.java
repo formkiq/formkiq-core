@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -234,7 +235,7 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
           deleteResponse.getMessage());
       assertNotNull(new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError()
           .response());
-      assertNotNull(new GetDocumentRequestBuilder(documentId).setArtifactId(artifactId)
+      assertNotNull(new GetDocumentRequestBuilder(DocumentArtifact.of(documentId, artifactId))
           .submit(client, siteId).exception());
       assertTrue(exists(siteId, documentId, null));
       assertFalse(exists(siteId, documentId, artifactId));
