@@ -21,51 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api.documents;
+package com.formkiq.stacks.api.handler.documents;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.client.api.DocumentTagsApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.GetDocumentTagResponse;
-import com.formkiq.testutils.api.ApiHttpResponse;
-import com.formkiq.testutils.api.HttpRequestBuilder;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.module.actions.ActionStatus;
+
+import java.util.function.BiFunction;
 
 /**
- * Builder for Get Document Tags Request.
+ * {@link BiFunction} to convert AddAction to Action.
  */
-public class GetDocumentTagRequestBuilder implements HttpRequestBuilder<GetDocumentTagResponse> {
+public class AddActionToActionFunction implements BiFunction<String, AddAction, Action> {
 
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
-  /** Tag Key. */
-  private final String key;
 
   /**
    * constructor.
-   *
+   * 
    * @param documentArtifact {@link DocumentArtifact}
-   * @param tagKey {@link String}
    */
-  public GetDocumentTagRequestBuilder(final DocumentArtifact documentArtifact,
-      final String tagKey) {
+  public AddActionToActionFunction(final DocumentArtifact documentArtifact) {
     this.document = documentArtifact;
-    this.key = tagKey;
-  }
-
-  /**
-   * constructor.
-   *
-   * @param documentId {@link String}
-   * @param tagKey {@link String}
-   */
-  public GetDocumentTagRequestBuilder(final String documentId, final String tagKey) {
-    this(DocumentArtifact.of(documentId, null), tagKey);
   }
 
   @Override
-  public ApiHttpResponse<GetDocumentTagResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(() -> new DocumentTagsApi(apiClient).getDocumentTag(document.documentId(),
-        this.key, siteId, document.artifactId(), null));
+  public Action apply(final String siteId, final AddAction a) {
+    String username = ApiAuthorization.getAuthorization().getUsername();
+    return new ActionBuilder().type(a.type()).queueId(a.queueId())
+        .parameters(a.parameters() != null ? a.parameters().toMap() : null)
+        .status(ActionStatus.PENDING).userId(username).document(document).indexUlid().build(siteId);
   }
 }

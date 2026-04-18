@@ -72,7 +72,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
 
       // given
       DocumentRestoreMoveAttributeFunction rfn =
-          new DocumentRestoreMoveAttributeFunction(siteId, documentId);
+          new DocumentRestoreMoveAttributeFunction(siteId, document);
 
       // when
       Map<String, AttributeValue> restore = rfn.transform(result);
@@ -124,7 +124,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
 
       // given
       DocumentRestoreMoveAttributeFunction rfn =
-          new DocumentRestoreMoveAttributeFunction(siteId, documentId);
+          new DocumentRestoreMoveAttributeFunction(siteId, document);
 
       // when
       Map<String, AttributeValue> restore = rfn.transform(result);

@@ -308,9 +308,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   private DocumentAttribute getDocumentAttribute(final String siteId,
       final DocumentArtifact document, final String key) throws ApiException {
-    DocumentAttribute response = new GetDocumentAttributeRequestBuilder(document.documentId(), key)
-        .setArtifactId(document.artifactId()).submit(client, siteId).throwIfError().response()
-        .getAttribute();
+    DocumentAttribute response = new GetDocumentAttributeRequestBuilder(document, key)
+        .submit(client, siteId).throwIfError().response().getAttribute();
     assertNotNull(response);
     return response;
   }

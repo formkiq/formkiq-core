@@ -38,18 +38,19 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
 
   /** Site Id. */
   private final String siteId;
-  /** Document Id. */
-  private final String documentId;
+  /** Document. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
    * @param siteIdParam {@link String}
-   * @param id {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public DocumentRestoreMoveAttributeFunction(final String siteIdParam, final String id) {
+  public DocumentRestoreMoveAttributeFunction(final String siteIdParam,
+      final DocumentArtifact documentArtifact) {
     this.siteId = siteIdParam;
-    this.documentId = id;
+    this.document = documentArtifact;
   }
 
   @Override
@@ -61,10 +62,10 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
 
     if (sk.startsWith(SOFT_DELETE + "document")) {
 
-      Map<String, AttributeValue> keys = keysDocument(this.siteId, this.documentId);
+      var key = new DocumentRecordBuilder().document(this.document).buildKey(this.siteId).toMap();
 
-      a.put(PK, keys.get(PK));
-      a.put(SK, keys.get(SK));
+      a.put(PK, key.get(PK));
+      a.put(SK, key.get(SK));
 
       if (a.containsKey(GSI1_PK)) {
         a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));

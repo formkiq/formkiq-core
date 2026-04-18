@@ -87,8 +87,8 @@ public interface ActionsService {
    * @param limit int
    * @return {@link Pagination}
    */
-  Pagination<String> findDocumentsWithStatus(String siteId, ActionStatus status, String nextToken,
-      int limit);
+  Pagination<DocumentArtifact> findDocumentsWithStatus(String siteId, ActionStatus status,
+      String nextToken, int limit);
 
   /**
    * Get List of {@link Action} by {@link ActionStatus}.
