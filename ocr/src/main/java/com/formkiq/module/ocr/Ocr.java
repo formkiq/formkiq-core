@@ -316,7 +316,9 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
 
   @Override
   public String sk() {
-    return "ocr" + DbKeys.TAG_DELIMINATOR;
+    return this.artifactId != null
+        ? "ocr_art" + DbKeys.TAG_DELIMINATOR + this.artifactId + DbKeys.TAG_DELIMINATOR
+        : "ocr" + DbKeys.TAG_DELIMINATOR;
   }
 
   @Override
