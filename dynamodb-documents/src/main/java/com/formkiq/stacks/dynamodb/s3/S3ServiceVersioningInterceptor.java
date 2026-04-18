@@ -106,8 +106,6 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
       final S3Service s3, final String bucket, final String s3Key, final ObjectVersion version,
       final Map<String, String> metadata) {
 
-    String username = ApiAuthorization.getAuthorization().getUsername();
-
     Map<String, AttributeValue> attr = new HashMap<>();
 
     String fulldate = this.df.format(new Date());
@@ -117,8 +115,6 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     attr.put(PK, AttributeValue.fromS(key.pk()));
     attr.put(SK, AttributeValue.fromS(key.sk() + TAG_DELIMINATOR + fulldate));
 
-    S3ObjectMetadata resp = s3.getObjectMetadata(bucket, s3Key, version.versionId());
-
     attr.put("documentId", AttributeValue.fromS(document.documentId()));
 
     if (document.artifactId() != null) {
@@ -126,7 +122,11 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
     }
 
     attr.put("insertedDate", AttributeValue.fromS(fulldate));
+
+    String username = ApiAuthorization.getAuthorization().getUsername();
     attr.put("userId", AttributeValue.fromS(username));
+
+    S3ObjectMetadata resp = s3.getObjectMetadata(bucket, s3Key, version.versionId());
     attr.put("contentType", AttributeValue.fromS(resp.getContentType()));
     attr.put("contentLength", AttributeValue.fromN(String.valueOf(resp.getContentLength())));
 

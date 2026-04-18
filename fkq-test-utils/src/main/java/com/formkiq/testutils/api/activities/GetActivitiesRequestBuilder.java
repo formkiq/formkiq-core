@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.activities;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetActivitesResponse;
@@ -38,8 +39,6 @@ import java.time.ZoneOffset;
  */
 public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivitesResponse> {
 
-  /** {@link String}. */
-  private String documentId;
   /** Next. */
   private String next;
   /** Limit. */
@@ -76,6 +75,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private String apiKey;
   /** {@link String}. */
   private String controlPolicy;
+  /** {@link DocumentArtifact}. */
+  private DocumentArtifact document;
 
   /**
    * constructor.
@@ -91,6 +92,10 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   public GetActivitiesRequestBuilder apiKey(final String activitiesApiKey) {
     this.apiKey = activitiesApiKey;
     return this;
+  }
+
+  private String artifactId() {
+    return document != null ? document.artifactId() : null;
   }
 
   /**
@@ -127,14 +132,18 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
-   * Set Document Id.
+   * Set Document Artifact.
    *
-   * @param activitiesDocumentId {@link String}
+   * @param activitiesDocument {@link DocumentArtifact}
    * @return this builder
    */
-  public GetActivitiesRequestBuilder documentId(final String activitiesDocumentId) {
-    this.documentId = activitiesDocumentId;
+  public GetActivitiesRequestBuilder document(final DocumentArtifact activitiesDocument) {
+    this.document = activitiesDocument;
     return this;
+  }
+
+  private String documentId() {
+    return document != null ? document.documentId() : null;
   }
 
   /**
@@ -295,9 +304,9 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   public ApiHttpResponse<GetActivitesResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
-        this.documentId, this.entityTypeId, this.namespace, this.entityId, rulesetId, ruleId,
-        workflowId, attributeKey, schema, classificationId, mappingId, apiKey, controlPolicy, start,
-        end, sort, next, limit, this.userId));
+        documentId(), artifactId(), this.entityTypeId, this.namespace, this.entityId, rulesetId,
+        ruleId, workflowId, attributeKey, schema, classificationId, mappingId, apiKey,
+        controlPolicy, start, end, sort, next, limit, this.userId));
   }
 
   /**

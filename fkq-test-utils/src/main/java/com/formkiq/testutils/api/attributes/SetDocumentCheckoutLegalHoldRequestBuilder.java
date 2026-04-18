@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.attributes;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.SetResponse;
@@ -35,9 +36,16 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class SetDocumentCheckoutLegalHoldRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** Document Id. */
-  private final String document;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
+
+  /**
+   * constructor.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
+   */
+  public SetDocumentCheckoutLegalHoldRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
+  }
 
   /**
    * constructor.
@@ -45,17 +53,12 @@ public class SetDocumentCheckoutLegalHoldRequestBuilder implements HttpRequestBu
    * @param documentId {@link String}
    */
   public SetDocumentCheckoutLegalHoldRequestBuilder(final String documentId) {
-    this.document = documentId;
-  }
-
-  public SetDocumentCheckoutLegalHoldRequestBuilder setArtifactId(final String id) {
-    this.artifactId = id;
-    return this;
+    this(DocumentArtifact.of(documentId, null));
   }
 
   @Override
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).setDocumentCheckoutLegalHold(document,
-        siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .setDocumentCheckoutLegalHold(document.documentId(), siteId, document.artifactId()));
   }
 }

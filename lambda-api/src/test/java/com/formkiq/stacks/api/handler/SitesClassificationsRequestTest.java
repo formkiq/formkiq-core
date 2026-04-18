@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -948,19 +949,20 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           createSchemaAttributes(List.of("retentionPeriodInDays2"), List.of("invoiceNumber"));
       addClassification(siteId, sa);
 
-      String documentId = new AddDocumentRequestBuilder().content()
+      var resp = new AddDocumentRequestBuilder().content()
           .addAttribute("retentionPeriodInDays2", new BigDecimal(1)).submit(client, siteId)
-          .throwIfError().response().getDocumentId();
+          .throwIfError().response();
+      DocumentArtifact document = DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
 
       setBearerToken(siteId);
 
       // when
-      new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
-          .addAttribute("invoiceNumber", "1234").submit(client, siteId).throwIfError();
+      new AddDocumentAttributeRequestBuilder(document).addAttribute("invoiceNumber", "1234")
+          .submit(client, siteId).throwIfError();
 
       // then
       var results =
-          new GetDocumentAttributesRequestBuilder(documentId).submit(client, siteId).throwIfError();
+          new GetDocumentAttributesRequestBuilder(document).submit(client, siteId).throwIfError();
       List<DocumentAttribute> documentAttributes = notNull(results.response().getAttributes());
       assertEquals(2, documentAttributes.size());
       assertEquals("invoiceNumber", documentAttributes.get(0).getKey());

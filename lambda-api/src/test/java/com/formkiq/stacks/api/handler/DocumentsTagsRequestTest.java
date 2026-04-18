@@ -199,8 +199,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("artifactonly", "value").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("artifactonly", "value")
+          .submit(client, siteId).throwIfError();
 
       // when
       var message = new DeleteDocumentTagRequestBuilder(documentId, "artifactonly")
@@ -321,8 +321,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("artifactvalues", List.of("abc", "xyz")).submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("artifactvalues", List.of("abc", "xyz"))
+          .submit(client, siteId).throwIfError();
 
       // when
       var message = new DeleteDocumentTagValueRequestBuilder(documentId, "artifactvalues", "xyz")
@@ -442,8 +442,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("artifactcategory", "artifact").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("artifactcategory", "artifact")
+          .submit(client, siteId).throwIfError();
 
       // when
       var resp = new GetDocumentTagsRequestBuilder(documentId).setArtifactId(artifact.artifactId())
@@ -585,8 +585,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("category", "artifact").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("category", "artifact")
+          .submit(client, siteId).throwIfError();
 
       // when
       var resp = new GetDocumentTagRequestBuilder(artifact, "category").submit(client, siteId)
@@ -658,8 +658,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("artifactcategory", "artifact0").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("artifactcategory", "artifact0")
+          .submit(client, siteId).throwIfError();
 
       // when
       var resp = new UpdateDocumentTagsRequestBuilder(documentId)
@@ -922,9 +922,9 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
       // when
-      var message = new AddDocumentTagRequestBuilder(documentId)
-          .setArtifactId(artifact.artifactId()).addTag("artifactcategory", "artifact")
-          .submit(client, siteId).throwIfError().response().getMessage();
+      var message =
+          new AddDocumentTagRequestBuilder(artifact).addTag("artifactcategory", "artifact")
+              .submit(client, siteId).throwIfError().response().getMessage();
 
       // then
       assertEquals("Created Tags.", message);
@@ -987,8 +987,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("artifactold", "value0").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("artifactold", "value0")
+          .submit(client, siteId).throwIfError();
 
       // when
       var resp = new SetDocumentTagsRequestBuilder(documentId).setArtifactId(artifact.artifactId())
@@ -1204,8 +1204,8 @@ public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response().getDocumentId();
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
-      new AddDocumentTagRequestBuilder(documentId).setArtifactId(artifact.artifactId())
-          .addTag("category", "artifact0").submit(client, siteId).throwIfError();
+      new AddDocumentTagRequestBuilder(artifact).addTag("category", "artifact0")
+          .submit(client, siteId).throwIfError();
 
       // when
       var resp = new SetDocumentTagValueRequestBuilder(documentId, "category")
