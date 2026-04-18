@@ -50,7 +50,6 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
-import com.formkiq.stacks.dynamodb.documents.Document;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -124,8 +123,8 @@ public class DocumentsUploadRequestHandler
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, item);
 
     AddDocumentAttributeToDocumentAttributeRecord tr =
-        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, DocumentArtifact.of(documentId,
-            item.getArtifactId()));
+        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+            DocumentArtifact.of(documentId, item.getArtifactId()));
 
     List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
     List<DocumentAttributeRecord> documentAttributes =

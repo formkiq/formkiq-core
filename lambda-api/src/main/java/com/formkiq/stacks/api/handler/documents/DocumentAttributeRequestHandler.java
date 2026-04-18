@@ -203,8 +203,8 @@ public class DocumentAttributeRequestHandler
     AddDocumentAttribute addAttribute = new AddDocumentAttributeStandard(attributeKey,
         a.stringValue(), a.stringValues(), a.numberValue(), a.numberValues(), a.booleanValue());
 
-    return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId, DocumentArtifact.of(documentId,
-        artifactId)).apply(addAttribute);
+    return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+        DocumentArtifact.of(documentId, artifactId)).apply(addAttribute);
   }
 
   @Override
