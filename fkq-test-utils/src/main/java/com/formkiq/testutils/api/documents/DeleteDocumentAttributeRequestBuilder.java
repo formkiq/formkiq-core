@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.DeleteResponse;
@@ -34,32 +35,26 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class DeleteDocumentAttributeRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
 
-  /** {@link String}. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** Attribute Key. */
   private final String key;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param attributeKey {@link String}
    */
-  public DeleteDocumentAttributeRequestBuilder(final String documentId, final String attributeKey) {
-    this.id = documentId;
+  public DeleteDocumentAttributeRequestBuilder(final DocumentArtifact documentArtifact,
+      final String attributeKey) {
+    this.document = documentArtifact;
     this.key = attributeKey;
-  }
-
-  public DeleteDocumentAttributeRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
   }
 
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new DocumentAttributesApi(apiClient)
-        .deleteDocumentAttribute(this.id, key, siteId, this.artifactId));
+        .deleteDocumentAttribute(document.documentId(), key, siteId, document.artifactId()));
   }
 }

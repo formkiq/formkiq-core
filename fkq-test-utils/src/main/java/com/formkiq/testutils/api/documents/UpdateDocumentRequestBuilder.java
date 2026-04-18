@@ -24,6 +24,7 @@
 package com.formkiq.testutils.api.documents;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
@@ -48,18 +49,25 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   /** {@link UpdateDocumentRequest}. */
   private final UpdateDocumentRequest request;
   /** Document Id. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
+   * @param documentArtifact {@link DocumentArtifact}
+   */
+  public UpdateDocumentRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
+    this.request = new UpdateDocumentRequest();
+  }
+
+  /**
+   * constructor.
+   *
    * @param documentId {@link String}
    */
   public UpdateDocumentRequestBuilder(final String documentId) {
-    this.id = documentId;
-    this.request = new UpdateDocumentRequest();
+    this(DocumentArtifact.of(documentId, null));
   }
 
   /**
@@ -183,11 +191,6 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
     return this;
   }
 
-  public UpdateDocumentRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
-  }
-
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -197,8 +200,8 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
    */
   public ApiHttpResponse<AddDocumentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    Objects.requireNonNull(id, "documentId must not be null");
-    return executeApiCall(() -> new DocumentsApi(apiClient).updateDocument(id, this.request, siteId,
-        this.artifactId, null));
+    Objects.requireNonNull(document.documentId(), "documentId must not be null");
+    return executeApiCall(() -> new DocumentsApi(apiClient).updateDocument(document.documentId(),
+        this.request, siteId, document.artifactId(), null));
   }
 }

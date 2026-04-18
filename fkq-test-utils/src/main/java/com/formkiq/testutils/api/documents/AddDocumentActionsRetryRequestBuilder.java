@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
@@ -36,22 +37,15 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder<AddResponse> {
 
   /** Document Id. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public AddDocumentActionsRetryRequestBuilder(final String documentId) {
-    this.id = documentId;
-  }
-
-  public AddDocumentActionsRetryRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
+  public AddDocumentActionsRetryRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
   /**
@@ -62,7 +56,7 @@ public class AddDocumentActionsRetryRequestBuilder implements HttpRequestBuilder
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentActionsApi(apiClient).addDocumentRetryAction(this.id,
-        siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentActionsApi(apiClient)
+        .addDocumentRetryAction(this.document.documentId(), siteId, this.document.artifactId()));
   }
 }

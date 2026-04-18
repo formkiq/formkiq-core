@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -41,16 +42,17 @@ public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<Se
 
   /** {@link SetDocumentAttributesRequest}. */
   private final SetDocumentAttributesRequest request;
-  /** Document Id. */
-  private String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
+   * 
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public SetDocumentAttributeRequestBuilder() {
+  public SetDocumentAttributeRequestBuilder(final DocumentArtifact documentArtifact) {
     this.request = new SetDocumentAttributesRequest();
+    this.document = documentArtifact;
   }
 
   /**
@@ -81,22 +83,6 @@ public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<Se
     return this;
   }
 
-  public SetDocumentAttributeRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
-  }
-
-  /**
-   * Set Document Id.
-   *
-   * @param documentId {@link String}
-   * @return AddDocumentAttributeRequestBuilder
-   */
-  public SetDocumentAttributeRequestBuilder setDocumentId(final String documentId) {
-    this.id = documentId;
-    return this;
-  }
-
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -105,7 +91,7 @@ public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<Se
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentAttributesApi(apiClient).setDocumentAttributes(this.id,
-        this.request, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentAttributesApi(apiClient).setDocumentAttributes(
+        this.document.documentId(), this.request, siteId, this.document.artifactId()));
   }
 }
