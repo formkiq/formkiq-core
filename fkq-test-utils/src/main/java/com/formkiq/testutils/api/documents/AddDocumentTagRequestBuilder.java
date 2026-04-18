@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentTagsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentTag;
@@ -41,9 +42,17 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
   /** {@link AddDocumentTagsRequest}. */
   private final AddDocumentTagsRequest request;
   /** Document Id. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  private final DocumentArtifact document;
+
+  /**
+   * constructor.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
+   */
+  public AddDocumentTagRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
+    this.request = new AddDocumentTagsRequest();
+  }
 
   /**
    * constructor.
@@ -51,8 +60,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @param documentId {@link String}
    */
   public AddDocumentTagRequestBuilder(final String documentId) {
-    this.id = documentId;
-    this.request = new AddDocumentTagsRequest();
+    this(DocumentArtifact.of(documentId, null));
   }
 
   /**
@@ -90,11 +98,6 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
     return this;
   }
 
-  public AddDocumentTagRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
-  }
-
   /**
    * Optionally run the request using the FormKiQ API.
    *
@@ -103,7 +106,7 @@ public class AddDocumentTagRequestBuilder implements HttpRequestBuilder<AddRespo
    * @return AddDocumentResponse
    */
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new DocumentTagsApi(apiClient).addDocumentTags(this.id,
-        this.request, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentTagsApi(apiClient).addDocumentTags(
+        this.document.documentId(), this.request, siteId, this.document.artifactId()));
   }
 }

@@ -324,9 +324,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final DocumentArtifact document) throws ApiException {
-    return notNull(new GetDocumentAttributesRequestBuilder(document.documentId())
-        .setArtifactId(document.artifactId()).submit(client, siteId).throwIfError().response()
-        .getAttributes());
+    return notNull(new GetDocumentAttributesRequestBuilder(document).submit(client, siteId)
+        .throwIfError().response().getAttributes());
   }
 
   private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
@@ -1216,9 +1215,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
 
       // when
-      AddResponse response = new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
-          .setArtifactId(artifact.artifactId()).addAttribute("security", "artifact")
-          .submit(client, siteId).throwIfError().response();
+      AddResponse response = new AddDocumentAttributeRequestBuilder(artifact)
+          .addAttribute("security", "artifact").submit(client, siteId).throwIfError().response();
 
       // then
       assertEquals("added attributes to documentId '" + documentId + "'", response.getMessage());

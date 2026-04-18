@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentSearch;
@@ -1035,17 +1036,18 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     submit("student", addDocumentReq, siteId, true);
 
     ApiHttpResponse<AddDocumentResponse> resp = submit("teacher", addDocumentReq, siteId, false);
-    String documentId = resp.response().getDocumentId();
+    DocumentArtifact document =
+        DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
 
     // add attribute
-    AddDocumentAttributeRequestBuilder addAttributeReq = new AddDocumentAttributeRequestBuilder()
-        .setDocumentId(documentId).addAttribute("myKey", "1234");
+    AddDocumentAttributeRequestBuilder addAttributeReq =
+        new AddDocumentAttributeRequestBuilder(document).addAttribute("myKey", "1234");
     submit("student", addAttributeReq, siteId, true);
     submit("teacher", addAttributeReq, siteId, false);
 
     // add tag
     AddDocumentTagRequestBuilder addTagReq =
-        new AddDocumentTagRequestBuilder(documentId).addTag("myTag", "111");
+        new AddDocumentTagRequestBuilder(document).addTag("myTag", "111");
     submit("student", addTagReq, siteId, true);
     submit("teacher", addTagReq, siteId, false);
 
@@ -1055,7 +1057,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     submit("teacher", addFolderReq, siteId, false);
 
     // delete document
-    DeleteDocumentRequestBuilder deleteReq = new DeleteDocumentRequestBuilder(documentId);
+    DeleteDocumentRequestBuilder deleteReq = new DeleteDocumentRequestBuilder(document);
 
     submit("student", deleteReq, siteId, true);
     submit("teacher", deleteReq, siteId, false);

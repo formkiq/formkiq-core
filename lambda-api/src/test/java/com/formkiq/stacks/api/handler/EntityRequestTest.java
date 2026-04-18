@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -470,8 +471,9 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(new String[] {siteId});
 
-      final String documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
-          .response().getDocumentId();
+      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId).response();
+      final DocumentArtifact document =
+          DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
 
       addCheckoutEntityType(siteId);
       validateCheckoutAttributes(siteId);
@@ -505,14 +507,13 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
 
       validateCheckoutAttributes(siteId);
 
-      ApiHttpResponse<AddResponse> addResp =
-          new AddDocumentAttributeRequestBuilder().setDocumentId(documentId)
-              .addAttribute("Checkout", "Checkout", entityId, EntityTypeNamespace.PRESET)
-              .submit(client, siteId);
+      ApiHttpResponse<AddResponse> addResp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("Checkout", "Checkout", entityId, EntityTypeNamespace.PRESET)
+          .submit(client, siteId);
       assertFalse(addResp.isError());
 
       ApiHttpResponse<GetDocumentAttributeResponse> attr =
-          new GetDocumentAttributeRequestBuilder(documentId, "Checkout").submit(client, siteId);
+          new GetDocumentAttributeRequestBuilder(document, "Checkout").submit(client, siteId);
       assertFalse(attr.isError());
       assertNotNull(Objects.requireNonNull(attr.response().getAttribute()).getStringValue());
     }

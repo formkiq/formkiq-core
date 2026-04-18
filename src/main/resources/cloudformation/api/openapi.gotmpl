@@ -3663,6 +3663,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdQuery'
+        - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/entityTypeIdQuery'
         - $ref: '#/components/parameters/namespaceParam'
         - $ref: '#/components/parameters/entityIdQuery'
@@ -8182,6 +8183,8 @@ components:
           description: User who added document
         documentId:
           description: Document Identifier
+        artifactId:
+          description: Document Artifact Identifier
         attributeKey:
           description: Document Attribute Key
         entityTypeId:
