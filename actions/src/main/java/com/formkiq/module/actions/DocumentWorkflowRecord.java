@@ -37,10 +37,12 @@ import java.util.Objects;
  * Record representing a Document Workflow relationship, with its DynamoDB key structure and
  * metadata.
  */
-public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String workflowId,
-    String workflowName, String status, String actionPk, String actionSk, String currentStepId,
-    Date insertedDate) {
+public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String artifactId,
+    String workflowId, String workflowName, String status, String actionPk, String actionSk,
+    String currentStepId, Date insertedDate) {
 
+  /** DynamoDB attribute name for artifact id. */
+  private static final String ATTR_ARTIFACT_ID = "artifactId";
   /** DynamoDB attribute name for document id. */
   private static final String ATTR_DOCUMENT_ID = "documentId";
   /** DynamoDB attribute name for workflow id. */
@@ -82,6 +84,7 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
 
       String documentId = DynamoDbTypes.toString(attributes.get(ATTR_DOCUMENT_ID));
+      String artifactId = DynamoDbTypes.toString(attributes.get(ATTR_ARTIFACT_ID));
       String workflowId = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_ID));
       String workflowName = DynamoDbTypes.toString(attributes.get(ATTR_WORKFLOW_NAME));
       String status = DynamoDbTypes.toString(attributes.get(ATTR_STATUS));
@@ -90,8 +93,8 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       String currentStepId = DynamoDbTypes.toString(attributes.get(ATTR_CURRENT_STEP_ID));
       Date insertedDate = DynamoDbTypes.toDate(attributes.get(ATTR_INSERTED_DATE));
 
-      return new DocumentWorkflowRecord(key, documentId, workflowId, workflowName, status, actionPk,
-          actionSk, currentStepId, insertedDate);
+      return new DocumentWorkflowRecord(key, documentId, artifactId, workflowId, workflowName,
+          status, actionPk, actionSk, currentStepId, insertedDate);
     }
 
     return null;
@@ -105,10 +108,11 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
    */
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString(ATTR_DOCUMENT_ID, documentId)
-        .withString(ATTR_WORKFLOW_ID, workflowId).withString(ATTR_WORKFLOW_NAME, workflowName)
-        .withString(ATTR_STATUS, status).withString(ATTR_ACTION_PK, actionPk)
-        .withString(ATTR_ACTION_SK, actionSk).withString(ATTR_CURRENT_STEP_ID, currentStepId)
-        .withDate(ATTR_INSERTED_DATE, insertedDate).build();
+        .withString(ATTR_ARTIFACT_ID, artifactId).withString(ATTR_WORKFLOW_ID, workflowId)
+        .withString(ATTR_WORKFLOW_NAME, workflowName).withString(ATTR_STATUS, status)
+        .withString(ATTR_ACTION_PK, actionPk).withString(ATTR_ACTION_SK, actionSk)
+        .withString(ATTR_CURRENT_STEP_ID, currentStepId).withDate(ATTR_INSERTED_DATE, insertedDate)
+        .build();
   }
 
   /**
@@ -127,6 +131,8 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
 
     /** DocumentId. */
     private String documentId;
+    /** ArtifactId. */
+    private String artifactId;
     /** WorkflowId. */
     private String workflowId;
     /** WorkflowName. */
@@ -164,10 +170,21 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       return this;
     }
 
+    /**
+     * Sets the artifact id.
+     *
+     * @param id the artifact id
+     * @return this {@link Builder}
+     */
+    public Builder artifactId(final String id) {
+      this.artifactId = id;
+      return this;
+    }
+
     @Override
     public DocumentWorkflowRecord build(final DynamoDbKey key) {
-      return new DocumentWorkflowRecord(key, documentId, workflowId, workflowName, status, actionPk,
-          actionSk, currentStepId, insertedDate);
+      return new DocumentWorkflowRecord(key, documentId, artifactId, workflowId, workflowName,
+          status, actionPk, actionSk, currentStepId, insertedDate);
     }
 
     @Override
@@ -189,13 +206,13 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       ValidationChecks.checkNotNull("workflowName", workflowName);
 
       String pk = "docs#" + documentId;
-      String sk = "wf#" + workflowId;
+      String sk = buildWorkflowSk();
 
-      String gsi1Pk = "wfdoc#" + documentId;
+      String gsi1Pk = buildWorkflowDocumentKey("#");
       String gsi1Sk = "wf#" + workflowName + "#" + workflowId;
 
       String gsi2Pk = "wf#" + workflowId;
-      String gsi2Sk = "wfdoc#" + documentId;
+      String gsi2Sk = buildWorkflowDocumentKey("_");
 
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
           .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
@@ -210,16 +227,25 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
     public DynamoDbKey buildLegacyKey(final String siteId) {
 
       String pk = "wfdoc#" + documentId;
-      String sk = "wf#" + workflowId;
+      String sk = buildWorkflowSk();
 
-      String gsi1Pk = "wfdoc#" + documentId;
+      String gsi1Pk = buildWorkflowDocumentKey("#");
       String gsi1Sk = "wf#" + workflowName + "#" + workflowId;
 
       String gsi2Pk = "wf#" + workflowId;
-      String gsi2Sk = "wfdoc#" + documentId;
+      String gsi2Sk = buildWorkflowDocumentKey("_");
 
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
           .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
+    }
+
+    private String buildWorkflowDocumentKey(final String delimiter) {
+      return artifactId != null ? "wfdoc#" + documentId + delimiter + "art#" + artifactId
+          : "wfdoc#" + documentId;
+    }
+
+    private String buildWorkflowSk() {
+      return artifactId != null ? "wf#" + workflowId + "#art#" + artifactId : "wf#" + workflowId;
     }
 
     /**
