@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.llm;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -39,8 +40,9 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
 /**
  * Record representing an Llm Result, with its DynamoDB key structure and metadata.
  */
-public record LlmResultRecord(DynamoDbKey key, String documentId, String llmPromptEntityName,
-    String content, Date insertedDate, List<Map<String, Object>> attributes, String userId) {
+public record LlmResultRecord(DynamoDbKey key, String documentId, String artifactId,
+    String llmPromptEntityName, String content, Date insertedDate,
+    List<Map<String, Object>> attributes, String userId) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -67,6 +69,7 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
     List<Map<String, Object>> attrs = DynamoDbTypes.toList(attributes.get("attributes"));
     return new LlmResultRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
+        DynamoDbTypes.toString(attributes.get("artifactId")),
         DynamoDbTypes.toString(attributes.get("llmPromptEntityName")),
         DynamoDbTypes.toString(attributes.get("content")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")), attrs,
@@ -81,9 +84,9 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
    */
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString("documentId", documentId)
-        .withString("content", content).withString("llmPromptEntityName", llmPromptEntityName)
-        .withString("userId", userId).withList("attributes", attributes)
-        .withDate("inserteddate", insertedDate).build();
+        .withString("artifactId", artifactId).withString("content", content)
+        .withString("llmPromptEntityName", llmPromptEntityName).withString("userId", userId)
+        .withList("attributes", attributes).withDate("inserteddate", insertedDate).build();
   }
 
   /**
@@ -99,8 +102,8 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
    * Fluent builder for {@link LlmResultRecord} that computes the DynamoDbKey.
    */
   public static class Builder implements DynamoDbEntityBuilder<LlmResultRecord> {
-    /** Document Id. */
-    private String documentId;
+    /** Document. */
+    private DocumentArtifact document;
     /** LLM Prompt Entity Name. */
     private String llmPromptEntityName;
     /** Content. */
@@ -125,8 +128,8 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
 
     @Override
     public LlmResultRecord build(final DynamoDbKey key) {
-      return new LlmResultRecord(key, documentId, llmPromptEntityName, content, insertedDate,
-          attributes, userId);
+      return new LlmResultRecord(key, document.documentId(), document.artifactId(),
+          llmPromptEntityName, content, insertedDate, attributes, userId);
     }
 
     @Override
@@ -140,11 +143,14 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     @Override
     public DynamoDbKey buildKey(final String siteId) {
 
-      Objects.requireNonNull(documentId, "documentId must not be null");
+      Objects.requireNonNull(document.documentId(), "documentId must not be null");
       Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
 
-      String pk = PREFIX_DOCS + documentId;
-      String sk = "llmresult#" + DateUtil.getNowInIso8601Format() + "#" + llmPromptEntityName;
+      String pk = PREFIX_DOCS + document.documentId();
+      String sk = document.artifactId() != null
+          ? "llmresult_art#" + document.artifactId() + "#" + DateUtil.getNowInIso8601Format() + "#"
+              + llmPromptEntityName
+          : "llmresult#" + DateUtil.getNowInIso8601Format() + "#" + llmPromptEntityName;
 
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
     }
@@ -161,13 +167,13 @@ public record LlmResultRecord(DynamoDbKey key, String documentId, String llmProm
     }
 
     /**
-     * Sets the document identifier.
+     * Sets the {@link DocumentArtifact}.
      *
-     * @param llmResultDocumentId the document ID
+     * @param documentArtifact {@link DocumentArtifact}
      * @return this Builder
      */
-    public Builder documentId(final String llmResultDocumentId) {
-      this.documentId = llmResultDocumentId;
+    public Builder document(final DocumentArtifact documentArtifact) {
+      this.document = documentArtifact;
       return this;
     }
 
