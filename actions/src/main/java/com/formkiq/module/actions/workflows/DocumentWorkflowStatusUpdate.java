@@ -109,11 +109,11 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
     String stepId = action.workflowStepId();
 
     DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(document.documentId())
-        .workflowName("").workflowId(workflowId).build(siteId);
+        .artifactId(document.artifactId()).workflowName("").workflowId(workflowId).build(siteId);
 
-    DocumentWorkflowRecord.Builder dwr =
-        DocumentWorkflowRecord.builder().documentId(document.documentId()).workflowId(workflowId)
-            .currentStepId(stepId).actionPk(action.key().pk()).actionSk(action.key().sk());
+    DocumentWorkflowRecord.Builder dwr = DocumentWorkflowRecord.builder()
+        .documentId(document.documentId()).workflowId(workflowId).artifactId(document.artifactId())
+        .currentStepId(stepId).actionPk(action.key().pk()).actionSk(action.key().sk());
 
     dwr.status(newStatus.name());
     if (!ActionStatus.FAILED.equals(newStatus)) {
