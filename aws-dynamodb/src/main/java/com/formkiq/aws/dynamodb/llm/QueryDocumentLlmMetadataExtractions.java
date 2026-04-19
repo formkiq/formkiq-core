@@ -27,9 +27,11 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import static com.formkiq.aws.dynamodb.llm.DocumentLlmMetadataExtractionRecord.KEY_SK_PREFIX;
+import static com.formkiq.aws.dynamodb.llm.DocumentLlmMetadataExtractionRecord.KEY_SK_PREFIX_ART;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
@@ -40,17 +42,17 @@ public class QueryDocumentLlmMetadataExtractions implements DynamoDbQuery {
   /** {@link String}. */
   private final String name;
   /** Document Id. */
-  private final String docId;
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    * 
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    * @param llmPromptEntityName {@link String}
    */
-  public QueryDocumentLlmMetadataExtractions(final String documentId,
+  public QueryDocumentLlmMetadataExtractions(final DocumentArtifact documentArtifact,
       final String llmPromptEntityName) {
-    this.docId = documentId;
+    this.document = documentArtifact;
     this.name = llmPromptEntityName;
   }
 
@@ -59,11 +61,13 @@ public class QueryDocumentLlmMetadataExtractions implements DynamoDbQuery {
       final int limit) {
 
     String index = isEmpty(this.name) ? DbKeys.GSI1 : null;
-    DynamoDbKey key = DocumentLlmMetadataExtractionRecord.builder().documentId(docId)
+    DynamoDbKey key = DocumentLlmMetadataExtractionRecord.builder().document(document)
         .llmPromptEntityName("").buildKey(siteId);
 
+    String prefix = document.artifactId() != null ? KEY_SK_PREFIX_ART + document.artifactId() + "#"
+        : KEY_SK_PREFIX;
     return DynamoDbQueryBuilder.builder().pk(key.pk()).scanIndexForward(false)
-        .beginsWith(KEY_SK_PREFIX + this.name).indexName(index).nextToken(nextToken).limit(limit)
+        .beginsWith(prefix + this.name).indexName(index).nextToken(nextToken).limit(limit)
         .build(tableName);
   }
 }

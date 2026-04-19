@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.llm;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -48,11 +49,14 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_DOCS;
  * </ul>
  */
 public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String documentId,
-    String llmPromptEntityName, String content, Date insertedDate,
+    String artifactId, String llmPromptEntityName, String content, Date insertedDate,
     List<Map<String, Object>> attributes, String userId) {
 
   /** {@link DocumentLlmMetadataExtractionRecord} SK Prefix. */
   public static final String KEY_SK_PREFIX = "mdextractionresult#";
+
+  /** {@link DocumentLlmMetadataExtractionRecord} SK Prefix. */
+  public static final String KEY_SK_PREFIX_ART = "mdextractionresult_art#";
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -81,6 +85,7 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
     List<Map<String, Object>> attrs = DynamoDbTypes.toList(attributes.get("attributes"));
     return new DocumentLlmMetadataExtractionRecord(key,
         DynamoDbTypes.toString(attributes.get("documentId")),
+        DynamoDbTypes.toString(attributes.get("artifactId")),
         DynamoDbTypes.toString(attributes.get("llmPromptEntityName")),
         DynamoDbTypes.toString(attributes.get("content")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")), attrs,
@@ -95,9 +100,9 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
    */
   public Map<String, AttributeValue> getAttributes() {
     return key.getAttributesBuilder().withString("documentId", documentId)
-        .withString("content", content).withString("llmPromptEntityName", llmPromptEntityName)
-        .withString("userId", userId).withList("attributes", attributes)
-        .withDate("inserteddate", insertedDate).build();
+        .withString("artifactId", artifactId).withString("content", content)
+        .withString("llmPromptEntityName", llmPromptEntityName).withString("userId", userId)
+        .withList("attributes", attributes).withDate("inserteddate", insertedDate).build();
   }
 
   /**
@@ -115,7 +120,7 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
   public static class Builder
       implements DynamoDbEntityBuilder<DocumentLlmMetadataExtractionRecord> {
     /** Document Id. */
-    private String documentId;
+    private DocumentArtifact document;
     /** LLM Prompt Entity Name. */
     private String llmPromptEntityName;
     /** Content. */
@@ -140,8 +145,8 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
 
     @Override
     public DocumentLlmMetadataExtractionRecord build(final DynamoDbKey key) {
-      return new DocumentLlmMetadataExtractionRecord(key, documentId, llmPromptEntityName, content,
-          insertedDate, attributes, userId);
+      return new DocumentLlmMetadataExtractionRecord(key, document.documentId(),
+          document.artifactId(), llmPromptEntityName, content, insertedDate, attributes, userId);
     }
 
     @Override
@@ -155,14 +160,18 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
     @Override
     public DynamoDbKey buildKey(final String siteId) {
 
+      String documentId = document.documentId();
       Objects.requireNonNull(documentId, "documentId must not be null");
       Objects.requireNonNull(llmPromptEntityName, "llmPromptEntityName must not be null");
 
+      String prefix = document.artifactId() == null ? KEY_SK_PREFIX
+          : KEY_SK_PREFIX_ART + document.artifactId() + "#";
+
       String timestamp = DateUtil.getNowInIso8601Format();
       String pk = PREFIX_DOCS + documentId;
-      String sk = KEY_SK_PREFIX + llmPromptEntityName + "#" + timestamp;
+      String sk = prefix + llmPromptEntityName + "#" + timestamp;
       String gsi1Pk = PREFIX_DOCS + documentId;
-      String gsi1Sk = KEY_SK_PREFIX + timestamp + "#" + llmPromptEntityName;
+      String gsi1Sk = prefix + timestamp + "#" + llmPromptEntityName;
 
       return DynamoDbKey.builder().pk(siteId, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
           .build();
@@ -182,11 +191,11 @@ public record DocumentLlmMetadataExtractionRecord(DynamoDbKey key, String docume
     /**
      * Sets the document identifier.
      *
-     * @param llmResultDocumentId the document ID
+     * @param llmResultDocument the document
      * @return this Builder
      */
-    public Builder documentId(final String llmResultDocumentId) {
-      this.documentId = llmResultDocumentId;
+    public Builder document(final DocumentArtifact llmResultDocument) {
+      this.document = llmResultDocument;
       return this;
     }
 
