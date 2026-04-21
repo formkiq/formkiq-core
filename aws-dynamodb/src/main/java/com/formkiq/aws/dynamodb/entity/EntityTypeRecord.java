@@ -29,11 +29,10 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 
@@ -84,6 +83,16 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
   }
 
   /**
+   * Creates a new {@link Builder} for {@link EntityTypeRecord} when building a Preset Entity Type.
+   *
+   * @param presetEntities {@link Collection} of {@link PresetEntity}
+   * @return a Builder instance
+   */
+  public static Builder builderWithPresets(final Collection<PresetEntity> presetEntities) {
+    return new Builder(presetEntities.stream().map(PresetEntity::getName).toList());
+  }
+
+  /**
    * Creates a new {@link Builder} for {@link EntityTypeRecord}.
    *
    * @return a Builder instance
@@ -93,9 +102,21 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
   }
 
   /**
+   * Creates a new {@link Builder} for {@link EntityTypeRecord} when building a Preset Entity Type.
+   * 
+   * @param presetEntities {@link Collection} of {@link PresetEntity}
+   * @return a Builder instance
+   */
+  public static Builder builder(final Collection<String> presetEntities) {
+    return new Builder(presetEntities);
+  }
+
+  /**
    * Fluent builder for {@link EntityTypeRecord} that computes the DynamoDbKey.
    */
   public static class Builder implements DynamoDbEntityBuilder<EntityTypeRecord> {
+    /** {@link PresetEntity}. */
+    private final Collection<String> presets;
     /** Document Id. */
     private String documentId;
     /** Namespace. */
@@ -104,6 +125,22 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     private String name;
     /** Inserted Date. */
     private Date insertedDate = new Date();
+
+    /**
+     * constructor.
+     */
+    public Builder() {
+      this(null);
+    }
+
+    /**
+     * constructor.
+     * 
+     * @param presetEntities {@link PresetEntity}
+     */
+    public Builder(final Collection<String> presetEntities) {
+      this.presets = presetEntities;
+    }
 
     @Override
     public EntityTypeRecord build(final DynamoDbKey key) {
@@ -223,10 +260,12 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
       vb.isValidByRegex("name", name, "^[A-Z][A-Za-z0-9]+$");
 
       if (EntityTypeNamespace.PRESET.equals(namespace)) {
-        PresetEntity entity = PresetEntity.fromString(name);
-        String presetEntities = Arrays.stream(PresetEntity.values()).map(PresetEntity::getName)
-            .collect(Collectors.joining(", "));
-        vb.isRequired("name", entity != null,
+        vb.isRequired("presets", presets, "'presets' is required");
+        vb.check();
+
+        String presetEntities = String.join(", ", presets);
+
+        vb.isRequired("name", presets.contains(name),
             "unexpected value must be one of '" + presetEntities + "'");
       }
 

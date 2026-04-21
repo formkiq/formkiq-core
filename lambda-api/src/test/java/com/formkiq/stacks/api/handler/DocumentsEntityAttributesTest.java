@@ -357,7 +357,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       var getAttributes = new GetAttributesRequestBuilder().submit(client, siteId).throwIfError();
 
       // then
-      assertEquals(2, notNull(getAttributes.response().getAttributes()).size());
+      assertEquals(3, notNull(getAttributes.response().getAttributes()).size());
 
       // when
       var resp = new GetAttributeRequestBuilder("RetentionPeriodInDays").submit(client, siteId)

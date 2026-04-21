@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
@@ -172,6 +173,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         .getDocuments());
   }
 
+  private Collection<PresetEntity> getPresets() {
+    return getAwsServices().getExtensions(PresetEntity.class);
+  }
+
   private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
       throws ApiException {
     AddDocumentResponse resp = new AddDocumentRequestBuilder().content().documentId(documentId)
@@ -284,9 +289,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       String documentId = saveDocument(siteId);
-      EntityTypeRecord entityTypeRecord =
-          EntityTypeRecord.builder().documentId(ID.uuid()).namespace(EntityTypeNamespace.PRESET)
-              .name(PresetEntity.LLM_PROMPT.getName()).build(siteId);
+      EntityTypeRecord entityTypeRecord = EntityTypeRecord.builderWithPresets(getPresets())
+          .documentId(ID.uuid()).namespace(EntityTypeNamespace.PRESET)
+          .name(LlmPromptPresetEntity.ENTITY_NAME).build(siteId);
       db.putItem(entityTypeRecord.getAttributes());
 
       EntityRecord entity = EntityRecord.builder().entityTypeId(entityTypeRecord.documentId())

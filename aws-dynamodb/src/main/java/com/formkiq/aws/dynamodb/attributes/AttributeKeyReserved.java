@@ -56,6 +56,8 @@ public enum AttributeKeyReserved {
   /** Retention Period In Days. */
   RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeType.STANDARD,
       AttributeDataType.NUMBER, false),
+  /** Retention Disposition Date. */
+  DISPOSITION_DATE("DispositionDate", AttributeType.GOVERNANCE, AttributeDataType.STRING, false),
   /** Retention Start Date Source Type. */
   RETENTION_START_DATE_SOURCE_TYPE("RetentionStartDateSourceType"),
   /** Retention Effective Start Date. */

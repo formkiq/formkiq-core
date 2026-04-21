@@ -26,76 +26,51 @@ package com.formkiq.aws.dynamodb.entity;
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
 import com.formkiq.validation.ValidationBuilder;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
- * Preset Entity Interface.
+ * Retention Policy Preset Entity.
  */
-public interface PresetEntity {
-
-  /**
-   * Find PresetEntity Attribute.
-   * 
-   * @param attributes {@link List} {@link EntityAttribute}
-   * @param attributeKey {@link String}
-   * @return {@link EntityAttribute}
-   */
-  default Optional<EntityAttribute> findAttribute(List<EntityAttribute> attributes,
-      String attributeKey) {
-    return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
-        .findFirst();
+public class RetentionPolicyPresetEntity implements PresetEntity {
+  @Override
+  public List<String> getAttributeKeys() {
+    return List.of("RetentionPeriodInDays", "RetentionStartDateSourceType", "DispositionDate");
   }
 
-  /**
-   * Find Derived Attribute.
-   *
-   * @param derivedAttributeKey {@link String}
-   * @return {@link Optional} {@link DerivedDocumentAttribute}
-   */
-  default Optional<DerivedDocumentAttribute> findDerivedAttribute(String derivedAttributeKey) {
-    return getDerivedAttributes().stream()
-        .filter(a -> a.getAttributeKey().equals(derivedAttributeKey)).findAny();
+  public List<DerivedDocumentAttribute> getDerivedAttributes() {
+    return List.of(new RetentionEffectiveStartDateAttribute(),
+        new RetentionEffectiveEndDateAttribute(), new RetentionEffectiveStatusAttribute());
   }
 
-  /**
-   * Get Attribute Keys.
-   *
-   * @return {@link List} {@link String}
-   */
-  List<String> getAttributeKeys();
-
-  /**
-   * Get {@link List} {@link DerivedDocumentAttribute}.
-   *
-   * @return {@link List} {@link DerivedDocumentAttribute}
-   */
-  default List<DerivedDocumentAttribute> getDerivedAttributes() {
-    return Collections.emptyList();
+  @Override
+  public String getName() {
+    return "RetentionPolicy";
   }
 
-  /**
-   * Get Entity Name.
-   * 
-   * @return {@link String}
-   */
-  String getName();
-
-  /**
-   * Validate Attributes.
-   * 
-   * @param attributes {@link List} {@link EntityAttribute}
-   */
-  default void validateAttributes(List<EntityAttribute> attributes) {
+  public void validateAttributes(final List<EntityAttribute> attributes) {
 
     ValidationBuilder vb = new ValidationBuilder();
-    for (String attributeKey : getAttributeKeys()) {
+
+    for (String attributeKey : List.of("RetentionPeriodInDays", "RetentionStartDateSourceType")) {
       Optional<EntityAttribute> attribute = findAttribute(attributes, attributeKey);
       vb.isRequired(attributeKey, attribute);
     }
     vb.check();
+
+    validateRetentionStartDateSourceType(vb, attributes);
+    vb.check();
+  }
+
+  private void validateRetentionStartDateSourceType(final ValidationBuilder vb,
+      final List<EntityAttribute> attributes) {
+    Optional<EntityAttribute> o =
+        findAttribute(attributes, RETENTION_START_DATE_SOURCE_TYPE.getKey());
+    o.ifPresent(entityAttribute -> notNull(entityAttribute.getStringValues())
+        .forEach(s -> vb.isRequired("key", RetentionStartDateSourceType.fromString(s),
+            "invalid value '" + s + "'")));
   }
 }

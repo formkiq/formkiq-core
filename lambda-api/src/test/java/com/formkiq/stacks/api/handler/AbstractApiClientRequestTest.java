@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ssm.SsmService;
@@ -41,6 +43,7 @@ import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.UserManagementApi;
 import com.formkiq.client.api.WebhooksApi;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -213,6 +216,8 @@ public abstract class AbstractApiClientRequestTest {
     services.register(SsmService.class, new SsmServiceExtension());
     services.register(WebhooksService.class, new WebhooksServiceExtension());
     services.register(ConfigService.class, new ConfigServiceExtension());
+
+    services.register(PresetEntity.class, new ClassServiceExtension<>(new LlmPromptPresetEntity()));
 
     return services;
   }

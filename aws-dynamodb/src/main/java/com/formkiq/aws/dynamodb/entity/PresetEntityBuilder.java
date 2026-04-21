@@ -24,15 +24,9 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
-import com.formkiq.validation.ValidationBuilder;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Record representing an Preset LlmPrompt Entity, with its DynamoDB key structure and metadata.
@@ -47,13 +41,40 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   private PresetEntity entityType;
 
   /**
-   * Sets the document identifier.
+   * Sets the Preset Entity Attributes.
    *
-   * @param entityName the entity name
+   * @param entityAttributes the entity attributes
    * @return this Builder
    */
-  public PresetEntityBuilder name(final String entityName) {
-    builder = builder.name(entityName);
+  public PresetEntityBuilder attributes(final List<EntityAttribute> entityAttributes) {
+    this.attributes = entityAttributes;
+    return this;
+  }
+
+  @Override
+  public EntityRecord build(final DynamoDbKey key) {
+    return builder.attributes(attributes).build(key);
+  }
+
+  @Override
+  public EntityRecord build(final String siteId) {
+    validate();
+    return builder.attributes(attributes).build(siteId);
+  }
+
+  @Override
+  public DynamoDbKey buildKey(final String siteId) {
+    return builder.buildKey(siteId);
+  }
+
+  /**
+   * Sets the document identifier.
+   *
+   * @param entityDocumentId the document ID
+   * @return this Builder
+   */
+  public PresetEntityBuilder documentId(final String entityDocumentId) {
+    builder = builder.documentId(entityDocumentId);
     return this;
   }
 
@@ -71,11 +92,11 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   /**
    * Sets the document identifier.
    *
-   * @param entityDocumentId the document ID
+   * @param entityName the entity name
    * @return this Builder
    */
-  public PresetEntityBuilder documentId(final String entityDocumentId) {
-    builder = builder.documentId(entityDocumentId);
+  public PresetEntityBuilder name(final String entityName) {
+    builder = builder.name(entityName);
     return this;
   }
 
@@ -90,67 +111,41 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
     return this;
   }
 
-  /**
-   * Sets the Preset Entity Attributes.
-   *
-   * @param entityAttributes the entity attributes
-   * @return this Builder
-   */
-  public PresetEntityBuilder attributes(final List<EntityAttribute> entityAttributes) {
-    this.attributes = entityAttributes;
-    return this;
-  }
-
-  @Override
-  public DynamoDbKey buildKey(final String siteId) {
-    return builder.buildKey(siteId);
-  }
-
-  @Override
-  public EntityRecord build(final String siteId) {
-    validate();
-    return builder.attributes(attributes).build(siteId);
-  }
-
-  @Override
-  public EntityRecord build(final DynamoDbKey key) {
-    return builder.attributes(attributes).build(key);
-  }
-
   private void validate() {
-    ValidationBuilder vb = new ValidationBuilder();
+    // ValidationBuilder vb = new ValidationBuilder();
+    this.entityType.validateAttributes(attributes);
 
-    switch (this.entityType) {
-      case LLM_PROMPT, CHECKOUT -> validateAttributes(vb, this.entityType.getAttributeKeys());
-      case RETENTION_POLICY -> {
-        validateAttributes(vb, this.entityType.getAttributeKeys());
-        vb.check();
-        validateRetentionStartDateSourceType(vb);
-      }
-      default -> throw new IllegalStateException("Unexpected value: " + this.entityType);
-    }
-
-    vb.check();
+    // switch (this.entityType) {
+    // case LLM_PROMPT, CHECKOUT -> validateAttributes(vb, this.entityType.getAttributeKeys());
+    // case RETENTION_POLICY -> {
+    // validateAttributes(vb, this.entityType.getAttributeKeys());
+    // vb.check();
+    // validateRetentionStartDateSourceType(vb);
+    // }
+    // default -> throw new IllegalStateException("Unexpected value: " + this.entityType);
+    // }
+    //
+    // vb.check();
   }
 
-  private void validateRetentionStartDateSourceType(final ValidationBuilder vb) {
-    Optional<EntityAttribute> o =
-        findAttribute(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey());
-    o.ifPresent(entityAttribute -> notNull(entityAttribute.getStringValues())
-        .forEach(s -> vb.isRequired("key", RetentionStartDateSourceType.fromString(s),
-            "invalid value '" + s + "'")));
-  }
+  // private void validateRetentionStartDateSourceType(final ValidationBuilder vb) {
+  // Optional<EntityAttribute> o =
+  // findAttribute(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey());
+  // o.ifPresent(entityAttribute -> notNull(entityAttribute.getStringValues())
+  // .forEach(s -> vb.isRequired("key", RetentionStartDateSourceType.fromString(s),
+  // "invalid value '" + s + "'")));
+  // }
+  //
+  // private void validateAttributes(final ValidationBuilder vb,
+  // final Collection<String> attributeKeys) {
+  // for (String attributeKey : attributeKeys) {
+  // Optional<EntityAttribute> attribute = findAttribute(attributeKey);
+  // vb.isRequired(attributeKey, attribute);
+  // }
+  // }
 
-  private void validateAttributes(final ValidationBuilder vb,
-      final Collection<String> attributeKeys) {
-    for (String attributeKey : attributeKeys) {
-      Optional<EntityAttribute> attribute = findAttribute(attributeKey);
-      vb.isRequired(attributeKey, attribute);
-    }
-  }
-
-  private Optional<EntityAttribute> findAttribute(final String attributeKey) {
-    return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
-        .findFirst();
-  }
+  // private Optional<EntityAttribute> findAttribute(final String attributeKey) {
+  // return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
+  // .findFirst();
+  // }
 }

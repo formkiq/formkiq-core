@@ -25,6 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
+import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -43,6 +45,7 @@ import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -239,7 +242,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       var add = new AddEntityTypeRequestBuilder()
-          .setEntityType(PresetEntity.LLM_PROMPT.getName(), EntityTypeNamespace.PRESET)
+          .setEntityType(LlmPromptPresetEntity.ENTITY_NAME, EntityTypeNamespace.PRESET)
           .submit(client, siteId);
 
       // then
@@ -264,7 +267,10 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(new String[] {siteId});
 
-      for (PresetEntity value : PresetEntity.values()) {
+      Collection<PresetEntity> presetEntities = new GetPresetEntities(getAwsServices()).apply(null);
+      assertFalse(presetEntities.isEmpty());
+
+      for (PresetEntity value : presetEntities) {
 
         AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
             new AddEntityType().name(value.getName()).namespace(EntityTypeNamespace.PRESET));
@@ -277,7 +283,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         GetEntityTypesResponse results =
             this.entityApi.getEntityTypes(siteId, "preset", null, null);
         List<EntityType> entityTypes = notNull(results.getEntityTypes());
-        assertTrue(entityTypes.size() <= PresetEntity.values().length);
+        assertTrue(entityTypes.size() <= presetEntities.size());
         EntityType entityType = entityTypes.stream()
             .filter(a -> value.getName().equals(a.getName())).findAny().orElse(null);
         assertNotNull(entityType);

@@ -26,12 +26,14 @@ package com.formkiq.stacks.api.handler.entity;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.CheckoutPresetEntity;
 import com.formkiq.aws.dynamodb.entity.EntityAttribute;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntityBuilder;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
@@ -55,6 +57,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -74,7 +77,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
 
   /**
    * constructor.
-   * 
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param isUpdate boolean
    */
@@ -125,11 +128,12 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
 
     if (EntityTypeNamespace.PRESET.equals(entityType.namespace())) {
 
-      PresetEntity presetEntity = PresetEntity.fromString(entityType.name());
+      Optional<PresetEntity> presetEntity =
+          new GetPresetEntity(this.awsServices).apply(entityType.name());
 
-      if (presetEntity != null) {
+      if (presetEntity.isPresent()) {
 
-        if (PresetEntity.CHECKOUT.equals(presetEntity)) {
+        if (presetEntity.get() instanceof CheckoutPresetEntity) {
 
           if (!notNull(entityAttributes).isEmpty()) {
             throw new BadException("'Checkout' entity type does not support attributes in request");
@@ -143,7 +147,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
         }
 
         // check attributes exist
-        entity = new PresetEntityBuilder().documentId(entityId).presetEntity(presetEntity)
+        entity = new PresetEntityBuilder().documentId(entityId).presetEntity(presetEntity.get())
             .name(addEntity.name()).entityTypeId(entityType.documentId())
             .attributes(entityAttributes).build(siteId);
 

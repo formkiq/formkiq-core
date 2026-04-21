@@ -64,6 +64,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -748,6 +749,50 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
                 + "{\"key\":\"RetentionStartDateSourceType\","
                 + "\"error\":\"'RetentionStartDateSourceType' is required\"}]}",
             response.exception().getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Retention with optional DispositionDate.
+   *
+   */
+  @Test
+  public void testAddEntityRetentionWithDispositionDate() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addRetentionEntityType(siteId);
+
+      for (String namespace : Arrays.asList(null, "preset", "custom")) {
+
+        String name = "RetentionPolicy_" + ID.uuid();
+        String dispositionDate = "2026-05-01T00:00:00Z";
+
+        // when
+        String entityId = new AddEntityRequestBuilder(entityTypeId, namespace).name(name)
+            .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
+            .addAttribute("RetentionStartDateSourceType", "date_inserted")
+            .addAttribute("DispositionDate", dispositionDate).submit(client, siteId).throwIfError()
+            .response().getEntityId();
+
+        // then
+        assertNotNull(entityId);
+        GetEntityResponse entityResponse =
+            this.entityApi.getEntity(entityTypeId, entityId, siteId, namespace);
+        Entity entity = entityResponse.getEntity();
+        assertNotNull(entity);
+        assertEquals(name, entity.getName());
+
+        List<EntityAttribute> attributes = notNull(entity.getAttributes()).stream()
+            .sorted(Comparator.comparing(EntityAttribute::getKey)).toList();
+        assertEquals(3, attributes.size());
+        assertEntityAttribute(attributes.get(0), "DispositionDate", dispositionDate, null);
+        assertEntityAttribute(attributes.get(1), "RetentionPeriodInDays", null, "10.0");
+        assertEntityAttribute(attributes.get(2), "RetentionStartDateSourceType", "DATE_INSERTED",
+            null);
       }
     }
   }

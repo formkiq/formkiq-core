@@ -29,6 +29,11 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
+import com.formkiq.aws.dynamodb.entity.CheckoutForLegalHoldPresetEntity;
+import com.formkiq.aws.dynamodb.entity.CheckoutPresetEntity;
+import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.entity.RetentionPolicyPresetEntity;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3Service;
@@ -375,6 +380,19 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
         new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
+
+    registerPresets(serviceCache);
+  }
+
+  private static void registerPresets(final AwsServiceCache serviceCache) {
+    serviceCache.registerAppend(PresetEntity.class,
+        new ClassServiceExtension<>(new LlmPromptPresetEntity()));
+    serviceCache.registerAppend(PresetEntity.class,
+        new ClassServiceExtension<>(new CheckoutPresetEntity()));
+    serviceCache.registerAppend(PresetEntity.class,
+        new ClassServiceExtension<>(new CheckoutForLegalHoldPresetEntity()));
+    serviceCache.registerAppend(PresetEntity.class,
+        new ClassServiceExtension<>(new RetentionPolicyPresetEntity()));
   }
 
   /** constructor. */
