@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
@@ -60,11 +61,16 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.client.model.AttributeDataType.NUMBER;
+import static com.formkiq.client.model.AttributeDataType.STRING;
+import static com.formkiq.client.model.AttributeType.STANDARD;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -87,7 +93,8 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     return new AddEntityRequestBuilder(entityTypeId).name("rt" + ID.ulid())
         .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
         .addAttribute("RetentionStartDateSourceType", retentionStartDateSourceType)
-        .submit(client, siteId).throwIfError().response().getEntityId();
+        .addAttribute("DispositionPeriodInDays", new BigDecimal("11")).submit(client, siteId)
+        .throwIfError().response().getEntityId();
   }
 
   private String addRetentionEntityType(final String siteId) throws ApiException {
@@ -118,10 +125,16 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
+  private Attribute getAttribute(final String siteId, final String attributeKey)
+      throws ApiException {
+    return new GetAttributeRequestBuilder(attributeKey).submit(client, siteId).throwIfError()
+        .response().getAttribute();
+  }
+
   private DocumentAttribute getDocumentAttribute(final String siteId,
-      final DocumentArtifact document) throws ApiException {
-    var resp = new GetDocumentAttributeRequestBuilder(document, "RetentionEffectiveStatus")
-        .submit(client, siteId).throwIfError().response();
+      final DocumentArtifact document, final String attributeKey) throws ApiException {
+    var resp = new GetDocumentAttributeRequestBuilder(document, attributeKey).submit(client, siteId)
+        .throwIfError().response();
     return resp.getAttribute();
   }
 
@@ -173,7 +186,8 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       DocumentArtifact document =
           DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
       verifyAttributes(siteId, document, entityTypeId, entityId, "DATE_INSERTED", "IN_EFFECT");
-      assertEquals("IN_EFFECT", getDocumentAttribute(siteId, document).getStringValue());
+      assertEquals("IN_EFFECT",
+          getDocumentAttribute(siteId, document, "RetentionEffectiveStatus").getStringValue());
 
       // given
       new SetBearer().apply(client, siteId);
@@ -252,10 +266,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           .submit(client, siteId).throwIfError();
 
       // then
-      var getAttribute =
-          new GetAttributeRequestBuilder("RetentionPolicy").submit(client, siteId).throwIfError();
-      assertAttribute(Objects.requireNonNull(getAttribute.response().getAttribute()),
-          "RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY);
+      var attribute = getAttribute(siteId, "RetentionPolicy");
+      assertAttribute(attribute, "RetentionPolicy", AttributeType.GOVERNANCE,
+          AttributeDataType.ENTITY);
 
       DocumentArtifact documentArtifact =
           DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
@@ -267,7 +280,6 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentArtifact);
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(insertedDate).lastModifiedDate(new Date()).build(siteId);
-      // document = new DocumentRecord(document.key(), documentId, insertedDate, new Date());
 
       // when
       db.putItem(document.getAttributes());
@@ -334,7 +346,6 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
           new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, documentArtifact);
       document = new DocumentRecordBuilder().documentId(document.documentId())
           .insertedDate(new Date()).lastModifiedDate(lastModifiedDate).build(siteId);
-      // document = new DocumentRecord(document.key(), documentId, new Date(), lastModifiedDate);
 
       // when
       db.putItem(document.getAttributes());
@@ -357,27 +368,35 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       var getAttributes = new GetAttributesRequestBuilder().submit(client, siteId).throwIfError();
 
       // then
-      assertEquals(3, notNull(getAttributes.response().getAttributes()).size());
+      assertEquals(4, notNull(getAttributes.response().getAttributes()).size());
 
       // when
-      var resp = new GetAttributeRequestBuilder("RetentionPeriodInDays").submit(client, siteId)
-          .throwIfError();
+      Attribute attribute = getAttribute(siteId, "RetentionPeriodInDays");
 
       // then
-      Attribute attribute = resp.response().getAttribute();
       assertNotNull(attribute);
-      assertAttribute(attribute, "RetentionPeriodInDays", AttributeType.STANDARD,
-          AttributeDataType.NUMBER);
+      assertAttribute(attribute, "RetentionPeriodInDays", STANDARD, NUMBER);
 
       // when
-      resp = new GetAttributeRequestBuilder("RetentionStartDateSourceType").submit(client, siteId)
-          .throwIfError();
+      attribute = getAttribute(siteId, "RetentionStartDateSourceType");
 
       // then
-      attribute = resp.response().getAttribute();
       assertNotNull(attribute);
-      assertAttribute(attribute, "RetentionStartDateSourceType", AttributeType.STANDARD,
-          AttributeDataType.STRING);
+      assertAttribute(attribute, "RetentionStartDateSourceType", STANDARD, STRING);
+
+      // when
+      attribute = getAttribute(siteId, "DispositionDate");
+
+      // then
+      assertNotNull(attribute);
+      assertAttribute(attribute, "DispositionDate", STANDARD, STRING);
+
+      // when
+      attribute = getAttribute(siteId, "DispositionPeriodInDays");
+
+      // then
+      assertNotNull(attribute);
+      assertAttribute(attribute, "DispositionPeriodInDays", STANDARD, NUMBER);
     }
   }
 
@@ -457,24 +476,55 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       final String entityTypeId, final String entityId, final String sourceType,
       final String retentionEffectiveStatus) throws ApiException {
 
-    var attr = new GetDocumentAttributeRequestBuilder(document, "RetentionPolicy")
-        .submit(client, siteId).throwIfError().response().getAttribute();
+    // when
+    var attr = getDocumentAttribute(siteId, document, "RetentionPolicy");
 
-    assertNotNull(attr);
+    // then
     assertEquals("RetentionPolicy", attr.getKey());
     assertEquals(entityTypeId + "#" + entityId, attr.getStringValue());
-    Entity entity = attr.getEntity();
 
+    Entity entity = attr.getEntity();
     assertNotNull(entity);
-    List<EntityAttribute> attributes = notNull(entity.getAttributes());
-    assertEquals(5, attributes.size());
-    assertEntityAttributeEquals(attributes.get(0), "RetentionPeriodInDays", null, "10.0");
-    assertEntityAttributeEquals(attributes.get(1), "RetentionStartDateSourceType", sourceType,
-        null);
-    assertEquals("RetentionEffectiveStartDate", attributes.get(2).getKey());
-    assertEquals("RetentionEffectiveEndDate", attributes.get(3).getKey());
-    assertEntityAttributeEquals(attributes.get(4), "RetentionEffectiveStatus",
-        retentionEffectiveStatus, null);
+
+    Map<String, EntityAttribute> attributes = notNull(entity.getAttributes()).stream()
+        .collect(Collectors.toMap(a -> Objects.requireNonNull(a.getKey()), Function.identity()));
+
+    assertEquals(7, attributes.size());
+    assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("RetentionPeriodInDays")),
+        "RetentionPeriodInDays", null, "10.0");
+
+    assertEntityAttributeEquals(
+        Objects.requireNonNull(attributes.get("RetentionStartDateSourceType")),
+        "RetentionStartDateSourceType", sourceType, null);
+
+    assertEquals("RetentionEffectiveStartDate",
+        Objects.requireNonNull(attributes.get("RetentionEffectiveStartDate")).getKey());
+    assertEquals("RetentionEffectiveEndDate",
+        Objects.requireNonNull(attributes.get("RetentionEffectiveEndDate")).getKey());
+
+    DocumentRecord documentRecord =
+        new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, document);
+    Date dispositionDateExpected =
+        Date.from(documentRecord.insertedDate().toInstant().plus(11, ChronoUnit.DAYS));
+
+    if ("DATE_LAST_MODIFIED".equals(sourceType)) {
+      dispositionDateExpected =
+          Date.from(documentRecord.lastModifiedDate().toInstant().plus(11, ChronoUnit.DAYS));
+    }
+
+    String dispositionDateExpectedValue =
+        DateUtil.getIsoDateFormatter().format(dispositionDateExpected);
+
+    assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("DispositionDate")),
+        "DispositionDate", dispositionDateExpectedValue, null);
+
+    assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("RetentionEffectiveStatus")),
+        "RetentionEffectiveStatus", retentionEffectiveStatus, null);
+
+    var dispositionDate = getDocumentAttribute(siteId, document, "DispositionDate");
+
+    assertNotNull(dispositionDate);
+    assertEquals(dispositionDateExpectedValue, dispositionDate.getStringValue());
   }
 
 }

@@ -787,13 +787,88 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         assertEquals(name, entity.getName());
 
         List<EntityAttribute> attributes = notNull(entity.getAttributes()).stream()
-            .sorted(Comparator.comparing(EntityAttribute::getKey)).toList();
+            .sorted(Comparator.comparing(EntityAttribute::getKey,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
         assertEquals(3, attributes.size());
         assertEntityAttribute(attributes.get(0), "DispositionDate", dispositionDate, null);
         assertEntityAttribute(attributes.get(1), "RetentionPeriodInDays", null, "10.0");
         assertEntityAttribute(attributes.get(2), "RetentionStartDateSourceType", "DATE_INSERTED",
             null);
       }
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Retention with optional DispositionPeriodInDays.
+   *
+   */
+  @Test
+  public void testAddEntityRetentionWithDispositionPeriodInDays() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addRetentionEntityType(siteId);
+
+      String name = "RetentionPolicy_" + ID.uuid();
+
+      // when
+      String entityId = new AddEntityRequestBuilder(entityTypeId, "preset").name(name)
+          .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
+          .addAttribute("RetentionStartDateSourceType", "date_inserted")
+          .addAttribute("DispositionPeriodInDays", new BigDecimal("11")).submit(client, siteId)
+          .throwIfError().response().getEntityId();
+
+      // then
+      assertNotNull(entityId);
+      GetEntityResponse entityResponse =
+          this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
+      Entity entity = entityResponse.getEntity();
+      assertNotNull(entity);
+      assertEquals(name, entity.getName());
+
+      List<EntityAttribute> attributes = notNull(entity.getAttributes()).stream().sorted(Comparator
+          .comparing(EntityAttribute::getKey, Comparator.nullsLast(Comparator.naturalOrder())))
+          .toList();
+      assertEquals(3, attributes.size());
+      assertEntityAttribute(attributes.get(0), "DispositionPeriodInDays", null, "11.0");
+      assertEntityAttribute(attributes.get(1), "RetentionPeriodInDays", null, "10.0");
+      assertEntityAttribute(attributes.get(2), "RetentionStartDateSourceType", "DATE_INSERTED",
+          null);
+    }
+  }
+
+  /**
+   * Post /entities/{entityTypeId} for Retention with DispositionPeriodInDays less than
+   * RetentionPeriodInDays.
+   *
+   */
+  @Test
+  public void testAddEntityRetentionWithDispositionPeriodInDaysLessThanRetentionPeriod()
+      throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = addRetentionEntityType(siteId);
+
+      String name = "RetentionPolicy_" + ID.uuid();
+
+      // when
+      var response = new AddEntityRequestBuilder(entityTypeId, "preset").name(name)
+          .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
+          .addAttribute("RetentionStartDateSourceType", "date_inserted")
+          .addAttribute("DispositionPeriodInDays", new BigDecimal("5")).submit(client, siteId);
+
+      // then
+      assertNull(response.response());
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"DispositionPeriodInDays\","
+          + "\"error\":\"'DispositionPeriodInDays' must be greater than "
+          + "'RetentionPeriodInDays'\"}]}", response.exception().getResponseBody());
     }
   }
 

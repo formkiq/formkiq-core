@@ -29,6 +29,9 @@ import com.formkiq.validation.ValidationBuilder;
 import java.util.List;
 import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.DISPOSITION_DATE;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.DISPOSITION_DATE_IN_DAYS;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_PERIOD_IN_DAYS;
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
@@ -38,12 +41,14 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 public class RetentionPolicyPresetEntity implements PresetEntity {
   @Override
   public List<String> getAttributeKeys() {
-    return List.of("RetentionPeriodInDays", "RetentionStartDateSourceType", "DispositionDate");
+    return List.of(RETENTION_PERIOD_IN_DAYS.getKey(), RETENTION_START_DATE_SOURCE_TYPE.getKey(),
+        DISPOSITION_DATE.getKey(), DISPOSITION_DATE_IN_DAYS.getKey());
   }
 
   public List<DerivedDocumentAttribute> getDerivedAttributes() {
     return List.of(new RetentionEffectiveStartDateAttribute(),
-        new RetentionEffectiveEndDateAttribute(), new RetentionEffectiveStatusAttribute());
+        new RetentionEffectiveEndDateAttribute(), new DispositionDateAttribute(),
+        new RetentionEffectiveStatusAttribute());
   }
 
   @Override
@@ -51,18 +56,40 @@ public class RetentionPolicyPresetEntity implements PresetEntity {
     return "RetentionPolicy";
   }
 
+  private Optional<Double> getNumberAttribute(final List<EntityAttribute> attributes,
+      final String attributeKey) {
+    return findAttribute(attributes, attributeKey)
+        .flatMap(a -> notNull(a.getNumberValues()).stream().findFirst());
+  }
+
   public void validateAttributes(final List<EntityAttribute> attributes) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
-    for (String attributeKey : List.of("RetentionPeriodInDays", "RetentionStartDateSourceType")) {
+    for (String attributeKey : List.of(RETENTION_PERIOD_IN_DAYS.getKey(),
+        RETENTION_START_DATE_SOURCE_TYPE.getKey())) {
       Optional<EntityAttribute> attribute = findAttribute(attributes, attributeKey);
       vb.isRequired(attributeKey, attribute);
     }
     vb.check();
 
     validateRetentionStartDateSourceType(vb, attributes);
+    validateDispositionPeriodInDays(vb, attributes);
     vb.check();
+  }
+
+  private void validateDispositionPeriodInDays(final ValidationBuilder vb,
+      final List<EntityAttribute> attributes) {
+    Optional<Double> retentionPeriod =
+        getNumberAttribute(attributes, RETENTION_PERIOD_IN_DAYS.getKey());
+    Optional<Double> dispositionPeriod =
+        getNumberAttribute(attributes, DISPOSITION_DATE_IN_DAYS.getKey());
+
+    if (retentionPeriod.isPresent() && dispositionPeriod.isPresent()) {
+      vb.isRequired(DISPOSITION_DATE_IN_DAYS.getKey(),
+          dispositionPeriod.get().compareTo(retentionPeriod.get()) > 0,
+          "'DispositionPeriodInDays' must be greater than 'RetentionPeriodInDays'");
+    }
   }
 
   private void validateRetentionStartDateSourceType(final ValidationBuilder vb,
