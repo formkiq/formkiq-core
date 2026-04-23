@@ -38,9 +38,12 @@ import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentSearchAttribute;
+import com.formkiq.client.model.DocumentSearchRange;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.testutils.api.SetBearer;
@@ -51,6 +54,7 @@ import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
@@ -63,9 +67,12 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -164,6 +171,21 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     var resp = new GetDocumentAttributeRequestBuilder(document, attributeKey).submit(client, siteId)
         .throwIfError().response();
     return resp.getAttribute();
+  }
+
+  private List<SearchResultDocument> getSearchResultDocuments(final String siteId,
+      final int plusDays) throws ApiException {
+
+    Instant dispositionDate = Instant.now();
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneId.of("UTC"));
+    String rangeStart = dateFormatter.format(dispositionDate.minus(10, ChronoUnit.DAYS));
+    String rangeEnd = dateFormatter.format(dispositionDate.plus(plusDays, ChronoUnit.DAYS));
+
+    var attribute = new DocumentSearchAttribute().key("DispositionDate")
+        .range(new DocumentSearchRange().start(rangeStart).end(rangeEnd));
+    var searchResponse = new SearchDocumentRequestBuilder().attribute(attribute)
+        .submit(client, siteId).throwIfError().response();
+    return notNull(searchResponse.getDocuments());
   }
 
   /**
@@ -547,7 +569,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
    * @throws InterruptedException InterruptedException
    */
   @Test
-  void testUpdateDocumentContentWithDateInsertedDateRetentionUpdatesDispositionDate()
+  void testUpdateDocumentContentWithDateInsertedDateRetention()
       throws ApiException, InterruptedException {
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
@@ -579,11 +601,17 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // then
       var updatedDoc =
           new GetDocumentRequestBuilder(document).submit(client, siteId).throwIfError().response();
-      assertNotEquals(doc.getLastModifiedDate(), updatedDoc.getLastModifiedDate());
 
-      String updatedDispositionDate =
-          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
-      assertEquals(originalDispositionDate, updatedDispositionDate);
+      assertNotEquals(doc.getLastModifiedDate(), updatedDoc.getLastModifiedDate());
+      assertEquals(originalDispositionDate,
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue());
+
+      var documents = getSearchResultDocuments(siteId, 20);
+      assertEquals(1, documents.size());
+      assertEquals(document.documentId(), documents.get(0).getDocumentId());
+
+      documents = getSearchResultDocuments(siteId, 10);
+      assertEquals(0, documents.size());
     }
   }
 
@@ -631,6 +659,13 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       var updatedDispositionDate =
           getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
       assertNotEquals(originalDispositionDate, updatedDispositionDate);
+
+      var documents = getSearchResultDocuments(siteId, 20);
+      assertEquals(1, documents.size());
+      assertEquals(document.documentId(), documents.get(0).getDocumentId());
+
+      documents = getSearchResultDocuments(siteId, 10);
+      assertEquals(0, documents.size());
     }
   }
 
