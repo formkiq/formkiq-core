@@ -58,6 +58,7 @@ import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
 import com.formkiq.urls.HttpStatus;
@@ -703,5 +704,36 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
         "RetentionEffectiveStatus", retentionEffectiveStatus, null);
   }
 
-  // add schema test...
+  /**
+   * Add Document with required schema RetentionPolicy default entity value.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAddDocumentWithSchemaRequiredRetentionEntityDefault() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      String entityTypeId = addRetentionEntityType(siteId);
+      String entityId = addRetentionEntity(siteId, entityTypeId, DATE_INSERTED.name());
+
+      new SetSchemaDocumentRequestBuilder("retention-default")
+          .addRequiredEntityAttribute("RetentionPolicy", entityTypeId, entityId)
+          .submit(client, siteId).throwIfError();
+
+      new SetBearer().apply(client, siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
+
+      // then
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      verifyAttributes(siteId, document, entityTypeId, entityId, DATE_INSERTED.name(),
+          "IN_EFFECT");
+      assertEquals("IN_EFFECT",
+          getDocumentAttribute(siteId, document, "RetentionEffectiveStatus").getStringValue());
+    }
+  }
 }
