@@ -37,6 +37,7 @@ import com.formkiq.aws.dynamodb.entity.EntityDocumentAttributeEntityKeyValueGet;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -239,15 +241,16 @@ public class DocumentAttributeRecordToMap implements
 
       Optional<PresetEntity> o = new GetPresetEntity(awsServiceCache).apply(retentionPolicyKey);
 
-      o.ifPresent(presetEntityI -> presetEntityI.getDerivedAttributes().forEach(da -> {
+      o.ifPresent(presetEntityI -> presetEntityI.getDerivedAttributes().stream()
+          .filter(Predicate.not(StoredDerivedAttribute.class::isInstance)).forEach(da -> {
 
-        var transformer = new AttributeValueToEntityTransformer();
-        var dar = da.getDocumentAttributeRecord(entityRecord, doc);
-        Map<String, Object> map = transformer.apply(dar.getAttributes(null));
-        map.remove("userId");
-        map.remove("entityId");
-        attributes.add(map);
-      }));
+            var transformer = new AttributeValueToEntityTransformer();
+            var dar = da.getDocumentAttributeRecord(entityRecord, doc);
+            Map<String, Object> map = transformer.apply(dar.getAttributes(null));
+            map.remove("userId");
+            map.remove("entityId");
+            attributes.add(map);
+          }));
 
       values.put("attributes", attributes);
     }

@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.client.api.CustomIndexApi;
@@ -210,7 +211,8 @@ public abstract class AbstractApiClientRequestTest {
     AwsServiceCache services = new AwsServiceCacheBuilder(server.getEnvironmentMap(),
         TestServices.getEndpointMap(), credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
-        .addService(new SsmAwsServiceRegistry()).addService(new SqsAwsServiceRegistry()).build();
+        .addService(new SnsAwsServiceRegistry()).addService(new SsmAwsServiceRegistry())
+        .addService(new SqsAwsServiceRegistry()).build();
 
     services.register(S3Service.class, new S3ServiceExtension());
     services.register(SsmService.class, new SsmServiceExtension());

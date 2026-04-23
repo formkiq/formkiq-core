@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -37,6 +38,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyVal
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
@@ -79,7 +81,8 @@ public class DocumentAttributeRequestHandler
       var presetEntity = findPresetEntityByDerivedAttribute(presets, attributeKey);
       if (presetEntity.isPresent()) {
 
-        var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey);
+        var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey)
+            .filter(Predicate.not(StoredDerivedAttribute.class::isInstance));
         if (derivedAttribute.isPresent()) {
 
 

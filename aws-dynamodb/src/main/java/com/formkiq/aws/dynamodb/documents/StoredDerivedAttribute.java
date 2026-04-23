@@ -23,29 +23,8 @@
  */
 package com.formkiq.aws.dynamodb.documents;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
-import com.formkiq.aws.dynamodb.entity.EntityRecord;
-
 /**
- * Derived Document Attribute that returns a {@link String}.
- *
+ * Derived document attribute whose calculated value is saved as a document attribute.
  */
-public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute {
-  /**
-   * Method to calculate value.
-   *
-   * @param entityRecord {@link EntityRecord}
-   * @param document {@link DocumentRecord}
-   * @return T
-   */
-  String calculate(EntityRecord entityRecord, DocumentRecord document);
-
-  default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document) {
-
-    return new DocumentAttributeRecord()
-        .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
-        .setUserId("System").setKey(getAttributeKey())
-        .setStringValue(calculate(entityRecord, document)).updateValueType();
-  }
+public interface StoredDerivedAttribute extends DerivedDocumentAttribute {
 }

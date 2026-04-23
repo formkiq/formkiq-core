@@ -90,6 +90,7 @@
 	</subpackage>
 
 	<subpackage name="aws">
+
         <allow pkg="org.junit.jupiter.api" />
 		<allow pkg="com.amazonaws.services.lambda.runtime" />
 		<allow pkg="com.formkiq.aws.cognito" />
@@ -134,6 +135,10 @@
         <allow pkg="com.formkiq.aws.secretsmanager" />
 		<allow pkg="software.amazon.awssdk.utils" />
 		<allow pkg="software.amazon.awssdk.services.sqs.model" />
+
+		<subpackage name="s3">
+			<allow pkg="java.lang.reflect" />
+		</subpackage>
 
 	</subpackage>
 

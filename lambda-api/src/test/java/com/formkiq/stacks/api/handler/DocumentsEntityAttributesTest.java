@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
@@ -41,6 +42,7 @@ import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.testutils.api.SetBearer;
 import com.formkiq.testutils.api.attributes.GetAttributeRequestBuilder;
 import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
@@ -48,9 +50,12 @@ import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -67,12 +72,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.entity.RetentionStartDateSourceType.DATE_INSERTED;
+import static com.formkiq.aws.dynamodb.entity.RetentionStartDateSourceType.DATE_LAST_MODIFIED;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.client.model.AttributeDataType.NUMBER;
 import static com.formkiq.client.model.AttributeDataType.STRING;
 import static com.formkiq.client.model.AttributeType.STANDARD;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -81,6 +90,17 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
 
   /** {@link DocumentService}. */
   private static DynamoDbService db;
+
+  private static Map<String, Object> createS3Map(final String siteId,
+      final DocumentArtifact document) {
+    String s3Key =
+        SiteIdKeyGenerator.createS3Key(siteId, document.documentId(), document.artifactId());
+
+    return new S3EventJsonBuilder()
+        .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put")
+            .withS3(new S3EventJsonBuilder.S3Builder().withBucket(BUCKET_NAME).withObject(s3Key)))
+        .build();
+  }
 
   @BeforeAll
   public static void setup() throws URISyntaxException {
@@ -93,14 +113,22 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     return new AddEntityRequestBuilder(entityTypeId).name("rt" + ID.ulid())
         .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
         .addAttribute("RetentionStartDateSourceType", retentionStartDateSourceType)
-        .addAttribute("DispositionPeriodInDays", new BigDecimal("11")).submit(client, siteId)
-        .throwIfError().response().getEntityId();
+        .submit(client, siteId).throwIfError().response().getEntityId();
   }
 
   private String addRetentionEntityType(final String siteId) throws ApiException {
     return new AddEntityTypeRequestBuilder()
         .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
         .throwIfError().response().getEntityTypeId();
+  }
+
+  private String addRetentionEntityWithDispositionPeriod(final String siteId,
+      final String entityTypeId, final String retentionStartDateSourceType) throws ApiException {
+    return new AddEntityRequestBuilder(entityTypeId).name("rt" + ID.ulid())
+        .addAttribute("RetentionStartDateSourceType", retentionStartDateSourceType)
+        .addAttribute("RetentionPeriodInDays", new BigDecimal("0"))
+        .addAttribute("DispositionPeriodInDays", new BigDecimal("11")).submit(client, siteId)
+        .throwIfError().response().getEntityId();
   }
 
   private void assertAttribute(final Attribute attribute, final String key,
@@ -339,6 +367,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       DocumentArtifact documentArtifact =
           DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
 
+      final String dispositionDateBeforeUpdate =
+          getDocumentAttribute(siteId, documentArtifact, "DispositionDate").getStringValue();
+
       // given
       Date lastModifiedDate = Date.from(Instant.now().plus(20, ChronoUnit.DAYS));
 
@@ -353,6 +384,43 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
       // then
       verifyAttributes(siteId, documentArtifact, entityTypeId, entityId, "DATE_LAST_MODIFIED",
           "NOT_IN_EFFECT");
+      assertEquals(dispositionDateBeforeUpdate,
+          getDocumentAttribute(siteId, documentArtifact, "DispositionDate").getStringValue());
+    }
+  }
+
+  /**
+   * Add RetentionPolicy with disposition period to Document.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAddRetentionEntityToDocumentStoresDispositionDate() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      String entityTypeId = addRetentionEntityType(siteId);
+      String entityId =
+          addRetentionEntityWithDispositionPeriod(siteId, entityTypeId, "DATE_INSERTED");
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("RetentionPolicy", entityTypeId, entityId, EntityTypeNamespace.PRESET)
+          .submit(client, siteId).throwIfError();
+
+      // then
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      DocumentRecord documentRecord =
+          new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, document);
+      Date expectedDispositionDate =
+          Date.from(documentRecord.insertedDate().toInstant().plus(11, ChronoUnit.DAYS));
+      String expectedDispositionDateValue =
+          DateUtil.getIsoDateFormatter().format(expectedDispositionDate);
+
+      assertEquals(expectedDispositionDateValue,
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue());
     }
   }
 
@@ -472,6 +540,100 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     }
   }
 
+  /**
+   * Update Document Content with Retention (DATE_INSERTED_DATE).
+   *
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  @Test
+  void testUpdateDocumentContentWithDateInsertedDateRetentionUpdatesDispositionDate()
+      throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      final String entityTypeId = addRetentionEntityType(siteId);
+      final String entityId =
+          addRetentionEntityWithDispositionPeriod(siteId, entityTypeId, DATE_INSERTED.name());
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("RetentionPolicy", entityTypeId, entityId, EntityTypeNamespace.PRESET)
+          .submit(client, siteId).throwIfError();
+
+      // then
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+
+      final var doc =
+          new GetDocumentRequestBuilder(document).submit(client, siteId).throwIfError().response();
+      final String originalDispositionDate =
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
+
+      // when
+      Thread.sleep(1000);
+      new UpdateDocumentRequestBuilder(document).content().submit(client, siteId).throwIfError();
+      new DocumentsS3Update(getAwsServices()).handleRequest(createS3Map(siteId, document), null);
+
+      // then
+      var updatedDoc =
+          new GetDocumentRequestBuilder(document).submit(client, siteId).throwIfError().response();
+      assertNotEquals(doc.getLastModifiedDate(), updatedDoc.getLastModifiedDate());
+
+      String updatedDispositionDate =
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
+      assertEquals(originalDispositionDate, updatedDispositionDate);
+    }
+  }
+
+  /**
+   * Update Document Content with Retention (DATE_LAST_MODIFIED).
+   *
+   * @throws ApiException ApiException
+   * @throws InterruptedException InterruptedException
+   */
+  @Test
+  void testUpdateDocumentContentWithDateLastModifiedRetentionUpdatesDispositionDate()
+      throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      final String entityTypeId = addRetentionEntityType(siteId);
+      final String entityId =
+          addRetentionEntityWithDispositionPeriod(siteId, entityTypeId, DATE_LAST_MODIFIED.name());
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("RetentionPolicy", entityTypeId, entityId, EntityTypeNamespace.PRESET)
+          .submit(client, siteId).throwIfError();
+
+      // then
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+
+      final var doc =
+          new GetDocumentRequestBuilder(document).submit(client, siteId).throwIfError().response();
+      final String originalDispositionDate =
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
+
+      // when - update document content
+      Thread.sleep(1000);
+      new UpdateDocumentRequestBuilder(document).content().submit(client, siteId).throwIfError();
+      new DocumentsS3Update(getAwsServices()).handleRequest(createS3Map(siteId, document), null);
+
+      // then
+      var updatedDoc =
+          new GetDocumentRequestBuilder(document).submit(client, siteId).throwIfError().response();
+      assertNotEquals(doc.getLastModifiedDate(), updatedDoc.getLastModifiedDate());
+
+      var updatedDispositionDate =
+          getDocumentAttribute(siteId, document, "DispositionDate").getStringValue();
+      assertNotEquals(originalDispositionDate, updatedDispositionDate);
+    }
+  }
+
   private void verifyAttributes(final String siteId, final DocumentArtifact document,
       final String entityTypeId, final String entityId, final String sourceType,
       final String retentionEffectiveStatus) throws ApiException {
@@ -489,7 +651,7 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     Map<String, EntityAttribute> attributes = notNull(entity.getAttributes()).stream()
         .collect(Collectors.toMap(a -> Objects.requireNonNull(a.getKey()), Function.identity()));
 
-    assertEquals(7, attributes.size());
+    assertEquals(5, attributes.size());
     assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("RetentionPeriodInDays")),
         "RetentionPeriodInDays", null, "10.0");
 
@@ -502,29 +664,9 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
     assertEquals("RetentionEffectiveEndDate",
         Objects.requireNonNull(attributes.get("RetentionEffectiveEndDate")).getKey());
 
-    DocumentRecord documentRecord =
-        new FindDocumentById().find(db, DOCUMENTS_TABLE, siteId, document);
-    Date dispositionDateExpected =
-        Date.from(documentRecord.insertedDate().toInstant().plus(11, ChronoUnit.DAYS));
-
-    if ("DATE_LAST_MODIFIED".equals(sourceType)) {
-      dispositionDateExpected =
-          Date.from(documentRecord.lastModifiedDate().toInstant().plus(11, ChronoUnit.DAYS));
-    }
-
-    String dispositionDateExpectedValue =
-        DateUtil.getIsoDateFormatter().format(dispositionDateExpected);
-
-    assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("DispositionDate")),
-        "DispositionDate", dispositionDateExpectedValue, null);
-
     assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("RetentionEffectiveStatus")),
         "RetentionEffectiveStatus", retentionEffectiveStatus, null);
-
-    var dispositionDate = getDocumentAttribute(siteId, document, "DispositionDate");
-
-    assertNotNull(dispositionDate);
-    assertEquals(dispositionDateExpectedValue, dispositionDate.getStringValue());
   }
 
+  // add schema test...
 }

@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.entity;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 import java.time.temporal.ChronoUnit;
@@ -36,7 +37,8 @@ import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.DISPOSITI
 /**
  * DispositionDate derived attribute.
  */
-public class DispositionDateAttribute extends RetentionEffectiveEndDateAttribute {
+public class DispositionDateAttribute extends RetentionEffectiveEndDateAttribute
+    implements StoredDerivedAttribute {
   @Override
   public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
     var sourceType = DynamoDbTypes.toString(entityRecord.getAttributes()
