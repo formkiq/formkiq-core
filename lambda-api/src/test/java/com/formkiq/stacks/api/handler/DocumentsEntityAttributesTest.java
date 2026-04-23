@@ -215,6 +215,38 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
   }
 
   /**
+   * Add Document with required schema RetentionPolicy default entity value.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testAddDocumentWithSchemaRequiredRetentionEntityDefault() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      new SetBearer().apply(client, siteId + "_govern");
+
+      String entityTypeId = addRetentionEntityType(siteId);
+      String entityId = addRetentionEntity(siteId, entityTypeId, DATE_INSERTED.name());
+
+      new SetSchemaDocumentRequestBuilder("retention-default")
+          .addRequiredEntityAttribute("RetentionPolicy", entityTypeId, entityId)
+          .submit(client, siteId).throwIfError();
+
+      new SetBearer().apply(client, siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
+
+      // then
+      DocumentArtifact document =
+          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
+      verifyAttributes(siteId, document, entityTypeId, entityId, DATE_INSERTED.name(), "IN_EFFECT");
+      assertEquals("IN_EFFECT",
+          getDocumentAttribute(siteId, document, "RetentionEffectiveStatus").getStringValue());
+    }
+  }
+
+  /**
    * Add Retention (DATE_INSERTED) to Document.
    *
    * @throws ApiException ApiException
@@ -702,38 +734,5 @@ public class DocumentsEntityAttributesTest extends AbstractApiClientRequestTest 
 
     assertEntityAttributeEquals(Objects.requireNonNull(attributes.get("RetentionEffectiveStatus")),
         "RetentionEffectiveStatus", retentionEffectiveStatus, null);
-  }
-
-  /**
-   * Add Document with required schema RetentionPolicy default entity value.
-   *
-   * @throws ApiException ApiException
-   */
-  @Test
-  void testAddDocumentWithSchemaRequiredRetentionEntityDefault() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearer().apply(client, siteId + "_govern");
-
-      String entityTypeId = addRetentionEntityType(siteId);
-      String entityId = addRetentionEntity(siteId, entityTypeId, DATE_INSERTED.name());
-
-      new SetSchemaDocumentRequestBuilder("retention-default")
-          .addRequiredEntityAttribute("RetentionPolicy", entityTypeId, entityId)
-          .submit(client, siteId).throwIfError();
-
-      new SetBearer().apply(client, siteId);
-
-      // when
-      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
-
-      // then
-      DocumentArtifact document =
-          DocumentArtifact.of(resp.response().getDocumentId(), resp.response().getArtifactId());
-      verifyAttributes(siteId, document, entityTypeId, entityId, DATE_INSERTED.name(),
-          "IN_EFFECT");
-      assertEquals("IN_EFFECT",
-          getDocumentAttribute(siteId, document, "RetentionEffectiveStatus").getStringValue());
-    }
   }
 }
