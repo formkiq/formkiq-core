@@ -29,6 +29,10 @@ import java.util.List;
  * PresetEntity for Checkout.
  */
 public class CheckoutPresetEntity implements PresetEntity {
+
+  /** Checkout Entity Name. */
+  public static final String ENTITY_NAME = "Checkout";
+
   @Override
   public List<String> getAttributeKeys() {
     return List.of("LockedBy", "LockedDate");
@@ -36,6 +40,6 @@ public class CheckoutPresetEntity implements PresetEntity {
 
   @Override
   public String getName() {
-    return "Checkout";
+    return ENTITY_NAME;
   }
 }

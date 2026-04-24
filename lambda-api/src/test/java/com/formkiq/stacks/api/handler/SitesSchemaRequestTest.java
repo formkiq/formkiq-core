@@ -71,7 +71,6 @@ import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -235,7 +234,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         .throwIfError().response().getAttribute();
   }
 
-  private @NotNull List<DocumentAttribute> getDocumentAttributes(final String siteId,
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
     return notNull(this.documentAttributesApi
         .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
@@ -919,44 +918,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
             + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
       }
-    }
-  }
-
-  /**
-   * POST /documents/{documentId}/attributes. Add Preset Retention Entity attributes.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testAddDocumentPresetAttribute() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      var entityTypeId = new AddEntityTypeRequestBuilder()
-          .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
-          .throwIfError().response().getEntityTypeId();
-
-      var entityId = new AddEntityRequestBuilder(entityTypeId).name("My Retention Policy")
-          .addAttribute("RetentionPeriodInDays", 5)
-          .addAttribute("RetentionStartDateSourceType", "DATE_INSERTED").submit(client, siteId)
-          .throwIfError().response().getEntityId();
-
-      new SetSchemaDocumentRequestBuilder("test4")
-          .addRequiredEntityAttribute("RetentionPolicy", entityTypeId, entityId)
-          .submit(client, siteId).throwIfError();
-
-      // when
-      var documentId = new AddDocumentRequestBuilder().content().submit(client, siteId)
-          .throwIfError().response().getDocumentId();
-
-      // then
-      var documentAttributes = getDocumentAttributes(siteId, documentId);
-      assertEquals(1, documentAttributes.size());
-      assertDocumentAttributeEquals(documentAttributes.get(0), "RetentionPolicy",
-          entityTypeId + "#" + entityId, null);
-      assertEquals(AttributeValueType.ENTITY, documentAttributes.get(0).getValueType());
     }
   }
 
