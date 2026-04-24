@@ -24,11 +24,11 @@
 package com.formkiq.stacks.dynamodb.s3;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentService;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -55,13 +55,15 @@ public class S3ServiceInterceptorExtension implements AwsServiceExtension<S3Serv
       String versionsTable = awsServiceCache.environment("DOCUMENT_VERSIONS_TABLE");
       String auditTable = awsServiceCache.environment("DOCUMENTS_AUDIT_TABLE");
 
-      if (!isEmpty(versionsTable)) {
-        String documentsS3Bucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
+      if (!isEmpty(versionsTable) && !isEmpty(auditTable)) {
 
-        DynamoDbConnectionBuilder connection =
-            awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-        DynamoDbService dbVersion = new DynamoDbServiceImpl(connection, versionsTable);
-        this.service = new S3ServiceVersioningInterceptor(documentsS3Bucket, dbVersion, auditTable);
+        var documentsS3Bucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
+        var dbConnection = awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+        var documentService = awsServiceCache.getExtension(DocumentService.class);
+        var dbVersionService = new DynamoDbServiceImpl(dbConnection, versionsTable);
+        this.service = new S3ServiceVersioningInterceptor(documentService, documentsS3Bucket,
+            dbVersionService, auditTable);
+
       } else {
         this.service = new S3ServiceNoVersioningInterceptor();
       }

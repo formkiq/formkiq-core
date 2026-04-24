@@ -23,29 +23,23 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
-import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttributeString;
-import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
+import java.util.List;
 
 /**
- * RetentionEffectiveStartDate {@link DerivedDocumentAttribute}.
+ * PresetEntity for LLM Prompt.
  */
-public class RetentionEffectiveStartDateAttribute implements DerivedDocumentAttributeString {
+public class LlmPromptPresetEntity implements PresetEntity {
+
+  /** Entity Name. */
+  public static final String ENTITY_NAME = "LlmPrompt";
+
   @Override
-  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
-    var sourceType = DynamoDbTypes.toString(entityRecord.getAttributes()
-        .get(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey()));
-    var date = RetentionStartDateSourceType.DATE_LAST_MODIFIED.name().equals(sourceType)
-        ? document.lastModifiedDate()
-        : document.insertedDate();
-    return DateUtil.getIsoDateFormatter().format(date);
+  public List<String> getAttributeKeys() {
+    return List.of("UserPrompt");
   }
 
   @Override
-  public String getAttributeKey() {
-    return "RetentionEffectiveStartDate";
+  public String getName() {
+    return ENTITY_NAME;
   }
 }

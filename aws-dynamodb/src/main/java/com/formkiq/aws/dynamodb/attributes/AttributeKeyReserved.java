@@ -52,21 +52,27 @@ public enum AttributeKeyReserved {
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
   /** Retention Policy. */
-  RETENTION_POLICY("RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY, false),
+  RETENTION_POLICY("RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY, null),
   /** Retention Period In Days. */
   RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeType.STANDARD,
-      AttributeDataType.NUMBER, false),
+      AttributeDataType.NUMBER, null),
+  /** Retention Disposition Date. */
+  DISPOSITION_DATE("DispositionDate", AttributeType.STANDARD, AttributeDataType.STRING,
+      AttributeDerivedType.STORED_DERIVED),
+  /** Retention Disposition Period In Days. */
+  DISPOSITION_DATE_IN_DAYS("DispositionPeriodInDays", AttributeType.STANDARD,
+      AttributeDataType.NUMBER, null),
   /** Retention Start Date Source Type. */
   RETENTION_START_DATE_SOURCE_TYPE("RetentionStartDateSourceType"),
   /** Retention Effective Start Date. */
   RETENTION_EFFECTIVE_START_DATE("RetentionEffectiveStartDate", AttributeType.STANDARD,
-      AttributeDataType.STRING, true),
+      AttributeDataType.STRING, AttributeDerivedType.STANDARD),
   /** Retention Effective End Date. */
   RETENTION_EFFECTIVE_END_DATE("RetentionEffectiveEndDate", AttributeType.STANDARD,
-      AttributeDataType.STRING, true),
+      AttributeDataType.STRING, AttributeDerivedType.STANDARD),
   /** Retention Effective Status. */
   RETENTION_EFFECTIVE_STATUS("RetentionEffectiveStatus", AttributeType.STANDARD,
-      AttributeDataType.STRING, true);
+      AttributeDataType.STRING, AttributeDerivedType.STANDARD);
 
   /**
    * Find {@link AttributeKeyReserved}.
@@ -86,14 +92,14 @@ public enum AttributeKeyReserved {
    * @return {@link List} {@link AttributeKeyReserved}
    */
   public static List<AttributeKeyReserved> getDerivedAttributes() {
-    return Arrays.stream(values()).filter(AttributeKeyReserved::isDerived).toList();
+    return Arrays.stream(values()).filter(a -> a.getDerivedType() != null).toList();
   }
 
   /** {@link AttributeType}. */
   private final AttributeType type;
 
   /** Is Attribute Derived. */
-  private final boolean derived;
+  private final AttributeDerivedType derivedType;
 
   /** Attribute Data Type. */
   private final AttributeDataType dataType;
@@ -102,14 +108,14 @@ public enum AttributeKeyReserved {
   private final String key;
 
   AttributeKeyReserved(final String reservedKey) {
-    this(reservedKey, AttributeType.STANDARD, AttributeDataType.STRING, false);
+    this(reservedKey, AttributeType.STANDARD, AttributeDataType.STRING, null);
   }
 
   AttributeKeyReserved(final String reservedKey, final AttributeType attributeType,
-      final AttributeDataType attributeDataType, final boolean derivedAttribute) {
+      final AttributeDataType attributeDataType, final AttributeDerivedType derivedAttributeType) {
     this.key = reservedKey;
     this.dataType = attributeDataType;
-    this.derived = derivedAttribute;
+    this.derivedType = derivedAttributeType;
     this.type = attributeType;
   }
 
@@ -120,6 +126,15 @@ public enum AttributeKeyReserved {
    */
   public AttributeDataType getDataType() {
     return this.dataType;
+  }
+
+  /**
+   * Is Attribute Key Derived.
+   * 
+   * @return boolean
+   */
+  public AttributeDerivedType getDerivedType() {
+    return derivedType;
   }
 
   /**
@@ -140,12 +155,7 @@ public enum AttributeKeyReserved {
     return type;
   }
 
-  /**
-   * Is Attribute Key Derived.
-   * 
-   * @return boolean
-   */
   public boolean isDerived() {
-    return derived;
+    return derivedType != null;
   }
 }

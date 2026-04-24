@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceInterceptor;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
@@ -67,19 +68,24 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Audit Table DynamoDb. */
   private final String auditTable;
+  /** {@link DocumentService}. */
+  private final DocumentService service;
 
   /**
    * constructor.
-   * 
+   *
+   * @param documentService {@link DocumentService}
    * @param watchS3Bucket {@link String}
    * @param dbVersionService {@link DynamoDbService}
    * @param auditDynamoDbTable {@link String}
    */
-  public S3ServiceVersioningInterceptor(final String watchS3Bucket,
-      final DynamoDbService dbVersionService, final String auditDynamoDbTable) {
+  public S3ServiceVersioningInterceptor(final DocumentService documentService,
+      final String watchS3Bucket, final DynamoDbService dbVersionService,
+      final String auditDynamoDbTable) {
     this.watchBucket = watchS3Bucket;
     this.versionService = dbVersionService;
     this.auditTable = auditDynamoDbTable;
+    this.service = documentService;
   }
 
   private void createAudit(final String siteId, final DocumentArtifact document,
@@ -177,6 +183,7 @@ public class S3ServiceVersioningInterceptor implements S3ServiceInterceptor {
 
       if (version != null) {
         createVersion(siteId, document, s3, bucket, key, version, metadata);
+        service.updateRetentionPolicyDispositionDateLastModified(siteId, document, new Date());
       }
 
       createAudit(siteId, document, auditChanges, version == null);

@@ -28,7 +28,7 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.FindEntityByName;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
-import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -343,13 +343,12 @@ public enum ActionType {
             .error("'llmPromptEntityName' parameter is required"));
       } else {
 
-        String tableName = db.getTableName();
-        String entityTypeId = new FindEntityTypeByName().find(db, tableName, siteId,
-            new FindEntityTypeByName.EntityTypeName(EntityTypeNamespace.PRESET,
-                PresetEntity.LLM_PROMPT.getName()));
+        String entityTypeId =
+            new FindEntityTypeByName().find(db, siteId, new FindEntityTypeByName.EntityTypeName(
+                EntityTypeNamespace.PRESET, LlmPromptPresetEntity.ENTITY_NAME));
 
         String name = (String) parameters.get("llmPromptEntityName");
-        EntityRecord entityRecord = new FindEntityByName().find(db, tableName, siteId,
+        EntityRecord entityRecord = new FindEntityByName().find(db, siteId,
             new FindEntityByName.EntityName(entityTypeId, name));
         if (entityRecord == null) {
           errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")

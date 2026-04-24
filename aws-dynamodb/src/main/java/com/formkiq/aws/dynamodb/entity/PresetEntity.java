@@ -24,108 +24,78 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
+import com.formkiq.validation.ValidationBuilder;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 /**
- * Present Entity.
+ * Preset Entity Interface.
  */
-public enum PresetEntity {
-  /** LLM Prompt entity. */
-  LLM_PROMPT("LlmPrompt", List.of("UserPrompt"), List.of()),
-  /** Checkout Lock Entity. */
-  CHECKOUT("Checkout", List.of("LockedBy", "LockedDate"), List.of()),
-  /** Lock Entity. */
-  CHECKOUT_FOR_LEGAL_HOLD("CheckoutForLegalHold", List.of("LockedBy", "LockedDate"), List.of()),
-  /** Retention Policy. */
-  RETENTION_POLICY("RetentionPolicy",
-      List.of("RetentionPeriodInDays", "RetentionStartDateSourceType"),
-      List.of(new RetentionEffectiveStartDateAttribute(), new RetentionEffectiveEndDateAttribute(),
-          new RetentionEffectiveStatusAttribute()));
+public interface PresetEntity {
 
   /**
-   * Find {@link DerivedDocumentAttribute} by AttributeKey.
+   * Find PresetEntity Attribute.
    * 
-   * @param derivedAttributeKey {@link String}
-   * @return {@link DerivedDocumentAttribute}
+   * @param attributes {@link List} {@link EntityAttribute}
+   * @param attributeKey {@link String}
+   * @return {@link EntityAttribute}
    */
-  public static Optional<PresetEntity> findPresetEntityByDerivedAttribute(
-      final String derivedAttributeKey) {
-    return Arrays.stream(values()).filter(a -> a.getDerivedAttributes().stream()
-        .anyMatch(da -> da.getAttributeKey().equals(derivedAttributeKey))).findAny();
-  }
-
-  /**
-   * Convert a string to the matching enum constant. Defaults to {@link #LLM_PROMPT} if no match is
-   * found.
-   *
-   * @param value string to convert (case-insensitive)
-   * @return matching enum constant, or {@code LLM_PROMPT} if none match
-   */
-  public static PresetEntity fromString(final String value) {
-    if (value != null) {
-      for (PresetEntity e : values()) {
-        if (e.name.equalsIgnoreCase(value) || e.name().equalsIgnoreCase(value)) {
-          return e;
-        }
-      }
-    }
-    return null;
-  }
-
-  /** Derived Document Attributes. */
-  private final List<DerivedDocumentAttribute> derivedAttributes;
-
-  /** Entity Name. */
-  private final String name;
-
-  /** Attribute Keys. */
-  private final List<String> attributeKeys;
-
-  PresetEntity(final String entityName, final List<String> entityAttributeKeys,
-      final List<DerivedDocumentAttribute> derivedDocumentAttributes) {
-    this.name = entityName;
-    this.attributeKeys = entityAttributeKeys;
-    this.derivedAttributes = derivedDocumentAttributes;
+  default Optional<EntityAttribute> findAttribute(List<EntityAttribute> attributes,
+      String attributeKey) {
+    return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
+        .findFirst();
   }
 
   /**
    * Find Derived Attribute.
-   * 
+   *
    * @param derivedAttributeKey {@link String}
    * @return {@link Optional} {@link DerivedDocumentAttribute}
    */
-  public Optional<DerivedDocumentAttribute> findDerivedAttribute(final String derivedAttributeKey) {
+  default Optional<DerivedDocumentAttribute> findDerivedAttribute(String derivedAttributeKey) {
     return getDerivedAttributes().stream()
         .filter(a -> a.getAttributeKey().equals(derivedAttributeKey)).findAny();
   }
 
   /**
    * Get Attribute Keys.
-   * 
+   *
    * @return {@link List} {@link String}
    */
-  public List<String> getAttributeKeys() {
-    return attributeKeys;
-  }
+  List<String> getAttributeKeys();
 
   /**
    * Get {@link List} {@link DerivedDocumentAttribute}.
-   * 
+   *
    * @return {@link List} {@link DerivedDocumentAttribute}
    */
-  public List<DerivedDocumentAttribute> getDerivedAttributes() {
-    return derivedAttributes;
+  default List<DerivedDocumentAttribute> getDerivedAttributes() {
+    return Collections.emptyList();
   }
 
   /**
-   * Get the string value for this preset entity.
-   *
-   * @return string representation
+   * Get Entity Name.
+   * 
+   * @return {@link String}
    */
-  public String getName() {
-    return name;
+  String getName();
+
+  /**
+   * Validate Attributes.
+   * 
+   * @param attributes {@link List} {@link EntityAttribute}
+   */
+  default void validateAttributes(List<EntityAttribute> attributes) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    for (String attributeKey : getAttributeKeys()) {
+      Optional<EntityAttribute> attribute = findAttribute(attributes, attributeKey);
+      vb.isRequired(attributeKey, attribute);
+    }
+    vb.check();
   }
 }

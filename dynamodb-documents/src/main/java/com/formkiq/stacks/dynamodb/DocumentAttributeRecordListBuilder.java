@@ -42,6 +42,8 @@ public class DocumentAttributeRecordListBuilder {
   private Collection<DocumentAttributeRecord> previousCompositeKeys;
   /** CompositeKeys To Be Deleted. */
   private Collection<DocumentAttributeRecord> compositeKeysToBeDeleted;
+  /** Previous All Attributes. */
+  private Collection<DocumentAttributeRecord> previousAllAttributes;
 
   /**
    * constructor.
@@ -64,6 +66,15 @@ public class DocumentAttributeRecordListBuilder {
    */
   public Collection<DocumentAttributeRecord> getNewAttributes() {
     return this.newAttributes;
+  }
+
+  /**
+   * Get Previous All Attributes.
+   * 
+   * @return {@link Collection} {@link DocumentAttributeRecord}
+   */
+  public Collection<DocumentAttributeRecord> getPreviousAllAttributes() {
+    return this.previousAllAttributes;
   }
 
   /**
@@ -112,6 +123,15 @@ public class DocumentAttributeRecordListBuilder {
       final Collection<DocumentAttributeRecord> attributes) {
     this.newAttributes = attributes;
     return this;
+  }
+
+  /**
+   * Set Previous All Attributes.
+   * 
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   */
+  public void setPreviousAllAttributes(final Collection<DocumentAttributeRecord> attributes) {
+    this.previousAllAttributes = attributes;
   }
 
   /**

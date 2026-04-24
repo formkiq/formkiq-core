@@ -67,6 +67,7 @@ import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.module.actions.ActionBuilder;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;

@@ -107,8 +107,6 @@ import software.amazon.awssdk.utils.http.SdkHttpUtils;
 @Reflectable
 public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Void> {
 
-  /** {@link ActionsService}. */
-  private static ActionsService actionsService;
   /** Bad Request. */
   static final int BAD_REQUEST = 400;
 
@@ -208,7 +206,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
 
     service = awsServiceCache.getExtension(DocumentService.class);
-    actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3service = awsServiceCache.getExtension(S3Service.class);
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
     s3ServiceInterceptor = awsServiceCache.getExtension(S3ServiceInterceptor.class);

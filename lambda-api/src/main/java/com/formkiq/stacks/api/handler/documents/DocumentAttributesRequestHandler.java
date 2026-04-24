@@ -69,8 +69,6 @@ public class DocumentAttributesRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    String tableName = awsservice.environment("DOCUMENTS_TABLE");
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
 
@@ -90,7 +88,7 @@ public class DocumentAttributesRequestHandler
         documentService.findDocumentAttributes(siteId, documentArtifact, nextToken, limit);
 
     Collection<Map<String, Object>> list =
-        new DocumentAttributeRecordToMap(true, true, db, tableName, document).apply(siteId,
+        new DocumentAttributeRecordToMap(true, true, awsservice, document).apply(siteId,
             results.getResults());
 
     ApiPagination current =

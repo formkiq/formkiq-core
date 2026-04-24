@@ -34,6 +34,8 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -56,8 +58,10 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -72,23 +76,24 @@ public class EntityTypesRequestHandler
    */
   public EntityTypesRequestHandler() {}
 
-  private List<Map<String, AttributeValue>> addPresetAttributes(final String siteId,
-      final AddEntityType addEntityType) {
+  private List<Map<String, AttributeValue>> addPresetAttributes(final AwsServiceCache awsservice,
+      final String siteId, final AddEntityType addEntityType) {
     final List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
 
     if (EntityTypeNamespace.PRESET.equals(addEntityType.namespace())) {
-      PresetEntity presetEntity = PresetEntity.fromString(addEntityType.name());
-      if (presetEntity != null) {
-        presetEntity.getAttributeKeys().forEach(k -> {
 
-          AttributeKeyReserved key = AttributeKeyReserved.find(k);
-          AttributeDataType dataType = key != null ? key.getDataType() : AttributeDataType.STRING;
+      Optional<PresetEntity> presetEntity =
+          new GetPresetEntity(awsservice).apply(addEntityType.name());
 
-          AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD).dataType(dataType)
-              .key(k).documentId(k);
-          attributeList.add(a.getAttributes(siteId));
-        });
-      }
+      presetEntity.ifPresent(presetEntityI -> presetEntityI.getAttributeKeys().forEach(k -> {
+
+        AttributeKeyReserved key = AttributeKeyReserved.find(k);
+        AttributeDataType dataType = key != null ? key.getDataType() : AttributeDataType.STRING;
+
+        AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD).dataType(dataType)
+            .key(k).documentId(k);
+        attributeList.add(a.getAttributes(siteId));
+      }));
     }
 
     return attributeList;
@@ -138,10 +143,10 @@ public class EntityTypesRequestHandler
 
     AddEntityType addEntityType = request.entityType();
 
-    EntityTypeRecord entityType = EntityTypeRecord.builder().documentId(ID.uuid())
-        .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
-
-    PresetEntity.fromString(addEntityType.name());
+    Collection<PresetEntity> presetEntities = new GetPresetEntities(awsservice).apply(null);
+    EntityTypeRecord entityType =
+        EntityTypeRecord.builderWithPresets(presetEntities).documentId(ID.uuid())
+            .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
@@ -151,7 +156,7 @@ public class EntityTypesRequestHandler
     Map<String, AttributeValue> attributes = entityType.getAttributes();
     attributeList.add(attributes);
 
-    attributeList.addAll(addPresetAttributes(siteId, addEntityType));
+    attributeList.addAll(addPresetAttributes(awsservice, siteId, addEntityType));
 
     UserActivityContext.setCreate(ActivityResourceType.ENTITY_TYPE, attributes);
     db.putItems(attributeList);

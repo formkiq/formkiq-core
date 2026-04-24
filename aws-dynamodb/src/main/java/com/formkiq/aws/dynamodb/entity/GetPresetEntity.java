@@ -21,31 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.documents;
+package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
-import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
- * Derived Document Attribute that returns a {@link String}.
- *
+ * {@link Function} to get all {@link PresetEntity}.
  */
-public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute {
+public class GetPresetEntity implements Function<String, Optional<PresetEntity>> {
+
+  /** {@link Collection} of {@link PresetEntity}. */
+  private final Collection<PresetEntity> presets;
+
   /**
-   * Method to calculate value.
-   *
-   * @param entityRecord {@link EntityRecord}
-   * @param document {@link DocumentRecord}
-   * @return T
+   * constructor.
+   * 
+   * @param serviceCache {@link AwsServiceCache}
    */
-  String calculate(EntityRecord entityRecord, DocumentRecord document);
+  public GetPresetEntity(final AwsServiceCache serviceCache) {
+    this(new GetPresetEntities(serviceCache).apply(null));
+  }
 
-  default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document) {
+  /**
+   * constructor.
+   *
+   * @param presetEntities {@link Collection} of {@link PresetEntity}
+   */
+  public GetPresetEntity(final Collection<PresetEntity> presetEntities) {
+    this.presets = presetEntities;
+  }
 
-    return new DocumentAttributeRecord()
-        .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
-        .setUserId("System").setKey(getAttributeKey())
-        .setStringValue(calculate(entityRecord, document)).updateValueType();
+  @Override
+  public Optional<PresetEntity> apply(final String entityTypeName) {
+    if (entityTypeName == null) {
+      throw new IllegalArgumentException("Entity Type Name is null");
+    }
+    return presets.stream().filter(p -> p.getName().equalsIgnoreCase(entityTypeName)).findFirst();
   }
 }

@@ -38,10 +38,15 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.DynamodbRecordKeyPredicate;
 import com.formkiq.aws.dynamodb.DynamodbRecordTx;
 import com.formkiq.aws.dynamodb.QueryConfig;
+import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.attributes.AttributeDerivedType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -53,6 +58,11 @@ import com.formkiq.aws.dynamodb.documents.ExistsDocumentById;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.documents.GetChildDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
+import com.formkiq.aws.dynamodb.entity.DispositionDateAttribute;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.FindEntityById;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -135,7 +145,10 @@ import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_POLICY;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE;
 import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
+import static com.formkiq.aws.dynamodb.entity.RetentionStartDateSourceType.DATE_LAST_MODIFIED;
 import static com.formkiq.aws.dynamodb.objects.Objects.concat;
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -177,6 +190,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DateTimeFormatter yyyymmddFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   /** {@link DocumentServiceInterceptor}. */
   private final DocumentServiceInterceptor interceptor;
+  /** {@link Collection} {@link PresetEntity}. */
+  private final Collection<PresetEntity> presets;
   /** Last Short Date. */
   private String lastShortDate = null;
 
@@ -194,7 +209,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   /**
    * constructor.
-   * 
+   *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
@@ -203,11 +218,29 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
+    this(connection, documentsTable, Collections.emptyList(), documentVersionsService,
+        documentServiceInterceptor);
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
+   * @param presetsEntities {@link Collection} {@link PresetEntity}
+   * @param documentVersionsService {@link DocumentVersionService}
+   * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
+   */
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable, final Collection<PresetEntity> presetsEntities,
+      final DocumentVersionService documentVersionsService,
+      final DocumentServiceInterceptor documentServiceInterceptor) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.presets = presetsEntities;
     this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
     this.versionsService = documentVersionsService;
@@ -1638,8 +1671,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     WriteRequestBuilder writeBuilder = new WriteRequestBuilder();
     writeBuilder.appends(this.documentTableName, tagValues);
 
-    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentArtifact, attributes,
-        AttributeValidationType.FULL, options.getValidationAccess());
+    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(null, item).build(siteId);
+    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentArtifact, documentRecord,
+        attributes, AttributeValidationType.FULL, options.getValidationAccess());
 
     writeBuilder.appends(this.documentTableName,
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
@@ -1772,8 +1806,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DocumentRecord doc = new FindDocumentById().find(dbService, siteId, document);
     validateDocumentPath(siteId, doc.path(), null);
 
-    DynamodbRecordTx tx =
-        getSaveDocumentAttributesTx(siteId, document, attributes, validation, validationAccess);
+    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document, doc, attributes, validation,
+        validationAccess);
 
     saveDocumentAttributes(siteId, document, tx);
   }
@@ -1799,8 +1833,102 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
   }
 
+  private DocumentAttributeRecordListBuilder createAttributeListBuilder(final String siteId,
+      final DocumentArtifact document, final DocumentRecord item,
+      final Collection<DocumentAttributeRecord> attributes,
+      final AttributeValidationAccess validationAccess) {
+
+    var listBuilder = new DocumentAttributeRecordListBuilder();
+
+    var storedDerivedAttributes = createStoredDerivedAttributes(siteId, item, attributes);
+    var newAttributes =
+        Stream.concat(storedDerivedAttributes.stream(), attributes.stream()).toList();
+
+    var previousAllAttributes = findAllAttributes(siteId, document);
+
+    var previousAttributes =
+        previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
+
+    var previousCompositeKeys =
+        previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
+
+    var attributesToBeDeleted =
+        getAttributesToBeDeleted(validationAccess, newAttributes, previousAttributes);
+
+    listBuilder.setNewAttributes(newAttributes);
+    listBuilder.setPreviousAttributes(previousAttributes);
+    listBuilder.setToBeDeletedAttributes(attributesToBeDeleted);
+    listBuilder.setPreviousCompositeKeys(previousCompositeKeys);
+    listBuilder.setPreviousAllAttributes(previousAllAttributes);
+
+    return listBuilder;
+  }
+
+  @Override
+  public void updateRetentionPolicyDispositionDateLastModified(final String siteId,
+      final DocumentArtifact document, final Date lastModifiedDate) {
+
+    QueryResult result = new QueryDocumentAttributesByKey(document, RETENTION_POLICY.getKey())
+        .query(dbService, siteId, null, 2);
+
+    if (!result.items().isEmpty()) {
+
+      var dar = new DocumentAttributeRecord().getFromAttributes(siteId, result.items().get(0));
+      var entityRecord = getEntityRecord(siteId, dar);
+      if (entityRecord != null) {
+
+        if (DATE_LAST_MODIFIED.name().equals(DynamoDbTypes
+            .toString(entityRecord.attributes().get(RETENTION_START_DATE_SOURCE_TYPE.getKey())))) {
+          var documentRecord = new DocumentRecordBuilder().document(document)
+              .lastModifiedDate(lastModifiedDate).build(siteId);
+          dar = new DispositionDateAttribute().getDocumentAttributeRecord(entityRecord,
+              documentRecord);
+          saveDocumentAttributes(siteId, document, List.of(dar), AttributeValidationType.NONE,
+              AttributeValidationAccess.ADMIN_UPDATE);
+        }
+      }
+    }
+  }
+
+  private Collection<DocumentAttributeRecord> createStoredDerivedAttributes(final String siteId,
+      final DocumentRecord item, final Collection<DocumentAttributeRecord> newAttributes) {
+
+    var o = newAttributes.stream().filter(a -> RETENTION_POLICY.getKey().equals(a.getKey()))
+        .findFirst();
+
+    Collection<DocumentAttributeRecord> list = new ArrayList<>();
+
+    o.ifPresent(dar -> {
+
+      var p =
+          presets.stream().filter(pp -> RETENTION_POLICY.getKey().equals(pp.getName())).findFirst();
+
+      if (p.isPresent()) {
+
+        var entityRecord = getEntityRecord(siteId, dar);
+
+        if (entityRecord != null) {
+
+          p.get().getDerivedAttributes().forEach(da -> {
+            if (da instanceof StoredDerivedAttribute) {
+              list.add(da.getDocumentAttributeRecord(entityRecord, item));
+            }
+          });
+        }
+      }
+    });
+
+    return list;
+  }
+
+  private EntityRecord getEntityRecord(final String siteId, final DocumentAttributeRecord dar) {
+    var entityKeyValue = DocumentAttributeEntityKeyValue.fromString(dar.getStringValue());
+    return new FindEntityById().find(dbService, siteId, entityKeyValue);
+  }
+
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId,
-      final DocumentArtifact document, final Collection<DocumentAttributeRecord> newAttributes,
+      final DocumentArtifact document, final DocumentRecord item,
+      final Collection<DocumentAttributeRecord> newAttributes,
       final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
       throws ValidationException {
 
@@ -1808,27 +1936,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (newAttributes != null) {
 
-      DocumentAttributeRecordListBuilder listBuilder = new DocumentAttributeRecordListBuilder();
-
-      Collection<DocumentAttributeRecord> previousAllAttributes =
-          findAllAttributes(siteId, document);
-
-      List<DocumentAttributeRecord> previousAttributes =
-          previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
-
-      List<DocumentAttributeRecord> previousCompositeKeys =
-          previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
-
-      Collection<DocumentAttributeRecord> attributesToBeDeleted =
-          getAttributesToBeDeleted(validationAccess, newAttributes, previousAttributes);
-
-      listBuilder.setNewAttributes(newAttributes);
-      listBuilder.setPreviousAttributes(previousAttributes);
-      listBuilder.setToBeDeletedAttributes(attributesToBeDeleted);
-      listBuilder.setPreviousCompositeKeys(previousCompositeKeys);
+      DocumentAttributeRecordListBuilder listBuilder =
+          createAttributeListBuilder(siteId, document, item, newAttributes, validationAccess);
 
       Collection<DocumentAttributeRecord> compositeKeysToBeDeleted =
-          getCompositeKeysToBeDeletedByAttributes(previousCompositeKeys, attributesToBeDeleted);
+          getCompositeKeysToBeDeletedByAttributes(listBuilder);
 
       // generate Document Attributes To Save
       Collection<DocumentAttributeRecord> toSave = generateDocumentAttributesToSave(siteId,
@@ -1842,7 +1954,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       toSave.forEach(t -> t.setInsertedDate(now));
 
       Collection<DocumentAttributeRecord> toBeDeleted =
-          concat(attributesToBeDeleted, compositeKeysToBeDeleted).stream()
+          concat(listBuilder.getToBeDeletedAttributes(), compositeKeysToBeDeleted).stream()
               .filter(Predicate.not(new DynamodbRecordKeyPredicate(toSave))).toList();
 
       if (!toBeDeleted.isEmpty() && toSave.isEmpty()) {
@@ -1850,7 +1962,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             .error("No attributes found to be saved, only found ones to delete")));
       }
 
-      tx = new DynamodbRecordTx(toSave, toBeDeleted, previousAllAttributes);
+      tx = new DynamodbRecordTx(toSave, toBeDeleted, listBuilder.getPreviousAllAttributes());
 
     } else {
       tx = new DynamodbRecordTx(Collections.emptyList(), Collections.emptyList(),
@@ -1861,13 +1973,12 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   private Collection<DocumentAttributeRecord> getCompositeKeysToBeDeletedByAttributes(
-      final Collection<DocumentAttributeRecord> previousCompositeKeys,
-      final Collection<DocumentAttributeRecord> attributesToBeDeleted) {
+      final DocumentAttributeRecordListBuilder listBuilder) {
 
-    Set<String> keys = attributesToBeDeleted.stream().map(DocumentAttributeRecord::getKey)
-        .collect(Collectors.toSet());
+    Set<String> keys = listBuilder.getToBeDeletedAttributes().stream()
+        .map(DocumentAttributeRecord::getKey).collect(Collectors.toSet());
 
-    return previousCompositeKeys.stream().filter(c -> {
+    return listBuilder.getPreviousCompositeKeys().stream().filter(c -> {
       String[] ss = c.getKey().split(DbKeys.COMPOSITE_KEY_DELIM);
       return Arrays.stream(ss).anyMatch(keys::contains);
     }).toList();
@@ -2219,6 +2330,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<ValidationError> errors) {
 
     var derivedKeys = AttributeKeyReserved.getDerivedAttributes().stream()
+        .filter(a -> !AttributeDerivedType.STORED_DERIVED.equals(a.getDerivedType()))
         .map(AttributeKeyReserved::getKey).collect(Collectors.toSet());
     documentAttributes.forEach(da -> {
       if (derivedKeys.contains(da.getKey())) {

@@ -375,6 +375,19 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
     serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
         new ClassServiceExtension<>(new EntityRequestHandlerInterceptor(serviceCache)));
+
+    registerPresets(serviceCache);
+  }
+
+  private static void registerPresets(final AwsServiceCache serviceCache) {
+    // serviceCache.registerAppend(PresetEntity.class,
+    // new ClassServiceExtension<>(new LlmPromptPresetEntity()));
+    // serviceCache.registerAppend(PresetEntity.class,
+    // new ClassServiceExtension<>(new CheckoutPresetEntity()));
+    // serviceCache.registerAppend(PresetEntity.class,
+    // new ClassServiceExtension<>(new CheckoutForLegalHoldPresetEntity()));
+    // serviceCache.registerAppend(PresetEntity.class,
+    // new ClassServiceExtension<>(new RetentionPolicyPresetEntity()));
   }
 
   /** constructor. */

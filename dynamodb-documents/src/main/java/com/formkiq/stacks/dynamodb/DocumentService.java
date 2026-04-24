@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -593,4 +594,14 @@ public interface DocumentService {
    */
   void updateDocument(String siteId, DocumentArtifact document,
       Map<String, AttributeValue> attributes);
+
+  /**
+   * Update Retention Policy Disposition Date for Last Modified.
+   * 
+   * @param siteId {@link String}
+   * @param document {@link String}
+   * @param lastModifiedDate {@link Date}
+   */
+  void updateRetentionPolicyDispositionDateLastModified(String siteId, DocumentArtifact document,
+      Date lastModifiedDate);
 }

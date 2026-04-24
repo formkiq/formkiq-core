@@ -58,4 +58,17 @@ public interface DynamoDbQuery {
     QueryResponse response = db.query(queryRequest);
     return new QueryResult(response.items(), response.lastEvaluatedKey());
   }
+
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
+   * @param siteId Site Identifier
+   * @param nextToken Next Token
+   * @param limit int
+   * @return QueryResult
+   */
+  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
+    return query(db, db.getTableName(), siteId, nextToken, limit);
+  }
 }
