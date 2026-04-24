@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3;
+package com.formkiq.testutils.aws.s3;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

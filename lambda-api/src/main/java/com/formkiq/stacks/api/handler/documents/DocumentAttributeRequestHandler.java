@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -37,8 +38,10 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyVal
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -61,9 +64,9 @@ import com.formkiq.validation.ValidationException;
 public class DocumentAttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  private static Collection<Map<String, Object>> findDerivedAttribute(final String siteId,
-      final String documentId, final String attributeKey, final DynamoDbService db,
-      final String tableName, final DocumentRecord document,
+  private static Collection<Map<String, Object>> findDerivedAttribute(
+      final AwsServiceCache awsservice, final DynamoDbService db, final String tableName,
+      final String siteId, final DocumentRecord document, final String attributeKey,
       final DocumentAttributeRecordToMap toMap) {
 
     final DocumentArtifact documentArtifact =
@@ -73,10 +76,13 @@ public class DocumentAttributeRequestHandler
     var attribute = AttributeKeyReserved.find(attributeKey);
     if (attribute != null && attribute.isDerived()) {
 
-      var presetEntity = PresetEntity.findPresetEntityByDerivedAttribute(attributeKey);
+      Collection<PresetEntity> presets = new GetPresetEntities(awsservice).apply(null);
+
+      var presetEntity = findPresetEntityByDerivedAttribute(presets, attributeKey);
       if (presetEntity.isPresent()) {
 
-        var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey);
+        var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey)
+            .filter(Predicate.not(StoredDerivedAttribute.class::isInstance));
         if (derivedAttribute.isPresent()) {
 
 
@@ -102,6 +108,12 @@ public class DocumentAttributeRequestHandler
       }
     }
     return map;
+  }
+
+  private static Optional<PresetEntity> findPresetEntityByDerivedAttribute(
+      final Collection<PresetEntity> presets, final String attributeKey) {
+    return presets.stream().filter(a -> a.getDerivedAttributes().stream()
+        .anyMatch(da -> da.getAttributeKey().equals(attributeKey))).findAny();
   }
 
   private static AttributeValidationType getValidationType(
@@ -160,12 +172,12 @@ public class DocumentAttributeRequestHandler
     List<DocumentAttributeRecord> list =
         documentService.findDocumentAttribute(siteId, documentArtifact, attributeKey);
 
-    var toMap = new DocumentAttributeRecordToMap(true, true, db, tableName, document);
+    var toMap = new DocumentAttributeRecordToMap(true, true, awsservice, document);
     Collection<Map<String, Object>> map = toMap.apply(siteId, list);
 
     if (map.isEmpty()) {
 
-      map = findDerivedAttribute(siteId, documentId, attributeKey, db, tableName, document, toMap);
+      map = findDerivedAttribute(awsservice, db, tableName, siteId, document, attributeKey, toMap);
 
       if (map.isEmpty()) {
         throw new NotFoundException(

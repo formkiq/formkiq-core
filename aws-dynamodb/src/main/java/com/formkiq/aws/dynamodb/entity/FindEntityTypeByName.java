@@ -33,6 +33,8 @@ import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
@@ -67,7 +69,7 @@ public class FindEntityTypeByName
   public QueryRequest build(final String tableName, final String siteId,
       final FindEntityTypeByName.EntityTypeName record) {
 
-    DynamoDbKey key = EntityTypeRecord.builder().documentId("").name(record.name())
+    DynamoDbKey key = EntityTypeRecord.builder(null).documentId("").name(record.name())
         .namespace(record.namespace()).buildKey(siteId);
     return DynamoDbQueryBuilder.builder().indexName(GSI1).pk(key.gsi1Pk()).beginsWith(key.gsi1Sk())
         .limit("1").build(tableName);
@@ -81,7 +83,11 @@ public class FindEntityTypeByName
     String name = record.name();
     if (!Strings.isUuid(name)) {
 
-      EntityTypeRecord.builder().namespace(record.namespace()).name(name).documentId(entityTypeId)
+      EntityTypeNamespace namespace = record.namespace();
+      List<String> presets =
+          EntityTypeNamespace.PRESET.equals(namespace) ? List.of(name) : Collections.emptyList();
+
+      EntityTypeRecord.builder(presets).namespace(namespace).name(name).documentId(entityTypeId)
           .validate();
 
       QueryRequest query = build(tableName, siteId, record);

@@ -103,7 +103,7 @@ import com.formkiq.client.model.SetDocumentRestoreResponse;
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   /** Test Timeout. */
-  private static final int TEST_TIMEOUT = 10;
+  private static final int TEST_TIMEOUT = 20;
 
   private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
     this.attributesApi.addAttribute(

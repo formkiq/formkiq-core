@@ -21,31 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.documents;
-
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
-import com.formkiq.aws.dynamodb.entity.EntityRecord;
+package com.formkiq.aws.dynamodb.attributes;
 
 /**
- * Derived Document Attribute that returns a {@link String}.
- *
+ * Attribute Derived Type.
  */
-public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute {
-  /**
-   * Method to calculate value.
-   *
-   * @param entityRecord {@link EntityRecord}
-   * @param document {@link DocumentRecord}
-   * @return T
-   */
-  String calculate(EntityRecord entityRecord, DocumentRecord document);
-
-  default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document) {
-
-    return new DocumentAttributeRecord()
-        .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
-        .setUserId("System").setKey(getAttributeKey())
-        .setStringValue(calculate(entityRecord, document)).updateValueType();
-  }
+public enum AttributeDerivedType {
+  /** Standard. */
+  STANDARD,
+  /** Stored Derived. */
+  STORED_DERIVED
 }

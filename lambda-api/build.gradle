@@ -54,6 +54,7 @@ dependencies {
   testImplementation project(':aws-cognito-identityprovider')
   testImplementation project(':aws-iam')
   testImplementation project(':aws-sts')
+  testImplementation project(':lambda-s3')
   testImplementation project(':fkq-test-utils')
   testImplementation project(':lambda-typesense')
 

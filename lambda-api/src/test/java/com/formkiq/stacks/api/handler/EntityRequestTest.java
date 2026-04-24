@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -36,26 +35,17 @@ import com.formkiq.client.model.AddEntityRequest;
 import com.formkiq.client.model.AddEntityResponse;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
-import com.formkiq.client.model.AddResponse;
-import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
-import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.client.model.GetEntitiesResponse;
 import com.formkiq.client.model.GetEntityResponse;
 import com.formkiq.client.model.UpdateEntityRequest;
 import com.formkiq.client.model.UpdateResponse;
-import com.formkiq.testutils.api.ApiHttpResponse;
-import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
-import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
-import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
-import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
-import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.entity.DeleteEntityAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.GetEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.UpdateEntityRequestBuilder;
@@ -65,7 +55,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -80,31 +69,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 /** Unit Tests for request /entities. */
 public class EntityRequestTest extends AbstractApiClientRequestTest {
 
-  private static void assertEntityAttribute(final EntityAttribute attribute, final String key,
-      final String stringValue, final String numberValue) {
-    assertEquals(key, attribute.getKey());
-    assertEquals(stringValue, attribute.getStringValue());
-
-    if (numberValue != null) {
-      assertNotNull(attribute.getNumberValue());
-      assertEquals(numberValue, attribute.getNumberValue().toString());
-    }
-  }
-
   private void addAttribute(final String siteId, final String attributeKey,
       final AttributeDataType dataType) throws ApiException {
     this.attributesApi.addAttribute(new AddAttributeRequest()
         .attribute(new AddAttribute().key(attributeKey).dataType(dataType)), siteId);
-  }
-
-  private String addCheckoutEntityType(final String siteId) throws ApiException {
-    String entityTypeId = this.entityApi
-        .addEntityType(new AddEntityTypeRequest().entityType(
-            new AddEntityType().name("Checkout").namespace(EntityTypeNamespace.PRESET)), siteId)
-        .getEntityTypeId();
-    assertNotNull(entityTypeId);
-
-    return entityTypeId;
   }
 
   private String addEntityType(final String siteId) throws ApiException {
@@ -112,22 +80,6 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         .addEntityType(new AddEntityTypeRequest().entityType(
             new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM)), siteId)
         .getEntityTypeId();
-    assertNotNull(entityTypeId);
-    return entityTypeId;
-  }
-
-  private String addLlmPromptEntityType(final String siteId) throws ApiException {
-    String entityTypeId =
-        new AddEntityTypeRequestBuilder().setEntityType("LlmPrompt", EntityTypeNamespace.PRESET)
-            .submit(client, siteId).throwIfError().response().getEntityTypeId();
-    assertNotNull(entityTypeId);
-    return entityTypeId;
-  }
-
-  private String addRetentionEntityType(final String siteId) throws ApiException {
-    String entityTypeId = new AddEntityTypeRequestBuilder()
-        .setEntityType("RetentionPolicy", EntityTypeNamespace.PRESET).submit(client, siteId)
-        .throwIfError().response().getEntityTypeId();
     assertNotNull(entityTypeId);
     return entityTypeId;
   }
@@ -409,148 +361,6 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Post /entities/{entityTypeId} for Checkout.
-   *
-   */
-  @Test
-  public void testAddEntityCheckoutByEntityId() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addCheckoutEntityType(siteId);
-
-      String name = "MyCheckout_" + ID.uuid();
-      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name));
-
-      // when
-      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
-
-      // then
-      String entityId = response.getEntityId();
-      assertNotNull(entityId);
-
-      // when - try with different namespaces
-      GetEntityResponse entityResponse0 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
-      GetEntityResponse entityResponse1 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
-      GetEntityResponse entityResponse2 =
-          this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
-
-      for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
-          entityResponse2)) {
-        Entity entity = entityResponse.getEntity();
-        assertNotNull(entity);
-        assertEquals(name, entity.getName());
-
-        int i = 0;
-        List<EntityAttribute> attributes = notNull(entity.getAttributes());
-        assertEquals(2, attributes.size());
-        assertEquals("LockedBy", attributes.get(i).getKey());
-        assertEquals(AttributeValueType.STRING, attributes.get(i).getValueType());
-        assertEquals("joesmith", attributes.get(i++).getStringValue());
-        assertEquals("LockedDate", attributes.get(i).getKey());
-        assertEquals(AttributeValueType.STRING, attributes.get(i).getValueType());
-        assertNotNull(attributes.get(i).getStringValue());
-
-        validateCheckoutAttributes(siteId);
-      }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for Checkout.
-   *
-   */
-  @Test
-  public void testAddEntityCheckoutByEntityName() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId).response();
-      final DocumentArtifact document =
-          DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
-
-      addCheckoutEntityType(siteId);
-      validateCheckoutAttributes(siteId);
-
-      String name = "MyCheckout_" + ID.uuid();
-      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name));
-
-      // when
-      AddEntityResponse response = this.entityApi.addEntity("Checkout", req, siteId, "preset");
-
-      // then
-      String entityId = response.getEntityId();
-      assertNotNull(entityId);
-
-      // when - try with different namespaces
-      GetEntityResponse entityResponse =
-          this.entityApi.getEntity("Checkout", entityId, siteId, "preset");
-
-      // then
-      Entity entity = entityResponse.getEntity();
-      assertNotNull(entity);
-      assertEquals(name, entity.getName());
-
-      int i = 0;
-      List<EntityAttribute> attributes = notNull(entity.getAttributes());
-      assertEquals(2, attributes.size());
-      assertEquals("LockedBy", attributes.get(i).getKey());
-      assertEquals("joesmith", attributes.get(i++).getStringValue());
-      assertEquals("LockedDate", attributes.get(i).getKey());
-      assertNotNull(attributes.get(i).getStringValue());
-
-      validateCheckoutAttributes(siteId);
-
-      ApiHttpResponse<AddResponse> addResp = new AddDocumentAttributeRequestBuilder(document)
-          .addAttribute("Checkout", "Checkout", entityId, EntityTypeNamespace.PRESET)
-          .submit(client, siteId);
-      assertFalse(addResp.isError());
-
-      ApiHttpResponse<GetDocumentAttributeResponse> attr =
-          new GetDocumentAttributeRequestBuilder(document, "Checkout").submit(client, siteId);
-      assertFalse(attr.isError());
-      assertNotNull(Objects.requireNonNull(attr.response().getAttribute()).getStringValue());
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for Checkout and try and override values.
-   *
-   */
-  @Test
-  public void testAddEntityCheckoutByOverrideValues() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      addCheckoutEntityType(siteId);
-
-      String name = "MyCheckout_" + ID.uuid();
-      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name(name)
-          .addAttributesItem(new AddEntityAttribute().key("LockedBy").stringValue("asd")));
-
-      // when
-      try {
-        this.entityApi.addEntity("Checkout", req, siteId, "preset");
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"message\":\"'Checkout' entity type does not " + "support attributes in request\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
    * Post /entities/{entityTypeId} for missing Checkout EntityType.
    *
    */
@@ -574,224 +384,6 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
             + "\"error\":\"EntityType 'Checkout' is not found\"}]}", e.getResponseBody());
       }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for LLM Prompt.
-   *
-   */
-  @Test
-  public void testAddEntityLlmPrompt() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addLlmPromptEntityType(siteId);
-
-      for (String namespace : Arrays.asList(null, "preset", "custom")) {
-
-        String name = "MyPrompt_" + ID.uuid();
-        AddEntityRequest req =
-            new AddEntityRequest().entity(new AddEntity().name(name).addAttributesItem(
-                new AddEntityAttribute().key("UserPrompt").stringValue("This prompt")));
-
-        // when
-        AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, namespace);
-
-        // then
-        String entityId = response.getEntityId();
-        assertNotNull(entityId);
-
-        // when - try with different namespaces
-        GetEntityResponse entityResponse0 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
-        GetEntityResponse entityResponse1 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
-        GetEntityResponse entityResponse2 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
-
-        for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
-            entityResponse2)) {
-          Entity entity = entityResponse.getEntity();
-          assertNotNull(entity);
-          assertEquals(name, entity.getName());
-
-          List<EntityAttribute> attributes = notNull(entity.getAttributes());
-          assertEquals(1, attributes.size());
-          assertEntityAttribute(attributes.get(0), "UserPrompt", "This prompt", null);
-        }
-      }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for missing LLM Prompt.
-   *
-   */
-  @Test
-  public void testAddEntityLlmPromptMissing() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addLlmPromptEntityType(siteId);
-
-      AddEntityRequest req = new AddEntityRequest().entity(new AddEntity().name("MyPrompt"));
-
-      // when
-      try {
-        this.entityApi.addEntity(entityTypeId, req, siteId, "preset");
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"UserPrompt\",\"error\":\"'UserPrompt' is required\"}]}",
-            e.getResponseBody());
-      }
-
-      // when - using EntityType Name.
-      try {
-        this.entityApi.addEntity("LlmPrompt", req, siteId, "preset");
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"UserPrompt\",\"error\":\"'UserPrompt' is required\"}]}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for Retention.
-   *
-   */
-  @Test
-  public void testAddEntityRetention() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addRetentionEntityType(siteId);
-
-      for (String namespace : Arrays.asList(null, "preset", "custom")) {
-
-        String name = "RetentionPolicy_" + ID.uuid();
-
-        // when
-        String entityId = new AddEntityRequestBuilder(entityTypeId, namespace).name(name)
-            .addAttribute("RetentionPeriodInDays", new BigDecimal("10"))
-            .addAttribute("RetentionStartDateSourceType", "date_inserted").submit(client, siteId)
-            .throwIfError().response().getEntityId();
-
-        // then
-        assertNotNull(entityId);
-
-        // when - try with different namespaces
-        GetEntityResponse entityResponse0 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, "preset");
-        GetEntityResponse entityResponse1 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, "custom");
-        GetEntityResponse entityResponse2 =
-            this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
-
-        for (GetEntityResponse entityResponse : List.of(entityResponse0, entityResponse1,
-            entityResponse2)) {
-          Entity entity = entityResponse.getEntity();
-          assertNotNull(entity);
-          assertEquals(name, entity.getName());
-
-          List<EntityAttribute> attributes = notNull(entity.getAttributes());
-          assertEquals(2, attributes.size());
-          assertEntityAttribute(attributes.get(0), "RetentionPeriodInDays", null, "10.0");
-          assertEntityAttribute(attributes.get(1), "RetentionStartDateSourceType", "DATE_INSERTED",
-              null);
-        }
-      }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} for Retention missing Attributes.
-   *
-   */
-  @Test
-  public void testAddEntityRetentionMissingAttributes() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addRetentionEntityType(siteId);
-
-      for (String namespace : Arrays.asList(null, "preset", "custom")) {
-
-        String name = "RetentionPolicy_" + ID.uuid();
-
-        // when
-        var response =
-            new AddEntityRequestBuilder(entityTypeId, namespace).name(name).submit(client, siteId);
-
-        // then
-        assertNull(response.response());
-        assertNotNull(response.exception());
-        assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"RetentionPeriodInDays\","
-                + "\"error\":\"'RetentionPeriodInDays' is required\"},"
-                + "{\"key\":\"RetentionStartDateSourceType\","
-                + "\"error\":\"'RetentionStartDateSourceType' is required\"}]}",
-            response.exception().getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Post /entities/{entityTypeId} and try and delete an attributeKey.
-   *
-   */
-  @Test
-  public void testAddPresetEntityDeleteAttribute() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(new String[] {siteId});
-
-      String entityTypeId = addLlmPromptEntityType(siteId);
-
-      String name = "MyPrompt_" + ID.uuid();
-      AddEntityRequest req =
-          new AddEntityRequest().entity(new AddEntity().name(name).addAttributesItem(
-              new AddEntityAttribute().key("UserPrompt").stringValue("This prompt")));
-
-      // when
-      AddEntityResponse response = this.entityApi.addEntity(entityTypeId, req, siteId, null);
-
-      // then
-      String entityId = response.getEntityId();
-      assertNotNull(entityId);
-
-      var get = new GetEntityRequestBuilder(entityTypeId, null, entityId).submit(client, siteId)
-          .throwIfError().response();
-      var entity = get.getEntity();
-      assertNotNull(entity);
-      assertEntity(entity, name, "UserPrompt", "This prompt");
-
-      // when
-      var resp = new DeleteEntityAttributeRequestBuilder(entityTypeId, entityId, "UserPrompt")
-          .submit(client, siteId);
-
-      // then
-      assertTrue(resp.isError());
-      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
-      assertEquals("{\"message\":\"PRESET Entities cannot have attributes removed\"}",
-          resp.exception().getResponseBody());
     }
   }
 
@@ -1170,11 +762,4 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     assertEntity(entity, "mine", "s", "222");
   }
 
-  private void validateCheckoutAttributes(final String siteId) {
-    List<Attribute> attributes = notNull(
-        new GetAttributesRequestBuilder().submit(client, siteId).response().getAttributes());
-    assertEquals(2, attributes.size());
-    assertEquals("LockedBy", attributes.get(0).getKey());
-    assertEquals("LockedDate", attributes.get(1).getKey());
-  }
 }

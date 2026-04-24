@@ -35,7 +35,10 @@ import com.formkiq.aws.dynamodb.entity.AttributeValueToEntityTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityAttributeTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityDocumentAttributeEntityKeyValueGet;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
@@ -43,8 +46,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -62,10 +67,10 @@ public class DocumentAttributeRecordToMap implements
   private final boolean loadEntities;
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
-  /** Table Name. */
-  private final String tabeName;
   /** {@link DocumentRecord}. */
   private final DocumentRecord doc;
+  /** {@link AwsServiceCache}. */
+  private final AwsServiceCache awsServiceCache;
 
   /**
    * constructor.
@@ -73,7 +78,7 @@ public class DocumentAttributeRecordToMap implements
    * @param uniqueAttributeKeys boolean
    */
   public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys) {
-    this(uniqueAttributeKeys, false, null, null, null);
+    this(uniqueAttributeKeys, false, null, null);
   }
 
   /**
@@ -81,17 +86,16 @@ public class DocumentAttributeRecordToMap implements
    *
    * @param uniqueAttributeKeys boolean
    * @param loadEntityValues boolean
-   * @param dbService {@link DynamoDbService}
-   * @param dynamoDbTableName {@link String}
+   * @param serviceCache {@link AwsServiceCache}
    * @param document {@link DocumentRecord}
    */
   public DocumentAttributeRecordToMap(final boolean uniqueAttributeKeys,
-      final boolean loadEntityValues, final DynamoDbService dbService,
-      final String dynamoDbTableName, final DocumentRecord document) {
+      final boolean loadEntityValues, final AwsServiceCache serviceCache,
+      final DocumentRecord document) {
     this.uniqueKeys = uniqueAttributeKeys;
     this.loadEntities = loadEntityValues;
-    this.db = dbService;
-    this.tabeName = dynamoDbTableName;
+    this.db = serviceCache != null ? serviceCache.getExtension(DynamoDbService.class) : null;
+    this.awsServiceCache = serviceCache;
     this.doc = document;
   }
 
@@ -209,7 +213,8 @@ public class DocumentAttributeRecordToMap implements
     if (loadEntities) {
       var entityKeyValues = findEntityKeyValues(attributes);
       Collection<Map<String, AttributeValue>> attrs =
-          new EntityDocumentAttributeEntityKeyValueGet(entityKeyValues).find(db, tabeName, siteId);
+          new EntityDocumentAttributeEntityKeyValueGet(entityKeyValues).find(db, db.getTableName(),
+              siteId);
 
       return attrs.stream().collect(Collectors.toMap(
           r -> new DocumentAttributeEntityKeyValue(DynamoDbTypes.toString(r.get("entityTypeId")),
@@ -223,23 +228,29 @@ public class DocumentAttributeRecordToMap implements
   private void updateDervivedAttributes(final EntityRecord entityRecord, final String key,
       final Map<String, Object> values) {
 
-    if (doc != null && AttributeKeyReserved.RETENTION_POLICY.getKey().equals(key)) {
+    String retentionPolicyKey = AttributeKeyReserved.RETENTION_POLICY.getKey();
+
+    if (doc != null && retentionPolicyKey.equals(key)) {
 
       Object rawAttributes = values.get("attributes");
-      List<Map<String, Object>> attributes = rawAttributes instanceof List<?> rawList
-          ? rawList.stream().filter(Map.class::isInstance).map(m -> (Map<String, Object>) m)
-              .collect(Collectors.toCollection(ArrayList::new))
-          : List.of();
+      List<Map<String, Object>> attributes = new ArrayList<>(
+          rawAttributes instanceof List<?> rawList
+              ? rawList.stream().filter(Map.class::isInstance).map(m -> (Map<String, Object>) m)
+                  .collect(Collectors.toCollection(ArrayList::new))
+              : List.of());
 
-      PresetEntity.RETENTION_POLICY.getDerivedAttributes().forEach(da -> {
+      Optional<PresetEntity> o = new GetPresetEntity(awsServiceCache).apply(retentionPolicyKey);
 
-        var transformer = new AttributeValueToEntityTransformer();
-        var dar = da.getDocumentAttributeRecord(entityRecord, doc);
-        Map<String, Object> map = transformer.apply(dar.getAttributes(null));
-        map.remove("userId");
-        map.remove("entityId");
-        attributes.add(map);
-      });
+      o.ifPresent(presetEntityI -> presetEntityI.getDerivedAttributes().stream()
+          .filter(Predicate.not(StoredDerivedAttribute.class::isInstance)).forEach(da -> {
+
+            var transformer = new AttributeValueToEntityTransformer();
+            var dar = da.getDocumentAttributeRecord(entityRecord, doc);
+            Map<String, Object> map = transformer.apply(dar.getAttributes(null));
+            map.remove("userId");
+            map.remove("entityId");
+            attributes.add(map);
+          }));
 
       values.put("attributes", attributes);
     }

@@ -24,6 +24,7 @@
 package com.formkiq.testutils.aws;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_AUDIT_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
@@ -163,6 +164,7 @@ public class FormKiqApiExtension
     map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    map.put("DOCUMENTS_AUDIT_TABLE", DOCUMENTS_AUDIT_TABLE);
     map.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     map.put("CACHE_TABLE", CACHE_TABLE);
     map.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);

@@ -899,7 +899,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   private void validateEntity(final String siteId, final String entityTypeId, final String entityId,
       final Collection<ValidationError> errors) {
 
-    DynamoDbKey entityType = EntityTypeRecord.builder().nameEmpty()
+    DynamoDbKey entityType = EntityTypeRecord.builder(null).nameEmpty()
         .namespace(EntityTypeNamespace.CUSTOM).documentId(entityTypeId).buildKey(siteId);
     boolean entityTypeExists = this.db.exists(entityType);
 

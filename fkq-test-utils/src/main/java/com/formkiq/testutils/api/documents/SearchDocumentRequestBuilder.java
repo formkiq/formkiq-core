@@ -26,6 +26,7 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
@@ -51,6 +52,16 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
    */
   public SearchDocumentRequestBuilder() {
     this.request = new DocumentSearchRequest();
+  }
+
+  /**
+   * Set the document search attribute.
+   *
+   * @param attribute {@link DocumentSearchAttribute}
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder attribute(final DocumentSearchAttribute attribute) {
+    return query(new DocumentSearch().attribute(attribute));
   }
 
   /**
@@ -94,6 +105,17 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
    */
   public SearchDocumentRequestBuilder previous(final String docsPrevious) {
     this.previous = docsPrevious;
+    return this;
+  }
+
+  /**
+   * Set the document search query.
+   *
+   * @param query {@link DocumentSearch}
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder query(final DocumentSearch query) {
+    this.request.query(query);
     return this;
   }
 

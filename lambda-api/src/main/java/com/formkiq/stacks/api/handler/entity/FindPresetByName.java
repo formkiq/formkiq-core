@@ -21,31 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.documents;
+package com.formkiq.stacks.api.handler.entity;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
-import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
+
+import java.util.function.Predicate;
 
 /**
- * Derived Document Attribute that returns a {@link String}.
- *
+ * {@link Predicate} to find PresetEntity by name.
  */
-public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute {
+public class FindPresetByName implements Predicate<PresetEntity> {
+
+  /** Entity Name. */
+  private final String entityName;
+
   /**
-   * Method to calculate value.
-   *
-   * @param entityRecord {@link EntityRecord}
-   * @param document {@link DocumentRecord}
-   * @return T
+   * constructor.
+   * 
+   * @param name {@link String}
    */
-  String calculate(EntityRecord entityRecord, DocumentRecord document);
+  public FindPresetByName(final String name) {
+    entityName = name;
+  }
 
-  default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document) {
-
-    return new DocumentAttributeRecord()
-        .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
-        .setUserId("System").setKey(getAttributeKey())
-        .setStringValue(calculate(entityRecord, document)).updateValueType();
+  @Override
+  public boolean test(final PresetEntity e) {
+    return e.getName().equalsIgnoreCase(entityName);
   }
 }

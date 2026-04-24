@@ -24,8 +24,11 @@
 package com.formkiq.stacks.dynamodb;
 
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
+
+import java.util.List;
 
 /**
  * 
@@ -54,8 +57,10 @@ public class DocumentServiceExtension implements AwsServiceExtension<DocumentSer
       DocumentServiceInterceptor interceptor =
           awsServiceCache.getExtensionOrNull(DocumentServiceInterceptor.class);
 
+      List<PresetEntity> presets = awsServiceCache.getExtensions(PresetEntity.class);
+
       this.service = new DocumentServiceImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), versionService, interceptor);
+          awsServiceCache.environment("DOCUMENTS_TABLE"), presets, versionService, interceptor);
     }
 
     return this.service;

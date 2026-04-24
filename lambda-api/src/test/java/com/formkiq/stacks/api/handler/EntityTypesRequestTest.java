@@ -25,21 +25,16 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddEntityTypeResponse;
-import com.formkiq.client.model.Attribute;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
-import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
-import com.formkiq.testutils.api.attributes.GetAttributesRequestBuilder;
-import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -48,34 +43,19 @@ import java.util.List;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /entityTypes. */
 public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
   private void assertEntityTypeEquals(final EntityType entityType, final String name) {
-    assertEntityTypeEquals(null, entityType, name, EntityTypeNamespace.CUSTOM, null);
-  }
-
-  private void assertEntityTypeEquals(final String siteId, final EntityType entityType,
-      final String name, final EntityTypeNamespace namespace, final PresetEntity presetEntity) {
     assertEquals(name, entityType.getName());
-    assertEquals(namespace, entityType.getNamespace());
+    assertEquals(EntityTypeNamespace.CUSTOM, entityType.getNamespace());
     assertNotNull(entityType.getEntityTypeId());
     assertNotNull(entityType.getInsertedDate());
     assertNotNull(DynamoDbTypes.toDate(entityType.getInsertedDate()));
 
-    if (EntityTypeNamespace.PRESET.equals(namespace)) {
-      assertNotNull(presetEntity);
-      List<String> attributes = notNull(
-          new GetAttributesRequestBuilder().submit(client, siteId).response().getAttributes())
-          .stream().map(Attribute::getKey).toList();
-
-      presetEntity.getAttributeKeys().forEach(attr -> assertTrue(attributes.contains(attr)));
-    }
   }
 
   /**
@@ -124,33 +104,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"}]}",
             e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Post /entityTypes invalid PRESET.
-   *
-   */
-  @Test
-  public void testAddEntityTypes03() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-
-      AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.PRESET));
-
-      // when
-      try {
-        this.entityApi.addEntityType(req, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"name\","
-            + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
-            + "CheckoutForLegalHold, RetentionPolicy'\"}]}", e.getResponseBody());
       }
     }
   }
@@ -217,83 +170,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"errors\":[{\"key\":\"name\","
             + "\"error\":\"'name' unexpected value 'da entity'\"}]}", e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * Test Preset Entity Type attribute already exists.
-   */
-  @Test
-  void testAddPresentEntityTypeWhenAttributeExists() {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      // given
-      setBearerToken(new String[] {siteId});
-
-      // when
-      var addResp =
-          new AddAttributeRequestBuilder().keyAsString("UserPrompt").submit(client, siteId);
-
-      // then
-      assertFalse(addResp.isError());
-
-      // when
-      var add = new AddEntityTypeRequestBuilder()
-          .setEntityType(PresetEntity.LLM_PROMPT.getName(), EntityTypeNamespace.PRESET)
-          .submit(client, siteId);
-
-      // then
-      assertFalse(add.isError());
-
-      var get = new GetAttributesRequestBuilder().submit(client, siteId);
-      assertFalse(get.isError());
-
-      List<Attribute> attributes = notNull(get.response().getAttributes());
-      assertEquals(1, attributes.size());
-      assertEquals("UserPrompt", attributes.get(0).getKey());
-    }
-  }
-
-  /**
-   * Post /entityTypes with Preset Entity Type.
-   *
-   */
-  @Test
-  public void testAddPresetEntityType() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-
-      for (PresetEntity value : PresetEntity.values()) {
-
-        AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
-            new AddEntityType().name(value.getName()).namespace(EntityTypeNamespace.PRESET));
-
-        // when
-        AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
-
-        // then
-        assertNotNull(response.getEntityTypeId());
-        GetEntityTypesResponse results =
-            this.entityApi.getEntityTypes(siteId, "preset", null, null);
-        List<EntityType> entityTypes = notNull(results.getEntityTypes());
-        assertTrue(entityTypes.size() <= PresetEntity.values().length);
-        EntityType entityType = entityTypes.stream()
-            .filter(a -> value.getName().equals(a.getName())).findAny().orElse(null);
-        assertNotNull(entityType);
-        assertEntityTypeEquals(siteId, entityType, value.getName(), EntityTypeNamespace.PRESET,
-            value);
-
-        // when - add prompt again
-        try {
-          this.entityApi.addEntityType(req, siteId);
-          fail();
-        } catch (ApiException e) {
-          // then
-          assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-          assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' already exists\"}]}",
-              e.getResponseBody());
-        }
       }
     }
   }
@@ -503,33 +379,6 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("{\"errors\":[{\"key\":\"namespace\","
           + "\"error\":\"'namespace' unexpected value 'ADSAF' must be one of "
           + "PRESET, CUSTOM\"}]}", e.getResponseBody());
-    }
-  }
-
-  /**
-   * Post /entityTypes with invalid Preset Entity Type.
-   *
-   */
-  @Test
-  public void testInvalidPresetEntityType() {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(new String[] {siteId});
-
-      AddEntityTypeRequest req = new AddEntityTypeRequest()
-          .entityType(new AddEntityType().name("Something").namespace(EntityTypeNamespace.PRESET));
-
-      // when
-      try {
-        this.entityApi.addEntityType(req, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"name\","
-            + "\"error\":\"unexpected value must be one of 'LlmPrompt, Checkout, "
-            + "CheckoutForLegalHold, RetentionPolicy'\"}]}", e.getResponseBody());
-      }
     }
   }
 }

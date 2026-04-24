@@ -23,29 +23,30 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
-import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttributeString;
-import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-import java.util.Date;
+import java.util.Collection;
+import java.util.function.Function;
 
 /**
- * RetentionEffectiveEndDate {@link DerivedDocumentAttribute}.
+ * {@link Function} to get all {@link PresetEntity}.
  */
-public class RetentionEffectiveStatusAttribute implements DerivedDocumentAttributeString {
-  @Override
-  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
+public class GetPresetEntities implements Function<Void, Collection<PresetEntity>> {
 
-    var now = DateUtil.getIsoDateFormatter().format(new Date());
-    var start = new RetentionEffectiveStartDateAttribute().calculate(entityRecord, document);
-    var end = new RetentionEffectiveEndDateAttribute().calculate(entityRecord, document);
+  /** {@link AwsServiceCache}. */
+  private final AwsServiceCache serviceCache;
 
-    return now.compareTo(start) >= 0 && now.compareTo(end) <= 0 ? "IN_EFFECT" : "NOT_IN_EFFECT";
+  /**
+   * constructor.
+   * 
+   * @param cache {@link AwsServiceCache}
+   */
+  public GetPresetEntities(final AwsServiceCache cache) {
+    this.serviceCache = cache;
   }
 
   @Override
-  public String getAttributeKey() {
-    return "RetentionEffectiveStatus";
+  public Collection<PresetEntity> apply(final Void unused) {
+    return serviceCache.getExtensions(PresetEntity.class);
   }
 }
