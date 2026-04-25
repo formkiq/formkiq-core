@@ -53,6 +53,8 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocument;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentContentTypes;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentDispositionAction;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentRetentionAndDisposition;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocusign;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
@@ -114,8 +116,7 @@ public class ConfigurationRequestHandler
     obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
         getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
         getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
-        getNotNullOrDefault(obj.notificationEmail(), ""),
-        Objects.getNotNullOrDefault(obj.document(), new SiteConfigurationDocument(null)),
+        getNotNullOrDefault(obj.notificationEmail(), ""), normalizeDocument(obj.document()),
         Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
         Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)), Objects
             .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
@@ -170,6 +171,15 @@ public class ConfigurationRequestHandler
     final int smallDiv = 3;
     int m = s != null && mask > s.length() ? s.length() / smallDiv : mask;
     return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
+  }
+
+  private SiteConfigurationDocument normalizeDocument(final SiteConfigurationDocument document) {
+    if (document != null) {
+      return document.withDefaults();
+    }
+
+    return new SiteConfigurationDocument(null, new SiteConfigurationDocumentRetentionAndDisposition(
+        SiteConfigurationDocumentDispositionAction.SOFT_DELETE));
   }
 
   @Override

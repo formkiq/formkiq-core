@@ -26,22 +26,12 @@ package com.formkiq.stacks.dynamodb.config;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Site Configuration Document.
+ * Document disposition action.
  */
 @Reflectable
-public record SiteConfigurationDocument(SiteConfigurationDocumentContentTypes contentTypes,
-    SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition) {
-
-  /**
-   * Create {@link SiteConfigurationDocument} with a default disposition action when missing.
-   *
-   * @return {@link SiteConfigurationDocument}
-   */
-  public SiteConfigurationDocument withDefaults() {
-    SiteConfigurationDocumentRetentionAndDisposition retention =
-        this.retentionAndDisposition != null ? this.retentionAndDisposition.withDefaults()
-            : new SiteConfigurationDocumentRetentionAndDisposition(
-                SiteConfigurationDocumentDispositionAction.SOFT_DELETE);
-    return new SiteConfigurationDocument(this.contentTypes, retention);
-  }
+public enum SiteConfigurationDocumentDispositionAction {
+  /** Soft delete document. */
+  SOFT_DELETE,
+  /** Permanently delete document. */
+  DELETE
 }
