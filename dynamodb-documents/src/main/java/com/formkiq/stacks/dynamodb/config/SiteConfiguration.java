@@ -96,8 +96,24 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     List<String> allowlist =
         DynamoDbTypes.toStrings(attributes.get("documentContentTypesAllowlist"));
     List<String> denylist = DynamoDbTypes.toStrings(attributes.get("documentContentTypesDenylist"));
-    return new SiteConfigurationDocument(
-        new SiteConfigurationDocumentContentTypes(allowlist, denylist));
+    String dispositionAction = DynamoDbTypes.toString(attributes.get("documentDispositionAction"));
+
+    boolean hasContentTypes = allowlist != null || denylist != null;
+    boolean hasRetentionAndDisposition = dispositionAction != null;
+
+    if (!hasContentTypes && !hasRetentionAndDisposition) {
+      return null;
+    }
+
+    SiteConfigurationDocumentContentTypes contentTypes =
+        hasContentTypes ? new SiteConfigurationDocumentContentTypes(allowlist, denylist) : null;
+
+    SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
+        new SiteConfigurationDocumentRetentionAndDisposition(dispositionAction != null
+            ? SiteConfigurationDocumentDispositionAction.valueOf(dispositionAction)
+            : SiteConfigurationDocumentDispositionAction.SOFT_DELETE);
+
+    return new SiteConfigurationDocument(contentTypes, retentionAndDisposition);
   }
 
   private static SiteConfigurationDocusign getSiteConfigurationDocusign(
@@ -172,8 +188,16 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
             .withString(WEBHOOK_TIME_TO_LIVE, webhookTimeToLive);
 
     if (document != null) {
-      map.withStrings("documentContentTypesAllowlist", notNull(document.contentTypes().allowlist()))
-          .withStrings("documentContentTypesDenylist", notNull(document.contentTypes().denylist()));
+      SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
+      if (contentTypes != null) {
+        map.withStrings("documentContentTypesAllowlist", notNull(contentTypes.allowlist()))
+            .withStrings("documentContentTypesDenylist", notNull(contentTypes.denylist()));
+      }
+
+      SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
+          document.withDefaults().retentionAndDisposition();
+      map.withString("documentDispositionAction",
+          retentionAndDisposition.dispositionAction().name());
     }
 
     if (google != null) {

@@ -10834,6 +10834,8 @@ components:
       properties:
         contentTypes:
           $ref: "#/components/schemas/DocumentConfigContentTypes"
+        retentionAndDisposition:
+          $ref: "#/components/schemas/DocumentConfigRetentionAndDisposition"
 
     DocumentConfigContentTypes:
       type: object
@@ -10855,6 +10857,19 @@ components:
           example:
             - application/x-msdownload
             - application/x-sh
+
+    DocumentConfigRetentionAndDisposition:
+      type: object
+      properties:
+        dispositionAction:
+          $ref: "#/components/schemas/DocumentConfigDispositionAction"
+
+    DocumentConfigDispositionAction:
+      type: string
+      default: SOFT_DELETE
+      enum:
+        - SOFT_DELETE
+        - DELETE
 
     OcrConfig:
       type: "object"

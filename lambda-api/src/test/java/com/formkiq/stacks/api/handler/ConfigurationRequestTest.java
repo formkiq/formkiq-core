@@ -29,6 +29,8 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigContentTypes;
+import com.formkiq.client.model.DocumentConfigDispositionAction;
+import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
 import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
@@ -87,6 +89,17 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       xm4Xo6+jDbifGOqFT4Ofeyc=
       -----END RSA PRIVATE KEY-----
            \s""";
+
+  private static void assertRententionAndDisposition(final GetConfigurationResponse config,
+      final DocumentConfigDispositionAction action) {
+    assertNotNull(config);
+    assertNotNull(config.getDocument());
+    assertNotNull(config.getDocument().getRetentionAndDisposition());
+
+    var retentionAndDisposition = config.getDocument().getRetentionAndDisposition();
+    assertEquals(action, retentionAndDisposition.getDispositionAction());
+  }
+
   /** {@link ConfigService}. */
   private ConfigService config;
 
@@ -696,5 +709,35 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // then
     GetConfigurationResponse configResponse = assertContentTypeAllowed(response, "text/plain", "");
     assertEquals("1", configResponse.getMaxDocuments());
+  }
+
+  /**
+   * PATCH Document Config Retention And Disposition update.
+   *
+   */
+  @Test
+  public void testPatchDocumentConfigDispositionAction() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    // when
+    GetConfigurationResponse resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+
+    // then
+    assertRententionAndDisposition(resp, DocumentConfigDispositionAction.SOFT_DELETE);
+
+    // when
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(
+        new DocumentConfig().retentionAndDisposition(new DocumentConfigRetentionAndDisposition()
+            .dispositionAction(DocumentConfigDispositionAction.DELETE)));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+    assertRententionAndDisposition(resp, DocumentConfigDispositionAction.DELETE);
   }
 }
