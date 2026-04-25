@@ -46,7 +46,7 @@ public class EntityDocumentAttributeEntityKeyValueGet implements DynamoDbGet {
   public EntityDocumentAttributeEntityKeyValueGet(
       final Collection<DocumentAttributeEntityKeyValue> entityKeyValues) {
     builders = entityKeyValues.stream().map(v -> EntityRecord.builder().name("")
-        .entityTypeId(v.entityTypeId()).documentId(v.entityId()));// .buildKey(siteId)).toList();
+        .entityTypeId(v.entityTypeId()).documentId(v.entityId()));
   }
 
   @Override
