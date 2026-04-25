@@ -11325,11 +11325,9 @@ components:
         status:
           $ref: "#/components/schemas/SiteStatus"
         permission:
-          type: "string"
-          description: "SiteId permission level"
-          enum:
-            - READ_WRITE
-            - READ_ONLY
+          deprecated: true
+          description: "Deprecated: use permissions"
+          $ref: "#/components/schemas/SitePermission"
         roles:
           type: "array"
           description: List of roles used to get permissions
@@ -11346,6 +11344,13 @@ components:
           $ref: "#/components/schemas/SiteConfig"
         usage:
           $ref: "#/components/schemas/SiteUsage"
+    SitePermission:
+      type: string
+      deprecated: true
+      description: "Deprecated: use permissions"
+      enum:
+        - READ_WRITE
+        - READ_ONLY
     AddClassificationResponse:
       type: "object"
       properties:
