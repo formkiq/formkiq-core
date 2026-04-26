@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.awstest;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,6 +44,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -171,14 +174,15 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
     for (ApiClient apiClient : getApiClients(null)) {
 
       // given
-      DocumentsApi api = new DocumentsApi(apiClient);
+      // DocumentsApi api = new DocumentsApi(apiClient);
 
       // when
-      GetDocumentsResponse documents =
-          api.getDocuments(null, null, null, null, "2010-01-01", "+0500", null, null, null, null);
+      GetDocumentsResponse documents = new GetDocumentsRequestBuilder().date("2010-01-01")
+          .tz("+0500").submit(apiClient, null).throwIfError().response();
+      // api.getDocuments(null, null, null, null, "2010-01-01", "+0500", null, null, null, null);
 
       // then
-      assertTrue(documents.getDocuments().isEmpty());
+      assertTrue(notNull(documents.getDocuments()).isEmpty());
     }
   }
 
@@ -221,8 +225,10 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
 
         // when
         while (list.isEmpty()) {
-          GetDocumentsResponse documents = api.getDocuments(siteId, null, null, null,
-              df.format(lastHour), tz, null, null, null, null);
+          GetDocumentsResponse documents = new GetDocumentsRequestBuilder()
+              .date(df.format(lastHour)).tz(tz).submit(apiClient, siteId).throwIfError().response();
+          // api.getDocuments(siteId, null, null, null,
+          // df.format(lastHour), tz, null, null, null, null);
 
           // then
           list = documents.getDocuments();

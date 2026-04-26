@@ -25,7 +25,6 @@ package com.formkiq.stacks.api.awstest;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.UserManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -43,6 +42,7 @@ import com.formkiq.client.model.Group;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.User;
 import com.formkiq.client.model.UserAttributes;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -266,16 +266,14 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
 
     ApiClient jwtClient = getApiClientForUser(username, USER_PASSWORD);
 
-    DocumentsApi api = new DocumentsApi(jwtClient);
+    // DocumentsApi api = new DocumentsApi(jwtClient);
 
     // when
-    try {
-      api.getDocuments(DEFAULT_SITE_ID, null, null, null, null, null, null, null, null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
+    var resp = new GetDocumentsRequestBuilder().submit(jwtClient, DEFAULT_SITE_ID);
+
+    // then
+    assertNotNull(resp.exception());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
   }
 
   /**

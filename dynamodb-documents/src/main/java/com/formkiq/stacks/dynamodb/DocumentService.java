@@ -442,13 +442,30 @@ public interface DocumentService {
 
   /**
    * Find Deleted {@link DocumentItem}.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param start {@link Date}
+   * @param end {@link Date}
+   * @param sort {@link String}
+   * @param nextToken {@link String}
+   * @param limit int
+   * @return {@link Pagination} {@link DocumentItem}
+   */
+  Pagination<DocumentItem> findSoftDeletedDocuments(String siteId, Date start, Date end,
+      String sort, String nextToken, int limit);
+
+  /**
+   * Find Deleted {@link DocumentItem}.
    * 
    * @param siteId Optional Grouping siteId
    * @param nextToken {@link String}
    * @param limit int
    * @return {@link Pagination} {@link DocumentItem}
    */
-  Pagination<DocumentItem> findSoftDeletedDocuments(String siteId, String nextToken, int limit);
+  default Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId,
+      final String nextToken, final int limit) {
+    return findSoftDeletedDocuments(siteId, null, null, null, nextToken, limit);
+  }
 
   /**
    * Is Folder Exists.

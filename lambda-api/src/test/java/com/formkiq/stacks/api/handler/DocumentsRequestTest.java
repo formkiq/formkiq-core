@@ -24,9 +24,12 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
@@ -71,10 +74,12 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
@@ -83,7 +88,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -147,6 +154,16 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         .getDocuments());
   }
 
+  private OffsetDateTime getSoftDeletedDateTime(final String siteId, final String documentId) {
+    AwsServiceCache awsServices =
+        getAwsServices().register(DynamoDbService.class, new DynamoDbServiceExtension());
+    DynamoDbService db = awsServices.getExtension(DynamoDbService.class);
+    var key = new DocumentRecordBuilder().documentId(documentId).buildSoftDeleteKey(siteId);
+    String deletedDate = db.get(key).get(DbKeys.GSI2_SK).s().substring("date#".length());
+    return OffsetDateTime.ofInstant(Instant.from(DateUtil.getIso8601Formatter().parse(deletedDate)),
+        ZoneOffset.UTC);
+  }
+
   @Test
   public void testHandleGetDocumentActionsArtifact01() throws Exception {
 
@@ -202,8 +219,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp =
-          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -230,8 +246,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       createTestData(siteId, DocumentService.MAX_RESULTS + 2);
 
       // when
-      var resp =
-          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -240,8 +255,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertFalse(isEmpty(resp.getNext()));
 
       // when
-      resp = documentsApi.getDocuments(siteId, null, null, null, null, null, resp.getNext(), null,
-          null, null);
+      resp = new GetDocumentsRequestBuilder().next(resp.getNext()).submit(client, siteId)
+          .throwIfError().response();
 
       // then
       assertTrue(isEmpty(resp.getNext()));
@@ -272,8 +287,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       createTestData(siteId, DocumentService.MAX_RESULTS);
 
       // when
-      var resp =
-          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -302,8 +316,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
-          null, null, null);
+      var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
+          .submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -330,8 +344,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, "2019-08-15", " 0500", null,
-          null, null, null);
+      var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
+          .submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -363,8 +377,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp =
-          documentsApi.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -399,8 +412,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      var resp = documentsApi.getDocuments(siteId, null, null, null, null, null, null, null,
-          "DOCUMENT_ID_ONLY", null);
+      var resp = new GetDocumentsRequestBuilder().projection("DOCUMENT_ID_ONLY")
+          .submit(client, siteId).throwIfError().response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -410,6 +423,88 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNull(documents.get(0).getLastModifiedDate());
       assertNull(documents.get(0).getUserId());
       assertNull(documents.get(0).getContentLength());
+    }
+  }
+
+  /**
+   * Get /documents soft deleted with start / end and sort.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsSoftDeleted01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      String doc0 = new AddDocumentRequestBuilder().content("doc0").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      String doc1 = new AddDocumentRequestBuilder().content("doc1").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      String doc2 = new AddDocumentRequestBuilder().content("doc2").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      // then
+      assertNotNull(doc0);
+      assertNotNull(doc1);
+      assertNotNull(doc2);
+
+      // when
+      new DeleteDocumentRequestBuilder(doc0).softDelete(true).submit(client, siteId).throwIfError();
+      new DeleteDocumentRequestBuilder(doc1).softDelete(true).submit(client, siteId).throwIfError();
+      new DeleteDocumentRequestBuilder(doc2).softDelete(true).submit(client, siteId).throwIfError();
+
+      // then
+      final OffsetDateTime deleted1 = getSoftDeletedDateTime(siteId, doc1);
+      final OffsetDateTime deleted2 = getSoftDeletedDateTime(siteId, doc2);
+
+      // when
+      var desc = new GetDocumentsRequestBuilder().softDeleted(true).sort("DESC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc2, doc1, doc0),
+          notNull(desc.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var asc = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc0, doc1, doc2),
+          notNull(asc.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var startOnly = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").start(deleted1)
+          .limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc1, doc2),
+          notNull(startOnly.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var endOnly = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").end(deleted1)
+          .limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc0, doc1),
+          notNull(endOnly.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var range = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").start(deleted1)
+          .end(deleted2).limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc1, doc2),
+          notNull(range.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var missingDeleteFlag = new GetDocumentsRequestBuilder().sort("ASC").start(deleted1)
+          .end(deleted2).limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertTrue(notNull(missingDeleteFlag.getDocuments()).isEmpty());
     }
   }
 

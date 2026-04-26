@@ -1594,6 +1594,7 @@ paths:
           enum:
           - FULLTEXT_METADATA_FAILED
           - FULLTEXT_CONTENT_FAILED
+      - $ref: '#/components/parameters/documentSearchSoftDeleted'
       - $ref: '#/components/parameters/documentSearchDeleted'
       - name: date
         in: query
@@ -1605,6 +1606,9 @@ paths:
         description: 'UTC offset to apply to date parameter (IE: -0600)'
         schema:
           type: string
+      - $ref: '#/components/parameters/startParam'
+      - $ref: '#/components/parameters/endParam'
+      - $ref: '#/components/parameters/sortParam'
       - name: next
         in: query
         description: Next page of results token
@@ -1834,7 +1838,7 @@ paths:
 
         The document can be permanently deleted by calling the DELETE /documents/{documentId} with softDelete=false or restored using the PUT /documents/{documentId}/restore.
 
-        Only the GET /documents?deleted=true will return all the soft deleted documents.
+        Only the GET /documents?softDeleted=true will return all the soft deleted documents.
       tags:
       - Documents
       parameters:
@@ -7940,6 +7944,13 @@ components:
         type: string
     documentSearchDeleted:
       name: deleted
+      in: query
+      description: 'Deprecated: use softDeleted. Fetch soft deleted documents'
+      deprecated: true
+      schema:
+        type: boolean
+    documentSearchSoftDeleted:
+      name: softDeleted
       in: query
       description: Fetch soft deleted documents
       schema:

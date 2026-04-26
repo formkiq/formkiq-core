@@ -73,6 +73,7 @@ import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.GetDocumentFind;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
@@ -109,6 +110,7 @@ import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
  * Unit Tests for {@link DocumentServiceImpl}.
@@ -1501,6 +1503,44 @@ public class DocumentServiceImplTest implements DbKeys {
         Pagination<Preset> p0 = service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
         assertEquals(0, p0.getResults().size());
       }
+    }
+  }
+
+  /**
+   * Find legacy soft-deleted documents without GSI2 keys.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testFindSoftDeletedDocumentsLegacyNoGsi2() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      Date now = new Date();
+      String userId = "jsmith";
+
+      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
+      DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), null);
+
+      service.saveDocument(siteId, item, List.of());
+      assertTrue(service.deleteDocument(siteId, document, true));
+
+      var key = new DocumentRecordBuilder().document(document).buildSoftDeleteKey(siteId);
+      db.updateItem(UpdateItemRequest.builder().tableName(DOCUMENTS_TABLE)
+          .key(Map.of(PK, AttributeValue.fromS(key.pk()), SK, AttributeValue.fromS(key.sk())))
+          .updateExpression("REMOVE GSI2PK, GSI2SK").build());
+
+      // when
+      List<DocumentItem> results =
+          service.findSoftDeletedDocuments(siteId, null, MAX_RESULTS).getResults();
+      List<DocumentItem> rangeResults =
+          service.findSoftDeletedDocuments(siteId, now, new Date(), "DESC", null, MAX_RESULTS)
+              .getResults();
+
+      // then
+      assertEquals(1, results.size());
+      assertEquals(document.documentId(), results.get(0).getDocumentId());
+      assertEquals(0, rangeResults.size());
+      assertTrue(service.deleteDocument(siteId, document, false));
     }
   }
 

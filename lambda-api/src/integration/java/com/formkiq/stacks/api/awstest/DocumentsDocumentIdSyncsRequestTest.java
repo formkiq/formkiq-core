@@ -47,6 +47,7 @@ import com.formkiq.client.model.DocumentSyncService;
 import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.DocumentSyncType;
 import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
@@ -136,8 +137,11 @@ public class DocumentsDocumentIdSyncsRequestTest extends AbstractAwsIntegrationT
         GetDocumentSyncResponse syncs = getDocumentSyncs(api, siteId, documentId, expectedCount);
         assertEquals(expectedCount, notNull(syncs.getSyncs()).size());
 
-        List<Document> docs = notNull(api.getDocuments(siteId, null, "FULLTEXT_METADATA_FAILED",
-            null, null, null, null, null, null, null).getDocuments());
+        List<Document> docs =
+            notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
+                .submit(client, siteId).throwIfError().response().getDocuments());
+        // notNull(api.getDocuments(siteId, null, "FULLTEXT_METADATA_FAILED",
+        // null, null, null, null, null, null, null).getDocuments());
         assertEquals(0, docs.size());
       }
     }

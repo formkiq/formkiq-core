@@ -51,6 +51,7 @@ import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.testutils.FileGenerator;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 import com.google.gson.Gson;
@@ -289,16 +290,17 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
         Objects.requireNonNull(response.getActions().get(0).getStatus()).name());
     assertEquals("FAILED", Objects.requireNonNull(response.getActions().get(1).getStatus()).name());
 
-    DocumentsApi docApi = new DocumentsApi(client);
+    // DocumentsApi docApi = new DocumentsApi(client);
 
-    GetDocumentsResponse documents =
-        docApi.getDocuments(null, "FAILED", null, null, null, null, null, null, null, "100");
+    GetDocumentsResponse documents = new GetDocumentsRequestBuilder().actionStatus("FAILED")
+        .submit(client, null).throwIfError().response();
     Optional<Document> o = notNull(documents.getDocuments()).stream()
         .filter(d -> documentId.equals(d.getDocumentId())).findAny();
     assertFalse(o.isEmpty());
 
-    documents =
-        docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, null, null, "100");
+    documents = new GetDocumentsRequestBuilder().actionStatus("FAILED_RETRY").submit(client, null)
+        .throwIfError().response();
+    // docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, null, null, "100");
     o = notNull(documents.getDocuments()).stream().filter(d -> documentId.equals(d.getDocumentId()))
         .findAny();
     assertFalse(o.isEmpty());

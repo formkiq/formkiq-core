@@ -168,9 +168,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, "FAILED", null, null, null, null, null, null, null, null)
-        .getDocuments());
+    return notNull(new GetDocumentsRequestBuilder().actionStatus(FAILED.name())
+        .submit(client, siteId).throwIfError().response().getDocuments());
   }
 
   private Collection<PresetEntity> getPresets() {
