@@ -202,7 +202,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     String sk = artifactId != null
         ? "softdelete#document" + TAG_DELIMINATOR + "art" + TAG_DELIMINATOR + this.artifactId
         : "softdelete#document#" + documentId;
-    return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
+    DynamoDbKey.Builder builder = DynamoDbKey.builder().pk(siteId, pk).sk(sk);
+
+    String fullDate = DateUtil.getNowInIso8601Format();
+    builder.gsi2Pk(siteId, pk).gsi2Sk("date#" + fullDate);
+
+    return builder.build();
   }
 
   public DocumentRecordBuilder checksum(final String cs) {

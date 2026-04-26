@@ -76,6 +76,7 @@ import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -237,12 +238,13 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testGet01() throws Exception {
     for (ApiClient client : getApiClients(null)) {
       // given
-      DocumentsApi api = new DocumentsApi(client);
+      // DocumentsApi api = new DocumentsApi(client);
       String date = this.df.format(new Date());
 
       // when
-      GetDocumentsResponse response =
-          api.getDocuments(null, null, null, null, date, null, null, null, null, null);
+      GetDocumentsResponse response = new GetDocumentsRequestBuilder().date(date)
+          .submit(client, null).throwIfError().response();
+      // api.getDocuments(null, null, null, null, date, null, null, null, null, null);
 
       // then
       assertNotNull(response.getDocuments());
@@ -262,24 +264,27 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     ApiClient client = getApiClientForUser(READONLY_EMAIL, USER_PASSWORD);
 
-    DocumentsApi api = new DocumentsApi(client);
+    // DocumentsApi api = new DocumentsApi(client);
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, null, null, null, null, null, null);
+        new GetDocumentsRequestBuilder().submit(client, null).throwIfError().response();
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
-    try {
-      api.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
-    }
+    var resp = new GetDocumentsRequestBuilder().submit(client, siteId);
+    // try {
+    // api.getDocuments(siteId, null, null, null, null, null, null, null, null, null);
+    // fail();
+    // } catch (ApiException e) {
+    // then
+    assertNotNull(resp.exception());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}",
+        resp.exception().getResponseBody());
+    // }
   }
 
   /**
@@ -294,24 +299,29 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     String siteId = "finance";
     ApiClient client = getApiClientForUser(USER_EMAIL, USER_PASSWORD);
 
-    DocumentsApi api = new DocumentsApi(client);
+    // DocumentsApi api = new DocumentsApi(client);
 
     String date = this.df.format(new Date());
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
+        new GetDocumentsRequestBuilder().date(date).submit(client, null).throwIfError().response();
+    // api.getDocuments(null, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
 
     // when
-    try {
-      api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
-    } catch (ApiException e) {
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
-    }
+    var resp = new GetDocumentsRequestBuilder().date(date).submit(client, siteId);
+    // try {
+    // api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
+    // } catch (ApiException e) {
+    // then
+    assertNotNull(resp.exception());
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}",
+        resp.exception().getResponseBody());
+    // }
   }
 
   /**
@@ -324,16 +334,17 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testGet04() throws Exception {
     // given
     final String siteId = "finance";
-    // getcli
     ApiClient client = getApiClients(siteId).get(0);
-    DocumentsApi api = new DocumentsApi(client);
+    // DocumentsApi api = new DocumentsApi(client);
     String date = this.df.format(new Date());
 
     // when
     GetDocumentsResponse responseNoSiteId =
-        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
-    GetDocumentsResponse responseSiteId =
-        api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
+        new GetDocumentsRequestBuilder().date(date).submit(client, null).throwIfError().response();
+    // api.getDocuments(null, null, null, null, date, null, null, null, null, null);
+    GetDocumentsResponse responseSiteId = new GetDocumentsRequestBuilder().date(date)
+        .submit(client, siteId).throwIfError().response();
+    // api.getDocuments(siteId, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(responseNoSiteId.getDocuments());
@@ -350,15 +361,17 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testGet05() throws Exception {
     // given
     ApiClient client = getApiClientForUser(FINANCE_EMAIL, USER_PASSWORD);
-    DocumentsApi api = new DocumentsApi(client);
+    // DocumentsApi api = new DocumentsApi(client);
 
     String date = this.df.format(new Date());
 
     // when
     GetDocumentsResponse results0 =
-        api.getDocuments(null, null, null, null, date, null, null, null, null, null);
-    GetDocumentsResponse results1 =
-        api.getDocuments(GROUP_FINANCE, null, null, null, date, null, null, null, null, null);
+        new GetDocumentsRequestBuilder().date(date).submit(client, null).throwIfError().response();
+    // api.getDocuments(null, null, null, null, date, null, null, null, null, null);
+    GetDocumentsResponse results1 = new GetDocumentsRequestBuilder().date(date)
+        .submit(client, GROUP_FINANCE).throwIfError().response();
+    // api.getDocuments(GROUP_FINANCE, null, null, null, date, null, null, null, null, null);
 
     // then
     assertNotNull(results0.getDocuments());

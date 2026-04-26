@@ -24,10 +24,12 @@
 package com.formkiq.aws.dynamodb.documents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import java.util.Arrays;
+import java.util.Date;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -98,12 +100,15 @@ public class DocumentRecordBuilderTest {
   void testBuildSoftDeleteKey01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
+      Date date = new Date();
 
-      DynamoDbKey key =
-          new DocumentRecordBuilder().documentId(documentId).buildSoftDeleteKey(siteId);
+      DynamoDbKey key = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .buildSoftDeleteKey(siteId);
 
       assertKeyEquals(siteId, "softdelete#docs#", key.pk());
       assertEquals("softdelete#document#" + documentId, key.sk());
+      assertKeyEquals(siteId, "softdelete#docs#", key.gsi2Pk());
+      assertTrue(key.gsi2Sk().startsWith("date#"));
     }
   }
 
@@ -118,6 +123,8 @@ public class DocumentRecordBuilderTest {
 
       assertKeyEquals(siteId, "softdelete#docs#", key.pk());
       assertEquals("softdelete#document#art#" + artifactId, key.sk());
+      assertKeyEquals(siteId, "softdelete#docs#", key.gsi2Pk());
+      assertTrue(key.gsi2Sk().startsWith("date#"));
     }
   }
 }

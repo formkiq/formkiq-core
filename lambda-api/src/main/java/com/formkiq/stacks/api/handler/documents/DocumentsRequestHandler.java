@@ -206,13 +206,38 @@ public class DocumentsRequestHandler
     return date;
   }
 
+  private Date getQueryDateTime(final ApiGatewayRequestEvent event, final String name) {
+
+    Date date = null;
+    String dateString = event.getQueryStringParameter(name);
+    if (!isEmpty(dateString)) {
+      date = DateUtil.toDateFromString(dateString, ZoneId.of("UTC"));
+    }
+
+    return date;
+  }
+
+  private String getQuerySort(final ApiGatewayRequestEvent event) throws BadException {
+    String sort = event.getQueryStringParameter("sort");
+    if (isEmpty(sort)) {
+      return "DESC";
+    }
+
+    if (!"ASC".equalsIgnoreCase(sort) && !"DESC".equalsIgnoreCase(sort)) {
+      throw new BadException("invalid sort '" + sort + "'");
+    }
+
+    return sort.toUpperCase();
+  }
+
   @Override
   public String getRequestUrl() {
     return "/documents";
   }
 
   private ApiPagination getSoftDeletedDocument(final ApiGatewayRequestEvent event,
-      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map) {
+      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
+      throws BadException {
 
     Logger logger = awsservice.getLogger();
     CacheService cacheService = awsservice.getExtension(CacheService.class);
@@ -223,7 +248,11 @@ public class DocumentsRequestHandler
     String nextToken = pagination != null ? pagination.getNextToken() : null;
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
-    Pagination<DocumentItem> results = service.findSoftDeletedDocuments(siteId, nextToken, limit);
+    Date start = getQueryDateTime(event, "start");
+    Date end = getQueryDateTime(event, "end");
+    String sort = getQuerySort(event);
+    Pagination<DocumentItem> results =
+        service.findSoftDeletedDocuments(siteId, start, end, sort, nextToken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
@@ -270,7 +299,8 @@ public class DocumentsRequestHandler
   }
 
   private boolean isSoftDelete(final ApiGatewayRequestEvent event) {
-    return "true".equals(event.getQueryStringParameter("deleted"));
+    return "true".equalsIgnoreCase(event.getQueryStringParameter("softDeleted"))
+        || "true".equalsIgnoreCase(event.getQueryStringParameter("deleted"));
   }
 
   private boolean isSyncStatus(final ApiGatewayRequestEvent event) {

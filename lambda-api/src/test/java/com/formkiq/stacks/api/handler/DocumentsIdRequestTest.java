@@ -82,6 +82,7 @@ import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.documents.RestoreDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -198,8 +199,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
+    return notNull(new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response()
+        .getDocuments());
+    // return notNull(this.documentsApi
+    // .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
   }
 
   private List<Document> getDocuments(final String siteId, final int expected)
@@ -215,8 +218,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
 
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, TRUE, null, null, null, null, null, null).getDocuments());
+    return notNull(new GetDocumentsRequestBuilder().deleted(true).submit(client, siteId)
+        .throwIfError().response().getDocuments());
+    // return notNull(this.documentsApi
+    // .getDocuments(siteId, null, null, TRUE, null, null, null, null, null, null).getDocuments());
   }
 
   private String getTagValue(final String siteId, final DocumentArtifact artifact) {

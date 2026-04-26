@@ -31,6 +31,7 @@ import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TypesenseExtension;
 import com.google.gson.Gson;
@@ -142,8 +143,8 @@ public class HttpServerTest {
   void testGetDocument01() throws Exception {
     // given
     // when
-    GetDocumentsResponse documents = this.documentsApi.getDocuments(null, null, null, null,
-        "2020-05-20", null, null, null, null, null);
+    GetDocumentsResponse documents = new GetDocumentsRequestBuilder().date("2020-05-20")
+        .submit(this.apiClient, null).throwIfError().response();
 
     // then
     assertEquals(0, documents.getDocuments().size());
