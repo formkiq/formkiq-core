@@ -86,6 +86,15 @@ public final class DateUtil {
   }
 
   /**
+   * Returns {@link DateTimeFormatter} in ISO 8601 format.
+   *
+   * @return {@link DateTimeFormatter}
+   */
+  public static DateTimeFormatter getIso8601Formatter() {
+    return DateTimeFormatter.ISO_INSTANT;
+  }
+
+  /**
    * String to ISO Standard format.
    * 
    * @return {@link SimpleDateFormat}

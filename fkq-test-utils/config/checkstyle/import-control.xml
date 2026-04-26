@@ -40,6 +40,7 @@
 
 		<subpackage name="documents">
 			<allow pkg="java.math" />
+			<allow pkg="java.time" />
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 

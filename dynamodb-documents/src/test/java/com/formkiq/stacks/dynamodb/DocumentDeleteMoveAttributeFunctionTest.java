@@ -25,6 +25,8 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import java.util.Arrays;
@@ -69,6 +71,12 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
       }
 
       assertEquals("softdelete#document#" + documentId, result.get(DbKeys.SK).s());
+      if (siteId != null) {
+        assertEquals(siteId + "/softdelete#docs#", result.get(DbKeys.GSI2_PK).s());
+      } else {
+        assertEquals("softdelete#docs#", result.get(DbKeys.GSI2_PK).s());
+      }
+      assertTrue(result.get(DbKeys.GSI2_SK).s().startsWith("date#"));
 
       // given
       DocumentRestoreMoveAttributeFunction rfn =
@@ -85,6 +93,8 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
       }
 
       assertEquals("document", restore.get(DbKeys.SK).s());
+      assertFalse(restore.containsKey(DbKeys.GSI2_PK));
+      assertFalse(restore.containsKey(DbKeys.GSI2_SK));
     }
   }
 

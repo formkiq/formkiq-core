@@ -57,6 +57,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.ExistsDocumentById;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.documents.GetChildDocumentsQuery;
+import com.formkiq.aws.dynamodb.documents.GetSoftDeletedDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.entity.DispositionDateAttribute;
@@ -1186,20 +1187,41 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId,
-      final String nextToken, final int limit) {
+  public Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId, final Date start,
+      final Date end, final String sort, final String nextToken, final int limit) {
 
-    Map<String, AttributeValue> sdKeys =
-        keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, SOFT_DELETE + "document");
+    boolean scanForward = "ASC".equalsIgnoreCase(sort);
+    GetSoftDeletedDocumentsQuery softDeletedQuery =
+        new GetSoftDeletedDocumentsQuery(start, end, scanForward);
+    QueryRequest query = shouldQueryLegacySoftDeletedDocuments(start, end, nextToken)
+        ? softDeletedQuery.buildPrimaryKey(this.documentTableName, siteId, nextToken, limit)
+        : softDeletedQuery.build(this.documentTableName, siteId, nextToken, limit);
+    QueryResponse response = this.dbService.query(query, false);
 
-    Map<String, AttributeValue> startkey = new StringToMapAttributeValue().apply(nextToken);
-    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
-    QueryResponse result =
-        this.dbService.queryBeginsWith(config, sdKeys.get(PK), sdKeys.get(SK), startkey, limit);
+    if (shouldFallbackToLegacySoftDeletedDocuments(start, end, nextToken, response)) {
+      query = softDeletedQuery.buildPrimaryKey(this.documentTableName, siteId, nextToken, limit);
+      response = this.dbService.query(query, false);
+    }
 
-    List<DocumentItem> items = result.items().stream()
-        .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
-    return new Pagination<>(items, result.lastEvaluatedKey());
+    List<DocumentItem> items =
+        response.items().stream().map(DynamoDbKey::fromAttributeMap).map(this.dbService::get)
+            .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
+    return new Pagination<>(items, response.lastEvaluatedKey());
+  }
+
+  private boolean shouldFallbackToLegacySoftDeletedDocuments(final Date start, final Date end,
+      final String nextToken, final QueryResponse response) {
+    return start == null && end == null && Strings.isEmpty(nextToken) && response.items().isEmpty();
+  }
+
+  private boolean shouldQueryLegacySoftDeletedDocuments(final Date start, final Date end,
+      final String nextToken) {
+    if (start != null || end != null || Strings.isEmpty(nextToken)) {
+      return false;
+    }
+
+    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
+    return startKey != null && !startKey.containsKey(GSI2_PK);
   }
 
   /**

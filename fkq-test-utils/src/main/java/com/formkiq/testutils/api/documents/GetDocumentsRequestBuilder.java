@@ -29,6 +29,8 @@ import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
+import java.time.OffsetDateTime;
+
 /**
  * Builder for Get /documents Request.
  */
@@ -42,6 +44,22 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
   private Boolean deleted;
   /** Next Token. */
   private String next;
+  /** Date. */
+  private String date;
+  /** Tz. */
+  private String tz;
+  /** Soft Deleted. */
+  private Boolean softDeleted;
+  /** Limit. */
+  private String limit;
+  /** Start Date. */
+  private OffsetDateTime start;
+  /** End Date. */
+  private OffsetDateTime end;
+  /** Sort. */
+  private String sort;
+  /** Projection. */
+  private String projection;
 
   /**
    * constructor.
@@ -63,6 +81,17 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
   }
 
   /**
+   * Set Date.
+   * 
+   * @param documentDate {@link java.util.Date}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder date(final String documentDate) {
+    this.date = documentDate;
+    return this;
+  }
+
+  /**
    * Set Sync Status.
    * 
    * @param documentDeleted {@link Boolean}
@@ -70,6 +99,28 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
    */
   public GetDocumentsRequestBuilder deleted(final Boolean documentDeleted) {
     this.deleted = documentDeleted;
+    return this;
+  }
+
+  /**
+   * Set End.
+   * 
+   * @param documentEnd {@link OffsetDateTime}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder end(final OffsetDateTime documentEnd) {
+    this.end = documentEnd;
+    return this;
+  }
+
+  /**
+   * Set Limit.
+   * 
+   * @param documentLimit int
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder limit(final int documentLimit) {
+    this.limit = String.valueOf(documentLimit);
     return this;
   }
 
@@ -84,11 +135,56 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
     return this;
   }
 
+  /**
+   * Set Projection.
+   * 
+   * @param documentProjection {@link String}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder projection(final String documentProjection) {
+    this.projection = documentProjection;
+    return this;
+  }
+
+  /**
+   * Set Soft Deleted.
+   * 
+   * @param documentSoftDeleted {@link Boolean}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder softDeleted(final Boolean documentSoftDeleted) {
+    this.softDeleted = documentSoftDeleted;
+    return this;
+  }
+
+  /**
+   * Set Sort.
+   * 
+   * @param documentSort {@link String}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder sort(final String documentSort) {
+    this.sort = documentSort;
+    return this;
+  }
+
+  /**
+   * Set Start.
+   * 
+   * @param documentStart {@link OffsetDateTime}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder start(final OffsetDateTime documentStart) {
+    this.start = documentStart;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentsResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocuments(siteId, actionStatus,
-        syncStatus, deleted, null, null, next, null, null, null));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocuments(siteId, actionStatus, syncStatus,
+            softDeleted, deleted, date, tz, start, end, sort, next, null, projection, limit));
   }
 
   /**
@@ -99,6 +195,17 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
    */
   public GetDocumentsRequestBuilder syncStatus(final String documentSyncStatus) {
     this.syncStatus = documentSyncStatus;
+    return this;
+  }
+
+  /**
+   * Set Tz.
+   * 
+   * @param documentTz {@link String}
+   * @return {@link GetDocumentsRequestBuilder}
+   */
+  public GetDocumentsRequestBuilder tz(final String documentTz) {
+    this.tz = documentTz;
     return this;
   }
 }

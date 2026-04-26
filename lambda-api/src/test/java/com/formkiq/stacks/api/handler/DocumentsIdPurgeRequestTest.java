@@ -38,6 +38,7 @@ import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -72,8 +73,10 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
-    return notNull(this.documentsApi
-        .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
+    return notNull(new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response()
+        .getDocuments());
+    // return notNull(this.documentsApi
+    // .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
   }
 
   private List<S3Object> getS3Files(final String siteId, final String documentId) {

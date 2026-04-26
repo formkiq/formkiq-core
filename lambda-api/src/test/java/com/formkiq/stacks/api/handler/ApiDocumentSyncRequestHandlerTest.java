@@ -75,6 +75,7 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -392,8 +393,11 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE, DocumentSyncStatus.FAILED);
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE);
 
-    List<Document> docs = notNull(this.documentsApi.getDocuments(null, null,
-        "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null, null).getDocuments());
+    List<Document> docs =
+        notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
+            .submit(client, null).throwIfError().response().getDocuments());
+    // this.documentsApi.getDocuments(null, null,
+    // "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null, null).getDocuments());
     assertEquals(1, docs.size());
     assertEquals(documentId, docs.get(0).getDocumentId());
 
@@ -412,8 +416,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         DocumentSyncStatus.FAILED_RETRY);
     assertDocumentSync(syncs.get(1), DocumentSyncService.TYPESENSE, DocumentSyncStatus.COMPLETE);
 
-    docs = notNull(this.documentsApi.getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null,
-        null, null, null, null, null, null).getDocuments());
+    docs = notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
+        .submit(client, null).throwIfError().response().getDocuments());
+    // notNull(this.documentsApi.getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null,
+    // null, null, null, null, null, null).getDocuments());
     assertEquals(0, docs.size());
   }
 

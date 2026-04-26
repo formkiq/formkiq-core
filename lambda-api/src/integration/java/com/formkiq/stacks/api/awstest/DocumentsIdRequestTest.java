@@ -47,6 +47,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.opensearch.OpenSearchIndexPurgeRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -200,9 +201,10 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       api.deleteDocument(documentId, siteId, null, Boolean.TRUE);
 
       // then
-      List<Document> softDeletedDocuments = notNull(
-          api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null, "100")
-              .getDocuments());
+      List<Document> softDeletedDocuments = notNull(new GetDocumentsRequestBuilder().deleted(true)
+          .limit(100).submit(client, siteId).throwIfError().response().getDocuments());
+      // api.getDocuments(siteId, null, null, Boolean.TRUE, null, null, null, null, null, "100")
+      // .getDocuments());
       assertFalse(softDeletedDocuments.isEmpty());
 
       try {
