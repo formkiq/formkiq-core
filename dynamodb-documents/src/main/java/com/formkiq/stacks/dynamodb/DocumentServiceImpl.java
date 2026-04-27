@@ -60,10 +60,10 @@ import com.formkiq.aws.dynamodb.documents.GetChildDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.GetSoftDeletedDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
-import com.formkiq.aws.dynamodb.entity.DispositionDateAttribute;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.entity.RetentionDispositionCompositeAttribute;
 import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -1871,8 +1871,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     var previousAttributes =
         previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
 
-    var previousCompositeKeys =
-        previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
+    var previousCompositeKeys = previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY)
+        .filter(a -> !a.getKey().startsWith(RETENTION_POLICY.getKey())).toList();
 
     var attributesToBeDeleted =
         getAttributesToBeDeleted(validationAccess, newAttributes, previousAttributes);
@@ -1901,10 +1901,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
         if (DATE_LAST_MODIFIED.name().equals(DynamoDbTypes
             .toString(entityRecord.attributes().get(RETENTION_START_DATE_SOURCE_TYPE.getKey())))) {
+
           var documentRecord = new DocumentRecordBuilder().document(document)
               .lastModifiedDate(lastModifiedDate).build(siteId);
-          dar = new DispositionDateAttribute().getDocumentAttributeRecord(entityRecord,
-              documentRecord);
+
+          dar = new RetentionDispositionCompositeAttribute()
+              .getDocumentAttributeRecord(entityRecord, documentRecord);
+
           saveDocumentAttributes(siteId, document, List.of(dar), AttributeValidationType.NONE,
               AttributeValidationAccess.ADMIN_UPDATE);
         }
@@ -1933,7 +1936,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
           p.get().getDerivedAttributes().forEach(da -> {
             if (da instanceof StoredDerivedAttribute) {
-              list.add(da.getDocumentAttributeRecord(entityRecord, item));
+              DocumentAttributeRecord der = da.getDocumentAttributeRecord(entityRecord, item);
+              list.add(der);
+
             }
           });
         }
@@ -2165,8 +2170,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     boolean saveGsi1 = doc.getBelongsToDocumentId() == null;
     SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(saveGsi1)
         .timeToLive(doc.getString("TimeToLive"));
-
-    // Map<String, AttributeValue> keys = keysDocument(siteId, item.getDocumentId());
 
     saveDocument(null, siteId, item, tags, attributes, options);
 
