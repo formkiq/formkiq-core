@@ -25,9 +25,11 @@ package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
 import com.formkiq.validation.ValidationBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -86,10 +88,12 @@ public interface PresetEntity {
 
   /**
    * Validate Attributes.
-   * 
+   *
    * @param attributes {@link List} {@link EntityAttribute}
+   * @param existing Existing attributes
    */
-  default void validateAttributes(List<EntityAttribute> attributes) {
+  default void validateAttributes(List<EntityAttribute> attributes,
+      Map<String, AttributeValue> existing) {
 
     ValidationBuilder vb = new ValidationBuilder();
     for (String attributeKey : getAttributeKeys()) {

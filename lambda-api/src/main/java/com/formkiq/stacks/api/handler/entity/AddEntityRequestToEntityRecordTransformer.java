@@ -94,10 +94,14 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     String siteId = authorization.getSiteId();
     String entityId = update ? event.getPathParameter("entityId") : ID.uuid();
     String entityTypeId = event.getPathParameter("entityTypeId");
-    AddEntityRequest request = getEntityRequest(siteId, event, entityTypeId, entityId);
+
+    AddEntityRequest request =
+        JsonToObject.fromJson(this.awsServices, event, AddEntityRequest.class);
+    var oldAttributes = update ? getEntity(siteId, entityTypeId, entityId) : null;
 
     EntityTypeRecord entityType = validate(siteId, entityTypeId, request);
-    EntityRecord entity = getEntityRecord(siteId, request, entityType, entityId);
+
+    EntityRecord entity = getEntityRecord(siteId, request, entityType, entityId, oldAttributes);
 
     Map<String, AttributeValue> attributes = entity.getAttributes();
 
@@ -107,7 +111,6 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
       UserActivityContext.setCreate(ActivityResourceType.ENTITY, attributes);
     } else {
 
-      Map<String, AttributeValue> oldAttributes = db.get(entity.key());
       attributes = Objects.merge(attributes, oldAttributes);
       attributes.put("inserteddate", oldAttributes.get("inserteddate"));
       UserActivityContext.setUpdate(ActivityResourceType.ENTITY, oldAttributes, attributes);
@@ -118,13 +121,34 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     return entity;
   }
 
+  private Map<String, AttributeValue> getEntity(final String siteId, final String entityTypeId,
+      final String entityId) {
+
+    DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+    EntityRecord.Builder builder =
+        EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
+
+    Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
+    if (attributes.isEmpty()) {
+      throw new NotFoundException("Entity '" + entityId + "' not found");
+    }
+
+    return attributes;
+  }
+
   private EntityRecord getEntityRecord(final String siteId, final AddEntityRequest request,
-      final EntityTypeRecord entityType, final String entityId) {
+      final EntityTypeRecord entityType, final String entityId,
+      final Map<String, AttributeValue> existingAttributes) {
 
     EntityRecord entity;
     AddEntity addEntity = request.entity();
     List<EntityAttribute> entityAttributes =
         notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
+
+    var existing =
+        existingAttributes != null ? EntityRecord.fromAttributeMap(existingAttributes) : null;
+    var entityName =
+        isEmpty(addEntity.name()) && existing != null ? existing.name() : addEntity.name();
 
     if (EntityTypeNamespace.PRESET.equals(entityType.namespace())) {
 
@@ -147,9 +171,10 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
         }
 
         // check attributes exist
-        entity = new PresetEntityBuilder().documentId(entityId).presetEntity(presetEntity.get())
-            .name(addEntity.name()).entityTypeId(entityType.documentId())
-            .attributes(entityAttributes).build(siteId);
+        entity =
+            new PresetEntityBuilder().existing(existing != null ? existing.getAttributes() : null)
+                .documentId(entityId).presetEntity(presetEntity.get()).name(entityName)
+                .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
 
       } else {
         throw new NotFoundException("Entity Type '" + entityType.name() + "' not found");
@@ -157,36 +182,11 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
 
     } else {
 
-      entity = EntityRecord.builder().documentId(entityId).name(addEntity.name())
+      entity = EntityRecord.builder().documentId(entityId).name(entityName)
           .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
     }
 
     return entity;
-  }
-
-  private AddEntityRequest getEntityRequest(final String siteId, final ApiGatewayRequestEvent event,
-      final String entityTypeId, final String entityId) {
-
-    AddEntityRequest req = JsonToObject.fromJson(this.awsServices, event, AddEntityRequest.class);
-
-    if (update) {
-
-      DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
-      EntityRecord.Builder builder =
-          EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
-
-      Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
-      if (attributes.isEmpty()) {
-        throw new NotFoundException("Entity '" + entityId + "' not found");
-      }
-
-      if (req != null && req.entity() != null && isEmpty(req.entity().name())) {
-        AddEntity entity = new AddEntity(attributes.get("name").s(), req.entity().attributes());
-        req = new AddEntityRequest(entity);
-      }
-    }
-
-    return req;
   }
 
   private EntityTypeRecord validate(final String siteId, final String entityTypeId,
@@ -216,9 +216,11 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
     AttributeValidator attributeValidator = this.awsServices.getExtension(AttributeValidator.class);
     Map<String, AttributeRecord> attributeRecordMap =
         attributeValidator.getAttributeRecordMap(siteId, list);
+
     Collection<ValidationError> errors =
         attributeValidator.validateFullAttribute(Collections.emptyList(), siteId, list,
             attributeRecordMap, AttributeValidationAccess.ADMIN_CREATE);
+
     vb.addErrors(errors);
     vb.check();
   }
@@ -226,7 +228,10 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
   private EntityTypeRecord validateRequired(final DynamoDbService db, final String siteId,
       final String entityTypeId, final AddEntityRequest request, final ValidationBuilder vb) {
     vb.isRequired("entityTypeId", entityTypeId);
-    vb.isRequired("name", request.entity().name());
+
+    if (!update) {
+      vb.isRequired("name", request.entity().name());
+    }
     vb.check();
 
     EntityTypeRecord entityTypeRecord = EntityTypeRecord.builder().documentId(entityTypeId)
