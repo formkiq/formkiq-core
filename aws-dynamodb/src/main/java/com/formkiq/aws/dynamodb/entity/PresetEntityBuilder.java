@@ -25,8 +25,10 @@ package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Record representing an Preset LlmPrompt Entity, with its DynamoDB key structure and metadata.
@@ -39,6 +41,8 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   private List<EntityAttribute> attributes;
   /** {@link PresetEntity}. */
   private PresetEntity entityType;
+  /** Existing Attributes. */
+  private Map<String, AttributeValue> existing;
 
   /**
    * Sets the Preset Entity Attributes.
@@ -89,6 +93,11 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
     return this;
   }
 
+  public PresetEntityBuilder existing(final Map<String, AttributeValue> existingAttributes) {
+    this.existing = existingAttributes;
+    return this;
+  }
+
   /**
    * Sets the document identifier.
    *
@@ -112,40 +121,6 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   }
 
   private void validate() {
-    // ValidationBuilder vb = new ValidationBuilder();
-    this.entityType.validateAttributes(attributes);
-
-    // switch (this.entityType) {
-    // case LLM_PROMPT, CHECKOUT -> validateAttributes(vb, this.entityType.getAttributeKeys());
-    // case RETENTION_POLICY -> {
-    // validateAttributes(vb, this.entityType.getAttributeKeys());
-    // vb.check();
-    // validateRetentionStartDateSourceType(vb);
-    // }
-    // default -> throw new IllegalStateException("Unexpected value: " + this.entityType);
-    // }
-    //
-    // vb.check();
+    this.entityType.validateAttributes(attributes, existing);
   }
-
-  // private void validateRetentionStartDateSourceType(final ValidationBuilder vb) {
-  // Optional<EntityAttribute> o =
-  // findAttribute(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey());
-  // o.ifPresent(entityAttribute -> notNull(entityAttribute.getStringValues())
-  // .forEach(s -> vb.isRequired("key", RetentionStartDateSourceType.fromString(s),
-  // "invalid value '" + s + "'")));
-  // }
-  //
-  // private void validateAttributes(final ValidationBuilder vb,
-  // final Collection<String> attributeKeys) {
-  // for (String attributeKey : attributeKeys) {
-  // Optional<EntityAttribute> attribute = findAttribute(attributeKey);
-  // vb.isRequired(attributeKey, attribute);
-  // }
-  // }
-
-  // private Optional<EntityAttribute> findAttribute(final String attributeKey) {
-  // return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
-  // .findFirst();
-  // }
 }
