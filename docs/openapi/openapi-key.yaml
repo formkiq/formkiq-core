@@ -121,135 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/upload:
-    get:
-      operationId: GetDocumentUpload
-      summary: Get url to add large document
-      description: Returns a URL that can be used to upload document content and create a new document; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
-      tags:
-      - Documents
-      parameters:
-      - name: path
-        in: query
-        description: The upload file's path
-        schema:
-          type: string
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/checksumTypeParam'
-      - $ref: '#/components/parameters/checksumParam'
-      - $ref: '#/components/parameters/contentLengthParam'
-      - $ref: '#/components/parameters/durationParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    post:
-      operationId: AddDocumentUpload
-      summary: Add large document
-      description: |-
-        Returns a URL that can be used to upload document content and create a new document.
-        This endpoint is required for uploading content larger than 5 MB and allows document metadata
-        to be provided at creation time.
-
-        **Content Type Detection**
-        If the document **Content-Type** is not specified during upload, the service will determine it
-        asynchronously after the upload completes.
-        This may result in a **temporary delay** before the content type and related metadata are available.
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/contentLengthParam'
-      - $ref: '#/components/parameters/durationParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentUploadRequest'
-            examples:
-              Simple_File:
-                value:
-                  path: test.txt
-                  contentType: text/plain
-                  tags:
-                  - key: category
-                    value: sample
-                  - key: players
-                    values:
-                    - "111"
-                    - "222"
-                  metadata:
-                  - key: info
-                    value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-      responses:
-        "201":
-          description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-  /documents/{documentId}/upload:
-    get:
-      operationId: GetDocumentIdUpload
-      summary: Get url to update large document
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/checksumTypeParam'
-      - $ref: '#/components/parameters/checksumParam'
-      - $ref: '#/components/parameters/contentLengthParam'
-      - $ref: '#/components/parameters/durationParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
-      tags:
-      - Documents
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/restore:
     put:
       operationId: SetDocumentRestore
@@ -5801,6 +5672,135 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/upload:
+    get:
+      operationId: GetDocumentUpload
+      summary: Get url to add large document
+      description: Returns a URL that can be used to upload document content and create a new document; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
+      tags:
+      - Documents
+      parameters:
+      - name: path
+        in: query
+        description: The upload file's path
+        schema:
+          type: string
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/checksumTypeParam'
+      - $ref: '#/components/parameters/checksumParam'
+      - $ref: '#/components/parameters/contentLengthParam'
+      - $ref: '#/components/parameters/durationParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentUrlResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentUpload
+      summary: Add large document
+      description: |-
+        Returns a URL that can be used to upload document content and create a new document.
+        This endpoint is required for uploading content larger than 5 MB and allows document metadata
+        to be provided at creation time.
+
+        **Content Type Detection**
+        If the document **Content-Type** is not specified during upload, the service will determine it
+        asynchronously after the upload completes.
+        This may result in a **temporary delay** before the content type and related metadata are available.
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/contentLengthParam'
+      - $ref: '#/components/parameters/durationParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentUploadRequest'
+            examples:
+              Simple_File:
+                value:
+                  path: test.txt
+                  contentType: text/plain
+                  tags:
+                  - key: category
+                    value: sample
+                  - key: players
+                    values:
+                    - "111"
+                    - "222"
+                  metadata:
+                  - key: info
+                    value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentUrlResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+  /documents/{documentId}/upload:
+    get:
+      operationId: GetDocumentIdUpload
+      summary: Get url to update large document
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/checksumTypeParam'
+      - $ref: '#/components/parameters/checksumParam'
+      - $ref: '#/components/parameters/contentLengthParam'
+      - $ref: '#/components/parameters/durationParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
+      tags:
+      - Documents
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentUrlResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/url:
     get:
       operationId: GetDocumentUrl
@@ -8816,50 +8816,6 @@ components:
           description: List of document tags
           items:
             $ref: '#/components/schemas/AddDocumentTag'
-    AddDocumentUploadRequest:
-      type: object
-      properties:
-        documentId:
-          type: string
-          description: optional Document Identifier, if skipped one will be assigned
-        artifacts:
-          type: boolean
-          description: Whether the document supports artifact documents
-        path:
-          type: string
-          description: Path or Name of document
-        contentType:
-          type: string
-          description: Document media type
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        checksum:
-          type: string
-          description: The checksum value to validate the file against
-        attributes:
-          type: array
-          description: List of Attributes to add to document
-          items:
-            $ref: '#/components/schemas/AddDocumentAttribute'
-        tags:
-          type: array
-          description: List of document tags
-          items:
-            $ref: '#/components/schemas/AddDocumentTag'
-        actions:
-          type: array
-          description: List of Actions
-          items:
-            $ref: '#/components/schemas/AddAction'
     AddDocumentRequest:
       required:
       - content
@@ -13813,6 +13769,50 @@ components:
         eq:
           type: string
           description: Searches for strings that eq
+    AddDocumentUploadRequest:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: optional Document Identifier, if skipped one will be assigned
+        artifacts:
+          type: boolean
+          description: Whether the document supports artifact documents
+        path:
+          type: string
+          description: Path or Name of document
+        contentType:
+          type: string
+          description: Document media type
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        checksum:
+          type: string
+          description: The checksum value to validate the file against
+        attributes:
+          type: array
+          description: List of Attributes to add to document
+          items:
+            $ref: '#/components/schemas/AddDocumentAttribute'
+        tags:
+          type: array
+          description: List of document tags
+          items:
+            $ref: '#/components/schemas/AddDocumentTag'
+        actions:
+          type: array
+          description: List of Actions
+          items:
+            $ref: '#/components/schemas/AddAction'
     GetDocumentUrlResponse:
       type: object
       properties:
