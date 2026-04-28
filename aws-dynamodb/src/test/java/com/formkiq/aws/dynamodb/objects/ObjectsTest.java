@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,6 +49,16 @@ public class ObjectsTest {
   }
 
   /**
+   * Unit Test notNull with {@link Long}.
+   */
+  @Test
+  public void testNotNullLong() {
+    assertEquals(-1, Objects.notNull((Long) null));
+    assertEquals(-10, Objects.notNull(Long.valueOf(-10)));
+    assertEquals(10, Objects.notNull(Long.valueOf(10)));
+  }
+
+  /**
    * Unit Test Paritioning.
    */
   @Test
@@ -69,7 +80,7 @@ public class ObjectsTest {
     assertEquals("[1, 2, 3, 4]", result.get(i++).toString());
     assertEquals("[5, 6, 7, 8]", result.get(i++).toString());
     assertEquals("[9, 10, 11, 12]", result.get(i++).toString());
-    assertEquals("[13, 14, 15]", result.get(i++).toString());
+    assertEquals("[13, 14, 15]", result.get(i).toString());
   }
 
   /**
@@ -101,6 +112,6 @@ public class ObjectsTest {
     assertEquals("[66, 67, 68, 69, 70, 71, 72]", result.get(i++).toString());
     assertEquals("[73, 74, 75, 76, 77, 78, 79]", result.get(i++).toString());
     assertEquals("[80, 81, 82, 83, 84, 85, 86]", result.get(i++).toString());
-    assertEquals("[87, 88, 89, 90]", result.get(i++).toString());
+    assertEquals("[87, 88, 89, 90]", result.get(i).toString());
   }
 }
