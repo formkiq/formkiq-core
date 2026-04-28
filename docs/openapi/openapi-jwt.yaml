@@ -121,35 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/restore:
-    put:
-      operationId: SetDocumentRestore
-      summary: Restore soft deleted document
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      description: Restores a soft deleted document
-      tags:
-      - Documents
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetDocumentRestoreResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/compress:
     post:
       operationId: CompressDocuments
@@ -5380,6 +5351,35 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/restore:
+    put:
+      operationId: SetDocumentRestore
+      summary: Restore soft deleted document
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      description: Restores a soft deleted document
+      tags:
+      - Documents
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetDocumentRestoreResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/tags:
     get:
       operationId: GetDocumentTags
@@ -8894,12 +8894,6 @@ components:
           description: List of share permissions
           items:
             $ref: '#/components/schemas/UserSharePermission'
-    SetDocumentRestoreResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Document Document restore message
     AddFolderShareResponse:
       type: object
       properties:
@@ -13627,6 +13621,12 @@ components:
         isBase64:
           type: boolean
           description: Is the content Base64-encoded?
+    SetDocumentRestoreResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Document Document restore message
     GetDocumentTagsResponse:
       type: object
       properties:
