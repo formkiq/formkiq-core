@@ -1,0 +1,122 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/syncs:
+    get:
+      operationId: GetDocumentSyncs
+      summary: Get document syncs
+      description: Retrieve the document syncs with external services status
+      tags:
+        - Documents
+      parameters:
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentSyncResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddDocumentSync
+      summary: Add document sync to service
+      description: Add a document to a service
+      tags:
+        - Documents
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentSyncRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetDocumentSyncResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        syncs:
+          type: "array"
+          description: "List of document syncs"
+          items:
+            $ref: "#/components/schemas/DocumentSync"
+
+    #@overlay/match missing_ok=True
+    AddDocumentSyncRequest:
+      type: "object"
+      properties:
+        sync:
+          $ref: "#/components/schemas/AddDocumentSync"
+
+    #@overlay/match missing_ok=True
+    AddDocumentSync:
+      type: "object"
+      properties:
+        service:
+          $ref: "#/components/schemas/AddDocumentSyncService"
+        type:
+          $ref: "#/components/schemas/DocumentSyncType"
+
+    #@overlay/match missing_ok=True
+    DocumentSync:
+      type: "object"
+      properties:
+        service:
+          $ref: "#/components/schemas/DocumentSyncService"
+        status:
+          $ref: "#/components/schemas/DocumentSyncStatus"
+        type:
+          $ref: "#/components/schemas/DocumentSyncType"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        syncDate:
+          type: "string"
+          description: "Timestamp of synchronization"
+        userId:
+          type: "string"
+          description: "User who added document"
+        message:
+          type: string
+          description: Document sync message
