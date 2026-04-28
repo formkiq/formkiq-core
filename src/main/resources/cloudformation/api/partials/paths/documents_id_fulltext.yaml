@@ -205,6 +205,23 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    UpdateDocumentFulltextResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Full text processing message
+
+    #@overlay/match missing_ok=True
+    SetDocumentFulltextResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Full text processing message
+
+
+    #@overlay/match missing_ok=True
     GetDocumentFulltextResponse:
       type: "object"
       properties:

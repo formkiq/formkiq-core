@@ -137,6 +137,41 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    OcrTableData:
+      type: object
+      properties:
+        value:
+          type: string
+          description: Table Value
+
+    #@overlay/match missing_ok=True
+    OcrTable:
+      type: object
+      properties:
+        headers:
+          type: "array"
+          items:
+            type: "string"
+        data:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/OcrTableData"
+
+    #@overlay/match missing_ok=True
+    OcrKeyValues:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Ocr Key
+        values:
+          type: "array"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
     GetDocumentOcrResponse:
       type: object
       properties:

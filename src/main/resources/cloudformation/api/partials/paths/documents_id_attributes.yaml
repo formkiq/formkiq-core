@@ -185,6 +185,52 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    AddDocumentAttributeValue:
+      type: "object"
+      description: "Document Attribute Value"
+      properties:
+        stringValue:
+          type: "string"
+          description: "Attribute with string value"
+        stringValues:
+          type: "array"
+          description: "Attribute with string values"
+          items:
+            type: "string"
+        numberValue:
+          type: "number"
+          description: "Attribute with number value"
+        numberValues:
+          type: "array"
+          description: "Attribute with number values"
+          items:
+            type: "number"
+        booleanValue:
+          type: "boolean"
+          description: "Attribute with boolean value"
+
+
+    #@overlay/match missing_ok=True
+    SetDocumentAttributeRequest:
+      type: "object"
+      description: "Set List of document attributes"
+      properties:
+        attribute:
+          $ref: "#/components/schemas/AddDocumentAttributeValue"
+
+    #@overlay/match missing_ok=True
+    SetDocumentAttributesRequest:
+      type: "object"
+      description: "Set List of document attributes"
+      properties:
+        attributes:
+          type: "array"
+          description: "List of document attributes"
+          items:
+            $ref: "#/components/schemas/AddDocumentAttribute"
+
+
+    #@overlay/match missing_ok=True
     GetDocumentAttributesResponse:
       type: "object"
       properties:
@@ -196,6 +242,13 @@ components:
           description: "List of attributes"
           items:
             $ref: "#/components/schemas/DocumentAttribute"
+
+    #@overlay/match missing_ok=True
+    GetDocumentAttributeResponse:
+      type: "object"
+      properties:
+        attribute:
+          $ref: "#/components/schemas/DocumentAttribute"
 
     #@overlay/match missing_ok=True
     DocumentAttribute:

@@ -41,6 +41,18 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    DocumentsCompressRequest:
+      type: "object"
+      required:
+        - "documentIds"
+      properties:
+        documentIds:
+          type: "array"
+          description: "Documents to compress"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
     DocumentsCompressResponse:
       type: "object"
       properties:

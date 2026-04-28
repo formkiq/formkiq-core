@@ -417,6 +417,14 @@ components:
             type: "string"
 
     #@overlay/match missing_ok=True
+    UpdateMatchingDocumentTagsResponse:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "response message"
+
+    #@overlay/match missing_ok=True
     UpdateMatchingDocumentTagsRequest:
       type: "object"
       description: "Add/Update of multiple document tag(s) based on document(s) that have the matching tag."

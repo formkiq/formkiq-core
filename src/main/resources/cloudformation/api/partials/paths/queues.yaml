@@ -170,6 +170,44 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    WorkflowDocument:
+      type: "object"
+      properties:
+        workflow:
+          $ref: "#/components/schemas/WorkflowSummary"
+        document:
+          $ref: "#/components/schemas/Document"
+
+
+    #@overlay/match missing_ok=True
+    DeleteQueueResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    AddQueueRequest:
+      type: "object"
+      required:
+        - name
+      properties:
+        name:
+          description: "Queue name"
+          type: "string"
+
+
+    #@overlay/match missing_ok=True
+    AddQueueResponse:
+      type: "object"
+      properties:
+        queueId:
+          type: "string"
+          description: "Queue Identifier"
+
+
+    #@overlay/match missing_ok=True
     GetQueuesResponse:
       type: "object"
       properties:

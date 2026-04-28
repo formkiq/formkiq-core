@@ -1512,6 +1512,1014 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    OpaPolicyAttributeEq:
+      type: "object"
+      description: "Attribute EQ criteria"
+      properties:
+        stringValue:
+          type: "string"
+          description: "The value to compare the Attribute Key value to"
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+        booleanValue:
+          type: "boolean"
+          description: "The value to compare the Attribute Key value to"
+        input:
+          $ref: "#/components/schemas/OpaPolicyAttributeInput"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeGt:
+      type: "object"
+      description: "Attribute greater than criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeGte:
+      type: "object"
+      description: "Attribute greater than and equals to criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeLt:
+      type: "object"
+      description: "Attribute less than criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeLte:
+      type: "object"
+      description: "Attribute less than and equals to criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeNeq:
+      type: "object"
+      description: "Attribute not equal to criteria"
+      properties:
+        stringValue:
+          type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeIn:
+      type: "object"
+      description: "Attribute In to criteria"
+      properties:
+        stringValues:
+          type: "array"
+          items:
+            type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeNotIn:
+      type: "object"
+      description: "Attribute Not In to criteria"
+      properties:
+        stringValues:
+          type: "array"
+          items:
+            type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeInput:
+      type: "object"
+      properties:
+        matchUsername:
+          type: "boolean"
+          description: "Match Input Username"
+        matchUserClaim:
+          type: "string"
+          description: "Matches user claim name to match against the Attribute Key value"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInputMethod:
+      type: "object"
+      properties:
+        in:
+          type: "array"
+          description: "List of HTTP Methods"
+          items:
+            type: "string"
+        notIn:
+          type: "array"
+          description: "List of HTTP Methods"
+          items:
+            type: "string"
+
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInputResource:
+      type: "object"
+      properties:
+        in:
+          type: "array"
+          description: "List of Resources"
+          items:
+            type: "string"
+        notIn:
+          type: "array"
+          description: "List of Resources"
+          items:
+            type: "string"
+
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaCompositeKey:
+      type: "object"
+      properties:
+        attributeKeys:
+          type: "array"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    AddAttributeSchemaRequired:
+      type: object
+      properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
+        minNumberOfValues:
+          type: number
+          description: The minimum number of attribute values
+        maxNumberOfValues:
+          type: number
+          description: The maximum number of attribute values
+        attributeKey:
+          type: string
+        defaultValue:
+          type: string
+          description: Default value
+        defaultValues:
+          type: array
+          description: Default values
+          items:
+            type: string
+        allowedValues:
+          type: array
+          description: Only valid string values
+          items:
+            type: string
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaRequired:
+      type: "object"
+      properties:
+        attributeKey:
+          type: "string"
+        minNumberOfValues:
+          type: "number"
+          description: "The minimum number of attribute values"
+        maxNumberOfValues:
+          type: "number"
+          description: "The maximum number of attribute values"
+        defaultValue:
+          type: "string"
+          description: "Default value"
+        defaultValues:
+          type: "array"
+          description: "Default values"
+          items:
+            type: "string"
+        allowedValues:
+          type: "array"
+          description: "Only valid string values"
+          items:
+            type: "string"
+        localizedAllowedValues:
+          type: "object"
+          additionalProperties:
+            type: string
+
+
+    #@overlay/match missing_ok=True
+    AddAttributeSchemaOptional:
+      type: object
+      properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
+        minNumberOfValues:
+          type: number
+          description: The minimum number of attribute values
+        maxNumberOfValues:
+          type: number
+          description: The maximum number of attribute values
+        attributeKey:
+          type: string
+        allowedValues:
+          type: array
+          description: Only valid string values
+          items:
+            type: string
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaOptional:
+      type: "object"
+      properties:
+        minNumberOfValues:
+          type: "number"
+          description: "The minimum number of attribute values"
+        maxNumberOfValues:
+          type: "number"
+          description: "The maximum number of attribute values"
+        attributeKey:
+          type: "string"
+        allowedValues:
+          type: "array"
+          description: "Only valid string values"
+          items:
+            type: "string"
+        localizedAllowedValues:
+          type: "object"
+          additionalProperties:
+            type: string
+
+    #@overlay/match missing_ok=True
+    LocaleResourceType:
+      type: string
+      description: Type of Locale Resource
+      enum:
+        - INTERFACE
+        - SCHEMA
+        - CLASSIFICATION
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceInterfaceItem:
+      type: object
+      required:
+        - itemType
+        - interfaceKey
+        - localizedValue
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+        interfaceKey:
+          type: "string"
+          description: "Interface Key"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceSchemaItem:
+      type: object
+      required:
+        - itemType
+        - attributeKey
+        - allowedValue
+        - localizedValue
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceClassificationItem:
+      type: object
+      required:
+        - itemType
+        - attributeKey
+        - allowedValue
+        - localizedValue
+        - classificationId
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        classificationId:
+          type: "string"
+          description: "Classification Id"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttribute:
+      type: "object"
+      properties:
+        key:
+          type: "string"
+          description: "Attribute Key"
+        eq:
+          $ref: "#/components/schemas/OpaPolicyAttributeEq"
+        gt:
+          $ref: "#/components/schemas/OpaPolicyAttributeGt"
+        gte:
+          $ref: "#/components/schemas/OpaPolicyAttributeGte"
+        lt:
+          $ref: "#/components/schemas/OpaPolicyAttributeLt"
+        lte:
+          $ref: "#/components/schemas/OpaPolicyAttributeLte"
+        neq:
+          $ref: "#/components/schemas/OpaPolicyAttributeNeq"
+        in:
+          $ref: "#/components/schemas/OpaPolicyAttributeIn"
+        notIn:
+          $ref: "#/components/schemas/OpaPolicyAttributeNotIn"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInput:
+      type: "object"
+      properties:
+        httpMethod:
+          $ref: "#/components/schemas/OpaPolicyInputMethod"
+        resource:
+          $ref: "#/components/schemas/OpaPolicyInputResource"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshotFailure:
+      type: object
+      description: Details about a failure for a specific shard in a snapshot.
+      properties:
+        index:
+          type: string
+          description: The index name.
+        index_uuid:
+          type: string
+          description: UUID of the index.
+        shard_id:
+          type: integer
+          format: int32
+          description: Shard identifier.
+        reason:
+          type: string
+          description: Full exception/message explaining why the failure occurred.
+        node_id:
+          type: string
+          description: ID of the node handling that shard.
+        status:
+          type: string
+          description: Status of the failure (e.g., INTERNAL_SERVER_ERROR).
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshotShard:
+      type: object
+      properties:
+        total:
+          type: "number"
+          description: "Total number of shards"
+        failed:
+          type: "number"
+          description: "Failed number of shards"
+        successful:
+          type: "number"
+          description: "Successful number of shards"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchAlias:
+      type: object
+      properties:
+        name:
+          type: "string"
+          description: "Name of Alias"
+
+    #@overlay/match missing_ok=True
+    AddResourceItem:
+      oneOf:
+        - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
+        - $ref: '#/components/schemas/AddLocaleResourceSchemaItem'
+        - $ref: '#/components/schemas/AddLocaleResourceClassificationItem'
+
+    #@overlay/match missing_ok=True
+    ResourceItem:
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+        interfaceKey:
+          type: "string"
+          description: "Interface Key"
+        itemKey:
+          type: "string"
+          description: "Item Key"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        classificationId:
+          type: "string"
+          description: "Classification Id"
+
+    #@overlay/match missing_ok=True
+    ApiKeyPermission:
+      type: string
+      description: List of API permissions (defaults to READ / WRITE / DELETE)
+      enum:
+        - READ
+        - WRITE
+        - DELETE
+        - GOVERN
+
+    #@overlay/match missing_ok=True
+    OpaPolicy:
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+          description: "SiteId to apply OPA Policy to"
+        policy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyItem:
+      type: "object"
+      properties:
+        policy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+        allRoles:
+          items:
+            type: "string"
+          description: "User must match all roles"
+        anyRoles:
+          items:
+            type: "string"
+          description: "User must match any role"
+        excludedRoles:
+          items:
+            type: "string"
+          description: "User must NOT have these roles"
+        attributes:
+          items:
+            $ref: "#/components/schemas/OpaPolicyAttribute"
+        input:
+          $ref: "#/components/schemas/OpaPolicyInput"
+
+
+    #@overlay/match missing_ok=True
+    ApiKey:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of API Key"
+        apiKey:
+          type: "string"
+          description: "API Key value"
+        userId:
+          type: "string"
+        siteId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        permissions:
+          type: "array"
+          description: "List of permissions"
+          items:
+            type: "string"
+            enum:
+              - READ
+              - WRITE
+              - DELETE
+              - GOVERN
+        groups:
+          type: "array"
+          description: "List of groups to add as custom claims to API Key"
+          items:
+            type: "string"
+
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshot:
+      type: object
+      properties:
+        snapshot:
+          type: "string"
+          description: "Snapshot name"
+        uuid:
+          type: "string"
+          description: "Snapshot’s universally unique identifier (UUID)"
+        version:
+          type: "string"
+          description: "Open Search version that created the snapshot"
+        indices:
+          type: "array"
+          description: "Indices in the snapshot"
+          items:
+            type: "string"
+        shards:
+          $ref: "#/components/schemas/OpenSearchSnapshotShard"
+        failures:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchSnapshotFailure"
+        state:
+          type: "string"
+          description: "Snapshot status. Possible values: IN_PROGRESS, SUCCESS, FAILED, PARTIAL"
+        start_time:
+          type: "string"
+          description: "Date/time when the snapshot creation process began"
+        start_time_in_millis:
+          type: "number"
+          description: "Time (in milliseconds) when the snapshot creation process began"
+        end_time:
+          type: "string"
+          description: "Date/time when the snapshot creation process ended"
+        end_time_in_millis:
+          type: "number"
+          description: "Time (in milliseconds) when the snapshot creation process ended"
+        duration_in_millis:
+          type: "number"
+          description: "Total time (in milliseconds) that the snapshot creation process lasted"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchS3Repository:
+      type: object
+      properties:
+        repository:
+          type: "string"
+          description: "Name of the Repository"
+        bucket:
+          type: "string"
+          description: "Name of the S3 bucket"
+
+    #@overlay/match missing_ok=True
+    SiteGroup:
+      type: object
+      properties:
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SiteGroupPermissions"
+
+    #@overlay/match missing_ok=True
+    LocaleInfo:
+      type: object
+      properties:
+        locale:
+          type: "string"
+          description: "Name of Locale"
+
+    #@overlay/match missing_ok=True
+    OpenSearchIndex:
+      type: object
+      properties:
+        numberOfReplicas:
+          type: "string"
+          description: "The number of replicas per shard"
+        numberOfShards:
+          type: "string"
+          description: "The number of shards in index"
+        documentCount:
+          type: "string"
+          description: "The number of documents in index"
+        storeSize:
+          type: "string"
+          description: "The store size of the index"
+        name:
+          type: "string"
+          description: "Name of Index"
+        aliases:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchAlias"
+
+    #@overlay/match missing_ok=True
+    ClassificationSummary:
+      type: "object"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+        name:
+          description: "Name of Classification"
+          type: "string"
+        userId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+
+    #@overlay/match missing_ok=True
+    Classification:
+      type: "object"
+      properties:
+        name:
+          description: "Name of Classification"
+          type: "string"
+        userId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        attributes:
+          $ref: "#/components/schemas/SchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    AddClassification:
+      type: "object"
+      properties:
+        name:
+          description: "Name of Classification"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SetSchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    OpenSearchIndexSetting:
+      type: object
+      properties:
+        numberOfReplicas:
+          type: "string"
+          description: "The number of replicas per shard"
+        numberOfShards:
+          type: "string"
+          description: "The number of shards in index"
+
+    #@overlay/match missing_ok=True
+    UpdateSite:
+      type: "object"
+      properties:
+        title:
+          description: "Title of Site"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/SiteStatus"
+
+    #@overlay/match missing_ok=True
+    SetSchemaAttributes:
+      type: "object"
+      properties:
+        compositeKeys:
+          type: "array"
+          description: "List of Composite Keys"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaCompositeKey"
+        required:
+          type: "array"
+          description: "List of Required Attributes"
+          items:
+            $ref: "#/components/schemas/AddAttributeSchemaRequired"
+        optional:
+          type: "array"
+          description: "List of Optional Attribute"
+          items:
+            $ref: "#/components/schemas/AddAttributeSchemaOptional"
+        allowAdditionalAttributes:
+          type: "boolean"
+          default: true
+
+    #@overlay/match missing_ok=True
+    SchemaAttributes:
+      type: "object"
+      properties:
+        compositeKeys:
+          type: "array"
+          description: "List of Composite Keys"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaCompositeKey"
+        required:
+          type: "array"
+          description: "List of Required Attributes"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaRequired"
+        optional:
+          type: "array"
+          description: "List of Optional Attribute"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaOptional"
+        allowAdditionalAttributes:
+          type: "boolean"
+          default: true
+
+    #@overlay/match missing_ok=True
+    SetLocaleResourceItemRequest:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/AddResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceItemRequest:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/AddResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceItemResponse:
+      type: object
+      properties:
+        itemKey:
+          type: "string"
+          description: "Item Key of resource"
+
+    #@overlay/match missing_ok=True
+    AddLocaleRequest:
+      type: object
+      properties:
+        locale:
+          type: "string"
+          description: "Name of Locale"
+
+    #@overlay/match missing_ok=True
+    GetLocalesResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        locales:
+          type: "array"
+          description: "List of Locale"
+          items:
+            $ref: "#/components/schemas/LocaleInfo"
+
+    #@overlay/match missing_ok=True
+    GetLocaleResourceItemsResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        resourceItems:
+          type: "array"
+          description: "List of permissions"
+          items:
+            $ref: "#/components/schemas/ResourceItem"
+
+    #@overlay/match missing_ok=True
+    GetLocaleResourceItemResponse:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/ResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: "string"
+          description: "Name of API Key"
+        groups:
+          type: "array"
+          description: "Optional list of groups to add as custom claims to API Key"
+          items:
+            type: "string"
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ApiKeyPermission"
+
+    #@overlay/match missing_ok=True
+    AddApiKeyResponse:
+      type: object
+      properties:
+        apiKey:
+          type: "string"
+          description: "API Key Identifier"
+
+    #@overlay/match missing_ok=True
+    DeleteApiKeyResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPoliciesResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        opaPolicies:
+          type: "array"
+          description: "List of OPA policies"
+          items:
+            $ref: "#/components/schemas/OpaPolicy"
+
+    #@overlay/match missing_ok=True
+    SetOpaAccessPolicyItemsRequest:
+      type: object
+      required:
+        - policyItems
+      properties:
+        policyItems:
+          type: "array"
+          description: "List of OPA policy items"
+          items:
+            $ref: "#/components/schemas/OpaPolicyItem"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPolicyResponse:
+      type: object
+      properties:
+        opaPolicy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPolicyItemsResponse:
+      type: object
+      properties:
+        policyItems:
+          items:
+            $ref: "#/components/schemas/OpaPolicyItem"
+
+    #@overlay/match missing_ok=True
+    GetApiKeysResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        apiKeys:
+          type: "array"
+          description: "List of ApiKeys"
+          items:
+            $ref: "#/components/schemas/ApiKey"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchSnapshotResponse:
+      type: object
+      properties:
+        snapshots:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchSnapshot"
+
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchSnapshotRepositoryResponse:
+      type: object
+      properties:
+        s3Repositories:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchS3Repository"
+
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndiceRequest:
+      type: object
+      properties:
+        indexName:
+          type: "string"
+          description: "The name of the index to set for SiteId"
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndexRequest:
+      type: object
+      properties:
+        indexSettings:
+          $ref: "#/components/schemas/OpenSearchIndexSetting"
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndexResponse:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    GetSiteGroupsResponse:
+      type: object
+      properties:
+        groupNames:
+          type: "array"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    GetSiteGroupResponse:
+      type: object
+      properties:
+        group:
+          $ref: "#/components/schemas/SiteGroup"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchIndiceResponse:
+      type: object
+      properties:
+        indices:
+          type: "array"
+          description: "OpenSearch Indices"
+          items:
+            $ref: "#/components/schemas/OpenSearchIndex"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchIndexResponse:
+      type: object
+      properties:
+        indexSettings:
+          $ref: "#/components/schemas/OpenSearchIndexSetting"
+
+    #@overlay/match missing_ok=True
+    AddClassificationResponse:
+      type: "object"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+
+    #@overlay/match missing_ok=True
+    GetSitesSchemaResponse:
+      type: "object"
+      properties:
+        name:
+          description: "Name of schema"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    GetClassificationResponse:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/Classification"
+
+    #@overlay/match missing_ok=True
+    GetClassificationsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/ClassificationSummary"
+
+    #@overlay/match missing_ok=True
+    SetClassificationRequest:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/AddClassification"
+
+    #@overlay/match missing_ok=True
+    UpdateSiteRequest:
+      type: "object"
+      properties:
+        site:
+          $ref: "#/components/schemas/UpdateSite"
+
+    #@overlay/match missing_ok=True
+    AddClassificationRequest:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/AddClassification"
+
+    #@overlay/match missing_ok=True
+    SetSitesSchemaRequest:
+      type: "object"
+      properties:
+        name:
+          description: "Name of schema"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SetSchemaAttributes"
+
+    #@overlay/match missing_ok=True
     AddSiteRequest:
       type: "object"
       properties:

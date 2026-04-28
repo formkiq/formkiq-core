@@ -348,6 +348,22 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    DeleteRulesetResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteRuleResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
     RulesetStatus:
       type: string
       description: Status of the Ruleset

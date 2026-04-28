@@ -70,6 +70,42 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    AddDocumentSyncService:
+      type: string
+      description: Add Document Sync Service
+      enum:
+        - FULLTEXT
+
+    #@overlay/match missing_ok=True
+    DocumentSyncService:
+      type: string
+      description: Service of Document Sync
+      enum:
+        - TYPESENSE
+        - OPENSEARCH
+
+    #@overlay/match missing_ok=True
+    DocumentSyncStatus:
+      type: string
+      description: Status of Document Sync
+      enum:
+        - COMPLETE
+        - FAILED
+        - FAILED_RETRY
+        - PENDING
+
+    #@overlay/match missing_ok=True
+    DocumentSyncType:
+      type: string
+      description: Type of Document Sync
+      enum:
+        - METADATA
+        - CONTENT
+        - SOFT_DELETE
+        - DELETE
+
+
+    #@overlay/match missing_ok=True
     GetDocumentSyncResponse:
       type: "object"
       properties:
