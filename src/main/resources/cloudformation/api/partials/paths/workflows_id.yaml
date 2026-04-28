@@ -151,6 +151,38 @@ paths:
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
+  #@overlay/match missing_ok=True
+  /workflows/{workflowId}/documents:
+    get:
+      operationId: GetWorkflowDocuments
+      summary: Get list of documents in workflow
+      description: List documents in Workflow; available as an Add-On Module
+      tags:
+        - Document Workflows
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetWorkflowDocumentsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+
 components:
   schemas:
 
@@ -252,3 +284,16 @@ components:
           type: "string"
         status:
           $ref: "#/components/schemas/WorkflowStatus"
+
+    #@overlay/match missing_ok=True
+    GetWorkflowDocumentsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        documents:
+          type: "array"
+          description: "List of workflow documents"
+          items:
+            $ref: "#/components/schemas/Document"
