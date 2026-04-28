@@ -121,128 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /indices/{indexType}/move:
-    post:
-      operationId: IndexFolderMove
-      description: Perform an Folder Index Move
-      tags:
-      - Custom Index
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/indexTypeParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IndexFolderMoveRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IndexFolderMoveResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /indices/{indexType}/{indexKey}:
-    delete:
-      operationId: DeleteIndex
-      description: |-
-        Perform a delete on the Folder Index.
-
-        When deleting a file from the "folder" index, you can set the indexKey to a URLEncoded path variable.
-      tags:
-      - Custom Index
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/indexKeyParam'
-      - $ref: '#/components/parameters/indexTypeParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteIndicesResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /indices/search:
-    post:
-      operationId: IndexSearch
-      description: Perform a search on a index; this is currently available for both folder and tag indices
-      tags:
-      - Custom Index
-      - Tag Index
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/limitParam'
-      - $ref: '#/components/parameters/nextParam'
-      - name: previous
-        in: query
-        description: Previous page of results token
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IndexSearchRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IndexSearchResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /esignature/docusign/{documentId}/envelopes:
     post:
       operationId: AddDocusignEnvelopes
@@ -5150,6 +5028,128 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /indices/{indexType}/move:
+    post:
+      operationId: IndexFolderMove
+      description: Perform an Folder Index Move
+      tags:
+      - Custom Index
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/indexTypeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexFolderMoveRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexFolderMoveResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /indices/{indexType}/{indexKey}:
+    delete:
+      operationId: DeleteIndex
+      description: |-
+        Perform a delete on the Folder Index.
+
+        When deleting a file from the "folder" index, you can set the indexKey to a URLEncoded path variable.
+      tags:
+      - Custom Index
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/indexKeyParam'
+      - $ref: '#/components/parameters/indexTypeParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteIndicesResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /indices/search:
+    post:
+      operationId: IndexSearch
+      description: Perform a search on a index; this is currently available for both folder and tag indices
+      tags:
+      - Custom Index
+      - Tag Index
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      - name: previous
+        in: query
+        description: Previous page of results token
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexSearchRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexSearchResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /queues:
     get:
       operationId: GetQueues
@@ -8246,59 +8246,12 @@ components:
         error:
           type: string
           description: Error Message
-    IndexFolderMoveRequest:
-      type: object
-      properties:
-        source:
-          type: string
-          description: Source path
-        target:
-          type: string
-          description: Target path
-    DeleteIndicesResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: response message
     UpdateMatchingDocumentTagsResponse:
       type: object
       properties:
         message:
           type: string
           description: response message
-    IndexFolderMoveResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Folder move message
-    IndexSearchRequest:
-      type: object
-      properties:
-        indexType:
-          type: string
-          description: The name of the index to search
-    IndexSearchResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        previous:
-          type: string
-          description: Previous page of results token
-        values:
-          type: array
-          description: List of search results
-          items:
-            $ref: '#/components/schemas/IndexSearch'
-    IndexSearch:
-      type: object
-      properties:
-        value:
-          type: string
-          description: value of index
     GetDocumentAttributeResponse:
       type: object
       properties:
@@ -13235,6 +13188,53 @@ components:
           description: List of permissions
           items:
             $ref: '#/components/schemas/FolderPermissionType'
+    IndexFolderMoveRequest:
+      type: object
+      properties:
+        source:
+          type: string
+          description: Source path
+        target:
+          type: string
+          description: Target path
+    DeleteIndicesResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: response message
+    IndexFolderMoveResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Folder move message
+    IndexSearchRequest:
+      type: object
+      properties:
+        indexType:
+          type: string
+          description: The name of the index to search
+    IndexSearchResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        previous:
+          type: string
+          description: Previous page of results token
+        values:
+          type: array
+          description: List of search results
+          items:
+            $ref: '#/components/schemas/IndexSearch'
+    IndexSearch:
+      type: object
+      properties:
+        value:
+          type: string
+          description: value of index
     GetQueuesResponse:
       type: object
       properties:
