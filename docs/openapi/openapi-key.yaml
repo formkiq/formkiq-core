@@ -121,190 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /attributes:
-    get:
-      operationId: GetAttributes
-      tags:
-      - Attributes
-      description: Returns a list of attributes
-      summary: Get Attributes listing
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/nextParam'
-      - $ref: '#/components/parameters/limitParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetAttributesResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    post:
-      operationId: AddAttribute
-      description: Creates a new attribute
-      summary: Add new attribute
-      tags:
-      - Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddAttributeRequest'
-      responses:
-        "201":
-          description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-  /attributes/{key}:
-    get:
-      operationId: GetAttribute
-      tags:
-      - Attributes
-      description: Returns a attribute
-      summary: Get Attribute
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/keyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetAttributeResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    patch:
-      operationId: UpdateAttribute
-      description: Updates existing attribute
-      summary: Update existing attribute
-      tags:
-      - Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/keyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateAttributeRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpdateResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    delete:
-      operationId: DeleteAttribute
-      description: Delete a attribute
-      summary: Delete attribute
-      tags:
-      - Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/keyParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /attributes/{key}/allowedValues:
-    get:
-      operationId: GetAttributeAllowedValues
-      tags:
-      - Attributes
-      description: Returns an attribute's allowed values that spans across all classifications and site schema
-      summary: Get Attribute Allowed Values
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/keyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetAttributeAllowedValuesResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /search:
     post:
       operationId: DocumentSearch
@@ -4583,6 +4399,190 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /attributes:
+    get:
+      operationId: GetAttributes
+      tags:
+      - Attributes
+      description: Returns a list of attributes
+      summary: Get Attributes listing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/nextParam'
+      - $ref: '#/components/parameters/limitParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAttributesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddAttribute
+      description: Creates a new attribute
+      summary: Add new attribute
+      tags:
+      - Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddAttributeRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+  /attributes/{key}:
+    get:
+      operationId: GetAttribute
+      tags:
+      - Attributes
+      description: Returns a attribute
+      summary: Get Attribute
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/keyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAttributeResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    patch:
+      operationId: UpdateAttribute
+      description: Updates existing attribute
+      summary: Update existing attribute
+      tags:
+      - Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/keyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAttributeRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    delete:
+      operationId: DeleteAttribute
+      description: Delete a attribute
+      summary: Delete attribute
+      tags:
+      - Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/keyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /attributes/{key}/allowedValues:
+    get:
+      operationId: GetAttributeAllowedValues
+      tags:
+      - Attributes
+      description: Returns an attribute's allowed values that spans across all classifications and site schema
+      summary: Get Attribute Allowed Values
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/keyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAttributeAllowedValuesResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -10844,153 +10844,6 @@ components:
       - MANUAL
       - DATA_CLASSIFICATION
       - MALWARE_SCAN
-    GetAttributeAllowedValuesResponse:
-      type: object
-      properties:
-        allowedValues:
-          type: array
-          description: Attribute's allowed values
-          items:
-            type: string
-        localizedAllowedValues:
-          type: object
-          additionalProperties:
-            type: string
-    GetAttributeResponse:
-      type: object
-      properties:
-        attribute:
-          $ref: '#/components/schemas/Attribute'
-    GetAttributesResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        attributes:
-          type: array
-          description: List of attributes
-          items:
-            $ref: '#/components/schemas/Attribute'
-    Attribute:
-      type: object
-      properties:
-        type:
-          $ref: '#/components/schemas/AttributeType'
-        key:
-          type: string
-          description: Attribute Key
-        dataType:
-          $ref: '#/components/schemas/AttributeDataType'
-        watermark:
-          $ref: '#/components/schemas/Watermark'
-    Watermark:
-      type: object
-      properties:
-        fontSize:
-          type: number
-          description: Watermark Font Size
-        text:
-          type: string
-          description: Watermark text
-        rotation:
-          type: number
-          description: Watermark Rotation
-        imageDocumentId:
-          type: string
-          description: Watermark Image Document Id
-        scale:
-          $ref: '#/components/schemas/WatermarkScale'
-        position:
-          $ref: '#/components/schemas/WatermarkPosition'
-    WatermarkPosition:
-      type: object
-      properties:
-        xAnchor:
-          $ref: '#/components/schemas/WatermarkPositionXAnchor'
-        yAnchor:
-          $ref: '#/components/schemas/WatermarkPositionYAnchor'
-        xOffset:
-          type: number
-          description: X offset
-        yOffset:
-          type: number
-          description: Y offset
-    WatermarkScale:
-      type: string
-      description: Watermark Scale
-      enum:
-      - FIT_BEST
-      - ORIGINAL
-    WatermarkPositionXAnchor:
-      type: string
-      description: Watermark X Position Anchor
-      enum:
-      - LEFT
-      - RIGHT
-      - CENTER
-    WatermarkPositionYAnchor:
-      type: string
-      description: Watermark Y Position Anchor
-      enum:
-      - TOP
-      - BOTTOM
-      - CENTER
-    AttributeType:
-      type: string
-      description: Type of Attribute
-      default: STANDARD
-      enum:
-      - STANDARD
-      - OPA
-      - GOVERNANCE
-    AttributeDataType:
-      type: string
-      description: Data Type of Attribute
-      default: STRING
-      enum:
-      - STRING
-      - NUMBER
-      - BOOLEAN
-      - KEY_ONLY
-      - PUBLICATION
-      - WATERMARK
-      - ENTITY
-    UpdateAttributeRequest:
-      required:
-      - attribute
-      type: object
-      properties:
-        attribute:
-          $ref: '#/components/schemas/UpdateAttribute'
-    UpdateAttribute:
-      type: object
-      properties:
-        type:
-          $ref: '#/components/schemas/AttributeType'
-        watermark:
-          $ref: '#/components/schemas/Watermark'
-    AddAttributeRequest:
-      required:
-      - attribute
-      type: object
-      properties:
-        attribute:
-          $ref: '#/components/schemas/AddAttribute'
-    AddAttribute:
-      required:
-      - key
-      type: object
-      properties:
-        key:
-          type: string
-          description: Attribute Key
-        dataType:
-          $ref: '#/components/schemas/AttributeDataType'
-        type:
-          $ref: '#/components/schemas/AttributeType'
-        watermark:
-          $ref: '#/components/schemas/Watermark'
     GetWebhooksResponse:
       type: object
       properties:
@@ -12950,6 +12803,153 @@ components:
         viewUrl:
           type: string
           description: The view URL to be navigated to complete DocuSign signing
+    GetAttributesResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        attributes:
+          type: array
+          description: List of attributes
+          items:
+            $ref: '#/components/schemas/Attribute'
+    Attribute:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/AttributeType'
+        key:
+          type: string
+          description: Attribute Key
+        dataType:
+          $ref: '#/components/schemas/AttributeDataType'
+        watermark:
+          $ref: '#/components/schemas/Watermark'
+    Watermark:
+      type: object
+      properties:
+        fontSize:
+          type: number
+          description: Watermark Font Size
+        text:
+          type: string
+          description: Watermark text
+        rotation:
+          type: number
+          description: Watermark Rotation
+        imageDocumentId:
+          type: string
+          description: Watermark Image Document Id
+        scale:
+          $ref: '#/components/schemas/WatermarkScale'
+        position:
+          $ref: '#/components/schemas/WatermarkPosition'
+    WatermarkPosition:
+      type: object
+      properties:
+        xAnchor:
+          $ref: '#/components/schemas/WatermarkPositionXAnchor'
+        yAnchor:
+          $ref: '#/components/schemas/WatermarkPositionYAnchor'
+        xOffset:
+          type: number
+          description: X offset
+        yOffset:
+          type: number
+          description: Y offset
+    WatermarkScale:
+      type: string
+      description: Watermark Scale
+      enum:
+      - FIT_BEST
+      - ORIGINAL
+    WatermarkPositionXAnchor:
+      type: string
+      description: Watermark X Position Anchor
+      enum:
+      - LEFT
+      - RIGHT
+      - CENTER
+    WatermarkPositionYAnchor:
+      type: string
+      description: Watermark Y Position Anchor
+      enum:
+      - TOP
+      - BOTTOM
+      - CENTER
+    AttributeType:
+      type: string
+      description: Type of Attribute
+      default: STANDARD
+      enum:
+      - STANDARD
+      - OPA
+      - GOVERNANCE
+    AttributeDataType:
+      type: string
+      description: Data Type of Attribute
+      default: STRING
+      enum:
+      - STRING
+      - NUMBER
+      - BOOLEAN
+      - KEY_ONLY
+      - PUBLICATION
+      - WATERMARK
+      - ENTITY
+    AddAttributeRequest:
+      required:
+      - attribute
+      type: object
+      properties:
+        attribute:
+          $ref: '#/components/schemas/AddAttribute'
+    AddAttribute:
+      required:
+      - key
+      type: object
+      properties:
+        key:
+          type: string
+          description: Attribute Key
+        dataType:
+          $ref: '#/components/schemas/AttributeDataType'
+        type:
+          $ref: '#/components/schemas/AttributeType'
+        watermark:
+          $ref: '#/components/schemas/Watermark'
+    GetAttributeResponse:
+      type: object
+      properties:
+        attribute:
+          $ref: '#/components/schemas/Attribute'
+    UpdateAttributeRequest:
+      required:
+      - attribute
+      type: object
+      properties:
+        attribute:
+          $ref: '#/components/schemas/UpdateAttribute'
+    UpdateAttribute:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/AttributeType'
+        watermark:
+          $ref: '#/components/schemas/Watermark'
+    GetAttributeAllowedValuesResponse:
+      type: object
+      properties:
+        allowedValues:
+          type: array
+          description: Attribute's allowed values
+          items:
+            type: string
+        localizedAllowedValues:
+          type: object
+          additionalProperties:
+            type: string
     AddDocumentResponse:
       type: object
       properties:
