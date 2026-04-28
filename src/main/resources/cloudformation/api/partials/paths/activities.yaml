@@ -1,0 +1,277 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /userActivities:
+    get:
+      operationId: GetUserActivities
+      summary: Get user activities
+      description: Retrieve a user's activities
+      tags:
+        - User Activities
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+        - name: "userId"
+          in: "query"
+          description: "Fetch specific user activities"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserActivitesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/userActivities:
+    get:
+      operationId: GetDocumentUserActivities
+      summary: Get user activities for a document
+      description: Retrieve a user's activities for a document
+      tags:
+        - User Activities
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserActivitesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /activities:
+    get:
+      operationId: GetResourceActivities
+      summary: Get resource activities 
+      description: Retrieve an resource activities
+      tags:
+        - User Activities
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdQuery'
+        - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/entityTypeIdQuery'
+        - $ref: '#/components/parameters/namespaceParam'
+        - $ref: '#/components/parameters/entityIdQuery'
+        - $ref: '#/components/parameters/rulesetIdQuery'
+        - $ref: '#/components/parameters/ruleIdQuery'
+        - $ref: '#/components/parameters/workflowIdQuery'
+        - $ref: '#/components/parameters/attributeKeyQuery'
+        - $ref: '#/components/parameters/schemaQuery'
+        - $ref: '#/components/parameters/classificationIdQuery'
+        - $ref: '#/components/parameters/mappingIdQuery'
+        - $ref: '#/components/parameters/apiKeyQuery'
+        - $ref: '#/components/parameters/controlPolicyQuery'
+        - $ref: '#/components/parameters/startParam'
+        - $ref: '#/components/parameters/endParam'
+        - $ref: '#/components/parameters/sortParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+        - name: "userId"
+          in: "query"
+          description: "Fetch specific user activities"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetActivitesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetActivitesResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        activities:
+          type: "array"
+          description: "List of Entity Type activities"
+          items:
+            $ref: "#/components/schemas/Activity"
+
+    #@overlay/match missing_ok=True
+    GetUserActivitesResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        userActivities:
+          type: "array"
+          description: "List of user activities"
+          items:
+            $ref: "#/components/schemas/UserActivity"
+
+    #@overlay/match missing_ok=True
+    UserActivityType:
+      type: string
+      description: The type of the activity
+      enum:
+      - VIEW
+      - DOWNLOAD
+      - CREATE
+      - UPDATE
+      - DELETE
+      - SOFT_DELETE
+      - RESTORE
+      - NEW_VERSION
+      - UPDATE_VERSION
+
+    #@overlay/match missing_ok=True
+    UserActivity:
+      type: "object"
+      properties:
+        type:
+          $ref: "#/components/schemas/UserActivityType"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        userId:
+          type: "string"
+          description: "User who added document"
+        document:
+          $ref: "#/components/schemas/Document"
+        changes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UserActivityChanges'
+
+    #@overlay/match missing_ok=True
+    UserActivityChanges:
+      type: object
+      properties:
+        oldValue:
+          type: object
+          description: Previous key value
+        newValue:
+          type: object
+          description: New key value
+
+    #@overlay/match missing_ok=True
+    ActivityStatus:
+      type: string
+      description:  "The status of the activity"
+      enum:
+        - COMPLETE
+        - FAILED
+        - UNAUTHORIZED
+
+    #@overlay/match missing_ok=True
+    Activity:
+      type: object
+      properties:
+        resource:
+          type: string
+          description: Resource of Activity
+        type:
+          type: string
+          description: Type of Activity
+        source:
+          type: string
+          description: The Source of the activity
+        sourceIpAddress:
+          type: string
+          description: The Source IP address of the user
+        message:
+          type: string
+          description: The activity message
+        status:
+          $ref: '#/components/schemas/ActivityStatus'
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        userId:
+          type: string
+          description: User who added document
+        documentId:
+          description: Document Identifier
+        artifactId:
+          description: Document Artifact Identifier
+        attributeKey:
+          description: Document Attribute Key
+        entityTypeId:
+          type: string
+          description: Entity Type Identifier
+        entityId:
+          type: string
+          description: Entity Identifier
+        apiKey:
+          type: string
+          description: API Key
+        rulesetId:
+          type: string
+          description: Ruleset Identifier
+        schema:
+          type: string
+          description: Schema Identifier
+        mappingId:
+          type: string
+          description: Mapping Identifier
+        classificationId:
+          type: string
+          description: Classification Identifier
+        ruleId:
+          type: string
+          description: Ruleset Rule Identifier
+        workflowId:
+          type: string
+          description: Workflow Identifier
+        controlPolicy:
+          type: string
+          description: Control Policy Type
+        changes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UserActivityChanges'
