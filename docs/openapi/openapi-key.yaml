@@ -121,52 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/generate:
-    post:
-      operationId: AddDocumentGenerate
-      description: |-
-        Generates a new document using a specified template file and data sources. This operation allows users to merge data from multiple documents into a template to create a new document in the desired output format (e.g., DOCX).
-
-        By Default data source must include a `data` object, which contains key-value pairs that will be merged into the template. The value can be any valid JSON object. { "data":{}}. The data path can be adjusted via the "dataRoot" field.
-
-        ; available as an Add-On Module
-      summary: Add Document Generate
-      tags:
-      - Document Generation
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentGenerateRequest'
-      responses:
-        "201":
-          description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocumentGenerateResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/documentGenerationLambdaApi201'
   /integrations/google/drive/documents/{documentId}/export:
     post:
       operationId: AddGoogleDocumentExport
@@ -1510,6 +1464,52 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200'
+  /documents/{documentId}/generate:
+    post:
+      operationId: AddDocumentGenerate
+      description: |-
+        Generates a new document using a specified template file and data sources. This operation allows users to merge data from multiple documents into a template to create a new document in the desired output format (e.g., DOCX).
+
+        By Default data source must include a `data` object, which contains key-value pairs that will be merged into the template. The value can be any valid JSON object. { "data":{}}. The data path can be adjusted via the "dataRoot" field.
+
+        ; available as an Add-On Module
+      summary: Add Document Generate
+      tags:
+      - Document Generation
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentGenerateRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentGenerateResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/documentGenerationLambdaApi201'
   /documents:
     get:
       operationId: GetDocuments
@@ -8869,78 +8869,6 @@ components:
       properties:
         target:
           $ref: '#/components/schemas/ReindexTarget'
-    AddDocumentGenerateRequest:
-      type: object
-      properties:
-        locale:
-          $ref: '#/components/schemas/LocaleInfo'
-        insertDocuments:
-          type: array
-          description: List of documents to insert
-          items:
-            $ref: '#/components/schemas/DocumentGenerateInsertDocument'
-        datasources:
-          type: array
-          description: List of data sources
-          items:
-            $ref: '#/components/schemas/DocumentGenerateDataSource'
-        outputType:
-          $ref: '#/components/schemas/DocumentGenerateOutputType'
-        saveAsDocumentId:
-          type: string
-          description: Save the generated document with a specific documentId
-        path:
-          type: string
-          description: The path of the generated document
-    DocumentGenerateInsertDocumentPosition:
-      type: string
-      description: Position of document
-      enum:
-      - APPEND
-    DocumentGenerateInsertDocument:
-      type: object
-      required:
-      - documentId
-      - position
-      properties:
-        position:
-          $ref: '#/components/schemas/DocumentGenerateInsertDocumentPosition'
-        documentId:
-          type: string
-          description: Document Identifier of the data source document
-        artifactId:
-          type: string
-          description: Document Artifact Identifier of the data source document
-    DocumentGenerateDataSource:
-      type: object
-      required:
-      - documentId
-      properties:
-        name:
-          type: string
-          description: The data source name
-        documentId:
-          type: string
-          description: Document Identifier of the data source document
-        artifactId:
-          type: string
-          description: Document Artifact Identifier of the data source document
-        dataRoot:
-          type: string
-          description: The default JSON object path for the data object
-          default: data
-    DocumentGenerateOutputType:
-      type: string
-      description: Document Generate Output Type
-      enum:
-      - DOCX
-      - PDF
-    AddDocumentGenerateResponse:
-      type: object
-      properties:
-        documentId:
-          type: string
-          description: Generated document identifier
     OcrTable:
       type: object
       properties:
@@ -10722,6 +10650,78 @@ components:
         userId:
           type: string
           description: User who added document
+    AddDocumentGenerateRequest:
+      type: object
+      properties:
+        locale:
+          $ref: '#/components/schemas/LocaleInfo'
+        insertDocuments:
+          type: array
+          description: List of documents to insert
+          items:
+            $ref: '#/components/schemas/DocumentGenerateInsertDocument'
+        datasources:
+          type: array
+          description: List of data sources
+          items:
+            $ref: '#/components/schemas/DocumentGenerateDataSource'
+        outputType:
+          $ref: '#/components/schemas/DocumentGenerateOutputType'
+        saveAsDocumentId:
+          type: string
+          description: Save the generated document with a specific documentId
+        path:
+          type: string
+          description: The path of the generated document
+    DocumentGenerateInsertDocumentPosition:
+      type: string
+      description: Position of document
+      enum:
+      - APPEND
+    DocumentGenerateInsertDocument:
+      type: object
+      required:
+      - documentId
+      - position
+      properties:
+        position:
+          $ref: '#/components/schemas/DocumentGenerateInsertDocumentPosition'
+        documentId:
+          type: string
+          description: Document Identifier of the data source document
+        artifactId:
+          type: string
+          description: Document Artifact Identifier of the data source document
+    DocumentGenerateDataSource:
+      type: object
+      required:
+      - documentId
+      properties:
+        name:
+          type: string
+          description: The data source name
+        documentId:
+          type: string
+          description: Document Identifier of the data source document
+        artifactId:
+          type: string
+          description: Document Artifact Identifier of the data source document
+        dataRoot:
+          type: string
+          description: The default JSON object path for the data object
+          default: data
+    DocumentGenerateOutputType:
+      type: string
+      description: Document Generate Output Type
+      enum:
+      - DOCX
+      - PDF
+    AddDocumentGenerateResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Generated document identifier
     AddDocumentResponse:
       type: object
       properties:
