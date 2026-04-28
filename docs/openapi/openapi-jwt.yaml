@@ -121,101 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /objects/examine/pdf:
-    get:
-      operationId: GetExaminePdfUrl
-      description: Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
-      summary: Add Examine Pdf
-      tags:
-      - Examine Objects
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetExaminePdfUrlResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
-  /objects/examine/{id}/pdf:
-    get:
-      operationId: GetExaminePdf
-      description: |-
-        Get PDF details
-
-        File must have been uploaded previously using the GET /objects/examine/pdf API.
-      summary: Add Examine Pdf
-      tags:
-      - Examine Objects
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/idParam'
-      responses:
-        "201":
-          description: 201 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetExaminePdfResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
-  /publications/{documentId}:
-    get:
-      operationId: GetPublishedDocumentContent
-      summary: Get published document's contents
-      description: Get a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      responses:
-        "307":
-          description: Temporary Redirect
-          headers:
-            Location:
-              schema:
-                type: string
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    delete:
-      operationId: DeletePublishedDocumentContent
-      summary: Delete published document's contents
-      description: Delete a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/generate:
     post:
       operationId: AddDocumentGenerate
@@ -4819,6 +4724,101 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /objects/examine/pdf:
+    get:
+      operationId: GetExaminePdfUrl
+      description: Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
+      summary: Add Examine Pdf
+      tags:
+      - Examine Objects
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetExaminePdfUrlResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
+  /objects/examine/{id}/pdf:
+    get:
+      operationId: GetExaminePdf
+      description: |-
+        Get PDF details
+
+        File must have been uploaded previously using the GET /objects/examine/pdf API.
+      summary: Add Examine Pdf
+      tags:
+      - Examine Objects
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/idParam'
+      responses:
+        "201":
+          description: 201 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetExaminePdfResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
+  /publications/{documentId}:
+    get:
+      operationId: GetPublishedDocumentContent
+      summary: Get published document's contents
+      description: Get a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        "307":
+          description: Temporary Redirect
+          headers:
+            Location:
+              schema:
+                type: string
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    delete:
+      operationId: DeletePublishedDocumentContent
+      summary: Delete published document's contents
+      description: Delete a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /queues:
     get:
       operationId: GetQueues
@@ -8941,37 +8941,6 @@ components:
         documentId:
           type: string
           description: Generated document identifier
-    GetExaminePdfUrlResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Uploaded document identifier
-        uploadUrl:
-          type: string
-          description: Url to upload document to
-    GetExaminePdfResponse:
-      type: object
-      properties:
-        fileinfo:
-          $ref: '#/components/schemas/PdfDocument'
-    PdfDocument:
-      type: object
-      properties:
-        fields:
-          type: array
-          description: List of document fields
-          items:
-            $ref: '#/components/schemas/PdfDocumentField'
-    PdfDocumentField:
-      type: object
-      properties:
-        field:
-          type: string
-          description: Name of Field
-        value:
-          type: string
-          description: Value of Field
     OcrTable:
       type: object
       properties:
@@ -12996,6 +12965,37 @@ components:
       - MANUAL
       - DATA_CLASSIFICATION
       - MALWARE_SCAN
+    GetExaminePdfUrlResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Uploaded document identifier
+        uploadUrl:
+          type: string
+          description: Url to upload document to
+    GetExaminePdfResponse:
+      type: object
+      properties:
+        fileinfo:
+          $ref: '#/components/schemas/PdfDocument'
+    PdfDocument:
+      type: object
+      properties:
+        fields:
+          type: array
+          description: List of document fields
+          items:
+            $ref: '#/components/schemas/PdfDocumentField'
+    PdfDocumentField:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Name of Field
+        value:
+          type: string
+          description: Value of Field
     GetQueuesResponse:
       type: object
       properties:
