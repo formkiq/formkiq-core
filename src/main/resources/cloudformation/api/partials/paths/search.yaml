@@ -187,6 +187,203 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    DocumentFulltextAttributeEq:
+      properties:
+        stringValue:
+          type: "string"
+          description: "Search for string value"
+        numberValue:
+          type: "number"
+          description: "Search for number value"
+        booleanValue:
+          type: "boolean"
+          description: "Search for boolean value"
+
+    #@overlay/match missing_ok=True
+    SearchRangeDataType:
+      type: string
+      description: Search Range Data Type
+      enum:
+        - STRING
+        - NUMBER
+      default: "STRING"
+
+    #@overlay/match missing_ok=True
+    DocumentFulltextAttribute:
+      required:
+        - "key"
+      type: "object"
+      properties:
+        eq:
+          $ref: "#/components/schemas/DocumentFulltextAttributeEq"
+        eqOr:
+          type: array
+          description: "Searches for ANY strings that eq"
+          items:
+            $ref: "#/components/schemas/DocumentFulltextAttributeEq"
+        key:
+          type: "string"
+          description: "Tag key to search"
+
+    #@overlay/match missing_ok=True
+    DocumentFulltextTag:
+      required:
+        - "key"
+      type: "object"
+      properties:
+        eq:
+          type: "string"
+          description: "Searches for strings that eq"
+        eqOr:
+          type: array
+          description: "Searches for ANY strings that eq"
+          items:
+            type: "string"
+        key:
+          type: "string"
+          description: "Tag key to search"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchRange:
+      required:
+        - "start"
+        - "end"
+      type: "object"
+      properties:
+        start:
+          type: "string"
+          description: "Start of range query"
+        end:
+          type: "string"
+          description: "End of range query"
+        type:
+          $ref: "#/components/schemas/SearchRangeDataType"
+
+    #@overlay/match missing_ok=True
+    DocumentFulltextSearch:
+      type: "object"
+      description: "Document full text search criteria"
+      properties:
+        page:
+          type: "integer"
+          description: "Result page to return (starting at 1)"
+        text:
+          type: "string"
+          description: "Full text search"
+        tags:
+          type: "array"
+          description: "List of search tags"
+          items:
+            $ref: "#/components/schemas/DocumentFulltextTag"
+        attributes:
+          type: "array"
+          description: "List of search attributes"
+          items:
+            $ref: "#/components/schemas/DocumentFulltextAttribute"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchFilename:
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+          description: "Searches for a filename"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchFolder:
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+          description: "Searches for a folder"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchMeta:
+      type: "object"
+      properties:
+        folder:
+          type: "string"
+          description: "Searches for a folder"
+        path:
+          type: "string"
+          description: "Searches for a Path of document"
+        eq:
+          type: "string"
+          description: "Searches for strings that eq"
+        indexType:
+          type: "string"
+          description: "Searches in an index"
+          enum:
+            - folder
+        indexFilterBeginsWith:
+          type: "string"
+          description: "Returns index records that begins with a particular substring"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchTag:
+      required:
+        - "key"
+      type: "object"
+      properties:
+        beginsWith:
+          type: "string"
+          description: "Searches for strings that begin with"
+        eq:
+          type: "string"
+          description: "Searches for strings that eq"
+        eqOr:
+          type: array
+          description: "Searches for ANY strings that eq"
+          items:
+            type: "string"
+        range:
+          $ref: "#/components/schemas/DocumentSearchRange"
+        key:
+          type: "string"
+          description: "Tag key to search"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchTags:
+      required:
+        - "key"
+      type: "object"
+      properties:
+        eq:
+          type: "string"
+          description: "Searches for strings that eq"
+        beginsWith:
+          type: "string"
+          description: "Searches for strings that begin with"
+        range:
+          $ref: "#/components/schemas/DocumentSearchRange"
+        key:
+          type: "string"
+          description: "Tag key to search"
+
+    #@overlay/match missing_ok=True
+    DocumentSearchAttribute:
+      required:
+        - "key"
+      type: "object"
+      properties:
+        eq:
+          type: "string"
+          description: "Searches for strings that eq"
+        eqOr:
+          type: array
+          description: "Searches for ANY strings that eq"
+          items:
+            type: "string"
+        beginsWith:
+          type: "string"
+          description: "Searches for strings that begin with"
+        range:
+          $ref: "#/components/schemas/DocumentSearchRange"
+        key:
+          type: "string"
+          description: "Attribute key to search"
+
+    #@overlay/match missing_ok=True
     DocumentSearchRequest:
       required:
         - "query"
@@ -197,6 +394,40 @@ components:
           $ref: "#/components/schemas/DocumentSearch"
         responseFields:
           $ref: "#/components/schemas/SearchResponseFields"
+
+    #@overlay/match missing_ok=True
+    DocumentSearch:
+      type: "object"
+      description: "Document tag search criteria"
+      properties:
+        text:
+          type: "string"
+          description: "Full text search"
+        meta:
+          $ref: "#/components/schemas/DocumentSearchMeta"
+        filename:
+          $ref: "#/components/schemas/DocumentSearchFilename"
+        folder:
+          $ref: "#/components/schemas/DocumentSearchFolder"
+        attribute:
+          $ref: "#/components/schemas/DocumentSearchAttribute"
+        attributes:
+          type: array
+          description: "List of Composite Key attributes to filter search results on"
+          items:
+            $ref: "#/components/schemas/DocumentSearchAttribute"
+        tag:
+          $ref: "#/components/schemas/DocumentSearchTag"
+        tags:
+          type: array
+          description: "List of Composite Key tags to filter search results on"
+          items:
+            $ref: "#/components/schemas/DocumentSearchTags"
+        documentIds:
+          type: array
+          description: "List of DocumentIds to filter search results on"
+          items:
+            type: "string"
 
     #@overlay/match missing_ok=True
     SearchResponseFields:
@@ -352,6 +583,18 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+
+    #@overlay/match missing_ok=True
+    DocumentFulltextRequest:
+      required:
+        - "query"
+      type: "object"
+      description: "Document full text search"
+      properties:
+        query:
+          $ref: "#/components/schemas/DocumentFulltextSearch"
+        responseFields:
+          $ref: "#/components/schemas/SearchResponseFields"
 
     #@overlay/match missing_ok=True
     DocumentFulltextResponse:

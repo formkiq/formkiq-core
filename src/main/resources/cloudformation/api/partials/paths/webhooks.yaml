@@ -266,6 +266,68 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    AddWebhookRequest:
+      required:
+        - "name"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of webhook"
+        ttl:
+          type: "string"
+          description: "Webhook time to live (expiry in seconds)"
+        enabled:
+          type: "string"
+          description: "Is webhook enabled"
+        tags:
+          type: "array"
+          description: "List of document tags"
+          items:
+            $ref: "#/components/schemas/AddDocumentTag"
+
+
+    #@overlay/match missing_ok=True
+    AddWebhookTagRequest:
+      type: "object"
+      properties:
+        value:
+          type: "string"
+          description: "Tag value"
+        values:
+          type: "array"
+          description: "Tag values"
+          items:
+            type: "string"
+            description: "Tag value"
+        key:
+          type: "string"
+          description: "Tag key"
+
+    #@overlay/match missing_ok=True
+    DocumentId:
+      required:
+        - "documentId"
+      type: "object"
+      properties:
+        documentId:
+          type: "string"
+          description: "Document Identifier"
+        siteId:
+          type: "string"
+          description: "Site Identifier"
+
+    #@overlay/match missing_ok=True
+    AddWebhookResponse:
+      type: "object"
+      properties:
+        webhookId:
+          type: "string"
+        siteId:
+          type: "string"
+          description: "Site Identifier"
+
+    #@overlay/match missing_ok=True
     GetWebhooksResponse:
       type: "object"
       properties:

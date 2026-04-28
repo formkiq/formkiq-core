@@ -694,6 +694,54 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    DeleteCaseResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteCaseNigoDocumentResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteCaseNigoResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteCaseDocumentResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteCaseTaskDocumentResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DeleteCaseTaskResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
     AddCaseResponse:
       type: "object"
       properties:
