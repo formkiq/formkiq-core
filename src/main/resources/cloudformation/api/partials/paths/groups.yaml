@@ -1,0 +1,585 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /groups:
+    get:
+      operationId: GetGroups
+      description: Returns the list of user groups
+      summary: Get list of user group(s)
+      parameters:
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetGroupsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddGroup
+      description: Add a new group
+      summary: Add a group
+      tags:
+        - User Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddGroupRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AddResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /groups/{groupName}:
+    get:
+      operationId: GetGroup
+      description: Returns a user group
+      summary: Get a user group
+      parameters:
+        - $ref: '#/components/parameters/groupNamePath'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetGroupResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteGroup
+      summary: Delete Group
+      description: Delete Group
+      tags:
+        - User Management
+      parameters:
+        - $ref: '#/components/parameters/groupNamePath'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /groups/{groupName}/users:
+    get:
+      operationId: GetUsersInGroup
+      description: Returns the list of users in a group
+      summary: Get users in a group
+      parameters:
+        - $ref: '#/components/parameters/groupNamePath'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetUsersInGroupResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddUserToGroup
+      description: Adds a user to a group
+      summary: Add User to a group
+      parameters:
+        - $ref: '#/components/parameters/groupNamePath'
+      tags:
+        - User Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddUserRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AddResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /groups/{groupName}/users/{username}:
+    delete:
+      operationId: RemoveUsernameFromGroup
+      summary: Remove Username From Group
+      description: Remove Username From Group
+      tags:
+        - User Management
+      parameters:
+        - $ref: '#/components/parameters/groupNamePath'
+        - $ref: '#/components/parameters/usernamePath'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /users:
+    get:
+      operationId: GetUsers
+      description: Returns the list of users
+      summary: Get list of user(s)
+      parameters:
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetUsersResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddUser
+      description: Adds a user
+      summary: Add User
+      tags:
+        - User Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddUserRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AddResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /users/{username}:
+    get:
+      operationId: GetUser
+      description: Returns a user
+      summary: Get a user
+      parameters:
+        - $ref: '#/components/parameters/usernamePath'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetUserResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteUsername
+      summary: Delete Username
+      description: Delete Username
+      tags:
+        - User Management
+      parameters:
+        - $ref: '#/components/parameters/usernamePath'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /users/{username}/groups:
+    get:
+      operationId: GetListOfUserGroups
+      description: Returns a list of group user belongs to
+      summary: Returns a list of group user belongs to
+      parameters:
+        - $ref: '#/components/parameters/usernamePath'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetUserGroupsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /users/{username}/{userOperation}:
+    put:
+      operationId: SetUserOperation
+      description: Set User Operation (disable, enable, reset-password)
+      summary: Set User Operation
+      parameters:
+        - $ref: '#/components/parameters/usernamePath'
+        - $ref: '#/components/parameters/usernameOperationPath'
+      tags:
+        - User Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SetResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetGroupsResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        groups:
+          type: "array"
+          description: "List of groups"
+          items:
+            $ref: "#/components/schemas/Group"
+    #@overlay/match missing_ok=True
+    GetGroupResponse:
+      type: object
+      properties:
+        group:
+          $ref: "#/components/schemas/Group"
+    #@overlay/match missing_ok=True
+    GetUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+    #@overlay/match missing_ok=True
+    GetUserGroupsResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        groups:
+          type: "array"
+          description: "List of groups"
+          items:
+            $ref: "#/components/schemas/Group"
+    #@overlay/match missing_ok=True
+    GetUsersResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        users:
+          type: "array"
+          description: "List of users"
+          items:
+            $ref: "#/components/schemas/User"
+    #@overlay/match missing_ok=True
+    Group:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of group"
+        description:
+          type: "string"
+          description: "Description of group"
+        insertedDate:
+          type: "string"
+          description: "Inserted timestamp of group"
+        lastModifiedDate:
+          type: "string"
+          description: "Last nodified timestamp of group"
+    #@overlay/match missing_ok=True
+    SetGroupPermissionsRequest:
+      type: object
+      properties:
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SiteGroupPermissions"
+    #@overlay/match missing_ok=True
+    GetUsersInGroupResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        users:
+          type: "array"
+          description: "List of users"
+          items:
+            $ref: "#/components/schemas/User"
+    #@overlay/match missing_ok=True
+    AddGroupRequest:
+      required:
+        - "group"
+      type: "object"
+      properties:
+        group:
+          $ref: "#/components/schemas/AddGroup"
+    #@overlay/match missing_ok=True
+    AddGroup:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Group"
+        description:
+          type: "string"
+          description: "Description of Group"
+    #@overlay/match missing_ok=True
+    AddUserRequest:
+      required:
+        - "user"
+      type: "object"
+      properties:
+        user:
+          $ref: "#/components/schemas/AddUser"
+    #@overlay/match missing_ok=True
+    AddUser:
+      type: "object"
+      properties:
+        username:
+          type: "string"
+          description: "Email address of user"
+        attributes:
+          $ref: "#/components/schemas/UserAttributes"
+    #@overlay/match missing_ok=True
+    User:
+      type: "object"
+      properties:
+        username:
+          type: "string"
+          description: "Username of user"
+        email:
+          type: "string"
+          description: "Email of user"
+        enabled:
+          type: "boolean"
+          description: "whether the user is enabled"
+        userStatus:
+          type: "string"
+          description: "Status of user"
+        insertedDate:
+          type: "string"
+          description: "Inserted timestamp of user"
+        lastModifiedDate:
+          type: "string"
+          description: "Last nodified timestamp of user"
+        attributes:
+          $ref: "#/components/schemas/UserAttributes"
+    #@overlay/match missing_ok=True
+    UserAttributes:
+      type: "object"
+      properties:
+        address:
+          type: "string"
+          description: "Address of user"
+        birthdate:
+          type: "string"
+          description: "Birthdate of user"
+        familyName:
+          type: "string"
+          description: "Family name of user"
+        gender:
+          type: "string"
+          description: "Gender of user"
+        givenName:
+          type: "string"
+          description: "Given name of user"
+        locale:
+          type: "string"
+          description: "Locale of user"
+        middleName:
+          type: "string"
+          description: "Middle name of user"
+        name:
+          type: "string"
+          description: "Name of user"
+        nickname:
+          type: "string"
+          description: "Nickname of user"
+        phoneNumber:
+          type: "string"
+          description: "Phone number of user"
+        picture:
+          type: "string"
+          description: "Picture of user"
+        preferredUsername:
+          type: "string"
+          description: "Preferred username of user"
+        profile:
+          type: "string"
+          description: "Profile of user"
+        zoneinfo:
+          type: "string"
+          description: "Zoneinfo of user"
+        updatedAt:
+          type: "string"
+          description: "Updated at date of user"
+        website:
+          type: "string"
+          description: "Website of user"
