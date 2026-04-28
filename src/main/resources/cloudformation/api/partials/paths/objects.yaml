@@ -1,0 +1,106 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /objects/examine/pdf:
+    get:
+      operationId: GetExaminePdfUrl
+      description: |-
+        Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
+      summary: Add Examine Pdf
+      tags:
+        - Examine Objects
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetExaminePdfUrlResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200"
+  #@overlay/match missing_ok=True
+  /objects/examine/{id}/pdf:
+    get:
+      operationId: GetExaminePdf
+      description: |-
+        Get PDF details
+        
+        File must have been uploaded previously using the GET /objects/examine/pdf API.
+      summary: Add Examine Pdf
+      tags:
+        - Examine Objects
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '201':
+          description: "201 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetExaminePdfResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetExaminePdfUrlResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "Uploaded document identifier"
+        uploadUrl:
+          type: "string"
+          description: "Url to upload document to"
+
+    #@overlay/match missing_ok=True
+    GetExaminePdfResponse:
+      type: "object"
+      properties:
+        fileinfo:
+          $ref: "#/components/schemas/PdfDocument"
+
+    #@overlay/match missing_ok=True
+    PdfDocument:
+      type: "object"
+      properties:
+        fields:
+          type: "array"
+          description: "List of document fields"
+          items:
+            $ref: "#/components/schemas/PdfDocumentField"
+
+    #@overlay/match missing_ok=True
+    PdfDocumentField:
+      type: "object"
+      properties:
+        field:
+          type: "string"
+          description: "Name of Field"
+        value:
+          type: "string"
+          description: "Value of Field"
