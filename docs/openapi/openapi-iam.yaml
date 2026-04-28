@@ -12634,6 +12634,12 @@ components:
       properties:
         dispositionAction:
           $ref: '#/components/schemas/DocumentConfigDispositionAction'
+        softDeleteRetentionInDays:
+          type: integer
+          format: int32
+          default: -1
+          minimum: -1
+          description: Number of days to retain soft deleted documents before permanent deletion. Use -1 to retain soft deleted documents until trash is cleared manually.
     DocumentConfigDispositionAction:
       type: string
       default: SOFT_DELETE

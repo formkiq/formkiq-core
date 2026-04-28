@@ -98,6 +98,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     var retentionAndDisposition = config.getDocument().getRetentionAndDisposition();
     assertEquals(action, retentionAndDisposition.getDispositionAction());
+    assertEquals(-1, retentionAndDisposition.getSoftDeleteRetentionInDays());
   }
 
   /** {@link ConfigService}. */
@@ -730,7 +731,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     // when
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(
         new DocumentConfig().retentionAndDisposition(new DocumentConfigRetentionAndDisposition()
-            .dispositionAction(DocumentConfigDispositionAction.DELETE)));
+            .dispositionAction(DocumentConfigDispositionAction.DELETE)
+            .softDeleteRetentionInDays(30)));
 
     // when
     UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
@@ -738,6 +740,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals("Config saved", response.getMessage());
-    assertRententionAndDisposition(resp, DocumentConfigDispositionAction.DELETE);
+    assertNotNull(resp);
+    assertNotNull(resp.getDocument());
+    var retentionAndDisposition = resp.getDocument().getRetentionAndDisposition();
+    assertNotNull(retentionAndDisposition);
+    assertEquals(DocumentConfigDispositionAction.DELETE,
+        retentionAndDisposition.getDispositionAction());
+    assertEquals(30, retentionAndDisposition.getSoftDeleteRetentionInDays());
   }
 }

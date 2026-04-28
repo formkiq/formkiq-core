@@ -97,9 +97,12 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
         DynamoDbTypes.toStrings(attributes.get("documentContentTypesAllowlist"));
     List<String> denylist = DynamoDbTypes.toStrings(attributes.get("documentContentTypesDenylist"));
     String dispositionAction = DynamoDbTypes.toString(attributes.get("documentDispositionAction"));
+    Long softDeleteRetentionInDays =
+        DynamoDbTypes.toLong(attributes.get("documentSoftDeleteRetentionInDays"));
 
     boolean hasContentTypes = allowlist != null || denylist != null;
-    boolean hasRetentionAndDisposition = dispositionAction != null;
+    boolean hasRetentionAndDisposition =
+        dispositionAction != null || softDeleteRetentionInDays != null;
 
     if (!hasContentTypes && !hasRetentionAndDisposition) {
       return null;
@@ -111,7 +114,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
         new SiteConfigurationDocumentRetentionAndDisposition(dispositionAction != null
             ? SiteConfigurationDocumentDispositionAction.valueOf(dispositionAction)
-            : SiteConfigurationDocumentDispositionAction.SOFT_DELETE);
+            : SiteConfigurationDocumentDispositionAction.SOFT_DELETE, softDeleteRetentionInDays)
+            .withDefaults();
 
     return new SiteConfigurationDocument(contentTypes, retentionAndDisposition);
   }
@@ -197,7 +201,9 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
           document.withDefaults().retentionAndDisposition();
       map.withString("documentDispositionAction",
-          retentionAndDisposition.dispositionAction().name());
+          retentionAndDisposition.dispositionAction().name())
+          .withNumber("documentSoftDeleteRetentionInDays",
+              retentionAndDisposition.softDeleteRetentionInDays());
     }
 
     if (google != null) {
