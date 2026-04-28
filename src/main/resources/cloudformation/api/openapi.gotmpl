@@ -108,79 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-  /shares:
-    get:
-      operationId: GetUserShares
-      summary: Get user shared folders
-      description: Get a listing of user folder/document shares; available as an Add-On Module
-      parameters:
-        - $ref: '#/components/parameters/groupParam'
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/nextParam'
-      tags:
-        - Document Shares
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetUserSharesResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-  /shares/folders/{indexKey}:
-    post:
-      operationId: AddFolderShare
-      summary: Add folder share
-      description: Creates a new folder share; available as an Add-On Module
-      tags:
-        - Document Shares
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/indexKeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddFolderShareRequest'
-      responses:
-        '201':
-          description: 201 CREATED
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddFolderShareResponse'
-        '400':
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-  /shares/{shareKey}:
-    delete:
-      operationId: DeleteShare
-      summary: Delete folder share
-      description: Delete a specific document share; available as an Add-On Module
-      tags:
-        - Document Shares
-      parameters:
-        - $ref: '#/components/parameters/shareKey'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteShareResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /workflows/{workflowId}/documents:
     get:
       operationId: GetWorkflowDocuments
@@ -3731,59 +3658,6 @@ components:
           description: "Queue name"
           type: "string"
 
-    GetUserSharesResponse:
-      type: "object"
-      properties:
-        next:
-          type: "string"
-          description: "Next page of results token"
-        shares:
-          type: "array"
-          description: "List of user's shares"
-          items:
-            $ref: "#/components/schemas/UserShare"
-    UserSharePermission:
-      type: string
-      description: User Share Permission
-      enum:
-        - READ
-        - WRITE
-        - DELETE
-    UserSharePermissionType:
-      type: string
-      description: User Share Permission Type
-      enum:
-        - GROUP
-    UserShare:
-      type: "object"
-      properties:
-        group:
-          type: "string"
-          description: "Name of Share Group"
-        shareKey:
-          type: "string"
-          description: "Share Identifier"
-        type:
-          type: "string"
-          enum:
-            - FOLDER
-          description: "Type of Document"
-        permissions:
-          type: "array"
-          description: "List of share permissions"
-          items:
-            $ref: "#/components/schemas/UserSharePermission"
-        siteId:
-          type: "string"
-          description: "Site Identifier"
-        path:
-          type: "string"
-          description: "Path or Name of document"
-        userId:
-          type: "string"
-          description: "User who created share"
-        permissionType:
-          $ref: "#/components/schemas/UserSharePermissionType"
     GetDocumentAttributeResponse:
       type: "object"
       properties:
@@ -4158,37 +4032,6 @@ components:
           description: "List of child documents"
           items:
             $ref: "#/components/schemas/AddChildDocument"
-    AddFolderShareRequest:
-      type: "object"
-      properties:
-        share:
-          $ref: "#/components/schemas/AddShare"
-    AddShare:
-      type: "object"
-      properties:
-        group:
-          type: "string"
-          description: "Share with Group"
-        permissions:
-          type: "array"
-          description: "List of share permissions"
-          items:
-            $ref: "#/components/schemas/UserSharePermission"
-    AddFolderShareResponse:
-      type: "object"
-      properties:
-        message:
-          type: "string"
-          description: "API Response message"
-        shareKey:
-          type: "string"
-          description: "Share Identifier"
-    DeleteShareResponse:
-      type: "object"
-      properties:
-        message:
-          type: "string"
-          description: "API Response message"
 
     SetDocumentAttributeRequest:
       type: "object"
