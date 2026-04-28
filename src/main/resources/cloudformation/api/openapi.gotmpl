@@ -108,33 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-  /documents/compress:
-    post:
-      operationId: CompressDocuments
-      summary: Compress multiple documents into a .zip file
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DocumentsCompressRequest'
-      description: |-
-        Compress documents into an .ZIP archive file, and returns a S3 presigned url for the location of the archive file. The operation is async and processing time depends on the number and size of documents included; a 404 status code is returned until the file is ready.
-      tags:
-        - Documents
-      responses:
-        "201":
-          description: 201 CREATED
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentsCompressResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /attributes:
     get:
       operationId: GetAttributes
@@ -4673,12 +4646,6 @@ components:
           description: "Documents to compress"
           items:
             type: "string"
-    DocumentsCompressResponse:
-      type: "object"
-      properties:
-        downloadUrl:
-          type: "string"
-          description: "Archive download URL"
     DocumentFulltextRequest:
       required:
         - "query"
