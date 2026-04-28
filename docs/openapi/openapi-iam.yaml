@@ -121,121 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/antivirus:
-    put:
-      operationId: SetAntivirus
-      summary: Antivirus document scan
-      description: "Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module\n**Deprecated**. This endpoint is no longer recommended.  \nPlease use the **`/documents/{document}/malwareScan`** endpoint instead.\n"
-      tags:
-      - MalwareScan
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetAntivirusRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
-  /documents/{documentId}/malwareScan:
-    get:
-      operationId: GetMalwareScanResults
-      summary: Get Malware Scan results
-      description: Gets a Malware Scan results; available as an Add-On Module
-      tags:
-      - MalwareScan
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/nextParam'
-      - $ref: '#/components/parameters/limitParam'
-      responses:
-        "200":
-          description: 200 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetMalwareScanResponse'
-        "400":
-          description: 400 BAD REQUEST
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
-    put:
-      operationId: SetMalwareScan
-      summary: MalwareScan document scan
-      description: |
-        Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
-      tags:
-      - MalwareScan
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetMalwareScanRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
   /documents/{documentId}/fulltext:
     get:
       operationId: GetDocumentFulltext
@@ -4333,6 +4218,121 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/antivirus:
+    put:
+      operationId: SetAntivirus
+      summary: Antivirus document scan
+      description: "Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module\n**Deprecated**. This endpoint is no longer recommended.  \nPlease use the **`/documents/{document}/malwareScan`** endpoint instead.\n"
+      tags:
+      - MalwareScan
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAntivirusRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
+  /documents/{documentId}/malwareScan:
+    get:
+      operationId: GetMalwareScanResults
+      summary: Get Malware Scan results
+      description: Gets a Malware Scan results; available as an Add-On Module
+      tags:
+      - MalwareScan
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/nextParam'
+      - $ref: '#/components/parameters/limitParam'
+      responses:
+        "200":
+          description: 200 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMalwareScanResponse'
+        "400":
+          description: 400 BAD REQUEST
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
+    put:
+      operationId: SetMalwareScan
+      summary: MalwareScan document scan
+      description: |
+        Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
+      tags:
+      - MalwareScan
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMalwareScanRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
   /documents/{documentId}/ocr:
     get:
       operationId: GetDocumentOcr
@@ -10581,81 +10581,6 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/FulltextAttribute'
-    SetAntivirusRequest:
-      type: object
-    SetMalwareScanRequest:
-      type: object
-    GetMalwareScanResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        malwareScanResults:
-          type: array
-          description: List of Malware Scan Results
-          items:
-            $ref: '#/components/schemas/MalwareScanResult'
-    MalwareScanResult:
-      type: object
-      properties:
-        scanStatus:
-          $ref: '#/components/schemas/MalwareScanStatus'
-        scanEngine:
-          $ref: '#/components/schemas/MalwareEngine'
-        s3version:
-          type: string
-          description: Document storage version
-        scanMessage:
-          type: string
-          description: Document Malware scan message
-        scannedDate:
-          type: string
-          description: Scanned Timestamp
-    MalwareEngine:
-      type: string
-      description: Type of Malware Engine used
-      enum:
-      - CLAM_AV
-    MalwareScanStatus:
-      type: string
-      description: Document Malware scan result
-      enum:
-      - MALICIOUS
-      - ERROR
-      - CLEAN
-    UpdateConfigurationRequest:
-      type: object
-      properties:
-        chatGptApiKey:
-          type: string
-          description: ChatGPT Api Key
-        maxContentLengthBytes:
-          type: string
-          description: Set Maximum Document Content Length in Bytes
-        maxDocuments:
-          type: string
-          description: Set Maximum number of Documents allowed
-        maxWebhooks:
-          type: string
-          description: Set Maximum number of Webhooks allowed
-        notificationEmail:
-          type: string
-          description: Email address to use for notifications
-        document:
-          $ref: '#/components/schemas/DocumentConfig'
-        ocr:
-          $ref: '#/components/schemas/OcrConfig'
-        google:
-          $ref: '#/components/schemas/GoogleConfig'
-        docusign:
-          $ref: '#/components/schemas/DocusignConfig'
-    UpdateConfigurationResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Result message
     AddResourceItem:
       oneOf:
       - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
@@ -11136,100 +11061,6 @@ components:
           description: List of groups to add as custom claims to API Key
           items:
             type: string
-    GetConfigurationResponse:
-      type: object
-      properties:
-        chatGptApiKey:
-          type: string
-          description: ChatGPT API Key
-        maxContentLengthBytes:
-          type: string
-          description: Set Maximum Document Content Length in Bytes
-        maxDocuments:
-          type: string
-          description: Set Maximum number of Documents allowed
-        maxWebhooks:
-          type: string
-          description: Set Maximum number of Webhooks allowed
-        notificationEmail:
-          type: string
-          description: Email address to use for notifications (Must be verified identity created in AWS SES)
-        document:
-          $ref: '#/components/schemas/DocumentConfig'
-        ocr:
-          $ref: '#/components/schemas/OcrConfig'
-        google:
-          $ref: '#/components/schemas/GoogleConfig'
-        docusign:
-          $ref: '#/components/schemas/DocusignConfig'
-    DocumentConfig:
-      type: object
-      properties:
-        contentTypes:
-          $ref: '#/components/schemas/DocumentConfigContentTypes'
-        retentionAndDisposition:
-          $ref: '#/components/schemas/DocumentConfigRetentionAndDisposition'
-    DocumentConfigContentTypes:
-      type: object
-      properties:
-        allowlist:
-          type: array
-          items:
-            type: string
-            description: Allowed MIME types
-          example:
-          - application/pdf
-          - image/png
-          - image/jpeg
-        denylist:
-          type: array
-          items:
-            type: string
-            description: Disallowed MIME types
-          example:
-          - application/x-msdownload
-          - application/x-sh
-    DocumentConfigRetentionAndDisposition:
-      type: object
-      properties:
-        dispositionAction:
-          $ref: '#/components/schemas/DocumentConfigDispositionAction'
-        softDeleteRetentionInDays:
-          type: integer
-          format: int32
-          default: -1
-          minimum: -1
-          description: Number of days to retain soft deleted documents before permanent deletion. Use -1 to retain soft deleted documents until trash is cleared manually.
-    DocumentConfigDispositionAction:
-      type: string
-      default: SOFT_DELETE
-      enum:
-      - SOFT_DELETE
-      - DELETE
-    GoogleConfig:
-      type: object
-      properties:
-        workloadIdentityAudience:
-          type: string
-          description: Workload Identity Audience
-        workloadIdentityServiceAccount:
-          type: string
-          description: Workload Service Account
-    DocusignConfig:
-      type: object
-      properties:
-        userId:
-          type: string
-          description: Docusign UserId
-        integrationKey:
-          type: string
-          description: Docusign Integration Key or ClientId
-        rsaPrivateKey:
-          type: string
-          description: Docusign Rsa Private Key
-        hmacSignature:
-          type: string
-          description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
     GetUsersInGroupResponse:
       type: object
       properties:
@@ -12909,6 +12740,49 @@ components:
         isBase64:
           type: boolean
           description: Is the content Base64-encoded?
+    SetAntivirusRequest:
+      type: object
+    SetMalwareScanRequest:
+      type: object
+    GetMalwareScanResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        malwareScanResults:
+          type: array
+          description: List of Malware Scan Results
+          items:
+            $ref: '#/components/schemas/MalwareScanResult'
+    MalwareScanResult:
+      type: object
+      properties:
+        scanStatus:
+          $ref: '#/components/schemas/MalwareScanStatus'
+        scanEngine:
+          $ref: '#/components/schemas/MalwareEngine'
+        s3version:
+          type: string
+          description: Document storage version
+        scanMessage:
+          type: string
+          description: Document Malware scan message
+        scannedDate:
+          type: string
+          description: Scanned Timestamp
+    MalwareEngine:
+      type: string
+      description: Type of Malware Engine used
+      enum:
+      - CLAM_AV
+    MalwareScanStatus:
+      type: string
+      description: Document Malware scan result
+      enum:
+      - MALICIOUS
+      - ERROR
+      - CLEAN
     GetDocumentOcrResponse:
       type: object
       properties:
@@ -13962,6 +13836,132 @@ components:
         maxTransactions:
           type: number
           description: Max number of OCR actions that can be created (-1 for unlimited)
+    UpdateConfigurationRequest:
+      type: object
+      properties:
+        chatGptApiKey:
+          type: string
+          description: ChatGPT Api Key
+        maxContentLengthBytes:
+          type: string
+          description: Set Maximum Document Content Length in Bytes
+        maxDocuments:
+          type: string
+          description: Set Maximum number of Documents allowed
+        maxWebhooks:
+          type: string
+          description: Set Maximum number of Webhooks allowed
+        notificationEmail:
+          type: string
+          description: Email address to use for notifications
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        ocr:
+          $ref: '#/components/schemas/OcrConfig'
+        google:
+          $ref: '#/components/schemas/GoogleConfig'
+        docusign:
+          $ref: '#/components/schemas/DocusignConfig'
+    UpdateConfigurationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Result message
+    DocumentConfig:
+      type: object
+      properties:
+        contentTypes:
+          $ref: '#/components/schemas/DocumentConfigContentTypes'
+        retentionAndDisposition:
+          $ref: '#/components/schemas/DocumentConfigRetentionAndDisposition'
+    DocumentConfigContentTypes:
+      type: object
+      properties:
+        allowlist:
+          type: array
+          items:
+            type: string
+            description: Allowed MIME types
+          example:
+          - application/pdf
+          - image/png
+          - image/jpeg
+        denylist:
+          type: array
+          items:
+            type: string
+            description: Disallowed MIME types
+          example:
+          - application/x-msdownload
+          - application/x-sh
+    DocumentConfigRetentionAndDisposition:
+      type: object
+      properties:
+        dispositionAction:
+          $ref: '#/components/schemas/DocumentConfigDispositionAction'
+        softDeleteRetentionInDays:
+          type: integer
+          format: int32
+          default: -1
+          minimum: -1
+          description: Number of days to retain soft deleted documents before permanent deletion. Use -1 to retain soft deleted documents until trash is cleared manually.
+    DocumentConfigDispositionAction:
+      type: string
+      default: SOFT_DELETE
+      enum:
+      - SOFT_DELETE
+      - DELETE
+    GetConfigurationResponse:
+      type: object
+      properties:
+        chatGptApiKey:
+          type: string
+          description: ChatGPT API Key
+        maxContentLengthBytes:
+          type: string
+          description: Set Maximum Document Content Length in Bytes
+        maxDocuments:
+          type: string
+          description: Set Maximum number of Documents allowed
+        maxWebhooks:
+          type: string
+          description: Set Maximum number of Webhooks allowed
+        notificationEmail:
+          type: string
+          description: Email address to use for notifications (Must be verified identity created in AWS SES)
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        ocr:
+          $ref: '#/components/schemas/OcrConfig'
+        google:
+          $ref: '#/components/schemas/GoogleConfig'
+        docusign:
+          $ref: '#/components/schemas/DocusignConfig'
+    GoogleConfig:
+      type: object
+      properties:
+        workloadIdentityAudience:
+          type: string
+          description: Workload Identity Audience
+        workloadIdentityServiceAccount:
+          type: string
+          description: Workload Service Account
+    DocusignConfig:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: Docusign UserId
+        integrationKey:
+          type: string
+          description: Docusign Integration Key or ClientId
+        rsaPrivateKey:
+          type: string
+          description: Docusign Rsa Private Key
+        hmacSignature:
+          type: string
+          description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
     GetVersionResponse:
       type: object
       properties:
