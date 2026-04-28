@@ -1,0 +1,308 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /mappings:
+    get:
+      operationId: GetMappings
+      tags:
+        - Mappings
+      description: Returns a list of mappings; available as an Add-On Module
+      summary: Get Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetMappingsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddMapping
+      description: |-
+        Creates a new mapping; available as an Add-On Module
+      summary: Add New Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMappingRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddMappingResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /mappings/{mappingId}:
+    get:
+      operationId: GetMapping
+      tags:
+        - Mappings
+      description: Get a mapping; available as an Add-On Module
+      summary: Get Mapping
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetMappingResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetMapping
+      description: |-
+        Sets an mapping; available as an Add-On Module
+      summary: Set Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMappingRequest'
+      responses:
+        '200':
+          description: 200 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    delete:
+      operationId: DeleteMapping
+      description: Delete Mapping; available as an Add-On Module
+      summary: Delete Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    AddMappingResponse:
+      type: "object"
+      properties:
+        mappingId:
+          type: "string"
+          description: "Mapping Identifier"
+
+    #@overlay/match missing_ok=True
+    SetMappingRequest:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/AddMapping"
+
+    #@overlay/match missing_ok=True
+    AddMappingRequest:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/AddMapping"
+
+    #@overlay/match missing_ok=True
+    AddMapping:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Mapping"
+        description:
+          type: "string"
+          description: "Description of Mapping"
+        attributes:
+          type: "array"
+          description: "List of attributes"
+          items:
+            $ref: "#/components/schemas/MappingAttribute"
+
+    #@overlay/match missing_ok=True
+    GetMappingsResponse:
+      type: "object"
+      properties:
+        mappings:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Mapping"
+        next:
+          type: "string"
+          description: "Next page of results token"
+
+    #@overlay/match missing_ok=True
+    GetMappingResponse:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/Mapping"
+
+    #@overlay/match missing_ok=True
+    Mapping:
+      type: "object"
+      properties:
+        mappingId:
+          type: "string"
+          description: "Mapping Identifier"
+        name:
+          type: "string"
+          description: "Name of Mapping"
+        description:
+          type: "string"
+          description: "Description of Mapping"
+        attributes:
+          type: "array"
+          description: "List of attributes"
+          items:
+            $ref: "#/components/schemas/MappingAttribute"
+
+    #@overlay/match missing_ok=True
+    MappingAttribute:
+      type: "object"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        defaultValue:
+          type: "string"
+          description: "Default value"
+        defaultValues:
+          type: "array"
+          description: "Default values"
+          items:
+            type: "string"
+        labelTexts:
+          items:
+            type: "string"
+            description: "Label Text"
+        labelMatchingType:
+          $ref: "#/components/schemas/MappingAttributeLabelMatchingType"
+        metadataField:
+          $ref: "#/components/schemas/MappingAttributeMetadataField"
+        validationRegex:
+          type: "string"
+          description: "Attribute Value Regex Validation"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeMetadataField:
+      type: string
+      description: Attribute Metadata Field
+      enum:
+        - USERNAME
+        - PATH
+        - CONTENT_TYPE
+
+    #@overlay/match missing_ok=True
+    MappingAttributeLabelMatchingType:
+      type: string
+      description: Attribute Label Matching Type
+      enum:
+        - FUZZY
+        - EXACT
+        - BEGINS_WITH
+        - CONTAINS
+
+    #@overlay/match missing_ok=True
+    MappingAttributeSourceType:
+      type: string
+      description: Attribute Source Type
+      enum:
+        - CONTENT
+        - CONTENT_KEY_VALUE
+        - METADATA
+        - MANUAL
+        - DATA_CLASSIFICATION
+        - MALWARE_SCAN
