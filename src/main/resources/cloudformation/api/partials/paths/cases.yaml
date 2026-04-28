@@ -1,0 +1,1232 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /cases:
+    get:
+      operationId: GetCases
+      tags:
+        - Case Management
+      description: Returns a list of the Cases; available as an Add-On Module
+      summary: Get Case listing
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCasesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    post:
+      operationId: AddCase
+      summary: Add New Case
+      description: Adds new case; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCaseRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddCaseResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}:
+    get:
+      operationId: GetCase
+      tags:
+        - Case Management
+      description: Returns a Case; available as an Add-On Module
+      summary: Get Case details
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    patch:
+      operationId: UpdateCase
+      summary: Update existing Case
+      description: Updates existing case; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCaseRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateCaseResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    delete:
+      operationId: DeleteCase
+      summary: Delete Case
+      description: Delete Case
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/documents:
+    get:
+      operationId: GetCaseDocuments
+      tags:
+        - Case Management
+      description: Returns documents in a Case; available as an Add-On Module
+      summary: Get list of document in a case
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseDocumentsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/documents/{documentId}:
+    delete:
+      operationId: DeleteCaseDocument
+      summary: Delete Document from Case
+      description: Delete Document from Case
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseDocumentResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/tasks/{taskId}:
+    get:
+      operationId: GetCaseTask
+      tags:
+        - Case Management
+      description: Returns a Task in Case; available as an Add-On Module
+      summary: Get task in a case
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/taskIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseTaskResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    patch:
+      operationId: UpdateTask
+      summary: Update existing Task
+      description: Updates existing task; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/taskIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTaskResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    delete:
+      operationId: DeleteTask
+      summary: Delete Task
+      description: Delete Task
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/taskIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseTaskResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/tasks/{taskId}/documents:
+    get:
+      operationId: GetTaskDocuments
+      tags:
+        - Case Management
+      description: Returns a list documents in a Case; available as an Add-On Module
+      summary: Get list of document in a task
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/taskIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseDocumentsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/tasks/{taskId}/documents/{documentId}:
+    delete:
+      operationId: DeleteTaskDocument
+      summary: Delete Document from Task
+      description: Delete Document from Task
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/taskIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseTaskDocumentResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/nigos/{nigoId}:
+    get:
+      operationId: GetCaseNigo
+      tags:
+        - Case Management
+      description: Returns a Nigo in Case; available as an Add-On Module
+      summary: Get nigo in a case
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/nigoIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseNigoResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    patch:
+      operationId: UpdateNigo
+      summary: Update existing Nigo
+      description: Updates existing nigo; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/nigoIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNigoRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNigoResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    delete:
+      operationId: DeleteNigo
+      summary: Delete Nigo
+      description: Delete Nigo
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/nigoIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseNigoResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/nigos/{nigoId}/documents:
+    get:
+      operationId: GetNigoDocuments
+      tags:
+        - Case Management
+      description: Returns a list documents in a Case; available as an Add-On Module
+      summary: Get list of document in a task
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/nigoIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseDocumentsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/nigos/{nigoId}/documents/{documentId}:
+    delete:
+      operationId: DeleteNigoDocument
+      summary: Delete Document from Nigo
+      description: Delete Document from Nigo
+      tags:
+        - Case Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - $ref: '#/components/parameters/nigoIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCaseNigoDocumentResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/tasks:
+    get:
+      operationId: GetCaseTasks
+      tags:
+        - Case Management
+      description: Returns a Case; available as an Add-On Module
+      summary: Get list of tasks in a case
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseTasksResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    post:
+      operationId: AddTask
+      summary: Add New Task
+      description: Adds new task; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTaskRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddTaskResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /cases/{caseId}/nigos:
+    get:
+      operationId: GetCaseNigos
+      tags:
+        - Case Management
+      description: Returns a Nigos of Case; available as an Add-On Module
+      summary: Get list of Nigos in a case
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetCaseNigosResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+    post:
+      operationId: AddNigo
+      summary: Add New Nigo
+      description: Adds new nigo; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/caseIdParam'
+      tags:
+        - Case Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNigoRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddNigoResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/caseManagementLambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    AddCaseResponse:
+      type: "object"
+      properties:
+        caseId:
+          type: "string"
+          description: "Case Identifier"
+    #@overlay/match missing_ok=True
+    AddTaskResponse:
+      type: "object"
+      properties:
+        taskId:
+          type: "string"
+          description: "Task Identifier"
+    #@overlay/match missing_ok=True
+    AddNigoResponse:
+      type: "object"
+      properties:
+        nigoId:
+          type: "string"
+          description: "Nigo Identifier"
+    #@overlay/match missing_ok=True
+    AddCaseRequest:
+      required:
+        - "case"
+      type: "object"
+      properties:
+        case:
+          $ref: "#/components/schemas/AddCase"
+    #@overlay/match missing_ok=True
+    AddCase:
+      required:
+        - "name"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Case Name"
+        status:
+          $ref: "#/components/schemas/CaseStatus"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        description:
+          type: "string"
+          description: "Case Description"
+        documentNumberFormat:
+          type: "array"
+          description: "Format of Document Number"
+          items:
+            $ref: "#/components/schemas/StringFormat"
+        caseNumberFormat:
+          type: "array"
+          description: "Format of Case Number"
+          items:
+            $ref: "#/components/schemas/StringFormat"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    StringFormat:
+      type: "object"
+      properties:
+        type:
+          $ref: "#/components/schemas/StringGeneratorType"
+        staticValue:
+          type: "string"
+          description: "Static Value"
+        padding:
+          type: "integer"
+          description: "Optional padding for AUTO_INCREMENT number"
+    #@overlay/match missing_ok=True
+    UpdateCaseResponse:
+      type: "object"
+      properties:
+        caseId:
+          type: "string"
+          description: "Case Identifier"
+    #@overlay/match missing_ok=True
+    UpdateCaseRequest:
+      type: "object"
+      properties:
+        case:
+          $ref: "#/components/schemas/UpdateCase"
+    #@overlay/match missing_ok=True
+    UpdateCase:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Case Name"
+        status:
+          $ref: "#/components/schemas/CaseStatus"
+        description:
+          type: "string"
+          description: "Case Description"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    StringGeneratorType:
+      type: string
+      description: Generate Strings of Type
+      enum:
+        - AUTO_INCREMENT
+        - STATIC
+        - DATE_YYYYMMDD
+    #@overlay/match missing_ok=True
+    CaseStatus:
+      type: string
+      description: Status of the Case
+      enum:
+        - NEW
+        - ASSIGNED
+        - IN_PROGRESS
+        - ON_HOLD
+        - ESCALATED
+        - RESOLVED
+        - CLOSED
+        - UNDER_REVIEW
+        - AWAITING_CLIENT_RESPONSE
+    #@overlay/match missing_ok=True
+    TaskStatus:
+      type: string
+      description: Status of the Task
+      enum:
+        - NEW
+        - ASSIGNED
+        - IN_PROGRESS
+        - ON_HOLD
+        - ESCALATED
+        - RESOLVED
+        - CLOSED
+        - UNDER_REVIEW
+        - AWAITING_CLIENT_RESPONSE
+    #@overlay/match missing_ok=True
+    NigoStatus:
+      type: string
+      description: Status of the Nigo
+      enum:
+        - NEW
+        - ASSIGNED
+        - IN_PROGRESS
+        - ON_HOLD
+        - ESCALATED
+        - RESOLVED
+        - CLOSED
+        - UNDER_REVIEW
+        - AWAITING_CLIENT_RESPONSE
+    #@overlay/match missing_ok=True
+    UpdateTaskResponse:
+      type: "object"
+      properties:
+        taskId:
+          type: "string"
+          description: "Task Identifier"
+    #@overlay/match missing_ok=True
+    UpdateTaskRequest:
+      type: "object"
+      properties:
+        task:
+          $ref: "#/components/schemas/UpdateTask"
+    #@overlay/match missing_ok=True
+    UpdateTask:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Task"
+        description:
+          type: "string"
+          description: "Description of Task"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    AddTaskRequest:
+      required:
+        - "task"
+      type: "object"
+      properties:
+        task:
+          $ref: "#/components/schemas/AddTask"
+    #@overlay/match missing_ok=True
+    AddTask:
+      required:
+        - "description"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Task"
+        description:
+          type: "string"
+          description: "Description of Task"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    UpdateNigoResponse:
+      type: "object"
+      properties:
+        nigoId:
+          type: "string"
+          description: "Nigo Identifier"
+    #@overlay/match missing_ok=True
+    UpdateNigoRequest:
+      type: "object"
+      properties:
+        nigo:
+          $ref: "#/components/schemas/UpdateNigo"
+    #@overlay/match missing_ok=True
+    UpdateNigo:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Nigo"
+        description:
+          type: "string"
+          description: "Description of Nigo"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        status:
+          $ref: "#/components/schemas/NigoStatus"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    AddNigoRequest:
+      required:
+        - "nigo"
+      type: "object"
+      properties:
+        nigo:
+          $ref: "#/components/schemas/AddNigo"
+    #@overlay/match missing_ok=True
+    AddNigo:
+      required:
+        - "name"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Nigo"
+        description:
+          type: "string"
+          description: "Description of Nigo"
+        status:
+          $ref: "#/components/schemas/NigoStatus"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        documentIds:
+          type: "array"
+          items:
+            type: "string"
+    #@overlay/match missing_ok=True
+    Task:
+      type: "object"
+      properties:
+        taskId:
+          type: "string"
+          description: "Task Identifier"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        name:
+          type: "string"
+          description: "Name of Task"
+        description:
+          type: "string"
+          description: "Description of Task"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date of Task"
+        startDate:
+          type: "string"
+          description: "Start Date of Task"
+        endDate:
+          type: "string"
+          description: "End Date of Task"
+        dueDate:
+          type: "string"
+          description: "Due Date of Task"
+        userId:
+          type: "string"
+          description: "User who added Task"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+    #@overlay/match missing_ok=True
+    Nigo:
+      type: "object"
+      properties:
+        nigoId:
+          type: "string"
+          description: "Nigo Identifier"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        name:
+          type: "string"
+          description: "Name of Nigo"
+        description:
+          type: "string"
+          description: "Description of Nigo"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        userId:
+          type: "string"
+          description: "User who added Nigo"
+        status:
+          $ref: "#/components/schemas/NigoStatus"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+    #@overlay/match missing_ok=True
+    GetCasesResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        cases:
+          type: "array"
+          description: "List of cases"
+          items:
+            $ref: "#/components/schemas/Case"
+    #@overlay/match missing_ok=True
+    GetCaseNigosResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        nigos:
+          type: "array"
+          description: "List of Nigos"
+          items:
+            $ref: "#/components/schemas/Nigo"
+    #@overlay/match missing_ok=True
+    GetCaseNigoResponse:
+      type: "object"
+      properties:
+        nigo:
+          $ref: "#/components/schemas/Nigo"
+    #@overlay/match missing_ok=True
+    GetCaseTaskResponse:
+      type: "object"
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+    #@overlay/match missing_ok=True
+    GetCaseTasksResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        tasks:
+          type: "array"
+          description: "List of tasks"
+          items:
+            $ref: "#/components/schemas/Task"
+    #@overlay/match missing_ok=True
+    GetCaseDocumentsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        documents:
+          type: "array"
+          description: "List of documents"
+          items:
+            $ref: "#/components/schemas/Document"
+    #@overlay/match missing_ok=True
+    GetCaseResponse:
+      type: "object"
+      properties:
+        case:
+          $ref: "#/components/schemas/Case"
+    #@overlay/match missing_ok=True
+    Case:
+      type: "object"
+      properties:
+        caseId:
+          type: "string"
+          description: "Case Identifier"
+        caseNumber:
+          type: "string"
+          description: "Case Number"
+        documentNumber:
+          type: "string"
+          description: "Document Number"
+        plannedStartDate:
+          type: "string"
+          description: "Planned Start Date"
+        startDate:
+          type: "string"
+          description: "Start Date"
+        endDate:
+          type: "string"
+          description: "End Date"
+        dueDate:
+          type: "string"
+          description: "Due Date"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        name:
+          type: "string"
+          description: "Case Name"
+        description:
+          type: "string"
+          description: "Case Description"
+        metadata:
+          type: "object"
+          additionalProperties:
+            type: object
+        status:
+          $ref: "#/components/schemas/CaseStatus"
+        userId:
+          type: "string"
+          description: "User who added document"
