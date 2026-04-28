@@ -108,36 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-  /shortlinks:
-    post:
-      operationId: AddShortlink
-      summary: Add shortlink
-      description: Create a shortlink for a target URL
-      tags:
-        - Shortlinks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddShortlinkRequest'
-      responses:
-        '201':
-          description: 201 CREATED
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddShortlinkResponse'
-        '400':
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
   /documents/upload:
     get:
       operationId: GetDocumentUpload
@@ -8942,24 +8912,6 @@ components:
         message:
           type: "string"
           description: "Result message"
-    AddShortlinkRequest:
-      type: "object"
-      required:
-        - targetUrl
-        - slug
-      properties:
-        targetUrl:
-          type: "string"
-          description: "Target URL for the shortlink"
-        slug:
-          type: "string"
-          description: "Shortlink slug"
-    AddShortlinkResponse:
-      type: "object"
-      properties:
-        url:
-          type: "string"
-          description: "Shortlink URL"
     GetSitesSchemaResponse:
       type: "object"
       properties:

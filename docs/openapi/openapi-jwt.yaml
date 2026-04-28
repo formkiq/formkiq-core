@@ -121,43 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /shortlinks:
-    post:
-      operationId: AddShortlink
-      summary: Add shortlink
-      description: Create a shortlink for a target URL
-      tags:
-      - Shortlinks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddShortlinkRequest'
-      responses:
-        "201":
-          description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddShortlinkResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /documents/upload:
     get:
       operationId: GetDocumentUpload
@@ -5889,6 +5852,43 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /shortlinks:
+    post:
+      operationId: AddShortlink
+      summary: Add shortlink
+      description: Create a shortlink for a target URL
+      tags:
+      - Shortlinks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddShortlinkRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddShortlinkResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /sites:
     get:
       operationId: GetSites
@@ -12572,24 +12572,6 @@ components:
         message:
           type: string
           description: Result message
-    AddShortlinkRequest:
-      type: object
-      required:
-      - targetUrl
-      - slug
-      properties:
-        targetUrl:
-          type: string
-          description: Target URL for the shortlink
-        slug:
-          type: string
-          description: Shortlink slug
-    AddShortlinkResponse:
-      type: object
-      properties:
-        url:
-          type: string
-          description: Shortlink URL
     GetSitesSchemaResponse:
       type: object
       properties:
@@ -13847,6 +13829,24 @@ components:
           type: object
           additionalProperties:
             type: object
+    AddShortlinkRequest:
+      type: object
+      required:
+      - targetUrl
+      - slug
+      properties:
+        targetUrl:
+          type: string
+          description: Target URL for the shortlink
+        slug:
+          type: string
+          description: Shortlink slug
+    AddShortlinkResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Shortlink URL
     AddSiteRequest:
       type: object
       properties:
