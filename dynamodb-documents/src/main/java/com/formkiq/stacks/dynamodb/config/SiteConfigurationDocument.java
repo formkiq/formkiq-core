@@ -33,7 +33,7 @@ public record SiteConfigurationDocument(SiteConfigurationDocumentContentTypes co
     SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition) {
 
   /**
-   * Create {@link SiteConfigurationDocument} with a default disposition action when missing.
+   * Create {@link SiteConfigurationDocument} with defaults when missing.
    *
    * @return {@link SiteConfigurationDocument}
    */
@@ -41,7 +41,7 @@ public record SiteConfigurationDocument(SiteConfigurationDocumentContentTypes co
     SiteConfigurationDocumentRetentionAndDisposition retention =
         this.retentionAndDisposition != null ? this.retentionAndDisposition.withDefaults()
             : new SiteConfigurationDocumentRetentionAndDisposition(
-                SiteConfigurationDocumentDispositionAction.SOFT_DELETE);
+                SiteConfigurationDocumentDispositionAction.SOFT_DELETE, -1L);
     return new SiteConfigurationDocument(this.contentTypes, retention);
   }
 }

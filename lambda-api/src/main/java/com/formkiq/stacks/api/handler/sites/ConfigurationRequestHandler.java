@@ -179,7 +179,7 @@ public class ConfigurationRequestHandler
     }
 
     return new SiteConfigurationDocument(null, new SiteConfigurationDocumentRetentionAndDisposition(
-        SiteConfigurationDocumentDispositionAction.SOFT_DELETE));
+        SiteConfigurationDocumentDispositionAction.SOFT_DELETE, -1L));
   }
 
   @Override

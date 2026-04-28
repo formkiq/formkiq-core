@@ -30,10 +30,10 @@ import com.formkiq.graalvm.annotations.Reflectable;
  */
 @Reflectable
 public record SiteConfigurationDocumentRetentionAndDisposition(
-    SiteConfigurationDocumentDispositionAction dispositionAction) {
+    SiteConfigurationDocumentDispositionAction dispositionAction, Long softDeleteRetentionInDays) {
 
   /**
-   * Create object with a default disposition action when missing.
+   * Create object with defaults when missing.
    *
    * @return {@link SiteConfigurationDocumentRetentionAndDisposition}
    */
@@ -41,6 +41,8 @@ public record SiteConfigurationDocumentRetentionAndDisposition(
     SiteConfigurationDocumentDispositionAction action =
         this.dispositionAction != null ? this.dispositionAction
             : SiteConfigurationDocumentDispositionAction.SOFT_DELETE;
-    return new SiteConfigurationDocumentRetentionAndDisposition(action);
+    Long retentionInDays =
+        this.softDeleteRetentionInDays != null ? this.softDeleteRetentionInDays : -1L;
+    return new SiteConfigurationDocumentRetentionAndDisposition(action, retentionInDays);
   }
 }

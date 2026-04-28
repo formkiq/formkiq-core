@@ -53,14 +53,15 @@ public class SiteConfigurationTest {
     assertNotNull(result.document().retentionAndDisposition());
     assertEquals(SiteConfigurationDocumentDispositionAction.SOFT_DELETE,
         result.document().retentionAndDisposition().dispositionAction());
+    assertEquals(-1L, result.document().retentionAndDisposition().softDeleteRetentionInDays());
   }
 
   @Test
-  public void testGetAttributesPersistsDispositionAction() {
+  public void testGetAttributesPersistsRetentionAndDisposition() {
     SiteConfiguration config = SiteConfiguration.builder()
         .document(new SiteConfigurationDocument(null,
             new SiteConfigurationDocumentRetentionAndDisposition(
-                SiteConfigurationDocumentDispositionAction.DELETE)))
+                SiteConfigurationDocumentDispositionAction.DELETE, 30L)))
         .build("default");
 
     SiteConfiguration result = SiteConfiguration.fromAttributeMap(config.getAttributes());
@@ -69,5 +70,6 @@ public class SiteConfigurationTest {
     assertNotNull(result.document().retentionAndDisposition());
     assertEquals(SiteConfigurationDocumentDispositionAction.DELETE,
         result.document().retentionAndDisposition().dispositionAction());
+    assertEquals(30L, result.document().retentionAndDisposition().softDeleteRetentionInDays());
   }
 }
