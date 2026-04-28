@@ -121,57 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/url:
-    get:
-      operationId: GetDocumentUrl
-      summary: Get document content url
-      description: Returns a URL for the document's contents; this URL will expire (the default is 48 hours)
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/versionKeyParam'
-      - $ref: '#/components/parameters/durationParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      - name: inline
-        in: query
-        description: Set the Content-Disposition to inline
-        schema:
-          type: boolean
-          default: false
-      - name: bypassWatermark
-        in: query
-        description: Allow the by pass of watermark (only allowed by GOVERN / ADMIN permissions)
-        schema:
-          type: boolean
-          default: false
-      - name: format
-        in: query
-        description: Return a shortlink URL when set to `short`; available as an Add-On Module
-        schema:
-          type: string
-          enum:
-          - short
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentUrlResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /shortlinks:
     post:
       operationId: AddShortlink
@@ -5889,6 +5838,57 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/url:
+    get:
+      operationId: GetDocumentUrl
+      summary: Get document content url
+      description: Returns a URL for the document's contents; this URL will expire (the default is 48 hours)
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/versionKeyParam'
+      - $ref: '#/components/parameters/durationParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      - name: inline
+        in: query
+        description: Set the Content-Disposition to inline
+        schema:
+          type: boolean
+          default: false
+      - name: bypassWatermark
+        in: query
+        description: Allow the by pass of watermark (only allowed by GOVERN / ADMIN permissions)
+        schema:
+          type: boolean
+          default: false
+      - name: format
+        in: query
+        description: Return a shortlink URL when set to `short`; available as an Add-On Module
+        schema:
+          type: string
+          enum:
+          - short
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentUrlResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /sites:
     get:
       operationId: GetSites
@@ -8517,22 +8517,6 @@ components:
         siteId:
           type: string
           description: Site Identifier
-    GetDocumentUrlResponse:
-      type: object
-      properties:
-        documentId:
-          type: string
-          description: Document Identifier
-        artifactId:
-          type: string
-          description: Artifact Identifier
-        url:
-          type: string
-          description: Document content url
-        headers:
-          type: object
-          additionalProperties:
-            type: object
     ChildDocument:
       required:
       - documentId
@@ -13847,6 +13831,22 @@ components:
         eq:
           type: string
           description: Searches for strings that eq
+    GetDocumentUrlResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
+        url:
+          type: string
+          description: Document content url
+        headers:
+          type: object
+          additionalProperties:
+            type: object
     AddSiteRequest:
       type: object
       properties:
