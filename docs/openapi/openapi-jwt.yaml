@@ -121,179 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents:
-    get:
-      operationId: GetDocuments
-      tags:
-      - Documents
-      description: Returns a list of the most recent documents added, ordered by inserted, descending
-      summary: Get Documents listing
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - name: actionStatus
-        in: query
-        description: Fetch documents with an action status
-        schema:
-          type: string
-          enum:
-          - FAILED
-          - IN_QUEUE
-          - PENDING
-          - RUNNING
-          - SKIPPED
-          - FAILED_RETRY
-      - name: syncStatus
-        in: query
-        description: Fetch documents with an sync status
-        schema:
-          type: string
-          enum:
-          - FULLTEXT_METADATA_FAILED
-          - FULLTEXT_CONTENT_FAILED
-      - $ref: '#/components/parameters/documentSearchSoftDeleted'
-      - $ref: '#/components/parameters/documentSearchDeleted'
-      - name: date
-        in: query
-        description: Fetch documents inserted on a certain date (yyyy-MM-dd)
-        schema:
-          type: string
-      - name: tz
-        in: query
-        description: 'UTC offset to apply to date parameter (IE: -0600)'
-        schema:
-          type: string
-      - $ref: '#/components/parameters/startParam'
-      - $ref: '#/components/parameters/endParam'
-      - $ref: '#/components/parameters/sortParam'
-      - name: next
-        in: query
-        description: Next page of results token
-        schema:
-          type: string
-      - name: previous
-        in: query
-        description: Previous page of results token
-        schema:
-          type: string
-      - name: projection
-        in: query
-        description: Specify a restricted document projection. Use 'DOCUMENT_ID_ONLY' to return only the documentId attribute.
-        schema:
-          type: string
-          enum:
-          - DOCUMENT_ID_ONLY
-      - $ref: '#/components/parameters/limitParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    post:
-      operationId: AddDocument
-      description: |-
-        Creates a new document; body may include document content if less than 5 MB.
-
-        Returns a unique **documentId** used in subsequent operations.
-
-        **Content Type Detection**
-        If the document **Content-Type** is not specified during upload, the service will determine it
-        asynchronously after the upload completes.
-
-        This may result in a **temporary delay** before the content type and related metadata are available.
-
-        See POST /documents/{documentId}/tags for adding tags to document schema
-
-        See POST /documents/{documentId}/actions for adding actions to document schema
-      summary: Add new document
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentRequest'
-            examples:
-              Simple_File:
-                value:
-                  path: test.txt
-                  contentType: text/plain
-                  isBase64: false
-                  content: This is sample data file
-                  tags:
-                  - key: category
-                    value: sample
-                  - key: players
-                    values:
-                    - "111"
-                    - "222"
-                  metadata:
-                  - key: info
-                    value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              Child_Document:
-                value:
-                  path: doc1.txt
-                  contentType: text/plain
-                  content: This is document1 content
-                  tags:
-                  - key: type
-                    value: document1
-                  documents:
-                    contentType: text/plain,
-                    content: This is child document1 content,
-                    tags:
-                    - key: type
-                      value: childdocument1
-              Document_with_Webhook:
-                value:
-                  path: test.txt
-                  contentType: text/plain
-                  isBase64: false
-                  content: This is sample data file
-                  actions:
-                  - type: webhook
-                    parameters:
-                      url: <callback_url>
-      responses:
-        "201":
-          description: 201 CREATED
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocumentResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /documents/{documentId}:
     get:
       operationId: GetDocument
@@ -5704,6 +5531,179 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents:
+    get:
+      operationId: GetDocuments
+      tags:
+      - Documents
+      description: Returns a list of the most recent documents added, ordered by inserted, descending
+      summary: Get Documents listing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - name: actionStatus
+        in: query
+        description: Fetch documents with an action status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - IN_QUEUE
+          - PENDING
+          - RUNNING
+          - SKIPPED
+          - FAILED_RETRY
+      - name: syncStatus
+        in: query
+        description: Fetch documents with an sync status
+        schema:
+          type: string
+          enum:
+          - FULLTEXT_METADATA_FAILED
+          - FULLTEXT_CONTENT_FAILED
+      - $ref: '#/components/parameters/documentSearchSoftDeleted'
+      - $ref: '#/components/parameters/documentSearchDeleted'
+      - name: date
+        in: query
+        description: Fetch documents inserted on a certain date (yyyy-MM-dd)
+        schema:
+          type: string
+      - name: tz
+        in: query
+        description: 'UTC offset to apply to date parameter (IE: -0600)'
+        schema:
+          type: string
+      - $ref: '#/components/parameters/startParam'
+      - $ref: '#/components/parameters/endParam'
+      - $ref: '#/components/parameters/sortParam'
+      - name: next
+        in: query
+        description: Next page of results token
+        schema:
+          type: string
+      - name: previous
+        in: query
+        description: Previous page of results token
+        schema:
+          type: string
+      - name: projection
+        in: query
+        description: Specify a restricted document projection. Use 'DOCUMENT_ID_ONLY' to return only the documentId attribute.
+        schema:
+          type: string
+          enum:
+          - DOCUMENT_ID_ONLY
+      - $ref: '#/components/parameters/limitParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocument
+      description: |-
+        Creates a new document; body may include document content if less than 5 MB.
+
+        Returns a unique **documentId** used in subsequent operations.
+
+        **Content Type Detection**
+        If the document **Content-Type** is not specified during upload, the service will determine it
+        asynchronously after the upload completes.
+
+        This may result in a **temporary delay** before the content type and related metadata are available.
+
+        See POST /documents/{documentId}/tags for adding tags to document schema
+
+        See POST /documents/{documentId}/actions for adding actions to document schema
+      summary: Add new document
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentRequest'
+            examples:
+              Simple_File:
+                value:
+                  path: test.txt
+                  contentType: text/plain
+                  isBase64: false
+                  content: This is sample data file
+                  tags:
+                  - key: category
+                    value: sample
+                  - key: players
+                    values:
+                    - "111"
+                    - "222"
+                  metadata:
+                  - key: info
+                    value: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Child_Document:
+                value:
+                  path: doc1.txt
+                  contentType: text/plain
+                  content: This is document1 content
+                  tags:
+                  - key: type
+                    value: document1
+                  documents:
+                    contentType: text/plain,
+                    content: This is child document1 content,
+                    tags:
+                    - key: type
+                      value: childdocument1
+              Document_with_Webhook:
+                value:
+                  path: test.txt
+                  contentType: text/plain
+                  isBase64: false
+                  content: This is sample data file
+                  actions:
+                  - type: webhook
+                    parameters:
+                      url: <callback_url>
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /documents/{documentId}/actions:
     get:
       operationId: GetDocumentActions
@@ -8568,43 +8568,6 @@ components:
         siteId:
           type: string
           description: Site Identifier
-    AddDocumentResponse:
-      type: object
-      properties:
-        documentId:
-          type: string
-          description: Document Identifier
-        artifactId:
-          type: string
-          description: Artifact Identifier
-        siteId:
-          type: string
-          description: Site Identifier
-        uploadUrl:
-          type: string
-          description: Url to upload document to
-        headers:
-          type: object
-          additionalProperties:
-            type: object
-        documents:
-          type: array
-          description: List of child documents
-          items:
-            $ref: '#/components/schemas/AddChildDocumentResponse'
-    AddChildDocumentResponse:
-      type: object
-      properties:
-        documentId:
-          type: string
-          description: Document Identifier
-        uploadUrl:
-          type: string
-          description: Url to upload document to
-        headers:
-          type: object
-          additionalProperties:
-            type: object
     GetDocumentUrlResponse:
       type: object
       properties:
@@ -9026,12 +8989,6 @@ components:
           description: List of Actions
           items:
             $ref: '#/components/schemas/AddAction'
-    ChecksumType:
-      type: string
-      description: The type of checksum to use for file validation
-      enum:
-      - SHA1
-      - SHA256
     AddDocumentRequest:
       required:
       - content
@@ -9260,22 +9217,6 @@ components:
           description: List of document tags
           items:
             $ref: '#/components/schemas/AddDocumentTag'
-    DocumentMetadata:
-      type: object
-      description: Document Metadata (use either 'value' or 'values' not both)
-      properties:
-        key:
-          type: string
-          description: Metadata key
-        value:
-          type: string
-          description: Metadata value
-        values:
-          type: array
-          description: Metadata values
-          items:
-            type: string
-            description: Metadata value
     AddDocumentMetadata:
       required:
       - key
@@ -10128,67 +10069,6 @@ components:
           $ref: '#/components/schemas/WorkflowSummary'
         document:
           $ref: '#/components/schemas/Document'
-    Document:
-      type: object
-      properties:
-        siteId:
-          type: string
-          description: Site Identifier
-        path:
-          type: string
-          description: Path or Name of document
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-        lastModifiedDate:
-          type: string
-          description: Last Modified Timestamp
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        documentId:
-          type: string
-          description: Document Identifier
-        artifactId:
-          type: string
-          description: Artifact Identifier
-        contentType:
-          type: string
-          description: Document Content-Type
-        userId:
-          type: string
-          description: User who added document
-        contentLength:
-          type: integer
-          description: Document size
-        version:
-          type: string
-          description: Document version
-        versionKey:
-          type: string
-          description: Document Version Identifier
-        s3version:
-          type: string
-          description: Document storage version
-        belongsToDocumentId:
-          type: string
-          description: Parent Document Identifier
-        metadata:
-          type: array
-          description: List of document Metadata
-          items:
-            $ref: '#/components/schemas/DocumentMetadata'
     DocumentSearchResponse:
       type: object
       properties:
@@ -11611,20 +11491,6 @@ components:
           $ref: '#/components/schemas/AttributeType'
         watermark:
           $ref: '#/components/schemas/Watermark'
-    GetDocumentsResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        previous:
-          type: string
-          description: Previous page of results token
-        documents:
-          type: array
-          description: List of documents
-          items:
-            $ref: '#/components/schemas/Document'
     GetWebhooksResponse:
       type: object
       properties:
@@ -13602,6 +13468,140 @@ components:
         viewUrl:
           type: string
           description: The view URL to be navigated to complete DocuSign signing
+    AddDocumentResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
+        siteId:
+          type: string
+          description: Site Identifier
+        uploadUrl:
+          type: string
+          description: Url to upload document to
+        headers:
+          type: object
+          additionalProperties:
+            type: object
+        documents:
+          type: array
+          description: List of child documents
+          items:
+            $ref: '#/components/schemas/AddChildDocumentResponse'
+    AddChildDocumentResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document Identifier
+        uploadUrl:
+          type: string
+          description: Url to upload document to
+        headers:
+          type: object
+          additionalProperties:
+            type: object
+    GetDocumentsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        previous:
+          type: string
+          description: Previous page of results token
+        documents:
+          type: array
+          description: List of documents
+          items:
+            $ref: '#/components/schemas/Document'
+    Document:
+      type: object
+      properties:
+        siteId:
+          type: string
+          description: Site Identifier
+        path:
+          type: string
+          description: Path or Name of document
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        lastModifiedDate:
+          type: string
+          description: Last Modified Timestamp
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        documentId:
+          type: string
+          description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
+        contentType:
+          type: string
+          description: Document Content-Type
+        userId:
+          type: string
+          description: User who added document
+        contentLength:
+          type: integer
+          description: Document size
+        version:
+          type: string
+          description: Document version
+        versionKey:
+          type: string
+          description: Document Version Identifier
+        s3version:
+          type: string
+          description: Document storage version
+        belongsToDocumentId:
+          type: string
+          description: Parent Document Identifier
+        metadata:
+          type: array
+          description: List of document Metadata
+          items:
+            $ref: '#/components/schemas/DocumentMetadata'
+    ChecksumType:
+      type: string
+      description: The type of checksum to use for file validation
+      enum:
+      - SHA1
+      - SHA256
+    DocumentMetadata:
+      type: object
+      description: Document Metadata (use either 'value' or 'values' not both)
+      properties:
+        key:
+          type: string
+          description: Metadata key
+        value:
+          type: string
+          description: Metadata value
+        values:
+          type: array
+          description: Metadata values
+          items:
+            type: string
+            description: Metadata value
     GetDocumentActionsResponse:
       type: object
       properties:
