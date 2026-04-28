@@ -1,0 +1,635 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /rulesets:
+    get:
+      operationId: GetRulesets
+      tags:
+        - Rulesets
+      description: Returns a list of rule sets; available as an Add-On Module
+      summary: Get Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - name: "next"
+          in: "query"
+          description: "Next page of results token"
+          schema:
+            type: "string"
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetRulesetsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddRuleset
+      description: |-
+        Creates a new ruleset; available as an Add-On Module
+      summary: Add New Ruleset
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRulesetRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddRulesetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /rulesets/{rulesetId}:
+    get:
+      operationId: GetRuleset
+      tags:
+        - Rulesets
+      description: Get a rule sets; available as an Add-On Module
+      summary: Get Ruleset
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetRulesetResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      operationId: UpdateRuleset
+      description: |-
+        Updates an existing ruleset; available as an Add-On Module
+      summary: Update Ruleset
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRulesetRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRulesetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    delete:
+      operationId: DeleteRuleset
+      description: Delete Ruleset; available as an Add-On Module
+      summary: Delete Ruleset
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRulesetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /rulesets/{rulesetId}/rules:
+    get:
+      operationId: GetRules
+      tags:
+        - Rulesets
+      description: Returns a list of rules in a ruleset; available as an Add-On Module
+      summary: Get Rules
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetRulesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddRule
+      description: |-
+        Creates a new rule; available as an Add-On Module
+      summary: Add New Rule
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRuleRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddRuleResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /rulesets/{rulesetId}/rules/{ruleId}:
+    get:
+      operationId: GetRule
+      tags:
+        - Rulesets
+      description: Returns a rule in a ruleset; available as an Add-On Module
+      summary: Get Rule
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+        - $ref: '#/components/parameters/ruleIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetRuleResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      operationId: UpdateRule
+      description: |-
+        Update Rule; available as an Add-On Module
+      summary: Update Rule
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+        - $ref: '#/components/parameters/ruleIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRuleRequest'
+      responses:
+        '200':
+          description: 200 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRuleResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    delete:
+      operationId: DeleteRule
+      description: Delete Rule; available as an Add-On Module
+      summary: Delete Rule
+      tags:
+        - Rulesets
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/rulesetIdParam'
+        - $ref: '#/components/parameters/ruleIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRuleResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    RulesetStatus:
+      type: string
+      description: Status of the Ruleset
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    #@overlay/match missing_ok=True
+    AddRulesetResponse:
+      type: "object"
+      properties:
+        rulesetId:
+          type: "string"
+          description: "Ruleset Identifier"
+
+    #@overlay/match missing_ok=True
+    UpdateRulesetResponse:
+      type: "object"
+      properties:
+        message:
+          type: string
+          description: Ruleset update message
+
+    #@overlay/match missing_ok=True
+    UpdateRuleResponse:
+      type: "object"
+      properties:
+        message:
+          type: string
+          description: Rule update message
+
+    #@overlay/match missing_ok=True
+    AddRuleResponse:
+      type: "object"
+      properties:
+        ruleId:
+          type: "string"
+          description: "Rule Identifier"
+
+    #@overlay/match missing_ok=True
+    AddRuleRequest:
+      required:
+        - "case"
+      type: "object"
+      properties:
+        rule:
+          $ref: "#/components/schemas/AddRule"
+
+    #@overlay/match missing_ok=True
+    UpdateRuleRequest:
+      required:
+        - "case"
+      type: "object"
+      properties:
+        rule:
+          $ref: "#/components/schemas/UpdateRule"
+
+    #@overlay/match missing_ok=True
+    AddRule:
+      type: "object"
+      properties:
+        priority:
+          type: "number"
+          description: "Rule priority"
+        description:
+          type: "string"
+          description: "Rule description"
+        workflowId:
+          type: "string"
+          description: "Workflow to start on matching of conditions"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+        conditions:
+          $ref: "#/components/schemas/RuleCondition"
+
+    #@overlay/match missing_ok=True
+    UpdateRule:
+      type: "object"
+      properties:
+        priority:
+          type: "number"
+          description: "Rule priority"
+        description:
+          type: "string"
+          description: "Rule description"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+        workflowId:
+          type: "string"
+          description: "Workflow to start on matching of conditions"
+        conditions:
+          $ref: "#/components/schemas/RuleCondition"
+
+    #@overlay/match missing_ok=True
+    AddRulesetRequest:
+      required:
+        - "ruleset"
+      type: "object"
+      properties:
+        ruleset:
+          $ref: "#/components/schemas/AddRuleset"
+
+    #@overlay/match missing_ok=True
+    UpdateRulesetRequest:
+      required:
+        - "ruleset"
+      type: "object"
+      properties:
+        ruleset:
+          $ref: "#/components/schemas/UpdateRuleset"
+
+    #@overlay/match missing_ok=True
+    AddRuleset:
+      type: "object"
+      properties:
+        description:
+          type: "string"
+          description: "Ruleset description"
+        priority:
+          type: "number"
+          description: "Ruleset priority"
+        version:
+          type: "number"
+          description: "Ruleset version"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+
+    #@overlay/match missing_ok=True
+    UpdateRuleset:
+      type: "object"
+      properties:
+        description:
+          type: "string"
+          description: "Ruleset description"
+        priority:
+          type: "number"
+          description: "Ruleset priority"
+        version:
+          type: "number"
+          description: "Ruleset version"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+
+    #@overlay/match missing_ok=True
+    GetRulesResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        rules:
+          type: "array"
+          description: "List of rules"
+          items:
+            $ref: "#/components/schemas/Rule"
+
+    #@overlay/match missing_ok=True
+    GetRuleResponse:
+      type: "object"
+      properties:
+        rule:
+          $ref: "#/components/schemas/Rule"
+
+    #@overlay/match missing_ok=True
+    GetRulesetsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        rulesets:
+          type: "array"
+          description: "List of rulesets"
+          items:
+            $ref: "#/components/schemas/Ruleset"
+
+    #@overlay/match missing_ok=True
+    GetRulesetResponse:
+      type: "object"
+      properties:
+        ruleset:
+          $ref: "#/components/schemas/Ruleset"
+
+    #@overlay/match missing_ok=True
+    Ruleset:
+      type: "object"
+      properties:
+        rulesetId:
+          type: "string"
+          description: "Ruleset identifier"
+        description:
+          type: "string"
+          description: "Ruleset description"
+        priority:
+          type: "number"
+          description: "Ruleset priority"
+        version:
+          type: "number"
+          description: "Ruleset version"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+
+    #@overlay/match missing_ok=True
+    Rule:
+      type: "object"
+      properties:
+        ruleId:
+          type: "string"
+          description: "Workflow to start on matching of conditions"
+        priority:
+          type: "number"
+          description: "Rule priority"
+        description:
+          type: "string"
+          description: "Ruleset description"
+        workflowId:
+          type: "string"
+          description: "Workflow to start on matching of conditions"
+        status:
+          $ref: "#/components/schemas/RulesetStatus"
+        conditions:
+          $ref: "#/components/schemas/RuleCondition"
+
+    #@overlay/match missing_ok=True
+    RuleCondition:
+      type: "object"
+      properties:
+        must:
+          type: "array"
+          description: "List of rule conditions"
+          items:
+            $ref: "#/components/schemas/RuleConditionMust"
+
+    #@overlay/match missing_ok=True
+    RuleConditionCriterion:
+      type: string
+      description: Rule condition attribute
+      enum:
+        - TEXT
+        - CONTENT_TYPE
+        - BARCODE
+        - FIELD
+        - ATTRIBUTE
+
+    #@overlay/match missing_ok=True
+    RuleConditionAttribute:
+      type: string
+      description: Rule condition attribute (deprecated, use Criterion)
+      enum:
+        - TEXT
+        - CONTENT_TYPE
+        - BARCODE
+        - FIELD
+        - ATTRIBUTE
+
+    #@overlay/match missing_ok=True
+    RuleConditionOperation:
+      type: string
+      description: Rule condition attribute
+      enum:
+        - EQ
+        - CONTAINS
+
+    #@overlay/match missing_ok=True
+    RuleConditionMust:
+      type: "object"
+      properties:
+        attribute:
+          $ref: "#/components/schemas/RuleConditionAttribute"
+        criterion:
+          $ref: "#/components/schemas/RuleConditionCriterion"
+        attributeKey:
+          type: "string"
+          description: "Rule attribute key (only required for ATTRIBUTE criterion)"
+        fieldName:
+          type: "string"
+          description: "Rule field name (only required for FIELD criterion)"
+        value:
+          type: "string"
+          description: "Rule condition value"
+        operation:
+          $ref: "#/components/schemas/RuleConditionOperation"
