@@ -121,39 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/content:
-    get:
-      operationId: GetDocumentContent
-      summary: Get document's contents
-      description: "Retrieves the content of the document with the specified `documentId`.\n- If the content is plain text and under 6 MB, the content will be returned directly.\n- If the content is plain text but exceeds 6 MB, an error will be returned.\n- For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.\nIt is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.\n\nIf the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. \nAll other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.\n"
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/versionKeyParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-            Location:
-              $ref: '#/components/headers/Location'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentContentResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/artifacts:
     get:
       operationId: GetDocumentArtifacts
@@ -5871,6 +5838,39 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/documentSignatureLambdaApi'
+  /documents/{documentId}/content:
+    get:
+      operationId: GetDocumentContent
+      summary: Get document's contents
+      description: "Retrieves the content of the document with the specified `documentId`.\n- If the content is plain text and under 6 MB, the content will be returned directly.\n- If the content is plain text but exceeds 6 MB, an error will be returned.\n- For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.\nIt is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.\n\nIf the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. \nAll other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.\n"
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/versionKeyParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentContentResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/purge:
     delete:
       operationId: PurgeDocument
@@ -8310,21 +8310,6 @@ components:
         value:
           type: string
           description: value of index
-    GetDocumentContentResponse:
-      type: object
-      properties:
-        content:
-          type: string
-          description: Document content
-        contentUrl:
-          type: string
-          description: URL to retrieve document content
-        contentType:
-          type: string
-          description: Document Content-Type
-        isBase64:
-          type: boolean
-          description: Is the content Base64-encoded?
     GetDocumentVersionsResponse:
       type: object
       properties:
@@ -13847,6 +13832,21 @@ components:
         url:
           type: string
           description: Presigned download URL (DOWNLOAD).
+    GetDocumentContentResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Document content
+        contentUrl:
+          type: string
+          description: URL to retrieve document content
+        contentType:
+          type: string
+          description: Document Content-Type
+        isBase64:
+          type: boolean
+          description: Is the content Base64-encoded?
     AddSiteRequest:
       type: object
       properties:
