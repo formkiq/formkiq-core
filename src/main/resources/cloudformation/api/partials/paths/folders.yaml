@@ -1,0 +1,270 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /folders:
+    get:
+      operationId: GetFolderDocuments
+      summary: Get document folders
+      description: Get list of documents in a folder
+      tags:
+        - Document Folders
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/indexKeyQueryParam'
+        - $ref: '#/components/parameters/pathQueryParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFoldersResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+    post:
+      operationId: AddFolder
+      summary: Add document folder
+      description: Creates a new folder
+      tags:
+        - Document Folders
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/shareKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFolderRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddFolderResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /folders/{indexKey}:
+    delete:
+      operationId: DeleteFolder
+      summary: Delete document folder
+      description: Delete a specific folder; folder must be empty
+      tags:
+        - Document Folders
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/indexKeyParam'
+        - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFolderResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /folders/{indexKey}/permissions:
+    get:
+      operationId: GetFolderPermissions
+      summary: Get folder permissions
+      description: Get list of permissions for a folder
+      tags:
+        - Document Folders
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/indexKeyParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFolderPermissionsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /folders/permissions:
+    put:
+      operationId: SetFolderPermissions
+      summary: Sets Folder Permissions
+      description: |-
+        Sets a folders permissions
+
+        NOTE: Can only be called be ADMIN or GOVERN.
+
+      tags:
+        - Document Folders
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFolderPermissionsRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetFoldersResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        previous:
+          type: "string"
+          description: "Previous page of results token"
+        documents:
+          type: "array"
+          description: "List of search result documents"
+          items:
+            $ref: "#/components/schemas/SearchResultDocument"
+
+    #@overlay/match missing_ok=True
+    AddFolderRequest:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path of Folder to create"
+    
+    #@overlay/match missing_ok=True
+    AddFolderResponse:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "Response Message"
+        indexKey:
+          type: "string"
+          description: "Folder Index Key"
+
+    #@overlay/match missing_ok=True
+    DeleteFolderResponse:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "API Response message"
+
+    #@overlay/match missing_ok=True
+    GetFolderPermissionsResponse:
+      type: "object"
+      properties:
+        roles:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FolderPermission"
+
+    #@overlay/match missing_ok=True
+    FolderPermissionType:
+      type: string
+      description: Folder Permission Type
+      enum:
+        - READ
+        - WRITE
+        - DELETE
+
+    #@overlay/match missing_ok=True
+    FolderPermission:
+      type: "object"
+      properties:
+        roleName:
+          type: "string"
+          description: "Name of Role"
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FolderPermissionType"
+
+    #@overlay/match missing_ok=True
+    SetFolderPermissionsRequest:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path of Folder"
+        roles:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/AddFolderPermission"
+
+    #@overlay/match missing_ok=True
+    AddFolderPermission:
+      type: "object"
+      properties:
+        roleName:
+          type: "string"
+          description: "Name of Role"
+        permissions:
+          type: "array"
+          description: "List of permissions"
+          items:
+            $ref: "#/components/schemas/FolderPermissionType"
