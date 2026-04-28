@@ -48,7 +48,7 @@ public class DispositionDateAttribute extends RetentionEffectiveEndDateAttribute
     var date = getDispositionField(entityRecord, document);
 
     var dispositionDate = Date.from(date.toInstant().plus(periodInDays, ChronoUnit.DAYS));
-    return DateUtil.getIsoDateFormatter().format(dispositionDate);
+    return DateUtil.getYyyyMmDdFormatter().format(dispositionDate);
   }
 
   @Override
