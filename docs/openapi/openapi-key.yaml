@@ -121,112 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /esignature/docusign/{documentId}/envelopes:
-    post:
-      operationId: AddDocusignEnvelopes
-      summary: Create Docusign Envelope request
-      description: DocuSign create Docusign Envelope request; available as an Add-On Module
-      tags:
-      - E-Signature
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocusignEnvelopesRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocusignEnvelopesResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
-  /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
-    post:
-      operationId: AddDocusignRecipientView
-      summary: Create Docusign Recipient View request
-      description: DocuSign create Docusign Recipient View request; available as an Add-On Module
-      tags:
-      - E-Signature
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/docusignEnvelopeIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocusignRecipientViewRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocusignRecipientViewResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
-  /esignature/docusign/events:
-    post:
-      operationId: AddEsignatureDocusignEvents
-      summary: Add E-signature event
-      description: DocuSign callback URL handler; available as an Add-On Module
-      tags:
-      - E-Signature
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddResponse'
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
   /groups:
     get:
       operationId: GetGroups
@@ -4870,6 +4764,112 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+  /esignature/docusign/{documentId}/envelopes:
+    post:
+      operationId: AddDocusignEnvelopes
+      summary: Create Docusign Envelope request
+      description: DocuSign create Docusign Envelope request; available as an Add-On Module
+      tags:
+      - E-Signature
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocusignEnvelopesRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocusignEnvelopesResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
+    post:
+      operationId: AddDocusignRecipientView
+      summary: Create Docusign Recipient View request
+      description: DocuSign create Docusign Recipient View request; available as an Add-On Module
+      tags:
+      - E-Signature
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocusignRecipientViewRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocusignRecipientViewResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+  /esignature/docusign/events:
+    post:
+      operationId: AddEsignatureDocusignEvents
+      summary: Add E-signature event
+      description: DocuSign callback URL handler; available as an Add-On Module
+      tags:
+      - E-Signature
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
   /folders:
     get:
       operationId: GetFolderDocuments
@@ -11006,205 +11006,6 @@ components:
           type: object
           additionalProperties:
             type: string
-    DocusignEnvironment:
-      type: string
-      description: Docusign Environment
-      enum:
-      - PRODUCTION
-      - DEVELOPMENT
-    DocusignRecipientView:
-      type: object
-      properties:
-        returnUrl:
-          type: string
-          description: Identifies the return point after sending the envelope
-        recipientId:
-          type: string
-          description: A reference used to map recipients to other objects, such as specific document tabs.
-        userName:
-          type: string
-          description: The username of the recipient. You can use either email and userName.
-        clientUserId:
-          type: string
-          description: Specifies unique identifier for signer
-        email:
-          type: string
-          description: Specifies the email of the recipient
-        frameAncestors:
-          type: array
-          description: An array of ancestors that can embed the frame. Include the domain where the envelope will be embedded and the same URL as messageOrigins.
-          items:
-            type: string
-        messageOrigins:
-          type: array
-          description: The originating domain for the signature request message
-          items:
-            type: string
-    AddDocusignEnvelopesRequest:
-      type: object
-      required:
-      - environment
-      properties:
-        emailSubject:
-          type: string
-          description: The subject line of the email message that is sent to all recipients
-        environment:
-          $ref: '#/components/schemas/DocusignEnvironment'
-        signers:
-          type: array
-          description: List of DocuSign Signers
-          items:
-            $ref: '#/components/schemas/DocusignSigner'
-        inpersonSigners:
-          type: array
-          description: List of DocuSign Inperson Signers
-          items:
-            $ref: '#/components/schemas/DocusignInpersonSigner'
-        notification:
-          $ref: '#/components/schemas/DocusignNotification'
-    DocusignNotification:
-      properties:
-        useAccountDefaults:
-          type: string
-          description: When true, the account default notification settings are used for the envelope, overriding the reminders and expirations settings. When false, the reminders and expirations settings specified in this request are used. The default value is false.
-        expirations:
-          $ref: '#/components/schemas/DocusignNotificationExpirations'
-        reminders:
-          $ref: '#/components/schemas/DocusignNotificationReminders'
-    DocusignNotificationExpirations:
-      properties:
-        expireAfter:
-          type: string
-          description: An integer that sets the number of days the envelope is active. For this value to be used, expireEnabled must be explicitly set to true.
-        expireEnabled:
-          type: string
-          description: When true, the envelope expires in the number of days set by expireAfter.
-        expireWarn:
-          type: string
-          description: An integer that specifying the number of days before the envelope expires that an expiration warning email is sent to the recipient.
-    DocusignNotificationReminders:
-      properties:
-        reminderDelay:
-          type: string
-          description: An integer specifying the number of days after the recipient receives the envelope that reminder emails are sent to the recipient.
-        reminderEnabled:
-          type: string
-          description: When true, reminders are enabled. The default value is false.
-        reminderFrequency:
-          type: string
-          description: An integer specifying the interval in days between reminder emails.
-    DocusignSigner:
-      required:
-      - name
-      type: object
-      properties:
-        name:
-          type: string
-          description: Name of Signer
-        email:
-          type: string
-          description: Email of Signer
-        clientUserId:
-          type: string
-          description: Specifies unique identifier for signer
-        recipientId:
-          type: string
-          description: A reference used to map recipients to other objects, such as specific document tabs.
-        routingOrder:
-          type: string
-          description: Specifies the routing order of the recipient in the envelope.
-        suppressEmails:
-          type: string
-          description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
-        tabs:
-          $ref: '#/components/schemas/DocusignSigningTabs'
-    DocusignSigningTabs:
-      type: object
-      properties:
-        signHereTabs:
-          type: array
-          description: A list of Sign Here tabs
-          items:
-            $ref: '#/components/schemas/DocusignSignHereTabs'
-    DocusignSignHereTabs:
-      type: object
-      properties:
-        anchorString:
-          type: string
-          description: Specifies the string to find in the document and use as the basis for tab placement.
-        anchorXOffset:
-          type: string
-          description: Specifies the X axis location of the tab in anchorUnits relative to the anchorString.
-        anchorYOffset:
-          type: string
-          description: Specifies the Y axis location of the tab in anchorUnits relative to the anchorString.
-        anchorIgnoreIfNotPresent:
-          type: string
-          description: When true, this tab is ignored if the anchorString is not found in the document.
-        anchorUnits:
-          type: string
-          description: Specifies units of the anchorXOffset and anchorYOffset
-        xPosition:
-          type: string
-          description: This property indicates the horizontal offset of the object on the page
-        yPosition:
-          type: string
-          description: This property indicates the vertical offset of the object on the page
-        pageNumber:
-          type: string
-          description: Specifies the page number on which the tab is located
-    DocusignInpersonSigner:
-      required:
-      - hostEmail
-      - hostName
-      - signerName
-      type: object
-      properties:
-        hostEmail:
-          type: string
-          description: The email of the signing host
-        hostName:
-          type: string
-          description: The name of the signing host
-        signerName:
-          type: string
-          description: The full legal name of a signer
-        signerEmail:
-          type: string
-          description: The in-person signer's email address
-        recipientId:
-          type: string
-          description: A reference used to map recipients to other objects, such as specific document tabs.
-        routingOrder:
-          type: string
-          description: Specifies the routing order of the recipient in the envelope.
-        suppressEmails:
-          type: string
-          description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
-        tabs:
-          $ref: '#/components/schemas/DocusignSigningTabs'
-    AddDocusignEnvelopesResponse:
-      type: object
-      properties:
-        envelopeId:
-          type: string
-          description: Docusign Envelope Identifier
-    AddDocusignRecipientViewRequest:
-      type: object
-      required:
-      - environment
-      - recipientView
-      properties:
-        environment:
-          $ref: '#/components/schemas/DocusignEnvironment'
-        recipientView:
-          $ref: '#/components/schemas/DocusignRecipientView'
-    AddDocusignRecipientViewResponse:
-      type: object
-      properties:
-        viewUrl:
-          type: string
-          description: The view URL to be navigated to complete DocuSign signing
     GetActivitesResponse:
       type: object
       properties:
@@ -13108,6 +12909,205 @@ components:
         message:
           type: string
           description: Result message
+    DocusignEnvironment:
+      type: string
+      description: Docusign Environment
+      enum:
+      - PRODUCTION
+      - DEVELOPMENT
+    DocusignRecipientView:
+      type: object
+      properties:
+        returnUrl:
+          type: string
+          description: Identifies the return point after sending the envelope
+        recipientId:
+          type: string
+          description: A reference used to map recipients to other objects, such as specific document tabs.
+        userName:
+          type: string
+          description: The username of the recipient. You can use either email and userName.
+        clientUserId:
+          type: string
+          description: Specifies unique identifier for signer
+        email:
+          type: string
+          description: Specifies the email of the recipient
+        frameAncestors:
+          type: array
+          description: An array of ancestors that can embed the frame. Include the domain where the envelope will be embedded and the same URL as messageOrigins.
+          items:
+            type: string
+        messageOrigins:
+          type: array
+          description: The originating domain for the signature request message
+          items:
+            type: string
+    AddDocusignEnvelopesRequest:
+      type: object
+      required:
+      - environment
+      properties:
+        emailSubject:
+          type: string
+          description: The subject line of the email message that is sent to all recipients
+        environment:
+          $ref: '#/components/schemas/DocusignEnvironment'
+        signers:
+          type: array
+          description: List of DocuSign Signers
+          items:
+            $ref: '#/components/schemas/DocusignSigner'
+        inpersonSigners:
+          type: array
+          description: List of DocuSign Inperson Signers
+          items:
+            $ref: '#/components/schemas/DocusignInpersonSigner'
+        notification:
+          $ref: '#/components/schemas/DocusignNotification'
+    DocusignNotification:
+      properties:
+        useAccountDefaults:
+          type: string
+          description: When true, the account default notification settings are used for the envelope, overriding the reminders and expirations settings. When false, the reminders and expirations settings specified in this request are used. The default value is false.
+        expirations:
+          $ref: '#/components/schemas/DocusignNotificationExpirations'
+        reminders:
+          $ref: '#/components/schemas/DocusignNotificationReminders'
+    DocusignNotificationExpirations:
+      properties:
+        expireAfter:
+          type: string
+          description: An integer that sets the number of days the envelope is active. For this value to be used, expireEnabled must be explicitly set to true.
+        expireEnabled:
+          type: string
+          description: When true, the envelope expires in the number of days set by expireAfter.
+        expireWarn:
+          type: string
+          description: An integer that specifying the number of days before the envelope expires that an expiration warning email is sent to the recipient.
+    DocusignNotificationReminders:
+      properties:
+        reminderDelay:
+          type: string
+          description: An integer specifying the number of days after the recipient receives the envelope that reminder emails are sent to the recipient.
+        reminderEnabled:
+          type: string
+          description: When true, reminders are enabled. The default value is false.
+        reminderFrequency:
+          type: string
+          description: An integer specifying the interval in days between reminder emails.
+    DocusignSigner:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of Signer
+        email:
+          type: string
+          description: Email of Signer
+        clientUserId:
+          type: string
+          description: Specifies unique identifier for signer
+        recipientId:
+          type: string
+          description: A reference used to map recipients to other objects, such as specific document tabs.
+        routingOrder:
+          type: string
+          description: Specifies the routing order of the recipient in the envelope.
+        suppressEmails:
+          type: string
+          description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
+        tabs:
+          $ref: '#/components/schemas/DocusignSigningTabs'
+    DocusignSigningTabs:
+      type: object
+      properties:
+        signHereTabs:
+          type: array
+          description: A list of Sign Here tabs
+          items:
+            $ref: '#/components/schemas/DocusignSignHereTabs'
+    DocusignSignHereTabs:
+      type: object
+      properties:
+        anchorString:
+          type: string
+          description: Specifies the string to find in the document and use as the basis for tab placement.
+        anchorXOffset:
+          type: string
+          description: Specifies the X axis location of the tab in anchorUnits relative to the anchorString.
+        anchorYOffset:
+          type: string
+          description: Specifies the Y axis location of the tab in anchorUnits relative to the anchorString.
+        anchorIgnoreIfNotPresent:
+          type: string
+          description: When true, this tab is ignored if the anchorString is not found in the document.
+        anchorUnits:
+          type: string
+          description: Specifies units of the anchorXOffset and anchorYOffset
+        xPosition:
+          type: string
+          description: This property indicates the horizontal offset of the object on the page
+        yPosition:
+          type: string
+          description: This property indicates the vertical offset of the object on the page
+        pageNumber:
+          type: string
+          description: Specifies the page number on which the tab is located
+    DocusignInpersonSigner:
+      required:
+      - hostEmail
+      - hostName
+      - signerName
+      type: object
+      properties:
+        hostEmail:
+          type: string
+          description: The email of the signing host
+        hostName:
+          type: string
+          description: The name of the signing host
+        signerName:
+          type: string
+          description: The full legal name of a signer
+        signerEmail:
+          type: string
+          description: The in-person signer's email address
+        recipientId:
+          type: string
+          description: A reference used to map recipients to other objects, such as specific document tabs.
+        routingOrder:
+          type: string
+          description: Specifies the routing order of the recipient in the envelope.
+        suppressEmails:
+          type: string
+          description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
+        tabs:
+          $ref: '#/components/schemas/DocusignSigningTabs'
+    AddDocusignEnvelopesResponse:
+      type: object
+      properties:
+        envelopeId:
+          type: string
+          description: Docusign Envelope Identifier
+    AddDocusignRecipientViewRequest:
+      type: object
+      required:
+      - environment
+      - recipientView
+      properties:
+        environment:
+          $ref: '#/components/schemas/DocusignEnvironment'
+        recipientView:
+          $ref: '#/components/schemas/DocusignRecipientView'
+    AddDocusignRecipientViewResponse:
+      type: object
+      properties:
+        viewUrl:
+          type: string
+          description: The view URL to be navigated to complete DocuSign signing
     GetFoldersResponse:
       type: object
       properties:
