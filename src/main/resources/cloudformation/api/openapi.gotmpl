@@ -108,251 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-  /documents/{documentId}/tags:
-    get:
-      operationId: GetDocumentTags
-      summary: Get document's tags
-      description: Get a listing of a document's tags
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-        - $ref: '#/components/parameters/nextParam'
-        - name: previous
-          in: query
-          description: "Previous page of results token"
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentTagsResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-    post:
-      operationId: AddDocumentTags
-      summary: Add tag to document
-      description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentTagsRequest'
-            examples:
-              Add_Key_Only_Tag:
-                value:
-                  key: category
-              Add_Key_and_Value_Tag:
-                value:
-                  key: category
-                  value: person
-              Add_Key_and_Values_Tag:
-                value:
-                  key: category
-                  values: [person,canadian]
-      responses:
-        '201':
-          description: 201 CREATED
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-    patch:
-      operationId: UpdateDocumentTags
-      summary: Update document tags
-      description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentTagsRequest'
-            examples:
-              Add_Key_Only_Tag:
-                value:
-                  tags:
-                    - key: category
-              Add_Key_and_Value_Tag:
-                value:
-                  tags:
-                    - key: category
-                      value: sample
-              Add_Key_and_Values_Tag:
-                value:
-                  tags:
-                    - key: players
-                      values: ["111", "222"]
-      responses:
-        '200':
-          $ref: '#/components/responses/200CorsUpdateResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-    put:
-      operationId: SetDocumentTags
-      summary: Set document's tags
-      description: Set multiple tags to a document; this endpoint also accepts a different body parameter for setting a single tag
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentTagsRequest'
-            examples:
-              Add_Key_Only_Tag:
-                value:
-                  tags:
-                    - key: category
-              Add_Key_and_Value_Tag:
-                value:
-                  tags:
-                    - key: category
-                      value: sample
-              Add_Key_and_Values_Tag:
-                value:
-                  tags:
-                    - key: players
-                      values: ["111", "222"]
-      responses:
-        '200':
-          $ref: '#/components/responses/200CorsSetResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-  /documents/{documentId}/tags/{tagKey}:
-    get:
-      operationId: GetDocumentTag
-      summary: Get document tag by key
-      description: Get a document tag by using its key
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-        - $ref: '#/components/parameters/tagkeyParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentTagResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-    put:
-      operationId: SetDocumentTag
-      summary: Update document tag value(s)
-      description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-        - $ref: '#/components/parameters/tagkeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentTagKeyRequest'
-      responses:
-        '200':
-          $ref: '#/components/responses/200CorsUpdateResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-    delete:
-      operationId: DeleteDocumentTag
-      summary: Delete document tag
-      description: Delete a document tag by using its key
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-        - $ref: '#/components/parameters/tagkeyParam'
-      responses:
-        '200':
-          $ref: '#/components/responses/200CorsDeleteResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-  /documents/{documentId}/tags/{tagKey}/{tagValue}:
-    delete:
-      operationId: DeleteDocumentTagAndValue
-      summary: Delete document's tag value
-      description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/documentIdParam'
-        - $ref: '#/components/parameters/artifactIdParam'
-        - $ref: '#/components/parameters/tagkeyParam'
-        - $ref: '#/components/parameters/tagvalueParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        '200':
-          $ref: '#/components/responses/200CorsDeleteResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-  /documents/tags:
-    patch:
-      operationId: UpdateMatchingDocumentTags
-      summary: Mass Update document tag(s)
-      description: This API request allows the adding/updating of multiple document tag(s) based on document(s) that have the matching tag.
-      tags:
-        - Document Tags
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMatchingDocumentTagsRequest'
-      responses:
-        '200':
-          description: "200 OK"
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/UpdateMatchingDocumentTagsResponse"
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /documents/{documentId}/url:
     get:
       operationId: GetDocumentUrl
@@ -4794,17 +4549,6 @@ components:
         target:
           type: "string"
           description: "Target path"
-    SetDocumentTagKeyRequest:
-      type: "object"
-      properties:
-        value:
-          type: "string"
-          description: "Tag value"
-        values:
-          type: "array"
-          description: "Tag values"
-          items:
-            type: "string"
     DeleteIndicesResponse:
       type: "object"
       properties:
@@ -5010,20 +4754,6 @@ components:
       properties:
         attribute:
           $ref: "#/components/schemas/DocumentAttribute"
-    GetDocumentTagsResponse:
-      type: "object"
-      properties:
-        next:
-          type: "string"
-          description: "Next page of results token"
-        previous:
-          type: "string"
-          description: "Previous page of results token"
-        tags:
-          type: "array"
-          description: "List of tags"
-          items:
-            $ref: "#/components/schemas/DocumentTag"
     SetDocumentVersionRequest:
       type: "object"
       properties:
@@ -5551,42 +5281,7 @@ components:
         message:
           type: "string"
           description: "API Response message"
-    MatchDocumentTag:
-      type: "object"
-      description: "Match Document Tag"
-      required:
-        - "key"
-      properties:
-        key:
-          type: "string"
-          description: "Tag key"
-        beginsWith:
-          type: "string"
-          description: "Searches for strings that begin with"
-        eq:
-          type: "string"
-          description: "Searches for strings that eq"
-    UpdateMatchingDocumentTagsRequest:
-      type: "object"
-      description: "Add/Update of multiple document tag(s) based on document(s) that have the matching tag."
-      required:
-        - "match"
-        - "update"
-      properties:
-        match:
-          type: "object"
-          properties:
-            tag:
-              $ref: "#/components/schemas/MatchDocumentTag"
-        update:
-          type: "object"
-          description: "Data to update"
-          properties:
-            tags:
-              type: "array"
-              description: "List of document tags"
-              items:
-                $ref: "#/components/schemas/AddDocumentTag"
+
     SetDocumentAttributeRequest:
       type: "object"
       description: "Set List of document attributes"
@@ -5602,15 +5297,6 @@ components:
           description: "List of document attributes"
           items:
             $ref: "#/components/schemas/AddDocumentAttribute"
-    AddDocumentTagsRequest:
-      type: "object"
-      description: "Add List of document tags"
-      properties:
-        tags:
-          type: "array"
-          description: "List of document tags"
-          items:
-            $ref: "#/components/schemas/AddDocumentTag"
     AddDocumentMetadata:
       required:
         - "key"
@@ -5653,24 +5339,6 @@ components:
           type: "boolean"
           description: "Attribute with boolean value"
 
-    AddDocumentTag:
-      required:
-        - "key"
-      type: "object"
-      description: "List of Document Tags (use either 'value' or 'values' not both)"
-      properties:
-        key:
-          type: "string"
-          description: "Tag key"
-        value:
-          type: "string"
-          description: "Tag value"
-        values:
-          type: "array"
-          description: "Tag values"
-          items:
-            type: "string"
-            description: "Tag value"
     AddChildDocument:
       required:
         - "content"
@@ -5739,63 +5407,9 @@ components:
         s3version:
           type: "string"
           description: "Document storage version"
-    DocumentTag:
-      type: "object"
-      properties:
-        insertedDate:
-          type: "string"
-          description: "Inserted Timestamp"
-        documentId:
-          type: "string"
-          description: "Document Identifier"
-        type:
-          type: "string"
-          description: "Tag type"
-        userId:
-          type: "string"
-          description: "User who added document"
-        value:
-          type: "string"
-          description: "Tag value"
-        values:
-          type: "array"
-          description: "Tag values"
-          items:
-            type: "string"
-            description: "Tag value"
-        key:
-          type: "string"
-          description: "Tag key"
     AddWebhookTagRequest:
       type: "object"
       properties:
-        value:
-          type: "string"
-          description: "Tag value"
-        values:
-          type: "array"
-          description: "Tag values"
-          items:
-            type: "string"
-            description: "Tag value"
-        key:
-          type: "string"
-          description: "Tag key"
-    GetDocumentTagResponse:
-      type: "object"
-      properties:
-        insertedDate:
-          type: "string"
-          description: "Inserted Timestamp"
-        documentId:
-          type: "string"
-          description: "Document Identifier"
-        type:
-          type: "string"
-          description: "Tag type"
-        userId:
-          type: "string"
-          description: "User who added document"
         value:
           type: "string"
           description: "Tag value"
