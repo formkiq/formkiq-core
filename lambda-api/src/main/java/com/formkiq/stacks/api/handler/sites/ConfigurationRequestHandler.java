@@ -242,6 +242,16 @@ public class ConfigurationRequestHandler
           vb.addError("document.contentTypes", "Only set either 'allowlist' or 'denylist'");
         }
       }
+
+      var retentionAndDisposition = document.retentionAndDisposition();
+
+      if (retentionAndDisposition != null) {
+        var softDeleteRetentionInDays = Objects.notNull(retentionAndDisposition.softDeleteRetentionInDays());
+        if (softDeleteRetentionInDays < -1) {
+          vb.addError("document.retentionAndDisposition.softDeleteRetentionInDays",
+              "'softDeleteRetentionInDays' must be -1 or greater");
+        }
+      }
     }
   }
 

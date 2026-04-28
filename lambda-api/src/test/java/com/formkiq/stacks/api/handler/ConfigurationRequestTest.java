@@ -748,4 +748,33 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         retentionAndDisposition.getDispositionAction());
     assertEquals(30, retentionAndDisposition.getSoftDeleteRetentionInDays());
   }
+
+  /**
+   * PATCH Document Config Retention And Disposition invalid soft delete retention.
+   *
+   */
+  @Test
+  public void testPatchDocumentConfigInvalidSoftDeleteRetentionInDays() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().document(new DocumentConfig().retentionAndDisposition(
+            new DocumentConfigRetentionAndDisposition().softDeleteRetentionInDays(-2)));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"document.retentionAndDisposition."
+              + "softDeleteRetentionInDays\","
+              + "\"error\":\"'softDeleteRetentionInDays' must be -1 or greater\"}]}",
+          e.getResponseBody());
+    }
+  }
 }

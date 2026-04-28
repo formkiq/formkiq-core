@@ -256,4 +256,13 @@ public class Objects {
       throw ex;
     }
   }
+
+  /**
+   * If {@link Long} is null return -1.
+   * @param aLong {@link Long}
+   * @return {@link Long}
+   */
+  public static Long notNull(Long aLong) {
+    return aLong != null ? aLong : -1;
+  }
 }
