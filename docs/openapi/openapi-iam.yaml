@@ -121,124 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/ocr:
-    get:
-      operationId: GetDocumentOcr
-      summary: Get document ocr content
-      description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
-      tags:
-      - Document OCR
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/ocrOutputTypeParam'
-      - $ref: '#/components/parameters/contentUrlParam'
-      - $ref: '#/components/parameters/textParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentOcrResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
-    post:
-      operationId: AddDocumentOcr
-      summary: Perform document ocr
-      description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
-      tags:
-      - Document OCR
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentOcrRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocumentOcrResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
-    put:
-      operationId: SetDocumentOcr
-      summary: Set document ocr result
-      description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
-      tags:
-      - Document OCR
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentOcrRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocumentOcrResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
-    delete:
-      operationId: DeleteDocumentOcr
-      summary: Delete document ocr
-      description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
-      tags:
-      - Document OCR
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
   /documents/{documentId}/versions:
     get:
       operationId: GetDocumentVersions
@@ -5167,6 +5049,124 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/ocr:
+    get:
+      operationId: GetDocumentOcr
+      summary: Get document ocr content
+      description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      tags:
+      - Document OCR
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/ocrOutputTypeParam'
+      - $ref: '#/components/parameters/contentUrlParam'
+      - $ref: '#/components/parameters/textParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentOcrResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+    post:
+      operationId: AddDocumentOcr
+      summary: Perform document ocr
+      description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      tags:
+      - Document OCR
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentOcrRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentOcrResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+    put:
+      operationId: SetDocumentOcr
+      summary: Set document ocr result
+      description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      tags:
+      - Document OCR
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentOcrRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentOcrResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
+    delete:
+      operationId: DeleteDocumentOcr
+      summary: Delete document ocr
+      description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      tags:
+      - Document OCR
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/ocrLambdaApi200'
   /documents/{documentId}/purge:
     delete:
       operationId: PurgeDocument
@@ -10689,53 +10689,6 @@ components:
           type: array
           items:
             type: string
-    GetDocumentOcrResponse:
-      type: object
-      properties:
-        contentUrls:
-          type: array
-          description: Presigned S3 Urls for the OCR content
-          items:
-            type: string
-        keyValues:
-          type: array
-          description: List of ocr key / values
-          items:
-            $ref: '#/components/schemas/OcrKeyValues'
-        tables:
-          type: array
-          items:
-            $ref: '#/components/schemas/OcrTable'
-        data:
-          type: string
-          description: OCR text result
-        ocrEngine:
-          type: string
-          description: The OCR technique used
-        ocrStatus:
-          type: string
-          description: The status of the OCR request
-        contentType:
-          type: string
-          description: Document Content-Type
-        isBase64:
-          type: boolean
-          description: Is the content Base64-encoded?
-        userId:
-          type: string
-          description: User who requested the OCR
-        documentId:
-          type: string
-          description: Document Identifier
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-    AddDocumentOcrResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: OCR processing message
     AddDocumentFulltextResponse:
       type: object
       properties:
@@ -10932,74 +10885,6 @@ components:
       - MALICIOUS
       - ERROR
       - CLEAN
-    OcrEngine:
-      type: string
-      description: Type of OCR Engine to use
-      enum:
-      - TESSERACT
-      - TEXTRACT
-    OcrOutputType:
-      type: string
-      description: OCR Engine output format (textract table only)
-      enum:
-      - CSV
-    TextractQuery:
-      type: object
-      description: A question to ask Textract
-      properties:
-        text:
-          type: string
-          description: Natural-language question
-        alias:
-          type: string
-          description: Label to identify this query in the result
-        pages:
-          type: array
-          items:
-            type: string
-          description: Page selection
-    AddDocumentOcrRequest:
-      type: object
-      example:
-        parseTypes:
-        - TEXT
-        - FORMS
-        - TABLES
-        - QUERIES
-      properties:
-        textractQueries:
-          type: array
-          items:
-            $ref: '#/components/schemas/TextractQuery'
-        parseTypes:
-          type: array
-          description: OCR Parse types - TEXT, FORMS, TABLES, QUERIES
-          items:
-            type: string
-        addPdfDetectedCharactersAsText:
-          type: boolean
-          description: Rewrite PDF document, converting any Image text to searchable text
-        ocrEngine:
-          $ref: '#/components/schemas/OcrEngine'
-        ocrNumberOfPages:
-          type: string
-          description: Number of pages to OCR (from start) (-1 all)
-        ocrOutputType:
-          $ref: '#/components/schemas/OcrOutputType'
-    SetDocumentOcrRequest:
-      required:
-      - content
-      type: object
-      properties:
-        contentType:
-          type: string
-          description: Document Content-Type
-        isBase64:
-          type: boolean
-          description: Is the content Base64-encoded?
-        content:
-          type: string
-          description: Document content
     UpdateConfigurationRequest:
       type: object
       properties:
@@ -13361,6 +13246,121 @@ components:
         isBase64:
           type: boolean
           description: Is the content Base64-encoded?
+    GetDocumentOcrResponse:
+      type: object
+      properties:
+        contentUrls:
+          type: array
+          description: Presigned S3 Urls for the OCR content
+          items:
+            type: string
+        keyValues:
+          type: array
+          description: List of ocr key / values
+          items:
+            $ref: '#/components/schemas/OcrKeyValues'
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/OcrTable'
+        data:
+          type: string
+          description: OCR text result
+        ocrEngine:
+          type: string
+          description: The OCR technique used
+        ocrStatus:
+          type: string
+          description: The status of the OCR request
+        contentType:
+          type: string
+          description: Document Content-Type
+        isBase64:
+          type: boolean
+          description: Is the content Base64-encoded?
+        userId:
+          type: string
+          description: User who requested the OCR
+        documentId:
+          type: string
+          description: Document Identifier
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+    AddDocumentOcrResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: OCR processing message
+    AddDocumentOcrRequest:
+      type: object
+      example:
+        parseTypes:
+        - TEXT
+        - FORMS
+        - TABLES
+        - QUERIES
+      properties:
+        textractQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextractQuery'
+        parseTypes:
+          type: array
+          description: OCR Parse types - TEXT, FORMS, TABLES, QUERIES
+          items:
+            type: string
+        addPdfDetectedCharactersAsText:
+          type: boolean
+          description: Rewrite PDF document, converting any Image text to searchable text
+        ocrEngine:
+          $ref: '#/components/schemas/OcrEngine'
+        ocrNumberOfPages:
+          type: string
+          description: Number of pages to OCR (from start) (-1 all)
+        ocrOutputType:
+          $ref: '#/components/schemas/OcrOutputType'
+    TextractQuery:
+      type: object
+      description: A question to ask Textract
+      properties:
+        text:
+          type: string
+          description: Natural-language question
+        alias:
+          type: string
+          description: Label to identify this query in the result
+        pages:
+          type: array
+          items:
+            type: string
+          description: Page selection
+    OcrEngine:
+      type: string
+      description: Type of OCR Engine to use
+      enum:
+      - TESSERACT
+      - TEXTRACT
+    OcrOutputType:
+      type: string
+      description: OCR Engine output format (textract table only)
+      enum:
+      - CSV
+    SetDocumentOcrRequest:
+      required:
+      - content
+      type: object
+      properties:
+        contentType:
+          type: string
+          description: Document Content-Type
+        isBase64:
+          type: boolean
+          description: Is the content Base64-encoded?
+        content:
+          type: string
+          description: Document content
     SetDocumentRestoreResponse:
       type: object
       properties:
