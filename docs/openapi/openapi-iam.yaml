@@ -121,179 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/attributes:
-    get:
-      operationId: GetDocumentAttributes
-      summary: Get document's attributes
-      description: Get a listing of a document's attributes
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/limitParam'
-      - $ref: '#/components/parameters/nextParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentAttributesResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    post:
-      operationId: AddDocumentAttributes
-      summary: Add attribute to document
-      description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentAttributesRequest'
-      responses:
-        "201":
-          $ref: '#/components/responses/201CorsAddResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
-    put:
-      operationId: SetDocumentAttributes
-      summary: Set document's attributes
-      description: |-
-        Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
-
-        Note:
-        - attributes in the request will overwrite existing attributes.
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentAttributesRequest'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsSetResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /documents/{documentId}/attributes/{attributeKey}:
-    get:
-      operationId: GetDocumentAttribute
-      summary: Get document attribute by key
-      description: Get a document attribute by using its key
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/attributeKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentAttributeResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    put:
-      operationId: SetDocumentAttributeValue
-      summary: Set document's attributes value
-      description: Set attributes value to a document
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/attributeKeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentAttributeRequest'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsSetResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    delete:
-      operationId: DeleteDocumentAttribute
-      summary: Delete document attribute
-      description: Delete a document attribute by using its key
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/attributeKeyParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /documents/{documentId}/attributes/{attributeKey}/{attributeValue}:
-    delete:
-      operationId: DeleteDocumentAttributeAndValue
-      summary: Delete document's attribute value
-      description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
-      tags:
-      - Document Attributes
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/attributeKeyParam'
-      - $ref: '#/components/parameters/attributeValueParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/tags:
     get:
       operationId: GetDocumentTags
@@ -5794,6 +5621,179 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/attributes:
+    get:
+      operationId: GetDocumentAttributes
+      summary: Get document's attributes
+      description: Get a listing of a document's attributes
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentAttributesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentAttributes
+      summary: Add attribute to document
+      description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentAttributesRequest'
+      responses:
+        "201":
+          $ref: '#/components/responses/201CorsAddResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+    put:
+      operationId: SetDocumentAttributes
+      summary: Set document's attributes
+      description: |-
+        Set multiple attributes to a document; this endpoint also accepts a different body parameter for setting a single attribute
+
+        Note:
+        - attributes in the request will overwrite existing attributes.
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentAttributesRequest'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsSetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/attributes/{attributeKey}:
+    get:
+      operationId: GetDocumentAttribute
+      summary: Get document attribute by key
+      description: Get a document attribute by using its key
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/attributeKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentAttributeResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    put:
+      operationId: SetDocumentAttributeValue
+      summary: Set document's attributes value
+      description: Set attributes value to a document
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/attributeKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentAttributeRequest'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsSetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    delete:
+      operationId: DeleteDocumentAttribute
+      summary: Delete document attribute
+      description: Delete a document attribute by using its key
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/attributeKeyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/attributes/{attributeKey}/{attributeValue}:
+    delete:
+      operationId: DeleteDocumentAttributeAndValue
+      summary: Delete document's attribute value
+      description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
+      tags:
+      - Document Attributes
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/attributeKeyParam'
+      - $ref: '#/components/parameters/attributeValueParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/certifications:
     post:
       operationId: AddDocumentCertification
@@ -8465,17 +8465,6 @@ components:
       properties:
         attribute:
           $ref: '#/components/schemas/DocumentAttribute'
-    GetDocumentAttributesResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        attributes:
-          type: array
-          description: List of attributes
-          items:
-            $ref: '#/components/schemas/DocumentAttribute'
     GetDocumentTagsResponse:
       type: object
       properties:
@@ -9068,15 +9057,6 @@ components:
           description: List of document attributes
           items:
             $ref: '#/components/schemas/AddDocumentAttribute'
-    AddDocumentAttributesRequest:
-      type: object
-      description: Add List of document attributes
-      properties:
-        attributes:
-          type: array
-          description: List of document attributes
-          items:
-            $ref: '#/components/schemas/AddDocumentAttribute'
     AddDocumentTagsRequest:
       type: object
       description: Add List of document tags
@@ -9127,92 +9107,6 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
-    AddDocumentAttribute:
-      oneOf:
-      - $ref: '#/components/schemas/AddDocumentAttributeStandard'
-      - $ref: '#/components/schemas/AddDocumentAttributeClassification'
-      - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
-      - $ref: '#/components/schemas/AddDocumentAttributeEntity'
-    DocumentRelationshipType:
-      type: string
-      description: Document Relationship Type
-      enum:
-      - PRIMARY
-      - ATTACHMENT
-      - APPENDIX
-      - SUPPLEMENT
-      - ASSOCIATED
-      - RENDITION
-    AddDocumentAttributeRelationship:
-      required:
-      - documentId
-      - relationship
-      type: object
-      description: Document Relationship
-      properties:
-        documentId:
-          type: string
-          description: Relationship To Document Identifier
-        relationship:
-          $ref: '#/components/schemas/DocumentRelationshipType'
-        inverseRelationship:
-          $ref: '#/components/schemas/DocumentRelationshipType'
-    AddDocumentAttributeClassification:
-      required:
-      - classificationId
-      type: object
-      description: Document Classification
-      properties:
-        classificationId:
-          type: string
-          description: Classification Identifier
-    AddDocumentAttributeStandard:
-      required:
-      - key
-      type: object
-      description: Document Attribute
-      properties:
-        key:
-          type: string
-          description: Attribute key
-        stringValue:
-          type: string
-          description: Attribute with string value
-        stringValues:
-          type: array
-          description: Attribute with string values
-          items:
-            type: string
-        numberValue:
-          type: number
-          description: Attribute with number value
-        numberValues:
-          type: array
-          description: Attribute with number values
-          items:
-            type: number
-        booleanValue:
-          type: boolean
-          description: Attribute with boolean value
-    AddDocumentAttributeEntity:
-      required:
-      - key
-      - entityTypeId
-      - entityId
-      type: object
-      description: Document Entity Attribute
-      properties:
-        key:
-          type: string
-          description: Attribute key
-        entityTypeId:
-          type: string
-          description: EntityType Identifier or Entity Type Name
-        entityId:
-          type: string
-          description: Entity Identifier
-        namespace:
-          $ref: '#/components/schemas/EntityTypeNamespace'
     AddDocumentTag:
       required:
       - key
@@ -9299,41 +9193,6 @@ components:
         s3version:
           type: string
           description: Document storage version
-    DocumentAttribute:
-      type: object
-      properties:
-        key:
-          type: string
-          description: Attribute key
-        stringValue:
-          type: string
-          description: Attribute with string value
-        stringValues:
-          type: array
-          description: Attribute with string values
-          items:
-            type: string
-        numberValue:
-          type: number
-          description: Attribute with number value
-        numberValues:
-          type: array
-          description: Attribute with number values
-          items:
-            type: number
-        booleanValue:
-          type: boolean
-          description: Attribute with boolean value
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-        userId:
-          type: string
-          description: User who added attribute
-        valueType:
-          $ref: '#/components/schemas/AttributeValueType'
-        entity:
-          $ref: '#/components/schemas/Entity'
     DocumentTag:
       type: object
       properties:
@@ -9489,20 +9348,6 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/FulltextAttribute'
-    AttributeValueType:
-      type: string
-      description: Attribute Value Type
-      enum:
-      - BOOLEAN
-      - KEY_ONLY
-      - NUMBER
-      - STRING
-      - PUBLICATION
-      - CLASSIFICATION
-      - COMPOSITE_STRING
-      - RELATIONSHIPS
-      - WATERMARK
-      - ENTITY
     FulltextAttribute:
       type: object
       properties:
@@ -13774,6 +13619,161 @@ components:
         outputType:
           type: string
           description: The output type of the image
+    GetDocumentAttributesResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        attributes:
+          type: array
+          description: List of attributes
+          items:
+            $ref: '#/components/schemas/DocumentAttribute'
+    DocumentAttribute:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Attribute key
+        stringValue:
+          type: string
+          description: Attribute with string value
+        stringValues:
+          type: array
+          description: Attribute with string values
+          items:
+            type: string
+        numberValue:
+          type: number
+          description: Attribute with number value
+        numberValues:
+          type: array
+          description: Attribute with number values
+          items:
+            type: number
+        booleanValue:
+          type: boolean
+          description: Attribute with boolean value
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        userId:
+          type: string
+          description: User who added attribute
+        valueType:
+          $ref: '#/components/schemas/AttributeValueType'
+        entity:
+          $ref: '#/components/schemas/Entity'
+    AttributeValueType:
+      type: string
+      description: Attribute Value Type
+      enum:
+      - BOOLEAN
+      - KEY_ONLY
+      - NUMBER
+      - STRING
+      - PUBLICATION
+      - CLASSIFICATION
+      - COMPOSITE_STRING
+      - RELATIONSHIPS
+      - WATERMARK
+      - ENTITY
+    AddDocumentAttributesRequest:
+      type: object
+      description: Add List of document attributes
+      properties:
+        attributes:
+          type: array
+          description: List of document attributes
+          items:
+            $ref: '#/components/schemas/AddDocumentAttribute'
+    AddDocumentAttribute:
+      oneOf:
+      - $ref: '#/components/schemas/AddDocumentAttributeStandard'
+      - $ref: '#/components/schemas/AddDocumentAttributeClassification'
+      - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
+      - $ref: '#/components/schemas/AddDocumentAttributeEntity'
+    AddDocumentAttributeStandard:
+      required:
+      - key
+      type: object
+      description: Document Attribute
+      properties:
+        key:
+          type: string
+          description: Attribute key
+        stringValue:
+          type: string
+          description: Attribute with string value
+        stringValues:
+          type: array
+          description: Attribute with string values
+          items:
+            type: string
+        numberValue:
+          type: number
+          description: Attribute with number value
+        numberValues:
+          type: array
+          description: Attribute with number values
+          items:
+            type: number
+        booleanValue:
+          type: boolean
+          description: Attribute with boolean value
+    AddDocumentAttributeClassification:
+      required:
+      - classificationId
+      type: object
+      description: Document Classification
+      properties:
+        classificationId:
+          type: string
+          description: Classification Identifier
+    AddDocumentAttributeRelationship:
+      required:
+      - documentId
+      - relationship
+      type: object
+      description: Document Relationship
+      properties:
+        documentId:
+          type: string
+          description: Relationship To Document Identifier
+        relationship:
+          $ref: '#/components/schemas/DocumentRelationshipType'
+        inverseRelationship:
+          $ref: '#/components/schemas/DocumentRelationshipType'
+    AddDocumentAttributeEntity:
+      required:
+      - key
+      - entityTypeId
+      - entityId
+      type: object
+      description: Document Entity Attribute
+      properties:
+        key:
+          type: string
+          description: Attribute key
+        entityTypeId:
+          type: string
+          description: EntityType Identifier or Entity Type Name
+        entityId:
+          type: string
+          description: Entity Identifier
+        namespace:
+          $ref: '#/components/schemas/EntityTypeNamespace'
+    DocumentRelationshipType:
+      type: string
+      description: Document Relationship Type
+      enum:
+      - PRIMARY
+      - ATTACHMENT
+      - APPENDIX
+      - SUPPLEMENT
+      - ASSOCIATED
+      - RENDITION
     AddDocumentCertificationRequest:
       type: object
       required:
