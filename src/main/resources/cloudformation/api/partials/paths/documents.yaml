@@ -175,6 +175,44 @@ paths:
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
 
+  #@overlay/match missing_ok=True
+  /public/documents:
+    post:
+      operationId: PublicAddDocument
+      summary: Public add document
+      description: |-
+        Allow unauthenticated creation of new documents; must be enabled during installation (disabled by default)
+        
+        See POST /documents/{documentId}/tags for adding tags to document schema
+        
+        See POST /documents/{documentId}/actions for adding actions to document schema
+      tags:
+        - Public
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentResponse'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
 components:
   schemas:
     #@overlay/match missing_ok=True
@@ -317,3 +355,111 @@ components:
           items:
             type: "string"
             description: "Metadata value"
+
+    #@overlay/match missing_ok=True
+    AddDocumentRequest:
+      required:
+        - "content"
+      type: "object"
+      properties:
+        documentId:
+          type: "string"
+          description: "optional Document Identifier (Version 4 UUID), if skipped one will be assigned"
+        artifacts:
+          type: "boolean"
+          description: "Whether the document supports artifact documents"
+        path:
+          type: "string"
+          description: "Path or Name of document"
+        checksumType:
+          $ref: "#/components/schemas/ChecksumType"
+        checksum:
+          type: "string"
+          description: "The checksum value to validate the file against"
+        width:
+          type: "string"
+          description: "Document Content Width property"
+        height:
+          type: "string"
+          description: "Document Content Height property"
+        deepLinkPath:
+          type: "string"
+          description: "Path or Name of deep link"
+        contentType:
+          type: "string"
+          description: "Document media type"
+        isBase64:
+          type: "boolean"
+          description: "Is the content Base64-encoded?"
+        content:
+          type: "string"
+          description: "Document content"
+        tags:
+          type: "array"
+          description: "List of document tags"
+          items:
+            $ref: "#/components/schemas/AddDocumentTag"
+        metadata:
+          type: "array"
+          description: "List of document Metadata"
+          items:
+            $ref: "#/components/schemas/AddDocumentMetadata"
+        actions:
+          type: array
+          description: "List of Actions"
+          items:
+            $ref: "#/components/schemas/AddAction"
+        attributes:
+          type: array
+          description: "List of Attributes to add to document"
+          items:
+            $ref: "#/components/schemas/AddDocumentAttribute"
+        documents:
+          type: "array"
+          description: "List of child documents"
+          items:
+            $ref: "#/components/schemas/AddChildDocument"
+
+    #@overlay/match missing_ok=True
+    AddChildDocument:
+      required:
+        - "content"
+      type: "object"
+      description: "List of related documents"
+      properties:
+        path:
+          type: "string"
+          description: "Path or Name of document"
+        width:
+          type: "string"
+          description: "Document Content Width property"
+        height:
+          type: "string"
+          description: "Document Content Height property"
+        deepLinkPath:
+          type: "string"
+          description: "Path or Name of deep link"
+        contentType:
+          type: "string"
+          description: "Document Content-Type"
+        checksumType:
+          $ref: "#/components/schemas/ChecksumType"
+        checksum:
+          type: "string"
+          description: "The checksum value to validate the file against"
+        isBase64:
+          type: "boolean"
+          description: "Is the content Base64-encoded?"
+        content:
+          type: "string"
+          description: "Document content"
+        tags:
+          type: "array"
+          description: "List of document tags"
+          items:
+            $ref: "#/components/schemas/AddDocumentTag"
+        metadata:
+          type: "array"
+          description: "List of document Metadata"
+          items:
+            $ref: "#/components/schemas/AddDocumentMetadata"

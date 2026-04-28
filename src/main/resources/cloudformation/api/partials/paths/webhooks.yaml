@@ -1,0 +1,350 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /public/webhooks/{webhooks+}:
+    post:
+      operationId: PublicAddWebhook
+      summary: Public add webhook
+      description: Receive an incoming public post to a specified webhook and creates a document based on the data sent; must be enabled during installation (disabled by default)
+      tags:
+        - Public
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/webhooksParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentId'
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /private/webhooks/{webhooks+}:
+    post:
+      operationId: AddWebhookDocument
+      summary: Add webhook
+      description: Receive an incoming private webhook and creates a document based on the webhook's body; requires authentication
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/webhooksParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentId'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /webhooks:
+    get:
+      operationId: GetWebhooks
+      summary: Get webhooks
+      tags:
+        - Webhooks
+      description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetWebhooksResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddWebhook
+      summary: Add webhook
+      description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWebhookRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddWebhookResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /webhooks/{webhookId}:
+    get:
+      operationId: GetWebhook
+      summary: Get webhook
+      tags:
+        - Webhooks
+      description: Return a webhook's details, i.e., its metadata
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/webhookIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetWebhookResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteWebhook
+      summary: Delete webhook
+      description: Delete a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/webhookIdParam'
+        - $ref: '#/components/parameters/siteIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      operationId: UpdateWebhook
+      summary: Update webhook
+      description: Updates a webhook's details, i.e., its metadata
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/webhookIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWebhookRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsUpdateResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /webhooks/{webhookId}/tags:
+    get:
+      operationId: GetWebhookTags
+      summary: Get webhook tags
+      description: Get a webhook's tags
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/webhookIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetWebhookTagsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddWebhookTag
+      summary: Add webhook tag
+      description: Add a tag to a webhook
+      tags:
+        - Webhooks
+      parameters:
+        - $ref: '#/components/parameters/webhookIdParam'
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWebhookTagRequest'
+            examples:
+              Add_Key_Only_Tag:
+                value:
+                  key: category
+              Add_Key_and_Value_Tag:
+                value:
+                  key: category
+                  value: person
+      responses:
+        '201':
+          $ref: '#/components/responses/200Cors'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetWebhooksResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        webhooks:
+          type: "array"
+          description: "List of webhooks"
+          items:
+            $ref: "#/components/schemas/GetWebhookResponse"
+
+    #@overlay/match missing_ok=True
+    GetWebhookResponse:
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+          description: "Site Identifier"
+        name:
+          type: "string"
+          description: "Webhook name"
+        url:
+          type: "string"
+          description: "Webhook url"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        webhookId:
+          type: "string"
+          description: "Webhook Identifier"
+        userId:
+          type: "string"
+          description: "User who added document"
+        enabled:
+          type: "string"
+          description: "Is webhook enabled"
+        ttl:
+          type: "string"
+          description: "Webhook time to live (expiry in seconds)"
+
+    #@overlay/match missing_ok=True
+    GetWebhookTagsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        previous:
+          type: "string"
+          description: "Previous page of results token"
+        tags:
+          type: "array"
+          description: "List of webhook tags"
+          items:
+            $ref: "#/components/schemas/WebhookTag"
+
+    #@overlay/match missing_ok=True
+    WebhookTag:
+      required:
+        - "key"
+        - "value"
+      type: "object"
+      properties:
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        webhookId:
+          type: "string"
+          description: "Webhook Identifier"
+        type:
+          type: "string"
+          description: "Tag type"
+        userId:
+          type: "string"
+          description: "User who added document"
+        value:
+          type: "string"
+          description: "Tag value"
+        key:
+          type: "string"
+          description: "Tag key"
