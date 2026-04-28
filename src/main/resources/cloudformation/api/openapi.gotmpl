@@ -108,128 +108,6 @@ servers:
   - url: http://localhost
     description: Local development server
 paths:
-  /folders:
-    get:
-      operationId: GetFolderDocuments
-      summary: Get document folders
-      description: Get list of documents in a folder
-      tags:
-        - Document Folders
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/indexKeyQueryParam'
-        - $ref: '#/components/parameters/pathQueryParam'
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-        - $ref: '#/components/parameters/nextParam'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetFoldersResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
-    post:
-      operationId: AddFolder
-      summary: Add document folder
-      description: Creates a new folder
-      tags:
-        - Document Folders
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddFolderRequest'
-      responses:
-        '201':
-          description: 201 CREATED
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddFolderResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
-  /folders/{indexKey}:
-    delete:
-      operationId: DeleteFolder
-      summary: Delete document folder
-      description: Delete a specific folder; folder must be empty
-      tags:
-        - Document Folders
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/indexKeyParam'
-        - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteFolderResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
-  /folders/{indexKey}/permissions:
-    get:
-      operationId: GetFolderPermissions
-      summary: Get folder permissions
-      description: Get list of permissions for a folder
-      tags:
-        - Document Folders
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-        - $ref: '#/components/parameters/indexKeyParam'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetFolderPermissionsResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/searchLambdaApi200"
-  /folders/permissions:
-    put:
-      operationId: SetFolderPermissions
-      summary: Sets Folder Permissions
-      description: |-
-        Sets a folders permissions
-
-        NOTE: Can only be called be ADMIN or GOVERN.
-
-      tags:
-        - Document Folders
-      parameters:
-        - $ref: '#/components/parameters/siteIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetFolderPermissionsRequest'
-      responses:
-        '200':
-          description: 200 OK
-{{ tmpl.Exec "cors.responseHeaders" . | indent 10 }}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetResponse'
-{{ tmpl.Exec "security.apiAuthorization" . | indent 6 }}
-{{ tmpl.Exec "apigw.lambdaIntegration200" . | indent 6 }}
   /shares:
     get:
       operationId: GetUserShares
@@ -3824,70 +3702,7 @@ components:
         value:
           type: "string"
           description: "value of index"
-    GetFolderPermissionsResponse:
-      type: "object"
-      properties:
-        roles:
-          type: "array"
-          items:
-            $ref: "#/components/schemas/FolderPermission"
 
-    FolderPermissionType:
-      type: string
-      description: Folder Permission Type
-      enum:
-        - READ
-        - WRITE
-        - DELETE
-
-    FolderPermission:
-      type: "object"
-      properties:
-        roleName:
-          type: "string"
-          description: "Name of Role"
-        permissions:
-          type: "array"
-          items:
-            $ref: "#/components/schemas/FolderPermissionType"
-
-    SetFolderPermissionsRequest:
-      type: "object"
-      properties:
-        path:
-          type: "string"
-          description: "Path of Folder"
-        roles:
-          type: "array"
-          items:
-            $ref: "#/components/schemas/AddFolderPermission"
-    AddFolderPermission:
-      type: "object"
-      properties:
-        roleName:
-          type: "string"
-          description: "Name of Role"
-        permissions:
-          type: "array"
-          description: "List of permissions"
-          items:
-            $ref: "#/components/schemas/FolderPermissionType"
-
-    AddFolderRequest:
-      type: "object"
-      properties:
-        path:
-          type: "string"
-          description: "Path of Folder to create"
-    AddFolderResponse:
-      type: "object"
-      properties:
-        message:
-          type: "string"
-          description: "Response Message"
-        indexKey:
-          type: "string"
-          description: "Folder Index Key"
     GetQueuesResponse:
       type: "object"
       properties:
@@ -4368,12 +4183,6 @@ components:
         shareKey:
           type: "string"
           description: "Share Identifier"
-    DeleteFolderResponse:
-      type: "object"
-      properties:
-        message:
-          type: "string"
-          description: "API Response message"
     DeleteShareResponse:
       type: "object"
       properties:
@@ -4876,20 +4685,6 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/UserActivityChanges'
 
-    GetFoldersResponse:
-      type: "object"
-      properties:
-        next:
-          type: "string"
-          description: "Next page of results token"
-        previous:
-          type: "string"
-          description: "Previous page of results token"
-        documents:
-          type: "array"
-          description: "List of search result documents"
-          items:
-            $ref: "#/components/schemas/SearchResultDocument"
     GetWorkflowQueueDocumentsResponse:
       type: "object"
       properties:
