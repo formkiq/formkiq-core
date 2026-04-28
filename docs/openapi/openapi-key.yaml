@@ -121,263 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/fulltext:
-    get:
-      operationId: GetDocumentFulltext
-      summary: Get document's full-text
-      description: Retrieve an OpenSearch document's details, i.e., metadata
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentFulltextResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-    delete:
-      operationId: DeleteDocumentFulltext
-      summary: Delete document full-text
-      description: Remove full text search for a document from OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteFulltextResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-    put:
-      operationId: SetDocumentFulltext
-      summary: Set document's full-text
-      description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentFulltextRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetDocumentFulltextResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-    post:
-      operationId: AddDocumentFulltext
-      summary: Add document's full-text
-      description: Add a document to OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentFulltextRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddDocumentFulltextResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-    patch:
-      operationId: UpdateDocumentFulltext
-      summary: Update document's full-text
-      description: Update a document in OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateDocumentFulltextRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpdateDocumentFulltextResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-  /documents/{documentId}/fulltext/tags/{tagKey}:
-    delete:
-      operationId: DeleteDocumentFulltextTag
-      summary: Delete document full-text tag
-      description: Remove document tags from OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/tagkeyParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200Cors'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-  /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
-    delete:
-      operationId: DeleteDocumentFulltextTagAndValue
-      summary: Delete document full-text tag/value
-      description: Remove document tag/value from OpenSearch; available as an Add-On Module
-      tags:
-      - Advanced Document Search
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/tagkeyParam'
-      - $ref: '#/components/parameters/tagvalueParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200Cors'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
-  /documents/{documentId}/syncs:
-    get:
-      operationId: GetDocumentSyncs
-      summary: Get document syncs
-      description: Retrieve the document syncs with external services status
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/limitParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentSyncResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    post:
-      operationId: AddDocumentSync
-      summary: Add document sync to service
-      description: Add a document to a service
-      tags:
-      - Documents
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentSyncRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/dataClassification:
     get:
       operationId: GetDocumentDataClassification
@@ -4218,6 +3961,200 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/fulltext:
+    get:
+      operationId: GetDocumentFulltext
+      summary: Get document's full-text
+      description: Retrieve an OpenSearch document's details, i.e., metadata
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentFulltextResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+    delete:
+      operationId: DeleteDocumentFulltext
+      summary: Delete document full-text
+      description: Remove full text search for a document from OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFulltextResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+    put:
+      operationId: SetDocumentFulltext
+      summary: Set document's full-text
+      description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentFulltextRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetDocumentFulltextResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+    post:
+      operationId: AddDocumentFulltext
+      summary: Add document's full-text
+      description: Add a document to OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentFulltextRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentFulltextResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+    patch:
+      operationId: UpdateDocumentFulltext
+      summary: Update document's full-text
+      description: Update a document in OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentFulltextRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateDocumentFulltextResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+  /documents/{documentId}/fulltext/tags/{tagKey}:
+    delete:
+      operationId: DeleteDocumentFulltextTag
+      summary: Delete document full-text tag
+      description: Remove document tags from OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200Cors'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+  /documents/{documentId}/fulltext/tags/{tagKey}/{tagValue}:
+    delete:
+      operationId: DeleteDocumentFulltextTagAndValue
+      summary: Delete document full-text tag/value
+      description: Remove document tag/value from OpenSearch; available as an Add-On Module
+      tags:
+      - Advanced Document Search
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/tagkeyParam'
+      - $ref: '#/components/parameters/tagvalueParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200Cors'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
   /documents/{documentId}/antivirus:
     put:
       operationId: SetAntivirus
@@ -4494,6 +4431,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetDocumentRestoreResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/syncs:
+    get:
+      operationId: GetDocumentSyncs
+      summary: Get document syncs
+      description: Retrieve the document syncs with external services status
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentSyncResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentSync
+      summary: Add document sync to service
+      description: Add a document to a service
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentSyncRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -8688,24 +8688,6 @@ components:
           description: List of document attributes
           items:
             $ref: '#/components/schemas/AddDocumentAttribute'
-    AddDocumentMetadata:
-      required:
-      - key
-      type: object
-      description: Document Metadata (use either 'value' or 'values' not both)
-      properties:
-        key:
-          type: string
-          description: Metadata key
-        value:
-          type: string
-          description: Metadata value
-        values:
-          type: array
-          description: Metadata values
-          items:
-            type: string
-            description: Metadata value
     AddDocumentAttributeValue:
       type: object
       description: Document Attribute Value
@@ -8786,78 +8768,6 @@ components:
         key:
           type: string
           description: Tag key
-    GetDocumentFulltextResponse:
-      type: object
-      properties:
-        siteId:
-          type: string
-          description: Site Identifier
-        content:
-          type: string
-          description: Content of document
-        contentType:
-          type: string
-          description: Document Content-Type
-        path:
-          type: string
-          description: Path or Name of document
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-        lastModifiedDate:
-          type: string
-          description: Last Modified Timestamp
-        documentId:
-          type: string
-          description: Document Identifier
-        createdBy:
-          type: string
-          description: User who added document
-        contentLength:
-          type: integer
-          description: Document size
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        tags:
-          type: object
-          additionalProperties:
-            type: object
-        metadata:
-          type: object
-          additionalProperties:
-            type: object
-        attributes:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/FulltextAttribute'
-    AddDocumentSyncRequest:
-      type: object
-      properties:
-        sync:
-          $ref: '#/components/schemas/AddDocumentSync'
-    GetDocumentSyncResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        syncs:
-          type: array
-          description: List of document syncs
-          items:
-            $ref: '#/components/schemas/DocumentSync'
     AddDocumentSyncService:
       type: string
       description: Add Document Sync Service
@@ -8885,34 +8795,6 @@ components:
       - CONTENT
       - SOFT_DELETE
       - DELETE
-    AddDocumentSync:
-      type: object
-      properties:
-        service:
-          $ref: '#/components/schemas/AddDocumentSyncService'
-        type:
-          $ref: '#/components/schemas/DocumentSyncType'
-    DocumentSync:
-      type: object
-      properties:
-        service:
-          $ref: '#/components/schemas/DocumentSyncService'
-        status:
-          $ref: '#/components/schemas/DocumentSyncStatus'
-        type:
-          $ref: '#/components/schemas/DocumentSyncType'
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-        syncDate:
-          type: string
-          description: Timestamp of synchronization
-        userId:
-          type: string
-          description: User who added document
-        message:
-          type: string
-          description: Document sync message
     SetDocumentDataClassificationRequest:
       type: object
       required:
@@ -10428,12 +10310,6 @@ components:
           type: array
           items:
             type: string
-    AddDocumentFulltextResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Full text processing message
     UpdateDocumentFulltextResponse:
       type: object
       properties:
@@ -10446,141 +10322,6 @@ components:
         message:
           type: string
           description: Full text processing message
-    SetDocumentFulltextRequest:
-      type: object
-      properties:
-        contentType:
-          type: string
-          description: Document Content-Type
-        content:
-          type: string
-          description: Document content
-        contentUrls:
-          type: array
-          items:
-            type: string
-          description: URL(s) which contain document content
-        path:
-          type: string
-          description: Path or Name of document
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        tags:
-          type: array
-          description: List of document tags
-          items:
-            $ref: '#/components/schemas/AddDocumentTag'
-        metadata:
-          type: array
-          description: List of document Metadata
-          items:
-            $ref: '#/components/schemas/AddDocumentMetadata'
-        attributes:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/FulltextAttribute'
-    AddDocumentFulltextRequest:
-      type: object
-      properties:
-        contentType:
-          type: string
-          description: Document Content-Type
-        content:
-          type: string
-          description: Document content
-        contentUrls:
-          type: array
-          items:
-            type: string
-          description: URL(s) which contain document content
-        path:
-          type: string
-          description: Path or Name of document
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        tags:
-          type: array
-          description: List of document tags
-          items:
-            $ref: '#/components/schemas/AddDocumentTag'
-        metadata:
-          type: array
-          description: List of document Metadata
-          items:
-            $ref: '#/components/schemas/AddDocumentMetadata'
-        attributes:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/FulltextAttribute'
-    UpdateDocumentFulltextRequest:
-      type: object
-      properties:
-        contentType:
-          type: string
-          description: Document Content-Type
-        content:
-          type: string
-          description: Document content
-        contentUrls:
-          type: array
-          items:
-            type: string
-          description: URL(s) which contain document content
-        path:
-          type: string
-          description: Path or Name of document
-        width:
-          type: string
-          description: Document Content Width property
-        height:
-          type: string
-          description: Document Content Height property
-        deepLinkPath:
-          type: string
-          description: Path or Name of deep link
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        tags:
-          type: array
-          description: List of document tags
-          items:
-            $ref: '#/components/schemas/AddDocumentTag'
-        metadata:
-          type: array
-          description: List of document Metadata
-          items:
-            $ref: '#/components/schemas/AddDocumentMetadata'
-        attributes:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/FulltextAttribute'
     AddResourceItem:
       oneOf:
       - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
@@ -10757,12 +10498,6 @@ components:
           type: string
           description: API Key Identifier
     DeleteQueueResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Result message
-    DeleteFulltextResponse:
       type: object
       properties:
         message:
@@ -12740,6 +12475,227 @@ components:
         isBase64:
           type: boolean
           description: Is the content Base64-encoded?
+    GetDocumentFulltextResponse:
+      type: object
+      properties:
+        siteId:
+          type: string
+          description: Site Identifier
+        content:
+          type: string
+          description: Content of document
+        contentType:
+          type: string
+          description: Document Content-Type
+        path:
+          type: string
+          description: Path or Name of document
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        lastModifiedDate:
+          type: string
+          description: Last Modified Timestamp
+        documentId:
+          type: string
+          description: Document Identifier
+        createdBy:
+          type: string
+          description: User who added document
+        contentLength:
+          type: integer
+          description: Document size
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        tags:
+          type: object
+          additionalProperties:
+            type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: object
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FulltextAttribute'
+    DeleteFulltextResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Result message
+    SetDocumentFulltextRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+          description: Document Content-Type
+        content:
+          type: string
+          description: Document content
+        contentUrls:
+          type: array
+          items:
+            type: string
+          description: URL(s) which contain document content
+        path:
+          type: string
+          description: Path or Name of document
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        tags:
+          type: array
+          description: List of document tags
+          items:
+            $ref: '#/components/schemas/AddDocumentTag'
+        metadata:
+          type: array
+          description: List of document Metadata
+          items:
+            $ref: '#/components/schemas/AddDocumentMetadata'
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FulltextAttribute'
+    AddDocumentFulltextRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+          description: Document Content-Type
+        content:
+          type: string
+          description: Document content
+        contentUrls:
+          type: array
+          items:
+            type: string
+          description: URL(s) which contain document content
+        path:
+          type: string
+          description: Path or Name of document
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        tags:
+          type: array
+          description: List of document tags
+          items:
+            $ref: '#/components/schemas/AddDocumentTag'
+        metadata:
+          type: array
+          description: List of document Metadata
+          items:
+            $ref: '#/components/schemas/AddDocumentMetadata'
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FulltextAttribute'
+    AddDocumentFulltextResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Full text processing message
+    UpdateDocumentFulltextRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+          description: Document Content-Type
+        content:
+          type: string
+          description: Document content
+        contentUrls:
+          type: array
+          items:
+            type: string
+          description: URL(s) which contain document content
+        path:
+          type: string
+          description: Path or Name of document
+        width:
+          type: string
+          description: Document Content Width property
+        height:
+          type: string
+          description: Document Content Height property
+        deepLinkPath:
+          type: string
+          description: Path or Name of deep link
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        tags:
+          type: array
+          description: List of document tags
+          items:
+            $ref: '#/components/schemas/AddDocumentTag'
+        metadata:
+          type: array
+          description: List of document Metadata
+          items:
+            $ref: '#/components/schemas/AddDocumentMetadata'
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FulltextAttribute'
+    AddDocumentMetadata:
+      required:
+      - key
+      type: object
+      description: Document Metadata (use either 'value' or 'values' not both)
+      properties:
+        key:
+          type: string
+          description: Metadata key
+        value:
+          type: string
+          description: Metadata value
+        values:
+          type: array
+          description: Metadata values
+          items:
+            type: string
+            description: Metadata value
     SetAntivirusRequest:
       type: object
     SetMalwareScanRequest:
@@ -12904,6 +12860,50 @@ components:
         message:
           type: string
           description: Document Document restore message
+    GetDocumentSyncResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        syncs:
+          type: array
+          description: List of document syncs
+          items:
+            $ref: '#/components/schemas/DocumentSync'
+    AddDocumentSyncRequest:
+      type: object
+      properties:
+        sync:
+          $ref: '#/components/schemas/AddDocumentSync'
+    AddDocumentSync:
+      type: object
+      properties:
+        service:
+          $ref: '#/components/schemas/AddDocumentSyncService'
+        type:
+          $ref: '#/components/schemas/DocumentSyncType'
+    DocumentSync:
+      type: object
+      properties:
+        service:
+          $ref: '#/components/schemas/DocumentSyncService'
+        status:
+          $ref: '#/components/schemas/DocumentSyncStatus'
+        type:
+          $ref: '#/components/schemas/DocumentSyncType'
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        syncDate:
+          type: string
+          description: Timestamp of synchronization
+        userId:
+          type: string
+          description: User who added document
+        message:
+          type: string
+          description: Document sync message
     GetDocumentTagsResponse:
       type: object
       properties:
