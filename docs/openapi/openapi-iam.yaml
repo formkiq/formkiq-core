@@ -121,98 +121,6 @@ servers:
 - url: http://localhost
   description: Local development server
 paths:
-  /documents/{documentId}/versions:
-    get:
-      operationId: GetDocumentVersions
-      summary: Get document's versions
-      description: Get a listing of document content and metadata versions; available as an Add-On Module
-      tags:
-      - Document Versions
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/limitParam'
-      - $ref: '#/components/parameters/shareKeyParam'
-      - $ref: '#/components/parameters/nextParam'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetDocumentVersionsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-    put:
-      operationId: SetDocumentVersion
-      summary: Set version of document
-      description: Set document to a previous document version; available as an Add-On Module
-      tags:
-      - Document Versions
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDocumentVersionRequest'
-      responses:
-        "200":
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetDocumentVersionResponse'
-        "400":
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
-  /documents/{documentId}/versions/{versionKey}:
-    delete:
-      operationId: DeleteDocumentVersion
-      summary: Delete document version
-      description: Delete a specific previous document version; available as an Add-On Module
-      tags:
-      - Document Versions
-      parameters:
-      - $ref: '#/components/parameters/siteIdParam'
-      - $ref: '#/components/parameters/documentIdParam'
-      - $ref: '#/components/parameters/artifactIdParam'
-      - $ref: '#/components/parameters/versionKeyPath'
-      - $ref: '#/components/parameters/shareKeyParam'
-      responses:
-        "200":
-          $ref: '#/components/responses/200CorsDeleteResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/checkout:
     put:
       operationId: SetDocumentCheckout
@@ -5686,6 +5594,98 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/versions:
+    get:
+      operationId: GetDocumentVersions
+      summary: Get document's versions
+      description: Get a listing of document content and metadata versions; available as an Add-On Module
+      tags:
+      - Document Versions
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentVersionsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    put:
+      operationId: SetDocumentVersion
+      summary: Set version of document
+      description: Set document to a previous document version; available as an Add-On Module
+      tags:
+      - Document Versions
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDocumentVersionRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetDocumentVersionResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/versions/{versionKey}:
+    delete:
+      operationId: DeleteDocumentVersion
+      summary: Delete document version
+      description: Delete a specific previous document version; available as an Add-On Module
+      tags:
+      - Document Versions
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/versionKeyPath'
+      - $ref: '#/components/parameters/shareKeyParam'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /search:
     post:
       operationId: DocumentSearch
@@ -8299,17 +8299,6 @@ components:
         value:
           type: string
           description: value of index
-    GetDocumentVersionsResponse:
-      type: object
-      properties:
-        next:
-          type: string
-          description: Next page of results token
-        documents:
-          type: array
-          description: List of document versions
-          items:
-            $ref: '#/components/schemas/DocumentVersion'
     GetFolderPermissionsResponse:
       type: object
       properties:
@@ -8454,18 +8443,6 @@ components:
       properties:
         attribute:
           $ref: '#/components/schemas/DocumentAttribute'
-    SetDocumentVersionRequest:
-      type: object
-      properties:
-        versionKey:
-          type: string
-          description: VersionKey returned by the GET /documents/{documentId}/versions to revert to
-    SetDocumentVersionResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Response Message
     DocumentSearch:
       type: object
       description: Document tag search criteria
@@ -8970,32 +8947,6 @@ components:
           description: List of document Metadata
           items:
             $ref: '#/components/schemas/AddDocumentMetadata'
-    DocumentVersion:
-      type: object
-      properties:
-        insertedDate:
-          type: string
-          description: Inserted Timestamp
-        checksum:
-          type: string
-          description: Document checksum, changes when document file changes
-        checksumType:
-          $ref: '#/components/schemas/ChecksumType'
-        contentType:
-          type: string
-          description: Document Content-Type
-        userId:
-          type: string
-          description: User who added document
-        contentLength:
-          type: integer
-          description: Document size
-        versionKey:
-          type: string
-          description: Document Version Identifier
-        s3version:
-          type: string
-          description: Document storage version
     AddWebhookTagRequest:
       type: object
       properties:
@@ -13569,6 +13520,55 @@ components:
           type: object
           additionalProperties:
             type: object
+    GetDocumentVersionsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        documents:
+          type: array
+          description: List of document versions
+          items:
+            $ref: '#/components/schemas/DocumentVersion'
+    DocumentVersion:
+      type: object
+      properties:
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        checksum:
+          type: string
+          description: Document checksum, changes when document file changes
+        checksumType:
+          $ref: '#/components/schemas/ChecksumType'
+        contentType:
+          type: string
+          description: Document Content-Type
+        userId:
+          type: string
+          description: User who added document
+        contentLength:
+          type: integer
+          description: Document size
+        versionKey:
+          type: string
+          description: Document Version Identifier
+        s3version:
+          type: string
+          description: Document storage version
+    SetDocumentVersionRequest:
+      type: object
+      properties:
+        versionKey:
+          type: string
+          description: VersionKey returned by the GET /documents/{documentId}/versions to revert to
+    SetDocumentVersionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response Message
     DocumentSearchRequest:
       required:
       - query
