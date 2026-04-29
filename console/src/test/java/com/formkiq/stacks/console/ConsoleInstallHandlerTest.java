@@ -1,6 +1,6 @@
 /**
  * MIT License
- *
+ * 
  * Copyright (c) 2018 - 2020 FormKiQ
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -12,7 +12,7 @@
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -502,8 +502,7 @@ public class ConsoleInstallHandlerTest {
     assertEquals("https://test2111111111111111.auth.us-east-2.amazoncognito.com",
         o.get("cognitoHostedUi"));
     assertEquals(cognitoSingleSignOnUrl, o.get("cognitoSingleSignOnUrl"));
-    assertEquals(ssoLoginRedirectEnabled,
-        Boolean.valueOf(o.get("ssoAutomaticSignIn").toString()));
+    assertEquals(ssoLoginRedirectEnabled, Boolean.valueOf(o.get("ssoAutomaticSignIn").toString()));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
   }

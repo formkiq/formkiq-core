@@ -99,8 +99,7 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
   }
 
   private Map<String, Object> toResponse(final SiteConfigurationWebUi webui) {
-    Boolean ssoLoginRedirectEnabled =
-        webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
+    Boolean ssoLoginRedirectEnabled = webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
     return Map.of("webui", Map.of("ssoAutomaticSignIn", ssoLoginRedirectEnabled));
   }
 
@@ -120,8 +119,7 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
     Map<String, Object> consoleConfig =
         gson.fromJson(s3Service.getContentAsString(consoleBucket, key, null), Map.class);
 
-    boolean ssoLoginRedirectEnabled =
-        webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
+    boolean ssoLoginRedirectEnabled = webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
     consoleConfig.put("ssoAutomaticSignIn", ssoLoginRedirectEnabled);
     s3Service.putObject(consoleBucket, key,
         gson.toJson(consoleConfig).getBytes(StandardCharsets.UTF_8), "application/json");

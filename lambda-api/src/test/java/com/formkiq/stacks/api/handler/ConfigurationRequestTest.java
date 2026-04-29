@@ -115,6 +115,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals(-1, retentionAndDisposition.getSoftDeleteRetentionInDays());
   }
 
+  private static boolean getSsoAutomaticSignIn(
+      final ApiHttpResponse<GetSystemConfigurationResponse> resp) {
+    Boolean ssoAutomaticSignIn = requireNonNull(resp.response().getWebui()).getSsoAutomaticSignIn();
+    return ssoAutomaticSignIn != null ? ssoAutomaticSignIn : false;
+  }
+
   /** {@link ConfigService}. */
   private ConfigService config;
 
@@ -828,8 +834,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertFalse(getSsoLoginRedirectEnabled(s3));
 
     // when
-    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(true)
-        .submit(client, null);
+    update =
+        new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(true).submit(client, null);
 
     // then
     assertEquals("Config saved", update.response().getMessage());
@@ -838,20 +844,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertTrue(getSsoLoginRedirectEnabled(s3));
 
     // when
-    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(false)
-        .submit(client, null);
+    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(false).submit(client,
+        null);
 
     // then
     assertEquals("Config saved", update.response().getMessage());
     resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
     assertFalse(getSsoAutomaticSignIn(resp));
     assertFalse(getSsoLoginRedirectEnabled(s3));
-  }
-
-  private static boolean getSsoAutomaticSignIn(
-      final ApiHttpResponse<GetSystemConfigurationResponse> resp) {
-    Boolean ssoAutomaticSignIn = requireNonNull(resp.response().getWebui()).getSsoAutomaticSignIn();
-    return ssoAutomaticSignIn != null ? ssoAutomaticSignIn : false;
   }
 
   /**
