@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.console;
 
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,10 +34,15 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationWebUi;
+import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
@@ -47,16 +53,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
-import com.formkiq.module.http.HttpServiceJdk11;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /** Unit Tests for {@link ConsoleInstallHandler}. */
+@ExtendWith(DynamoDbExtension.class)
 @ExtendWith(LocalStackExtension.class)
 public class ConsoleInstallHandlerTest {
 
@@ -67,8 +71,8 @@ public class ConsoleInstallHandlerTest {
   private static final String CONSOLE_BUCKET = "destbucket";
   /** {@link S3Service}. */
   private static S3Service s3;
-  /** {@link S3ConnectionBuilder}. */
-  private static S3ConnectionBuilder s3Connection;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
 
   /**
    * Before Class.
@@ -81,13 +85,13 @@ public class ConsoleInstallHandlerTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "OPERATIONAL_MODE", "ACTIVE");
-    AwsServiceCache serviceCache =
-        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), cred)
-            .addService(new S3AwsServiceRegistry()).build();
+    // Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "OPERATIONAL_MODE", "ACTIVE");
+    serviceCache =
+        new AwsServiceCacheBuilder(createEnvironment(), TestServices.getEndpointMap(), cred)
+            .addService(new DynamoDbAwsServiceRegistry()).addService(new S3AwsServiceRegistry())
+            .build();
     serviceCache.register(S3Service.class, new S3ServiceExtension());
 
-    s3Connection = serviceCache.getExtension(S3ConnectionBuilder.class);
     s3 = serviceCache.getExtension(S3Service.class);
 
     s3.createBucket(CONSOLE_BUCKET);
@@ -96,31 +100,15 @@ public class ConsoleInstallHandlerTest {
 
   }
 
-  /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
-
-  /** {@link LambdaContextRecorder}. */
-  private final LambdaContextRecorder context = new LambdaContextRecorder();
-  /** {@link ConsoleInstallHandler}. */
-  private ConsoleInstallHandler handler;
-
-  /** {@link LambdaLogger}. */
-  private final LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
-
-  /** before. */
-  @BeforeEach
-  public void before() {
-    Map<String, String> map = createEnvironment();
-    createHandler(map);
-  }
-
-  private Map<String, String> createEnvironment() {
+  private static Map<String, String> createEnvironment() {
     Map<String, String> map = new HashMap<>();
+    map.put("AWS_REGION", "us-east-2");
     map.put("CONSOLE_VERSION", "0.1");
     map.put("CONSOLE_ZIP_URL",
         "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip");
     map.put("REGION", "us-east-1");
     map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+    map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("API_URL",
         "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
     map.put("API_IAM_URL", "https://auth.execute-api.us-east-1.amazonaws.com/iam/");
@@ -137,20 +125,37 @@ public class ConsoleInstallHandlerTest {
     return map;
   }
 
-  private void createHandler(final Map<String, String> map) {
-    this.handler =
-        new ConsoleInstallHandler(map, Region.US_EAST_2, s3Connection, new HttpServiceJdk11()) {
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
+  /** {@link LambdaContextRecorder}. */
+  private final LambdaContextRecorder context = new LambdaContextRecorder();
 
-          @Override
-          protected HttpURLConnection getConnection(final String responseUrl) {
-            return ConsoleInstallHandlerTest.this.getConnection();
-          }
+  /** {@link ConsoleInstallHandler}. */
+  private ConsoleInstallHandler handler;
 
-          @Override
-          protected InputStream getConsoleZipInputStream(final String consoleZipUrl) {
-            return ConsoleInstallHandlerTest.class.getResourceAsStream("/test.zip");
-          }
-        };
+  /** {@link LambdaLogger}. */
+  private final LambdaLoggerRecorder logger = this.context.getLoggerRecorder();
+
+  /** before. */
+  @BeforeEach
+  public void before() {
+    serviceCache.environment().remove("COGNITO_SINGLE_SIGN_ON_URL");
+    createHandler();
+  }
+
+  private void createHandler() {
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected InputStream getConsoleZipInputStream(final String consoleZipUrl) {
+        return ConsoleInstallHandlerTest.class.getResourceAsStream("/test.zip");
+      }
+    };
   }
 
   /**
@@ -177,6 +182,118 @@ public class ConsoleInstallHandlerTest {
   }
 
   /**
+   * Test Handle Request 'CREATE' with Sso Login Redirect enabled.
+   *
+   */
+  @Test
+  public void testCreateWithSsoLoginRedirect() {
+    // given
+    var configService = serviceCache.getExtension(ConfigService.class);
+    var config =
+        SiteConfiguration.builder().webui(new SiteConfigurationWebUi(true)).build("global");
+    configService.save("global", config);
+
+    String cognitoSingleSignOnUrl =
+        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
+    serviceCache.environment().put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
+    createHandler();
+
+    final int contentlength = 105;
+    Map<String, Object> input = createInput("Create");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.logger.log(
+        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
+    this.logger.log(
+        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
+    this.logger.log("Request Create was successful!");
+
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    verifySendResponse(contentlength);
+    verifyConfigWritten(cognitoSingleSignOnUrl, true);
+    verifyCognitoConfig();
+
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
+  }
+
+  /**
+   * Test Handle Request 'CREATE'.
+   *
+   */
+  @Test
+  public void testCreateWithoutSsoLoginRedirect() {
+    // given
+    String cognitoSingleSignOnUrl =
+        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
+    serviceCache.environment().put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
+    createHandler();
+
+    final int contentlength = 105;
+    Map<String, Object> input = createInput("Create");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.logger.log(
+        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
+    this.logger.log(
+        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
+    this.logger.log("Request Create was successful!");
+
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    verifySendResponse(contentlength);
+    verifyConfigWritten(cognitoSingleSignOnUrl, false);
+    verifyCognitoConfig();
+
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
+
+    assertEquals("font/woff2",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
+
+    assertEquals("text/css",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css", null).getContentType());
+
+    assertEquals("application/vnd.ms-fontobject",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot", null).getContentType());
+
+    assertEquals("image/x-icon",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico", null).getContentType());
+
+    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
+        .endsWith("/javascript"));
+
+    assertEquals("image/svg+xml",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
+
+    assertEquals("font/ttf",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf", null).getContentType());
+
+    assertEquals("text/plain",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt", null).getContentType());
+
+    assertEquals("font/woff",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+
+    // given
+    input = createInput("Delete");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
+  }
+
+  /**
    * Test Handle Request 'CREATE'.
    *
    */
@@ -199,7 +316,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten("");
+    verifyConfigWritten("", false);
     verifyCognitoConfig();
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
@@ -258,7 +375,7 @@ public class ConsoleInstallHandlerTest {
 
     // then
     verifySendResponse(contentlength);
-    verifyConfigWritten("");
+    verifyConfigWritten("", false);
     verifyCognitoConfig();
 
     assertTrue(this.logger.containsString(
@@ -354,79 +471,6 @@ public class ConsoleInstallHandlerTest {
     assertTrue(connection.contains("\"Status\":\"FAILURE\""));
   }
 
-  /**
-   * Test Handle Request 'CREATE'.
-   *
-   */
-  @Test
-  public void testHandleRequest05() {
-    // given
-    String cognitoSingleSignOnUrl =
-        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
-    Map<String, String> map = createEnvironment();
-    map.put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
-    createHandler(map);
-
-    final int contentlength = 105;
-    Map<String, Object> input = createInput("Create");
-    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
-
-    // when
-    this.logger.log(
-        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
-    this.logger.log(
-        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
-    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
-    this.logger.log("Request Create was successful!");
-
-    this.handler.handleRequest(input, this.context);
-
-    // then
-    verifySendResponse(contentlength);
-    verifyConfigWritten(cognitoSingleSignOnUrl);
-    verifyCognitoConfig();
-
-    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
-    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
-
-    assertEquals("font/woff2",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/font.woff2", null).getContentType());
-
-    assertEquals("text/css",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.css", null).getContentType());
-
-    assertEquals("application/vnd.ms-fontobject",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.eot", null).getContentType());
-
-    assertEquals("image/x-icon",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ico", null).getContentType());
-
-    assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
-        .endsWith("/javascript"));
-
-    assertEquals("image/svg+xml",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
-
-    assertEquals("font/ttf",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.ttf", null).getContentType());
-
-    assertEquals("text/plain",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.txt", null).getContentType());
-
-    assertEquals("font/woff",
-        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
-
-    // given
-    input = createInput("Delete");
-    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
-
-    // when
-    this.handler.handleRequest(input, this.context);
-
-    // then
-    assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
-  }
-
   private void verifyCognitoConfig() {
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
         "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message", null).isObjectExists());
@@ -441,11 +485,13 @@ public class ConsoleInstallHandlerTest {
    * Verify Config File is written.
    *
    * @param cognitoSingleSignOnUrl {@link String}
+   * @param ssoLoginRedirectEnabled {@link boolean}
    */
-  private void verifyConfigWritten(final String cognitoSingleSignOnUrl) {
+  private void verifyConfigWritten(final String cognitoSingleSignOnUrl,
+      final boolean ssoLoginRedirectEnabled) {
 
     String json = s3.getContentAsString("destbucket", "0.1/assets/config.json", null);
-    Map<String, String> o = this.gson.fromJson(json, Map.class);
+    Map<String, Object> o = this.gson.fromJson(json, Map.class);
     assertEquals("https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/",
         o.get("documentApi"));
     assertEquals("us-east-2_blGeBpyLg", o.get("userPoolId"));
@@ -456,6 +502,8 @@ public class ConsoleInstallHandlerTest {
     assertEquals("https://test2111111111111111.auth.us-east-2.amazoncognito.com",
         o.get("cognitoHostedUi"));
     assertEquals(cognitoSingleSignOnUrl, o.get("cognitoSingleSignOnUrl"));
+    assertEquals(ssoLoginRedirectEnabled,
+        Boolean.valueOf(o.get("ssoLoginRedirectEnabled").toString()));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
   }

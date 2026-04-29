@@ -72,7 +72,7 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     Map<String, AttributeValue> attributes = this.db.get(key);
     return !attributes.isEmpty() ? SiteConfiguration.fromAttributeMap(attributes)
         : new SiteConfiguration(null, null, null, null, null, null, null, null, null, null, null,
-            null);
+            null, null);
   }
 
   @Override

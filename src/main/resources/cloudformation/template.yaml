@@ -306,6 +306,10 @@ Resources:
           Fn::GetAtt:
             - CoreApi
             - Outputs.UserAuthApiUrl
+        DocumentsTableName:
+          Fn::GetAtt:
+            - CoreStorage
+            - Outputs.DocumentsTableName
         AllowAdminCreateUserOnly: "true"
         LogRetentionInDays:
           Ref: LogRetentionInDays

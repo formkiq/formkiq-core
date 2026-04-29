@@ -25,7 +25,9 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigContentTypes;
@@ -38,21 +40,31 @@ import com.formkiq.client.model.OcrConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.api.SetBearers;
+import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateSystemConfigurationRequestBuilder;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/configuration. */
@@ -128,6 +140,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     AwsServiceCache awsServices = getAwsServices();
     awsServices.register(ConfigService.class, new ConfigServiceExtension());
     this.config = awsServices.getExtension(ConfigService.class);
+  }
+
+  private boolean getSsoLoginRedirectEnabled(final S3Service s3) {
+    Map<String, Object> consoleConfig = GsonUtil.getInstance()
+        .fromJson(s3.getContentAsString(BUCKET_NAME, "1.0/assets/config.json", null), Map.class);
+    return (Boolean) consoleConfig.get("ssoLoginRedirectEnabled");
   }
 
   /**
@@ -469,10 +487,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
     assertNotNull(c.getOcr());
-    assertEquals("2", Objects.formatDouble(
-        java.util.Objects.requireNonNull(c.getOcr().getMaxPagesPerTransaction()).doubleValue()));
-    assertEquals("1", Objects.formatDouble(
-        java.util.Objects.requireNonNull(c.getOcr().getMaxTransactions()).doubleValue()));
+    assertEquals("2",
+        Objects.formatDouble(requireNonNull(c.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("1",
+        Objects.formatDouble(requireNonNull(c.getOcr().getMaxTransactions()).doubleValue()));
   }
 
   /**
@@ -559,10 +577,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("5", response.getMaxWebhooks());
     assertEquals("", response.getNotificationEmail());
     assertNotNull(response.getOcr());
-    assertEquals("-1", Objects.formatDouble(java.util.Objects
-        .requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
-    assertEquals("-1", Objects.formatDouble(
-        java.util.Objects.requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
+    assertEquals("-1", Objects
+        .formatDouble(requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("-1",
+        Objects.formatDouble(requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
   }
 
   /**
@@ -776,5 +794,74 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
               + "\"error\":\"'softDeleteRetentionInDays' must be -1 or greater\"}]}",
           e.getResponseBody());
     }
+  }
+
+  /**
+   * Patch System Configuration empty as Admin.
+   */
+  @Test
+  public void testUpdateSystemConfigurationAsAdmin() {
+    // given
+    var ssm = getAwsServices().getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/test/s3/Console", BUCKET_NAME);
+    ssm.putParameter("/formkiq/test/console/version", "1.0");
+
+    var s3 = getAwsServices().getExtension(S3Service.class);
+    s3.putObject(BUCKET_NAME, "1.0/assets/config.json", "{}".getBytes(StandardCharsets.UTF_8),
+        "application/json");
+
+    setBearerToken("Admins");
+
+    // when
+    var update = new UpdateSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+
+    // when
+    var resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertFalse(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertFalse(getSsoLoginRedirectEnabled(s3));
+
+    // when
+    update = new UpdateSystemConfigurationRequestBuilder().ssoLoginRedirectEnabled(true)
+        .submit(client, null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+    resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+    assertTrue(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertTrue(getSsoLoginRedirectEnabled(s3));
+
+    // when
+    update = new UpdateSystemConfigurationRequestBuilder().ssoLoginRedirectEnabled(false)
+        .submit(client, null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+    resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+    assertFalse(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertFalse(getSsoLoginRedirectEnabled(s3));
+  }
+
+  /**
+   * Patch System Configuration empty as Admin.
+   */
+  @Test
+  public void testUpdateSystemConfigurationAsUser() {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+
+    // when
+    var update = new UpdateSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertNull(update.response());
+    assertNotNull(update.exception());
+
+    assertEquals(HttpStatus.UNAUTHORIZED, update.exception().getCode());
+    assertEquals("{\"message\":\"user is unauthorized\"}", update.exception().getResponseBody());
   }
 }
