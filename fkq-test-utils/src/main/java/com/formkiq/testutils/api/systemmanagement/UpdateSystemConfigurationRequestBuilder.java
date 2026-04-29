@@ -52,9 +52,9 @@ public class UpdateSystemConfigurationRequestBuilder implements HttpRequestBuild
    * @param ssoLoginRedirectEnabled {@link boolean}
    * @return {@link UpdateSystemConfigurationRequestBuilder}
    */
-  public UpdateSystemConfigurationRequestBuilder ssoLoginRedirectEnabled(
+  public UpdateSystemConfigurationRequestBuilder ssoAutomaticSignIn(
       final boolean ssoLoginRedirectEnabled) {
-    request.webui(new SystemConfigurationWebUi().ssoLoginRedirectEnabled(ssoLoginRedirectEnabled));
+    request.webui(new SystemConfigurationWebUi().ssoAutomaticSignIn(ssoLoginRedirectEnabled));
     return this;
   }
 

@@ -35,6 +35,7 @@ import com.formkiq.client.model.DocumentConfigDispositionAction;
 import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
 import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
+import com.formkiq.client.model.GetSystemConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
 import com.formkiq.client.model.OcrConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
@@ -44,6 +45,7 @@ import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.SetBearers;
 import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSystemConfigurationRequestBuilder;
@@ -145,7 +147,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   private boolean getSsoLoginRedirectEnabled(final S3Service s3) {
     Map<String, Object> consoleConfig = GsonUtil.getInstance()
         .fromJson(s3.getContentAsString(BUCKET_NAME, "1.0/assets/config.json", null), Map.class);
-    return (Boolean) consoleConfig.get("ssoLoginRedirectEnabled");
+    return (Boolean) consoleConfig.get("ssoAutomaticSignIn");
   }
 
   /**
@@ -822,28 +824,34 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     var resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
 
     // then
-    assertFalse(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertFalse(getSsoAutomaticSignIn(resp));
     assertFalse(getSsoLoginRedirectEnabled(s3));
 
     // when
-    update = new UpdateSystemConfigurationRequestBuilder().ssoLoginRedirectEnabled(true)
+    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(true)
         .submit(client, null);
 
     // then
     assertEquals("Config saved", update.response().getMessage());
     resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
-    assertTrue(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertTrue(getSsoAutomaticSignIn(resp));
     assertTrue(getSsoLoginRedirectEnabled(s3));
 
     // when
-    update = new UpdateSystemConfigurationRequestBuilder().ssoLoginRedirectEnabled(false)
+    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(false)
         .submit(client, null);
 
     // then
     assertEquals("Config saved", update.response().getMessage());
     resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
-    assertFalse(requireNonNull(resp.response().getWebui()).getSsoLoginRedirectEnabled());
+    assertFalse(getSsoAutomaticSignIn(resp));
     assertFalse(getSsoLoginRedirectEnabled(s3));
+  }
+
+  private static boolean getSsoAutomaticSignIn(
+      final ApiHttpResponse<GetSystemConfigurationResponse> resp) {
+    Boolean ssoAutomaticSignIn = requireNonNull(resp.response().getWebui()).getSsoAutomaticSignIn();
+    return ssoAutomaticSignIn != null ? ssoAutomaticSignIn : false;
   }
 
   /**

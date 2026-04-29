@@ -100,8 +100,8 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
 
   private Map<String, Object> toResponse(final SiteConfigurationWebUi webui) {
     Boolean ssoLoginRedirectEnabled =
-        webui != null ? webui.ssoLoginRedirectEnabled() : Boolean.FALSE;
-    return Map.of("webui", Map.of("ssoLoginRedirectEnabled", ssoLoginRedirectEnabled));
+        webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
+    return Map.of("webui", Map.of("ssoAutomaticSignIn", ssoLoginRedirectEnabled));
   }
 
   private void updateConsoleConfig(final AwsServiceCache awsservice,
@@ -121,8 +121,8 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
         gson.fromJson(s3Service.getContentAsString(consoleBucket, key, null), Map.class);
 
     boolean ssoLoginRedirectEnabled =
-        webui != null ? webui.ssoLoginRedirectEnabled() : Boolean.FALSE;
-    consoleConfig.put("ssoLoginRedirectEnabled", ssoLoginRedirectEnabled);
+        webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
+    consoleConfig.put("ssoAutomaticSignIn", ssoLoginRedirectEnabled);
     s3Service.putObject(consoleBucket, key,
         gson.toJson(consoleConfig).getBytes(StandardCharsets.UTF_8), "application/json");
   }

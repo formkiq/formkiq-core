@@ -242,7 +242,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     }
 
     if (webui != null) {
-      map.withBoolean(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED, webui.ssoLoginRedirectEnabled());
+      map.withBoolean(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED, webui.ssoAutomaticSignIn());
     }
 
     return map.build();

@@ -13805,9 +13805,9 @@ components:
       required:
       - ssoLoginRedirectEnabled
       properties:
-        ssoLoginRedirectEnabled:
+        ssoAutomaticSignIn:
           type: boolean
-          description: Enable SSO login redirect in the web UI
+          description: Enable SSO automatic sign in
     GetSystemConfigurationResponse:
       type: object
       properties:

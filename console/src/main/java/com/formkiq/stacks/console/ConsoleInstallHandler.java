@@ -1,6 +1,6 @@
 /**
  * MIT License
- * 
+ *
  * Copyright (c) 2018 - 2020 FormKiQ
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -12,7 +12,7 @@
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -137,7 +137,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
             + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
             + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\",%n"
             + "  \"awsRegion\": \"%s\",%n" + "  \"cognitoSingleSignOnUrl\": \"%s\",%n"
-            + "  \"ssoLoginRedirectEnabled\": %s%n" + "}",
+            + "  \"ssoAutomaticSignIn\": %s%n" + "}",
         documentApi, cognitoUserPoolId, apiIamUrl, apiKeyUrl, congitoClientId, consoleVersion,
         brand, userAuthentication, authApi, cognitoHostedUi, serviceCache.region(),
         cognitoSingleSignOnUrl, ssoLoginRedirectEnabled);
@@ -317,7 +317,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     ConfigService configService = serviceCache.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get("global");
     SiteConfigurationWebUi webui = config.webui();
-    return webui != null && webui.ssoLoginRedirectEnabled();
+    return webui != null && webui.ssoAutomaticSignIn();
   }
 
   /**

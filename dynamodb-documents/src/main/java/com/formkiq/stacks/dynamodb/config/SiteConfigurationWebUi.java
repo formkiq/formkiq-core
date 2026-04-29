@@ -27,5 +27,5 @@ import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Web UI configuration. */
 @Reflectable
-public record SiteConfigurationWebUi(Boolean ssoLoginRedirectEnabled) {
+public record SiteConfigurationWebUi(Boolean ssoAutomaticSignIn) {
 }
