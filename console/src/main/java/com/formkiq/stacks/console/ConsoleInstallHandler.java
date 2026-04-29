@@ -38,89 +38,97 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import org.json.JSONObject;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationWebUi;
 import com.formkiq.urls.HttpStatus;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 
 /** {@link RequestHandler} for installing the console. */
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
-  /** Environment Variable {@link Map}. */
-  private final Map<String, String> environmentMap;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+
+  private static void initialize(final AwsServiceCache cache) {
+    cache.register(ConfigService.class, new ConfigServiceExtension());
+    cache.register(S3Service.class, new S3ServiceExtension());
+    serviceCache = cache;
+  }
+
   /** {@link HttpService}. */
-  private final HttpService http;
+  private final HttpService http = new HttpServiceJdk11();
+
   /** Extra Mime Types. */
-  private final Map<String, String> mimeTypes = new HashMap<>();
-  /** {@link S3Service}. */
-  private final S3Service s3;
-  /** {@link Region}. */
-  private final Region awsRegion;
+  private final Map<String, String> mimeTypes = createMimeTypes();
+
+  // static {
+  //
+  // AwsServiceCache cache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+  // EnvironmentVariableCredentialsProvider.create())
+  // .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry())
+  // .build();
+  //
+  // initialize(cache);
+  // }
 
   /** constructor. */
   public ConsoleInstallHandler() {
-    this(System.getenv(), Region.of(System.getenv("REGION")),
-        new S3ConnectionBuilder("true".equals(System.getenv("ENABLE_AWS_X_RAY")))
-            .setRegion(Region.of(System.getenv("REGION"))),
-        new HttpServiceJdk11());
+    AwsServiceCache cache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+        EnvironmentVariableCredentialsProvider.create())
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry()).build();
+
+    initialize(cache);
   }
 
   /**
    * constructor.
    *
-   * @param map {@link Map}
-   * @param region {@link Region}
-   * @param s3builder {@link S3ConnectionBuilder}
-   * @param httpService {@link HttpService}
+   * @param cache {@link AwsServiceCache}
    */
-  public ConsoleInstallHandler(final Map<String, String> map, final Region region,
-      final S3ConnectionBuilder s3builder, final HttpService httpService) {
-
-    this.environmentMap = map;
-    this.awsRegion = region;
-    this.http = httpService;
-
-    this.mimeTypes.put(".woff2", "font/woff2");
-    this.mimeTypes.put(".eot", "application/vnd.ms-fontobject");
-    this.mimeTypes.put(".ico", "image/x-icon");
-    this.mimeTypes.put(".js", "application/javascript");
-    this.mimeTypes.put(".svg", "image/svg+xml");
-    this.mimeTypes.put(".ttf", "font/ttf");
-    this.mimeTypes.put(".woff", "font/woff");
-    this.mimeTypes.put(".css", "text/css");
-
-    this.s3 = new S3Service(s3builder);
+  ConsoleInstallHandler(final AwsServiceCache cache) {
+    initialize(cache);
   }
 
   /**
    * Write Console Config including Cognito.
    *
    * @param logger {@link LambdaLogger}
+   * @param s3 {@link S3Service}
    */
-  private void createCognitoConfig(final LambdaLogger logger) {
+  private void createCognitoConfig(final LambdaLogger logger, final S3Service s3) {
 
-    String consoleVersion = this.environmentMap.get("CONSOLE_VERSION");
-    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
-    String brand = this.environmentMap.get("BRAND");
-    String authApi = this.environmentMap.get("API_AUTH_URL");
-    String cognitoHostedUi = this.environmentMap.get("COGNITO_HOSTED_UI");
-    String userAuthentication = this.environmentMap.get("USER_AUTHENTICATION");
-    String cognitoUserPoolId = this.environmentMap.get("COGNITO_USER_POOL_ID");
-    String congitoClientId = this.environmentMap.get("COGNITO_USER_POOL_CLIENT_ID");
+    String consoleVersion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    String brand = serviceCache.environment("BRAND");
+    String authApi = serviceCache.environment("API_AUTH_URL");
+    String cognitoHostedUi = serviceCache.environment("COGNITO_HOSTED_UI");
+    String userAuthentication = serviceCache.environment("USER_AUTHENTICATION");
+    String cognitoUserPoolId = serviceCache.environment("COGNITO_USER_POOL_ID");
+    String congitoClientId = serviceCache.environment("COGNITO_USER_POOL_CLIENT_ID");
 
-    String documentApi = this.environmentMap.get("API_URL");
-    String apiIamUrl = this.environmentMap.get("API_IAM_URL");
-    String apiKeyUrl = this.environmentMap.get("API_KEY_URL");
-    String cognitoSingleSignOnUrl = this.environmentMap.get("COGNITO_SINGLE_SIGN_ON_URL");
+    String documentApi = serviceCache.environment("API_URL");
+    String apiIamUrl = serviceCache.environment("API_IAM_URL");
+    String apiKeyUrl = serviceCache.environment("API_KEY_URL");
+    String cognitoSingleSignOnUrl = serviceCache.environment("COGNITO_SINGLE_SIGN_ON_URL");
     if (cognitoSingleSignOnUrl == null) {
       cognitoSingleSignOnUrl = "";
     }
+    boolean ssoLoginRedirectEnabled = isSsoLoginRedirectEnabled();
 
     String json = String.format(
         "{%n" + "  \"documentApi\": \"%s\",%n" + "  \"userPoolId\": \"%s\",%n"
@@ -128,15 +136,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
             + "  \"clientId\": \"%s\",%n" + "  \"consoleVersion\": \"%s\",%n"
             + "  \"brand\": \"%s\",%n" + "  \"userAuthentication\": \"%s\",%n"
             + "  \"authApi\": \"%s\",%n" + "  \"cognitoHostedUi\": \"%s\",%n"
-            + "  \"awsRegion\": \"%s\",%n" + "  \"cognitoSingleSignOnUrl\": \"%s\"%n" + "}",
+            + "  \"awsRegion\": \"%s\",%n" + "  \"cognitoSingleSignOnUrl\": \"%s\",%n"
+            + "  \"ssoAutomaticSignIn\": %s%n" + "}",
         documentApi, cognitoUserPoolId, apiIamUrl, apiKeyUrl, congitoClientId, consoleVersion,
-        brand, userAuthentication, authApi, cognitoHostedUi, this.awsRegion,
-        cognitoSingleSignOnUrl);
+        brand, userAuthentication, authApi, cognitoHostedUi, serviceCache.region(),
+        cognitoSingleSignOnUrl, ssoLoginRedirectEnabled);
 
     String fileName = consoleVersion + "/assets/config.json";
 
-    this.s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null,
-        null);
+    s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null, null);
 
     logger.log("writing Cognito config: " + json);
   }
@@ -145,48 +153,65 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * Customize Cognito Email Templates.
    *
    * @param logger {@link LambdaLogger}
+   * @param s3 {@link S3Service}
    * @throws IOException IOException
    */
-  private void createCognitoEmail(final LambdaLogger logger) throws IOException {
-    String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
-    String domain = this.environmentMap.get("DOMAIN");
+  private void createCognitoEmail(final LambdaLogger logger, final S3Service s3)
+      throws IOException {
+    String cognitoConfigBucket = serviceCache.environment("COGNITO_CONFIG_BUCKET");
+    String domain = serviceCache.environment("DOMAIN");
 
     String key1 = String.format("formkiq/cognito/%s/CustomMessage_AdminCreateUser/Message", domain);
     logger.log("writing cognito email key1 " + key1);
 
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_AdminCreateUser/Message")) {
-      this.s3.putObject(cognitoConfigBucket, key1, is, null);
+      s3.putObject(cognitoConfigBucket, key1, is, null);
     }
 
     String key2 = String.format("formkiq/cognito/%s/CustomMessage_SignUp/Message", domain);
     logger.log("writing cognito email key2 " + key2);
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_SignUp/Message")) {
-      this.s3.putObject(cognitoConfigBucket, key2, is, null);
+      s3.putObject(cognitoConfigBucket, key2, is, null);
     }
 
     String key3 = String.format("formkiq/cognito/%s/CustomMessage_ForgotPassword/Message", domain);
     logger.log("writing cognito email key3 " + key3);
     try (InputStream is =
         getClass().getResourceAsStream("/emailtemplates/CustomMessage_ForgotPassword/Message")) {
-      this.s3.putObject(cognitoConfigBucket, key3, is, null);
+      s3.putObject(cognitoConfigBucket, key3, is, null);
     }
+  }
+
+  private Map<String, String> createMimeTypes() {
+    Map<String, String> map = new HashMap<>();
+    map.put(".woff2", "font/woff2");
+    map.put(".eot", "application/vnd.ms-fontobject");
+    map.put(".ico", "image/x-icon");
+    map.put(".js", "application/javascript");
+    map.put(".svg", "image/svg+xml");
+    map.put(".ttf", "font/ttf");
+    map.put(".woff", "font/woff");
+    map.put(".css", "text/css");
+    return map;
   }
 
   /**
    * Empty Console Bucket.
    *
    * @param logger {@link LambdaLogger}
+   * @param s3 {@link S3Service}
    */
-  private void deleteConsole(final LambdaLogger logger) {
-    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
-    logger.log("deleting console from: " + destinationBucket);
-    this.s3.deleteAllFiles(destinationBucket, true);
+  private void deleteConsole(final LambdaLogger logger, final S3Service s3) {
 
-    String cognitoConfigBucket = this.environmentMap.get("COGNITO_CONFIG_BUCKET");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    logger.log("deleting console from: " + destinationBucket);
+    s3.deleteAllFiles(destinationBucket, true);
+
+    String cognitoConfigBucket = serviceCache.environment("COGNITO_CONFIG_BUCKET");
     logger.log("deleting cognito config from: " + cognitoConfigBucket);
-    this.s3.deleteAllFiles(cognitoConfigBucket, true);
+    s3.deleteAllFiles(cognitoConfigBucket, true);
   }
 
   /**
@@ -231,7 +256,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * @return {@link String}
    */
   protected String getConsoleZipUrl() {
-    return this.environmentMap.get("CONSOLE_ZIP_URL");
+    return serviceCache.environment("CONSOLE_ZIP_URL");
   }
 
   /**
@@ -253,17 +278,19 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
           ("Create".equalsIgnoreCase(requestType) || "Update".equalsIgnoreCase(requestType));
       boolean delete = "Delete".equalsIgnoreCase(requestType);
 
+      var s3 = serviceCache.getExtension(S3Service.class);
+
       if (unzip) {
 
-        unzipConsole(input, context, logger);
-        createCognitoConfig(logger);
-        createCognitoEmail(logger);
+        unzipConsole(s3, input, context, logger);
+        createCognitoConfig(logger, s3);
+        createCognitoEmail(logger, s3);
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
 
       } else if (delete) {
 
-        deleteConsole(logger);
+        deleteConsole(logger, s3);
 
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
@@ -284,6 +311,13 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
 
     return null;
+  }
+
+  private boolean isSsoLoginRedirectEnabled() {
+    ConfigService configService = serviceCache.getExtension(ConfigService.class);
+    SiteConfiguration config = configService.get("global");
+    SiteConfigurationWebUi webui = config.webui();
+    return webui != null && webui.ssoAutomaticSignIn();
   }
 
   /**
@@ -355,20 +389,21 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   /**
    * Unzip Console file.
    *
+   * @param s3 {@link S3Service}
    * @param input {@link Map}
    * @param context {@link Context}
    * @param logger {@link LambdaLogger}
    */
-  private void unzipConsole(final Map<String, Object> input, final Context context,
-      final LambdaLogger logger) {
+  private void unzipConsole(final S3Service s3, final Map<String, Object> input,
+      final Context context, final LambdaLogger logger) {
 
-    String consoleversion = this.environmentMap.get("CONSOLE_VERSION");
-    String destinationBucket = this.environmentMap.get("CONSOLE_BUCKET");
+    String consoleversion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
     String consoleZipUrl = getConsoleZipUrl();
     logger.log("unpacking " + consoleZipUrl + " to bucket " + destinationBucket);
 
     try (InputStream stream = getConsoleZipInputStream(consoleZipUrl)) {
-      writeToBucket(stream, destinationBucket, consoleversion);
+      writeToBucket(s3, stream, destinationBucket, consoleversion);
     } catch (IOException e) {
 
       logStacktrace(context, e);
@@ -379,14 +414,15 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   /**
    * Write {@link InputStream} to Bucket.
    *
+   * @param s3 {@link S3Service}
    * @param stream {@link InputStream}
    * @param destinationBucket {@link String}
    * @param consoleversion {@link String}
    *
    * @throws IOException IOException
    */
-  private void writeToBucket(final InputStream stream, final String destinationBucket,
-      final String consoleversion) throws IOException {
+  private void writeToBucket(final S3Service s3, final InputStream stream,
+      final String destinationBucket, final String consoleversion) throws IOException {
 
     try (ZipInputStream zis = new ZipInputStream(stream)) {
 
@@ -408,7 +444,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
         byte[] byteArray = S3Service.toByteArray(zis);
 
-        this.s3.putObject(destinationBucket, fileName, byteArray, mimeType, null);
+        s3.putObject(destinationBucket, fileName, byteArray, mimeType, null);
 
         entry = zis.getNextEntry();
       }

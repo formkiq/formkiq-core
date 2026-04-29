@@ -16,4 +16,8 @@
 	<allow pkg="com.formkiq.aws.ssm" />
 	<allow pkg="software.amazon.awssdk.services.s3" />
 	<allow pkg="software.amazon.awssdk.regions" />
+  <allow pkg="com.formkiq.aws.dynamodb" />
+  <allow pkg="com.formkiq.module.lambdaservices" />
+  <allow pkg="com.formkiq.stacks.dynamodb.config" />
+  <allow pkg="software.amazon.awssdk.auth.credentials" />
 </import-control>
