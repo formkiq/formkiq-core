@@ -120,7 +120,7 @@ public class ConfigurationRequestHandler
         Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
         Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)), Objects
             .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
-        null, null);
+        null, null, null);
 
     Gson gson = GsonUtil.getInstance();
     String json = gson.toJson(obj);
@@ -246,7 +246,8 @@ public class ConfigurationRequestHandler
       var retentionAndDisposition = document.retentionAndDisposition();
 
       if (retentionAndDisposition != null) {
-        var softDeleteRetentionInDays = Objects.notNull(retentionAndDisposition.softDeleteRetentionInDays());
+        var softDeleteRetentionInDays =
+            Objects.notNull(retentionAndDisposition.softDeleteRetentionInDays());
         if (softDeleteRetentionInDays < -1) {
           vb.addError("document.retentionAndDisposition.softDeleteRetentionInDays",
               "'softDeleteRetentionInDays' must be -1 or greater");

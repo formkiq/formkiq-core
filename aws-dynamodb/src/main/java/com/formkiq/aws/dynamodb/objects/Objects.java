@@ -214,6 +214,16 @@ public class Objects {
   }
 
   /**
+   * If {@link Long} is null return -1.
+   * 
+   * @param l {@link Long}
+   * @return {@link Long}
+   */
+  public static Long notNull(final Long l) {
+    return l != null ? l : -1;
+  }
+
+  /**
    * Returns a {@link List} that is guarantee not to be null.
    *
    * @param <T> Type
@@ -255,14 +265,5 @@ public class Objects {
     if (obj == null) {
       throw ex;
     }
-  }
-
-  /**
-   * If {@link Long} is null return -1.
-   * @param aLong {@link Long}
-   * @return {@link Long}
-   */
-  public static Long notNull(Long aLong) {
-    return aLong != null ? aLong : -1;
   }
 }

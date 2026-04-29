@@ -127,6 +127,7 @@ import com.formkiq.stacks.api.handler.sites.SitesLocalesRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesSchemaAttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesSchemaRequestHandler;
+import com.formkiq.stacks.api.handler.sites.SystemConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.users.UserGroupsRequestHandler;
 import com.formkiq.stacks.api.handler.users.UserOperationRequestHandler;
 import com.formkiq.stacks.api.handler.users.UserRequestHandler;
@@ -246,6 +247,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
     addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new SystemConfigurationRequestHandler());
     addRequestHandler(new ConfigurationApiKeysRequestHandler());
     addRequestHandler(new ConfigurationApiKeyRequestHandler());
   }

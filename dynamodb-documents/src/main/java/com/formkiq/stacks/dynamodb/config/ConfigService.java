@@ -52,6 +52,8 @@ public interface ConfigService {
   String KEY_DOCUSIGN_RSA_PRIVATE_KEY = "docusignRsaPrivateKey";
   /** Docusign Rsa Private Key. */
   String KEY_DOCUSIGN_HMAC_SIGNATURE = "docusignHmacSignature";
+  /** Web UI SSO login redirect enabled key. */
+  String KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED = "webuiSsoLoginRedirectEnabled";
 
   /**
    * Delete Config.

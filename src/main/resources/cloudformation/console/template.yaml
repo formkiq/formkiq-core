@@ -70,6 +70,10 @@ Parameters:
     Type: String
     Description: Auth Api URL
 
+  DocumentsTableName:
+    Type: String
+    Description: Document DynamoDb Table Name
+
   Brand:
     Type: String
     Description: Console Installer Brand
@@ -462,6 +466,8 @@ Resources:
             Ref: CognitoUserPoolClientId
           COGNITO_USER_POOL_ID:
             Ref: CognitoUserPoolId
+          DOCUMENTS_TABLE:
+            Ref: DocumentsTableName
       LoggingConfig:
         LogGroup:
           Ref: ConsoleInstallerLogGroup
@@ -528,6 +534,11 @@ Resources:
                   - ssm:GetParameter
                 Resource:
                   - Fn::Sub: "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/formkiq/*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
               - Effect: Allow
                 Action:
                   - s3:GetObject

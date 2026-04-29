@@ -32,6 +32,7 @@ import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_USER_ID;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
@@ -59,7 +60,8 @@ import java.util.Objects;
 public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String maxContentLengthBytes,
     String maxDocuments, String maxWebhooks, String notificationEmail,
     SiteConfigurationDocument document, SiteConfigurationOcr ocr, SiteConfigurationGoogle google,
-    SiteConfigurationDocusign docusign, String documentTimeToLive, String webhookTimeToLive) {
+    SiteConfigurationDocusign docusign, String documentTimeToLive, String webhookTimeToLive,
+    SiteConfigurationWebUi webui) {
 
   /**
    * Construct a {@link SiteConfiguration} from a DynamoDB attribute map.
@@ -85,10 +87,11 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     SiteConfigurationGoogle google = getSiteConfigurationGoogle(attributes);
     SiteConfigurationDocusign docusign = getSiteConfigurationDocusign(attributes);
     SiteConfigurationDocument document = getSiteConfigurationDocument(attributes);
+    SiteConfigurationWebUi webui = getSiteConfigurationWebUi(attributes);
 
     return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
         maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
-        webhookTimeToLive);
+        webhookTimeToLive, webui);
   }
 
   private static SiteConfigurationDocument getSiteConfigurationDocument(
@@ -151,6 +154,18 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       ocr = new SiteConfigurationOcr(maxPages, maxTx);
     }
     return ocr;
+  }
+
+  private static SiteConfigurationWebUi getSiteConfigurationWebUi(
+      final Map<String, AttributeValue> attributes) {
+
+    SiteConfigurationWebUi webui = null;
+    if (attributes.containsKey(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED)) {
+      webui = new SiteConfigurationWebUi(
+          DynamoDbTypes.toBoolean(attributes.get(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED)));
+    }
+
+    return webui;
   }
 
   private static SiteConfigurationGoogle getSiteConfigurationGoogle(
@@ -226,6 +241,10 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
           .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, trim(docusign.hmacSignature()));
     }
 
+    if (webui != null) {
+      map.withBoolean(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED, webui.ssoAutomaticSignIn());
+    }
+
     return map.build();
   }
 
@@ -264,6 +283,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     private String documentTimeToLive;
     /** Webhook TTL value (stored as string). */
     private String webhookTimeToLive;
+    /** {@link SiteConfigurationWebUi}. */
+    private SiteConfigurationWebUi webui;
     /** {@link SiteConfigurationDocument}. */
     private SiteConfigurationDocument document;
 
@@ -271,7 +292,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     public SiteConfiguration build(final DynamoDbKey key) {
       return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
           maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
-          webhookTimeToLive);
+          webhookTimeToLive, webui);
     }
 
     /**
@@ -330,6 +351,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       docusign(config.docusign);
       documentTimeToLive(config.documentTimeToLive);
       document(config.document);
+      webui(config.webui);
       return this;
     }
 
@@ -440,6 +462,17 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
      */
     public Builder webhookTimeToLive(final String value) {
       this.webhookTimeToLive = value;
+      return this;
+    }
+
+    /**
+     * Set the Web UI configuration.
+     *
+     * @param value Web UI configuration
+     * @return this builder
+     */
+    public Builder webui(final SiteConfigurationWebUi value) {
+      this.webui = value;
       return this;
     }
   }
