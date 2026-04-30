@@ -168,6 +168,7 @@ components:
       - RESTORE
       - NEW_VERSION
       - UPDATE_VERSION
+      - SSO_TOKEN_GRANT
 
     #@overlay/match missing_ok=True
     UserActivity:

@@ -157,6 +157,15 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
         .build();
   }
 
+  private DynamoDbShardKey buildActivityTypes(final String siteId) {
+
+    Objects.requireNonNull(type, "type must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    String typeName = type.name();
+    return buildActivityKey(siteId, "activityTypes#" + typeName, typeName);
+  }
+
   private DynamoDbShardKey buildApiKeys(final String siteId) {
 
     Objects.requireNonNull(apiKey, "apikeys must not be null");
@@ -230,6 +239,7 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
       case "mappings" -> buildMappings(siteId);
       case "apikeys" -> buildApiKeys(siteId);
       case "controlpolicy#opa" -> buildControlPolicyOpa(siteId);
+      case "ssoTokenGrant" -> buildSsoTokenGrant(siteId);
       default -> throw new IllegalArgumentException("Invalid resource " + resource);
     };
   }
@@ -265,6 +275,11 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     Objects.requireNonNull(userId, "userId must not be null");
 
     return buildActivityKey(siteId, "schemas#" + schema, schema);
+  }
+
+  private DynamoDbShardKey buildSsoTokenGrant(final String siteId) {
+    Objects.requireNonNull(userId, "userId must not be null");
+    return buildActivityKey(siteId, "globalActivity#ssoTokenGrant", "ssoTokenGrant");
   }
 
   private DynamoDbShardKey buildWorkflowsKey(final String siteId) {

@@ -8383,6 +8383,7 @@ components:
       - RESTORE
       - NEW_VERSION
       - UPDATE_VERSION
+      - SSO_TOKEN_GRANT
     UserActivity:
       type: object
       properties:
