@@ -61,8 +61,7 @@ public class ChecksumCalculator {
    * @throws NoSuchAlgorithmException if SHA-1 algorithm is not available
    */
   public byte[] calculateSha1(final byte[] data) throws NoSuchAlgorithmException {
-    MessageDigest digest = MessageDigest.getInstance("SHA-1");
-    return digest.digest(data);
+    return digest("SHA-1", data);
   }
 
   /**
@@ -73,7 +72,22 @@ public class ChecksumCalculator {
    * @throws NoSuchAlgorithmException if SHA-256 algorithm is not available
    */
   public byte[] calculateSha256(final byte[] data) throws NoSuchAlgorithmException {
-    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    return digest("SHA-256", data);
+  }
+
+  /**
+   * Calculates the SHA-512 hash of a byte array.
+   *
+   * @param data the input byte array
+   * @return the SHA-512 hash as a byte[]
+   * @throws NoSuchAlgorithmException if SHA-512 algorithm is not available
+   */
+  public byte[] calculateSha512(final byte[] data) throws NoSuchAlgorithmException {
+    return digest("SHA-512", data);
+  }
+
+  private byte[] digest(final String algorithm, final byte[] data) throws NoSuchAlgorithmException {
+    MessageDigest digest = MessageDigest.getInstance(algorithm);
     return digest.digest(data);
   }
 

@@ -362,7 +362,7 @@ public enum ActionType {
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
   /** Valid checksum types for checksum action. */
-  private static final List<String> VALID_CHECKSUM_TYPES = List.of("SHA1", "SHA256");
+  private static final List<String> VALID_CHECKSUM_TYPES = List.of("SHA1", "SHA256", "SHA512");
 
   private static boolean hasValue(final Map<String, Object> parameters, final String key) {
     return parameters != null && parameters.containsKey(key)
