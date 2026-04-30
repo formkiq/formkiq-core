@@ -47,5 +47,7 @@ public enum UserActivityType {
   /** New Version. */
   NEW_VERSION,
   /** Update Version. */
-  UPDATE_VERSION
+  UPDATE_VERSION,
+  /** SSO Token Grant. */
+  SSO_TOKEN_GRANT
 }

@@ -78,6 +78,12 @@ public class ActivityRecordBuilderTest {
   }
 
   @Test
+  void testBuildKeyActivityTypes() {
+    String type = UserActivityType.SSO_TOKEN_GRANT.name();
+    assertBuildKey("activityTypes", Map.of("type", type), "activityTypes#" + type, type);
+  }
+
+  @Test
   void testBuildKeyApiKeys() {
     String apiKey = "api-key-1";
     assertBuildKey("apikeys", Map.of("apiKey", apiKey), "apikeys#" + apiKey, apiKey);
@@ -151,7 +157,7 @@ public class ActivityRecordBuilderTest {
 
   @Test
   void testBuildKeyMappings() {
-    String mappingId = "mapping-1";
+    String mappingId = "ssoTokenGrant";
     assertBuildKey("mappings", Map.of("mappingId", mappingId), "mappings#" + mappingId, mappingId);
   }
 
@@ -180,5 +186,11 @@ public class ActivityRecordBuilderTest {
     String workflowId = "workflow-1";
     assertBuildKey("workflows", Map.of("workflowId", workflowId), "workflows#" + workflowId,
         workflowId);
+  }
+
+  @Test
+  void testBuildSsoTokenGrant() {
+    String mappingId = "mapping-1";
+    assertBuildKey("ssoTokenGrant", Map.of(), "globalActivity#ssoTokenGrant", "ssoTokenGrant");
   }
 }
