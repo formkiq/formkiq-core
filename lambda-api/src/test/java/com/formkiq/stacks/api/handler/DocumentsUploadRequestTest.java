@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
@@ -42,6 +44,11 @@ import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -226,6 +233,45 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       HttpResponse<String> put = putS3Request(response, content);
       assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), put.statusCode());
+    }
+  }
+
+  /**
+   * GET Request Upload Document with SHA512.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testGet06Sha512() throws Exception {
+    // given
+    final String reqChecksum = "ead40277a5f9d21db05ede5d78063478a1795dbd4b2db4af919b7e06a733cfc6"
+        + "ddd7eac7f956194a05a18ce1b8cc9e352b490b983431b83c8e78730aa8a40634";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.getDocumentUpload(null, siteId, "sha512", reqChecksum, 1, null, null);
+
+      // then
+      assertNotNull(response.getUrl());
+      assertEquals(2, notNull(response.getHeaders()).size());
+      assertEquals("6tQCd6X50h2wXt5deAY0eKF5Xb1LLbSvkZt+Bqczz8bd1+rH+VYZSgWhjOG4zJ41"
+          + "K0kLmDQxuDyOeHMKqKQGNA==", response.getHeaders().get("x-amz-checksum-sha512"));
+      assertEquals("SHA512", response.getHeaders().get("x-amz-sdk-checksum-algorithm"));
+
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      AwsServiceCache awsServices = getAwsServices();
+      awsServices.register(DocumentService.class, new DocumentServiceExtension());
+      awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+      DocumentRecord document = awsServices.getExtension(DocumentService.class).findDocument(siteId,
+          DocumentArtifact.of(documentId, null));
+      assertEquals(documentId, document.documentId());
+      assertEquals("SHA512", document.checksumType());
     }
   }
 
