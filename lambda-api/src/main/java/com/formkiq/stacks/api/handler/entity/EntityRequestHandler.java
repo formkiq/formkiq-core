@@ -68,7 +68,7 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     DeleteResult deleteResult = db.deleteItem(key);
 
     if (!deleteResult.isDelete()) {
-      throw new NotFoundException("entity '" + entityTypeId + "' not found");
+      throw new NotFoundException("entity '" + entityId + "' not found");
     }
     UserActivityContext.setDelete(ActivityResourceType.ENTITY, deleteResult.attributes());
 

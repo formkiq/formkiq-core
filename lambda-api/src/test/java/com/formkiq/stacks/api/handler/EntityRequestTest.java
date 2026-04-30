@@ -431,6 +431,30 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /entities/{entityTypeId}/{entityId}. Invalid entityId.
+   *
+   */
+  @Test
+  public void testDeleteEntity02() {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(new String[] {siteId});
+
+    String entityTypeId = ID.uuid();
+    String entityId = ID.uuid();
+
+    // when
+    try {
+      this.entityApi.deleteEntity(entityTypeId, entityId, siteId);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"entity '" + entityId + "' not found\"}", e.getResponseBody());
+    }
+  }
+
+  /**
    * Get /entities/{entityTypeId}.
    *
    * @throws Exception an error has occurred
