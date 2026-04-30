@@ -102,6 +102,8 @@ public class AddDocumentRequestToPresignedUrls
 
       if ("SHA256".equals(checksumType)) {
         headers.put("x-amz-checksum-sha256", this.s3PresignerService.toBase64(item.getChecksum()));
+      } else if ("SHA512".equals(checksumType)) {
+        headers.put("x-amz-checksum-sha512", this.s3PresignerService.toBase64(item.getChecksum()));
       } else if ("SHA1".equals(checksumType)) {
         headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
       }

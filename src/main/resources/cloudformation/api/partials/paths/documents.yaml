@@ -384,6 +384,7 @@ components:
       enum:
         - SHA1
         - SHA256
+        - SHA512
     #@overlay/match missing_ok=True
     DocumentMetadata:
       type: "object"

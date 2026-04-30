@@ -143,6 +143,8 @@ public class S3PresignerService {
         putObjectRequest = putObjectRequest.checksumSHA1(toBase64(checksum));
       } else if (ChecksumAlgorithm.SHA256.equals(checksumAlgorithm)) {
         putObjectRequest = putObjectRequest.checksumSHA256(toBase64(checksum));
+      } else if (ChecksumAlgorithm.SHA512.equals(checksumAlgorithm)) {
+        putObjectRequest = putObjectRequest.checksumSHA512(toBase64(checksum));
       }
 
       if (contentLength.isPresent()) {
@@ -200,6 +202,7 @@ public class S3PresignerService {
       return switch (algorithm) {
         case SHA1 -> this.calculator.bytesToHex(this.calculator.calculateSha1(bytes));
         case SHA256 -> this.calculator.bytesToHex(this.calculator.calculateSha256(bytes));
+        case SHA512 -> this.calculator.bytesToHex(this.calculator.calculateSha512(bytes));
         default ->
           throw new IllegalArgumentException("Supported Checksum Algorithm '" + algorithm + "'");
       };

@@ -48,6 +48,8 @@ public class S3ObjectMetadata {
   private String checksumSha1;
   /** Checksum Sha256. */
   private String checksumSha256;
+  /** Checksum Sha512. */
+  private String checksumSha512;
 
   /**
    * constructor.
@@ -82,6 +84,9 @@ public class S3ObjectMetadata {
     if ("SHA256".equals(checksumType)) {
       checksum = base64ToHex(getChecksumSha256());
 
+    } else if ("SHA512".equals(checksumType)) {
+      checksum = base64ToHex(getChecksumSha512());
+
     } else if ("SHA1".equals(checksumType)) {
       checksum = getChecksumSha1();
     } else {
@@ -110,6 +115,15 @@ public class S3ObjectMetadata {
   }
 
   /**
+   * Get Checksum SHA 512.
+   *
+   * @return String
+   */
+  public String getChecksumSha512() {
+    return this.checksumSha512;
+  }
+
+  /**
    * Get Checksum Type.
    * 
    * @return String
@@ -120,6 +134,8 @@ public class S3ObjectMetadata {
 
     if (!isEmpty(getChecksumSha256())) {
       checksumType = "SHA256";
+    } else if (!isEmpty(getChecksumSha512())) {
+      checksumType = "SHA512";
     } else if (!isEmpty(getChecksumSha1())) {
       checksumType = "SHA1";
     }
@@ -215,6 +231,17 @@ public class S3ObjectMetadata {
    */
   public S3ObjectMetadata setChecksumSha256(final String checksum) {
     this.checksumSha256 = checksum;
+    return this;
+  }
+
+  /**
+   * Set Checksum SHA 512.
+   *
+   * @param checksum {@link String}
+   * @return S3ObjectMetadata
+   */
+  public S3ObjectMetadata setChecksumSha512(final String checksum) {
+    this.checksumSha512 = checksum;
     return this;
   }
 

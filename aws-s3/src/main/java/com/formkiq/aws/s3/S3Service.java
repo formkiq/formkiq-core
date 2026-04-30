@@ -526,6 +526,7 @@ public class S3Service {
       md.setVersionId(resp.versionId());
       md.setChecksumSha1(resp.checksumSHA1());
       md.setChecksumSha256(resp.checksumSHA256());
+      md.setChecksumSha512(resp.checksumSHA512());
 
     } catch (NoSuchKeyException e) {
       md.setObjectExists(false);

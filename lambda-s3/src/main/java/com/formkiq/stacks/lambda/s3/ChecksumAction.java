@@ -74,6 +74,8 @@ public class ChecksumAction implements DocumentAction {
           this.checksumCalculator.bytesToHex(this.checksumCalculator.calculateSha1(bytes));
         case "SHA256" ->
           this.checksumCalculator.bytesToHex(this.checksumCalculator.calculateSha256(bytes));
+        case "SHA512" ->
+          this.checksumCalculator.bytesToHex(this.checksumCalculator.calculateSha512(bytes));
         default -> throw new IOException("unsupported checksumType '" + checksumType + "'");
       };
     } catch (NoSuchAlgorithmException e) {

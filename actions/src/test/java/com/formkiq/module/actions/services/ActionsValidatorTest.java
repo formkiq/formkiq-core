@@ -253,7 +253,7 @@ class ActionsValidatorTest {
         .parameters(Map.of("checksumType", "md5")).document(document).indexUlid()
         .build((String) null);
     testTemplate(action, "parameters.checksumType",
-        "'checksumType' parameter must be one of [SHA1, SHA256]");
+        "'checksumType' parameter must be one of [SHA1, SHA256, SHA512]");
   }
 
   @Test
@@ -261,6 +261,15 @@ class ActionsValidatorTest {
     DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
         .parameters(Map.of("checksumType", "sha256")).document(document).indexUlid()
+        .build((String) null);
+    testTemplate(action, null, null);
+  }
+
+  @Test
+  void testValidation13Sha512() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.CHECKSUM).userId("joe")
+        .parameters(Map.of("checksumType", "sha512")).document(document).indexUlid()
         .build((String) null);
     testTemplate(action, null, null);
   }

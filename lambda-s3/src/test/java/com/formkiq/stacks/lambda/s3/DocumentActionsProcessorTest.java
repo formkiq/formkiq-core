@@ -712,6 +712,44 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Checksum SHA512 Action.
+   */
+  @Test
+  public void testChecksumAction02Sha512() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String content = "this is some data";
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions =
+          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document)
+              .indexUlid().parameters(Map.of("checksumType", "SHA512")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertEquals(ActionType.CHECKSUM, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentRecord item = documentService.findDocument(siteId, document);
+      assertEquals("SHA512", item.checksumType());
+      assertEquals(
+          "76cef72e24a58b90331bc9a31e9400c0356d2101b6e3051fe61f1ec4c582d6d7"
+              + "c7f695289d8f4a41288c4af8a2d01d6777bbabd51906508e5132cdf4dbabd567",
+          item.checksum());
+    }
+  }
+
+  /**
    * Handle documentTagging ChatApt Action missing GptKey.
    *
    */
