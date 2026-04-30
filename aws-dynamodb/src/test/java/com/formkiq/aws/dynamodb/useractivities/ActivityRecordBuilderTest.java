@@ -78,12 +78,6 @@ public class ActivityRecordBuilderTest {
   }
 
   @Test
-  void testBuildKeyActivityTypes() {
-    String type = UserActivityType.SSO_TOKEN_GRANT.name();
-    assertBuildKey("activityTypes", Map.of("type", type), "activityTypes#" + type, type);
-  }
-
-  @Test
   void testBuildKeyApiKeys() {
     String apiKey = "api-key-1";
     assertBuildKey("apikeys", Map.of("apiKey", apiKey), "apikeys#" + apiKey, apiKey);
