@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
@@ -47,8 +48,9 @@ public class DispositionDateAttribute extends RetentionEffectiveEndDateAttribute
 
     var date = getDispositionField(entityRecord, document);
 
-    var dispositionDate = Date.from(date.toInstant().plus(periodInDays, ChronoUnit.DAYS));
-    return DateUtil.getYyyyMmDdFormatter().format(dispositionDate);
+    var dispositionDate = Date.from(date.toInstant().atZone(ZoneOffset.UTC).toLocalDate()
+        .plus(periodInDays, ChronoUnit.DAYS).atStartOfDay(ZoneOffset.UTC).toInstant());
+    return DateUtil.getIsoDateFormatter().format(dispositionDate);
   }
 
   @Override
