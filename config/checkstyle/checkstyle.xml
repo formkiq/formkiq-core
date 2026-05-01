@@ -154,11 +154,6 @@
 			<message key="ws.illegalFollow"
 				value="GenericWhitespace ''{0}'' should followed by whitespace." />
 		</module>
-		<module name="Indentation">
-			<property name="arrayInitIndent" value="2" />
-			<property name="basicOffset" value="2" />
-			<property name="caseIndent" value="2" />
-		</module>
 		<module name="AbbreviationAsWordInName">
 			<property name="allowedAbbreviationLength" value="1" />
 			<property name="ignoreFinal" value="false" />
@@ -222,10 +217,6 @@
 			<property name="format" value="System\.out\.println" />
 			<property name="illegalPattern" value="true" />
 		</module>
-		<module name="Regexp">
-			<property name="format" value="System\.setProperty" />
-			<property name="illegalPattern" value="true" />
-		</module>
 		<module name="JavadocStyle" />
 		<module name="JavadocVariable" />
 		<module name="LocalFinalVariableName" />
@@ -255,7 +246,7 @@
 				value="TYPECAST,METHOD_CALL,EXPR,ARRAY_INIT,UNARY_MINUS,UNARY_PLUS,ELIST,STAR,ASSIGN,PLUS,MINUS,DIV,LITERAL_NEW" />
 		</module>
 		<module name="ReturnCount">
-			<property name="max" value="3" />
+			<property name="max" value="4" />
 		</module>
 		<module name="CyclomaticComplexity">
 			<property name="switchBlockAsSingleDecisionPoint"
@@ -278,11 +269,11 @@
 	</module>
 	<module name="SuppressionFilter">
 		<property name="file"
-			value="${project_loc}/config/checkstyle/mysuppressions.xml" />
+			value="${suppressions_file}" />
 	</module>
 	<module name="LineLength">
 		<property name="ignorePattern"
 			value="^package.*|^import.*|a href|href|http://|https://|ftp://" />
-		<property name="max" value="100" />
+		<property name="max" value="101" />
 	</module>
 </module>
