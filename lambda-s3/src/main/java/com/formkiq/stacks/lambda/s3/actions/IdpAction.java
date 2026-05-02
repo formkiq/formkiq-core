@@ -58,6 +58,7 @@ import com.formkiq.stacks.lambda.s3.text.TokenGeneratorRegex;
 import com.formkiq.stacks.lambda.s3.text.TokenGeneratorKeyValue;
 import com.formkiq.strings.StringFormatter;
 import com.formkiq.strings.StringFormatterAlphaNumeric;
+import com.formkiq.urls.UrlPathEncoder;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 
@@ -238,8 +239,11 @@ public class IdpAction implements DocumentAction {
     Map<String, Map<String, String>> results = new HashMap<>();
 
     for (Map.Entry<String, List<MappingAttribute>> e : result.entrySet()) {
+      String llmPromptEntityName = e.getKey();
       HttpResponse<String> response = this.http.sendRequest(siteId, "get",
-          "/documents/" + documentId + "/metadataExtractionResults/" + e.getKey() + "?limit=1", "");
+          "/documents/" + documentId + "/metadataExtractionResults/"
+              + UrlPathEncoder.encodePathSegment(llmPromptEntityName) + "?limit=1",
+          "");
 
       String body = response.body();
       MetadataExtractionsResponse data = gson.fromJson(body, MetadataExtractionsResponse.class);
@@ -251,7 +255,7 @@ public class IdpAction implements DocumentAction {
             attributes.stream().collect(Collectors.toMap(DataClassificationAttribute::key,
                 DataClassificationAttribute::value, (existing, replacement) -> existing));
 
-        results.put(e.getKey(), map);
+        results.put(llmPromptEntityName, map);
       }
     }
 

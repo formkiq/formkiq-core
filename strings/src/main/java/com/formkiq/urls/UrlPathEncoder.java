@@ -21,44 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.lambda.s3.actions;
+package com.formkiq.urls;
 
-import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.urls.UrlPathEncoder;
-
-import java.util.Map;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
- * DocumentAction for DataClassification {@link Action}.
+ * URL path encoder.
  */
-public class AddMetadataExtractionAction extends AbstractIntelligentDocumentProcessingAction {
+public final class UrlPathEncoder {
 
   /**
-   * constructor.
+   * Encode a single URL path segment.
    *
-   * @param serviceCache {@link AwsServiceCache}
+   * @param value {@link String}
+   * @return {@link String}
    */
-  public AddMetadataExtractionAction(final AwsServiceCache serviceCache) {
-    super(serviceCache);
+  public static String encodePathSegment(final String value) {
+    return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
   }
 
-  @Override
-  protected Map<String, Object> buildPayload(final Action action) {
-    return Map.of();
-  }
-
-  @Override
-  protected String getMethod() {
-    return "POST";
-  }
-
-  @Override
-  protected String getUrl(final DocumentArtifact document, final Action action) {
-    String documentId = document.documentId();
-    String llmPromptEntityName = (String) action.parameters().get("llmPromptEntityName");
-    return String.format("/documents/%s/metadataExtractionResults/%s", documentId,
-        UrlPathEncoder.encodePathSegment(llmPromptEntityName));
-  }
+  private UrlPathEncoder() {}
 }

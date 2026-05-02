@@ -69,6 +69,7 @@
 
 			<subpackage name="actions">
 				<allow pkg="com.formkiq.strings" />
+				<allow pkg="com.formkiq.urls" />
 
 				<subpackage name="resize">
 					<allow pkg="javax.imageio" />
