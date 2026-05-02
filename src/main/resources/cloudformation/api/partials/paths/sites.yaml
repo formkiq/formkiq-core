@@ -920,69 +920,6 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
   #@overlay/match missing_ok=True
-  /system/configuration:
-    get:
-      operationId: GetSystemConfiguration
-      description: Returns the system configuration
-      summary: Get system configuration
-      tags:
-        - System Management
-      responses:
-        '200':
-          description: "200 OK"
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/GetSystemConfigurationResponse"
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-    patch:
-      operationId: UpdateSystemConfiguration
-      description: Update the system configuration
-      summary: Update system configuration
-      tags:
-        - System Management
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSystemConfigurationRequest'
-      responses:
-        '200':
-          description: 200 OK
-          headers:
-            Access-Control-Allow-Origin:
-              $ref: '#/components/headers/AccessControlAllowOrigin'
-            Access-Control-Allow-Methods:
-              $ref: '#/components/headers/AccessControlAllowMethods'
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/AccessControlAllowHeaders'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpdateResponse'
-        '400':
-          description: 400 OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorsResponse'
-      security:
-      - ApiAuthorization: []
-      x-amazon-apigateway-integration:
-        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
-
-  #@overlay/match missing_ok=True
   /sites/{siteId}/configuration:
     get:
       operationId: GetConfiguration
@@ -2754,30 +2691,6 @@ components:
         message:
           type: "string"
           description: "Result message"
-
-    #@overlay/match missing_ok=True
-    SystemConfigurationWebUi:
-      type: object
-      required:
-        - ssoLoginRedirectEnabled
-      properties:
-        ssoAutomaticSignIn:
-          type: boolean
-          description: "Enable SSO automatic sign in"
-
-    #@overlay/match missing_ok=True
-    GetSystemConfigurationResponse:
-      type: object
-      properties:
-        webui:
-          $ref: "#/components/schemas/SystemConfigurationWebUi"
-
-    #@overlay/match missing_ok=True
-    UpdateSystemConfigurationRequest:
-      type: object
-      properties:
-        webui:
-          $ref: "#/components/schemas/SystemConfigurationWebUi"
 
     #@overlay/match missing_ok=True
     DocumentConfig:
