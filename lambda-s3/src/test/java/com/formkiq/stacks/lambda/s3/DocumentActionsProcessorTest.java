@@ -401,7 +401,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer
         .when(request().withMethod("GET")
             .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION
-                + "/metadataExtractionResults/AnotherPrompt"))
+                + "/metadataExtractionResults/Another%20Prompt"))
         .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(metadataExtractions)));
 
     MalwareScanResponse malwareScanResponse =
@@ -1738,7 +1738,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
 
         List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "Myprompt")).document(document).indexUlid()
+            .parameters(Map.of("llmPromptEntityName", "My prompt")).document(document).indexUlid()
             .build(siteId));
         actionsService.saveNewActions(actions);
 
@@ -1755,12 +1755,12 @@ public class DocumentActionsProcessorTest implements DbKeys {
           assertEquals("PUT", lastRequest.getMethod().getValue());
 
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-          assertEquals("Myprompt", resultmap.get("llmPromptEntityName").toString());
+          assertEquals("My prompt", resultmap.get("llmPromptEntityName").toString());
 
         } else {
           assertEquals("POST", lastRequest.getMethod().getValue());
           assertTrue(lastRequest.getPath().toString().endsWith(
-              "/documents/" + document.documentId() + "/metadataExtractionResults/Myprompt"));
+              "/documents/" + document.documentId() + "/metadataExtractionResults/My%20prompt"));
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
           assertTrue(resultmap.isEmpty());
         }
@@ -2794,7 +2794,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       Mapping mapping = createMapping("certificate_number", null, null,
           MappingAttributeSourceType.METADATA_EXTRACTION_RESULT, null, null, null);
-      mapping.getAttributes().forEach(a -> a.setLlmPromptEntityName("AnotherPrompt"));
+      mapping.getAttributes().forEach(a -> a.setLlmPromptEntityName("Another Prompt"));
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
