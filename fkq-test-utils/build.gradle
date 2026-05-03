@@ -11,6 +11,7 @@ dependencies {
   implementation project(':aws-secrets-manager')
   implementation project(':aws-dynamodb')
   implementation project(':fkq-lambda-services')
+  implementation project(':strings')
 
   implementation group: 'software.amazon.awssdk', name: 'sso', version: '2.42.8'
   implementation group: 'software.amazon.awssdk', name: 'ssooidc', version: '2.42.8'

@@ -29,11 +29,47 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+import com.formkiq.urls.HttpStatus;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Builder for Get Document Request.
  */
 public class GetDocumentRequestBuilder implements HttpRequestBuilder<GetDocumentResponse> {
+
+  /**
+   * Assert Document Not Found.
+   *
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @return {@link GetDocumentResponse}
+   */
+  public static GetDocumentResponse assertDocumentFound(final ApiClient client, final String siteId,
+      final DocumentArtifact document) {
+    var resp = new GetDocumentRequestBuilder(document).submit(client, siteId);
+    assertNotNull(resp.response());
+    assertNull(resp.exception());
+    return resp.response();
+  }
+
+  /**
+   * Assert Document Not Found.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   */
+  public static void assertDocumentNotFound(final ApiClient client, final String siteId,
+      final DocumentArtifact document) {
+    var resp = new GetDocumentRequestBuilder(document).submit(client, siteId);
+    assertNull(resp.response());
+    assertNotNull(resp.exception());
+    assertEquals(HttpStatus.NOT_FOUND, resp.exception().getCode());
+  }
 
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
