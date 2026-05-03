@@ -85,10 +85,13 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.lambda.s3.actions.AddMetadataExtractionAction;
 import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.DeleteAction;
 import com.formkiq.stacks.lambda.s3.actions.DocumentExternalSystemExport;
 import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
 import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
@@ -96,6 +99,7 @@ import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.HttpRetryException;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
+import com.formkiq.stacks.lambda.s3.actions.MoveAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
 import com.formkiq.stacks.lambda.s3.actions.SetDataClassificationAction;
@@ -173,6 +177,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     awsServiceCache.register(ActionsNotificationService.class,
@@ -324,6 +329,12 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       case FULLTEXT -> actionStatus =
           new FullTextAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case MOVE ->
+        actionStatus = new MoveAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case DELETE -> actionStatus =
+          new DeleteAction(serviceCache).run(logger, siteId, document, actions, action);
 
       case CHECKSUM -> actionStatus =
           new ChecksumAction(serviceCache).run(logger, siteId, document, actions, action);

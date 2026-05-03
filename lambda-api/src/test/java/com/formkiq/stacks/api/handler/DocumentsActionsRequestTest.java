@@ -78,6 +78,7 @@ import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddActionParameters.EngineEnum;
 import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddDocumentActionsRequest;
+import com.formkiq.client.model.DeleteType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
@@ -1135,6 +1136,68 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("{ocrParseTypes=text}", actions.get(0).parameters().toString());
 
       assertEquals(0, getDocumentActions(siteId, documentId).size());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for workflow-only DELETE action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActionsDelete01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken("Admins");
+      String documentId = saveDocument(siteId);
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.DELETE)
+              .parameters(new AddActionParameters().deleteType(DeleteType.SOFT_DELETE))));
+
+      setBearerToken(siteId);
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'DELETE'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions for workflow-only MOVE action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActionsMove01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken("Admins");
+      String documentId = saveDocument(siteId);
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+          .actions(Collections.singletonList(new AddAction().type(DocumentActionType.MOVE)
+              .parameters(new AddActionParameters().path("/approved/"))));
+
+      setBearerToken(siteId);
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'MOVE'\"}]}",
+            e.getResponseBody());
+      }
     }
   }
 

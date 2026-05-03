@@ -107,6 +107,42 @@ public enum ActionType {
 
     }
   },
+  /** Move document to folder. */
+  MOVE {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+      if (isMissingValue(parameters, "path")) {
+        errors.add(new ValidationErrorImpl().key("parameters.path")
+            .error("action 'path' parameter is required"));
+      } else {
+        String path = parameters.get("path").toString().trim();
+        if (!path.endsWith("/")) {
+          errors.add(new ValidationErrorImpl().key("parameters.path")
+              .error("action 'path' parameter must end with '/'"));
+        }
+      }
+    }
+  },
+  /** Delete document. */
+  DELETE {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+      if (isMissingValue(parameters, "deleteType")) {
+        errors.add(new ValidationErrorImpl().key("parameters.deleteType")
+            .error("action 'deleteType' parameter is required"));
+      } else {
+        String deleteType = parameters.get("deleteType").toString().trim().toUpperCase(Locale.ROOT);
+        if (!VALID_DELETE_TYPES.contains(deleteType)) {
+          errors.add(new ValidationErrorImpl().key("parameters.deleteType")
+              .error("action 'deleteType' parameter must be one of " + VALID_DELETE_TYPES));
+        }
+      }
+    }
+  },
   /** Checksum. */
   CHECKSUM {
     @Override
@@ -115,7 +151,7 @@ public enum ActionType {
         final String notificationsEmail, final Collection<ValidationError> errors) {
       String checksumType = parameters != null ? (String) parameters.get("checksumType") : null;
 
-      if (!hasValue(parameters, "checksumType")) {
+      if (isMissingValue(parameters, "checksumType")) {
         errors.add(new ValidationErrorImpl().key("parameters.checksumType")
             .error("'checksumType' parameter is required"));
       } else if (!VALID_CHECKSUM_TYPES.contains(checksumType.toUpperCase(Locale.ROOT))) {
@@ -130,7 +166,7 @@ public enum ActionType {
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
         final String notificationsEmail, final Collection<ValidationError> errors) {
-      if (!hasValue(parameters, "mappingId")) {
+      if (isMissingValue(parameters, "mappingId")) {
         errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
 
       } else {
@@ -158,21 +194,21 @@ public enum ActionType {
 
         for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
             PARAMETER_NOTIFICATION_SUBJECT)) {
-          if (!hasValue(parameters, parameter)) {
+          if (isMissingValue(parameters, parameter)) {
             errors.add(new ValidationErrorImpl().key("parameters." + parameter)
                 .error("action '" + parameter + "' parameter is required"));
           }
         }
 
-        if (!hasValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
-            && !hasValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
+        if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
+            && isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
           errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
               .error("action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '"
                   + PARAMETER_NOTIFICATION_TO_BCC + "' is required"));
         }
 
-        if (!hasValue(parameters, PARAMETER_NOTIFICATION_TEXT)
-            && !hasValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
+        if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TEXT)
+            && isMissingValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
           errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
               .error("action '" + PARAMETER_NOTIFICATION_TEXT + "' or '"
                   + PARAMETER_NOTIFICATION_HTML + "' is required"));
@@ -260,7 +296,7 @@ public enum ActionType {
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
         final String notificationsEmail, final Collection<ValidationError> errors) {
-      if (!hasValue(parameters, "eventBusName")) {
+      if (isMissingValue(parameters, "eventBusName")) {
         errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
             .error("'eventBusName' parameter is required"));
       }
@@ -272,7 +308,7 @@ public enum ActionType {
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
         final String notificationsEmail, final Collection<ValidationError> errors) {
-      if (!hasValue(parameters, "llmPromptEntityName")) {
+      if (isMissingValue(parameters, "llmPromptEntityName")) {
         errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
             .error("'llmPromptEntityName' parameter is required"));
       }
@@ -309,7 +345,7 @@ public enum ActionType {
 
     private void validateDimension(final Map<String, Object> parameters,
         final Collection<ValidationError> errors, final String dimension) {
-      if (!hasValue(parameters, dimension)) {
+      if (isMissingValue(parameters, dimension)) {
         errors.add(new ValidationErrorImpl().key("parameters." + dimension)
             .error("'" + dimension + "' parameter is required"));
       } else {
@@ -338,7 +374,7 @@ public enum ActionType {
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
         final String notificationsEmail, final Collection<ValidationError> errors) {
-      if (!hasValue(parameters, "llmPromptEntityName")) {
+      if (isMissingValue(parameters, "llmPromptEntityName")) {
         errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
             .error("'llmPromptEntityName' parameter is required"));
       } else {
@@ -363,10 +399,13 @@ public enum ActionType {
       List.of("bmp", "gif", "jpeg", "png", "tif");
   /** Valid checksum types for checksum action. */
   private static final List<String> VALID_CHECKSUM_TYPES = List.of("SHA1", "SHA256", "SHA512");
+  /** Valid delete types for delete action. */
+  private static final List<String> VALID_DELETE_TYPES =
+      List.of("SOFT_DELETE", "HARD_DELETE", "PURGE");
 
-  private static boolean hasValue(final Map<String, Object> parameters, final String key) {
-    return parameters != null && parameters.containsKey(key)
-        && !isEmpty(parameters.get(key).toString().trim());
+  private static boolean isMissingValue(final Map<String, Object> parameters, final String key) {
+    return parameters == null || !parameters.containsKey(key)
+        || isEmpty(parameters.get(key).toString().trim());
   }
 
   /**

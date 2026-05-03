@@ -416,6 +416,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     mockServer.when(request().withMethod("PATCH")).respond(CALLBACK);
     mockServer.when(request().withMethod("POST")).respond(CALLBACK);
     mockServer.when(request().withMethod("PUT")).respond(CALLBACK);
+    mockServer.when(request().withMethod("DELETE")).respond(CALLBACK);
     mockServer.when(request().withMethod("GET")).respond(CALLBACK);
   }
 
@@ -746,6 +747,57 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "76cef72e24a58b90331bc9a31e9400c0356d2101b6e3051fe61f1ec4c582d6d7"
               + "c7f695289d8f4a41288c4af8a2d01d6777bbabd51906508e5132cdf4dbabd567",
           item.checksum());
+    }
+  }
+
+  /**
+   * Handle Delete Action.
+   *
+   */
+  @Test
+  public void testDeleteAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      for (String deleteType : Arrays.asList("SOFT_DELETE", "HARD_DELETE", "PURGE")) {
+        // given
+        DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+        String s3Key =
+            SiteIdKeyGenerator.createS3Key(siteId, document.documentId(), document.artifactId());
+        s3Service.putObject(BUCKET_NAME, s3Key, "content".getBytes(StandardCharsets.UTF_8),
+            "text/plain");
+
+        DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+        item.setPath("incoming/" + document.documentId() + ".txt");
+        documentService.saveDocument(siteId, item, null);
+
+        List<Action> actions = List.of(createAction(document, ActionType.DELETE)
+            .parameters(Map.of("deleteType", deleteType)).build(siteId));
+        actionsService.saveNewActions(actions);
+
+        AwsEvent map = buildAwsEvent(siteId, document);
+        CALLBACK.reset();
+
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        Action action = actionsService.getActions(siteId, document).get(0);
+        assertEquals(ActionType.DELETE, action.type());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+
+        HttpRequest lastRequest = CALLBACK.getLastRequest();
+        if ("PURGE".equals(deleteType)) {
+          assertEquals("/documents/" + document.documentId() + "/purge",
+              lastRequest.getPath().getValue());
+        } else {
+          assertEquals("/documents/" + document.documentId(), lastRequest.getPath().getValue());
+          assertEquals(Boolean.toString("SOFT_DELETE".equals(deleteType)),
+              lastRequest.getFirstQueryStringParameter("softDelete"));
+        }
+
+        if (siteId != null) {
+          assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+        }
+      }
     }
   }
 
@@ -2828,6 +2880,37 @@ public class DocumentActionsProcessorTest implements DbKeys {
     processor.handleRequest(map, null);
 
     // then
+  }
+
+  /**
+   * Handle Move Action.
+   *
+   */
+  @Test
+  public void testMoveAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+      DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+      item.setPath("incoming/test.txt");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.MOVE)
+          .parameters(Map.of("path", "/approved/")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertEquals(ActionType.MOVE, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      DocumentRecord updated = documentService.findDocument(siteId, document);
+      assertEquals("approved/test.txt", updated.path());
+    }
   }
 
   @Test

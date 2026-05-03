@@ -29,6 +29,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -76,16 +77,40 @@ public class SendHttpRequest {
   public HttpResponse<String> sendRequest(final String siteId, final String method,
       final String url, final String payload) throws IOException {
 
+    return sendRequest(siteId, method, url, payload, Map.of());
+  }
+
+  /**
+   * Send Http Request.
+   *
+   * @param siteId {@link String}
+   * @param method {@link String}
+   * @param url {@link String}
+   * @param payload {@link String}
+   * @param queryParameters {@link Map}
+   * @return {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  public HttpResponse<String> sendRequest(final String siteId, final String method,
+      final String url, final String payload, final Map<String, String> queryParameters)
+      throws IOException {
+
     String u = this.documentsIamUrl + url;
 
-    Optional<Map<String, String>> parameters = Optional.empty();
+    Map<String, String> params = new HashMap<>();
+    params.putAll(queryParameters);
 
     if (siteId != null) {
-      parameters = Optional.of(Map.of("siteId", siteId));
+      params.put("siteId", siteId);
     }
 
+    Optional<Map<String, String>> parameters =
+        params.isEmpty() ? Optional.empty() : Optional.of(params);
+
     HttpResponse<String> response;
-    if ("get".equalsIgnoreCase(method)) {
+    if ("delete".equalsIgnoreCase(method)) {
+      response = this.http.delete(u, Optional.empty(), parameters);
+    } else if ("get".equalsIgnoreCase(method)) {
       response = this.http.get(u, Optional.empty(), parameters, payload);
     } else if ("put".equalsIgnoreCase(method)) {
       response = this.http.put(u, Optional.empty(), parameters, payload);

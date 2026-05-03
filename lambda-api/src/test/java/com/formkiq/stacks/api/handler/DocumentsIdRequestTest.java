@@ -91,9 +91,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.DeleteType;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentResponse;
@@ -595,6 +597,62 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"queueId\",\"error\":\"'queueId' does not exist\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents request, with workflow-only DELETE action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddDocumentDelete01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+      AddDocumentRequest req = new AddDocumentRequest().content("SKADJASKDSA")
+          .contentType("text/plain").addActionsItem(new AddAction().type(DocumentActionType.DELETE)
+              .parameters(new AddActionParameters().deleteType(DeleteType.SOFT_DELETE)));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'DELETE'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents request, with workflow-only MOVE action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleAddDocumentMove01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+      AddDocumentRequest req = new AddDocumentRequest().content("SKADJASKDSA")
+          .contentType("text/plain").addActionsItem(new AddAction().type(DocumentActionType.MOVE)
+              .parameters(new AddActionParameters().path("/approved/")));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'MOVE'\"}]}",
             e.getResponseBody());
       }
     }

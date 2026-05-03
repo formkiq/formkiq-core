@@ -45,6 +45,10 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
  */
 public interface ApiValidator {
 
+  /** Action Types that can only be run as workflow steps. */
+  List<ActionType> WORKFLOW_ONLY_ACTION_TYPES =
+      List.of(ActionType.QUEUE, ActionType.MOVE, ActionType.DELETE);
+
   default void validateActions(AwsServiceCache awsservice, SiteConfiguration config,
       final String siteId, List<Action> actions) throws ValidationException {
 
@@ -61,9 +65,13 @@ public interface ApiValidator {
       throw new ValidationException(firstError.get());
     }
 
-    if (notNull(actions).stream().anyMatch(o -> ActionType.QUEUE.equals(o.type()))) {
+    Optional<Action> workflowOnlyAction = notNull(actions).stream()
+        .filter(o -> WORKFLOW_ONLY_ACTION_TYPES.contains(o.type())).findFirst();
+
+    if (workflowOnlyAction.isPresent()) {
+      String type = workflowOnlyAction.map(a -> a.type().name()).orElse("");
       ValidationError e =
-          new ValidationErrorImpl().key("type").error("action type cannot be 'QUEUE'");
+          new ValidationErrorImpl().key("type").error("action type cannot be '" + type + "'");
       throw new ValidationException(List.of(e));
     }
 
