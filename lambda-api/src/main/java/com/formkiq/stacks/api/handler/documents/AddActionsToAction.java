@@ -91,6 +91,7 @@ public class AddActionsToAction {
       put(map, "width", parameters.width());
       put(map, "height", parameters.height());
       put(map, "path", parameters.path());
+      put(map, "deleteType", parameters.deleteType());
       put(map, "outputType", parameters.outputType());
       put(map, "llmPromptEntityName", parameters.llmPromptEntityName());
     }

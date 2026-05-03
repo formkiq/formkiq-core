@@ -275,6 +275,59 @@ class ActionsValidatorTest {
   }
 
   @Test
+  void testValidationDeleteInvalidDeleteType() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.DELETE).userId("joe")
+        .parameters(Map.of("deleteType", "ARCHIVE")).document(document).indexUlid()
+        .build((String) null);
+    testTemplate(action, "parameters.deleteType",
+        "action 'deleteType' parameter must be one of [SOFT_DELETE, HARD_DELETE, PURGE]");
+  }
+
+  @Test
+  void testValidationDeleteMissingDeleteType() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.DELETE).userId("joe").document(document)
+        .indexUlid().build((String) null);
+    testTemplate(action, "parameters.deleteType", "action 'deleteType' parameter is required");
+  }
+
+  @Test
+  void testValidationDeleteValidDeleteType() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.DELETE).userId("joe")
+        .parameters(Map.of("deleteType", "SOFT_DELETE")).document(document).indexUlid()
+        .build((String) null);
+    testTemplate(action, null, null);
+  }
+
+  @Test
+  void testValidationMoveMissingPath() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.MOVE).userId("joe").document(document)
+        .indexUlid().build((String) null);
+    testTemplate(action, "parameters.path", "action 'path' parameter is required");
+  }
+
+  @Test
+  void testValidationMovePathMustEndWithSlash() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.MOVE).userId("joe")
+        .parameters(Map.of("path", "/approved")).document(document).indexUlid()
+        .build((String) null);
+    testTemplate(action, "parameters.path", "action 'path' parameter must end with '/'");
+  }
+
+  @Test
+  void testValidationMoveValidPath() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.MOVE).userId("joe")
+        .parameters(Map.of("path", "approved/")).document(document).indexUlid()
+        .build((String) null);
+    testTemplate(action, null, null);
+  }
+
+  @Test
   void testZeroHeight() {
     testDimensionTemplate(Map.of("height", "0", "width", "100"), "parameters.height",
         "'height' parameter must be an integer > 0 or 'auto'");

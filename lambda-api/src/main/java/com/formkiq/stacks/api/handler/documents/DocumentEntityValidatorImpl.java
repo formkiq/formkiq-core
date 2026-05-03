@@ -37,6 +37,7 @@ import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
@@ -93,10 +94,17 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
         .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
 
     if (!actions.isEmpty()) {
+      int beforeActionErrors = errors.size();
 
       for (Action action : actions) {
         errors.addAll(this.actionsValidator.validation(siteId, action, config.chatGptApiKey(),
             config.notificationEmail()));
+      }
+
+      if (errors.size() == beforeActionErrors) {
+        actions.stream().filter(a -> ApiValidator.WORKFLOW_ONLY_ACTION_TYPES.contains(a.type()))
+            .findFirst().ifPresent(action -> errors.add(new ValidationErrorImpl().key("type")
+                .error("action type cannot be '" + action.type().name() + "'")));
       }
     }
   }

@@ -9724,6 +9724,8 @@ components:
       - ANTIVIRUS
       - DOCUMENTTAGGING
       - FULLTEXT
+      - MOVE
+      - DELETE
       - CHECKSUM
       - NOTIFICATION
       - OCR
@@ -9736,6 +9738,13 @@ components:
       - RESIZE
       - DATA_CLASSIFICATION
       - MALWARE_SCAN
+    DeleteType:
+      type: string
+      description: 'DELETE: Type of delete to perform'
+      enum:
+      - SOFT_DELETE
+      - HARD_DELETE
+      - PURGE
     DocumentAction:
       type: object
       properties:
@@ -9876,7 +9885,9 @@ components:
           description: The height of the image to resize (or 'auto')
         path:
           type: string
-          description: The path to use when creating resized document (optional)
+          description: 'MOVE: Destination folder path, must end with ''/''; RESIZE: Path to use when creating resized document (optional)'
+        deleteType:
+          $ref: '#/components/schemas/DeleteType'
         outputType:
           type: string
           description: The output type of the image

@@ -45,7 +45,7 @@ public record AddActionParameters(List<AwsTextractQuery> ocrTextractQueries, Str
     String notificationType, String notificationToCc, String notificationToBcc,
     String notificationSubject, String notificationText, String notificationHtml, String tags,
     String mappingId, String eventBusName, String checksumType, String width, String height,
-    String path, String outputType, String llmPromptEntityName) {
+    String path, String deleteType, String outputType, String llmPromptEntityName) {
 
   public Map<String, Object> toMap() {
     Map<String, Object> map = new HashMap<>();
@@ -74,6 +74,7 @@ public record AddActionParameters(List<AwsTextractQuery> ocrTextractQueries, Str
     put(map, "width", this.width);
     put(map, "height", this.height);
     put(map, "path", this.path);
+    put(map, "deleteType", this.deleteType);
     put(map, "outputType", this.outputType);
     put(map, "llmPromptEntityName", this.llmPromptEntityName);
 
