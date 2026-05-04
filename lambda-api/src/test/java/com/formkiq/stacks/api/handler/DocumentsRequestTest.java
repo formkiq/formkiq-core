@@ -92,6 +92,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -452,12 +453,16 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new DeleteDocumentRequestBuilder(doc0).softDelete(true).submit(client, siteId).throwIfError();
+      Thread.sleep(1000);
       new DeleteDocumentRequestBuilder(doc1).softDelete(true).submit(client, siteId).throwIfError();
+      Thread.sleep(1000);
       new DeleteDocumentRequestBuilder(doc2).softDelete(true).submit(client, siteId).throwIfError();
 
       // then
-      final OffsetDateTime deleted1 = getSoftDeletedDateTime(siteId, doc1);
-      final OffsetDateTime deleted2 = getSoftDeletedDateTime(siteId, doc2);
+      final OffsetDateTime deleted1 =
+          getSoftDeletedDateTime(siteId, doc1).truncatedTo(ChronoUnit.SECONDS);
+      final OffsetDateTime deleted2 =
+          getSoftDeletedDateTime(siteId, doc2).truncatedTo(ChronoUnit.SECONDS);
 
       // when
       var desc = new GetDocumentsRequestBuilder().softDeleted(true).sort("DESC").limit(10)

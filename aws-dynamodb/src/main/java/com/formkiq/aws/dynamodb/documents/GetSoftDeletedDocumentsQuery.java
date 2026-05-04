@@ -26,10 +26,11 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.objects.DateUtil;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
@@ -47,6 +48,11 @@ public class GetSoftDeletedDocumentsQuery implements DynamoDbQuery {
   private static final String DATE_MIN = DATE_PREFIX;
   /** Sort key maximum. */
   private static final String DATE_MAX = DATE_PREFIX + "~";
+  /** Sort key date suffix for the end of a second. */
+  private static final String END_OF_SECOND_SUFFIX = ".999999999Z";
+  /** Sort key date formatter. */
+  private static final DateTimeFormatter DATE_KEY_FORMATTER =
+      DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneOffset.UTC);
 
   /** Range start. */
   private final Date start;
@@ -111,12 +117,12 @@ public class GetSoftDeletedDocumentsQuery implements DynamoDbQuery {
   }
 
   private String toEndDateKey(final Date date) {
-    Instant instant = date.toInstant().plus(1, ChronoUnit.MILLIS).minusNanos(1);
-    return DATE_PREFIX + DateUtil.getIso8601Formatter().format(instant);
+    Instant instant = date.toInstant().truncatedTo(ChronoUnit.SECONDS);
+    return DATE_PREFIX + DATE_KEY_FORMATTER.format(instant) + END_OF_SECOND_SUFFIX;
   }
 
   private String toStartDateKey(final Date date) {
-    Instant instant = date.toInstant().truncatedTo(ChronoUnit.MILLIS).minus(1, ChronoUnit.MILLIS);
-    return DATE_PREFIX + DateUtil.getIso8601Formatter().format(instant);
+    Instant instant = date.toInstant().truncatedTo(ChronoUnit.SECONDS);
+    return DATE_PREFIX + DATE_KEY_FORMATTER.format(instant);
   }
 }
