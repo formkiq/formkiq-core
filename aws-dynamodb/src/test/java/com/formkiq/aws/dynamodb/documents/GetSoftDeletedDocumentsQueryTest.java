@@ -28,11 +28,13 @@ import com.formkiq.aws.dynamodb.objects.DateUtil;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit Tests for {@link GetSoftDeletedDocumentsQuery}.
@@ -51,9 +53,9 @@ public class GetSoftDeletedDocumentsQueryTest {
     assertEquals(Boolean.TRUE, request.scanIndexForward());
     assertEquals("#PK = :PK AND #SK BETWEEN :SK_low AND :SK_high",
         request.keyConditionExpression());
-    assertEquals("date#2025-04-01T23:59:59.999Z",
+    assertEquals("date#2025-04-02T00:00:00",
         request.expressionAttributeValues().get(":SK_low").s());
-    assertEquals("date#2025-04-03T00:00:00.000999999Z",
+    assertEquals("date#2025-04-03T00:00:00.999999999Z",
         request.expressionAttributeValues().get(":SK_high").s());
     assertEquals("GSI2SK", request.expressionAttributeNames().get("#SK"));
   }
@@ -80,7 +82,7 @@ public class GetSoftDeletedDocumentsQueryTest {
         new GetSoftDeletedDocumentsQuery(null, end, false).build("Documents", siteId, null, 10);
 
     assertEquals("date#", request.expressionAttributeValues().get(":SK_low").s());
-    assertEquals("date#2025-04-02T00:00:00.000999999Z",
+    assertEquals("date#2025-04-02T00:00:00.999999999Z",
         request.expressionAttributeValues().get(":SK_high").s());
   }
 
@@ -106,8 +108,25 @@ public class GetSoftDeletedDocumentsQueryTest {
     QueryRequest request =
         new GetSoftDeletedDocumentsQuery(start, null, false).build("Documents", siteId, null, 10);
 
-    assertEquals("date#2025-04-01T23:59:59.999Z",
+    assertEquals("date#2025-04-02T00:00:00",
         request.expressionAttributeValues().get(":SK_low").s());
     assertEquals("date#~", request.expressionAttributeValues().get(":SK_high").s());
+  }
+
+  @Test
+  void testBuildWithRangeLowerBoundSortsAfterUpperBound() {
+    String siteId = ID.uuid();
+    Date start = Date.from(Instant.parse("2026-05-03T03:35:36.001Z"));
+    Date end = Date.from(Instant.parse("2026-05-03T03:35:36.044Z"));
+
+    QueryRequest request =
+        new GetSoftDeletedDocumentsQuery(start, end, false).build("Documents", siteId, null, 10);
+
+    String low = request.expressionAttributeValues().get(":SK_low").s();
+    String high = request.expressionAttributeValues().get(":SK_high").s();
+    assertEquals("date#2026-05-03T03:35:36", low);
+    assertEquals("date#2026-05-03T03:35:36.999999999Z", high);
+    assertTrue(low.compareTo(high) <= 0,
+        "DynamoDB BETWEEN lower bound must sort before upper bound; low=" + low + ", high=" + high);
   }
 }
