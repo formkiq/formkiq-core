@@ -166,6 +166,16 @@ Parameters:
 
 Conditions:
 
+  HasCertificateStackNameUserAuthApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - "_"
+
   HasCertificateStackNameHttpApiDomain:
     Fn::Not:
       - Fn::Or:
@@ -519,12 +529,11 @@ Resources:
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
   AuthStageMapping:
-    Condition: HasCertificateStackName
+    Condition: HasCertificateStackNameUserAuthApiDomain
     Type: 'AWS::ApiGatewayV2::ApiMapping'
     Properties:
       DomainName:
-        Fn::ImportValue:
-          Fn::Sub: '${CertificateStackName}-UserAuthApiDomain'
+        Ref: CertificateStackNameUserAuthApiDomain
       ApiId:
         Fn::GetAtt:
           - UserAuthApi
