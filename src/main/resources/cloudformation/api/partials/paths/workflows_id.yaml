@@ -213,6 +213,9 @@ components:
         stepId:
           type: "string"
           description: "Workflow Step Identifier"
+        description:
+          type: "string"
+          description: "Workflow Step description"
         action:
           $ref: "#/components/schemas/DocumentAction"
         queue:
