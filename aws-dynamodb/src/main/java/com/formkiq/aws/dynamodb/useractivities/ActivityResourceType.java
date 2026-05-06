@@ -56,7 +56,13 @@ public enum ActivityResourceType {
   /** Control Policy Opa. */
   CONTROL_POLICY_OPA("controlpolicy#opa", "controlPolicy", true),
   /** Api Key. */
-  API_KEY("apikeys", "apiKey", true);
+  API_KEY("apikeys", "apiKey", true),
+  /** Site. */
+  SITE("sites", "siteId", false),
+  /** Site Permission. */
+  SITE_PERMISSION("sitePermissions", "siteId", false),
+  /** Site Configuration. */
+  SITE_CONFIGURATION("siteConfiguration", "siteId", false);
 
   public static ActivityResourceType find(final Map<String, String> map) {
     Optional<ActivityResourceType> o = Arrays.stream(values()).filter(a -> a.queryable)

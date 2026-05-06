@@ -35,6 +35,7 @@ import java.util.Optional;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -48,6 +49,7 @@ import com.formkiq.aws.ses.SesConnectionBuilder;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
@@ -192,7 +194,17 @@ public class ConfigurationRequestHandler
     validate(awsservice, config);
 
     ConfigService configService = awsservice.getExtension(ConfigService.class);
+    SiteConfiguration oldConfig = configService.get(siteId);
     if (configService.save(siteId, config)) {
+      Map<String, Object> properties = Map.of("siteId", siteId);
+      if (oldConfig.key() == null) {
+        UserActivityContext.setCreate(ActivityResourceType.SITE_CONFIGURATION,
+            config.getAttributes(), properties);
+      } else {
+        oldConfig = SiteConfiguration.builder().configuration(oldConfig).build(siteId);
+        UserActivityContext.setUpdate(ActivityResourceType.SITE_CONFIGURATION,
+            oldConfig.getAttributes(), config.getAttributes(), properties);
+      }
       return ApiRequestHandlerResponse.builder().ok().body("message", "Config saved").build();
     }
 

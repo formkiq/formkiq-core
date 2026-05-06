@@ -176,6 +176,27 @@ public class ActivityRecordBuilderTest {
   }
 
   @Test
+  void testBuildKeySiteConfiguration() {
+    String siteId = "site-1";
+    assertBuildKey("siteConfiguration", Map.of("siteId", siteId), "globalActivity#",
+        "siteConfiguration#" + siteId);
+  }
+
+  @Test
+  void testBuildKeySitePermissions() {
+    String siteId = "site-1";
+    String groupName = "group-1";
+    assertBuildKey("sitePermissions", Map.of("siteId", siteId, "groupName", groupName),
+        "globalActivity#", "sitePermissions#" + siteId + "#" + groupName);
+  }
+
+  @Test
+  void testBuildKeySites() {
+    String siteId = "site-1";
+    assertBuildKey("sites", Map.of("siteId", siteId), "globalActivity#", "sites#" + siteId);
+  }
+
+  @Test
   void testBuildKeyWorkflows() {
     String workflowId = "workflow-1";
     assertBuildKey("workflows", Map.of("workflowId", workflowId), "workflows#" + workflowId,
@@ -184,7 +205,6 @@ public class ActivityRecordBuilderTest {
 
   @Test
   void testBuildSsoTokenGrant() {
-    String mappingId = "mapping-1";
-    assertBuildKey("ssoTokenGrant", Map.of(), "globalActivity#ssoTokenGrant", "ssoTokenGrant");
+    assertBuildKey("ssoTokenGrant", Map.of(), "globalActivity#", "ssoTokenGrant");
   }
 }
