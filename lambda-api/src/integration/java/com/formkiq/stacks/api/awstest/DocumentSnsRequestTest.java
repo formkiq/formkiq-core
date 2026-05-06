@@ -57,7 +57,12 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
   private static String documentSnsQueue;
 
   private static Message getMessage(final SqsMessageReceiver receiver) throws InterruptedException {
-    List<Message> messages = receiver.get().messages();
+    return getMessage(receiver, List.of());
+  }
+
+  private static Message getMessage(final SqsMessageReceiver receiver,
+      final List<String> searchStrings) throws InterruptedException {
+    List<Message> messages = receiver.get(searchStrings);
     assertEquals(1, messages.size());
     return messages.get(0);
   }
@@ -111,7 +116,7 @@ class DocumentSnsRequestTest extends AbstractAwsIntegrationTest {
         .response().getDocumentId();
 
     // then
-    Message message = getMessage(receiver);
+    Message message = getMessage(receiver, List.of("create"));
     Map<String, Object> map = assertMessage(message, "create", documentId, path);
     assertNotNull(map.get("url"));
 
