@@ -223,7 +223,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     final Long contentLength = 36L;
     String key = ID.uuid();
     String contentType = "text/plain";
-    DocumentRecord record = new DocumentRecordBuilder().build((String) null);
+    DocumentArtifact document = DocumentArtifact.of(key, null);
+    DocumentRecord record = new DocumentRecordBuilder().document(document).build((String) null);
     DocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(record);
 
     // new DocumentItemDynamoDb(key, new Date(), "test");

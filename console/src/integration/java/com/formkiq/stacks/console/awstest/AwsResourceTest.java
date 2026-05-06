@@ -154,11 +154,9 @@ public class AwsResourceTest {
 
           if ("saml".equals(userAuthentication)) {
 
-            page.waitForNavigation(() -> {
-              page.waitForSelector("text=Sign In");
-              Locator element = page.locator("text=Sign In");
-              assertEquals(1, element.count());
-            });
+            page.waitForSelector("text=Sign In");
+            Locator element = page.locator("text=Sign In");
+            assertEquals(1, element.count());
 
           } else {
 
@@ -198,7 +196,7 @@ public class AwsResourceTest {
    */
   @Test
   public void testSsmParameters() {
-    assertEquals("v4.0.33",
+    assertEquals("v4.0.35",
         ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/version"));
     assertTrue(ssmService.getParameterValue("/formkiq/" + appenvironment + "/s3/Console")
         .contains(appenvironment + "-web-ui-"));
