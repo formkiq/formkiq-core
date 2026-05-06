@@ -96,6 +96,10 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private String ruleId;
   /** Control Policy. */
   private String controlPolicy;
+  /** Site Id. */
+  private String resourceSiteId;
+  /** Site Group Name. */
+  private String groupName;
 
   /**
    * constructor.
@@ -239,6 +243,9 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
       case "mappings" -> buildMappings(siteId);
       case "apikeys" -> buildApiKeys(siteId);
       case "controlpolicy#opa" -> buildControlPolicyOpa(siteId);
+      case "sites" -> buildSites(siteId);
+      case "sitePermissions" -> buildSitePermissions(siteId);
+      case "siteConfiguration" -> buildSiteConfiguration(siteId);
       case "ssoTokenGrant" -> buildSsoTokenGrant(siteId);
       default -> throw new IllegalArgumentException("Invalid resource " + resource);
     };
@@ -277,9 +284,32 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     return buildActivityKey(siteId, "schemas#" + schema, schema);
   }
 
+  private DynamoDbShardKey buildSiteConfiguration(final String siteId) {
+    Objects.requireNonNull(resourceSiteId, "siteId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "globalActivity#", "siteConfiguration#" + resourceSiteId);
+  }
+
+  private DynamoDbShardKey buildSitePermissions(final String siteId) {
+    Objects.requireNonNull(resourceSiteId, "siteId must not be null");
+    Objects.requireNonNull(groupName, "groupName must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "globalActivity#",
+        "sitePermissions#" + resourceSiteId + "#" + groupName);
+  }
+
+  private DynamoDbShardKey buildSites(final String siteId) {
+    Objects.requireNonNull(resourceSiteId, "siteId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "globalActivity#", "sites#" + resourceSiteId);
+  }
+
   private DynamoDbShardKey buildSsoTokenGrant(final String siteId) {
     Objects.requireNonNull(userId, "userId must not be null");
-    return buildActivityKey(siteId, "globalActivity#ssoTokenGrant", "ssoTokenGrant");
+    return buildActivityKey(siteId, "globalActivity#", "ssoTokenGrant");
   }
 
   private DynamoDbShardKey buildWorkflowsKey(final String siteId) {
@@ -374,6 +404,8 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     attributeKey = (String) resourceIds.get("attributeKey");
     apiKey = (String) resourceIds.get("apiKey");
     controlPolicy = (String) resourceIds.get("controlPolicy");
+    resourceSiteId = (String) resourceIds.get("siteId");
+    groupName = (String) resourceIds.get("groupName");
 
     return this;
   }
