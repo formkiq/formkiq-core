@@ -25,6 +25,9 @@ package com.formkiq.stacks.api.handler.sites;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -32,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
 import com.formkiq.validation.ValidationError;
@@ -85,6 +89,8 @@ public class SitesLocalesRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+    UserActivityContext.set(ActivityResourceType.LOCALE, UserActivityType.CREATE,
+        Map.of("locale", new ChangeRecord(null, locale)), Map.of("locale", locale));
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "Locale '" + locale + "' saved").build();

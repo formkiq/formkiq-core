@@ -59,6 +59,12 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   private String sort;
   /** Workflow Id. */
   private String workflowId;
+  /** Queue Id. */
+  private String queueId;
+  /** Webhook Id. */
+  private String webhookId;
+  /** Locale. */
+  private String locale;
   /** Ruleset Id. */
   private String rulesetId;
   /** Attribute Key. */
@@ -202,6 +208,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   }
 
   /**
+   * Set Locale.
+   *
+   * @param activitiesLocale {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder locale(final String activitiesLocale) {
+    this.locale = activitiesLocale;
+    return this;
+  }
+
+  /**
    * Set MappingId.
    *
    * @param activitiesMappingId {@link String}
@@ -231,6 +248,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder next(final String activitiesNext) {
     this.next = activitiesNext;
+    return this;
+  }
+
+  /**
+   * Set Queue Id.
+   *
+   * @param activitiesQueueId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder queueId(final String activitiesQueueId) {
+    this.queueId = activitiesQueueId;
     return this;
   }
 
@@ -305,8 +333,8 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
       final String siteId) {
     return executeApiCall(() -> new UserActivitiesApi(apiClient).getResourceActivities(siteId,
         documentId(), artifactId(), this.entityTypeId, this.namespace, this.entityId, rulesetId,
-        ruleId, workflowId, attributeKey, schema, classificationId, mappingId, apiKey,
-        controlPolicy, start, end, sort, next, limit, this.userId));
+        ruleId, workflowId, queueId, webhookId, locale, attributeKey, schema, classificationId,
+        mappingId, apiKey, controlPolicy, start, end, sort, next, limit, this.userId));
   }
 
   /**
@@ -317,6 +345,17 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
    */
   public GetActivitiesRequestBuilder userId(final String activitiesUserId) {
     this.userId = activitiesUserId;
+    return this;
+  }
+
+  /**
+   * Set Webhook Id.
+   *
+   * @param activitiesWebhookId {@link String}
+   * @return this builder
+   */
+  public GetActivitiesRequestBuilder webhookId(final String activitiesWebhookId) {
+    this.webhookId = activitiesWebhookId;
     return this;
   }
 

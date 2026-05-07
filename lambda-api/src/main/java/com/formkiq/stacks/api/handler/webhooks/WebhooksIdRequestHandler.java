@@ -33,6 +33,9 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -41,6 +44,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}". */
@@ -56,10 +60,16 @@ public class WebhooksIdRequestHandler
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    if (webhooksService.findWebhook(siteId, id) == null) {
+    DynamicObject webhook = webhooksService.findWebhook(siteId, id);
+    if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
     webhooksService.deleteWebhook(siteId, id);
+    UserActivityContext.set(ActivityResourceType.WEBHOOK, UserActivityType.DELETE,
+        Map.of("webhookId", new ChangeRecord(id, null), "name",
+            new ChangeRecord(webhook.getString("path"), null), "enabled",
+            new ChangeRecord(webhook.getString("enabled"), null)),
+        Map.of("webhookId", id));
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "'" + id + "' object deleted")
         .build();
@@ -115,7 +125,8 @@ public class WebhooksIdRequestHandler
 
     WebhooksService webhooksService = awsServices.getExtension(WebhooksService.class);
 
-    if (webhooksService.findWebhook(siteId, id) == null) {
+    DynamicObject webhook = webhooksService.findWebhook(siteId, id);
+    if (webhook == null) {
       throw new NotFoundException("Webhook 'id' not found");
     }
 
@@ -143,6 +154,22 @@ public class WebhooksIdRequestHandler
 
     if (ttlDate != null) {
       webhooksService.updateTimeToLive(siteId, id, ttlDate);
+    }
+
+    Map<String, ChangeRecord> changes = new HashMap<>();
+    if (obj.containsKey("name")) {
+      changes.put("name", new ChangeRecord(webhook.getString("path"), obj.getString("name")));
+    }
+    if (obj.containsKey("enabled")) {
+      changes.put("enabled",
+          new ChangeRecord(webhook.getString("enabled"), obj.getBoolean("enabled")));
+    }
+    if (obj.containsKey("ttl")) {
+      changes.put("TimeToLive", new ChangeRecord(webhook.getString("TimeToLive"), ttlDate));
+    }
+    if (!changes.isEmpty()) {
+      UserActivityContext.set(ActivityResourceType.WEBHOOK, UserActivityType.UPDATE, changes,
+          Map.of("webhookId", id));
     }
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "'" + id + "' object updated")

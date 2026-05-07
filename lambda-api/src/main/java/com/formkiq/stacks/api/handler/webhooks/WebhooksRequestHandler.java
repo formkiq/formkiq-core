@@ -36,6 +36,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -49,6 +52,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -154,6 +158,11 @@ public class WebhooksRequestHandler
     validatePost(awsservice, config, siteId, o);
 
     String id = saveWebhook(authorization, awsservice, config, siteId, o);
+    UserActivityContext.set(ActivityResourceType.WEBHOOK, UserActivityType.CREATE,
+        Map.of("webhookId", new ChangeRecord(null, id), "name",
+            new ChangeRecord(null, o.getString("name")), "enabled",
+            new ChangeRecord(null, o.containsKey("enabled") ? o.getString("enabled") : "true")),
+        Map.of("webhookId", id));
 
     return ApiRequestHandlerResponse.builder().created()
         .body(Map.of("webhookId", id, "siteId", isDefaultSiteId(siteId) ? DEFAULT_SITE_ID : siteId))

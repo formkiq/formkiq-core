@@ -24,6 +24,9 @@
 package com.formkiq.stacks.api.handler.sites;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -32,6 +35,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecordToMap;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
@@ -39,6 +43,7 @@ import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems". */
@@ -96,7 +101,30 @@ public class SitesLocaleResourceItemsRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+    UserActivityContext.set(ActivityResourceType.LOCALE, UserActivityType.CREATE,
+        toChanges(null, item), Map.of("locale", locale));
 
     return ApiRequestHandlerResponse.builder().created().body("itemKey", item.getItemKey()).build();
+  }
+
+  private Map<String, ChangeRecord> toChanges(final LocaleTypeRecord oldItem,
+      final LocaleTypeRecord newItem) {
+
+    Map<String, ChangeRecord> changes = new HashMap<>();
+    changes.put("locale", new ChangeRecord(value(oldItem, LocaleTypeRecord::getLocale),
+        value(newItem, LocaleTypeRecord::getLocale)));
+    changes.put("itemKey", new ChangeRecord(value(oldItem, LocaleTypeRecord::getItemKey),
+        value(newItem, LocaleTypeRecord::getItemKey)));
+    changes.put("itemType", new ChangeRecord(value(oldItem, i -> i.getItemType().name()),
+        value(newItem, i -> i.getItemType().name())));
+    changes.put("localizedValue",
+        new ChangeRecord(value(oldItem, LocaleTypeRecord::getLocalizedValue),
+            value(newItem, LocaleTypeRecord::getLocalizedValue)));
+    return changes;
+  }
+
+  private String value(final LocaleTypeRecord item,
+      final java.util.function.Function<LocaleTypeRecord, String> function) {
+    return item != null ? function.apply(item) : null;
   }
 }

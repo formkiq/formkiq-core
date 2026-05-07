@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -41,6 +44,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 
 /** {@link ApiGatewayRequestHandler} for "/webhooks/{webhookId}/tags". */
@@ -114,6 +118,12 @@ public class WebhooksTagsRequestHandler
     }
 
     webhooksService.addTags(siteId, id, List.of(tag), ttl);
+
+    Map<String, ChangeRecord> changes = new HashMap<>();
+    changes.put("tagKey", new ChangeRecord(null, tag.getKey()));
+    changes.put("tagValue", new ChangeRecord(null, tag.getValue()));
+    UserActivityContext.set(ActivityResourceType.WEBHOOK, UserActivityType.UPDATE, changes,
+        Map.of("webhookId", id));
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "Created Tag '" + tag.getKey() + "'.").build();

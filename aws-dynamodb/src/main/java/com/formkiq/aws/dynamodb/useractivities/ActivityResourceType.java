@@ -41,6 +41,12 @@ public enum ActivityResourceType {
   ENTITY_TYPE("entityTypes", "entityTypeId", true),
   /** Workflow. */
   WORKFLOW("workflows", "workflowId", true),
+  /** Queue. */
+  QUEUE("queues", "queueId", true),
+  /** Webhook. */
+  WEBHOOK("webhooks", "webhookId", true),
+  /** Locale. */
+  LOCALE("locales", "locale", true),
   /** Ruleset Rule. */
   RULESET_RULE("rulesetRules", "ruleId", true),
   /** Ruleset. */

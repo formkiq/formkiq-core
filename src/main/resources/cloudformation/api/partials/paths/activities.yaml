@@ -90,6 +90,9 @@ paths:
         - $ref: '#/components/parameters/rulesetIdQuery'
         - $ref: '#/components/parameters/ruleIdQuery'
         - $ref: '#/components/parameters/workflowIdQuery'
+        - $ref: '#/components/parameters/queueIdQuery'
+        - $ref: '#/components/parameters/webhookIdQuery'
+        - $ref: '#/components/parameters/localeQueryParam'
         - $ref: '#/components/parameters/attributeKeyQuery'
         - $ref: '#/components/parameters/schemaQuery'
         - $ref: '#/components/parameters/classificationIdQuery'
@@ -269,6 +272,15 @@ components:
         workflowId:
           type: string
           description: Workflow Identifier
+        queueId:
+          type: string
+          description: Queue Identifier
+        webhookId:
+          type: string
+          description: Webhook Identifier
+        locale:
+          type: string
+          description: Locale Identifier
         controlPolicy:
           type: string
           description: Control Policy Type

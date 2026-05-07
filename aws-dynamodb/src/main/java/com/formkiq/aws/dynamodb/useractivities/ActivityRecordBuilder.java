@@ -74,6 +74,12 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private String artifactId;
   /** Activity Record Workflow Id. */
   private String workflowId;
+  /** Activity Record Queue Id. */
+  private String queueId;
+  /** Activity Record Webhook Id. */
+  private String webhookId;
+  /** Activity Record Locale. */
+  private String locale;
   /** Activity Record Ruleset Id. */
   private String rulesetId;
   /** Activity Record Attribute Key. */
@@ -140,8 +146,8 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
 
     return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId, schema,
         classificationId, mappingId, rulesetId, ruleId, entityTypeId, entityId, documentId,
-        artifactId, workflowId, attributeKey, apiKey, controlPolicy, message, insertedDate,
-        versionPk, versionSk, changes);
+        artifactId, workflowId, attributeKey, queueId, webhookId, locale, apiKey, controlPolicy,
+        message, insertedDate, versionPk, versionSk, changes);
   }
 
   private DynamoDbShardKey buildActivityKey(final String siteId, final String pk,
@@ -232,6 +238,9 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   public DynamoDbShardKey buildKey(final String siteId) {
     return switch (resource) {
       case "documents", "users", "documentAttributes" -> buildDocumentsKey(siteId);
+      case "queues" -> buildQueuesKey(siteId);
+      case "webhooks" -> buildWebhooksKey(siteId);
+      case "locales" -> buildLocalesKey(siteId);
       case "rulesets" -> buildRulesetsKey(siteId);
       case "rulesetRules" -> buildRulesKey(siteId);
       case "workflows" -> buildWorkflowsKey(siteId);
@@ -251,12 +260,28 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     };
   }
 
+  private DynamoDbShardKey buildLocalesKey(final String siteId) {
+
+    Objects.requireNonNull(locale, "locale must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "locales#" + locale, locale);
+  }
+
   private DynamoDbShardKey buildMappings(final String siteId) {
 
     Objects.requireNonNull(mappingId, "mappingId must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
 
     return buildActivityKey(siteId, "mappings#" + mappingId, mappingId);
+  }
+
+  private DynamoDbShardKey buildQueuesKey(final String siteId) {
+
+    Objects.requireNonNull(queueId, "queueId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "queues#" + queueId, queueId);
   }
 
   private DynamoDbShardKey buildRulesKey(final String siteId) {
@@ -310,6 +335,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private DynamoDbShardKey buildSsoTokenGrant(final String siteId) {
     Objects.requireNonNull(userId, "userId must not be null");
     return buildActivityKey(siteId, "globalActivity#", "ssoTokenGrant");
+  }
+
+  private DynamoDbShardKey buildWebhooksKey(final String siteId) {
+
+    Objects.requireNonNull(webhookId, "webhookId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "webhooks#" + webhookId, webhookId);
   }
 
   private DynamoDbShardKey buildWorkflowsKey(final String siteId) {
@@ -392,6 +425,9 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   public ActivityRecordBuilder resourceIds(final Map<String, Object> resourceIds) {
 
     workflowId = (String) resourceIds.get("workflowId");
+    queueId = (String) resourceIds.get("queueId");
+    webhookId = (String) resourceIds.get("webhookId");
+    locale = (String) resourceIds.get("locale");
     documentId = (String) resourceIds.get("documentId");
     artifactId = (String) resourceIds.get("artifactId");
     entityId = (String) resourceIds.get("entityId");

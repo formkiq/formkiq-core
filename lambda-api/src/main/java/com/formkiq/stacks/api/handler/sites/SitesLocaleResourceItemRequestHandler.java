@@ -24,6 +24,9 @@
 package com.formkiq.stacks.api.handler.sites;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -31,13 +34,16 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecordToMap;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * {@link ApiGatewayRequestHandler} for "/sites/{siteId}/locales/{locale}/resourceItems/{itemKey}".
@@ -60,10 +66,13 @@ public class SitesLocaleResourceItemRequestHandler
 
     LocaleService service = awsservice.getExtension(LocaleService.class);
 
+    LocaleTypeRecord item = service.find(siteId, locale, itemKey);
     boolean deleted = service.delete(siteId, locale, itemKey);
     if (!deleted) {
       throw new NotFoundException("ItemKey '" + itemKey + "' not found");
     }
+    UserActivityContext.set(ActivityResourceType.LOCALE, UserActivityType.DELETE,
+        toChanges(item, null), Map.of("locale", locale));
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "ItemKey '" + itemKey + "' successfully deleted").build();
@@ -104,6 +113,7 @@ public class SitesLocaleResourceItemRequestHandler
     String locale = event.getPathParameter("locale");
     String itemKey = event.getPathParameter("itemKey");
     LocaleService service = awsservice.getExtension(LocaleService.class);
+    final LocaleTypeRecord oldItem = service.find(siteId, locale, itemKey);
 
     LocaleTypeRecord item = record.getResourceItem();
     item.setLocale(locale);
@@ -116,8 +126,31 @@ public class SitesLocaleResourceItemRequestHandler
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
+    UserActivityContext.set(ActivityResourceType.LOCALE, UserActivityType.UPDATE,
+        toChanges(oldItem, item), Map.of("locale", locale));
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "set item '" + item.getItemKey() + "' successfully").build();
+  }
+
+  private Map<String, ChangeRecord> toChanges(final LocaleTypeRecord oldItem,
+      final LocaleTypeRecord newItem) {
+
+    Map<String, ChangeRecord> changes = new HashMap<>();
+    changes.put("locale", new ChangeRecord(value(oldItem, LocaleTypeRecord::getLocale),
+        value(newItem, LocaleTypeRecord::getLocale)));
+    changes.put("itemKey", new ChangeRecord(value(oldItem, LocaleTypeRecord::getItemKey),
+        value(newItem, LocaleTypeRecord::getItemKey)));
+    changes.put("itemType", new ChangeRecord(value(oldItem, i -> i.getItemType().name()),
+        value(newItem, i -> i.getItemType().name())));
+    changes.put("localizedValue",
+        new ChangeRecord(value(oldItem, LocaleTypeRecord::getLocalizedValue),
+            value(newItem, LocaleTypeRecord::getLocalizedValue)));
+    return changes;
+  }
+
+  private String value(final LocaleTypeRecord item,
+      final java.util.function.Function<LocaleTypeRecord, String> function) {
+    return item != null ? function.apply(item) : null;
   }
 }
