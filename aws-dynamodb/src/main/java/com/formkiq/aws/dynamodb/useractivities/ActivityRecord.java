@@ -38,8 +38,9 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
     UserActivityStatus status, String sourceIpAddress, String source, String userId, String schema,
     String classificationId, String mappingId, String rulesetId, String ruleId, String entityTypeId,
     String entityId, String documentId, String artifactId, String workflowId, String attributeKey,
-    String apiKey, String controlPolicy, String message, Date insertedDate, String versionPk,
-    String versionSk, Map<String, Object> changes) {
+    String queueId, String webhookId, String locale, String apiKey, String controlPolicy,
+    String message, Date insertedDate, String versionPk, String versionSk,
+    Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -71,6 +72,8 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
         .withString("apiKey", apiKey).withString("documentId", documentId)
         .withString("artifactId", artifactId).withString("controlPolicy", controlPolicy)
         .withString("workflowId", workflowId).withString("attributeKey", attributeKey)
-        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
+        .withString("queueId", queueId).withString("webhookId", webhookId)
+        .withString("locale", locale).withDate("inserteddate", insertedDate)
+        .withMap("changes", changes).build();
   }
 }

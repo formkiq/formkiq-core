@@ -263,7 +263,7 @@ Resources:
   DocumentsS3Buckets:
     Type: AWS::S3::Bucket
     DependsOn:
-    - DocumentsS3Update
+    - DocumentsUpdateObjectPermission
     Properties:
       BucketName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"

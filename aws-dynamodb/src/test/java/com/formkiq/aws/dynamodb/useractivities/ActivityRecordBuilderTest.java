@@ -150,9 +150,21 @@ public class ActivityRecordBuilderTest {
   }
 
   @Test
+  void testBuildKeyLocales() {
+    String locale = "fr-CA";
+    assertBuildKey("locales", Map.of("locale", locale), "locales#" + locale, locale);
+  }
+
+  @Test
   void testBuildKeyMappings() {
     String mappingId = "ssoTokenGrant";
     assertBuildKey("mappings", Map.of("mappingId", mappingId), "mappings#" + mappingId, mappingId);
+  }
+
+  @Test
+  void testBuildKeyQueues() {
+    String queueId = "queue-1";
+    assertBuildKey("queues", Map.of("queueId", queueId), "queues#" + queueId, queueId);
   }
 
   @Test
@@ -194,6 +206,12 @@ public class ActivityRecordBuilderTest {
   void testBuildKeySites() {
     String siteId = "site-1";
     assertBuildKey("sites", Map.of("siteId", siteId), "globalActivity#", "sites#" + siteId);
+  }
+
+  @Test
+  void testBuildKeyWebhooks() {
+    String webhookId = "webhook-1";
+    assertBuildKey("webhooks", Map.of("webhookId", webhookId), "webhooks#" + webhookId, webhookId);
   }
 
   @Test
