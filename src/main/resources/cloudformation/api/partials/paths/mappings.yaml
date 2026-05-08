@@ -305,4 +305,5 @@ components:
         - METADATA
         - MANUAL
         - DATA_CLASSIFICATION
+        - METADATA_EXTRACTION_RESULT
         - MALWARE_SCAN
