@@ -38,7 +38,14 @@ import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetMappingsResponse;
 import com.formkiq.client.model.Mapping;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
+import com.formkiq.client.model.MappingAttributeDataClassification;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
+import com.formkiq.client.model.MappingAttributeMalwareScan;
+import com.formkiq.client.model.MappingAttributeManual;
+import com.formkiq.client.model.MappingAttributeMetadata;
+import com.formkiq.client.model.MappingAttributeMetadataExtractionResult;
+import com.formkiq.client.model.MappingAttributeMetadataField;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.SetMappingRequest;
 import com.formkiq.client.model.SetResponse;
@@ -57,27 +64,242 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   /** SiteId. */
   private static final String SITE_ID = ID.uuid();
 
-  private static void validateAddMappingsAttributes03(final Mapping mapping) {
-    assertEquals(1, notNull(mapping.getAttributes()).size());
-    assertEquals("invoice", notNull(mapping.getAttributes()).get(0).getAttributeKey());
-    assertEquals(MappingAttributeSourceType.CONTENT,
-        notNull(mapping.getAttributes()).get(0).getSourceType());
-    assertEquals(MappingAttributeLabelMatchingType.CONTAINS,
-        notNull(mapping.getAttributes()).get(0).getLabelMatchingType());
-    assertEquals("invoice",
-        String.join(",", notNull(notNull(mapping.getAttributes()).get(0).getLabelTexts())));
+  private static void assertMapping(final GetMappingsResponse response, final String name,
+      final String description) {
+    assertEquals(1, notNull(response.getMappings()).size());
+    assertMapping(response.getMappings().get(0), name, description);
+  }
+
+  private static void assertMapping(final Mapping mapping, final String name,
+      final String description) {
+    assertNotNull(mapping);
+    assertEquals(name, mapping.getName());
+    assertEquals(description, mapping.getDescription());
+  }
+
+  private static void assertMappingAttributeContent(final GetMappingsResponse response) {
+    var mappings = notNull(response.getMappings());
+    assertEquals(1, mappings.size());
+
+    assertMappingAttributeContent(mappings.get(0));
+  }
+
+  private static void assertMappingAttributeContent(final Mapping mapping) {
+
+    assertNotNull(mapping);
+
+    var mappingAttributes = notNull(mapping.getAttributes());
+    assertEquals(1, mappingAttributes.size());
+
+    var attribute = mappingAttributes.get(0).getMappingAttributeContent();
+    assertEquals("invoice", attribute.getAttributeKey());
+    assertEquals(MappingAttributeSourceType.CONTENT, attribute.getSourceType());
+    assertEquals(MappingAttributeLabelMatchingType.CONTAINS, attribute.getLabelMatchingType());
+    assertEquals("invoice", String.join(",", notNull(attribute.getLabelTexts())));
+  }
+
+  private static void assertMappingManual(final Mapping mapping, final String defaultValue) {
+
+    assertNotNull(mapping);
+    var mappingAttributes = notNull(mapping.getAttributes());
+    assertEquals(1, mappingAttributes.size());
+
+    var mappingAttribute = mappingAttributes.get(0).getMappingAttributeManual();
+    assertEquals("invoice", mappingAttribute.getAttributeKey());
+    assertEquals(MappingAttributeSourceType.MANUAL, mappingAttribute.getSourceType());
+    assertEquals(defaultValue, mappingAttribute.getDefaultValue());
+    assertEquals("", String.join(",", notNull(mappingAttribute.getDefaultValues())));
+  }
+
+  private static MappingAttribute contentKeyValueMappingAttribute(final List<String> labelTexts) {
+    return new MappingAttribute(new MappingAttributeContent().attributeKey("invoicekv")
+        .sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
+        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts));
+  }
+
+  private static MappingAttribute contentMappingAttribute(final String attributeKey,
+      final List<String> labelTexts) {
+    return new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.CONTENT)
+        .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS).labelTexts(labelTexts));
+  }
+
+  private static MappingAttribute dataClassificationMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeDataClassification().attributeKey("invoicedata")
+        .sourceType(MappingAttributeSourceType.DATA_CLASSIFICATION));
+  }
+
+  private static MappingAttribute malwareScanMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeMalwareScan().attributeKey("invoicemalware")
+        .sourceType(MappingAttributeSourceType.MALWARE_SCAN));
+  }
+
+  private static MappingAttribute manualMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeManual().attributeKey("invoice")
+        .sourceType(MappingAttributeSourceType.MANUAL));
+  }
+
+  private static MappingAttribute manualMappingAttribute(final String attributeKey) {
+    return new MappingAttribute(new MappingAttributeManual().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.MANUAL).defaultValue("23"));
+  }
+
+  private static MappingAttribute metadataExtractionMappingAttribute() {
+    return new MappingAttribute(
+        new MappingAttributeMetadataExtractionResult().attributeKey("invoiceextraction")
+            .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)
+            .llmPromptEntityName("invoice"));
+  }
+
+  private static MappingAttribute metadataMappingAttribute(final String attributeKey,
+      final List<String> labelTexts, final MappingAttributeMetadataField metadataField) {
+    return new MappingAttribute(new MappingAttributeMetadata().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.METADATA)
+        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts)
+        .metadataField(metadataField));
   }
 
   private void addAttribute(final String siteId) throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key("invoice")), siteId);
+    addAttributeString(siteId, "invoice");
   }
 
-  private void addAttribute(final String siteId, final AttributeDataType dataType)
-      throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key("invoice").dataType(dataType)),
-        siteId);
+  private void addAttributeKeyOnly(final String siteId) throws ApiException {
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key("invoice").dataType(AttributeDataType.KEY_ONLY)), siteId);
+  }
+
+  private void addAttributeString(final String siteId, final String key) throws ApiException {
+    this.attributesApi
+        .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
+  }
+
+  private void assertAddMappingValidationError(final String siteId,
+      final MappingAttribute mappingAttribute, final String expectedResponseBody) {
+    AddMappingRequest req = new AddMappingRequest()
+        .mapping(new AddMapping().name("asd").addAttributesItem(mappingAttribute));
+
+    try {
+      this.mappingsApi.addMapping(req, siteId);
+      fail();
+    } catch (ApiException e) {
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(expectedResponseBody, e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /mappings.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddContentMappings() throws ApiException {
+    // given
+    final String key0 = "invoice";
+
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+
+      AddMapping mapping = new AddMapping().name("test")
+          .addAttributesItem(contentMappingAttribute(key0, List.of("invoice")));
+
+      AddMappingRequest req = new AddMappingRequest().mapping(mapping);
+
+      // when
+      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(addResponse.getMappingId());
+
+      GetMappingsResponse response = this.mappingsApi.getMappings(siteId, null, null);
+      assertMapping(response, "test", "");
+      assertMappingAttributeContent(response);
+
+      // given
+      mapping.setName("another");
+      mapping.setDescription("test desc");
+      SetMappingRequest setReq = new SetMappingRequest().mapping(mapping);
+
+      // when
+      SetResponse setResponse =
+          this.mappingsApi.setMapping(addResponse.getMappingId(), setReq, siteId);
+
+      // then
+      assertEquals("Mapping set", setResponse.getMessage());
+
+      response = this.mappingsApi.getMappings(siteId, null, null);
+      assertMapping(response, "another", "test desc");
+      assertMappingAttributeContent(response);
+
+      Mapping m = this.mappingsApi.getMapping(addResponse.getMappingId(), siteId).getMapping();
+      assertMapping(m, "another", "test desc");
+
+      assertMappingAttributeContent(m);
+    }
+  }
+
+  /**
+   * POST /mappings SourceTypes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddMappingsAllSourceTypes() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      List<String> attributeKeys = List.of("invoicecontent", "invoicekv", "invoicemetadata",
+          "invoicemanual", "invoicedata", "invoiceextraction", "invoicemalware");
+      for (String attributeKey : attributeKeys) {
+        addAttributeString(siteId, attributeKey);
+      }
+
+      AddMapping mapping = new AddMapping().name("source types")
+          .addAttributesItem(contentMappingAttribute("invoicecontent", List.of("invoice")))
+          .addAttributesItem(contentKeyValueMappingAttribute(List.of("invoice")))
+          .addAttributesItem(metadataMappingAttribute("invoicemetadata", List.of("application/pdf"),
+              MappingAttributeMetadataField.CONTENT_TYPE))
+          .addAttributesItem(manualMappingAttribute("invoicemanual"))
+          .addAttributesItem(dataClassificationMappingAttribute())
+          .addAttributesItem(metadataExtractionMappingAttribute())
+          .addAttributesItem(malwareScanMappingAttribute());
+
+      AddMappingRequest req = new AddMappingRequest().mapping(mapping);
+
+      // when
+      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(addResponse.getMappingId());
+
+      // when
+      Mapping responseMapping =
+          this.mappingsApi.getMapping(addResponse.getMappingId(), siteId).getMapping();
+
+      // then
+      assertNotNull(responseMapping);
+      List<MappingAttribute> attributes = notNull(responseMapping.getAttributes());
+      assertEquals(7, attributes.size());
+      assertEquals(MappingAttributeSourceType.CONTENT,
+          attributes.get(0).getMappingAttributeContent().getSourceType());
+      assertEquals(MappingAttributeSourceType.CONTENT_KEY_VALUE,
+          attributes.get(1).getMappingAttributeContent().getSourceType());
+      assertEquals(MappingAttributeSourceType.METADATA,
+          attributes.get(2).getMappingAttributeMetadata().getSourceType());
+      assertEquals(MappingAttributeSourceType.MANUAL,
+          attributes.get(3).getMappingAttributeManual().getSourceType());
+      assertEquals(MappingAttributeSourceType.DATA_CLASSIFICATION,
+          attributes.get(4).getMappingAttributeDataClassification().getSourceType());
+      assertEquals(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT,
+          attributes.get(5).getMappingAttributeMetadataExtractionResult().getSourceType());
+      assertEquals(MappingAttributeSourceType.MALWARE_SCAN,
+          attributes.get(6).getMappingAttributeMalwareScan().getSourceType());
+    }
   }
 
   /**
@@ -85,7 +307,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testAddMappings01() {
+  public void testAddMappingsEmptyBody() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
@@ -110,7 +332,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testAddMappings02() {
+  public void testAddMappingsEmptyMapping() {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
@@ -134,106 +356,19 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /mappings.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testAddMappings03() throws ApiException {
-    // given
-    final String key0 = "invoice";
-
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId);
-
-      AddMapping mapping = new AddMapping().name("test")
-          .addAttributesItem(new MappingAttribute().attributeKey(key0)
-              .sourceType(MappingAttributeSourceType.CONTENT)
-              .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-              .labelTexts(List.of("invoice")));
-
-      AddMappingRequest req = new AddMappingRequest().mapping(mapping);
-
-      // when
-      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
-
-      // then
-      assertNotNull(addResponse.getMappingId());
-
-      GetMappingsResponse response = this.mappingsApi.getMappings(siteId, null, null);
-      assertEquals(1, notNull(response.getMappings()).size());
-      assertEquals("test", response.getMappings().get(0).getName());
-      assertEquals("", response.getMappings().get(0).getDescription());
-      validateAddMappingsAttributes03(response.getMappings().get(0));
-
-      // given
-      mapping.setName("another");
-      mapping.setDescription("test desc");
-      SetMappingRequest setReq = new SetMappingRequest().mapping(mapping);
-
-      // when
-      SetResponse setResponse =
-          this.mappingsApi.setMapping(addResponse.getMappingId(), setReq, siteId);
-
-      // then
-      assertEquals("Mapping set", setResponse.getMessage());
-
-      response = this.mappingsApi.getMappings(siteId, null, null);
-      assertEquals(1, notNull(response.getMappings()).size());
-      assertEquals("another", response.getMappings().get(0).getName());
-      assertEquals("test desc", response.getMappings().get(0).getDescription());
-      validateAddMappingsAttributes03(response.getMappings().get(0));
-
-      Mapping m = this.mappingsApi.getMapping(addResponse.getMappingId(), siteId).getMapping();
-      assertNotNull(m);
-      assertEquals("another", m.getName());
-      assertEquals("test desc", m.getDescription());
-      validateAddMappingsAttributes03(m);
-    }
-  }
-
-  /**
-   * POST /mappings SourceType MANUAL.
-   *
-   */
-  @Test
-  public void testAddMappings04() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
-
-      setBearerToken(siteId);
-      addAttribute(siteId);
-
-      AddMappingRequest req = new AddMappingRequest().mapping(new AddMapping().name("asd")
-          .addAttributesItem(new MappingAttribute().attributeKey("invoice").defaultValue("23")
-              .sourceType(MappingAttributeSourceType.MANUAL)));
-
-      // when
-      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
-
-      // then
-      assertNotNull(response.getMappingId());
-    }
-  }
-
-  /**
    * POST /mappings MANUAL, KEY_ONLY attribute.
    *
    */
   @Test
-  public void testAddMappings05() throws ApiException {
+  public void testAddMappingsKeyOnlyAttribute() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, AttributeDataType.KEY_ONLY);
+      addAttributeKeyOnly(siteId);
 
-      AddMappingRequest req = new AddMappingRequest().mapping(new AddMapping().name("asd")
-          .addAttributesItem(new MappingAttribute().attributeKey("invoice").defaultValue("23")
-              .sourceType(MappingAttributeSourceType.MANUAL)));
+      AddMappingRequest req = new AddMappingRequest().mapping(
+          new AddMapping().name("asd").addAttributesItem(manualMappingAttribute("invoice")));
 
       // when
       try {
@@ -250,26 +385,118 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /mappings MANUAL, KEY_ONLY attribute.
+   * POST /mappings SourceType MANUAL.
    *
    */
   @Test
-  public void testAddMappings06() throws ApiException {
+  public void testAddMappingsManual() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, SITE_ID)) {
 
       setBearerToken(siteId);
-      addAttribute(siteId, AttributeDataType.KEY_ONLY);
+      addAttribute(siteId);
 
-      AddMappingRequest req = new AddMappingRequest()
-          .mapping(new AddMapping().name("asd").addAttributesItem(new MappingAttribute()
-              .attributeKey("invoice").sourceType(MappingAttributeSourceType.MANUAL)));
+      AddMappingRequest req = new AddMappingRequest().mapping(
+          new AddMapping().name("asd").addAttributesItem(manualMappingAttribute("invoice")));
 
       // when
       AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
 
       // then
       assertNotNull(response.getMappingId());
+
+      Mapping m = this.mappingsApi.getMapping(response.getMappingId(), siteId).getMapping();
+      assertMapping(m, "asd", "");
+      assertMappingManual(m, "23");
+    }
+  }
+
+  /**
+   * POST /mappings MANUAL, KEY_ONLY attribute.
+   *
+   */
+  @Test
+  public void testAddMappingsManualKeyOnly() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttributeKeyOnly(siteId);
+
+      AddMappingRequest req = new AddMappingRequest()
+          .mapping(new AddMapping().name("asd").addAttributesItem(manualMappingAttribute()));
+
+      // when
+      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(response.getMappingId());
+
+      Mapping m = this.mappingsApi.getMapping(response.getMappingId(), siteId).getMapping();
+      assertMapping(m, "asd", "");
+      assertMappingManual(m, null);
+    }
+  }
+
+  /**
+   * POST /mappings SourceType validation.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddMappingsValidationFails() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId);
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(new MappingAttributeContent().attributeKey("invoice")
+              .sourceType(MappingAttributeSourceType.CONTENT)),
+          "{\"errors\":[{\"key\":\"attribute[0].labelMatchingType\","
+              + "\"error\":\"'labelMatchingType' is required\"},"
+              + "{\"key\":\"attribute[0].labelTexts\","
+              + "\"error\":\"'labelTexts' is required\"}]}");
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(new MappingAttributeContent().attributeKey("invoice")
+              .sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)),
+          "{\"errors\":[{\"key\":\"attribute[0].labelMatchingType\","
+              + "\"error\":\"'labelMatchingType' is required\"},"
+              + "{\"key\":\"attribute[0].labelTexts\","
+              + "\"error\":\"'labelTexts' is required\"}]}");
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(new MappingAttributeMetadata().attributeKey("invoice")
+              .sourceType(MappingAttributeSourceType.METADATA)
+              .labelMatchingType(MappingAttributeLabelMatchingType.EXACT)
+              .labelTexts(List.of("invoice"))),
+          "{\"errors\":[{\"key\":\"attribute[0].metadataField\","
+              + "\"error\":\"'metadataField' is required\"}]}");
+
+      assertAddMappingValidationError(siteId, manualMappingAttribute(),
+          "{\"errors\":[{\"key\":\"attribute[0].defaultValue\","
+              + "\"error\":\"'defaultValue' or 'defaultValues' is required\"}]}");
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(new MappingAttributeDataClassification()
+              .sourceType(MappingAttributeSourceType.DATA_CLASSIFICATION)),
+          "{\"errors\":[{\"key\":\"attribute[0].attributeKey\","
+              + "\"error\":\"'attributeKey' is required\"}]}");
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(
+              new MappingAttributeMetadataExtractionResult().attributeKey("invoice")
+                  .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)),
+          "{\"errors\":[{\"key\":\"attribute[0].llmPromptEntityName\","
+              + "\"error\":\"'llmPromptEntityName' is required\"}]}");
+
+      assertAddMappingValidationError(siteId,
+          new MappingAttribute(new MappingAttributeMalwareScan()
+              .sourceType(MappingAttributeSourceType.MALWARE_SCAN)),
+          "{\"errors\":[{\"key\":\"attribute[0].attributeKey\","
+              + "\"error\":\"'attributeKey' is required\"}]}");
     }
   }
 
@@ -279,7 +506,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
    * @throws ApiException an error has occurred
    */
   @Test
-  public void testDeleteMappings01() throws ApiException {
+  public void testDeleteMappings() throws ApiException {
     // given
     final String key0 = "invoice";
 
@@ -290,13 +517,15 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId);
 
       AddMapping mapping = new AddMapping().name("test")
-          .addAttributesItem(new MappingAttribute().attributeKey(key0)
-              .sourceType(MappingAttributeSourceType.CONTENT)
-              .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-              .labelTexts(List.of("invoice")));
+          .addAttributesItem(contentMappingAttribute(key0, List.of("invoice")));
 
       AddMappingRequest req = new AddMappingRequest().mapping(mapping);
+
+      // when
       AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+
+      // then
+      assertNotNull(addResponse.getMappingId());
       assertNotNull(this.mappingsApi.getMapping(addResponse.getMappingId(), siteId));
 
       // when

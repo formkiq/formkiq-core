@@ -30,7 +30,9 @@ import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
 import com.formkiq.client.model.AddMappingResponse;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
+import com.formkiq.client.model.MappingAttributeManual;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -60,8 +62,9 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
    */
   public AddMappingRequestBuilder addManualMapping(final String name, final String attributeKey,
       final String defaultValue) {
-    MappingAttribute ma = new MappingAttribute().sourceType(MappingAttributeSourceType.MANUAL)
-        .attributeKey(attributeKey).defaultValue(defaultValue);
+    MappingAttribute ma =
+        new MappingAttribute(new MappingAttributeManual().attributeKey(attributeKey)
+            .sourceType(MappingAttributeSourceType.MANUAL).defaultValue(defaultValue));
     AddMapping mapping = new AddMapping().name(name).addAttributesItem(ma);
     this.req.setMapping(mapping);
     return this;
@@ -81,10 +84,23 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
   public AddMappingRequestBuilder addMapping(final String name, final String description,
       final String attributeKey, final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
-    addMapping(new AddMapping().name(name).description(description)
-        .addAttributesItem(new MappingAttribute().attributeKey(attributeKey).sourceType(sourceType)
-            .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText)));
+    addMapping(new AddMapping().name(name).description(description).addAttributesItem(
+        createMappingAttribute(attributeKey, sourceType, labelMatchingType, labelText)));
     return this;
+  }
+
+  private MappingAttribute createMappingAttribute(final String attributeKey,
+      final MappingAttributeSourceType sourceType,
+      final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
+    return switch (sourceType) {
+      case CONTENT -> new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
+          .sourceType(MappingAttributeSourceType.CONTENT).labelMatchingType(labelMatchingType)
+          .addLabelTextsItem(labelText));
+      case CONTENT_KEY_VALUE -> new MappingAttribute(new MappingAttributeContent()
+          .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
+          .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText));
+      default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
+    };
   }
 
   /**
