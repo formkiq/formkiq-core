@@ -11939,17 +11939,55 @@ components:
             $ref: '#/components/schemas/MappingClassificationCondition'
     MappingClassificationCondition:
       oneOf:
+      - $ref: '#/components/schemas/MappingClassificationConditionContent'
+      - $ref: '#/components/schemas/MappingClassificationConditionDataClassification'
       - $ref: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
       discriminator:
         propertyName: sourceType
         mapping:
+          CONTENT: '#/components/schemas/MappingClassificationConditionContent'
+          DATA_CLASSIFICATION: '#/components/schemas/MappingClassificationConditionDataClassification'
           METADATA_EXTRACTION_RESULT: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+    MappingClassificationConditionContent:
+      required:
+      - sourceType
+      - matchingType
+      - text
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        matchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
+        text:
+          type: string
+          description: Text to match against the document content
+    MappingClassificationConditionDataClassification:
+      required:
+      - sourceType
+      - resultKey
+      - resultValue
+      - matchingType
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        resultKey:
+          type: string
+          description: Result key
+        resultValue:
+          type: string
+          description: Result value
+        matchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
     MappingClassificationConditionMetadataExtractionResult:
       required:
       - sourceType
       - resultKey
       - resultValue
-      - resultMatchingType
+      - matchingType
       - llmPromptEntityName
       type: object
       description: Mapping Classification Condition
@@ -11965,7 +12003,7 @@ components:
         resultValue:
           type: string
           description: Result value
-        resultMatchingType:
+        matchingType:
           $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
     MappingAttribute:
       oneOf:
@@ -12148,6 +12186,7 @@ components:
       type: string
       description: Classification Condition Source Type
       enum:
+      - CONTENT
       - DATA_CLASSIFICATION
       - METADATA_EXTRACTION_RESULT
     GetExaminePdfUrlResponse:

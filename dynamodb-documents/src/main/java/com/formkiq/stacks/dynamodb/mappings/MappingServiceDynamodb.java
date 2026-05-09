@@ -294,10 +294,23 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     String key = "classification[" + classificationIndex + "].condition[" + conditionIndex + "]";
 
     vb.isRequired(key + ".sourceType", condition.sourceType());
-    vb.isRequired(key + ".resultKey", condition.resultKey());
-    vb.isRequired(key + ".resultValue", condition.resultValue());
-    vb.isRequired(key + ".llmPromptEntityName", condition.llmPromptEntityName());
-    vb.isRequired(key + ".resultMatchingType", condition.resultMatchingType());
+
+    MappingClassificationConditionSourceType sourceType = condition.sourceType();
+
+    if (MappingClassificationConditionSourceType.CONTENT.equals(sourceType)) {
+      vb.isRequired(key + ".matchingType", condition.matchingType());
+      vb.isRequired(key + ".text", condition.text());
+    } else if (MappingClassificationConditionSourceType.DATA_CLASSIFICATION.equals(sourceType)) {
+      vb.isRequired(key + ".resultKey", condition.resultKey());
+      vb.isRequired(key + ".resultValue", condition.resultValue());
+      vb.isRequired(key + ".matchingType", condition.matchingType());
+    } else if (MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT
+        .equals(sourceType)) {
+      vb.isRequired(key + ".resultKey", condition.resultKey());
+      vb.isRequired(key + ".resultValue", condition.resultValue());
+      vb.isRequired(key + ".matchingType", condition.matchingType());
+      vb.isRequired(key + ".llmPromptEntityName", condition.llmPromptEntityName());
+    }
   }
 
   private void validateClassifications(final ValidationBuilder vb,

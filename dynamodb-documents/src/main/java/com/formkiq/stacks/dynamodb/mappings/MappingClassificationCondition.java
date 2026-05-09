@@ -32,10 +32,11 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * @param resultKey Result Key
  * @param resultValue Result Value
  * @param llmPromptEntityName LLM Prompt Entity Name
- * @param resultMatchingType {@link MappingClassificationConditionMatchingType}
+ * @param matchingType {@link MappingClassificationConditionMatchingType}
+ * @param text Text
  */
 @Reflectable
 public record MappingClassificationCondition(MappingClassificationConditionSourceType sourceType,
     String resultKey, String resultValue, String llmPromptEntityName,
-    MappingClassificationConditionMatchingType resultMatchingType) {
+    MappingClassificationConditionMatchingType matchingType, String text) {
 }

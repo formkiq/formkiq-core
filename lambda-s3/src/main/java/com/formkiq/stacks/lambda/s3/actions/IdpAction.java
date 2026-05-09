@@ -137,9 +137,13 @@ public class IdpAction implements DocumentAction {
         createDataClassificationMap(siteId, document, mappingAttributes, mappingClassifications);
     var docMetadataExtractionMap = createMetadataExtractionResultMap(siteId, document,
         mappingAttributes, mappingClassifications);
+    var documentContent = createDocumentContent(logger, siteId, document, mappingClassifications);
 
-    var records = createDocumentAttributeRecords(logger, siteId, document, mappingAttributes,
-        mappingClassifications, dataClassificationMap, docMetadataExtractionMap);
+    Collection<DocumentAttributeRecord> records = addAttributesForMappingAttributes(logger, siteId,
+        document, mappingAttributes, dataClassificationMap, docMetadataExtractionMap);
+
+    records.addAll(addAttributesForMappingClassifications(document, mappingClassifications,
+        dataClassificationMap, docMetadataExtractionMap, documentContent));
 
     if (!records.isEmpty()) {
       this.documentService.saveDocumentAttributes(siteId, document, records,
@@ -149,26 +153,11 @@ public class IdpAction implements DocumentAction {
     return new ProcessActionStatus(ActionStatus.COMPLETE);
   }
 
-  private Collection<DocumentAttributeRecord> createDocumentAttributeRecords(final Logger logger,
-      final String siteId, final DocumentArtifact document,
-      final List<MappingAttribute> mappingAttributes,
-      final List<MappingClassification> mappingClassifications,
-      final Map<String, String> dataClassificationMap,
-      final Map<String, Map<String, String>> docMetadataExtractionMap) throws IOException {
-
-    Collection<DocumentAttributeRecord> records = addAttributesForMappingAttributes(logger, siteId,
-        document, mappingAttributes, dataClassificationMap, docMetadataExtractionMap);
-
-    records.addAll(addAttributesForMappingClassifications(document, mappingClassifications,
-        dataClassificationMap, docMetadataExtractionMap));
-
-    return records;
-  }
-
   private Collection<DocumentAttributeRecord> addAttributesForMappingClassifications(
       final DocumentArtifact document, final List<MappingClassification> mappingClassifications,
       final Map<String, String> dataClassificationMap,
-      final Map<String, Map<String, String>> docMetadataExtractionMap) {
+      final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final String documentContent) {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
@@ -176,8 +165,8 @@ public class IdpAction implements DocumentAction {
 
       List<MappingClassificationCondition> conditions = notNull(mapping.conditions());
 
-      MappingClassificationCondition condition =
-          findMatchingCondition(conditions, dataClassificationMap, docMetadataExtractionMap);
+      MappingClassificationCondition condition = findMatchingCondition(conditions,
+          dataClassificationMap, docMetadataExtractionMap, documentContent);
 
       if (condition != null) {
         String username = ApiAuthorization.getAuthorization().getUsername();
@@ -194,20 +183,27 @@ public class IdpAction implements DocumentAction {
   private MappingClassificationCondition findMatchingCondition(
       final List<MappingClassificationCondition> conditions,
       final Map<String, String> dataClassificationMap,
-      final Map<String, Map<String, String>> docMetadataExtractionMap) {
+      final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final String documentContent) {
 
-    return notNull(conditions).stream().filter(
-        condition -> matchesCondition(condition, dataClassificationMap, docMetadataExtractionMap))
-        .findFirst().orElse(null);
+    return notNull(conditions).stream().filter(condition -> matchesCondition(condition,
+        dataClassificationMap, docMetadataExtractionMap, documentContent)).findFirst().orElse(null);
   }
 
   private boolean matchesCondition(final MappingClassificationCondition condition,
       final Map<String, String> dataClassificationMap,
-      final Map<String, Map<String, String>> docMetadataExtractionMap) {
+      final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final String documentContent) {
 
     String value;
+    String expected = condition.resultValue();
+    MappingClassificationConditionMatchingType matchingType = condition.matchingType();
 
     switch (condition.sourceType()) {
+      case CONTENT -> {
+        value = documentContent;
+        expected = condition.text();
+      }
       case DATA_CLASSIFICATION -> value = dataClassificationMap.get(condition.resultKey());
       case METADATA_EXTRACTION_RESULT -> {
         Map<String, String> extractionResult =
@@ -218,7 +214,7 @@ public class IdpAction implements DocumentAction {
           "Unsupported classification condition source type: " + condition.sourceType());
     }
 
-    return matchesResult(value, condition.resultValue(), condition.resultMatchingType());
+    return matchesResult(value, expected, matchingType);
   }
 
   private boolean matchesResult(final String value, final String expected,
@@ -328,6 +324,17 @@ public class IdpAction implements DocumentAction {
     return hasDataClassificationAttribute || hasDataClassificationCondition
         ? createDataClassificationAttributes(siteId, document)
         : Collections.emptyMap();
+  }
+
+  private String createDocumentContent(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<MappingClassification> classifications)
+      throws IOException {
+    boolean hasContentCondition = notNull(classifications).stream()
+        .flatMap(classification -> notNull(classification.conditions()).stream())
+        .anyMatch(condition -> MappingClassificationConditionSourceType.CONTENT
+            .equals(condition.sourceType()));
+
+    return hasContentCondition ? getDocumentContent(logger, siteId, document) : null;
   }
 
   private Map<String, Map<String, String>> createMetadataExtractionResultMap(final String siteId,

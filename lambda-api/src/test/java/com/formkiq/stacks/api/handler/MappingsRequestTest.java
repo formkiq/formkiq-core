@@ -48,6 +48,9 @@ import com.formkiq.client.model.MappingAttributeMetadataExtractionResult;
 import com.formkiq.client.model.MappingAttributeMetadataField;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.MappingClassification;
+import com.formkiq.client.model.MappingClassificationCondition;
+import com.formkiq.client.model.MappingClassificationConditionContent;
+import com.formkiq.client.model.MappingClassificationConditionDataClassification;
 import com.formkiq.client.model.MappingClassificationConditionMatchingType;
 import com.formkiq.client.model.MappingClassificationConditionMetadataExtractionResult;
 import com.formkiq.client.model.MappingClassificationConditionSourceType;
@@ -189,15 +192,29 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   private MappingClassification mappingClassification(final String classificationId,
-      final List<MappingClassificationConditionMetadataExtractionResult> conditions) {
+      final List<MappingClassificationCondition> conditions) {
     return new MappingClassification().classificationId(classificationId).conditions(conditions);
   }
 
-  private MappingClassificationConditionMetadataExtractionResult mappingClassificationCondition() {
-    return new MappingClassificationConditionMetadataExtractionResult()
-        .sourceType(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT)
-        .resultKey("classification").resultValue("INVOICE").llmPromptEntityName("myprompt")
-        .resultMatchingType(MappingClassificationConditionMatchingType.EXACT);
+  private MappingClassificationCondition mappingClassificationCondition() {
+    return new MappingClassificationCondition(
+        new MappingClassificationConditionMetadataExtractionResult()
+            .sourceType(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT)
+            .resultKey("classification").resultValue("INVOICE").llmPromptEntityName("myprompt")
+            .matchingType(MappingClassificationConditionMatchingType.EXACT));
+  }
+
+  private MappingClassificationCondition mappingClassificationContentCondition() {
+    return new MappingClassificationCondition(new MappingClassificationConditionContent()
+        .sourceType(MappingClassificationConditionSourceType.CONTENT).text("invoice")
+        .matchingType(MappingClassificationConditionMatchingType.CONTAINS));
+  }
+
+  private MappingClassificationCondition mappingClassificationDataClassificationCondition() {
+    return new MappingClassificationCondition(new MappingClassificationConditionDataClassification()
+        .sourceType(MappingClassificationConditionSourceType.DATA_CLASSIFICATION)
+        .resultKey("classification").resultValue("INVOICE")
+        .matchingType(MappingClassificationConditionMatchingType.EXACT));
   }
 
   private MappingAttribute metadataExtractionMappingAttribute() {
@@ -401,15 +418,116 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       MappingClassification classification = classifications.get(0);
       assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
 
-      List<MappingClassificationConditionMetadataExtractionResult> conditions =
-          notNull(classification.getConditions());
+      List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
       assertEquals(1, conditions.size());
+      var result = conditions.get(0).getMappingClassificationConditionMetadataExtractionResult();
       assertEquals(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT,
-          conditions.get(0).getSourceType());
-      assertEquals("classification", conditions.get(0).getResultKey());
-      assertEquals("INVOICE", conditions.get(0).getResultValue());
-      assertEquals(MappingClassificationConditionMatchingType.EXACT,
-          conditions.get(0).getResultMatchingType());
+          result.getSourceType());
+      assertEquals("classification", result.getResultKey());
+      assertEquals("INVOICE", result.getResultValue());
+      assertEquals(MappingClassificationConditionMatchingType.EXACT, result.getMatchingType());
+    }
+  }
+
+  /**
+   * POST /mappings with classifications using a content condition.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddMappingsClassificationsContent() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      AddMapping addMapping =
+          classificationMappingRequest(List.of(mappingClassification(CLASSIFICATION_ID,
+              List.of(mappingClassificationContentCondition()))));
+
+      // when
+      var mappingId = new AddMappingRequestBuilder().addMapping(addMapping).submit(client, siteId)
+          .throwIfError().response().getMappingId();
+
+      // then
+      assertNotNull(mappingId);
+
+      // when
+      var mapping = new GetMappingRequestBuilder(mappingId).submit(client, siteId).throwIfError()
+          .response().getMapping();
+
+      // then
+      assertNotNull(mapping);
+      assertEquals("AI Document Classification", mapping.getName());
+      assertEquals("", mapping.getDescription());
+
+      List<MappingAttribute> attributes = notNull(mapping.getAttributes());
+      assertEquals(0, attributes.size());
+
+      List<MappingClassification> classifications = notNull(mapping.getClassifications());
+      assertEquals(1, classifications.size());
+
+      MappingClassification classification = classifications.get(0);
+      assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
+
+      List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
+      assertEquals(1, conditions.size());
+      var result = conditions.get(0).getMappingClassificationConditionContent();
+      assertEquals(MappingClassificationConditionSourceType.CONTENT, result.getSourceType());
+      assertEquals("invoice", result.getText());
+      assertEquals(MappingClassificationConditionMatchingType.CONTAINS, result.getMatchingType());
+    }
+  }
+
+  /**
+   * POST /mappings with classifications using a data classification condition.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddMappingsClassificationsDataClassification() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      AddMapping addMapping =
+          classificationMappingRequest(List.of(mappingClassification(CLASSIFICATION_ID,
+              List.of(mappingClassificationDataClassificationCondition()))));
+
+      // when
+      var mappingId = new AddMappingRequestBuilder().addMapping(addMapping).submit(client, siteId)
+          .throwIfError().response().getMappingId();
+
+      // then
+      assertNotNull(mappingId);
+
+      // when
+      var mapping = new GetMappingRequestBuilder(mappingId).submit(client, siteId).throwIfError()
+          .response().getMapping();
+
+      // then
+      assertNotNull(mapping);
+      assertEquals("AI Document Classification", mapping.getName());
+      assertEquals("", mapping.getDescription());
+
+      List<MappingAttribute> attributes = notNull(mapping.getAttributes());
+      assertEquals(0, attributes.size());
+
+      List<MappingClassification> classifications = notNull(mapping.getClassifications());
+      assertEquals(1, classifications.size());
+
+      MappingClassification classification = classifications.get(0);
+      assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
+
+      List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
+      assertEquals(1, conditions.size());
+      var result = conditions.get(0).getMappingClassificationConditionDataClassification();
+      assertEquals(MappingClassificationConditionSourceType.DATA_CLASSIFICATION,
+          result.getSourceType());
+      assertEquals("classification", result.getResultKey());
+      assertEquals("INVOICE", result.getResultValue());
+      assertEquals(MappingClassificationConditionMatchingType.EXACT, result.getMatchingType());
     }
   }
 

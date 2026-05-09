@@ -30,6 +30,8 @@ import com.formkiq.graalvm.annotations.Reflectable;
  */
 @Reflectable
 public enum MappingClassificationConditionSourceType {
+  /** Content. */
+  CONTENT,
   /** Data Classification. */
   DATA_CLASSIFICATION,
   /** Metadata Extraction Result. */

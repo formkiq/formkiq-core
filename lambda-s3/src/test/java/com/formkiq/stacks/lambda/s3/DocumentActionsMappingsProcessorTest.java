@@ -305,6 +305,11 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         .respond(org.mockserver.model.HttpResponse.response("""
             {"metadataExtractions":[{"attributes":[{"key":"classification","value":"INVOICE"}]}]}
             """));
+
+    mockServer.when(request().withMethod("GET").withPath("/documents/.*/dataClassification.*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"dataClassifications":[{"attributes":[{"key":"classification","value":"INVOICE"}]}]}
+            """));
   }
 
   private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
@@ -924,6 +929,80 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Idp with Mapping Action and SourceType CONTENT classification.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationContent() throws IOException, ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      try (InputStream is = new FileInputStream("src/test/resources/text/text01.txt")) {
+        String text = IoUtils.toUtf8String(is);
+        DocumentArtifact document = addTextToBucket(siteId, text);
+        var classificationId = createClassification(siteId);
+
+        var conditions = List.of(new MappingClassificationCondition(
+            MappingClassificationConditionSourceType.CONTENT, null, null, null,
+            MappingClassificationConditionMatchingType.CONTAINS, "SALES INVOICE"));
+
+        MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+        // when
+        processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+        // then
+        Action action = actionsService.getActions(siteId, document).get(0);
+        assertActionCompleted(action);
+
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+        assertEquals(1, results.size());
+
+        DocumentAttributeRecord record = results.get(0);
+        assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
+        assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
+        assertEquals(classificationId, record.getStringValue());
+      }
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action and SourceType DATA_CLASSIFICATION classification.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationDataClassification() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      var classificationId = createClassification(siteId);
+
+      var conditions = List.of(new MappingClassificationCondition(
+          MappingClassificationConditionSourceType.DATA_CLASSIFICATION, "classification", "INVOICE",
+          null, MappingClassificationConditionMatchingType.EXACT, null));
+
+      MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+      // when
+      DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
+      assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
+      assertEquals(classificationId, record.getStringValue());
+    }
+  }
+
+  /**
    * Handle Idp with Mapping Action and SourceType METADATA_EXTRACTION_RESULT classification.
    *
    * @throws ValidationException ValidationException
@@ -936,7 +1015,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
       var conditions = List.of(new MappingClassificationCondition(
           MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT, "classification",
-          "INVOICE", "myPrompt", MappingClassificationConditionMatchingType.EXACT));
+          "INVOICE", "myPrompt", MappingClassificationConditionMatchingType.EXACT, null));
 
       MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
 
@@ -973,7 +1052,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
       var conditions = List.of(new MappingClassificationCondition(
           MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT, "classification",
-          "RECEIPT", "myPrompt", MappingClassificationConditionMatchingType.EXACT));
+          "RECEIPT", "myPrompt", MappingClassificationConditionMatchingType.EXACT, null));
 
       MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
 
