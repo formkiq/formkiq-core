@@ -296,6 +296,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     vb.isRequired(key + ".sourceType", condition.sourceType());
     vb.isRequired(key + ".resultKey", condition.resultKey());
     vb.isRequired(key + ".resultValue", condition.resultValue());
+    vb.isRequired(key + ".llmPromptEntityName", condition.llmPromptEntityName());
     vb.isRequired(key + ".resultMatchingType", condition.resultMatchingType());
   }
 

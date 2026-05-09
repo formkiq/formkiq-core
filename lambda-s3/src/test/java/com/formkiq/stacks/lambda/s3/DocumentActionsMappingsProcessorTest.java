@@ -31,9 +31,11 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
@@ -69,8 +71,16 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
+import com.formkiq.stacks.dynamodb.mappings.MappingClassification;
+import com.formkiq.stacks.dynamodb.mappings.MappingClassificationCondition;
+import com.formkiq.stacks.dynamodb.mappings.MappingClassificationConditionMatchingType;
+import com.formkiq.stacks.dynamodb.mappings.MappingClassificationConditionSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -143,6 +153,8 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
   private static AttributeService attributeService;
   /** {@link MappingService}. */
   private static MappingService mappingService;
+  /** {@link SchemaService}. */
+  private static SchemaService schemaService;
   /** {@link DocumentService}. */
   private static DocumentService documentService;
   /** {@link ClientAndServer}. */
@@ -228,6 +240,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
     actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
     mappingService = new MappingServiceDynamodb(db);
+    schemaService = new SchemaServiceDynamodb(db);
     attributeService = new AttributeServiceDynamodb(db);
     createMockServer();
 
@@ -267,6 +280,15 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     return env;
   }
 
+  private static String createClassification(final String siteId) {
+    String classificationId = ID.uuid();
+    schemaService.setClassification(siteId, classificationId, "Invoice " + classificationId,
+        new Schema().name("Invoice").attributes(new SchemaAttributes().required(List.of())
+            .optional(List.of()).compositeKeys(List.of())),
+        "joe");
+    return classificationId;
+  }
+
   /**
    * Create Mock Server.
    *
@@ -276,6 +298,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     mockServer = startClientAndServer(PORT);
 
     addKeyValueOcrMock();
+
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/metadataExtractionResults/.*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"metadataExtractions":[{"attributes":[{"key":"classification","value":"INVOICE"}]}]}
+            """));
   }
 
   private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
@@ -299,6 +328,15 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
     processor = new DocumentActionsProcessor(serviceCache);
     serviceCache.getExtension(EventBridgeService.class);
+  }
+
+  private static MappingRecord saveMappingRecord(final String siteId, final String classificationId,
+      final List<MappingClassificationCondition> conditions) {
+
+    Mapping mapping = new Mapping("classification", null, null,
+        List.of(new MappingClassification(classificationId, conditions)));
+
+    return mappingService.saveMapping(siteId, null, mapping);
   }
 
   private String addPdfToBucket(final String siteId) {
@@ -882,6 +920,73 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action and SourceType METADATA_EXTRACTION_RESULT classification.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationMetaDataExtractionResult() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      var classificationId = createClassification(siteId);
+
+      var conditions = List.of(new MappingClassificationCondition(
+          MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT, "classification",
+          "INVOICE", "myPrompt", MappingClassificationConditionMatchingType.EXACT));
+
+      MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+      // when
+      DocumentArtifact document = DocumentArtifact.of(DOCUMENT_ID_OCR_KEY_VALUE, null);
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
+      assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
+      assertEquals(classificationId, record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action and non-matching SourceType METADATA_EXTRACTION_RESULT
+   * classification.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationMetaDataExtractionResultNoMatch()
+      throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      var classificationId = createClassification(siteId);
+
+      var conditions = List.of(new MappingClassificationCondition(
+          MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT, "classification",
+          "RECEIPT", "myPrompt", MappingClassificationConditionMatchingType.EXACT));
+
+      MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+      // when
+      DocumentArtifact document = DocumentArtifact.of(DOCUMENT_ID_OCR_KEY_VALUE, null);
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(0, results.size());
     }
   }
 }

@@ -11938,16 +11938,27 @@ components:
           items:
             $ref: '#/components/schemas/MappingClassificationCondition'
     MappingClassificationCondition:
+      oneOf:
+      - $ref: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+      discriminator:
+        propertyName: sourceType
+        mapping:
+          METADATA_EXTRACTION_RESULT: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+    MappingClassificationConditionMetadataExtractionResult:
       required:
       - sourceType
       - resultKey
       - resultValue
       - resultMatchingType
+      - llmPromptEntityName
       type: object
       description: Mapping Classification Condition
       properties:
         sourceType:
-          $ref: '#/components/schemas/MappingAttributeSourceType'
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        llmPromptEntityName:
+          type: string
+          description: LLM prompt entity name
         resultKey:
           type: string
           description: Result key
@@ -12133,6 +12144,12 @@ components:
       - DATA_CLASSIFICATION
       - METADATA_EXTRACTION_RESULT
       - MALWARE_SCAN
+    MappingClassificationConditionSourceType:
+      type: string
+      description: Classification Condition Source Type
+      enum:
+      - DATA_CLASSIFICATION
+      - METADATA_EXTRACTION_RESULT
     GetExaminePdfUrlResponse:
       type: object
       properties:

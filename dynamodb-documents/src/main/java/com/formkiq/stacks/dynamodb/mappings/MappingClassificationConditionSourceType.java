@@ -26,16 +26,12 @@ package com.formkiq.stacks.dynamodb.mappings;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Mapping Classification Condition.
- *
- * @param sourceType {@link MappingClassificationConditionSourceType}
- * @param resultKey Result Key
- * @param resultValue Result Value
- * @param llmPromptEntityName LLM Prompt Entity Name
- * @param resultMatchingType {@link MappingClassificationConditionMatchingType}
+ * Mapping Attribute Source Type.
  */
 @Reflectable
-public record MappingClassificationCondition(MappingClassificationConditionSourceType sourceType,
-    String resultKey, String resultValue, String llmPromptEntityName,
-    MappingClassificationConditionMatchingType resultMatchingType) {
+public enum MappingClassificationConditionSourceType {
+  /** Data Classification. */
+  DATA_CLASSIFICATION,
+  /** Metadata Extraction Result. */
+  METADATA_EXTRACTION_RESULT
 }

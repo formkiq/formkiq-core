@@ -48,8 +48,9 @@ import com.formkiq.client.model.MappingAttributeMetadataExtractionResult;
 import com.formkiq.client.model.MappingAttributeMetadataField;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.MappingClassification;
-import com.formkiq.client.model.MappingClassificationCondition;
 import com.formkiq.client.model.MappingClassificationConditionMatchingType;
+import com.formkiq.client.model.MappingClassificationConditionMetadataExtractionResult;
+import com.formkiq.client.model.MappingClassificationConditionSourceType;
 import com.formkiq.client.model.SetMappingRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.mappings.AddMappingRequestBuilder;
@@ -120,66 +121,6 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
     assertEquals("", String.join(",", notNull(mappingAttribute.getDefaultValues())));
   }
 
-  private static MappingAttribute contentKeyValueMappingAttribute(final List<String> labelTexts) {
-    return new MappingAttribute(new MappingAttributeContent().attributeKey("invoicekv")
-        .sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
-        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts));
-  }
-
-  private static MappingAttribute contentMappingAttribute(final String attributeKey,
-      final List<String> labelTexts) {
-    return new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
-        .sourceType(MappingAttributeSourceType.CONTENT)
-        .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS).labelTexts(labelTexts));
-  }
-
-  private static MappingAttribute dataClassificationMappingAttribute() {
-    return new MappingAttribute(new MappingAttributeDataClassification().attributeKey("invoicedata")
-        .sourceType(MappingAttributeSourceType.DATA_CLASSIFICATION));
-  }
-
-  private static MappingAttribute malwareScanMappingAttribute() {
-    return new MappingAttribute(new MappingAttributeMalwareScan().attributeKey("invoicemalware")
-        .sourceType(MappingAttributeSourceType.MALWARE_SCAN));
-  }
-
-  private static MappingAttribute manualMappingAttribute() {
-    return new MappingAttribute(new MappingAttributeManual().attributeKey("invoice")
-        .sourceType(MappingAttributeSourceType.MANUAL));
-  }
-
-  private static MappingAttribute manualMappingAttribute(final String attributeKey) {
-    return new MappingAttribute(new MappingAttributeManual().attributeKey(attributeKey)
-        .sourceType(MappingAttributeSourceType.MANUAL).defaultValue("23"));
-  }
-
-  private static MappingClassification mappingClassification(final String classificationId,
-      final List<MappingClassificationCondition> conditions) {
-    return new MappingClassification().classificationId(classificationId).conditions(conditions);
-  }
-
-  private static MappingClassificationCondition mappingClassificationCondition() {
-    return new MappingClassificationCondition()
-        .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)
-        .resultKey("classification").resultValue("INVOICE")
-        .resultMatchingType(MappingClassificationConditionMatchingType.EXACT);
-  }
-
-  private static MappingAttribute metadataExtractionMappingAttribute() {
-    return new MappingAttribute(
-        new MappingAttributeMetadataExtractionResult().attributeKey("invoiceextraction")
-            .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)
-            .llmPromptEntityName("invoice"));
-  }
-
-  private static MappingAttribute metadataMappingAttribute(final String attributeKey,
-      final List<String> labelTexts, final MappingAttributeMetadataField metadataField) {
-    return new MappingAttribute(new MappingAttributeMetadata().attributeKey(attributeKey)
-        .sourceType(MappingAttributeSourceType.METADATA)
-        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts)
-        .metadataField(metadataField));
-  }
-
   private void addAttribute(final String siteId) throws ApiException {
     addAttributeString(siteId, "invoice");
   }
@@ -212,6 +153,66 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       final List<MappingClassification> classifications) {
     return new AddMapping().name("AI Document Classification").description("").attributes(List.of())
         .classifications(classifications);
+  }
+
+  private MappingAttribute contentKeyValueMappingAttribute(final List<String> labelTexts) {
+    return new MappingAttribute(new MappingAttributeContent().attributeKey("invoicekv")
+        .sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
+        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts));
+  }
+
+  private MappingAttribute contentMappingAttribute(final String attributeKey,
+      final List<String> labelTexts) {
+    return new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.CONTENT)
+        .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS).labelTexts(labelTexts));
+  }
+
+  private MappingAttribute dataClassificationMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeDataClassification().attributeKey("invoicedata")
+        .sourceType(MappingAttributeSourceType.DATA_CLASSIFICATION));
+  }
+
+  private MappingAttribute malwareScanMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeMalwareScan().attributeKey("invoicemalware")
+        .sourceType(MappingAttributeSourceType.MALWARE_SCAN));
+  }
+
+  private MappingAttribute manualMappingAttribute() {
+    return new MappingAttribute(new MappingAttributeManual().attributeKey("invoice")
+        .sourceType(MappingAttributeSourceType.MANUAL));
+  }
+
+  private MappingAttribute manualMappingAttribute(final String attributeKey) {
+    return new MappingAttribute(new MappingAttributeManual().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.MANUAL).defaultValue("23"));
+  }
+
+  private MappingClassification mappingClassification(final String classificationId,
+      final List<MappingClassificationConditionMetadataExtractionResult> conditions) {
+    return new MappingClassification().classificationId(classificationId).conditions(conditions);
+  }
+
+  private MappingClassificationConditionMetadataExtractionResult mappingClassificationCondition() {
+    return new MappingClassificationConditionMetadataExtractionResult()
+        .sourceType(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT)
+        .resultKey("classification").resultValue("INVOICE").llmPromptEntityName("myprompt")
+        .resultMatchingType(MappingClassificationConditionMatchingType.EXACT);
+  }
+
+  private MappingAttribute metadataExtractionMappingAttribute() {
+    return new MappingAttribute(
+        new MappingAttributeMetadataExtractionResult().attributeKey("invoiceextraction")
+            .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)
+            .llmPromptEntityName("invoice"));
+  }
+
+  private MappingAttribute metadataMappingAttribute(final String attributeKey,
+      final List<String> labelTexts, final MappingAttributeMetadataField metadataField) {
+    return new MappingAttribute(new MappingAttributeMetadata().attributeKey(attributeKey)
+        .sourceType(MappingAttributeSourceType.METADATA)
+        .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts)
+        .metadataField(metadataField));
   }
 
   /**
@@ -400,9 +401,10 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       MappingClassification classification = classifications.get(0);
       assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
 
-      List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
+      List<MappingClassificationConditionMetadataExtractionResult> conditions =
+          notNull(classification.getConditions());
       assertEquals(1, conditions.size());
-      assertEquals(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT,
+      assertEquals(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT,
           conditions.get(0).getSourceType());
       assertEquals("classification", conditions.get(0).getResultKey());
       assertEquals("INVOICE", conditions.get(0).getResultValue());
