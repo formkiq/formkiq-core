@@ -208,6 +208,11 @@ components:
           description: "List of attributes"
           items:
             $ref: "#/components/schemas/MappingAttribute"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/MappingClassification"
 
     #@overlay/match missing_ok=True
     GetMappingsResponse:
@@ -246,6 +251,48 @@ components:
           description: "List of attributes"
           items:
             $ref: "#/components/schemas/MappingAttribute"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/MappingClassification"
+
+    #@overlay/match missing_ok=True
+    MappingClassification:
+      required:
+        - "classificationId"
+      type: "object"
+      description: "Mapping Classification"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+        conditions:
+          type: "array"
+          description: "List of classification conditions"
+          items:
+            $ref: "#/components/schemas/MappingClassificationCondition"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationCondition:
+      required:
+        - "sourceType"
+        - "resultKey"
+        - "resultValue"
+        - "resultMatchingType"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        resultKey:
+          type: "string"
+          description: "Result key"
+        resultValue:
+          type: "string"
+          description: "Result value"
+        resultMatchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
 
     #@overlay/match missing_ok=True
     MappingAttribute:
@@ -420,6 +467,15 @@ components:
       description: Attribute Label Matching Type
       enum:
         - FUZZY
+        - EXACT
+        - BEGINS_WITH
+        - CONTAINS
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionMatchingType:
+      type: string
+      description: Classification Condition Result Matching Type
+      enum:
         - EXACT
         - BEGINS_WITH
         - CONTAINS

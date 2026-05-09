@@ -25,17 +25,16 @@ package com.formkiq.stacks.dynamodb.mappings;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-import java.util.List;
-
 /**
- * Mapping.
+ * Mapping Classification Condition.
  *
- * @param name Mapping Name
- * @param description Mapping Description
- * @param attributes {@link List} {@link MappingAttribute}
- * @param classifications {@link List} {@link MappingClassification}
+ * @param sourceType {@link MappingAttributeSourceType}
+ * @param resultKey Result Key
+ * @param resultValue Result Value
+ * @param resultMatchingType {@link MappingClassificationConditionMatchingType}
  */
 @Reflectable
-public record Mapping(String name, String description, List<MappingAttribute> attributes,
-    List<MappingClassification> classifications) {
+public record MappingClassificationCondition(MappingAttributeSourceType sourceType,
+    String resultKey, String resultValue,
+    MappingClassificationConditionMatchingType resultMatchingType) {
 }

@@ -11881,6 +11881,11 @@ components:
           description: List of attributes
           items:
             $ref: '#/components/schemas/MappingAttribute'
+        classifications:
+          type: array
+          description: List of classifications
+          items:
+            $ref: '#/components/schemas/MappingClassification'
     GetMappingsResponse:
       type: object
       properties:
@@ -11913,6 +11918,44 @@ components:
           description: List of attributes
           items:
             $ref: '#/components/schemas/MappingAttribute'
+        classifications:
+          type: array
+          description: List of classifications
+          items:
+            $ref: '#/components/schemas/MappingClassification'
+    MappingClassification:
+      required:
+      - classificationId
+      type: object
+      description: Mapping Classification
+      properties:
+        classificationId:
+          type: string
+          description: Classification Identifier
+        conditions:
+          type: array
+          description: List of classification conditions
+          items:
+            $ref: '#/components/schemas/MappingClassificationCondition'
+    MappingClassificationCondition:
+      required:
+      - sourceType
+      - resultKey
+      - resultValue
+      - resultMatchingType
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
+        resultKey:
+          type: string
+          description: Result key
+        resultValue:
+          type: string
+          description: Result value
+        resultMatchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
     MappingAttribute:
       oneOf:
       - $ref: '#/components/schemas/MappingAttributeContent'
@@ -12069,6 +12112,13 @@ components:
       description: Attribute Label Matching Type
       enum:
       - FUZZY
+      - EXACT
+      - BEGINS_WITH
+      - CONTAINS
+    MappingClassificationConditionMatchingType:
+      type: string
+      description: Classification Condition Result Matching Type
+      enum:
       - EXACT
       - BEGINS_WITH
       - CONTAINS

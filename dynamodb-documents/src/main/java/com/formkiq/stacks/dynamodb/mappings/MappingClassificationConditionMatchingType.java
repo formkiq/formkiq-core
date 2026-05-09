@@ -23,19 +23,14 @@
  */
 package com.formkiq.stacks.dynamodb.mappings;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-
-import java.util.List;
-
 /**
- * Mapping.
- *
- * @param name Mapping Name
- * @param description Mapping Description
- * @param attributes {@link List} {@link MappingAttribute}
- * @param classifications {@link List} {@link MappingClassification}
+ * Mapping Classification Condition Matching Type.
  */
-@Reflectable
-public record Mapping(String name, String description, List<MappingAttribute> attributes,
-    List<MappingClassification> classifications) {
+public enum MappingClassificationConditionMatchingType {
+  /** Exact match. */
+  EXACT,
+  /** Begins with match. */
+  BEGINS_WITH,
+  /** Contains match. */
+  CONTAINS
 }

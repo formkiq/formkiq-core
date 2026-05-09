@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -41,10 +42,13 @@ public class MappingToMappingRecord implements Function<Mapping, MappingRecord> 
   @Override
   public MappingRecord apply(final Mapping mapping) {
     MappingRecord r = new MappingRecord();
-    r.setName(mapping.getName());
-    r.setDescription(mapping.getDescription());
+    r.setName(mapping.name());
+    r.setDescription(mapping.description());
     r.setDocumentId(ID.uuid());
-    r.setAttributes(this.gson.toJson(mapping.getAttributes()));
+    r.setAttributes(
+        this.gson.toJson(mapping.attributes() != null ? mapping.attributes() : List.of()));
+    r.setClassifications(this.gson
+        .toJson(mapping.classifications() != null ? mapping.classifications() : List.of()));
     return r;
   }
 }

@@ -29,7 +29,6 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +49,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.aws.dynamodb.base64.Pagination;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -121,7 +119,17 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   public List<MappingAttribute> getAttributes(final MappingRecord mapping) {
     Gson gson = new GsonBuilder().create();
     Type listType = new TypeToken<ArrayList<MappingAttribute>>() {}.getType();
-    return gson.fromJson(mapping.getAttributes(), listType);
+    List<MappingAttribute> attributes = gson.fromJson(mapping.getAttributes(), listType);
+    return notNull(attributes);
+  }
+
+  @Override
+  public List<MappingClassification> getClassifications(final MappingRecord mapping) {
+    Gson gson = new GsonBuilder().create();
+    Type listType = new TypeToken<ArrayList<MappingClassification>>() {}.getType();
+    List<MappingClassification> classifications =
+        gson.fromJson(mapping.getClassifications(), listType);
+    return notNull(classifications);
   }
 
   @Override
@@ -156,11 +164,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       final Mapping mapping) throws ValidationException {
 
     boolean isNew = mappingId == null;
-    Collection<ValidationError> errors = validate(siteId, mapping);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    validate(siteId, mapping);
 
     MappingRecord record = new MappingToMappingRecord().apply(mapping);
 
@@ -182,118 +186,170 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
     return record;
   }
 
-  private void validate(final Map<String, AttributeRecord> attributes,
-      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
+  private void validate(final String siteId, final Mapping record) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    vb.isRequired("name", record.name());
+
+    boolean hasAttributes = !notNull(record.attributes()).isEmpty();
+    boolean hasClassifications = !notNull(record.classifications()).isEmpty();
+
+    if (!hasAttributes && !hasClassifications) {
+      vb.addError("attributes", "'attributes' or 'classifications' is required");
+    }
+
+    if (hasAttributes && hasClassifications) {
+      vb.addError("attributes", "'attributes' and 'classifications' cannot both be set");
+    }
+
+    vb.check();
+
+    if (hasAttributes) {
+      validateAttributes(vb, siteId, record);
+    }
+
+    if (hasClassifications) {
+      validateClassifications(vb, record.classifications());
+    }
+
+    vb.check();
+  }
+
+  private void validate(final ValidationBuilder vb, final Map<String, AttributeRecord> attributes,
+      final MappingAttribute attribute, final int index) {
 
     if (isEmpty(attribute.getAttributeKey())) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].attributeKey")
-          .error("'attributeKey' is required"));
+      vb.addError("attribute[" + index + "].attributeKey", "'attributeKey' is required");
     }
 
     if (attribute.getSourceType() == null) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].sourceType")
-          .error("'sourceType' is required"));
+      vb.addError("attribute[" + index + "].sourceType", "'sourceType' is required");
     }
 
     if (MappingAttributeSourceType.MANUAL.equals(attribute.getSourceType())) {
 
-      validateManual(attributes, attribute, index, errors);
+      validateManual(vb, attributes, attribute, index);
 
     } else if (MappingAttributeSourceType.METADATA_EXTRACTION_RESULT
         .equals(attribute.getSourceType())) {
 
       if (isEmpty(attribute.getLlmPromptEntityName())) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].llmPromptEntityName")
-            .error("'llmPromptEntityName' is required"));
+        vb.addError("attribute[" + index + "].llmPromptEntityName",
+            "'llmPromptEntityName' is required");
       }
 
     } else if (isLabelRequired(attribute.getSourceType())) {
 
       if (attribute.getLabelMatchingType() == null) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelMatchingType")
-            .error("'labelMatchingType' is required"));
+        vb.addError("attribute[" + index + "].labelMatchingType",
+            "'labelMatchingType' is required");
       }
 
       if (notNull(attribute.getLabelTexts()).isEmpty()) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].labelTexts")
-            .error("'labelTexts' is required"));
+        vb.addError("attribute[" + index + "].labelTexts", "'labelTexts' is required");
       }
     }
   }
 
-  private Collection<ValidationError> validate(final String siteId, final Mapping record) {
+  private void validateAttributes(final ValidationBuilder vb, final String siteId,
+      final Mapping record) {
 
-    Collection<ValidationError> errors = new ArrayList<>();
+    int size = record.attributes().size();
 
-    if (isEmpty(record.getName())) {
-      errors.add(new ValidationErrorImpl().key("name").error("'name' is required"));
-    }
+    List<String> attributeKeys =
+        notNull(record.attributes()).stream().map(MappingAttribute::getAttributeKey)
+            .filter(attributeKey -> !isEmpty(attributeKey)).toList();
 
-    if (notNull(record.getAttributes()).isEmpty()) {
-      errors.add(new ValidationErrorImpl().key("attributes").error("'attributes' is required"));
-    }
+    Map<String, AttributeRecord> attributes =
+        this.attributeService.getAttributes(siteId, attributeKeys);
 
-    if (errors.isEmpty()) {
-      int size = record.getAttributes().size();
+    for (int i = 0; i < size; i++) {
 
-      List<String> attributeKeys =
-          notNull(record.getAttributes()).stream().map(MappingAttribute::getAttributeKey)
-              .filter(attributeKey -> !isEmpty(attributeKey)).toList();
+      MappingAttribute attribute = record.attributes().get(i);
+      validate(vb, attributes, attribute, i);
 
-      Map<String, AttributeRecord> attributes =
-          this.attributeService.getAttributes(siteId, attributeKeys);
-
-      for (int i = 0; i < size; i++) {
-
-        MappingAttribute attribute = record.getAttributes().get(i);
-        validate(attributes, attribute, i, errors);
-
-        if (errors.isEmpty()) {
-          validateMetadataField(attribute, i, errors);
-        }
-      }
-
-      if (errors.isEmpty()) {
-
-        for (String attributeKey : attributeKeys) {
-          if (!attributes.containsKey(attributeKey)) {
-            errors.add(new ValidationErrorImpl().key(attributeKey)
-                .error("invalid attribute '" + attributeKey + "'"));
-          }
-        }
-
-        if (attributeKeys.size() != new HashSet<>(attributeKeys).size()) {
-          errors.add(new ValidationErrorImpl().error("duplicate attributes in mapping"));
-        }
+      if (vb.isEmpty()) {
+        validateMetadataField(vb, attribute, i);
       }
     }
 
-    return errors;
+    vb.check();
+
+    for (String attributeKey : attributeKeys) {
+      if (!attributes.containsKey(attributeKey)) {
+        vb.addError(attributeKey, "invalid attribute '" + attributeKey + "'");
+      }
+    }
+
+    if (attributeKeys.size() != new HashSet<>(attributeKeys).size()) {
+      vb.addError(null, "duplicate attributes in mapping");
+    }
   }
 
-  private void validateManual(final Map<String, AttributeRecord> attributes,
-      final MappingAttribute attribute, final int index, final Collection<ValidationError> errors) {
+  private void validateClassificationCondition(final ValidationBuilder vb,
+      final MappingClassificationCondition condition, final int classificationIndex,
+      final int conditionIndex) {
+
+    String key = "classification[" + classificationIndex + "].condition[" + conditionIndex + "]";
+
+    vb.isRequired(key + ".sourceType", condition.sourceType());
+    vb.isRequired(key + ".resultKey", condition.resultKey());
+    vb.isRequired(key + ".resultValue", condition.resultValue());
+    vb.isRequired(key + ".resultMatchingType", condition.resultMatchingType());
+  }
+
+  private void validateClassifications(final ValidationBuilder vb,
+      final List<MappingClassification> classifications) {
+
+    int classificationsWithoutConditions = 0;
+
+    for (int i = 0; i < classifications.size(); i++) {
+      MappingClassification classification = classifications.get(i);
+
+      if (isEmpty(classification.classificationId())) {
+        vb.addError("classification[" + i + "].classificationId", "'classificationId' is required");
+      }
+
+      List<MappingClassificationCondition> conditions = notNull(classification.conditions());
+
+      if (conditions.isEmpty()) {
+        classificationsWithoutConditions++;
+      }
+
+      for (int j = 0; j < conditions.size(); j++) {
+        validateClassificationCondition(vb, conditions.get(j), i, j);
+      }
+    }
+
+    if (classifications.size() > 1 && classificationsWithoutConditions > 1) {
+      vb.addError("classifications", "only one classification can omit conditions");
+    }
+  }
+
+  private void validateManual(final ValidationBuilder vb,
+      final Map<String, AttributeRecord> attributes, final MappingAttribute attribute,
+      final int index) {
 
     if (isKeysOnlyAttribute(attributes, attribute)) {
 
       if (!isMissingDefaultValue(attribute)) {
-        errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
-            .error("'defaultValue' or 'defaultValues' cannot be used with KEY_ONLY attribute"));
+        vb.addError("attribute[" + index + "].defaultValue",
+            "'defaultValue' or 'defaultValues' cannot be used with KEY_ONLY attribute");
       }
 
     } else if (isMissingDefaultValue(attribute)) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].defaultValue")
-          .error("'defaultValue' or 'defaultValues' is required"));
+      vb.addError("attribute[" + index + "].defaultValue",
+          "'defaultValue' or 'defaultValues' is required");
     }
   }
 
-  private void validateMetadataField(final MappingAttribute attribute, final int index,
-      final Collection<ValidationError> errors) {
+  private void validateMetadataField(final ValidationBuilder vb, final MappingAttribute attribute,
+      final int index) {
 
     if (MappingAttributeSourceType.METADATA.equals(attribute.getSourceType())
         && attribute.getMetadataField() == null) {
-      errors.add(new ValidationErrorImpl().key("attribute[" + index + "].metadataField")
-          .error("'metadataField' is required"));
+      vb.addError("attribute[" + index + "].metadataField", "'metadataField' is required");
     }
   }
 }

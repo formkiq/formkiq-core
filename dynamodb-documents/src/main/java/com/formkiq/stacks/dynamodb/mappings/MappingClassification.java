@@ -28,14 +28,12 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import java.util.List;
 
 /**
- * Mapping.
+ * Mapping Classification.
  *
- * @param name Mapping Name
- * @param description Mapping Description
- * @param attributes {@link List} {@link MappingAttribute}
- * @param classifications {@link List} {@link MappingClassification}
+ * @param classificationId Classification Identifier
+ * @param conditions Classification Conditions
  */
 @Reflectable
-public record Mapping(String name, String description, List<MappingAttribute> attributes,
-    List<MappingClassification> classifications) {
+public record MappingClassification(String classificationId,
+    List<MappingClassificationCondition> conditions) {
 }

@@ -47,8 +47,13 @@ import com.formkiq.client.model.MappingAttributeMetadata;
 import com.formkiq.client.model.MappingAttributeMetadataExtractionResult;
 import com.formkiq.client.model.MappingAttributeMetadataField;
 import com.formkiq.client.model.MappingAttributeSourceType;
+import com.formkiq.client.model.MappingClassification;
+import com.formkiq.client.model.MappingClassificationCondition;
+import com.formkiq.client.model.MappingClassificationConditionMatchingType;
 import com.formkiq.client.model.SetMappingRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.testutils.api.mappings.AddMappingRequestBuilder;
+import com.formkiq.testutils.api.mappings.GetMappingRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -63,6 +68,10 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
   /** SiteId. */
   private static final String SITE_ID = ID.uuid();
+  /** Classification Id. */
+  private static final String CLASSIFICATION_ID = "1658e3c2-b7c9-4cf2-8325-abcdd101ec57";
+  /** Classification Id 2. */
+  private static final String CLASSIFICATION_ID_2 = "2658e3c2-b7c9-4cf2-8325-abcdd101ec58";
 
   private static void assertMapping(final GetMappingsResponse response, final String name,
       final String description) {
@@ -144,6 +153,18 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
         .sourceType(MappingAttributeSourceType.MANUAL).defaultValue("23"));
   }
 
+  private static MappingClassification mappingClassification(final String classificationId,
+      final List<MappingClassificationCondition> conditions) {
+    return new MappingClassification().classificationId(classificationId).conditions(conditions);
+  }
+
+  private static MappingClassificationCondition mappingClassificationCondition() {
+    return new MappingClassificationCondition()
+        .sourceType(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)
+        .resultKey("classification").resultValue("INVOICE")
+        .resultMatchingType(MappingClassificationConditionMatchingType.EXACT);
+  }
+
   private static MappingAttribute metadataExtractionMappingAttribute() {
     return new MappingAttribute(
         new MappingAttributeMetadataExtractionResult().attributeKey("invoiceextraction")
@@ -185,6 +206,12 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
       assertEquals(expectedResponseBody, e.getResponseBody());
     }
+  }
+
+  private AddMapping classificationMappingRequest(
+      final List<MappingClassification> classifications) {
+    return new AddMapping().name("AI Document Classification").description("").attributes(List.of())
+        .classifications(classifications);
   }
 
   /**
@@ -303,6 +330,88 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /mappings with attributes and classifications.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddMappingsAttributesAndClassificationsFails() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+      setBearerToken(siteId);
+      addAttribute(siteId);
+
+      AddMapping mapping = new AddMapping().name("AI Document Classification")
+          .addAttributesItem(contentMappingAttribute("invoice", List.of("invoice")))
+          .classifications(List.of(mappingClassification(CLASSIFICATION_ID, List.of())));
+
+      // when
+      try {
+        this.mappingsApi.addMapping(new AddMappingRequest().mapping(mapping), siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"attributes\","
+                + "\"error\":\"'attributes' and 'classifications' cannot both be set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /mappings with classifications.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddMappingsClassifications() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      AddMapping addMapping = classificationMappingRequest(List
+          .of(mappingClassification(CLASSIFICATION_ID, List.of(mappingClassificationCondition()))));
+
+      // when
+      var mappingId = new AddMappingRequestBuilder().addMapping(addMapping).submit(client, siteId)
+          .throwIfError().response().getMappingId();
+
+      // then
+      assertNotNull(mappingId);
+
+      // when
+      var mapping = new GetMappingRequestBuilder(mappingId).submit(client, siteId).throwIfError()
+          .response().getMapping();
+
+      // then
+      assertNotNull(mapping);
+      assertEquals("AI Document Classification", mapping.getName());
+      assertEquals("", mapping.getDescription());
+
+      List<MappingAttribute> attributes = notNull(mapping.getAttributes());
+      assertEquals(0, attributes.size());
+
+      List<MappingClassification> classifications = notNull(mapping.getClassifications());
+      assertEquals(1, classifications.size());
+
+      MappingClassification classification = classifications.get(0);
+      assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
+
+      List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
+      assertEquals(1, conditions.size());
+      assertEquals(MappingAttributeSourceType.METADATA_EXTRACTION_RESULT,
+          conditions.get(0).getSourceType());
+      assertEquals("classification", conditions.get(0).getResultKey());
+      assertEquals("INVOICE", conditions.get(0).getResultValue());
+      assertEquals(MappingClassificationConditionMatchingType.EXACT,
+          conditions.get(0).getResultMatchingType());
+    }
+  }
+
+  /**
    * POST /mappings empty body.
    *
    */
@@ -347,10 +456,9 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
-                + "{\"key\":\"attributes\",\"error\":\"'attributes' is required\"}]}",
-            e.getResponseBody());
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
+            + "{\"key\":\"attributes\",\"error\":\"'attributes' or 'classifications' is "
+            + "required\"}]}", e.getResponseBody());
       }
     }
   }
@@ -435,6 +543,59 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       Mapping m = this.mappingsApi.getMapping(response.getMappingId(), siteId).getMapping();
       assertMapping(m, "asd", "");
       assertMappingManual(m, null);
+    }
+  }
+
+  /**
+   * POST /mappings with multiple classifications missing conditions.
+   *
+   */
+  @Test
+  public void testAddMappingsMultipleClassificationsConditionsFails() {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      var addMapping =
+          classificationMappingRequest(List.of(mappingClassification(CLASSIFICATION_ID, List.of()),
+              mappingClassification(CLASSIFICATION_ID_2, List.of())));
+
+      // when
+      var response = new AddMappingRequestBuilder().addMapping(addMapping).submit(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
+          response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"classifications\","
+              + "\"error\":\"only one classification can omit conditions\"}]}",
+          response.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /mappings with one default classification and one conditional classification.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddMappingsMultipleClassificationsOneWithoutConditions() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      var addMapping = classificationMappingRequest(List.of(
+          mappingClassification(CLASSIFICATION_ID, List.of()),
+          mappingClassification(CLASSIFICATION_ID_2, List.of(mappingClassificationCondition()))));
+
+      // when
+      var response = new AddMappingRequestBuilder().addMapping(addMapping).submit(client, siteId)
+          .throwIfError().response();
+
+      // then
+      assertNotNull(response.getMappingId());
     }
   }
 
