@@ -98,8 +98,15 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
     Map<String, AttributeValue> map =
-        new HashMap<>(Map.of("documentId", fromS(this.documentId), "name", fromS(this.name),
-            "attributes", fromS(this.attributes), "classifications", fromS(this.classifications)));
+        new HashMap<>(Map.of("documentId", fromS(this.documentId), "name", fromS(this.name)));
+
+    if (!isEmptyJsonArray(this.attributes)) {
+      map.put("attributes", fromS(this.attributes));
+    }
+
+    if (!isEmptyJsonArray(this.classifications)) {
+      map.put("classifications", fromS(this.classifications));
+    }
 
     if (!isEmpty(this.description)) {
       map.put("description", fromS(this.description));
@@ -148,6 +155,10 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
    */
   public String getName() {
     return this.name;
+  }
+
+  private boolean isEmptyJsonArray(final String value) {
+    return isEmpty(value) || "[]".equals(value);
   }
 
   @Override
