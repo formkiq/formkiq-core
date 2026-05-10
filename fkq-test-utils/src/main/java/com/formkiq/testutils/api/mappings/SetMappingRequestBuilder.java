@@ -26,11 +26,12 @@ package com.formkiq.testutils.api.mappings;
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddMapping;
+import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.SetMappingRequest;
 import com.formkiq.client.model.SetResponse;
-import com.formkiq.client.model.MappingAttribute;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -75,9 +76,23 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
   public SetMappingRequestBuilder addAttribute(final String attributeKey,
       final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
-    addMapping.addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
-        .sourceType(sourceType).labelMatchingType(labelMatchingType).addLabelTextsItem(labelText));
+    addMapping.addAttributesItem(
+        createMappingAttribute(attributeKey, sourceType, labelMatchingType, labelText));
     return this;
+  }
+
+  private MappingAttribute createMappingAttribute(final String attributeKey,
+      final MappingAttributeSourceType sourceType,
+      final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
+    return switch (sourceType) {
+      case CONTENT -> new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
+          .sourceType(MappingAttributeSourceType.CONTENT).labelMatchingType(labelMatchingType)
+          .addLabelTextsItem(labelText));
+      case CONTENT_KEY_VALUE -> new MappingAttribute(new MappingAttributeContent()
+          .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
+          .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText));
+      default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
+    };
   }
 
   /**

@@ -82,12 +82,15 @@ class MappingServiceDynamoDbTest implements DbKeys {
   }
 
   private Mapping createMapping() {
-    Mapping mapping = new Mapping().setName("test");
+    return createMapping("test");
+  }
+
+  private Mapping createMapping(final String name) {
     MappingAttribute a = new MappingAttribute().setAttributeKey("number")
         .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT).setLabelTexts(List.of("PO"))
         .setSourceType(MappingAttributeSourceType.CONTENT);
-    mapping.setAttributes(Collections.singletonList(a));
-    return mapping;
+
+    return new Mapping(name, null, Collections.singletonList(a), null);
   }
 
   /**
@@ -140,7 +143,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      Mapping mapping = new Mapping();
+      Mapping mapping = new Mapping(null, null, null, null);
 
       // when
       try {
@@ -158,7 +161,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
 
         error = itr.next();
         assertEquals("attributes", error.key());
-        assertEquals("'attributes' is required", error.error());
+        assertEquals("'attributes' or 'classifications' is required", error.error());
       }
     }
   }
@@ -177,7 +180,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
 
       // when
       for (int i = 0; i < count; i++) {
-        Mapping mapping = createMapping().setName("test_" + i);
+        Mapping mapping = createMapping("test_" + i);
         service.saveMapping(siteId, null, mapping);
       }
 
@@ -204,8 +207,7 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      Mapping mapping =
-          new Mapping().setName("test").setAttributes(List.of(new MappingAttribute()));
+      Mapping mapping = new Mapping("test", null, List.of(new MappingAttribute()), null);
 
       // when
       try {
@@ -248,8 +250,9 @@ class MappingServiceDynamoDbTest implements DbKeys {
 
       // when
       Mapping mapping = createMapping();
-      MappingAttribute attribute = mapping.getAttributes().get(0);
-      mapping.setAttributes(Arrays.asList(attribute, attribute));
+      MappingAttribute attribute = mapping.attributes().get(0);
+      mapping = new Mapping(mapping.name(), mapping.description(),
+          Arrays.asList(attribute, attribute), null);
 
       try {
         service.saveMapping(siteId, null, mapping);
@@ -278,11 +281,11 @@ class MappingServiceDynamoDbTest implements DbKeys {
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
           null);
 
-      Mapping mapping = new Mapping().setName("test")
-          .setAttributes(List.of(new MappingAttribute()
-              .setSourceType(MappingAttributeSourceType.METADATA).setAttributeKey("invoice")
-              .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT)
-              .setLabelTexts(List.of("test"))));
+      var mappingAttributes = List.of(new MappingAttribute()
+          .setSourceType(MappingAttributeSourceType.METADATA).setAttributeKey("invoice")
+          .setLabelMatchingType(MappingAttributeLabelMatchingType.EXACT)
+          .setLabelTexts(List.of("test")));
+      Mapping mapping = new Mapping("test", null, mappingAttributes, null);
 
       // when
       try {
@@ -309,8 +312,9 @@ class MappingServiceDynamoDbTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      Mapping mapping = new Mapping().setName("test").setAttributes(
-          List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL)));
+      var mappingAttributes =
+          List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL));
+      Mapping mapping = new Mapping("test", null, mappingAttributes, null);
 
       // when
       try {
@@ -344,9 +348,10 @@ class MappingServiceDynamoDbTest implements DbKeys {
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoice", null,
           null);
 
-      Mapping mapping = new Mapping().setName("test").setAttributes(
+      var mappingAttributes =
           List.of(new MappingAttribute().setSourceType(MappingAttributeSourceType.MANUAL)
-              .setAttributeKey("invoice").setDefaultValue("123")));
+              .setAttributeKey("invoice").setDefaultValue("123"));
+      Mapping mapping = new Mapping("test", null, mappingAttributes, null);
 
       // when
       MappingRecord mappingRecord = service.saveMapping(siteId, null, mapping);

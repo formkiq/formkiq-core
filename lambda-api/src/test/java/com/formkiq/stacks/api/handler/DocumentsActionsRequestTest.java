@@ -58,6 +58,7 @@ import com.formkiq.client.model.AddMappingRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
@@ -1079,10 +1080,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       AddMapping addMapping = new AddMapping().name("Document Invoice")
-          .addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
-              .sourceType(MappingAttributeSourceType.CONTENT)
+          .addAttributesItem(new MappingAttribute(new MappingAttributeContent()
+              .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT)
               .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-              .labelTexts(List.of("invoice", "invoice no")));
+              .labelTexts(List.of("invoice", "invoice no"))));
 
       String mappingId = this.mappingsApi
           .addMapping(new AddMappingRequest().mapping(addMapping), siteId).getMappingId();

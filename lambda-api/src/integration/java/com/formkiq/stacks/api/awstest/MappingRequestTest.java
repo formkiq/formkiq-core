@@ -35,6 +35,7 @@ import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.Mapping;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
 import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
@@ -202,10 +203,10 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
       MappingsApi api = new MappingsApi(client);
 
       AddMapping addMapping = new AddMapping().name("test")
-          .addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
-              .sourceType(MappingAttributeSourceType.CONTENT)
+          .addAttributesItem(new MappingAttribute(new MappingAttributeContent()
+              .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT)
               .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-              .labelTexts(List.of("invoice")));
+              .labelTexts(List.of("invoice"))));
 
       // when
       AddMappingResponse addMappingResponse =
@@ -220,7 +221,7 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
       assertNotNull(mappings.get(0).getDescription());
 
       List<MappingAttribute> attributes = notNull(mappings.get(0).getAttributes());
-      assertNotNull(attributes.get(0).getAttributeKey());
+      assertNotNull(attributes.get(0).getMappingAttributeContent().getAttributeKey());
 
       Mapping mapping = api.getMapping(mappingId, siteId).getMapping();
       assertNotNull(mapping);
@@ -229,7 +230,7 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
 
       attributes = notNull(mapping.getAttributes());
       assertEquals(1, attributes.size());
-      assertEquals(attributeKey, attributes.get(0).getAttributeKey());
+      assertEquals(attributeKey, attributes.get(0).getMappingAttributeContent().getAttributeKey());
 
       api.deleteMapping(mappingId, siteId);
 
@@ -247,10 +248,10 @@ public class MappingRequestTest extends AbstractAwsIntegrationTest {
     MappingsApi api = new MappingsApi(client);
 
     AddMapping addMapping = new AddMapping().name("Document Invoice")
-        .addAttributesItem(new MappingAttribute().attributeKey(attributeKey)
-            .sourceType(MappingAttributeSourceType.CONTENT)
+        .addAttributesItem(new MappingAttribute(new MappingAttributeContent()
+            .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT)
             .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
-            .validationRegex("INV-\\d+").labelTexts(List.of("invoice", "invoice no")));
+            .validationRegex("INV-\\d+").labelTexts(List.of("invoice", "invoice no"))));
 
     AddMappingResponse addMappingResponse =
         api.addMapping(new AddMappingRequest().mapping(addMapping), null);

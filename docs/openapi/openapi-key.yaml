@@ -11881,6 +11881,11 @@ components:
           description: List of attributes
           items:
             $ref: '#/components/schemas/MappingAttribute'
+        classifications:
+          type: array
+          description: List of classifications
+          items:
+            $ref: '#/components/schemas/MappingClassification'
     GetMappingsResponse:
       type: object
       properties:
@@ -11913,8 +11918,183 @@ components:
           description: List of attributes
           items:
             $ref: '#/components/schemas/MappingAttribute'
-    MappingAttribute:
+        classifications:
+          type: array
+          description: List of classifications
+          items:
+            $ref: '#/components/schemas/MappingClassification'
+    MappingClassification:
+      required:
+      - classificationId
       type: object
+      description: Mapping Classification
+      properties:
+        classificationId:
+          type: string
+          description: Classification Identifier
+        conditions:
+          type: array
+          description: List of classification conditions
+          items:
+            $ref: '#/components/schemas/MappingClassificationCondition'
+    MappingClassificationCondition:
+      oneOf:
+      - $ref: '#/components/schemas/MappingClassificationConditionContent'
+      - $ref: '#/components/schemas/MappingClassificationConditionDataClassification'
+      - $ref: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+      discriminator:
+        propertyName: sourceType
+        mapping:
+          CONTENT: '#/components/schemas/MappingClassificationConditionContent'
+          DATA_CLASSIFICATION: '#/components/schemas/MappingClassificationConditionDataClassification'
+          METADATA_EXTRACTION_RESULT: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+    MappingClassificationConditionContent:
+      required:
+      - sourceType
+      - matchingType
+      - text
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        matchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
+        text:
+          type: string
+          description: Text to match against the document content
+    MappingClassificationConditionDataClassification:
+      required:
+      - sourceType
+      - resultKey
+      - resultValue
+      - matchingType
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        resultKey:
+          type: string
+          description: Result key
+        resultValue:
+          type: string
+          description: Result value
+        matchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
+    MappingClassificationConditionMetadataExtractionResult:
+      required:
+      - sourceType
+      - resultKey
+      - resultValue
+      - matchingType
+      - llmPromptEntityName
+      type: object
+      description: Mapping Classification Condition
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/MappingClassificationConditionSourceType'
+        llmPromptEntityName:
+          type: string
+          description: LLM prompt entity name
+        resultKey:
+          type: string
+          description: Result key
+        resultValue:
+          type: string
+          description: Result value
+        matchingType:
+          $ref: '#/components/schemas/MappingClassificationConditionMatchingType'
+    MappingAttribute:
+      oneOf:
+      - $ref: '#/components/schemas/MappingAttributeContent'
+      - $ref: '#/components/schemas/MappingAttributeMetadata'
+      - $ref: '#/components/schemas/MappingAttributeManual'
+      - $ref: '#/components/schemas/MappingAttributeDataClassification'
+      - $ref: '#/components/schemas/MappingAttributeMetadataExtractionResult'
+      - $ref: '#/components/schemas/MappingAttributeMalwareScan'
+      discriminator:
+        propertyName: sourceType
+        mapping:
+          CONTENT: '#/components/schemas/MappingAttributeContent'
+          CONTENT_KEY_VALUE: '#/components/schemas/MappingAttributeContent'
+          METADATA: '#/components/schemas/MappingAttributeMetadata'
+          MANUAL: '#/components/schemas/MappingAttributeManual'
+          DATA_CLASSIFICATION: '#/components/schemas/MappingAttributeDataClassification'
+          METADATA_EXTRACTION_RESULT: '#/components/schemas/MappingAttributeMetadataExtractionResult'
+          MALWARE_SCAN: '#/components/schemas/MappingAttributeMalwareScan'
+    MappingAttributeContent:
+      required:
+      - attributeKey
+      - sourceType
+      - labelTexts
+      - labelMatchingType
+      type: object
+      description: Mapping Attribute from document content or content key-value data
+      properties:
+        attributeKey:
+          type: string
+          description: Attribute Key
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
+        defaultValue:
+          type: string
+          description: Default value used when no matching value is found
+        defaultValues:
+          type: array
+          description: Default values used when no matching value is found
+          items:
+            type: string
+        labelTexts:
+          type: array
+          description: Label Texts
+          items:
+            type: string
+            description: Label Text
+        labelMatchingType:
+          $ref: '#/components/schemas/MappingAttributeLabelMatchingType'
+        validationRegex:
+          type: string
+          description: Attribute Value Regex Validation
+    MappingAttributeMetadata:
+      required:
+      - attributeKey
+      - sourceType
+      - labelTexts
+      - labelMatchingType
+      - metadataField
+      type: object
+      description: Mapping Attribute from document metadata
+      properties:
+        attributeKey:
+          type: string
+          description: Attribute Key
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
+        defaultValue:
+          type: string
+          description: Default value used when no matching value is found
+        defaultValues:
+          type: array
+          description: Default values used when no matching value is found
+          items:
+            type: string
+        labelTexts:
+          type: array
+          description: Label Texts
+          items:
+            type: string
+            description: Label Text
+        labelMatchingType:
+          $ref: '#/components/schemas/MappingAttributeLabelMatchingType'
+        metadataField:
+          $ref: '#/components/schemas/MappingAttributeMetadataField'
+    MappingAttributeManual:
+      required:
+      - attributeKey
+      - sourceType
+      type: object
+      description: Mapping Attribute with manually configured default values
       properties:
         attributeKey:
           type: string
@@ -11929,17 +12109,46 @@ components:
           description: Default values
           items:
             type: string
-        labelTexts:
-          items:
-            type: string
-            description: Label Text
-        labelMatchingType:
-          $ref: '#/components/schemas/MappingAttributeLabelMatchingType'
-        metadataField:
-          $ref: '#/components/schemas/MappingAttributeMetadataField'
-        validationRegex:
+    MappingAttributeDataClassification:
+      required:
+      - attributeKey
+      - sourceType
+      type: object
+      description: Mapping Attribute from document data classification results
+      properties:
+        attributeKey:
           type: string
-          description: Attribute Value Regex Validation
+          description: Attribute Key
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
+    MappingAttributeMetadataExtractionResult:
+      required:
+      - attributeKey
+      - sourceType
+      - llmPromptEntityName
+      type: object
+      description: Mapping Attribute from document metadata extraction results
+      properties:
+        attributeKey:
+          type: string
+          description: Attribute Key
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
+        llmPromptEntityName:
+          type: string
+          description: LLM prompt entity name
+    MappingAttributeMalwareScan:
+      required:
+      - attributeKey
+      - sourceType
+      type: object
+      description: Mapping Attribute from document malware scan results
+      properties:
+        attributeKey:
+          type: string
+          description: Attribute Key
+        sourceType:
+          $ref: '#/components/schemas/MappingAttributeSourceType'
     MappingAttributeMetadataField:
       type: string
       description: Attribute Metadata Field
@@ -11955,6 +12164,13 @@ components:
       - EXACT
       - BEGINS_WITH
       - CONTAINS
+    MappingClassificationConditionMatchingType:
+      type: string
+      description: Classification Condition Result Matching Type
+      enum:
+      - EXACT
+      - BEGINS_WITH
+      - CONTAINS
     MappingAttributeSourceType:
       type: string
       description: Attribute Source Type
@@ -11966,6 +12182,13 @@ components:
       - DATA_CLASSIFICATION
       - METADATA_EXTRACTION_RESULT
       - MALWARE_SCAN
+    MappingClassificationConditionSourceType:
+      type: string
+      description: Classification Condition Source Type
+      enum:
+      - CONTENT
+      - DATA_CLASSIFICATION
+      - METADATA_EXTRACTION_RESULT
     GetExaminePdfUrlResponse:
       type: object
       properties:

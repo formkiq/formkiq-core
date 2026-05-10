@@ -38,7 +38,7 @@ public interface MappingService {
 
   /**
    * Delete Mapping.
-   * 
+   *
    * @param siteId {@link String}
    * @param mappingId {@link String}
    * @return boolean
@@ -47,7 +47,7 @@ public interface MappingService {
 
   /**
    * Find {@link MappingRecord}.
-   * 
+   *
    * @param siteId Optional Grouping siteId
    * @param nextToken {@link String}
    * @param limit int
@@ -57,15 +57,23 @@ public interface MappingService {
 
   /**
    * Get {@link MappingAttribute}.
-   * 
+   *
    * @param mapping {@link MappingRecord}
    * @return {@link List} {@link MappingAttribute}
    */
   List<MappingAttribute> getAttributes(MappingRecord mapping);
 
   /**
+   * Get {@link MappingClassification}.
+   *
+   * @param mapping {@link MappingRecord}
+   * @return {@link List} {@link MappingClassification}
+   */
+  List<MappingClassification> getClassifications(MappingRecord mapping);
+
+  /**
    * Get {@link MappingRecord}.
-   * 
+   *
    * @param siteId {@link String}
    * @param mappingId {@link String}
    * @return {@link MappingRecord}
@@ -74,7 +82,7 @@ public interface MappingService {
 
   /**
    * Save / Set {@link MappingRecord}.
-   * 
+   *
    * @param siteId {@link String}
    * @param mappingId {@link String}
    * @param mapping {@link Mapping}

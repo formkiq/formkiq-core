@@ -25,17 +25,15 @@ package com.formkiq.stacks.dynamodb.mappings;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-import java.util.List;
-
 /**
- * Mapping.
- *
- * @param name Mapping Name
- * @param description Mapping Description
- * @param attributes {@link List} {@link MappingAttribute}
- * @param classifications {@link List} {@link MappingClassification}
+ * Mapping Attribute Source Type.
  */
 @Reflectable
-public record Mapping(String name, String description, List<MappingAttribute> attributes,
-    List<MappingClassification> classifications) {
+public enum MappingClassificationConditionSourceType {
+  /** Content. */
+  CONTENT,
+  /** Data Classification. */
+  DATA_CLASSIFICATION,
+  /** Metadata Extraction Result. */
+  METADATA_EXTRACTION_RESULT
 }

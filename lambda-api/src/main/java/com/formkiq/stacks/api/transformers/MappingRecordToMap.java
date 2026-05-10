@@ -25,8 +25,10 @@ package com.formkiq.stacks.api.transformers;
 
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.stacks.dynamodb.mappings.MappingClassification;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -51,7 +53,13 @@ public class MappingRecordToMap implements Function<MappingRecord, Map<String, O
   @Override
   public Map<String, Object> apply(final MappingRecord a) {
     List<MappingAttribute> attributes = this.service.getAttributes(a);
-    return Map.of("mappingId", a.getDocumentId(), "name", a.getName(), "attributes", attributes,
-        "description", a.getDescription() != null ? a.getDescription() : "");
+    List<MappingClassification> classifications = this.service.getClassifications(a);
+    Map<String, Object> map = new HashMap<>();
+    map.put("mappingId", a.getDocumentId());
+    map.put("name", a.getName());
+    map.put("attributes", attributes);
+    map.put("classifications", classifications);
+    map.put("description", a.getDescription() != null ? a.getDescription() : "");
+    return map;
   }
 }
