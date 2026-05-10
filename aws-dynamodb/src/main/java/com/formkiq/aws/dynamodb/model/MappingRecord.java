@@ -33,7 +33,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
- * 
+ *
  * Mapping object.
  *
  */
@@ -48,6 +48,8 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
   public static final String PREFIX_SK = "site#document#";
   /** Mapping Attributes {@link String}. */
   private String attributes;
+  /** Mapping Classifications {@link String}. */
+  private String classifications;
   /** Description of Mapping. */
   private String description;
   /** Mapping Id. */
@@ -64,7 +66,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Get Attributes.
-   * 
+   *
    * @return {@link String}
    */
   public String getAttributes() {
@@ -84,10 +86,20 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
     return map;
   }
 
+  /**
+   * Get Classifications.
+   *
+   * @return {@link String}
+   */
+  public String getClassifications() {
+    return this.classifications;
+  }
+
   @Override
   public Map<String, AttributeValue> getDataAttributes() {
-    Map<String, AttributeValue> map = new HashMap<>(Map.of("documentId", fromS(this.documentId),
-        "name", fromS(this.name), "attributes", fromS(this.attributes)));
+    Map<String, AttributeValue> map =
+        new HashMap<>(Map.of("documentId", fromS(this.documentId), "name", fromS(this.name),
+            "attributes", fromS(this.attributes), "classifications", fromS(this.classifications)));
 
     if (!isEmpty(this.description)) {
       map.put("description", fromS(this.description));
@@ -98,7 +110,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Get Description.
-   * 
+   *
    * @return {@link String}
    */
   public String getDescription() {
@@ -107,7 +119,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Get Document Id.
-   * 
+   *
    * @return {@link String}
    */
   public String getDocumentId() {
@@ -122,7 +134,8 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
     if (!attrs.isEmpty()) {
       record = new MappingRecord().setDocumentId(ss(attrs, "documentId")).setName(ss(attrs, "name"))
-          .setDescription(ss(attrs, "description")).setAttributes(ss(attrs, "attributes"));
+          .setDescription(ss(attrs, "description")).setAttributes(ss(attrs, "attributes"))
+          .setClassifications(ss(attrs, "classifications"));
     }
 
     return record;
@@ -130,7 +143,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Get Name.
-   * 
+   *
    * @return {@link String}
    */
   public String getName() {
@@ -157,7 +170,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Set Attributes.
-   * 
+   *
    * @param mappingAttributes {@link String}
    * @return {@link MappingRecord}
    */
@@ -167,8 +180,19 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
   }
 
   /**
+   * Set Classifications.
+   *
+   * @param mappingClassifications {@link String}
+   * @return {@link MappingRecord}
+   */
+  public MappingRecord setClassifications(final String mappingClassifications) {
+    this.classifications = mappingClassifications;
+    return this;
+  }
+
+  /**
    * Set Description.
-   * 
+   *
    * @param mappingDescription {@link String}
    * @return {@link MappingRecord}
    */
@@ -179,7 +203,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Set Document Id.
-   * 
+   *
    * @param mappingId {@link String}
    * @return {@link MappingRecord}
    */
@@ -190,7 +214,7 @@ public class MappingRecord implements DynamodbRecord<MappingRecord> {
 
   /**
    * Set Name.
-   * 
+   *
    * @param schemaName {@link String}
    * @return {@link MappingRecord}
    */
