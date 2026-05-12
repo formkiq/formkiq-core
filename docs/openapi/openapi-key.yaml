@@ -1592,6 +1592,7 @@ paths:
         | OCR | ocrOutputType     | Convert OCR result to an Output format (textract table only) | true |
         | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
         | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
+        | LLMPROMPT | llmPromptEntityName | LLM Prompt Entity Name |
         | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
         | METADATA_EXTRACTION | llmPromptEntityName | LLM Prompt Entity Name |
         | CHECKSUM    | checksumType    | Checksum algorithm to calculate and persist for the document | SHA1, SHA256, or SHA512 |
@@ -2045,7 +2046,11 @@ paths:
     get:
       operationId: GetDocumentDataClassification
       summary: Get document's data classification
-      description: Retrieve an document's data classification; available as an Add-On Module
+      description: |
+        Retrieve an document's data classification; available as an Add-On Module.
+        **Deprecated**. This endpoint is no longer recommended.
+        Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
+      deprecated: true
       tags:
       - Intelligent Document Processing
       parameters:
@@ -2075,7 +2080,11 @@ paths:
     put:
       operationId: SetDocumentDataClassification
       summary: Set document's data classification
-      description: Generate Data Classfication attributes within a document; available as an Add-On Module
+      description: |
+        Generate Data Classfication attributes within a document; available as an Add-On Module.
+        **Deprecated**. This endpoint is no longer recommended.
+        Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
+      deprecated: true
       tags:
       - Intelligent Document Processing
       parameters:
@@ -2110,7 +2119,11 @@ paths:
     get:
       operationId: GetAllDocumentMetadataExtractionResults
       summary: Get all document's metadata extraction results
-      description: Retrieve all document's metadata extraction; available as an Add-On Module
+      description: |
+        Retrieve all document's metadata extraction; available as an Add-On Module.
+        **Deprecated**. This endpoint is no longer recommended.
+        Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
+      deprecated: true
       tags:
       - Intelligent Document Processing
       parameters:
@@ -2141,7 +2154,11 @@ paths:
     get:
       operationId: GetDocumentMetadataExtractionResults
       summary: Get document's metadata extraction results
-      description: Retrieve an document's metadata extraction; available as an Add-On Module
+      description: |
+        Retrieve an document's metadata extraction; available as an Add-On Module.
+        **Deprecated**. This endpoint is no longer recommended.
+        Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
+      deprecated: true
       tags:
       - Intelligent Document Processing
       parameters:
@@ -2172,7 +2189,11 @@ paths:
     post:
       operationId: AddDocumentMetadataExtractionResult
       summary: Add document's metadata extraction result
-      description: Create a document Metadatq Extraction Result attributes within a document; available as an Add-On Module
+      description: |
+        Create a document Metadatq Extraction Result attributes within a document; available as an Add-On Module.
+        **Deprecated**. This endpoint is no longer recommended.
+        Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
+      deprecated: true
       tags:
       - Intelligent Document Processing
       parameters:
@@ -2194,6 +2215,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentMetadataExtractionResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+  /documents/{documentId}/ai/prompts/{llmPromptEntityName}:
+    get:
+      operationId: GetDocumentAiPromptResults
+      summary: Get document AI results from LLM prompt
+      description: Retrieve document AI results from an LLM prompt; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentAiPromptResultsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+    post:
+      operationId: AddDocumentAiPrompt
+      summary: Add document AI result from LLM prompt
+      description: Run an LLM prompt against a document; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentAiResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -9789,6 +9871,7 @@ components:
       - PDFEXPORT
       - EVENTBRIDGE
       - RESIZE
+      - LLMPROMPT
       - DATA_CLASSIFICATION
       - MALWARE_SCAN
     DeleteType:
@@ -9887,7 +9970,7 @@ components:
           description: 'OCR: For the rewriting of the PDF document, converting any image text to searchable text'
         llmPromptEntityName:
           type: string
-          description: 'DATA_CLASSIFICATION: Set the LLM Prompt Entity Name'
+          description: 'LLMPROMPT, DATA_CLASSIFICATION, METADATA_EXTRACTION: Set the LLM Prompt Entity Name'
         url:
           type: string
           description: 'Webhook: Callback URL'
@@ -10325,6 +10408,80 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DataClassificationAttribute'
+    AddDocumentAiResponse:
+      type: object
+      properties:
+        systemPrompt:
+          type: string
+          description: System Prompt
+        aiPromptResult:
+          $ref: '#/components/schemas/DocumentAiPromptResult'
+    GetDocumentAiPromptResultsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        aiPromptResults:
+          type: array
+          description: List of document AI prompt result records
+          items:
+            $ref: '#/components/schemas/DocumentAiPromptResult'
+    DocumentAiPromptResult:
+      type: object
+      properties:
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        content:
+          type: string
+          description: Result content
+        userId:
+          type: string
+          description: UserId that created Result
+        values:
+          type: array
+          description: Document AI prompt values
+          items:
+            $ref: '#/components/schemas/DocumentAiPromptValue'
+    DocumentAiPromptValue:
+      type: object
+      required:
+      - resultType
+      - attributes
+      properties:
+        resultType:
+          $ref: '#/components/schemas/DocumentAiPromptResultType'
+        entityType:
+          type: string
+          description: Entity type when resultType is ENTITY
+        entityNamespace:
+          $ref: '#/components/schemas/EntityTypeNamespace'
+        attributes:
+          type: array
+          description: Attributes extracted from result content
+          items:
+            $ref: '#/components/schemas/DocumentAiPromptResultAttribute'
+    DocumentAiPromptResultAttribute:
+      type: object
+      required:
+      - key
+      - stringValues
+      properties:
+        key:
+          type: string
+          description: Document AI prompt result attribute key
+        stringValues:
+          type: array
+          description: Document AI prompt result attribute string values
+          items:
+            type: string
+    DocumentAiPromptResultType:
+      type: string
+      description: Document AI prompt result type
+      enum:
+      - KEY_VALUE
+      - ENTITY
     UpdateDocumentFulltextResponse:
       type: object
       properties:

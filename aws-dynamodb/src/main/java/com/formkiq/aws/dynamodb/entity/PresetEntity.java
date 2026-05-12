@@ -87,6 +87,15 @@ public interface PresetEntity {
   String getName();
 
   /**
+   * Get Required Attribute Keys.
+   *
+   * @return {@link List} {@link String}
+   */
+  default List<String> getRequiredAttributeKeys() {
+    return getAttributeKeys();
+  }
+
+  /**
    * Validate Attributes.
    *
    * @param attributes {@link List} {@link EntityAttribute}
@@ -96,7 +105,7 @@ public interface PresetEntity {
       Map<String, AttributeValue> existing) {
 
     ValidationBuilder vb = new ValidationBuilder();
-    for (String attributeKey : getAttributeKeys()) {
+    for (String attributeKey : getRequiredAttributeKeys()) {
       Optional<EntityAttribute> attribute = findAttribute(attributes, attributeKey);
       vb.isRequired(attributeKey, attribute);
     }
