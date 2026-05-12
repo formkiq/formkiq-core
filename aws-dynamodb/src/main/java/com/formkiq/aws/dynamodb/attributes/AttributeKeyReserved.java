@@ -77,6 +77,10 @@ public enum AttributeKeyReserved {
   LLM_USER_PROMPT("UserPrompt"),
   /** LLM System Prompt. */
   LLM_SYSTEM_PROMPT("LlmSystemPrompt"),
+  /** LLM System Prompt Document Id. */
+  LLM_SYSTEM_PROMPT_DOCUMENT_ID("LlmSystemPromptDocumentId"),
+  /** LLM System Prompt Artifact Id. */
+  LLM_SYSTEM_PROMPT_ARTIFACT_ID("LlmSystemPromptArtifactId"),
   /** LLM Response Preset Entity Types. */
   LLM_RESPONSE_PRESET_ENTITY_TYPES("LlmResponsePresetEntityTypes"),
   /** LLM Response Field Key. */

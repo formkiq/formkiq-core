@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -41,8 +42,19 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
   private List<EntityAttribute> attributes;
   /** {@link PresetEntity}. */
   private PresetEntity entityType;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
   /** Existing Attributes. */
   private Map<String, AttributeValue> existing;
+
+  /**
+   * constructor.
+   * 
+   * @param dbService {@link DynamoDbService}
+   */
+  public PresetEntityBuilder(final DynamoDbService dbService) {
+    this.db = dbService;
+  }
 
   /**
    * Sets the Preset Entity Attributes.
@@ -62,7 +74,7 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
 
   @Override
   public EntityRecord build(final String siteId) {
-    validate();
+    validate(siteId);
     return builder.attributes(attributes).build(siteId);
   }
 
@@ -120,7 +132,7 @@ public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> 
     return this;
   }
 
-  private void validate() {
-    this.entityType.validateAttributes(attributes, existing);
+  private void validate(final String siteId) {
+    this.entityType.validateAttributes(db, siteId, attributes, existing);
   }
 }

@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
 import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -96,13 +97,35 @@ public interface PresetEntity {
   }
 
   /**
+   * Find whether attribute exist in attributes or existing attributes.
+   * 
+   * @param attributes @link List} {@link EntityAttribute}
+   * @param existing {@link Map}
+   * @param attributeKey {@link String}
+   * @return boolean
+   */
+  default boolean hasAttribute(final List<EntityAttribute> attributes,
+      final Map<String, AttributeValue> existing, final String attributeKey) {
+    boolean hasAttribute = existing != null && existing.containsKey(attributeKey);
+    Optional<EntityAttribute> o = findAttribute(attributes, attributeKey);
+
+    if (o.isPresent()) {
+      hasAttribute = true;
+    }
+
+    return hasAttribute;
+  }
+
+  /**
    * Validate Attributes.
    *
+   * @param db {@link DynamoDbService}
+   * @param siteId {@link String}
    * @param attributes {@link List} {@link EntityAttribute}
    * @param existing Existing attributes
    */
-  default void validateAttributes(List<EntityAttribute> attributes,
-      Map<String, AttributeValue> existing) {
+  default void validateAttributes(DynamoDbService db, String siteId,
+      List<EntityAttribute> attributes, Map<String, AttributeValue> existing) {
 
     ValidationBuilder vb = new ValidationBuilder();
     for (String attributeKey : getRequiredAttributeKeys()) {
