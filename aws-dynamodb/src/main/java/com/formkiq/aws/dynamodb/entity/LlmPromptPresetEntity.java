@@ -23,11 +23,18 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.validation.ValidationBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_ANALYSIS_CATEGORY;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES;
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_USER_PROMPT;
 
 /**
  * PresetEntity for LLM Prompt.
@@ -39,10 +46,9 @@ public class LlmPromptPresetEntity implements PresetEntity {
 
   @Override
   public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
+    return List.of(LLM_USER_PROMPT.getKey(), LLM_SYSTEM_PROMPT.getKey(),
+        LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(), LLM_RESPONSE_FIELD_KEY.getKey(),
+        LLM_ANALYSIS_CATEGORY.getKey());
   }
 
   @Override
@@ -53,5 +59,20 @@ public class LlmPromptPresetEntity implements PresetEntity {
   @Override
   public List<String> getRequiredAttributeKeys() {
     return List.of(LLM_SYSTEM_PROMPT.getKey());
+  }
+
+  @Override
+  public void validateAttributes(final List<EntityAttribute> attributes,
+      final Map<String, AttributeValue> existing) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    Optional<EntityAttribute> systemPrompt = findAttribute(attributes, LLM_SYSTEM_PROMPT.getKey());
+    Optional<EntityAttribute> userPrompt = findAttribute(attributes, LLM_USER_PROMPT.getKey());
+
+    if (userPrompt.isEmpty()) {
+      vb.isRequired(LLM_SYSTEM_PROMPT.getKey(), systemPrompt);
+    }
+
+    vb.check();
   }
 }
