@@ -36,10 +36,37 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class GetAttributesRequestBuilder implements HttpRequestBuilder<GetAttributesResponse> {
 
+  /** Next Token. */
+  private String next;
+  /** Limit. */
+  private String limit;
+
   /**
    * constructor.
    */
   public GetAttributesRequestBuilder() {}
+
+  /**
+   * Set Limit.
+   * 
+   * @param resultsLimit int
+   * @return {@link GetAttributesRequestBuilder}
+   */
+  public GetAttributesRequestBuilder limit(final int resultsLimit) {
+    this.limit = String.valueOf(resultsLimit);
+    return this;
+  }
+
+  /**
+   * Set Next Token.
+   * 
+   * @param nextToken {@link String}
+   * @return {@link GetAttributesRequestBuilder}
+   */
+  public GetAttributesRequestBuilder next(final String nextToken) {
+    this.next = nextToken;
+    return this;
+  }
 
   @Override
   public ApiHttpResponse<GetAttributesResponse> submit(final ApiClient apiClient,
@@ -48,7 +75,7 @@ public class GetAttributesRequestBuilder implements HttpRequestBuilder<GetAttrib
     GetAttributesResponse obj = null;
     ApiException ex = null;
     try {
-      obj = new AttributesApi(apiClient).getAttributes(siteId, null, null);
+      obj = new AttributesApi(apiClient).getAttributes(siteId, next, limit);
     } catch (ApiException e) {
       ex = e;
     }
