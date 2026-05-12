@@ -24,12 +24,8 @@
 package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.validation.ValidationBuilder;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
 
