@@ -21,37 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.entity;
+package com.formkiq.stacks.lambda.s3.actions;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.module.actions.Action;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.urls.UrlPathEncoder;
 
-import java.util.List;
-
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
+import java.util.Map;
 
 /**
- * PresetEntity for LLM Prompt.
+ * DocumentAction for LLM Prompt {@link Action}.
  */
-public class LlmPromptPresetEntity implements PresetEntity {
+public class LlmPromptAction extends AbstractIntelligentDocumentProcessingAction {
 
-  /** Entity Name. */
-  public static final String ENTITY_NAME = "LlmPrompt";
-
-  @Override
-  public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
+  /**
+   * constructor.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   */
+  public LlmPromptAction(final AwsServiceCache serviceCache) {
+    super(serviceCache);
   }
 
   @Override
-  public String getName() {
-    return ENTITY_NAME;
+  protected Map<String, Object> buildPayload(final Action action) {
+    return Map.of();
   }
 
   @Override
-  public List<String> getRequiredAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey());
+  protected String getMethod() {
+    return "POST";
+  }
+
+  @Override
+  protected String getUrl(final DocumentArtifact document, final Action action) {
+    String documentId = document.documentId();
+    String llmPromptEntityName = (String) action.parameters().get("llmPromptEntityName");
+    return String.format("/documents/%s/ai/prompts/%s", documentId,
+        UrlPathEncoder.encodePathSegment(llmPromptEntityName));
   }
 }

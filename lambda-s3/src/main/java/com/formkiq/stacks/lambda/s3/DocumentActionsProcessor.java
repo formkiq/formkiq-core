@@ -99,6 +99,7 @@ import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
 import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
 import com.formkiq.stacks.lambda.s3.actions.HttpRetryException;
 import com.formkiq.stacks.lambda.s3.actions.IdpAction;
+import com.formkiq.stacks.lambda.s3.actions.LlmPromptAction;
 import com.formkiq.stacks.lambda.s3.actions.MoveAction;
 import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
 import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
@@ -380,6 +381,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       case METADATA_EXTRACTION -> actionStatus = new AddMetadataExtractionAction(serviceCache)
           .run(logger, siteId, document, actions, action);
+
+      case LLMPROMPT -> actionStatus =
+          new LlmPromptAction(serviceCache).run(logger, siteId, document, actions, action);
 
       default -> throw new IOException("Unhandled Action Type: " + action.type());
     }

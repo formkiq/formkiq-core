@@ -23,35 +23,48 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * PresetEntity for LLM Prompt.
- */
-public class LlmPromptPresetEntity implements PresetEntity {
+/** Unit Tests for {@link LlmPromptPresetEntity}. */
+class LlmPromptPresetEntityTest {
 
-  /** Entity Name. */
-  public static final String ENTITY_NAME = "LlmPrompt";
+  /**
+   * Get LLM Prompt attribute keys.
+   */
+  @Test
+  void testGetAttributeKeys01() {
+    // given
+    LlmPromptPresetEntity entity = new LlmPromptPresetEntity();
 
-  @Override
-  public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
+    // when
+    List<String> keys = entity.getAttributeKeys();
+
+    // then
+    assertEquals(List.of("LlmSystemPrompt", "LlmResponsePresetEntityTypes", "LlmResponseFieldKey",
+        "LlmAnalysisCategory"), keys);
   }
 
-  @Override
-  public String getName() {
-    return ENTITY_NAME;
-  }
+  /**
+   * LLM Prompt attribute keys are reserved string attributes.
+   */
+  @Test
+  void testReservedAttributeKeys01() {
+    // given
+    List<String> keys = new LlmPromptPresetEntity().getAttributeKeys().stream().skip(1).toList();
 
-  @Override
-  public List<String> getRequiredAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey());
+    // when / then
+    for (String key : keys) {
+      AttributeKeyReserved reserved = AttributeKeyReserved.find(key.toLowerCase());
+      assertNotNull(reserved);
+      assertEquals(key, reserved.getKey());
+      assertEquals(AttributeDataType.STRING, reserved.getDataType());
+    }
   }
 }

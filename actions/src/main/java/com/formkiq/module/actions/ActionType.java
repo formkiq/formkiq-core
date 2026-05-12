@@ -314,6 +314,18 @@ public enum ActionType {
       }
     }
   },
+  /** LLM Prompt. */
+  LLMPROMPT {
+    @Override
+    public void validate(final DynamoDbService db, final String siteId, final Action action,
+        final Map<String, Object> parameters, final String chatGptApiKey,
+        final String notificationsEmail, final Collection<ValidationError> errors) {
+      if (isMissingValue(parameters, "llmPromptEntityName")) {
+        errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
+            .error("'llmPromptEntityName' parameter is required"));
+      }
+    }
+  },
   /** Resize. */
   RESIZE {
     private boolean isGreaterThanZeroInteger(final String value) {

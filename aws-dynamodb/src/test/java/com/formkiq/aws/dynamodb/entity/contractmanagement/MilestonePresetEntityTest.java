@@ -21,37 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.entity;
+package com.formkiq.aws.dynamodb.entity.contractmanagement;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * PresetEntity for LLM Prompt.
- */
-public class LlmPromptPresetEntity implements PresetEntity {
+/** Unit Tests for {@link MilestonePresetEntity}. */
+class MilestonePresetEntityTest {
 
-  /** Entity Name. */
-  public static final String ENTITY_NAME = "LlmPrompt";
+  /**
+   * Get Milestone attribute keys.
+   */
+  @Test
+  void testGetAttributeKeys01() {
+    // given
+    MilestonePresetEntity entity = new MilestonePresetEntity();
 
-  @Override
-  public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
+    // when
+    List<String> keys = entity.getAttributeKeys();
+
+    // then
+    assertEquals(List.of("MilestoneDate", "MilestoneDescription", "MilestoneFeePercentageDue"),
+        keys);
   }
 
-  @Override
-  public String getName() {
-    return ENTITY_NAME;
-  }
+  /**
+   * Get Milestone name.
+   */
+  @Test
+  void testGetName01() {
+    // given
+    MilestonePresetEntity entity = new MilestonePresetEntity();
 
-  @Override
-  public List<String> getRequiredAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey());
+    // when
+    String name = entity.getName();
+
+    // then
+    assertEquals("Milestone", name);
   }
 }

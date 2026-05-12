@@ -238,6 +238,18 @@ class ActionsValidatorTest {
         "'llmPromptEntityName' parameter is required");
   }
 
+  /**
+   * LLMPROMPT Missing llmPromptEntityName.
+   */
+  @Test
+  void testValidation10a() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.LLMPROMPT).userId("joe").document(document)
+        .indexUlid().build((String) null);
+    testTemplate(action, "parameters.llmPromptEntityName",
+        "'llmPromptEntityName' parameter is required");
+  }
+
   @Test
   void testValidation11() {
     DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
