@@ -24,6 +24,8 @@
 package com.formkiq.aws.dynamodb.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -50,6 +52,16 @@ class MimeTypeTest {
     assertEquals("png", MimeType.fromContentType("image/png").getExtension());
     assertEquals("txt", MimeType.fromContentType("text/plain").getExtension());
     assertEquals("", MimeType.fromContentType(null).getExtension());
+  }
+
+  /**
+   * Test isPlainText.
+   */
+  @Test
+  void testIsPlainText() {
+    assertTrue(MimeType.isPlainText("text/plain"));
+    assertTrue(MimeType.isPlainText("text/markdown"));
+    assertFalse(MimeType.isPlainText("application/pdf"));
   }
 
 }

@@ -171,8 +171,9 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
         }
 
         // check attributes exist
+        DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
         entity =
-            new PresetEntityBuilder().existing(existing != null ? existing.getAttributes() : null)
+            new PresetEntityBuilder(db).existing(existing != null ? existing.getAttributes() : null)
                 .documentId(entityId).presetEntity(presetEntity.get()).name(entityName)
                 .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
 
