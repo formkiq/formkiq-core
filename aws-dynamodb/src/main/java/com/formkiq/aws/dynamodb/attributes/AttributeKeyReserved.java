@@ -77,8 +77,6 @@ public enum AttributeKeyReserved {
   LLM_SYSTEM_PROMPT("LlmSystemPrompt"),
   /** LLM Response Preset Entity Types. */
   LLM_RESPONSE_PRESET_ENTITY_TYPES("LlmResponsePresetEntityTypes"),
-  /** LLM Response Custom Entity Types. */
-  LLM_RESPONSE_CUSTOM_ENTITY_TYPES("LlmResponseCustomEntityTypes"),
   /** LLM Response Field Key. */
   LLM_RESPONSE_FIELD_KEY("LlmResponseFieldKey"),
   /** LLM Analysis Category. */

@@ -49,7 +49,6 @@ public class LlmPromptPresetEntity implements PresetEntity {
   public List<String> getAttributeKeys() {
     return List.of(USER_PROMPT, LLM_SYSTEM_PROMPT.getKey(),
         AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_CUSTOM_ENTITY_TYPES.getKey(),
         AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
         AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
   }
