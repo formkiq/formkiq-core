@@ -73,6 +73,8 @@ public enum AttributeKeyReserved {
   /** Retention Effective Status. */
   RETENTION_EFFECTIVE_STATUS("RetentionEffectiveStatus", AttributeType.STANDARD,
       AttributeDataType.STRING, AttributeDerivedType.STANDARD),
+  /** LLM User Prompt. */
+  LLM_USER_PROMPT("UserPrompt"),
   /** LLM System Prompt. */
   LLM_SYSTEM_PROMPT("LlmSystemPrompt"),
   /** LLM Response Preset Entity Types. */

@@ -47,8 +47,8 @@ class LlmPromptPresetEntityTest {
     List<String> keys = entity.getAttributeKeys();
 
     // then
-    assertEquals(List.of("LlmSystemPrompt", "LlmResponsePresetEntityTypes", "LlmResponseFieldKey",
-        "LlmAnalysisCategory"), keys);
+    assertEquals(List.of("UserPrompt", "LlmSystemPrompt", "LlmResponsePresetEntityTypes",
+        "LlmResponseFieldKey", "LlmAnalysisCategory"), keys);
   }
 
   /**
