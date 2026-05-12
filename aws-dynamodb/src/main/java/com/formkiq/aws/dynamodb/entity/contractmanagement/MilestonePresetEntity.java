@@ -21,37 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.entity;
+package com.formkiq.aws.dynamodb.entity.contractmanagement;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
 
 import java.util.List;
 
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
-
 /**
- * PresetEntity for LLM Prompt.
+ * PresetEntity for Contract Management Milestone.
  */
-public class LlmPromptPresetEntity implements PresetEntity {
+public class MilestonePresetEntity implements PresetEntity {
 
   /** Entity Name. */
-  public static final String ENTITY_NAME = "LlmPrompt";
+  public static final String ENTITY_NAME = "Milestone";
+  /** Milestone Date attribute. */
+  public static final String MILESTONE_DATE = "MilestoneDate";
+  /** Milestone Description attribute. */
+  public static final String MILESTONE_DESCRIPTION = "MilestoneDescription";
+  /** Milestone Fee Percentage Due attribute. */
+  public static final String MILESTONE_FEE_PERCENTAGE_DUE = "MilestoneFeePercentageDue";
 
   @Override
   public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
+    return List.of(MILESTONE_DATE, MILESTONE_DESCRIPTION, MILESTONE_FEE_PERCENTAGE_DUE);
   }
 
   @Override
   public String getName() {
     return ENTITY_NAME;
-  }
-
-  @Override
-  public List<String> getRequiredAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey());
   }
 }

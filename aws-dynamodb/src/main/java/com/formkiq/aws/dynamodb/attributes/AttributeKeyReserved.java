@@ -72,7 +72,15 @@ public enum AttributeKeyReserved {
       AttributeDataType.STRING, AttributeDerivedType.STANDARD),
   /** Retention Effective Status. */
   RETENTION_EFFECTIVE_STATUS("RetentionEffectiveStatus", AttributeType.STANDARD,
-      AttributeDataType.STRING, AttributeDerivedType.STANDARD);
+      AttributeDataType.STRING, AttributeDerivedType.STANDARD),
+  /** LLM System Prompt. */
+  LLM_SYSTEM_PROMPT("LlmSystemPrompt"),
+  /** LLM Response Preset Entity Types. */
+  LLM_RESPONSE_PRESET_ENTITY_TYPES("LlmResponsePresetEntityTypes"),
+  /** LLM Response Field Key. */
+  LLM_RESPONSE_FIELD_KEY("LlmResponseFieldKey"),
+  /** LLM Analysis Category. */
+  LLM_ANALYSIS_CATEGORY("LlmAnalysisCategory");
 
   /**
    * Find {@link AttributeKeyReserved}.

@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.formkiq.module.actions.ActionType.DATA_CLASSIFICATION;
+import static com.formkiq.module.actions.ActionType.LLMPROMPT;
 import static com.formkiq.module.actions.ActionType.METADATA_EXTRACTION;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -370,7 +371,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
       // given
       DocumentArtifact document = createDocument(siteId, "text/plain");
 
-      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
+      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION, LLMPROMPT)) {
 
         List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
             .parameters(Map.of("llmPromptEntityName", "My prompt")).document(document).indexUlid()
@@ -392,10 +393,16 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
           assertEquals("My prompt", resultmap.get("llmPromptEntityName").toString());
 
-        } else {
+        } else if (METADATA_EXTRACTION.equals(type)) {
           assertEquals("POST", lastRequest.getMethod().getValue());
           assertTrue(lastRequest.getPath().toString().endsWith(
               "/documents/" + document.documentId() + "/metadataExtractionResults/My%20prompt"));
+          Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+          assertTrue(resultmap.isEmpty());
+        } else {
+          assertEquals("POST", lastRequest.getMethod().getValue());
+          assertTrue(lastRequest.getPath().toString()
+              .endsWith("/documents/" + document.documentId() + "/ai/prompts/My%20prompt"));
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
           assertTrue(resultmap.isEmpty());
         }
@@ -420,7 +427,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
   public void testHandleDataClassification02() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION)) {
+      for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION, LLMPROMPT)) {
 
         DocumentArtifact document = createDocument(siteId, "application/pdf");
 

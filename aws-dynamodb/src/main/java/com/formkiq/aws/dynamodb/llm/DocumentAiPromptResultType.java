@@ -21,37 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.entity;
+package com.formkiq.aws.dynamodb.llm;
 
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
-
-import java.util.List;
-
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT;
+import java.util.Locale;
+import java.util.Objects;
 
 /**
- * PresetEntity for LLM Prompt.
+ * Result types for data extracted from an LLM prompt response.
  */
-public class LlmPromptPresetEntity implements PresetEntity {
+public enum DocumentAiPromptResultType {
+  /** A list of simple key/value attributes. */
+  KEY_VALUE,
+  /** Attributes grouped under an entity type. */
+  ENTITY;
 
-  /** Entity Name. */
-  public static final String ENTITY_NAME = "LlmPrompt";
-
-  @Override
-  public List<String> getAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(),
-        AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY.getKey(),
-        AttributeKeyReserved.LLM_ANALYSIS_CATEGORY.getKey());
-  }
-
-  @Override
-  public String getName() {
-    return ENTITY_NAME;
-  }
-
-  @Override
-  public List<String> getRequiredAttributeKeys() {
-    return List.of(LLM_SYSTEM_PROMPT.getKey());
+  /**
+   * Convert a string to a {@link DocumentAiPromptResultType}.
+   *
+   * @param value {@link String}
+   * @return {@link DocumentAiPromptResultType}
+   */
+  public static DocumentAiPromptResultType fromString(final String value) {
+    Objects.requireNonNull(value, "value must not be null");
+    return valueOf(value.toUpperCase(Locale.ROOT));
   }
 }
