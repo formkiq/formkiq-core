@@ -76,7 +76,7 @@ class LlmPromptPresetEntityTest {
 
     // then
     assertEquals(List.of("UserPrompt", "LlmSystemPrompt", "LlmSystemPromptDocumentId",
-        "LlmSystemPromptArtifactId", "LlmResponsePresetEntityTypes", "LlmResponseFieldKey",
+        "LlmSystemPromptArtifactId", "LlmResponsePresetEntityTypes", "LlmResponseFieldKeys",
         "LlmAnalysisCategory"), keys);
   }
 
