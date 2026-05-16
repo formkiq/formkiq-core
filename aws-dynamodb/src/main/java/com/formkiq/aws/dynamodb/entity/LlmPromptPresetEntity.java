@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_ANALYSIS_CATEGORY;
-import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_RESPONSE_FIELD_KEY;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_RESPONSE_FIELD_KEYS;
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_RESPONSE_PRESET_ENTITY_TYPES;
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT_ARTIFACT_ID;
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.LLM_SYSTEM_PROMPT_DOCUMENT_ID;
@@ -56,7 +56,7 @@ public class LlmPromptPresetEntity implements PresetEntity {
   public List<String> getAttributeKeys() {
     return List.of(LLM_USER_PROMPT.getKey(), LLM_SYSTEM_PROMPT.getKey(),
         LLM_SYSTEM_PROMPT_DOCUMENT_ID.getKey(), LLM_SYSTEM_PROMPT_ARTIFACT_ID.getKey(),
-        LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(), LLM_RESPONSE_FIELD_KEY.getKey(),
+        LLM_RESPONSE_PRESET_ENTITY_TYPES.getKey(), LLM_RESPONSE_FIELD_KEYS.getKey(),
         LLM_ANALYSIS_CATEGORY.getKey());
   }
 

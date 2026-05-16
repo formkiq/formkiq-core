@@ -84,7 +84,7 @@ public enum AttributeKeyReserved {
   /** LLM Response Preset Entity Types. */
   LLM_RESPONSE_PRESET_ENTITY_TYPES("LlmResponsePresetEntityTypes"),
   /** LLM Response Field Key. */
-  LLM_RESPONSE_FIELD_KEY("LlmResponseFieldKey"),
+  LLM_RESPONSE_FIELD_KEYS("LlmResponseFieldKeys"),
   /** LLM Analysis Category. */
   LLM_ANALYSIS_CATEGORY("LlmAnalysisCategory");
 
