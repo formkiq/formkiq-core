@@ -26,13 +26,13 @@ package com.formkiq.module.actions.services;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.validation.ValidationBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,11 +76,14 @@ class ActionsValidatorTest {
 
   private static void testTemplate(final Action action, final String errorKey,
       final String errorMessage) {
+    ValidationBuilder vb = new ValidationBuilder();
+
     // when
-    Collection<ValidationError> errors = validator.validation(null, action, null, null);
+    validator.validation(vb, null, action, null, null);
 
     // then
     boolean shouldHaveError = errorMessage != null;
+    var errors = vb.getErrors();
     assertEquals(shouldHaveError ? 1 : 0, errors.size());
 
     if (shouldHaveError) {
@@ -166,15 +169,16 @@ class ActionsValidatorTest {
     Action action = new Action(null, null, null, null, null, null, null, null, null, null, null,
         null, null, null, null, null, null, null, null);
     List<Action> actions = List.of(action);
+    ValidationBuilder vb = new ValidationBuilder();
 
     // when
-    List<Collection<ValidationError>> errorList = validator.validation(null, actions, null, null);
+    validator.validation(vb, null, actions, null, null);
 
     // then
+    var errorList = vb.getErrors();
     assertEquals(1, errorList.size());
 
-    Collection<ValidationError> errors = errorList.get(0);
-    ValidationError error = errors.iterator().next();
+    ValidationError error = errorList.iterator().next();
     assertEquals("type", error.key());
     assertEquals("action 'type' is required", error.error());
   }

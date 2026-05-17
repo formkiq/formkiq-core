@@ -23,11 +23,10 @@
  */
 package com.formkiq.module.actions.services;
 
-import java.util.Collection;
 import java.util.List;
 
 import com.formkiq.module.actions.Action;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationBuilder;
 
 /**
  * 
@@ -38,25 +37,25 @@ public interface ActionsValidator {
 
   /**
    * Validates {@link Action}.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param siteId {@link String}
    * @param action {@link Action}
    * @param chatGptApiKey {@link String}
    * @param notificationsEmail {@link String}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validation(String siteId, Action action, String chatGptApiKey,
+  void validation(ValidationBuilder vb, String siteId, Action action, String chatGptApiKey,
       String notificationsEmail);
 
   /**
    * Validates {@link List} {@link Action}.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param siteId {@link String}
    * @param action {@link Action}
    * @param chatGptApiKey {@link String}
    * @param notificationsEmail {@link String}
-   * @return {@link List} {@link Collection} {@link ValidationError}
    */
-  List<Collection<ValidationError>> validation(String siteId, List<Action> action,
-      String chatGptApiKey, String notificationsEmail);
+  void validation(ValidationBuilder vb, String siteId, List<Action> action, String chatGptApiKey,
+      String notificationsEmail);
 }

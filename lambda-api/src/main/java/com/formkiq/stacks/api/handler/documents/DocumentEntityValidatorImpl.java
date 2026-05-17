@@ -36,12 +36,9 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,22 +66,20 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
       throws ValidationException, BadException {
 
     String userId = authorization.getUsername();
-    Collection<ValidationError> errors = new ArrayList<>();
     List<DocumentTag> tags = validateTagSchema(item, userId);
-    validateTags(tags, errors);
-    validateActions(awsservice, config, siteId, item, errors);
 
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    ValidationBuilder vb = new ValidationBuilder();
+    validateTags(vb, tags);
+    validateActions(awsservice, config, siteId, item, vb);
+
+    vb.check();
 
     return tags;
   }
 
   // TODO merge with ApiValidator validateActions
   private void validateActions(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final AddDocumentRequest item,
-      final Collection<ValidationError> errors) {
+      final String siteId, final AddDocumentRequest item, final ValidationBuilder vb) {
 
     initActionsValidator(awsservice);
     DocumentArtifact document =
@@ -94,17 +89,17 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
         .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
 
     if (!actions.isEmpty()) {
-      int beforeActionErrors = errors.size();
+      int beforeActionErrors = vb.getErrors().size();
 
       for (Action action : actions) {
-        errors.addAll(this.actionsValidator.validation(siteId, action, config.chatGptApiKey(),
-            config.notificationEmail()));
+        this.actionsValidator.validation(vb, siteId, action, config.chatGptApiKey(),
+            config.notificationEmail());
       }
 
-      if (errors.size() == beforeActionErrors) {
+      if (vb.getErrors().size() == beforeActionErrors) {
         actions.stream().filter(a -> ApiValidator.WORKFLOW_ONLY_ACTION_TYPES.contains(a.type()))
-            .findFirst().ifPresent(action -> errors.add(new ValidationErrorImpl().key("type")
-                .error("action type cannot be '" + action.type().name() + "'")));
+            .findFirst().ifPresent(action -> vb.addError("type",
+                "action type cannot be '" + action.type().name() + "'"));
       }
     }
   }
@@ -128,16 +123,15 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   /**
    * Validate Document Tags.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param tags {@link List} {@link DocumentTag}
-   * @param errors {@link Collection} {@link ValidationError}
    */
-  private void validateTags(final List<DocumentTag> tags,
-      final Collection<ValidationError> errors) {
+  private void validateTags(final ValidationBuilder vb, final List<DocumentTag> tags) {
 
     List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
-    errors.addAll(validator.validateKeys(tagKeys));
+    validator.validateKeys(vb, tagKeys);
   }
 }

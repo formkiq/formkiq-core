@@ -30,11 +30,11 @@ import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,15 +55,10 @@ public interface ApiValidator {
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     ActionsValidator validator = new ActionsValidatorImpl(db);
 
-    List<Collection<ValidationError>> errors =
-        validator.validation(siteId, actions, config.chatGptApiKey(), config.notificationEmail());
+    ValidationBuilder vb = new ValidationBuilder();
+    validator.validation(vb, siteId, actions, config.chatGptApiKey(), config.notificationEmail());
 
-    Optional<Collection<ValidationError>> firstError =
-        errors.stream().filter(e -> !e.isEmpty()).findFirst();
-
-    if (firstError.isPresent()) {
-      throw new ValidationException(firstError.get());
-    }
+    vb.check();
 
     Optional<Action> workflowOnlyAction = notNull(actions).stream()
         .filter(o -> WORKFLOW_ONLY_ACTION_TYPES.contains(o.type())).findFirst();

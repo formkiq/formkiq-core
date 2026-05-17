@@ -25,16 +25,13 @@ package com.formkiq.module.actions.services;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.actions.Action;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 
 /**
  * 
@@ -60,48 +57,40 @@ public class ActionsValidatorImpl implements ActionsValidator {
   }
 
   private void validateActionParameters(final String siteId, final Action action,
-      final String chatGptApiKey, final String notificationsEmail,
-      final Collection<ValidationError> errors) {
+      final String chatGptApiKey, final String notificationsEmail, final ValidationBuilder vb) {
 
     Map<String, Object> parameters = getParameters(action);
-    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail,
-        errors);
+    action.type().validate(db, siteId, action, parameters, chatGptApiKey, notificationsEmail, vb);
   }
 
   @Override
-  public Collection<ValidationError> validation(final String siteId, final Action action,
+  public void validation(final ValidationBuilder vb, final String siteId, final Action action,
       final String chatGptApiKey, final String notificationsEmail) {
-    Collection<ValidationError> errors = new ArrayList<>();
 
     if (action == null) {
 
-      errors.add(new ValidationErrorImpl().error("action is required"));
+      vb.addError(null, "action is required");
 
     } else {
 
       if (action.type() == null) {
 
-        errors.add(new ValidationErrorImpl().key("type").error("action 'type' is required"));
+        vb.addError("type", "action 'type' is required");
 
       } else if (isEmpty(action.userId())) {
 
-        errors.add(new ValidationErrorImpl().key("userId").error("action 'userId' is required"));
+        vb.addError("userId", "action 'userId' is required");
 
       } else {
 
-        validateActionParameters(siteId, action, chatGptApiKey, notificationsEmail, errors);
+        validateActionParameters(siteId, action, chatGptApiKey, notificationsEmail, vb);
       }
     }
-
-    return errors;
   }
 
   @Override
-  public List<Collection<ValidationError>> validation(final String siteId,
+  public void validation(final ValidationBuilder vb, final String siteId,
       final List<Action> actions, final String chatGptApiKey, final String notificationsEmail) {
-
-    List<Collection<ValidationError>> errors = new ArrayList<>();
-    actions.forEach(a -> errors.add(validation(siteId, a, chatGptApiKey, notificationsEmail)));
-    return errors;
+    actions.forEach(a -> validation(vb, siteId, a, chatGptApiKey, notificationsEmail));
   }
 }
