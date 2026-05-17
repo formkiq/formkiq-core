@@ -39,11 +39,10 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -112,10 +111,9 @@ public class DocumentTagRequestHandler
       throw new NotFoundException("Tag " + tagKey + " not found.");
     }
 
-    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tag);
-    if (!tagErrors.isEmpty()) {
-      throw new ValidationException(tagErrors);
-    }
+    ValidationBuilder vb = new ValidationBuilder();
+    new DocumentTagValidatorImpl().validate(vb, tag);
+    vb.check();
 
     Map<String, Object> values = new HashMap<>();
     values.put("key", tagKey);
@@ -207,10 +205,8 @@ public class DocumentTagRequestHandler
    */
   private void validateTags(final List<DocumentTag> tags) throws ValidationException {
     DocumentTagValidator validate = new DocumentTagValidatorImpl();
-    Collection<ValidationError> errors = validate.validate(tags);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
+    ValidationBuilder vb = new ValidationBuilder();
+    validate.validate(vb, tags);
+    vb.check();
   }
 }

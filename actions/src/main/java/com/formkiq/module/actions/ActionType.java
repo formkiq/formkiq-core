@@ -32,8 +32,7 @@ import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,7 +62,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
     }
   },
@@ -72,7 +71,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
     }
   },
@@ -81,20 +80,17 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (!parameters.containsKey("tags")) {
-        errors.add(new ValidationErrorImpl().key("parameters.tags")
-            .error("action 'tags' parameter is required"));
+        vb.addError("parameters.tags", "action 'tags' parameter is required");
       }
 
       if (!parameters.containsKey("engine")) {
-        errors.add(new ValidationErrorImpl().key("parameters.engine")
-            .error("action 'engine' parameter is required"));
+        vb.addError("parameters.engine", "action 'engine' parameter is required");
       } else if (!"chatgpt".equals(parameters.getOrDefault("engine", ""))) {
-        errors.add(
-            new ValidationErrorImpl().key("parameters.engine").error("invalid 'engine' parameter"));
+        vb.addError("parameters.engine", "invalid 'engine' parameter");
       } else if (Strings.isEmpty(chatGptApiKey)) {
-        errors.add(new ValidationErrorImpl().error("chatgpt 'api key' is not configured"));
+        vb.addError(null, "chatgpt 'api key' is not configured");
       }
     }
   },
@@ -103,7 +99,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
     }
   },
@@ -112,15 +108,13 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "path")) {
-        errors.add(new ValidationErrorImpl().key("parameters.path")
-            .error("action 'path' parameter is required"));
+        vb.addError("parameters.path", "action 'path' parameter is required");
       } else {
         String path = parameters.get("path").toString().trim();
         if (!path.endsWith("/")) {
-          errors.add(new ValidationErrorImpl().key("parameters.path")
-              .error("action 'path' parameter must end with '/'"));
+          vb.addError("parameters.path", "action 'path' parameter must end with '/'");
         }
       }
     }
@@ -130,15 +124,14 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "deleteType")) {
-        errors.add(new ValidationErrorImpl().key("parameters.deleteType")
-            .error("action 'deleteType' parameter is required"));
+        vb.addError("parameters.deleteType", "action 'deleteType' parameter is required");
       } else {
         String deleteType = parameters.get("deleteType").toString().trim().toUpperCase(Locale.ROOT);
         if (!VALID_DELETE_TYPES.contains(deleteType)) {
-          errors.add(new ValidationErrorImpl().key("parameters.deleteType")
-              .error("action 'deleteType' parameter must be one of " + VALID_DELETE_TYPES));
+          vb.addError("parameters.deleteType",
+              "action 'deleteType' parameter must be one of " + VALID_DELETE_TYPES);
         }
       }
     }
@@ -148,15 +141,14 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       String checksumType = parameters != null ? (String) parameters.get("checksumType") : null;
 
       if (isMissingValue(parameters, "checksumType")) {
-        errors.add(new ValidationErrorImpl().key("parameters.checksumType")
-            .error("'checksumType' parameter is required"));
+        vb.addError("parameters.checksumType", "'checksumType' parameter is required");
       } else if (!VALID_CHECKSUM_TYPES.contains(checksumType.toUpperCase(Locale.ROOT))) {
-        errors.add(new ValidationErrorImpl().key("parameters.checksumType")
-            .error("'checksumType' parameter must be one of " + VALID_CHECKSUM_TYPES));
+        vb.addError("parameters.checksumType",
+            "'checksumType' parameter must be one of " + VALID_CHECKSUM_TYPES);
       }
     }
   },
@@ -165,17 +157,16 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "mappingId")) {
-        errors.add(new ValidationErrorImpl().key("mappingId").error("'mappingId' is required"));
+        vb.addError("mappingId", "'mappingId' is required");
 
       } else {
         String mappingId = (String) parameters.get("mappingId");
         MappingRecord m = new MappingRecord().setDocumentId(mappingId);
 
         if (!db.exists(m.fromS(m.pk(siteId)), m.fromS(m.sk()))) {
-          errors
-              .add(new ValidationErrorImpl().key("mappingId").error("'mappingId' does not exist"));
+          vb.addError("mappingId", "'mappingId' does not exist");
         }
       }
     }
@@ -185,33 +176,32 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
       if (isEmpty(notificationsEmail)) {
-        errors.add(new ValidationErrorImpl().key("parameters.notificationEmail")
-            .error("notificationEmail is not configured"));
+        vb.addError("parameters.notificationEmail", "notificationEmail is not configured");
       } else {
 
         for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
             PARAMETER_NOTIFICATION_SUBJECT)) {
           if (isMissingValue(parameters, parameter)) {
-            errors.add(new ValidationErrorImpl().key("parameters." + parameter)
-                .error("action '" + parameter + "' parameter is required"));
+            vb.addError("parameters." + parameter,
+                "action '" + parameter + "' parameter is required");
           }
         }
 
         if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
             && isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
-          errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TO_CC)
-              .error("action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '"
-                  + PARAMETER_NOTIFICATION_TO_BCC + "' is required"));
+          vb.addError("parameters." + PARAMETER_NOTIFICATION_TO_CC,
+              "action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '" + PARAMETER_NOTIFICATION_TO_BCC
+                  + "' is required");
         }
 
         if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TEXT)
             && isMissingValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
-          errors.add(new ValidationErrorImpl().key("parameters." + PARAMETER_NOTIFICATION_TEXT)
-              .error("action '" + PARAMETER_NOTIFICATION_TEXT + "' or '"
-                  + PARAMETER_NOTIFICATION_HTML + "' is required"));
+          vb.addError("parameters." + PARAMETER_NOTIFICATION_TEXT,
+              "action '" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
+                  + "' is required");
         }
       }
     }
@@ -221,7 +211,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       String ocrParseTypes = (String) parameters.get("ocrParseTypes");
       if (ocrParseTypes != null) {
         ocrParseTypes = ocrParseTypes.toLowerCase();
@@ -230,15 +220,15 @@ public enum ActionType {
                 Collections.emptyList()));
 
         if (ocrParseTypes.contains("queries") && ocrTextractQueries.isEmpty()) {
-          errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries")
-              .error("action 'ocrTextractQueries' parameter is required"));
+          vb.addError("parameters.ocrTextractQueries",
+              "action 'ocrTextractQueries' parameter is required");
         }
 
         ocrTextractQueries.forEach(q -> {
           String text = (String) q.get("text");
           if (isEmpty(text)) {
-            errors.add(new ValidationErrorImpl().key("parameters.ocrTextractQueries.text")
-                .error("action 'ocrTextractQueries.text' parameter is required"));
+            vb.addError("parameters.ocrTextractQueries.text",
+                "action 'ocrTextractQueries.text' parameter is required");
           }
         });
       }
@@ -249,13 +239,13 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isEmpty(action.queueId())) {
-        errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' is required"));
+        vb.addError("queueId", "'queueId' is required");
       } else {
         Queue q = new Queue().documentId(action.queueId());
         if (!db.exists(q.fromS(q.pk(siteId)), q.fromS(q.sk()))) {
-          errors.add(new ValidationErrorImpl().key("queueId").error("'queueId' does not exist"));
+          vb.addError("queueId", "'queueId' does not exist");
         }
       }
     }
@@ -265,10 +255,9 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (!parameters.containsKey("url")) {
-        errors.add(new ValidationErrorImpl().key("parameters.url")
-            .error("action 'url' parameter is required"));
+        vb.addError("parameters.url", "action 'url' parameter is required");
       }
     }
   },
@@ -277,7 +266,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
     }
   },
@@ -286,7 +275,7 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
 
     }
   },
@@ -295,10 +284,9 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "eventBusName")) {
-        errors.add(new ValidationErrorImpl().key("parameters.eventBusName")
-            .error("'eventBusName' parameter is required"));
+        vb.addError("parameters.eventBusName", "'eventBusName' parameter is required");
       }
     }
   },
@@ -307,10 +295,10 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "llmPromptEntityName")) {
-        errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
-            .error("'llmPromptEntityName' parameter is required"));
+        vb.addError("parameters.llmPromptEntityName",
+            "'llmPromptEntityName' parameter is required");
       }
     }
   },
@@ -319,10 +307,10 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "llmPromptEntityName")) {
-        errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
-            .error("'llmPromptEntityName' parameter is required"));
+        vb.addError("parameters.llmPromptEntityName",
+            "'llmPromptEntityName' parameter is required");
       }
     }
   },
@@ -339,44 +327,42 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       String widthParameterName = "width";
       String heightParameterName = "height";
 
       if ("auto".equals(parameters.get(widthParameterName))
           && "auto".equals(parameters.get(heightParameterName))) {
-        errors.add(new ValidationErrorImpl().key("parameters." + widthParameterName)
-            .error("'" + widthParameterName + "' and '" + heightParameterName
-                + "' parameters cannot be both set to auto"));
+        vb.addError("parameters." + widthParameterName, "'" + widthParameterName + "' and '"
+            + heightParameterName + "' parameters cannot be both set to auto");
       }
 
-      validateDimension(parameters, errors, widthParameterName);
-      validateDimension(parameters, errors, heightParameterName);
-      validateImageFormat(parameters, errors);
+      validateDimension(parameters, vb, widthParameterName);
+      validateDimension(parameters, vb, heightParameterName);
+      validateImageFormat(parameters, vb);
     }
 
-    private void validateDimension(final Map<String, Object> parameters,
-        final Collection<ValidationError> errors, final String dimension) {
+    private void validateDimension(final Map<String, Object> parameters, final ValidationBuilder vb,
+        final String dimension) {
       if (isMissingValue(parameters, dimension)) {
-        errors.add(new ValidationErrorImpl().key("parameters." + dimension)
-            .error("'" + dimension + "' parameter is required"));
+        vb.addError("parameters." + dimension, "'" + dimension + "' parameter is required");
       } else {
         String value = (String) parameters.get(dimension);
 
         if (!isGreaterThanZeroInteger(value) && !"auto".equals(value)) {
-          errors.add(new ValidationErrorImpl().key("parameters." + dimension)
-              .error("'" + dimension + "' parameter must be an integer > 0 or 'auto'"));
+          vb.addError("parameters." + dimension,
+              "'" + dimension + "' parameter must be an integer > 0 or 'auto'");
         }
       }
     }
 
     private void validateImageFormat(final Map<String, Object> parameters,
-        final Collection<ValidationError> errors) {
+        final ValidationBuilder vb) {
       String outputType = (String) parameters.get("outputType");
 
       if (outputType != null && !VALID_IMAGE_FORMATS.contains(outputType.toLowerCase())) {
-        errors.add(new ValidationErrorImpl().key("parameters.outputType")
-            .error("'outputType' parameter must be one of " + VALID_IMAGE_FORMATS));
+        vb.addError("parameters.outputType",
+            "'outputType' parameter must be one of " + VALID_IMAGE_FORMATS);
       }
     }
   },
@@ -385,10 +371,10 @@ public enum ActionType {
     @Override
     public void validate(final DynamoDbService db, final String siteId, final Action action,
         final Map<String, Object> parameters, final String chatGptApiKey,
-        final String notificationsEmail, final Collection<ValidationError> errors) {
+        final String notificationsEmail, final ValidationBuilder vb) {
       if (isMissingValue(parameters, "llmPromptEntityName")) {
-        errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
-            .error("'llmPromptEntityName' parameter is required"));
+        vb.addError("parameters.llmPromptEntityName",
+            "'llmPromptEntityName' parameter is required");
       } else {
 
         String entityTypeId =
@@ -399,8 +385,8 @@ public enum ActionType {
         EntityRecord entityRecord = new FindEntityByName().find(db, siteId,
             new FindEntityByName.EntityName(entityTypeId, name));
         if (entityRecord == null) {
-          errors.add(new ValidationErrorImpl().key("parameters.llmPromptEntityName")
-              .error("action 'llmPromptEntityName' doesn't exist"));
+          vb.addError("parameters.llmPromptEntityName",
+              "action 'llmPromptEntityName' doesn't exist");
         }
       }
     }
@@ -429,9 +415,9 @@ public enum ActionType {
    * @param parameters {@link Map}
    * @param chatGptApiKey {@link String}
    * @param notificationsEmail {@link String}
-   * @param errors {@link List} {@link com.formkiq.validation.ValidationBuilder}
+   * @param vb {@link ValidationBuilder}
    */
   public abstract void validate(DynamoDbService db, String siteId, Action action,
       Map<String, Object> parameters, String chatGptApiKey, String notificationsEmail,
-      Collection<ValidationError> errors);
+      ValidationBuilder vb);
 }

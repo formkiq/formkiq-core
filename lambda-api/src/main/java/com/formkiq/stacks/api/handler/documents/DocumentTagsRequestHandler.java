@@ -42,11 +42,10 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.DocumentTags;
 import com.formkiq.aws.dynamodb.base64.Pagination;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -136,10 +135,8 @@ public class DocumentTagsRequestHandler
   private boolean isValid(final DocumentTags tags) {
     List<DocumentTag> list =
         tags != null && tags.getTags() != null ? tags.getTags() : Collections.emptyList();
-    return !list.isEmpty()
-        ? !list.stream().map(t -> isValid(t)).filter(b -> b.equals(Boolean.FALSE)).findFirst()
-            .isPresent()
-        : false;
+    return !list.isEmpty() && list.stream().map(this::isValid).filter(b -> b.equals(Boolean.FALSE))
+        .findFirst().isEmpty();
   }
 
   @Override
@@ -186,7 +183,8 @@ public class DocumentTagsRequestHandler
     }
 
     if (tagsValid) {
-      int size = tags.getTags().stream().map(t -> t.getKey()).collect(Collectors.toSet()).size();
+      int size =
+          tags.getTags().stream().map(DocumentTag::getKey).collect(Collectors.toSet()).size();
       if (size != tags.getTags().size()) {
         throw new BadException("Tag key can only be included once in body; "
             + "please use 'values' to assign multiple tag values to that key");
@@ -278,10 +276,9 @@ public class DocumentTagsRequestHandler
    * @throws ValidationException ValidationException
    */
   private void validateTags(final DocumentTags tags) throws ValidationException {
-    Collection<ValidationError> tagErrors = new DocumentTagValidatorImpl().validate(tags);
-    if (!tagErrors.isEmpty()) {
-      throw new ValidationException(tagErrors);
-    }
+    ValidationBuilder vb = new ValidationBuilder();
+    new DocumentTagValidatorImpl().validate(vb, tags);
+    vb.check();
   }
 
   private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,

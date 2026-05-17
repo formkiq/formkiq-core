@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationBuilder;
 
 /**
  * {@link DocumentTag} Validator.
@@ -34,33 +34,33 @@ public interface DocumentTagValidator {
 
   /**
    * Validate {@link DocumentTag}.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param tags {@link Collection} {@link DocumentTag}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validate(Collection<DocumentTag> tags);
+  void validate(ValidationBuilder vb, Collection<DocumentTag> tags);
 
   /**
    * Validate {@link DocumentTag}.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param tag {@link DocumentTag}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validate(DocumentTag tag);
+  void validate(ValidationBuilder vb, DocumentTag tag);
 
   /**
    * Validate {@link DocumentTags}.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param tags {@link DocumentTags}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validate(DocumentTags tags);
+  void validate(ValidationBuilder vb, DocumentTags tags);
 
   /**
    * Validate {@link DocumentTag} Keys.
-   * 
+   *
+   * @param vb {@link ValidationBuilder}
    * @param tagKeys {@link DocumentTags}
-   * @return {@link Collection} {@link ValidationError}
    */
-  Collection<ValidationError> validateKeys(Collection<String> tagKeys);
+  void validateKeys(ValidationBuilder vb, Collection<String> tagKeys);
 }

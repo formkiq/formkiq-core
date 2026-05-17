@@ -25,14 +25,12 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
-import java.util.Arrays;
+
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.validation.ValidationError;
-import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationBuilder;
 
 /**
  * 
@@ -42,33 +40,28 @@ import com.formkiq.validation.ValidationErrorImpl;
 public class DocumentTagValidatorImpl implements DocumentTagValidator {
 
   @Override
-  public Collection<ValidationError> validate(final Collection<DocumentTag> tags) {
-    List<String> tagKeys = tags.stream().map(t -> t.getKey()).collect(Collectors.toList());
-    return validateKeys(tagKeys);
+  public void validate(final ValidationBuilder vb, final Collection<DocumentTag> tags) {
+    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
+    validateKeys(vb, tagKeys);
   }
 
   @Override
-  public Collection<ValidationError> validate(final DocumentTag tag) {
-    return validate(Arrays.asList(tag));
+  public void validate(final ValidationBuilder vb, final DocumentTag tag) {
+    validate(vb, List.of(tag));
   }
 
   @Override
-  public Collection<ValidationError> validate(final DocumentTags tags) {
-    return validate(tags.getTags());
+  public void validate(final ValidationBuilder vb, final DocumentTags tags) {
+    validate(vb, tags.getTags());
   }
 
   @Override
-  public Collection<ValidationError> validateKeys(final Collection<String> tagKeys) {
-    List<ValidationError> errors = Collections.emptyList();
-    List<String> invalidTags = notNull(tagKeys).stream()
-        .filter(tag -> SYSTEM_DEFINED_TAGS.contains(tag)).collect(Collectors.toList());
+  public void validateKeys(final ValidationBuilder vb, final Collection<String> tagKeys) {
+
+    var invalidTags = notNull(tagKeys).stream().filter(SYSTEM_DEFINED_TAGS::contains).toList();
 
     if (!invalidTags.isEmpty()) {
-      errors = invalidTags.stream()
-          .map(tagKey -> new ValidationErrorImpl().key(tagKey).error("unallowed tag key"))
-          .collect(Collectors.toList());
+      invalidTags.forEach(tagKey -> vb.addError(tagKey, "unallowed tag key"));
     }
-
-    return errors;
   }
 }
