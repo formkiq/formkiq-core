@@ -17,6 +17,14 @@ allprojects {
 
   version = '1.19.0'
 
+  plugins.withType(JavaPlugin).configureEach {
+    java {
+      toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+      }
+    }
+  }
+
   //  ext.awsCognitoVersion = '1.6.5'
   group = 'com.formkiq.stacks'
 

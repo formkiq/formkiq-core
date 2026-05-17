@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/java:11
+FROM public.ecr.aws/lambda/java:25
 
 COPY ./build/tmp/console/ /var/task/
 
