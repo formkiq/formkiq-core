@@ -45,4 +45,7 @@ public interface ActionParameters {
 
   /** Notification Html Parameter. */
   String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
+
+  /** Model Id Parameter. */
+  String PARAMETER_MODEL_ID = "modelId";
 }

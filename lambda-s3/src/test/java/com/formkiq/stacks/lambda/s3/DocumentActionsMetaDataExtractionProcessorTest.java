@@ -373,9 +373,13 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
 
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION, LLMPROMPT)) {
 
+        Map<String, Object> parameters = new HashMap<>(Map.of("llmPromptEntityName", "My prompt"));
+        if (LLMPROMPT.equals(type)) {
+          parameters.put("modelId", "us.amazon.nova-2-lite-v1:0");
+        }
+
         List<Action> actions = List.of(new ActionBuilder().type(type).userId("joe")
-            .parameters(Map.of("llmPromptEntityName", "My prompt")).document(document).indexUlid()
-            .build(siteId));
+            .parameters(parameters).document(document).indexUlid().build(siteId));
         actionsService.saveNewActions(actions);
 
         AwsEvent map = buildAwsEvent(siteId, document);
@@ -404,7 +408,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
           assertTrue(lastRequest.getPath().toString()
               .endsWith("/documents/" + document.documentId() + "/ai/prompts/My%20prompt"));
           Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
-          assertTrue(resultmap.isEmpty());
+          assertEquals("us.amazon.nova-2-lite-v1:0", resultmap.get("modelId").toString());
         }
 
         Action action = actionsService.getActions(siteId, document).get(0);
