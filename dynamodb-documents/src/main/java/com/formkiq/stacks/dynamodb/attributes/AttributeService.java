@@ -57,6 +57,19 @@ public interface AttributeService {
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
    * @param type {@link AttributeType}
+   * @param validationRegex {@link String}
+   */
+  void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
+      AttributeDataType dataType, AttributeType type, String validationRegex);
+
+  /**
+   * Add Attribute.
+   *
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @param siteId {@link String}
+   * @param key {@link String}
+   * @param dataType {@link AttributeDataType}
+   * @param type {@link AttributeType}
    * @param allowReservedAttributeKey boolean
    */
   void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
@@ -131,15 +144,16 @@ public interface AttributeService {
       AttributeType type);
 
   /**
-   * Update {@link AttributeRecord}. Supports updating the {@link AttributeType} or
-   * {@link Watermark}.
+   * Update {@link AttributeRecord}. Supports updating the {@link AttributeType}, {@link Watermark},
+   * or validation regex.
    *
    * @param access {@link AttributeValidationAccess}
    * @param siteId {@link String}
    * @param key {@link String}
    * @param type {@link AttributeType}
+   * @param validationRegex {@link String}
    * @param watermark {@link Watermark}
    */
   void updateAttribute(AttributeValidationAccess access, String siteId, String key,
-      AttributeType type, Watermark watermark);
+      AttributeType type, String validationRegex, Watermark watermark);
 }

@@ -40,6 +40,8 @@ public class AddAttribute {
   private String key;
   /** Type of Attribute. */
   private AttributeType type;
+  /** Attribute Value Regex Validation. */
+  private String validationRegex;
   /** Watermark. */
   private Watermark watermark;
 
@@ -75,6 +77,15 @@ public class AddAttribute {
    */
   public AttributeType getType() {
     return this.type;
+  }
+
+  /**
+   * Get Attribute Value Regex Validation.
+   * 
+   * @return {@link String}
+   */
+  public String getValidationRegex() {
+    return this.validationRegex;
   }
 
   /**
@@ -116,6 +127,17 @@ public class AddAttribute {
    */
   public AddAttribute setType(final AttributeType attributeType) {
     this.type = attributeType;
+    return this;
+  }
+
+  /**
+   * Set Attribute Value Regex Validation.
+   * 
+   * @param regex {@link String}
+   * @return AddAttribute
+   */
+  public AddAttribute setValidationRegex(final String regex) {
+    this.validationRegex = regex;
     return this;
   }
 
