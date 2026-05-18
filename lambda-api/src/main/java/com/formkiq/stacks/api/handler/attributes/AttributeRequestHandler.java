@@ -105,7 +105,8 @@ public class AttributeRequestHandler
         authorizer.isAdminOrGovern(siteId) ? AttributeValidationAccess.ADMIN_CREATE
             : AttributeValidationAccess.CREATE;
 
-    service.updateAttribute(access, siteId, key, type, attribute.getWatermark());
+    service.updateAttribute(access, siteId, key, type, attribute.getValidationRegex(),
+        attribute.getWatermark());
 
     return ApiRequestHandlerResponse.builder().ok()
         .body(Map.of("message", "Attribute '" + key + "' updated")).build();

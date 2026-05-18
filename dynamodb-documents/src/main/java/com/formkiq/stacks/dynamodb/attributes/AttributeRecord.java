@@ -59,6 +59,8 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   private String key;
   /** Type of Attribute. */
   private AttributeType type;
+  /** Attribute Value Regex Validation. */
+  private String validationRegex;
   /** Watermark Text. */
   private String watermarkText;
   /** Watermark Image DocumentId. */
@@ -141,6 +143,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
     addNumberIfNotEmpty(attr, "watermarkyOffset", this.watermarkyOffset);
     addNumberIfNotEmpty(attr, "watermarkRotation", this.watermarkRotation);
     addNumberIfNotEmpty(attr, "watermarkFontSize", this.watermarkFontSize);
+    addStringIfNotEmpty(attr, "validationRegex", this.validationRegex);
 
     return attr;
   }
@@ -181,6 +184,7 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
           .setWatermarkyOffset(toDoubleValue(attrs, "watermarkyOffset"))
           .setWatermarkFontSize(toDoubleValue(attrs, "watermarkFontSize"))
           .setWatermarkScale(toEnumValue(attrs, WatermarkScale.class, "watermarkScale"))
+          .setValidationRegex(toStringValue(attrs, "validationRegex"))
           .dataType(toEnumValue(attrs, AttributeDataType.class, "dataType"));
     }
 
@@ -203,6 +207,15 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
    */
   public AttributeType getType() {
     return this.type;
+  }
+
+  /**
+   * Get Attribute Value Regex Validation.
+   * 
+   * @return {@link String}
+   */
+  public String getValidationRegex() {
+    return this.validationRegex;
   }
 
   /**
@@ -313,6 +326,17 @@ public class AttributeRecord implements DynamodbRecord<AttributeRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return !isEmpty(this.watermarkText) ? createDatabaseKey(siteId, ATTR) : null;
+  }
+
+  /**
+   * Set Attribute Value Regex Validation.
+   *
+   * @param regex {@link String}
+   * @return AttributeRecord
+   */
+  public AttributeRecord setValidationRegex(final String regex) {
+    this.validationRegex = regex;
+    return this;
   }
 
   /**
