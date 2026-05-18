@@ -74,6 +74,12 @@ public class UpdateAttributeRequestBuilder implements HttpRequestBuilder<UpdateR
     return this;
   }
 
+  public UpdateAttributeRequestBuilder setValidationRegex(final String validationRegex) {
+    this.request.getAttribute().setValidationRegex(validationRegex);
+    return this;
+  }
+
+
   /**
    * Set Watermark Text.
    *
@@ -86,7 +92,6 @@ public class UpdateAttributeRequestBuilder implements HttpRequestBuilder<UpdateR
     updateAttribute.setWatermark(watermark);
     return this;
   }
-
 
   @Override
   public ApiHttpResponse<UpdateResponse> submit(final ApiClient apiClient, final String siteId) {

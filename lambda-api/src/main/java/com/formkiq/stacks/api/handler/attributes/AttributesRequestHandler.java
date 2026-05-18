@@ -105,7 +105,7 @@ public class AttributesRequestHandler
     if (isWatermark(attribute)) {
       service.addWatermarkAttribute(siteId, key, attribute.getWatermark());
     } else {
-      service.addAttribute(access, siteId, key, dataType, type);
+      service.addAttribute(access, siteId, key, dataType, type, attribute.getValidationRegex());
     }
 
     return ApiRequestHandlerResponse.builder().ok()

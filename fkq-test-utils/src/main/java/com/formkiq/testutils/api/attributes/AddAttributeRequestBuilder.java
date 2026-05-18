@@ -108,6 +108,21 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
     return this;
   }
 
+  /**
+   * Set String Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @param validationRegex {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsString(final String attributeKey,
+      final String validationRegex) {
+    this.request
+        .setAttribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.STRING)
+            .type(AttributeType.STANDARD).validationRegex(validationRegex));
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new AttributesApi(apiClient).addAttribute(this.request, siteId));

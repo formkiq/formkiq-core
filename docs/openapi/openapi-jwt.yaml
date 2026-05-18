@@ -8671,6 +8671,9 @@ components:
           description: Attribute Key
         dataType:
           $ref: '#/components/schemas/AttributeDataType'
+        validationRegex:
+          type: string
+          description: Attribute Value Regex Validation
         watermark:
           $ref: '#/components/schemas/Watermark'
     Watermark:
@@ -8762,6 +8765,9 @@ components:
           description: Attribute Key
         dataType:
           $ref: '#/components/schemas/AttributeDataType'
+        validationRegex:
+          type: string
+          description: Attribute Value Regex Validation
         type:
           $ref: '#/components/schemas/AttributeType'
         watermark:
@@ -8783,6 +8789,9 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/AttributeType'
+        validationRegex:
+          type: string
+          description: Attribute Value Regex Validation
         watermark:
           $ref: '#/components/schemas/Watermark'
     GetAttributeAllowedValuesResponse:

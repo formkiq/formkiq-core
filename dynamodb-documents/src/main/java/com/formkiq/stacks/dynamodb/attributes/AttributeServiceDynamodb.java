@@ -72,37 +72,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     this.db = dbService;
   }
 
-  @Override
-  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
-      final String key, final AttributeDataType dataType, final AttributeType type) {
-    addAttribute(validationAccess, siteId, key, dataType, type, false);
-  }
-
-  @Override
-  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
-      final String key, final AttributeDataType dataType, final AttributeType type,
-      final boolean allowReservedAttributeKey) {
-    addAttribute(validationAccess, siteId, key, dataType, type, allowReservedAttributeKey, null);
-  }
-
   private void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
-      final String key, final AttributeDataType dataType, final AttributeType type,
-      final boolean allowReservedAttributeKey, final Watermark watermark) {
-
-    WatermarkPosition position = watermark != null ? watermark.position() : null;
-
-    AttributeRecord a = new AttributeRecord().documentId(key).key(key)
-        .type(type != null ? type : AttributeType.STANDARD)
-        .setWatermarkText(watermark != null ? watermark.text() : null)
-        .setWatermarkImageDocumentId(watermark != null ? watermark.imageDocumentId() : null)
-        .setWatermarkRotation(watermark != null ? watermark.rotation() : null)
-        .setWatermarkScale(watermark != null ? watermark.scale() : null)
-        .setWatermarkFontSize(watermark != null ? watermark.fontSize() : null)
-        .dataType(dataType != null ? dataType : AttributeDataType.STRING);
-
-    if (position != null) {
-      updateWatermarkPosition(a, position);
-    }
+      final AttributeRecord a, final boolean allowReservedAttributeKey) {
 
     validate(validationAccess, siteId, allowReservedAttributeKey, a);
 
@@ -110,14 +81,38 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     this.db.putItem(attrs);
 
     UserActivityContext.setCreate(ActivityResourceType.ATTRIBUTE_KEY, attrs,
-        Map.of("attributeKey", key));
+        Map.of("attributeKey", a.getKey()));
+  }
+
+  @Override
+  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type) {
+    addAttribute(validationAccess, siteId, key, dataType, type, null);
+  }
+
+  @Override
+  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type,
+      final String validationRegex) {
+    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type)
+        .validationRegex(validationRegex).build();
+    addAttribute(validationAccess, siteId, a, false);
+  }
+
+  @Override
+  public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
+      final String key, final AttributeDataType dataType, final AttributeType type,
+      final boolean allowReservedAttributeKey) {
+    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type).build();
+    addAttribute(validationAccess, siteId, a, allowReservedAttributeKey);
   }
 
   @Override
   public void addWatermarkAttribute(final String siteId, final String key,
       final Watermark watermark) {
-    addAttribute(AttributeValidationAccess.CREATE, siteId, key, AttributeDataType.WATERMARK,
-        AttributeType.STANDARD, false, watermark);
+    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(AttributeDataType.WATERMARK)
+        .type(AttributeType.STANDARD).watermark(watermark).build();
+    addAttribute(AttributeValidationAccess.CREATE, siteId, a, false);
   }
 
   @Override
@@ -222,7 +217,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
   @Override
   public void updateAttribute(final AttributeValidationAccess validationAccess, final String siteId,
-      final String key, final AttributeType type, final Watermark watermark) {
+      final String key, final AttributeType type, final String validationRegex,
+      final Watermark watermark) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
@@ -231,8 +227,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     vb.isRequired(null, !oldAttributes.isEmpty(), "Attribute not found");
     vb.check();
 
-    vb.isRequired(null, !(type == null && watermark == null),
-        "Attribute Type or Watermark is required");
+    vb.isRequired(null, !(type == null && watermark == null && isEmpty(validationRegex)),
+        "Attribute Type, Validation Regex or Watermark is required");
     vb.isRequired(null, !(type != null && !validationAccess.isAdminOrGovernRole()),
         "Access denied to attribute");
     vb.check();
@@ -243,6 +239,10 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
 
     if (type != null) {
       r.type(type);
+    }
+
+    if (!isEmpty(validationRegex)) {
+      r.setValidationRegex(validationRegex);
     }
 
     if (watermark != null) {
@@ -269,17 +269,6 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     record
         .setWatermarkyAnchor(watermark.position() != null ? watermark.position().yAnchor() : null);
     record.setWatermarkImageDocumentId(watermark.imageDocumentId());
-  }
-
-  private void updateWatermarkPosition(final AttributeRecord a, final WatermarkPosition position) {
-    WatermarkXanchor xanchor =
-        position != null && position.xAnchor() != null ? position.xAnchor() : null;
-    WatermarkYanchor yanchor =
-        position != null && position.yAnchor() != null ? position.yAnchor() : null;
-
-    a.setWatermarkxOffset(position != null ? position.xOffset() : null)
-        .setWatermarkyOffset(position != null ? position.yOffset() : null)
-        .setWatermarkxAnchor(xanchor).setWatermarkyAnchor(yanchor);
   }
 
   private void validate(final AttributeValidationAccess validationAccess, final String siteId,

@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
@@ -213,11 +214,27 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           AttributeRecord attribute = attributesMap.get(da.getKey());
           AttributeDataType dataType = attribute.getDataType();
           validateDataType(siteId, da, dataType, vb);
+          validateRegex(attribute, da, vb);
 
           AttributeValidationAccess va =
               da.getValidationAccess() != null ? da.getValidationAccess() : access;
           validateAttributeTypeOpaOrGoverance(attribute, va, vb);
         }
+      }
+    }
+  }
+
+  private void validateRegex(final AttributeRecord attribute, final DocumentAttributeRecord record,
+      final ValidationBuilder vb) {
+
+    String validationRegex = attribute.getValidationRegex();
+
+    if (!isEmpty(validationRegex) && DocumentAttributeValueType.STRING.equals(record.getValueType())
+        && !isEmpty(record.getStringValue())) {
+      try {
+        vb.isValidByRegex(record.getKey(), record.getStringValue(), validationRegex);
+      } catch (PatternSyntaxException e) {
+        vb.addError(record.getKey(), "invalid validationRegex");
       }
     }
   }
