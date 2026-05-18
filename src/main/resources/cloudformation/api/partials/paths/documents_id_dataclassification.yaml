@@ -166,11 +166,6 @@ paths:
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/llmPromptEntityNameParam'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddDocumentAiPromptRequest'
       responses:
         "200":
           description: 200 OK
@@ -234,6 +229,11 @@ paths:
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentAiPromptRequest'
       responses:
         "200":
           description: 200 OK
