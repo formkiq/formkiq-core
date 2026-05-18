@@ -118,22 +118,40 @@ public class AddDocumentAttributeToDocumentAttributeRecord
 
   }
 
-  private void addEntity(final AddDocumentAttributeEntity a,
+  private void addEntities(final AddDocumentAttributeEntities a,
       final Collection<DocumentAttributeRecord> c) throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
-    vb.isRequired("entityId", a.entityId());
-    vb.isRequired("entityTypeId", a.entityTypeId());
+    vb.isRequired("entities", notNull(a.entities()), "'entities' is required");
     vb.check();
 
-    EntityTypeNamespace namespace = a.namespace();
+    for (AddDocumentAttributeEntityValue entity : notNull(a.entities())) {
+      addEntity(a.key(), entity.entityTypeId(), entity.entityId(), entity.namespace(), c);
+    }
+  }
+
+  private void addEntity(final AddDocumentAttributeEntity a,
+      final Collection<DocumentAttributeRecord> c) throws ValidationException {
+
+    addEntity(a.key(), a.entityTypeId(), a.entityId(), a.namespace(), c);
+  }
+
+  private void addEntity(final String key, final String entityTypeIdValue, final String entityId,
+      final EntityTypeNamespace namespace, final Collection<DocumentAttributeRecord> c)
+      throws ValidationException {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired("entityId", entityId);
+    vb.isRequired("entityTypeId", entityTypeIdValue);
+    vb.check();
+
     String entityTypeId = new FindEntityTypeByName().find(db, tableName, site,
-        new FindEntityTypeByName.EntityTypeName(namespace, a.entityTypeId()));
+        new FindEntityTypeByName.EntityTypeName(namespace, entityTypeIdValue));
 
     DocumentAttributeEntityKeyValue val =
-        new DocumentAttributeEntityKeyValue(entityTypeId, a.entityId());
+        new DocumentAttributeEntityKeyValue(entityTypeId, entityId);
 
-    addToList(c, DocumentAttributeValueType.ENTITY, a.key(), val.getStringValue(), null, null);
+    addToList(c, DocumentAttributeValueType.ENTITY, key, val.getStringValue(), null, null);
   }
 
   private void addRelationship(final AddDocumentAttributeRelationship a,
@@ -188,7 +206,9 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     if (a != null) {
       boolean used = false;
 
-      if (a instanceof AddDocumentAttributeEntity e) {
+      if (a instanceof AddDocumentAttributeEntities e) {
+        addEntities(e, c);
+      } else if (a instanceof AddDocumentAttributeEntity e) {
         addEntity(e, c);
       } else if (a instanceof AddDocumentAttributeRelationship e) {
         addRelationship(e, c);

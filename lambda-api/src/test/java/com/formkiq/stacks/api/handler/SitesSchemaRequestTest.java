@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -32,6 +33,7 @@ import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeEntity;
+import com.formkiq.client.model.AddDocumentAttributeEntityValue;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributeValue;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
@@ -64,6 +66,9 @@ import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
@@ -74,9 +79,11 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
@@ -103,6 +110,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     assertEquals(entityTypeId, da.getEntity().getEntityTypeId());
     assertEquals(entityId, da.getEntity().getEntityId());
   }
+
+  /** {@link HttpService}. */
+  private final HttpService http = new HttpServiceJdk11();
 
   private void addAttribute(final String siteId, final String key,
       final AttributeDataType dataType) {
@@ -722,6 +732,70 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           assertEquals("123", attributes.get(0).getStringValue());
         });
       }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add multiple Entity attributes in one request.
+   *
+   * @throws ApiException an error has occurred
+   * @throws IOException an I/O error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute08MultipleEntities() throws ApiException, IOException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId = addEntityTypeCustomCompany(siteId);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      // when
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId).name("My Company")
+          .addAttribute("address", "123").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId).name("My Company")
+          .addAttribute("address", "456").submit(client, siteId).throwIfError().response()
+          .getEntityId();
+
+      // then
+      assertNotNull(entityId0);
+      assertNotNull(entityId1);
+
+      // given
+      var entityValue0 = new AddDocumentAttributeEntityValue().entityTypeId(entityTypeId)
+          .entityId(entityId0).namespace(EntityTypeNamespace.CUSTOM);
+      var entityValue1 = new AddDocumentAttributeEntityValue().entityTypeId(entityTypeId)
+          .entityId(entityId1).namespace(EntityTypeNamespace.CUSTOM);
+
+      // when
+      new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("strings", List.of(entityValue0, entityValue1)).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, documentAttributes.size());
+
+      DocumentAttribute da = documentAttributes.getFirst();
+      assertEquals(AttributeValueType.ENTITY, da.getValueType());
+      assertEquals("strings", da.getKey());
+      assertEquals(Set.of(entityTypeId + "#" + entityId0, entityTypeId + "#" + entityId1),
+          Set.copyOf(notNull(da.getStringValues())));
+
+      assertNull(da.getEntity());
+      var entities = notNull(da.getEntities());
+      assertEquals(2, entities.size());
+      assertEquals("My Company", entities.get(0).getName());
+      assertEquals("My Company", entities.get(1).getName());
     }
   }
 

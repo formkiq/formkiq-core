@@ -27,7 +27,9 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntities;
 import com.formkiq.client.model.AddDocumentAttributeEntity;
+import com.formkiq.client.model.AddDocumentAttributeEntityValue;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddResponse;
@@ -36,6 +38,7 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Builder for {@link AddDocumentAttributesRequest}.
@@ -68,6 +71,20 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
       final BigDecimal numberValue) {
     this.request.addAttributesItem(new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(key).numberValue(numberValue)));
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param entities {@link List} of {@link AddDocumentAttributeEntityValue}
+   * @return AddDocumentAttributesRequestBuilder
+   */
+  public AddDocumentAttributeRequestBuilder addAttribute(final String key,
+      final List<AddDocumentAttributeEntityValue> entities) {
+    var addEntities = new AddDocumentAttributeEntities().key(key).entities(entities);
+    this.request.addAttributesItem(new AddDocumentAttribute(addEntities));
     return this;
   }
 

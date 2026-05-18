@@ -35,8 +35,8 @@ import java.lang.reflect.Type;
  * Polymorphic deserializer for AddDocumentAttribute based on presence of specific keys.
  *
  * Priority: 1) classificationId -> AddDocumentAttributeClassification 2) relationship ->
- * AddDocumentAttributeRelationship 3) entityTypeId -> AddDocumentAttributeEntity 4) else ->
- * AddDocumentAttributeStandard
+ * AddDocumentAttributeRelationship 3) entities -> AddDocumentAttributeEntities 4) entityTypeId ->
+ * AddDocumentAttributeEntity 5) else -> AddDocumentAttributeStandard
  */
 public final class AddDocumentAttributeDeserializer
     implements JsonDeserializer<AddDocumentAttribute> {
@@ -56,6 +56,8 @@ public final class AddDocumentAttributeDeserializer
       a = ctx.deserialize(o, AddDocumentAttributeClassification.class);
     } else if (o.has("relationship")) {
       a = ctx.deserialize(o, AddDocumentAttributeRelationship.class);
+    } else if (o.has("entities")) {
+      a = ctx.deserialize(o, AddDocumentAttributeEntities.class);
     } else if (o.has("entityTypeId")) {
       a = ctx.deserialize(o, AddDocumentAttributeEntity.class);
     } else {

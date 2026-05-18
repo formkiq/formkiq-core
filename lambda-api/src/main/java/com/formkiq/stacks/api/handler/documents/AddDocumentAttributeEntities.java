@@ -23,10 +23,14 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
+import java.util.List;
+
 /**
- * Discriminated union (oneOf) for attribute payloads.
+ * Entity attribute linking to multiple entities.
  */
-public sealed interface AddDocumentAttribute
-    permits AddDocumentAttributeStandard, AddDocumentAttributeClassification,
-    AddDocumentAttributeRelationship, AddDocumentAttributeEntity, AddDocumentAttributeEntities {
+@Reflectable
+public record AddDocumentAttributeEntities(String key,
+    List<AddDocumentAttributeEntityValue> entities) implements AddDocumentAttribute {
 }
