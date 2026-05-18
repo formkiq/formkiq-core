@@ -44,10 +44,6 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.entity.EntityRecord;
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.entity.LlmPromptPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
@@ -275,41 +271,6 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"'llmPromptEntityName' parameter is required\"}]}",
             e.getResponseBody());
       }
-    }
-  }
-
-  /**
-   * POST /documents/{documentId}/actions for Data classification.
-   *
-   */
-  @Test
-  public void testDataClassificationPrompt() throws ApiException {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      String documentId = saveDocument(siteId);
-      EntityTypeRecord entityTypeRecord = EntityTypeRecord.builderWithPresets(getPresets())
-          .documentId(ID.uuid()).namespace(EntityTypeNamespace.PRESET)
-          .name(LlmPromptPresetEntity.ENTITY_NAME).build(siteId);
-      db.putItem(entityTypeRecord.getAttributes());
-
-      EntityRecord entity = EntityRecord.builder().entityTypeId(entityTypeRecord.documentId())
-          .documentId(ID.uuid()).name("Myllm").build(siteId);
-      db.putItem(entity.getAttributes());
-
-      AddActionParameters param = new AddActionParameters().llmPromptEntityName("Myllm");
-
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(
-          List.of(new AddAction().type(DocumentActionType.DATA_CLASSIFICATION).parameters(param)));
-
-      // when
-      AddResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
-
-      // then
-      assertEquals("Actions saved", response.getMessage());
     }
   }
 

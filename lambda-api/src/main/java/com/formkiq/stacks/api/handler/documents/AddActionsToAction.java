@@ -94,6 +94,7 @@ public class AddActionsToAction {
       put(map, "deleteType", parameters.deleteType());
       put(map, "outputType", parameters.outputType());
       put(map, "llmPromptEntityName", parameters.llmPromptEntityName());
+      put(map, "modelId", parameters.modelId());
     }
 
     return map;

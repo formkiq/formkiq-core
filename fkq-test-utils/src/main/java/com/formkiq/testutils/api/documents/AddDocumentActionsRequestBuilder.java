@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddResponse;
@@ -74,6 +75,19 @@ public class AddDocumentActionsRequestBuilder implements HttpRequestBuilder<AddR
    */
   public AddDocumentActionsRequestBuilder addAction(final DocumentActionType type) {
     this.request.addActionsItem(new AddAction().type(type));
+    return this;
+  }
+
+  /**
+   * Add Action.
+   *
+   * @param type {@link DocumentActionType}
+   * @param parameters {@link AddActionParameters}
+   * @return {@link AddDocumentActionsRequestBuilder}
+   */
+  public AddDocumentActionsRequestBuilder addAction(final DocumentActionType type,
+      final AddActionParameters parameters) {
+    this.request.addActionsItem(new AddAction().type(type).parameters(parameters));
     return this;
   }
 

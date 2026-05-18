@@ -54,6 +54,7 @@ paths:
         | OCR | ocrNumberOfPages  | Number of pages to OCR (from start) | -1 |
         | OCR    | addPdfDetectedCharactersAsText | PDF Documents convert images to text | true or false |
         | LLMPROMPT | llmPromptEntityName | LLM Prompt Entity Name |
+        | LLMPROMPT | modelId | Override the LLM Prompt Entity model id for this action |
         | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
         | METADATA_EXTRACTION | llmPromptEntityName | LLM Prompt Entity Name |
         | CHECKSUM    | checksumType    | Checksum algorithm to calculate and persist for the document | SHA1, SHA256, or SHA512 |
@@ -309,6 +310,9 @@ components:
         llmPromptEntityName:
           type: "string"
           description: "LLMPROMPT, DATA_CLASSIFICATION, METADATA_EXTRACTION: Set the LLM Prompt Entity Name"
+        modelId:
+          type: "string"
+          description: "LLMPROMPT: Override the LLM Prompt Entity model id"
         url:
           type: "string"
           description: "Webhook: Callback URL"

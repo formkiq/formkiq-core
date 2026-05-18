@@ -25,6 +25,7 @@ package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.actions.Action;
+import com.formkiq.module.actions.ActionParameters;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.urls.UrlPathEncoder;
 
@@ -46,7 +47,8 @@ public class LlmPromptAction extends AbstractIntelligentDocumentProcessingAction
 
   @Override
   protected Map<String, Object> buildPayload(final Action action) {
-    return Map.of();
+    Object modelId = action.parameters().get(ActionParameters.PARAMETER_MODEL_ID);
+    return modelId != null ? Map.of(ActionParameters.PARAMETER_MODEL_ID, modelId) : Map.of();
   }
 
   @Override
