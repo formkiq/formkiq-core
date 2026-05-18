@@ -122,6 +122,35 @@ public class DocumentAttributeRecordToMap implements
     }
   }
 
+  private void addEntityValues(final DocumentAttributeRecord a,
+      final Map<String, Map<String, AttributeValue>> entityMap,
+      final Map<String, Object> lastValues) {
+
+    if (DocumentAttributeValueType.ENTITY.equals(a.getValueType()) && !isEmpty(a.getStringValue())
+        && entityMap.containsKey(a.getStringValue())) {
+
+      Map<String, AttributeValue> entityAttributes = entityMap.get(a.getStringValue());
+      AttributeValueToEntityTransformer transformer = new AttributeValueToEntityTransformer();
+      Map<String, Object> values = transformer.apply(entityAttributes);
+      new EntityAttributeTransformer().apply(values);
+
+      EntityRecord entityRecord = EntityRecord.fromAttributeMap(entityAttributes);
+      updateDervivedAttributes(entityRecord, a.getKey(), values);
+
+      if (lastValues.containsKey("entity")) {
+        List<Map<String, Object>> entities = new ArrayList<>();
+        entities.add((Map<String, Object>) lastValues.get("entity"));
+        entities.add(values);
+
+        lastValues.remove("entity");
+        lastValues.put("entities", entities);
+
+      } else if (lastValues.containsKey("entities")) {
+        ((List<Map<String, Object>>) lastValues.get("entities")).add(values);
+      }
+    }
+  }
+
   private void addNumberValues(final Map<String, Object> lastValues,
       final DocumentAttributeRecord a) {
     if (lastValues.containsKey("numberValue")) {
@@ -172,6 +201,7 @@ public class DocumentAttributeRecordToMap implements
         if (!isEmpty(a.getStringValue())) {
 
           addStringValues(lastValues, a);
+          addEntityValues(a, entityMap, lastValues);
 
         } else if (a.getNumberValue() != null) {
 

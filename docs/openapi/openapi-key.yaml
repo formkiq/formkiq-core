@@ -10116,6 +10116,11 @@ components:
           $ref: '#/components/schemas/AttributeValueType'
         entity:
           $ref: '#/components/schemas/Entity'
+        entities:
+          type: array
+          description: Attribute with entity values
+          items:
+            $ref: '#/components/schemas/Entity'
     AttributeValueType:
       type: string
       description: Attribute Value Type
@@ -10145,6 +10150,7 @@ components:
       - $ref: '#/components/schemas/AddDocumentAttributeClassification'
       - $ref: '#/components/schemas/AddDocumentAttributeRelationship'
       - $ref: '#/components/schemas/AddDocumentAttributeEntity'
+      - $ref: '#/components/schemas/AddDocumentAttributeEntities'
     AddDocumentAttributeStandard:
       required:
       - key
@@ -10207,6 +10213,36 @@ components:
         key:
           type: string
           description: Attribute key
+        entityTypeId:
+          type: string
+          description: EntityType Identifier or Entity Type Name
+        entityId:
+          type: string
+          description: Entity Identifier
+        namespace:
+          $ref: '#/components/schemas/EntityTypeNamespace'
+    AddDocumentAttributeEntities:
+      required:
+      - key
+      - entities
+      type: object
+      description: Document Entity Attribute with multiple values
+      properties:
+        key:
+          type: string
+          description: Attribute key
+        entities:
+          type: array
+          description: Attribute with entity values
+          items:
+            $ref: '#/components/schemas/AddDocumentAttributeEntityValue'
+    AddDocumentAttributeEntityValue:
+      required:
+      - entityTypeId
+      - entityId
+      type: object
+      description: Document Entity Attribute Value
+      properties:
         entityTypeId:
           type: string
           description: EntityType Identifier or Entity Type Name

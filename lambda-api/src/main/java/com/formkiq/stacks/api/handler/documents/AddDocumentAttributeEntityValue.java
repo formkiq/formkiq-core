@@ -23,10 +23,13 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
- * Discriminated union (oneOf) for attribute payloads.
+ * Entity reference for document entity attributes.
  */
-public sealed interface AddDocumentAttribute
-    permits AddDocumentAttributeStandard, AddDocumentAttributeClassification,
-    AddDocumentAttributeRelationship, AddDocumentAttributeEntity, AddDocumentAttributeEntities {
+@Reflectable
+public record AddDocumentAttributeEntityValue(String entityTypeId, String entityId,
+    EntityTypeNamespace namespace) {
 }
