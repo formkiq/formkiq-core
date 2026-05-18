@@ -692,8 +692,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean exists(final String siteId, final DocumentArtifact document) {
     return new ExistsDocumentById().find(dbService, siteId, document);
-    // Map<String, AttributeValue> keys = keysDocument(siteId, documentId);
-    // return this.dbService.exists(keys.get(PK), keys.get(SK));
   }
 
   @Override
@@ -1057,7 +1055,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
-      item = new AttributeValueToDocumentTag(siteId).apply(items.get(0));
+      item = new AttributeValueToDocumentTag(siteId).apply(items.getFirst());
     }
 
     return item;
@@ -1078,20 +1076,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     var key = new DocumentTagRecordBuilder().documentId(document.documentId())
         .artifactId(document.artifactId()).tagKey(tagKey).buildKey(siteId);
-    // Map<String, AttributeValue> values = key.toMap();
-    // queryKeys(keysDocumentTag(siteId, document,tagKey));
 
     QueryRequest q = DynamoDbQueryBuilder.builder().pk(key.pk()).scanIndexForward(true)
         .beginsWith(key.sk()).limit(maxresults).build(this.documentTableName);
-    // Builder req = QueryRequest.builder().tableName(this.documentTableName)
-    // .keyConditionExpression(PK + " = :pk and begins_with(" + SK + ", :sk)")
-    // .expressionAttributeValues(values);
-    //
-    // if (maxresults != null) {
-    // req = req.limit(maxresults);
-    // }
 
-    // QueryRequest q = req.build();
     return this.dbClient.query(q);
   }
 
@@ -1130,7 +1118,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         find(PREFIX_DOCUMENT_DATE, null, null, null, Boolean.FALSE, 1);
 
     if (!result.getResults().isEmpty()) {
-      String dateString = result.getResults().get(0).get(SK).s();
+      String dateString = result.getResults().getFirst().get(SK).s();
       date = DateUtil.toDateTimeFromString(dateString, null);
     }
 
@@ -1463,7 +1451,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         Map<String, AttributeValue> m = new HashMap<>(i);
         if (avalues.size() == 1) {
           m.remove("tagValues");
-          m.put("tagValue", avalues.get(0));
+          m.put("tagValue", avalues.getFirst());
         } else {
           m.put("tagValues", AttributeValue.builder().l(avalues).build());
         }
@@ -1505,12 +1493,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     var builder = new DocumentRecordBuilder().document(document);
     var softDeleteKey = builder.buildSoftDeleteKey(siteId);
-    // var key = builder.buildKey(siteId);
 
     String documentId = document.documentId();
-    // Map<String, AttributeValue> sdKeys = keysGeneric(siteId, SOFT_DELETE + PREFIX_DOCS, null);
-    // AttributeValue pk = sdKeys.get(PK);
-    // AttributeValue sk = AttributeValue.fromS(SOFT_DELETE + "document" + "#" + documentId);
 
     final int limit = 100;
 
@@ -1653,6 +1637,25 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return previous == null || !document.path().equals(previous.path());
   }
 
+  private DocumentRecordBuilder buildDocumentRecord(final String parentDocumentId,
+      final String siteId, final DocumentItem item, final SaveDocumentOptions options) {
+
+    DocumentArtifact documentArtifact =
+        DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+
+    DocumentRecordBuilder builder = new DocumentItemToDocumentRecordBuilder()
+        .apply(parentDocumentId, item).timeToLive(options.timeToLive());
+    builder.gsi1(options.saveDocumentDate());
+
+    DocumentRecord previous = findDocument(siteId, documentArtifact);
+    if (previous != null) {
+      builder.lastModifiedDate(new Date());
+      builder.setDefaultValues(previous);
+    }
+
+    return builder;
+  }
+
   /**
    * Save Document.
    *
@@ -1672,19 +1675,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     DocumentArtifact documentArtifact =
         DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
 
-    DocumentRecordBuilder builder = new DocumentItemToDocumentRecordBuilder()
-        .apply(parentDocumentId, item).timeToLive(options.timeToLive());
-    builder.gsi1(options.saveDocumentDate());
-
-    String documentId = item.getDocumentId();
-
-    DocumentRecord previous = findDocument(siteId, documentArtifact);
-    if (previous != null) {
-      builder.lastModifiedDate(new Date());
-      builder.setDefaultValues(previous);
-    }
-
+    DocumentRecordBuilder builder = buildDocumentRecord(parentDocumentId, siteId, item, options);
     DocumentRecord document = builder.build(siteId);
+    DocumentRecord previous = builder.getPreviousValues();
+
     validateDocumentPath(siteId, document.path(), previous);
 
     List<Map<String, AttributeValue>> tagValues =
@@ -1701,7 +1695,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
 
     WriteRequestBuilder txWriter = new WriteRequestBuilder();
-    if (item.getArtifactId() == null && isPathChanged(document, previous)) {
+
+    final boolean needsRootDocumentCreated = item.getArtifactId() != null
+        && !exists(siteId, DocumentArtifact.of(item.getDocumentId(), null));
+
+    if (needsRootDocumentCreated
+        || (item.getArtifactId() == null && isPathChanged(document, previous))) {
+      String documentId = item.getDocumentId();
       FolderIndexRecord pathRecord = createFolders(siteId, documentId, builder, document.path());
       txWriter.append(this.documentTableName, pathRecord.getAttributes(siteId));
 
@@ -1712,6 +1712,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     Map<String, AttributeValue> documentValues = document.getAttributes();
 
     txWriter.append(this.documentTableName, documentValues);
+
+    if (needsRootDocumentCreated) {
+      var rootDocument = builder.artifactId(null).build(siteId);
+      txWriter.append(this.documentTableName, rootDocument.getAttributes());
+    }
 
     boolean save0 = txWriter.batchWriteItem(this.dbClient);
     boolean save1 = writeBuilder.batchWriteItem(this.dbClient);
@@ -1895,7 +1900,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (!result.items().isEmpty()) {
 
-      var dar = new DocumentAttributeRecord().getFromAttributes(siteId, result.items().get(0));
+      var dar = new DocumentAttributeRecord().getFromAttributes(siteId, result.items().getFirst());
       var entityRecord = getEntityRecord(siteId, dar);
       if (entityRecord != null) {
 

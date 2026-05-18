@@ -253,6 +253,15 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   }
 
   /**
+   * Get Previous Values.
+   * 
+   * @return {@link DocumentRecord}
+   */
+  public DocumentRecord getPreviousValues() {
+    return defaultValues;
+  }
+
+  /**
    * Set GSI 1.
    *
    * @param setGsi1 {@link boolean}

@@ -50,6 +50,7 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -558,9 +559,9 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       List<DocumentTag> tags = notNull(
           this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags());
       assertEquals(1, tags.size());
-      assertEquals("category", tags.get(0).getKey());
-      assertEquals("person", tags.get(0).getValue());
-      assertEquals("userdefined", tags.get(0).getType());
+      assertEquals("category", tags.getFirst().getKey());
+      assertEquals("person", tags.getFirst().getValue());
+      assertEquals("userdefined", tags.getFirst().getType());
     }
   }
 
@@ -593,9 +594,9 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       GetDocumentTagsResponse tags =
           this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null);
       assertEquals(1, notNull(tags.getTags()).size());
-      assertEquals("category", tags.getTags().get(0).getKey());
-      assertEquals("person", tags.getTags().get(0).getValue());
-      assertEquals("userdefined", tags.getTags().get(0).getType());
+      assertEquals("category", tags.getTags().getFirst().getKey());
+      assertEquals("person", tags.getTags().getFirst().getValue());
+      assertEquals("userdefined", tags.getTags().getFirst().getType());
     }
   }
 
@@ -769,14 +770,14 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       List<DocumentAction> actions = notNull(this.documentActionsApi
           .getDocumentActions(documentId, siteId, null, null, null, null).getActions());
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions.get(0).getStatus());
+      assertEquals(DocumentActionType.OCR, actions.getFirst().getType());
+      assertEquals(DocumentActionStatus.PENDING, actions.getFirst().getStatus());
 
       List<DocumentTag> tags = notNull(
           this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags());
       assertEquals(1, tags.size());
-      assertEquals("test", tags.get(0).getKey());
-      assertEquals("this", tags.get(0).getValue());
+      assertEquals("test", tags.getFirst().getKey());
+      assertEquals("this", tags.getFirst().getValue());
     }
   }
 
@@ -872,25 +873,27 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/upload with artifacts=true requires documentId.
+   * POST /documents/upload with artifacts=true no documentId.
    */
   @Test
-  public void testPostArtifactsRequiresDocumentId() {
+  public void testPostArtifacts() throws ApiException {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().artifacts(Boolean.TRUE);
 
-      try {
-        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
-        fail();
-      } catch (ApiException e) {
-        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals(
-            "{\"errors\":[{\"key\":\"documentId\","
-                + "\"error\":\"'documentId' is required when 'artifacts' is true\"}]}",
-            e.getResponseBody());
-      }
+      // when
+      var resp = this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+
+      // then
+      String documentId = resp.getDocumentId();
+      String artifactId = resp.getArtifactId();
+      assertNotNull(documentId);
+      assertNotNull(artifactId);
+
+      new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
+      new GetDocumentRequestBuilder(DocumentArtifact.of(documentId, artifactId))
+          .submit(client, siteId).throwIfError();
     }
   }
 }

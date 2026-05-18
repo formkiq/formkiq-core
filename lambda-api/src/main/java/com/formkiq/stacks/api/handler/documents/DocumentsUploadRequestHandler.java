@@ -322,12 +322,6 @@ public class DocumentsUploadRequestHandler
 
     if (request.isArtifacts()) {
 
-      var documentId = request.getDocumentId();
-
-      if (isEmpty(documentId)) {
-        vb.addError("documentId", "'documentId' is required when 'artifacts' is true");
-      }
-
       if (!notNull(request.getDocuments()).isEmpty()) {
         vb.addError("documents", "'documents' are not allowed when 'artifacts' is true");
       }

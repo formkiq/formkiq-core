@@ -99,6 +99,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -1289,27 +1290,6 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents with artifacts=true requires documentId.
-   */
-  @Test
-  public void testPostArtifactsRequiresDocumentId() {
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      setBearerToken(siteId);
-
-      // when
-      var resp = new AddDocumentRequestBuilder().content().artifacts(true).submit(client, siteId);
-
-      // then
-      assertNotNull(resp.exception());
-      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
-      assertEquals(
-          "{\"errors\":[{\"key\":\"documentId\","
-              + "\"error\":\"'documentId' is required when 'artifacts' is true\"}]}",
-          resp.exception().getResponseBody());
-    }
-  }
-
-  /**
    * POST /documents with artifacts=true.
    */
   @Test
@@ -1422,6 +1402,56 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
       assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + documentId
           + "' does not exist\"}]}", resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true without documentId.
+   */
+  @Test
+  public void testPostArtifactsWithoutDocumentId() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+      var filename = ID.ulid() + ".txt";
+      // var path = folder + "/" + filename;
+
+      for (String path : Arrays.asList(filename, null)) {
+        // when
+        var resp =
+            new AddDocumentRequestBuilder().content("artifact content").contentType("text/plain")
+                .path(path).artifacts(true).submit(client, siteId).throwIfError();
+
+        // then
+        String documentId = resp.response().getDocumentId();
+        String artifactId = resp.response().getArtifactId();
+        assertNotNull(documentId);
+        assertNotNull(artifactId);
+
+        final var expectedFilename = path != null ? path : documentId;
+
+        var document =
+            new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
+        assertEquals(documentId, document.response().getDocumentId());
+        assertNull(document.response().getArtifactId());
+
+        DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+        var artifactDocument =
+            new GetDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
+        assertEquals(documentId, artifactDocument.response().getDocumentId());
+        assertEquals(artifactId, artifactDocument.response().getArtifactId());
+        assertEquals(expectedFilename, artifactDocument.response().getPath());
+
+        var artifacts = new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId)
+            .throwIfError();
+        List<Document> documents = notNull(artifacts.response().getDocuments());
+        assertEquals(1, documents.size());
+        assertEquals(artifactId, documents.getFirst().getArtifactId());
+
+        var folders = new GetFoldersRequestBuilder().submit(client, siteId).response();
+        var filenames = notNull(folders.getDocuments()).stream().map(SearchResultDocument::getPath)
+            .collect(Collectors.joining(","));
+        assertTrue(filenames.contains(expectedFilename));
+      }
     }
   }
 
