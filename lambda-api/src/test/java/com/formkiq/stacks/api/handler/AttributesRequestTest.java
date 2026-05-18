@@ -759,8 +759,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       var attributes = notNull(new GetAttributesRequestBuilder().submit(client, siteId)
           .throwIfError().response().getAttributes());
-      assertEquals(validationRegex, attributes.stream().filter(a -> key.equals(a.getKey()))
-          .findFirst().get().getValidationRegex());
+      var o = attributes.stream().filter(a -> key.equals(a.getKey())).findFirst();
+      assertTrue(o.isPresent());
+      assertEquals(validationRegex, o.get().getValidationRegex());
     }
   }
 
@@ -3169,11 +3170,13 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
     // given
     final String validationRegex = "PO-\\d+";
 
-    for (String siteId : Arrays.asList(null, SITE_ID)) {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
       setBearerToken(siteId);
       String key = "purchaseOrder_" + ID.uuid();
       AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key(key));
       this.attributesApi.addAttribute(req, siteId);
+
+      setBearerToken(siteId + "_govern");
 
       // when
       updateAttribute(siteId, key);
