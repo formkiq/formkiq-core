@@ -26,6 +26,7 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.IntelligentDocumentProcessingApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDocumentAiPromptRequest;
 import com.formkiq.client.model.AddDocumentAiResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -42,6 +43,8 @@ public class AddDocumentAiPromptRequestBuilder
   private final String documentId;
   /** LLM Prompt Entity Name. */
   private final String llmPromptEntityName;
+  /** Add Document AI Prompt Request. */
+  private AddDocumentAiPromptRequest request = new AddDocumentAiPromptRequest();
 
   /**
    * constructor.
@@ -66,10 +69,21 @@ public class AddDocumentAiPromptRequestBuilder
     this.llmPromptEntityName = promptEntityName;
   }
 
+  /**
+   * Set Model Id.
+   * 
+   * @param modelId {@link String}
+   * @return {@link AddDocumentAiPromptRequestBuilder}
+   */
+  public AddDocumentAiPromptRequestBuilder setModelId(final String modelId) {
+    this.request.modelId(modelId);
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<AddDocumentAiResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new IntelligentDocumentProcessingApi(apiClient)
-        .addDocumentAiPrompt(this.documentId, this.llmPromptEntityName, siteId, this.artifactId));
+    return executeApiCall(() -> new IntelligentDocumentProcessingApi(apiClient).addDocumentAiPrompt(
+        this.documentId, this.llmPromptEntityName, siteId, this.artifactId, this.request));
   }
 }
