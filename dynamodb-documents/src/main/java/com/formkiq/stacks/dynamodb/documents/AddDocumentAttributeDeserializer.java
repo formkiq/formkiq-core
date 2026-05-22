@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;

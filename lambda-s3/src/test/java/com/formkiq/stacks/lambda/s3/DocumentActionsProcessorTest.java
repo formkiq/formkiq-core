@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
@@ -57,10 +58,10 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmConnectionBuilder;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceCache;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -92,8 +93,6 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
@@ -462,7 +461,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private static void verifyAction(final String siteId, final DocumentArtifact document) {
-    Action action = actionsService.getActions(siteId, document).get(0);
+    Action action = actionsService.getActions(siteId, document).getFirst();
 
     assertEquals(ActionType.RESIZE, action.type());
     assertEquals(ActionStatus.COMPLETE, action.status());
@@ -496,11 +495,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
-      final String stringValue, final String numberValue) {
+      final String stringValue) {
     assertEquals(key, record.getKey());
     assertEquals(stringValue, record.getStringValue());
-    assertEquals(numberValue,
-        record.getNumberValue() != null ? record.getNumberValue().toString() : null);
+    assertNull(record.getNumberValue() != null ? record.getNumberValue().toString() : null);
   }
 
   private Map<String, Object> assertEventBridgeMessage(final Message message) {
@@ -569,16 +567,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
     return eventBusName;
   }
 
-  private Mapping createMapping(final String attributeKey, final String labelText,
-      final MappingAttributeLabelMatchingType matchingType,
-      final MappingAttributeSourceType sourceType, final String value, final List<String> values,
-      final MappingAttributeMetadataField metadataField) {
-
-    List<String> labelTexts = labelText != null ? List.of(labelText) : null;
-
+  private Mapping createMapping(final String attributeKey,
+      final MappingAttributeSourceType sourceType) {
     MappingAttribute a0 = new MappingAttribute().setAttributeKey(attributeKey)
-        .setSourceType(sourceType).setLabelMatchingType(matchingType).setLabelTexts(labelTexts)
-        .setDefaultValue(value).setDefaultValues(values).setMetadataField(metadataField);
+        .setSourceType(sourceType).setLabelMatchingType(null).setLabelTexts(null)
+        .setDefaultValue(null).setDefaultValues(null).setMetadataField(null);
 
     return new Mapping("test", null, List.of(a0), null);
   }
@@ -587,7 +580,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
 
     assertEquals(1, response.messages().size());
-    return response.messages().get(0);
+    return response.messages().getFirst();
   }
 
   private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
@@ -603,8 +596,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   private void processIdpRequest(final String siteId, final DocumentArtifact document,
-      final String contentType, final MappingRecord mappingRecord) throws ValidationException {
-    createDocument2(siteId, document, contentType);
+      final MappingRecord mappingRecord) throws ValidationException {
+    createDocument2(siteId, document, "application/pdf");
 
     List<Action> actions = List.of(createAction(document, ActionType.IDP)
         .parameters(Map.of("mappingId", mappingRecord.getDocumentId())).build(siteId));
@@ -681,7 +674,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.CHECKSUM, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -717,7 +710,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.CHECKSUM, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -760,7 +753,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         processor.handleRequest(map, null);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertEquals(ActionType.DELETE, action.type());
         assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -807,8 +800,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(1, list.size());
-      assertEquals(ActionStatus.FAILED, list.get(0).status());
-      assertEquals("missing config 'ChatGptApiKey'", list.get(0).message());
+      assertEquals(ActionStatus.FAILED, list.getFirst().status());
+      assertEquals("missing config 'ChatGptApiKey'", list.getFirst().message());
     }
   }
 
@@ -835,8 +828,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var saveTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, saveTags, null);
 
       List<Action> actions =
           List.of(
@@ -854,7 +848,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -909,8 +903,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(1, list.size());
-      assertEquals(ActionStatus.FAILED, list.get(0).status());
-      assertEquals("Unknown engine: unknown", list.get(0).message());
+      assertEquals(ActionStatus.FAILED, list.getFirst().status());
+      assertEquals("Unknown engine: unknown", list.getFirst().message());
     }
   }
 
@@ -940,8 +934,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
 
       List<Action> actions =
           List.of(
@@ -959,7 +954,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -1016,8 +1011,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
 
       List<Action> actions =
           List.of(
@@ -1035,7 +1031,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 6;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -1090,8 +1086,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
 
       List<Action> actions =
           List.of(
@@ -1109,7 +1106,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -1160,8 +1157,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
 
       List<Action> actions = List.of(createAction(document, ActionType.DOCUMENTTAGGING)
           .parameters(Map.of("engine", "chatgpt", "tags",
@@ -1177,7 +1175,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 7;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -1234,8 +1232,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "text/plain");
 
       documentService.saveDocument(siteId, item, null);
-      documentService.addTags(siteId, document, List.of(new DocumentTag(documentId, "untagged", "",
-          new Date(), "joe", DocumentTagType.SYSTEMDEFINED)), null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
 
       List<Action> actions =
           List.of(
@@ -1253,7 +1252,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       final int expectedSize = 5;
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       Pagination<DocumentTag> tags =
           documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
@@ -1319,7 +1318,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.EVENTBRIDGE, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -1385,7 +1384,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
       assertEquals("CSV", resultmap.get("ocrOutputType").toString());
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.RUNNING, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1394,7 +1393,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> runningActions =
           actionsService.getAction(siteId, document, ActionStatus.RUNNING);
       assertEquals(1, runningActions.size());
-      assertEquals(ActionType.OCR, runningActions.get(0).type());
+      assertEquals(ActionType.OCR, runningActions.getFirst().type());
     }
   }
 
@@ -1422,7 +1421,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1458,7 +1457,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1488,7 +1487,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
-      Action action = actions.get(0);
+      Action action = actions.getFirst();
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.documents."
           + "DocumentRecord.documentId()\" because \"item\" is null", action.message());
@@ -1521,7 +1520,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
 
       HttpRequest lastRequest = CALLBACK.getLastRequest();
       assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
@@ -1537,7 +1536,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNotNull(documentMap.get("lastModifiedDate"));
       assertNotNull(documentMap.get("url"));
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1640,7 +1639,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertNull(lastRequest);
 
       assertEquals(ActionStatus.COMPLETE,
-          actionsService.getActions(siteId, document).get(0).status());
+          actionsService.getActions(siteId, document).getFirst().status());
 
       HttpResponse<String> response = typesense.getDocument(siteId, documentId);
       assertEquals("200", String.valueOf(response.statusCode()));
@@ -1712,7 +1711,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       actions = actionsService.getActions(siteId, document);
 
       assertEquals(2, actions.size());
-      Action action = actions.get(0);
+      Action action = actions.getFirst();
       assertEquals(ActionStatus.FAILED, action.status());
       assertNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1751,8 +1750,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         // then
         List<Action> list = actionsService.getActions(siteId, document);
         assertEquals(1, list.size());
-        assertEquals(type, list.get(0).type());
-        assertEquals(ActionStatus.RUNNING, list.get(0).status());
+        assertEquals(type, list.getFirst().type());
+        assertEquals(ActionStatus.RUNNING, list.getFirst().status());
       }
     }
   }
@@ -1779,7 +1778,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(2, list.size());
-      assertEquals(ActionType.OCR, list.get(0).type());
+      assertEquals(ActionType.OCR, list.getFirst().type());
       assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
       assertEquals(ActionStatus.PENDING, list.get(0).status());
       assertEquals(ActionType.FULLTEXT, list.get(1).type());
@@ -1811,8 +1810,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
       // then
       List<Action> list = actionsService.getActions(siteId, document);
       assertEquals(2, list.size());
-      assertEquals(ActionType.OCR, list.get(0).type());
-      assertNull(list.get(0).parameters());
+      assertEquals(ActionType.OCR, list.getFirst().type());
+      assertNull(list.getFirst().parameters());
       assertEquals(ActionStatus.COMPLETE, list.get(0).status());
       assertNull(list.get(0).message());
       assertEquals(ActionType.FULLTEXT, list.get(1).type());
@@ -1847,7 +1846,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
       assertNotNull(resultmap.get("contentUrls").toString());
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1877,7 +1876,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         processor.handleRequest(map, null);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertRetryAction(action, i);
       }
 
@@ -1885,7 +1884,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(5, action.retryCount());
       assertEquals(5, action.maxRetries());
       assertEquals(ActionStatus.MAX_RETRIES_REACHED, action.status());
@@ -1931,7 +1930,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
           resultmap.get("textractQueries").toString());
 
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.RUNNING, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
@@ -1954,15 +1953,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      Mapping mapping = createMapping("malwareStatus", null, null,
-          MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
+      Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -1973,7 +1971,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "malwareStatus", "CLEAN", null);
+      assertDocumentAttributeEquals(results.getFirst(), "malwareStatus", "CLEAN");
     }
   }
 
@@ -1992,15 +1990,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      Mapping mapping = createMapping("malwareStatus", null, null,
-          MappingAttributeSourceType.MALWARE_SCAN, null, null, null);
+      Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals("No Malware Scans found", action.message());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2029,15 +2026,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("certificate_number", null, null,
-          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+      Mapping mapping =
+          createMapping("certificate_number", MappingAttributeSourceType.DATA_CLASSIFICATION);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2047,7 +2044,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
     }
   }
 
@@ -2070,8 +2067,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
         String documentId = ID.uuid();
         DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-        Mapping mapping =
-            createMapping("certificate_number", null, null, sourceType, null, null, null);
+        Mapping mapping = createMapping("certificate_number", sourceType);
 
         boolean metadata = MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType);
         if (metadata) {
@@ -2080,10 +2076,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-        processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+        processIdpRequest(siteId, document, mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
 
         if (metadata) {
           assertEquals("No Metadata Extraction Result found", action.message());
@@ -2117,15 +2113,14 @@ public class DocumentActionsProcessorTest implements DbKeys {
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "someattr",
           AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("someattr", null, null,
-          MappingAttributeSourceType.DATA_CLASSIFICATION, null, null, null);
+      Mapping mapping = createMapping("someattr", MappingAttributeSourceType.DATA_CLASSIFICATION);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2153,16 +2148,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
 
-      Mapping mapping = createMapping("certificate_number", null, null,
-          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT, null, null, null);
+      Mapping mapping = createMapping("certificate_number",
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT);
       mapping.attributes().forEach(a -> a.setLlmPromptEntityName("Another Prompt"));
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
-      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+      processIdpRequest(siteId, document, mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertNull(action.message());
       assertEquals(ActionStatus.COMPLETE, action.status());
       assertEquals(ActionType.IDP, action.type());
@@ -2172,7 +2167,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "certificate_number", "12", null);
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
     }
   }
 
@@ -2214,7 +2209,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.MOVE, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
       DocumentRecord updated = documentService.findDocument(siteId, document);
@@ -2247,7 +2242,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("Google Workload Identity is not configured", action.message());
@@ -2277,7 +2272,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.FAILED, action.status());
       assertEquals("PdfExport only supports Google DeepLink", action.message());
@@ -2313,7 +2308,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.PDFEXPORT, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -2352,7 +2347,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionType.PUBLISH, action.type());
       assertEquals(ActionStatus.COMPLETE, action.status());
 
@@ -2400,7 +2395,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       processor.handleRequest(map, null);
 
       // then
-      var raction = actionsService.getActions(siteId, document).get(0);
+      var raction = actionsService.getActions(siteId, document).getFirst();
       assertEquals(ActionStatus.IN_QUEUE, raction.status());
       assertEquals(SiteIdKeyGenerator.createDatabaseKey(siteId, "actions#IN_QUEUE#"),
           raction.key().gsi2Pk());
@@ -2496,7 +2491,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     List<DocumentAttributeRecord> attributes =
         documentService.findDocumentAttributes(siteId, document, null, 2).getResults();
     assertEquals(1, attributes.size());
-    DocumentAttributeRecord attribute = attributes.get(0);
+    DocumentAttributeRecord attribute = attributes.getFirst();
     assertEquals("Relationships", attribute.getKey());
     assertTrue(attribute.getStringValue().startsWith("RENDITION#"));
   }

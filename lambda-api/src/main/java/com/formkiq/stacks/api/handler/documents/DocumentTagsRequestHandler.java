@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -158,7 +159,11 @@ public class DocumentTagsRequestHandler
     validateTags(tags);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    documentService.addTags(siteId, document, tags.getTags(), null);
+
+    List<DocumentTagRecord> tagRecords = tags.getTags().stream()
+        .flatMap(t -> DocumentTagRecord.builder().tag(t).document(document).build(siteId).stream())
+        .toList();
+    documentService.addTags(siteId, document, tagRecords, null);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Updated Tags").build();
   }
@@ -204,7 +209,10 @@ public class DocumentTagsRequestHandler
 
     List<DocumentTag> allTags = new ArrayList<>(tags.getTags());
 
-    documentService.addTags(siteId, document, allTags, null);
+    List<DocumentTagRecord> tagRecords = allTags.stream()
+        .flatMap(t -> DocumentTagRecord.builder().tag(t).document(document).build(siteId).stream())
+        .toList();
+    documentService.addTags(siteId, document, tagRecords, null);
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", tagsValid ? "Created Tags." : "Created Tag '" + tag.getKey() + "'.")
@@ -231,7 +239,10 @@ public class DocumentTagsRequestHandler
 
     validateTags(tags);
 
-    documentService.addTags(siteId, document, tags.getTags(), null);
+    List<DocumentTagRecord> tagRecords = tags.getTags().stream()
+        .flatMap(t -> DocumentTagRecord.builder().tag(t).document(document).build(siteId).stream())
+        .toList();
+    documentService.addTags(siteId, document, tagRecords, null);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Set Tags").build();
   }

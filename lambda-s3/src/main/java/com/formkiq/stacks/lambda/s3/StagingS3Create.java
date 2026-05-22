@@ -23,24 +23,26 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.actions.AddActionsToAction;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
@@ -51,18 +53,16 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
-import com.formkiq.module.actions.services.DynamicObjectToAction;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
-import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -70,7 +70,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -80,6 +79,11 @@ import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeDeserializer;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
@@ -94,26 +98,23 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.Tag;
-import software.amazon.awssdk.utils.StringUtils;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.getSiteId;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.resetDatabaseKey;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
@@ -241,8 +242,35 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     return SdkHttpUtils.urlDecode(value);
   }
 
+  private static boolean writeS3File(final String siteId, final AddDocumentRequest loadDocument) {
+
+    boolean hasContent = !isEmpty(loadDocument.getContent());
+
+    if (hasContent) {
+
+      byte[] bytes = loadDocument.isBase64()
+          ? Base64.getDecoder().decode(loadDocument.getContent().getBytes(StandardCharsets.UTF_8))
+          : loadDocument.getContent().getBytes(StandardCharsets.UTF_8);
+
+      String documentId = loadDocument.getDocumentId();
+      logger.trace(String.format("Inserted %s into bucket %s as %s", loadDocument.getPath(),
+          documentsBucket, createDatabaseKey(siteId, documentId)));
+
+      String key = createS3Key(siteId, loadDocument.getDocumentId(), null);
+      Map<String, String> map = Map.of("checksum", loadDocument.getChecksum());
+      s3.putObject(documentsBucket, key, bytes, loadDocument.getContentType(), map);
+    } else {
+      logger.trace(String.format("Skipping %s no content", loadDocument.getPath()));
+    }
+
+    return hasContent;
+  }
+
   /** {@link Gson}. */
-  private final Gson gson = new GsonBuilder().create();
+  private final Gson gson =
+      new GsonBuilder().registerTypeAdapterFactory(new CaseInsensitiveEnumTypeAdapterFactory())
+          .registerTypeAdapter(AddDocumentAttribute.class, new AddDocumentAttributeDeserializer())
+          .create();
 
   /**
    * constructor.
@@ -262,87 +290,22 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     serviceCache = awsServiceCache;
   }
 
-  /**
-   * Generate {@link Map} of DocumentId / Content.
-   *
-   * @param doc {@link DynamicDocumentItem}
-   * @return {@link Map}
-   */
-  private Map<String, String> createContentMap(final DynamicDocumentItem doc) {
+  private void createDocument(final String siteId, final DocumentArtifact document,
+      final AddDocumentRequest loadedDoc, final DocumentRecord existingDocument)
+      throws ValidationException {
 
-    Map<String, String> map = new HashMap<>();
+    String userId = loadedDoc.getUserId();
+    DocumentRecordSet recordSet =
+        new AddDocumentRequestToDocumentRecordSet(serviceCache, existingDocument, userId)
+            .apply(siteId, loadedDoc);
 
-    if (doc.hasString("content")) {
-      if (doc.hasString("documentId")) {
-        map.put(doc.getString("documentId"), doc.getString("content"));
-      }
-    }
+    SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
+    service.saveDocument(siteId, recordSet, options);
 
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (document.hasString("content") && document.hasString("documentId")) {
-        map.put(document.getString("documentId"), document.getString("content"));
-      }
-    }
+    saveDocumentSync(siteId, recordSet.documentRecord().documentId(), loadedDoc.getAgent(),
+        existingDocument);
 
-    return map;
-  }
-
-  /**
-   * Generate {@link Map} of DocumentId / Content Type.
-   *
-   * @param doc {@link DynamicDocumentItem}
-   * @return {@link Map}
-   */
-  private Map<String, String> createContentTypeMap(final DynamicDocumentItem doc) {
-
-    Map<String, String> map = new HashMap<>();
-
-    if (doc.hasString("documentId") && doc.getContentType() != null) {
-      map.put(doc.getString("documentId"), doc.getContentType());
-    }
-
-    List<DynamicObject> documents = doc.getList("documents");
-    for (DynamicObject document : documents) {
-      if (document.hasString("contentType") && document.hasString("documentId")) {
-        map.put(document.getString("documentId"), document.getString("contentType"));
-      }
-    }
-
-    return map;
-  }
-
-  private DynamicDocumentItem createDocument(final String siteId,
-      final DynamicDocumentItem loadedDoc, final boolean hasContent,
-      final DocumentRecord existingDocument) throws ValidationException {
-
-    DynamicDocumentItem doc = new DynamicDocumentItem(loadedDoc);
-
-    doc = updateFromExistingDocument(doc, existingDocument);
-
-    // saving service will set these
-    doc.setInsertedDate(null);
-    doc.setLastModifiedDate(null);
-
-    if (hasContent) {
-      doc.setContentLength(null);
-      doc.setChecksum(ID.uuid());
-      doc.setDeepLinkPath(null);
-    } else if (doc.getChecksum() == null) {
-      doc.setChecksum(ID.uuid());
-    }
-
-    if (isEmpty(doc.getPath())) {
-      doc.setPath(doc.getDocumentId());
-    }
-
-    service.saveDocumentItemWithTag(siteId, doc);
-
-    saveDocumentSync(siteId, doc, existingDocument);
-
-    saveDocumentActions(siteId, doc);
-
-    return doc;
+    saveDocumentActions(siteId, document, notNull(loadedDoc.getActions()));
   }
 
   /**
@@ -460,73 +423,44 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param s3Key {@link String}
    * @return {@link DynamicDocumentItem}
    */
-  private DynamicDocumentItem loadDocument(final String bucket, final String siteId,
+  private AddDocumentRequest loadDocument(final String bucket, final String siteId,
       final String s3Key) {
 
-    DynamicDocumentItem doc;
+    AddDocumentRequest request;
 
     if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
       String s = getContentFromS3(bucket, s3Key);
-
-      Map<String, Object> map = this.gson.fromJson(s, Map.class);
-      doc = new DynamicDocumentItem(map);
+      request = this.gson.fromJson(s, AddDocumentRequest.class);
 
     } else {
-      doc = new DynamicDocumentItem(Collections.emptyMap());
+      request = new AddDocumentRequest();
 
-      String key = resetDatabaseKey(siteId, s3Key);
-      boolean uuid = isUuid(key);
+      String documentId = resetDatabaseKey(siteId, s3Key);
+      // String documentId = parts.documentId();
 
-      if (!uuid) {
-        doc.setPath(key);
+      if (isUuid(documentId)) {
+        request.setDocumentId(documentId);
+      } else {
+        request.setDocumentId(ID.uuid());
+        request.setPath(documentId);
       }
     }
 
-    updateDocumentId(siteId, s3Key, doc);
+    // updateDocumentId(siteId, s3Key, request);
+    // updateDocumentPath()
 
-    if (isEmpty(doc.getUserId())) {
+    S3ObjectMetadata metadata = s3.getObjectMetadata(bucket, s3Key, null);
+    String username = metadata.getMetadata().entrySet().stream()
+        .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(Map.Entry::getValue)
+        .orElse("System");
 
-      S3ObjectMetadata metadata = s3.getObjectMetadata(bucket, s3Key, null);
-      String username = metadata.getMetadata().entrySet().stream()
-          .filter(s -> s.getKey().equalsIgnoreCase("userid")).findFirst().map(Map.Entry::getValue)
-          .orElse("System");
+    updateIfMissing(siteId, request, username, true);
+    notNull(request.getDocuments()).forEach(d -> updateIfMissing(siteId, d, username, false));
 
-      doc.setUserId(username);
-    }
+    ApiAuthorization.login(new ApiAuthorization().username(request.getUserId()));
 
-    updateContentLength(doc);
-
-    return doc;
-  }
-
-  /**
-   * If document has a tagschema that needs to be processed.
-   *
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @throws IOException IOException
-   */
-  private void postDocumentTags(final String siteId, final DynamicDocumentItem doc)
-      throws IOException {
-
-    List<DynamicObject> tags = doc.getList("tags");
-
-    if (!tags.isEmpty()) {
-
-      String documentId = doc.getDocumentId();
-      String url =
-          serviceCache.environment("DOCUMENTS_IAM_URL") + "/documents/" + documentId + "/tags";
-      HttpService http = serviceCache.getExtension(HttpService.class);
-      Optional<Map<String, String>> parameters =
-          siteId != null ? Optional.of(Map.of("siteId", siteId)) : Optional.empty();
-      HttpResponse<String> response =
-          http.post(url, Optional.empty(), parameters, this.gson.toJson(Map.of("tags", tags)));
-
-      if (!HttpResponseStatus.is2XX(response)) {
-        throw new IOException(url + " returned " + response.statusCode());
-      }
-    }
+    return request;
   }
 
   /**
@@ -535,36 +469,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param siteId {@link String}
    * @param bucket {@link String}
    * @param s3Key {@link String}
-   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   private void processDefaultFile(final String siteId, final String bucket, final String s3Key)
-      throws IOException, ValidationException {
+      throws ValidationException {
 
-    DynamicDocumentItem loadDocument = loadDocument(bucket, siteId, s3Key);
-    DocumentArtifact document =
-        DocumentArtifact.of(loadDocument.getDocumentId(), loadDocument.getArtifactId());
-
-    Map<String, String> contentMap = createContentMap(loadDocument);
-    Map<String, String> contentTypeMap = createContentTypeMap(loadDocument);
-
-    boolean hasContent = !contentMap.isEmpty();
+    AddDocumentRequest loadDocument = loadDocument(bucket, siteId, s3Key);
+    String artifactId = loadDocument.isArtifacts() ? ID.ulid() : null;
+    DocumentArtifact document = DocumentArtifact.of(loadDocument.getDocumentId(), artifactId);
 
     DocumentRecord existingDocument = service.findDocument(siteId, document);
-    DynamicDocumentItem item = createDocument(siteId, loadDocument, hasContent, existingDocument);
+    createDocument(siteId, document, loadDocument, existingDocument);
 
-    String tagSchemaId = item.getString("tagSchemaId");
-    Boolean newCompositeTags = item.getBoolean("newCompositeTags");
-
-    if (!StringUtils.isEmpty(tagSchemaId) && Boolean.FALSE.equals(newCompositeTags)) {
-      postDocumentTags(siteId, item);
-    }
-
-    writeS3Document(bucket, s3Key, siteId, item, contentMap, contentTypeMap);
-
-    if (contentMap.isEmpty()) {
-      logger.trace(String.format("Skipping %s no content", item.getPath()));
-    }
+    boolean hasContent = writeS3Document(bucket, s3Key, siteId, document, loadDocument);
 
     if (existingDocument != null && !hasContent) {
 
@@ -577,7 +494,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       actionsService.saveNewActions(syncs);
 
       logger.trace("publishing actions message to " + snsDocumentEvent);
-      notificationService.publishNextActionEvent(syncs, siteId, item.getDocumentId());
+      notificationService.publishNextActionEvent(syncs, siteId, document.documentId());
     }
 
     deleteObject(bucket, s3Key);
@@ -670,7 +587,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    */
   private void processRecords(final Date date, final List<Map<String, Object>> records) {
 
-    for (Map<String, Object> event : Objects.notNull(records)) {
+    for (Map<String, Object> event : notNull(records)) {
 
       if (event.containsKey("body")) {
 
@@ -686,6 +603,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
           processEvent(date, event);
         } catch (Exception e) {
           logger.error(e);
+        } finally {
+          ApiAuthorization.logout();
         }
       }
     }
@@ -711,13 +630,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       List<String> documentIds = results.getResults();
       logger.trace("found: " + documentIds.size() + " matching documents");
 
-      Map<DocumentArtifact, Collection<DocumentTag>> tagMap = new HashMap<>();
+      Map<DocumentArtifact, Collection<DocumentTagRecord>> tagMap = new HashMap<>();
 
       for (String documentId : documentIds) {
 
-        List<DocumentTag> tags = addTags.stream()
-            .map(t -> new DocumentTag(documentId, t.getKey(), t.getValue(), date, user))
-            .collect(Collectors.toList());
+        List<DocumentTagRecord> tags = addTags.stream()
+            .flatMap(t -> DocumentTagRecord.builder().documentId(documentId).tagKey(t.getKey())
+                .tagValue(t.getValue()).insertedDate(date).userId(user).build(siteId).stream())
+            .toList();
         tagMap.put(DocumentArtifact.of(documentId, null), tags);
       }
 
@@ -730,20 +650,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * Save Actions.
    *
    * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
+   * @param document {@link DocumentArtifact}
+   * @param actions {@link AddAction}
    */
-  private void saveDocumentActions(final String siteId, final DynamicDocumentItem doc) {
-    if (doc.containsKey("actions")) {
+  private void saveDocumentActions(final String siteId, final DocumentArtifact document,
+      final List<AddAction> actions) {
+    if (!actions.isEmpty()) {
 
-      DocumentArtifact document = DocumentArtifact.of(doc.getDocumentId(), doc.getArtifactId());
       actionsService.deleteActions(siteId, document);
 
-      DynamicObjectToAction transform = new DynamicObjectToAction();
-      List<DynamicObject> list = doc.getList("actions");
-      List<Action> actions = list.stream().map(transform)
-          .map(t -> t.document(document).indexUlid().build(siteId)).toList();
-
-      actionsService.saveNewActions(actions);
+      AddActionsToAction toAction = new com.formkiq.aws.dynamodb.actions.AddActionsToAction();
+      List<Action> addActions =
+          actions.stream().map(a -> toAction.apply(siteId, document, a)).toList();
+      actionsService.saveNewActions(addActions);
     }
   }
 
@@ -751,113 +670,71 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * Save Document Sync.
    *
    * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
+   * @param documentId {@link String}
+   * @param agent {@link String}
    * @param existingDocument {@link DocumentItem}
    */
-  private void saveDocumentSync(final String siteId, final DynamicDocumentItem doc,
+  private void saveDocumentSync(final String siteId, final String documentId, final String agent,
       final DocumentRecord existingDocument) {
-    String agent = doc.getString("agent");
-
     if (DocumentSyncServiceType.FORMKIQ_CLI.name().equals(agent)) {
-      syncService.saveSync(siteId, doc.getDocumentId(), DocumentSyncServiceType.FORMKIQ_CLI,
+      syncService.saveSync(siteId, documentId, DocumentSyncServiceType.FORMKIQ_CLI,
           DocumentSyncStatus.COMPLETE, DocumentSyncType.CONTENT, existingDocument != null);
     }
   }
 
-  private void updateContentLength(final DynamicDocumentItem obj) {
+  private void updateIfMissing(final String siteId, final AddDocumentRequest request,
+      final String username, final boolean documentIdPathLookup) {
 
-    if (obj.containsKey("contentLength") && obj.get("contentLength") instanceof Double) {
-      long contentLength = obj.getDouble("contentLength").longValue();
-      obj.setContentLength(contentLength);
-    }
-  }
+    if (isEmpty(request.getDocumentId())) {
 
-  /**
-   * Update {@link DynamicDocumentItem} DocumentId.
-   * 
-   * @param siteId {@link String}
-   * @param s3Key {@link String}
-   * @param obj {@link DynamicDocumentItem}
-   */
-  private void updateDocumentId(final String siteId, final String s3Key,
-      final DynamicDocumentItem obj) {
-
-    if (isEmpty(obj.getDocumentId())) {
-
-      if (obj.getPath() != null) {
-
-        String documentId = getDocumentIdForPath(siteId, obj.getPath());
-        obj.setDocumentId(documentId);
-
+      if (documentIdPathLookup) {
+        request.setDocumentId(getDocumentIdForPath(siteId, request.getPath()));
       } else {
-
-        String key = resetDatabaseKey(siteId, s3Key);
-
-        boolean uuid = isUuid(key);
-        String documentId = uuid ? key : getDocumentIdForPath(siteId, key);
-        obj.setDocumentId(documentId);
+        request.setDocumentId(ID.uuid());
       }
     }
-  }
 
-  /**
-   * Update from existing Document.
-   * 
-   * @param obj {@link DynamicDocumentItem}
-   * @param existingDocument {@link DocumentItem}
-   * @return {@link DynamicDocumentItem}
-   */
-  private DynamicDocumentItem updateFromExistingDocument(final DynamicDocumentItem obj,
-      final DocumentRecord existingDocument) {
-
-    DynamicDocumentItem response;
-
-    if (existingDocument != null) {
-      DynamicDocumentItem origMap =
-          new DocumentRecordToDynamicDocumentItem().apply(existingDocument);
-      origMap.putAll(obj);
-      response = origMap;
-    } else {
-      response = obj;
+    if (isEmpty(request.getChecksum())) {
+      request.setChecksum(ID.uuid());
     }
 
-    return response;
+    if (isEmpty(request.getUserId())) {
+      request.setUserId(username);
+    }
   }
 
-  private void writeS3Document(final String bucket, final String s3Key, final String siteId,
-      final DynamicDocumentItem item, final Map<String, String> contentMap,
-      final Map<String, String> contentTypeMap) {
+  private boolean writeS3Document(final String bucket, final String s3Key, final String siteId,
+      final DocumentArtifact document, final AddDocumentRequest loadDocument) {
 
-    Map<String, String> map = Map.of("checksum", item.getChecksum());
+    boolean hasContent = false;
 
     if (s3Key.endsWith(FORMKIQ_B64_EXT)) {
 
-      for (Map.Entry<String, String> e : contentMap.entrySet()) {
+      if (writeS3File(siteId, loadDocument)) {
+        hasContent = true;
+      }
 
-        boolean isBase64 = item.getBoolean("isBase64");
-        byte[] bytes =
-            isBase64 ? Base64.getDecoder().decode(e.getValue().getBytes(StandardCharsets.UTF_8))
-                : e.getValue().getBytes(StandardCharsets.UTF_8);
-
-        String key = createDatabaseKey(siteId, e.getKey());
-        String contentType = contentTypeMap.get(e.getKey());
-
-        logger.trace(String.format("Inserted %s into bucket %s as %s", item.getPath(),
-            documentsBucket, createDatabaseKey(siteId, item.getDocumentId())));
-
-        s3.putObject(documentsBucket, key, bytes, contentType, map);
+      List<AddDocumentRequest> addDocumentRequests = notNull(loadDocument.getDocuments());
+      for (AddDocumentRequest addDocumentRequest : addDocumentRequests) {
+        if (writeS3File(siteId, addDocumentRequest)) {
+          hasContent = true;
+        }
       }
 
     } else {
 
       S3ObjectMetadata metadata = s3.getObjectMetadata(bucket, s3Key, null);
 
-      String destKey = createDatabaseKey(siteId, item.getDocumentId());
+      String destKey = createS3Key(siteId, document);
 
       logger.trace(String.format("Copying %s from bucket %s to %s in bucket %s.", s3Key, bucket,
           destKey, documentsBucket));
 
+      Map<String, String> map = Map.of("checksum", loadDocument.getChecksum());
       s3.copyObject(bucket, s3Key, documentsBucket, destKey, metadata.getContentType(), map);
+      hasContent = true;
     }
+
+    return hasContent;
   }
 }

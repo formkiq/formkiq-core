@@ -24,6 +24,7 @@
 package com.formkiq.module.ocr;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.actions.AwsTextractQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.s3.PresignGetUrlConfig;

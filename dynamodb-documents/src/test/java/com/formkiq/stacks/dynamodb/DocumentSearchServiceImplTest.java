@@ -32,12 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -49,6 +47,9 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeAll;
@@ -182,38 +183,46 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     return items;
   }
 
+  private DocumentRecordSet createTestDocumentWithTags(final Map<String, Object> tags,
+      final boolean value) {
+    return createTestDocumentWithTags(ID.uuid(), tags, value);
+  }
+
   /**
    * Create a Test Document with 2 tags.
-   * 
+   *
+   * @param documentId {@link String}
    * @param tags {@link Map}
    * @param value whether to set value or values
-   * @return {@link DynamicDocumentItem}
+   * @return {@link DocumentRecordSet}
    */
-  private DynamicDocumentItem createTestDocumentWithTags(final Map<String, Object> tags,
-      final boolean value) {
+  private DocumentRecordSet createTestDocumentWithTags(final String documentId,
+      final Map<String, Object> tags, final boolean value) {
     String username = "testuser";
-    String content = ID.uuid();
-    DynamicDocumentItem doc = new DynamicDocumentItem(
-        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
-            Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
+    DocumentRecord documentRecord =
+        new DocumentRecordBuilder().documentId(documentId).userId(username).build((String) null);
 
-    List<Map<String, Object>> list = new ArrayList<>();
-    doc.put("tags", list);
+    List<DocumentTagRecord> addTags = new ArrayList<>();
 
     for (Map.Entry<String, Object> e : tags.entrySet()) {
       if (value) {
-        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "value", e.getValue(),
-            "insertedDate", new Date(), "userId", username, "type",
-            DocumentTagType.USERDEFINED.name()));
+        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
+            .tagValue(e.getValue().toString()).type(DocumentTagType.USERDEFINED).userId(username)
+            .build((String) null));
       } else {
-        list.add(Map.of("documentId", doc.getDocumentId(), "key", e.getKey(), "values",
-            e.getValue(), "insertedDate", new Date(), "userId", username, "type",
-            DocumentTagType.USERDEFINED.name()));
+
+        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
+            .tagValues((List<String>) e.getValue()).type(DocumentTagType.USERDEFINED)
+            .userId(username).build((String) null));
       }
     }
 
-    return doc;
+    return new DocumentRecordSet(documentRecord, null, addTags, null);
+  }
+
+  private void saveDocument(final String siteId, final DocumentRecordSet doc) {
+    this.service.saveDocument(siteId, doc, new SaveDocumentOptions().saveDocumentDate(true));
   }
 
   /**
@@ -349,10 +358,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNotEquals(results.getResults().get(0).getDocumentId(),
-          results2.getResults().get(0).getDocumentId());
-      assertEquals("status", results.getResults().get(0).getMap("matchedTag").get("key"));
-      assertEquals("active", results.getResults().get(0).getMap("matchedTag").get("value"));
+      assertNotEquals(results.getResults().getFirst().getDocumentId(),
+          results2.getResults().getFirst().getDocumentId());
+      assertEquals("status", results.getResults().getFirst().getMap("matchedTag").get("key"));
+      assertEquals("active", results.getResults().getFirst().getMap("matchedTag").get("value"));
     }
   }
 
@@ -367,7 +376,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // given
       createTestData("finance");
       List<DocumentItem> items = createTestData(siteId);
-      DocumentItem item = items.get(0);
+      DocumentItem item = items.getFirst();
       DocumentTag tag =
           new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")
               .setValues(List.of("active", "notactive"));
@@ -407,16 +416,21 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch06() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
+      saveDocument(siteId, doc0);
+
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      String documentId1 = doc1.documentRecord().documentId();
+      saveDocument(siteId, doc1);
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      String documentId2 = doc2.documentRecord().documentId();
+      saveDocument(siteId, doc2);
 
       SearchTagCriteria c0 = new SearchTagCriteria("category", null, "thing", null, null);
-      SearchQueryBuilder q = new SearchQueryBuilder().tag(c0).documentIds(
-          Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c0)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
 
       // when - wrong document id
       Pagination<DynamicDocumentItem> results =
@@ -446,7 +460,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // then
       assertEquals(1, results.getResults().size());
-      assertEquals(doc2.getDocumentId(), results.getResults().get(0).getDocumentId());
+      assertEquals(documentId2, results.getResults().getFirst().getDocumentId());
 
       // given
       q.documentIds(List.of("123"));
@@ -467,14 +481,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given - tag only
       SearchTagCriteria c = new SearchTagCriteria("category", null, null, null, null);
-      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+      final SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
 
       // when
       Pagination<DynamicDocumentItem> results =
@@ -506,14 +520,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given - wrong value
       SearchTagCriteria c = new SearchTagCriteria("category", null, "thing123", null, null);
-      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+      final SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
 
       // when
       Pagination<DynamicDocumentItem> results =
@@ -532,16 +546,20 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch09() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
+      saveDocument(siteId, doc0);
+
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      String documentId1 = doc1.documentRecord().documentId();
+      saveDocument(siteId, doc1);
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc2);
 
       SearchTagCriteria c = new SearchTagCriteria("category", "th", null, null, null);
       SearchQuery q = new SearchQueryBuilder().tag(c)
-          .documentIds(Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId())).build();
+          .documentIds(Arrays.asList(documentId0, documentId1)).build();
 
       // when - wrong document id
       Pagination<DynamicDocumentItem> results =
@@ -578,9 +596,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
     Collection<String> docNumbers = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      DynamicDocumentItem doc = createTestDocumentWithTags(Map.of("category", "person_" + i), true);
-      docNumbers.add(doc.getDocumentId());
-      this.service.saveDocumentItemWithTag(null, doc);
+      DocumentRecordSet doc = createTestDocumentWithTags(Map.of("category", "person_" + i), true);
+      docNumbers.add(doc.documentRecord().documentId());
+      saveDocument(null, doc);
     }
 
     SearchQuery q = new SearchQueryBuilder().tag(c).documentIds(docNumbers).build();
@@ -602,17 +620,22 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch11() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 =
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      saveDocument(siteId, doc0);
+      String documentId0 = doc0.documentRecord().documentId();
+
+      DocumentRecordSet doc1 =
           createTestDocumentWithTags(Map.of("category", Arrays.asList("thing", "thing1")), false);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
+      saveDocument(siteId, doc1);
+      String documentId1 = doc1.documentRecord().documentId();
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc2);
+      String documentId2 = doc2.documentRecord().documentId();
 
       SearchTagCriteria c = new SearchTagCriteria("category", null, "thing", null, null);
-      SearchQueryBuilder q = new SearchQueryBuilder().tag(c).documentIds(
-          Arrays.asList(doc0.getDocumentId(), doc1.getDocumentId(), doc2.getDocumentId()));
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
 
       // when - wrong document id
       Pagination<DynamicDocumentItem> results =
@@ -653,29 +676,32 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch12() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      doc0.setDocumentId("1");
-      DynamicDocumentItem doc1 =
-          createTestDocumentWithTags(Map.of("category", Arrays.asList("thing", "thing1")), false);
-      doc1.setDocumentId("2");
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("category", "person3"), true);
-      doc2.setDocumentId("3");
-      DynamicDocumentItem doc3 = createTestDocumentWithTags(Map.of("category", "person2"), true);
-      doc3.setDocumentId("4");
-      DynamicDocumentItem doc4 = createTestDocumentWithTags(Map.of("category", "person5"), true);
-      doc4.setDocumentId("5");
+      DocumentRecordSet doc0 = createTestDocumentWithTags("1", Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
 
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
-      this.service.saveDocumentItemWithTag(siteId, doc3);
-      this.service.saveDocumentItemWithTag(siteId, doc4);
+      DocumentRecordSet doc1 = createTestDocumentWithTags("2",
+          Map.of("category", Arrays.asList("thing", "thing1")), false);
+      final String documentId1 = doc1.documentRecord().documentId();
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags("3", Map.of("category", "person3"), true);
+      final String documentId2 = doc2.documentRecord().documentId();
+
+      DocumentRecordSet doc3 = createTestDocumentWithTags("4", Map.of("category", "person2"), true);
+      final String documentId3 = doc3.documentRecord().documentId();
+
+      final DocumentRecordSet doc4 =
+          createTestDocumentWithTags("5", Map.of("category", "person5"), true);
+
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+      saveDocument(siteId, doc3);
+      saveDocument(siteId, doc4);
 
       SearchTagCriteria c =
           new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person2"), null);
-      SearchQueryBuilder q =
-          new SearchQueryBuilder().tag(c).documentIds(Arrays.asList(doc0.getDocumentId(),
-              doc1.getDocumentId(), doc2.getDocumentId(), doc3.getDocumentId()));
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2, documentId3));
 
       // when - wrong document id
       Pagination<DynamicDocumentItem> results =
@@ -686,7 +712,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertEquals(2, list.size());
       assertNull(results.getNextToken());
 
-      assertEquals("category", list.get(0).getMap("matchedTag").get("key"));
+      assertEquals("category", list.getFirst().getMap("matchedTag").get("key"));
       assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
       assertEquals("USERDEFINED", list.get(0).getMap("matchedTag").get("type"));
 
@@ -723,14 +749,15 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch13() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DynamicDocumentItem doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
-      DynamicDocumentItem doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
-      DynamicDocumentItem doc2 = createTestDocumentWithTags(Map.of("category", "person1"), true);
-      DynamicDocumentItem doc3 = createTestDocumentWithTags(Map.of("nocategory", "person"), true);
-      this.service.saveDocumentItemWithTag(siteId, doc0);
-      this.service.saveDocumentItemWithTag(siteId, doc1);
-      this.service.saveDocumentItemWithTag(siteId, doc2);
-      this.service.saveDocumentItemWithTag(siteId, doc3);
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("category", "person1"), true);
+      final DocumentRecordSet doc3 =
+          createTestDocumentWithTags(Map.of("nocategory", "person"), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+      saveDocument(siteId, doc3);
 
       SearchTagCriteria c =
           new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person1"), null);
@@ -835,8 +862,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("sample/anotherone/test4.pdf", list.get(0).getPath());
-      assertEquals(doc3.getDocumentId(), list.get(0).getDocumentId());
+      assertEquals("sample/anotherone/test4.pdf", list.getFirst().getPath());
+      assertEquals(doc3.getDocumentId(), list.getFirst().getDocumentId());
     }
   }
 
@@ -868,11 +895,11 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       List<DynamicDocumentItem> list0 = results0.getResults();
       assertEquals(1, list0.size());
-      assertEquals("sample", list0.get(0).getPath());
+      assertEquals("sample", list0.getFirst().getPath());
 
       List<DynamicDocumentItem> list1 = results1.getResults();
       assertEquals(1, list1.size());
-      assertEquals("sample/test2.pdf", list1.get(0).getPath());
+      assertEquals("sample/test2.pdf", list1.getFirst().getPath());
 
       // given
       q0 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null))
@@ -887,7 +914,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
       list0 = results0.getResults();
       assertEquals(1, list0.size());
-      assertEquals("sample", list0.get(0).getPath());
+      assertEquals("sample", list0.getFirst().getPath());
 
       results1 = this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
       assertEquals(0, results1.getResults().size());
@@ -978,7 +1005,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("/c/b/test3.pdf", list.get(0).getPath());
+      assertEquals("/c/b/test3.pdf", list.getFirst().getPath());
     }
   }
 
@@ -1006,8 +1033,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals(doc.getDocumentId(), list.get(0).getDocumentId());
-      assertEquals("/a/b/test2.pdf", list.get(0).getPath());
+      assertEquals(doc.getDocumentId(), list.getFirst().getDocumentId());
+      assertEquals("/a/b/test2.pdf", list.getFirst().getPath());
 
       // given - invalid path
       path = ID.uuid();
@@ -1095,7 +1122,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       assertEquals(1, results.getResults().size());
       assertNull(results.getNextToken());
-      assertEquals(documentId0, results.getResults().get(0));
+      assertEquals(documentId0, results.getResults().getFirst());
 
       // given
       c = new SearchTagCriteria("category", "per", null, null, null);

@@ -25,8 +25,8 @@ package com.formkiq.module.actions.services;
 
 import java.util.List;
 import java.util.function.Predicate;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 
 /**
  * 

@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DeleteResults;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
@@ -42,6 +41,7 @@ import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.WriteRequestOperations;
 import com.formkiq.aws.dynamodb.attributes.AttributeDerivedType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -53,6 +53,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentItemToDocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordToDocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.ExistsDocumentById;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
@@ -67,11 +68,11 @@ import com.formkiq.aws.dynamodb.entity.RetentionDispositionCompositeAttribute;
 import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -92,7 +93,6 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordPredicate;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordsToSchemaAttributes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
-import com.formkiq.stacks.dynamodb.attributes.DynamicObjectToDocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
@@ -104,6 +104,7 @@ import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.validation.ValidationChecks;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -277,17 +278,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void addTags(final String siteId,
-      final Map<DocumentArtifact, Collection<DocumentTag>> tags, final String timeToLive) {
+      final Map<DocumentArtifact, Collection<DocumentTagRecord>> tags, final String timeToLive) {
 
     Collection<String> tagKeys = new HashSet<>();
     List<Map<String, AttributeValue>> items = new ArrayList<>();
 
-    for (Map.Entry<DocumentArtifact, Collection<DocumentTag>> e : tags.entrySet()) {
+    for (Map.Entry<DocumentArtifact, Collection<DocumentTagRecord>> e : tags.entrySet()) {
       List<Map<String, AttributeValue>> attributes =
           getSaveTagsAttributes(siteId, e.getKey(), e.getValue());
       items.addAll(attributes);
 
-      tagKeys.addAll(e.getValue().stream().map(DocumentTag::getKey).toList());
+      tagKeys.addAll(e.getValue().stream().map(DocumentTagRecord::tagKey).toList());
     }
 
     if (!items.isEmpty()) {
@@ -303,8 +304,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   @Override
   public void addTags(final String siteId, final DocumentArtifact document,
-      final Collection<DocumentTag> tags, final String timeToLive) {
+      final Collection<DocumentTagRecord> tags, final String timeToLive) {
     DocumentRecord documentRecord = new FindDocumentById().find(dbService, siteId, document);
+    ValidationChecks.checkNotNull("document", documentRecord);
+
     validateDocumentPath(siteId, documentRecord.path(), null);
     addTags(siteId, Map.of(document, tags), timeToLive);
   }
@@ -539,18 +542,26 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           return match;
         }).toList();
 
-    deleteDocumentAttributes(siteId, document, documentAttributes);
+    WriteRequestBuilder batchWriter = new WriteRequestBuilder();
+    deleteDocumentAttributes(batchWriter, siteId, documentAttributes);
+
+    if (batchWriter.batchWriteItem(this.dbClient)) {
+      deleteDocumentAttributesInterceptor(siteId, document, documentAttributes);
+    }
 
     return documentAttributes;
   }
 
-  private void deleteDocumentAttributes(final String siteId, final DocumentArtifact document,
+  private void deleteDocumentAttributes(final WriteRequestBuilder batchWriter, final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    List<Map<String, AttributeValue>> keys = documentAttributes.stream()
-        .map(a -> Map.of(PK, a.fromS(a.pk(siteId)), SK, a.fromS(a.sk()))).toList();
-    this.dbService.deleteItems(keys);
+    List<DynamoDbKey> keys = documentAttributes.stream().map(a -> a.buildKey(siteId)).toList();
+    batchWriter.appendDeletes(this.documentTableName, keys);
+  }
 
+  private void deleteDocumentAttributesInterceptor(final String siteId,
+      final DocumentArtifact document,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
     if (this.interceptor != null) {
       AttributeValueToMap toMap = new AttributeValueToMap();
       documentAttributes.forEach(a -> this.interceptor.deleteDocumentAttribute(siteId, document,
@@ -815,7 +826,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       if (includeChildDocuments) {
 
         var childDocuments = new GetChildDocumentsQuery(document.documentId()).query(dbService,
-            dbService.getTableName(), siteId, nextToken, limit);
+            siteId, nextToken, limit);
 
         var childDocumentIds =
             childDocuments.items().stream().map(new AttributeValueToDocumentArtifact()).toList();
@@ -1274,25 +1285,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return builder.batchReadItems(this.dbClient, config);
   }
 
-  private Collection<DocumentAttributeRecord> getDocumentAttributes(final DynamicDocumentItem doc) {
-    List<DynamicObject> list = doc.getList("attributes");
-    return new DynamicObjectToDocumentAttributeRecord(doc.getDocumentId(), doc.getUserId(), null)
-        .apply(list);
-  }
-
   /**
    * Generate Save Tags DynamoDb Keys.
    *
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
-   * @param tags {@link Collection} {@link DocumentTag}
+   * @param tags {@link Collection} {@link DocumentTagRecord}
    * @return {@link List} {@link Map}
    */
   private List<Map<String, AttributeValue>> getSaveTagsAttributes(final String siteId,
-      final DocumentArtifact document, final Collection<DocumentTag> tags) {
+      final DocumentArtifact document, final Collection<DocumentTagRecord> tags) {
 
-    Predicate<DocumentTag> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.getType())
-        || !SYSTEM_DEFINED_TAGS.contains(tag.getKey());
+    Predicate<DocumentTagRecord> predicate = tag -> DocumentTagType.SYSTEMDEFINED.equals(tag.type())
+        || !SYSTEM_DEFINED_TAGS.contains(tag.tagKey());
 
     List<DocumentTagRecord> tagRecords = new ArrayList<>();
     notNull(tags).stream().filter(predicate).forEach(tag -> {
@@ -1569,53 +1574,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     this.dbClient.putItem(put);
   }
 
-  /**
-   * Save Child Documents.
-   *
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @param item {@link DocumentItem}
-   * @param date {@link Date}
-   * @throws ValidationException ValidationException
-   */
-  private void saveChildDocuments(final String siteId, final DynamicDocumentItem doc,
-      final DocumentItem item, final Date date) throws ValidationException {
-
-    List<DocumentTag> tags;
-    List<DynamicObject> documents = doc.getList("documents");
-
-    for (DynamicObject subdoc : documents) {
-
-      if (subdoc.getDate("insertedDate") == null) {
-        subdoc.put("insertedDate", date);
-      }
-
-      DocumentItem document = new DynamicDocumentItem(subdoc);
-      document.setBelongsToDocumentId(item.getDocumentId());
-
-      DocumentItem dockey = new DynamicDocumentItem(new HashMap<>());
-      dockey.setDocumentId(subdoc.getString("documentId"));
-      dockey.setBelongsToDocumentId(item.getDocumentId());
-
-      // save child document
-      SaveDocumentOptions childOptions = new SaveDocumentOptions().saveDocumentDate(false)
-          .timeToLive(doc.getString("TimeToLive")).setSkipDocumentEventBridge(true);
-      saveDocument(item.getDocumentId(), siteId, dockey, null, null, childOptions);
-
-      List<DynamicObject> doctags = subdoc.getList("tags");
-      tags = doctags.stream().map(t -> {
-        DynamicObjectToDocumentTag transformer = new DynamicObjectToDocumentTag(this.df);
-        return transformer.apply(t);
-      }).collect(Collectors.toList());
-
-      keysDocument(siteId, subdoc.getString("documentId"));
-
-      childOptions = new SaveDocumentOptions().saveDocumentDate(false)
-          .timeToLive(doc.getString("TimeToLive")).setSkipDocumentEventBridge(false);
-      saveDocument(null, siteId, document, tags, null, childOptions);
-    }
-  }
-
   private FolderIndexRecord createFolders(final String siteId, final String documentId,
       final DocumentRecordBuilder builder, final String documentPath) {
 
@@ -1637,14 +1595,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return previous == null || !document.path().equals(previous.path());
   }
 
-  private DocumentRecordBuilder buildDocumentRecord(final String parentDocumentId,
-      final String siteId, final DocumentItem item, final SaveDocumentOptions options) {
+  private DocumentRecordBuilder buildDocumentRecord(final String siteId, final DocumentRecord item,
+      final String parentDocumentId, final SaveDocumentOptions options) {
 
-    DocumentArtifact documentArtifact =
-        DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+    DocumentArtifact documentArtifact = DocumentArtifact.of(item.documentId(), item.artifactId());
 
-    DocumentRecordBuilder builder = new DocumentItemToDocumentRecordBuilder()
-        .apply(parentDocumentId, item).timeToLive(options.timeToLive());
+    DocumentRecordBuilder builder =
+        new DocumentRecordToDocumentRecordBuilder().apply(parentDocumentId, item);
+
+    if (!isEmpty(options.timeToLive())) {
+      builder.timeToLive(options.timeToLive());
+    }
+
     builder.gsi1(options.saveDocumentDate());
 
     DocumentRecord previous = findDocument(siteId, documentArtifact);
@@ -1659,78 +1621,69 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   /**
    * Save Document.
    *
-   * @param parentDocumentId Parent Document Id
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param set {@link DocumentRecordSet}
    * @param options {@link SaveDocumentOptions}
    * @throws ValidationException ValidationException
    */
-  private void saveDocument(final String parentDocumentId, final String siteId,
-      final DocumentItem item, final Collection<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> attributes, final SaveDocumentOptions options)
-      throws ValidationException {
+  private void saveDocumentInternal(final String siteId, final DocumentRecordSet set,
+      final SaveDocumentOptions options) throws ValidationException {
+    saveDocumentInternal(siteId, set, options, null);
+  }
 
+  private void saveDocumentInternal(final String siteId, final DocumentRecordSet set,
+      final SaveDocumentOptions options, final String parentDocumentId) throws ValidationException {
+
+    DocumentRecord document = set.documentRecord();
     DocumentArtifact documentArtifact =
-        DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+        DocumentArtifact.of(document.documentId(), document.artifactId());
 
-    DocumentRecordBuilder builder = buildDocumentRecord(parentDocumentId, siteId, item, options);
-    DocumentRecord document = builder.build(siteId);
+    DocumentRecordBuilder builder =
+        buildDocumentRecord(siteId, document, parentDocumentId, options);
+    document = builder.build(siteId);
     DocumentRecord previous = builder.getPreviousValues();
 
     validateDocumentPath(siteId, document.path(), previous);
 
     List<Map<String, AttributeValue>> tagValues =
-        getSaveTagsAttributes(siteId, documentArtifact, tags);
+        getSaveTagsAttributes(siteId, documentArtifact, set.documentTagRecords());
 
-    WriteRequestBuilder writeBuilder = new WriteRequestBuilder();
-    writeBuilder.appends(this.documentTableName, tagValues);
+    WriteRequestOperations writeOperations = new WriteRequestOperations();
+    writeOperations.appendsBatch(this.documentTableName, tagValues);
 
-    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(null, item).build(siteId);
-    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentArtifact, documentRecord,
-        attributes, AttributeValidationType.FULL, options.getValidationAccess());
+    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentArtifact, document,
+        set.documentAttributeRecords(), AttributeValidationType.FULL,
+        options.getValidationAccess());
 
-    writeBuilder.appends(this.documentTableName,
+    writeOperations.appendsBatch(this.documentTableName,
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
 
-    WriteRequestBuilder txWriter = new WriteRequestBuilder();
-
-    final boolean needsRootDocumentCreated = item.getArtifactId() != null
-        && !exists(siteId, DocumentArtifact.of(item.getDocumentId(), null));
-
-    if (needsRootDocumentCreated
-        || (item.getArtifactId() == null && isPathChanged(document, previous))) {
-      String documentId = item.getDocumentId();
+    if (documentArtifact.artifactId() == null && isPathChanged(document, previous)) {
+      String documentId = documentArtifact.documentId();
       FolderIndexRecord pathRecord = createFolders(siteId, documentId, builder, document.path());
-      txWriter.append(this.documentTableName, pathRecord.getAttributes(siteId));
+      writeOperations.appendTransaction(this.documentTableName, pathRecord.getAttributes(siteId));
 
-      removePreviousPath(siteId, previous, txWriter);
+      removePreviousPath(siteId, previous, writeOperations);
     }
 
     document = builder.build(siteId);
     Map<String, AttributeValue> documentValues = document.getAttributes();
 
-    txWriter.append(this.documentTableName, documentValues);
+    writeOperations.appendTransaction(this.documentTableName, documentValues);
 
-    if (needsRootDocumentCreated) {
-      var rootDocument = builder.artifactId(null).build(siteId);
-      txWriter.append(this.documentTableName, rootDocument.getAttributes());
-    }
+    Collection<DocumentAttributeRecord> deleteDocumentAttributes =
+        (Collection<DocumentAttributeRecord>) tx.deletes();
 
-    boolean save0 = txWriter.batchWriteItem(this.dbClient);
-    boolean save1 = writeBuilder.batchWriteItem(this.dbClient);
+    deleteDocumentAttributes(writeOperations.batchWriter(), siteId, deleteDocumentAttributes);
 
-    if (save0 || save1) {
-
-      deleteDocumentAttributes(siteId, documentArtifact,
-          (Collection<DocumentAttributeRecord>) tx.deletes());
+    if (writeOperations.execute(this.dbClient)) {
 
       saveDocumentInterceptor(siteId, documentArtifact, documentValues,
           previous != null ? previous.getAttributes() : null, tx);
+      deleteDocumentAttributesInterceptor(siteId, documentArtifact, deleteDocumentAttributes);
 
-      List<String> tagKeys =
-          notNull(tags).stream().map(DocumentTag::getKey).collect(Collectors.toList());
+      Collection<String> tagKeys = notNull(set.documentTagRecords()).stream()
+          .map(DocumentTagRecord::tagKey).collect(Collectors.toSet());
       this.indexWriter.writeTagIndex(siteId, tagKeys);
 
       if (options.saveDocumentDate()) {
@@ -1742,8 +1695,46 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void saveDocument(final String siteId, final DocumentItem document,
       final Collection<DocumentTag> tags) throws ValidationException {
+
+    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(document).build(siteId);
+    var taglist = notNull(tags).stream()
+        .flatMap(t -> DocumentTagRecord.builder().tag(t).build(siteId).stream()).toList();
+    var documentRecordSet = new DocumentRecordSet(documentRecord, null, taglist, null);
+
     SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true).timeToLive(null);
-    saveDocument(null, siteId, document, tags, null, options);
+    saveDocument(siteId, documentRecordSet, options);
+  }
+
+  @Override
+  public void saveDocument(final String siteId, final DocumentRecordSet documentRecordSet,
+      final SaveDocumentOptions options) throws ValidationException {
+
+    DocumentRecord documentRecord = documentRecordSet.documentRecord();
+    String documentId = documentRecord.documentId();
+
+    // if artifactId set but no "root" document create it
+    if (!isEmpty(documentRecord.artifactId())
+        && !exists(siteId, DocumentArtifact.of(documentId, null))) {
+      var rootDocumentRecordSet = createRootDocumentRecordSet(siteId, documentRecord);
+      saveDocumentInternal(siteId, rootDocumentRecordSet, options);
+    }
+
+    saveDocumentInternal(siteId, documentRecordSet, options);
+
+    for (DocumentRecordSet childDoc : notNull(documentRecordSet.children())) {
+
+      SaveDocumentOptions childLinkOptions = new SaveDocumentOptions().saveDocumentDate(false)
+          .timeToLive(getChildTimeToLive(childDoc, options)).setSkipDocumentEventBridge(true);
+
+      DocumentRecordSet childDocumentLink = createChildDocumentLink(siteId, documentId, childDoc);
+      saveDocumentInternal(siteId, childDocumentLink, childLinkOptions, documentId);
+
+      SaveDocumentOptions childOptions =
+          new SaveDocumentOptions().validationAccess(options.getValidationAccess())
+              .saveDocumentDate(false).timeToLive(options.timeToLive());
+
+      saveDocument(siteId, childDoc, childOptions);
+    }
   }
 
   @Override
@@ -1752,34 +1743,51 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final Collection<DocumentAttributeRecord> documentAttributes,
       final SaveDocumentOptions options) throws ValidationException {
 
-    // Map<String, AttributeValue> keys = keysDocument(siteId, document.getDocumentId());
-    saveDocument(null, siteId, document, tags, documentAttributes, options);
+    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(document).build(siteId);
+    var taglist = notNull(tags).stream()
+        .flatMap(t -> DocumentTagRecord.builder().tag(t).build(siteId).stream()).toList();
+    var documentRecordSet =
+        new DocumentRecordSet(documentRecord, documentAttributes, taglist, null);
 
-    for (DocumentItem childDoc : notNull(document.getDocuments())) {
+    saveDocument(siteId, documentRecordSet, options);
+  }
 
-      DocumentItem dockey = new DynamicDocumentItem(new HashMap<>());
-      dockey.setDocumentId(childDoc.getDocumentId());
-      dockey.setBelongsToDocumentId(document.getDocumentId());
-      childDoc.setBelongsToDocumentId(document.getDocumentId());
+  private DocumentRecordSet createRootDocumentRecordSet(final String siteId,
+      final DocumentRecord documentRecord) {
+    var record =
+        DocumentRecord.builder().document(DocumentArtifact.of(documentRecord.documentId(), null))
+            .path(documentRecord.path()).userId(documentRecord.userId()).build(siteId);
+    return new DocumentRecordSet(record, null, null, null);
+  }
 
-      SaveDocumentOptions childOptions =
-          new SaveDocumentOptions().saveDocumentDate(false).timeToLive(childDoc.getTimeToLive());
-      saveDocument(document.getDocumentId(), siteId, dockey, null, null, childOptions);
+  private DocumentRecordSet createChildDocumentLink(final String siteId,
+      final String parentDocumentId, final DocumentRecordSet childDoc) {
 
-      saveDocument(null, siteId, childDoc, null, null, childOptions);
-    }
+    DocumentRecord child = childDoc.documentRecord();
+    DocumentRecord link =
+        DocumentRecord.builder().documentId(child.documentId()).parentDocumentId(parentDocumentId)
+            .insertedDate(child.insertedDate()).belongsToDocumentId(parentDocumentId)
+            .timeToLive(child.timeToLive()).userId(child.userId()).build(siteId);
+
+    return new DocumentRecordSet(link, null, null, null);
+  }
+
+  private String getChildTimeToLive(final DocumentRecordSet childDoc,
+      final SaveDocumentOptions options) {
+    String childTimeToLive = childDoc.documentRecord().timeToLive();
+    return childTimeToLive != null ? childTimeToLive : options.timeToLive();
   }
 
   private void removePreviousPath(final String siteId, final DocumentRecord previous,
-      final WriteRequestBuilder txWriter) {
+      final WriteRequestOperations writeOperations) {
     if (previous != null) {
       List<FolderIndexRecord> folderIndexRecords =
           new PathToFolderIndexRecords(dbService).apply(siteId, previous.path());
       FolderIndexRecord fileRecord = last(folderIndexRecords);
       if (fileRecord != null) {
         var key = fileRecord.buildKey(siteId).key();
-        if (!txWriter.exists(key)) {
-          txWriter.appendDelete(this.documentTableName, key);
+        if (!writeOperations.transactionExists(key)) {
+          writeOperations.appendTransactionDelete(this.documentTableName, key);
         }
       }
     }
@@ -1850,13 +1858,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       builder.appends(this.documentTableName, list);
 
+      // delete old composite keys
+      deleteDocumentAttributes(builder, siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
+
       if (builder.batchWriteItem(this.dbClient)) {
-        // delete old composite keys
-        deleteDocumentAttributes(siteId, document,
+        saveDocumentInterceptor(siteId, document, Collections.emptyMap(), Collections.emptyMap(),
+            tx);
+        deleteDocumentAttributesInterceptor(siteId, document,
             (Collection<DocumentAttributeRecord>) tx.deletes());
       }
-
-      saveDocumentInterceptor(siteId, document, Collections.emptyMap(), Collections.emptyMap(), tx);
     }
   }
 
@@ -2122,65 +2132,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     save(pkvalues);
 
     return format;
-  }
-
-  /**
-   * Generate Tags for {@link DocumentTag}.
-   *
-   * @param doc {@link DynamicDocumentItem}
-   * @param date {@link Date}
-   * @param username {@link String}
-   * @return {@link List} {@link DocumentTag}
-   */
-  private List<DocumentTag> saveDocumentItemGenerateTags(final DynamicDocumentItem doc,
-      final Date date, final String username) {
-
-    List<DynamicObject> doctags = doc.getList("tags");
-
-    return doctags.stream().filter(t -> t.containsKey("key")).map(t -> {
-      DynamicObjectToDocumentTag transform = new DynamicObjectToDocumentTag(this.df);
-      DocumentTag tag = transform.apply(t);
-      tag.setInsertedDate(date);
-      tag.setUserId(username);
-      tag.setDocumentId(doc.getDocumentId());
-      return tag;
-    }).collect(Collectors.toList());
-  }
-
-  @Override
-  public DocumentItem saveDocumentItemWithTag(final String siteId, final DynamicDocumentItem doc)
-      throws ValidationException {
-
-    final Date date = new Date();
-    String username = doc.getUserId();
-    String documentId = resetDatabaseKey(siteId, doc.getDocumentId());
-
-    DocumentItem item = new DocumentItemDynamoDb(documentId, null, username);
-
-    String path = doc.getPath();
-
-    item.setDocumentId(doc.getDocumentId());
-    item.setPath(path);
-    item.setDeepLinkPath(doc.getDeepLinkPath());
-    item.setContentType(doc.getContentType());
-    item.setChecksum(doc.getChecksum());
-    item.setContentLength(doc.getContentLength());
-    item.setUserId(doc.getUserId());
-    item.setBelongsToDocumentId(doc.getBelongsToDocumentId());
-    item.setMetadata(doc.getMetadata());
-
-    List<DocumentTag> tags = saveDocumentItemGenerateTags(doc, date, username);
-    Collection<DocumentAttributeRecord> attributes = getDocumentAttributes(doc);
-
-    boolean saveGsi1 = doc.getBelongsToDocumentId() == null;
-    SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(saveGsi1)
-        .timeToLive(doc.getString("TimeToLive"));
-
-    saveDocument(null, siteId, item, tags, attributes, options);
-
-    saveChildDocuments(siteId, doc, item, date);
-
-    return item;
   }
 
   @Override

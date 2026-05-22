@@ -510,6 +510,11 @@ components:
           description: "List of document Metadata"
           items:
             $ref: "#/components/schemas/AddDocumentMetadata"
+        attributes:
+          type: array
+          description: "List of Attributes to add to document"
+          items:
+            $ref: "#/components/schemas/AddDocumentAttribute"
 
     #@overlay/match missing_ok=True
     ReindexTarget:

@@ -45,10 +45,11 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
@@ -163,7 +164,7 @@ public class DocumentTaggingAction implements DocumentAction {
 
     List<OpenAiChatCompletionsChoice> choices = response.choices();
 
-    Collection<DocumentTag> tags = new ArrayList<>();
+    Collection<DocumentTagRecord> tags = new ArrayList<>();
 
     for (OpenAiChatCompletionsChoice choice : choices) {
 
@@ -188,13 +189,20 @@ public class DocumentTaggingAction implements DocumentAction {
 
         if (!list.isEmpty()) {
 
-          DocumentTag tag = new DocumentTag(document.documentId(), e.getKey(),
+          DocumentTag docTag = new DocumentTag(document.documentId(), e.getKey(),
               list.get(0).toString(), new Date(), "System", DocumentTagType.USERDEFINED);
+          DocumentTagRecord tag =
+              DocumentTagRecord.builder().tag(docTag)
+                  .tagValue(list.size() > 1 ? null : docTag.getValue())
+                  .tagValues(list.size() > 1
+                      ? list.stream().map(Object::toString).collect(Collectors.toList())
+                      : null)
+                  .build(siteId).getFirst();
 
-          if (list.size() > 1) {
-            tag.setValue(null);
-            tag.setValues(list.stream().map(Object::toString).collect(Collectors.toList()));
-          }
+          // if (list.size() > 1) {
+          // tag.setValue(null);
+          // tag.setValues(list.stream().map(Object::toString).collect(Collectors.toList()));
+          // }
 
           tags.add(tag);
         }

@@ -21,15 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.ocr;
-
-import com.formkiq.graalvm.annotations.Reflectable;
-
-import java.util.List;
+package com.formkiq.stacks.dynamodb.documents;
 
 /**
- * Query object for AWS Textract.
+ * Discriminated union (oneOf) for attribute payloads.
  */
-@Reflectable
-public record AwsTextractQuery(String text, String alias, List<String> pages) {
+public sealed interface AddDocumentAttribute
+    permits AddDocumentAttributeStandard, AddDocumentAttributeClassification,
+    AddDocumentAttributeRelationship, AddDocumentAttributeEntity, AddDocumentAttributeEntities {
 }

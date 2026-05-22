@@ -49,15 +49,16 @@ public class PresignedUrlsToS3Bucket {
 
   /** {@link HttpClient}. */
   private final HttpClient http = HttpClient.newHttpClient();
-  /** {@link AddDocumentRequest}. */
-  private final AddDocumentRequest request;
+  /** {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}. */
+  private final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request;
 
   /**
    * constructor.
    * 
-   * @param addDocumentRequest {@link AddDocumentRequest}
+   * @param addDocumentRequest {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    */
-  public PresignedUrlsToS3Bucket(final AddDocumentRequest addDocumentRequest) {
+  public PresignedUrlsToS3Bucket(
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest addDocumentRequest) {
     this.request = addDocumentRequest;
   }
 
@@ -77,7 +78,8 @@ public class PresignedUrlsToS3Bucket {
 
       for (Map<String, Object> map : notNull(docs)) {
 
-        AddDocumentRequest childReq = this.request.getDocuments().get(i);
+        com.formkiq.stacks.dynamodb.documents.AddDocumentRequest childReq =
+            this.request.getDocuments().get(i);
         postContent(map, childReq);
 
         i++;
@@ -87,7 +89,8 @@ public class PresignedUrlsToS3Bucket {
     }
   }
 
-  private void postContent(final Map<String, Object> map, final AddDocumentRequest req)
+  private void postContent(final Map<String, Object> map,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest req)
       throws IOException, InterruptedException, URISyntaxException {
 
     String content = req.getContent();

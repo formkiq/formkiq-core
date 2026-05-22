@@ -24,19 +24,19 @@
 package com.formkiq.stacks.lambda.s3.actions;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
+import static com.formkiq.aws.dynamodb.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
+import static com.formkiq.aws.dynamodb.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
+import static com.formkiq.aws.dynamodb.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
+import static com.formkiq.aws.dynamodb.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
+import static com.formkiq.aws.dynamodb.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
 import java.io.IOException;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.ses.SesService;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.config.ConfigService;

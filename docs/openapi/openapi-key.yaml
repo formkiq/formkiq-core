@@ -9657,6 +9657,11 @@ components:
           description: List of document Metadata
           items:
             $ref: '#/components/schemas/AddDocumentMetadata'
+        attributes:
+          type: array
+          description: List of Attributes to add to document
+          items:
+            $ref: '#/components/schemas/AddDocumentAttribute'
     ReindexTarget:
       type: string
       description: Reindex object target
@@ -9789,6 +9794,11 @@ components:
         belongsToDocumentId:
           type: string
           description: Parent Document Identifier
+        attributes:
+          type: array
+          description: List of document attributes
+          items:
+            $ref: '#/components/schemas/DocumentAttribute'
     UpdateDocumentRequest:
       type: object
       properties:

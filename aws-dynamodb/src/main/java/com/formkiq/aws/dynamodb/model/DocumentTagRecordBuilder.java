@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.model;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 import java.util.ArrayList;
@@ -63,7 +64,9 @@ public class DocumentTagRecordBuilder
    *
    * @param id {@link String}
    * @return {@link DocumentTagRecordBuilder}
+   * @deprecated use {@link #document(DocumentArtifact)}
    */
+  @Deprecated
   public DocumentTagRecordBuilder artifactId(final String id) {
     this.artifactId = id;
     return this;
@@ -111,7 +114,7 @@ public class DocumentTagRecordBuilder
       throw new UnsupportedOperationException("Multiple Tag Keys found");
     }
 
-    return keys.size() == 1 ? keys.get(0).key() : null;
+    return keys.size() == 1 ? keys.getFirst().key() : null;
   }
 
   private DynamoDbKey buildKey(final String siteId, final String value, final int tagValueIndex) {
@@ -129,11 +132,25 @@ public class DocumentTagRecordBuilder
   }
 
   /**
+   * Set {@link DocumentArtifact}.
+   *
+   * @param document {@link DocumentArtifact}
+   * @return {@link DocumentTagRecordBuilder}
+   */
+  public DocumentTagRecordBuilder document(final DocumentArtifact document) {
+    this.documentId = document.documentId();
+    this.artifactId = document.artifactId();
+    return this;
+  }
+
+  /**
    * Set document id.
    *
    * @param id {@link String}
    * @return {@link DocumentTagRecordBuilder}
+   * @deprecated use {@link #document(DocumentArtifact)}
    */
+  @Deprecated
   public DocumentTagRecordBuilder documentId(final String id) {
     this.documentId = id;
     return this;
@@ -168,6 +185,17 @@ public class DocumentTagRecordBuilder
     this.insertedDate = tag.getInsertedDate();
     this.userId = tag.getUserId();
     this.type = tag.getType() != null ? tag.getType() : DocumentTagType.USERDEFINED;
+    return this;
+  }
+
+  public DocumentTagRecordBuilder tag(final DocumentTagRecord tag) {
+    this.documentId = tag.documentId();
+    this.tagKey = tag.tagKey();
+    this.tagValue = tag.tagValue();
+    this.tagValues = tag.tagValues();
+    this.insertedDate = tag.insertedDate();
+    this.userId = tag.userId();
+    this.type = tag.type() != null ? tag.type() : DocumentTagType.USERDEFINED;
     return this;
   }
 

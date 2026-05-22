@@ -191,12 +191,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, actions0.size());
-      assertEquals(DocumentActionType.FULLTEXT, actions0.get(0).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions0.get(0).getStatus());
+      assertEquals(DocumentActionType.FULLTEXT, actions0.getFirst().getType());
+      assertEquals(DocumentActionStatus.PENDING, actions0.getFirst().getStatus());
 
       assertEquals(1, actions1.size());
-      assertEquals(DocumentActionType.OCR, actions1.get(0).getType());
-      assertEquals(DocumentActionStatus.PENDING, actions1.get(0).getStatus());
+      assertEquals(DocumentActionType.OCR, actions1.getFirst().getType());
+      assertEquals(DocumentActionStatus.PENDING, actions1.getFirst().getStatus());
     }
   }
 
@@ -226,12 +226,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(1, documents.size());
-      assertNotNull(documents.get(0).getDocumentId());
-      assertNotNull(documents.get(0).getInsertedDate());
-      assertNotNull(documents.get(0).getLastModifiedDate());
-      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
-      assertNotNull(documents.get(0).getUserId());
-      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNotNull(documents.getFirst().getInsertedDate());
+      assertNotNull(documents.getFirst().getLastModifiedDate());
+      assertEquals(documents.getFirst().getInsertedDate(),
+          documents.getFirst().getLastModifiedDate());
+      assertNotNull(documents.getFirst().getUserId());
+      assertEquals("1000", String.valueOf(documents.getFirst().getContentLength()));
     }
   }
 
@@ -384,12 +385,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(1, documents.size());
-      assertNotNull(documents.get(0).getDocumentId());
-      assertNotNull(documents.get(0).getInsertedDate());
-      assertNotNull(documents.get(0).getLastModifiedDate());
-      assertEquals(documents.get(0).getInsertedDate(), documents.get(0).getLastModifiedDate());
-      assertNotNull(documents.get(0).getUserId());
-      assertEquals("1000", String.valueOf(documents.get(0).getContentLength()));
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNotNull(documents.getFirst().getInsertedDate());
+      assertNotNull(documents.getFirst().getLastModifiedDate());
+      assertEquals(documents.getFirst().getInsertedDate(),
+          documents.getFirst().getLastModifiedDate());
+      assertNotNull(documents.getFirst().getUserId());
+      assertEquals("1000", String.valueOf(documents.getFirst().getContentLength()));
     }
   }
 
@@ -420,11 +422,11 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(1, documents.size());
-      assertNotNull(documents.get(0).getDocumentId());
-      assertNull(documents.get(0).getInsertedDate());
-      assertNull(documents.get(0).getLastModifiedDate());
-      assertNull(documents.get(0).getUserId());
-      assertNull(documents.get(0).getContentLength());
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNull(documents.getFirst().getInsertedDate());
+      assertNull(documents.getFirst().getLastModifiedDate());
+      assertNull(documents.getFirst().getUserId());
+      assertNull(documents.getFirst().getContentLength());
     }
   }
 
@@ -613,18 +615,23 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testPost04() throws Exception {
-
     // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
 
       String content = "{\"firstName\": \"Jan\",\"lastName\": \"Doe\"}";
+      String attributeKey = "formType";
+      String attributeValue = "application";
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
 
       AddDocumentRequest req = new AddDocumentRequest()
           .addTagsItem(new AddDocumentTag().key("formName").value("Job Application Form"))
           .addDocumentsItem(new AddChildDocument().content(content).contentType("application/json")
-              .addTagsItem(new AddDocumentTag().key("formData")));
+              .addAttributesItem(new AddDocumentAttribute(
+                  new AddDocumentAttributeStandard().key(attributeKey).stringValue(attributeValue)))
+              .addTagsItem(new AddDocumentTag().key("formData").value("myvalue")));
 
       // when
       AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
@@ -635,29 +642,37 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       List<AddChildDocumentResponse> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
-      assertNull(documents.get(0).getUploadUrl());
+      assertNull(documents.getFirst().getUploadUrl());
 
       String documentId = response.getDocumentId();
-      String childDocumentId = documents.get(0).getDocumentId();
+      String childDocumentId = documents.getFirst().getDocumentId();
       assertNotNull(childDocumentId);
 
       List<ChildDocument> documents1 =
           notNull(this.documentsApi.getDocument(documentId, siteId, null, null).getDocuments());
       assertEquals(1, documents1.size());
-      assertEquals(childDocumentId, documents1.get(0).getDocumentId());
-      assertEquals("application/json", documents1.get(0).getContentType());
-      assertEquals(documentId, documents1.get(0).getBelongsToDocumentId());
+      assertEquals(childDocumentId, documents1.getFirst().getDocumentId());
+      assertEquals("application/json", documents1.getFirst().getContentType());
+      assertEquals(documentId, documents1.getFirst().getBelongsToDocumentId());
 
       List<DocumentTag> tags = notNull(
           this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags());
 
       assertEquals(1, tags.size());
-      assertEquals("formName", tags.get(0).getKey());
-      assertEquals("Job Application Form", tags.get(0).getValue());
+      assertEquals("formName", tags.getFirst().getKey());
+      assertEquals("Job Application Form", tags.getFirst().getValue());
 
       tags = notNull(this.tagsApi
           .getDocumentTags(childDocumentId, siteId, null, null, null, null, null).getTags());
-      assertEquals(0, tags.size());
+      assertEquals(1, tags.size());
+      assertEquals("formData", tags.getFirst().getKey());
+      assertEquals("myvalue", tags.getFirst().getValue());
+
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(childDocumentId, siteId, null, null, null).getAttributes());
+      assertEquals(1, attributes.size());
+      assertEquals(attributeKey, attributes.getFirst().getKey());
+      assertEquals(attributeValue, attributes.getFirst().getStringValue());
 
       GetDocumentResponse childDocument =
           this.documentsApi.getDocument(childDocumentId, null, null, null);
@@ -1137,8 +1152,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       final int expected = 1;
       assertEquals(expected, attributes.size());
-      assertEquals(attributeKey, attributes.get(0).getKey());
-      assertEquals(value, attributes.get(0).getStringValue());
+      assertEquals(attributeKey, attributes.getFirst().getKey());
+      assertEquals(value, attributes.getFirst().getStringValue());
     }
   }
 
@@ -1339,11 +1354,11 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(artifacts.response());
       List<Document> documents = notNull(artifacts.response().getDocuments());
       assertEquals(1, documents.size());
-      assertEquals(path1, documents.get(0).getPath());
+      assertEquals(path1, documents.getFirst().getPath());
 
       var baseFolderDocuments = getFilesInFolder(siteId, folder0);
       assertEquals(1, baseFolderDocuments.size());
-      assertEquals(path0, baseFolderDocuments.get(0).getPath());
+      assertEquals(path0, baseFolderDocuments.getFirst().getPath());
 
       var artifactFolderDocuments = getFilesInFolder(siteId, folder1);
       assertTrue(artifactFolderDocuments.isEmpty());

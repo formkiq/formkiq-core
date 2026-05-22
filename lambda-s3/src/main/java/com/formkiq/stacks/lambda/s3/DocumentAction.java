@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ValidationException;
 

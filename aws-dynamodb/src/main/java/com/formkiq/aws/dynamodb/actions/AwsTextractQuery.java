@@ -21,31 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.aws.dynamodb.actions;
+
+import com.formkiq.graalvm.annotations.Reflectable;
+
+import java.util.List;
 
 /**
- * Action Parameters.
+ * Query object for AWS Textract.
  */
-public interface ActionParameters {
-
-  /** Notification To Parameter. */
-  String PARAMETER_NOTIFICATION_TO_CC = "notificationToCc";
-
-  /** Notification To Parameter. */
-  String PARAMETER_NOTIFICATION_TO_BCC = "notificationToBcc";
-
-  /** Notification Type Parameter. */
-  String PARAMETER_NOTIFICATION_TYPE = "notificationType";
-
-  /** Notification Subject Parameter. */
-  String PARAMETER_NOTIFICATION_SUBJECT = "notificationSubject";
-
-  /** Notification Text Parameter. */
-  String PARAMETER_NOTIFICATION_TEXT = "notificationText";
-
-  /** Notification Html Parameter. */
-  String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
-
-  /** Model Id Parameter. */
-  String PARAMETER_MODEL_ID = "modelId";
+@Reflectable
+public record AwsTextractQuery(String text, String alias, List<String> pages) {
 }

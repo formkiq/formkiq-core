@@ -23,6 +23,8 @@
  */
 package com.formkiq.module.actions;
 
+import com.formkiq.aws.dynamodb.actions.Action;
+
 import java.io.Serializable;
 import java.util.Comparator;
 

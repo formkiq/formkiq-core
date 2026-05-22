@@ -73,10 +73,11 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.sns.SnsService;
-import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
@@ -116,9 +117,9 @@ import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
@@ -325,11 +326,11 @@ public class StagingS3CreateTest implements DbKeys {
           Optional<Parameter> p = httpRequest.getQueryStringParameterList().stream()
               .filter(s -> "siteId".equals(s.getName().getValue())).findFirst();
           if (p.isPresent()) {
-            siteId = p.get().getValues().get(0).getValue();
+            siteId = p.get().getValues().getFirst().getValue();
           }
 
-          Collection<DocumentTag> tags =
-              List.of(new DocumentTag(documentId, "test", "novalue", new Date(), "joe"));
+          var tags = DocumentTagRecord.builder().documentId(documentId).tagKey("test")
+              .tagValue("novalue").userId("joe").build(siteId);
           service.addTags(siteId, document, tags, null);
 
           return HttpResponse.response("{}");
@@ -799,7 +800,7 @@ public class StagingS3CreateTest implements DbKeys {
     // then
     List<S3Object> staging = s3.listObjects(STAGING_BUCKET, null).contents();
     assertEquals(1, staging.size());
-    assertEquals(key, staging.get(0).key());
+    assertEquals(key, staging.getFirst().key());
 
     List<S3Object> docs = s3.listObjects(DOCUMENTS_BUCKET, null).contents();
     assertEquals(0, docs.size());
@@ -837,7 +838,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertTrue(s3.getObjectMetadata(STAGING_BUCKET, s3Key, null).isObjectExists());
       ReceiveMessageResponse response = getReceiveMessageResponse(queueUrl);
       assertEquals(1, response.messages().size());
-      Message msg = response.messages().get(0);
+      Message msg = response.messages().getFirst();
       Map<String, Object> json = GSON.fromJson(msg.body(), Map.class);
       json = GSON.fromJson((String) json.get("Message"), Map.class);
       assertEquals(siteId, json.get("siteId"));
@@ -984,27 +985,27 @@ public class StagingS3CreateTest implements DbKeys {
 
       DocumentArtifact document0 = new DocumentArtifact(documentId0, null);
       DocumentItem di =
-          service.findDocument(siteId, document0, true, null, MAX_RESULTS).getResults().get(0);
+          service.findDocument(siteId, document0, true, null, MAX_RESULTS).getResults().getFirst();
       assertNull(di.getContentType());
       verifyBelongsToDocument(di, Arrays.asList(documentId1, documentId2));
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, document0, null, MAX_RESULTS).getResults();
       assertEquals(1, tags.size());
-      assertEquals("formName", tags.get(0).getKey());
-      assertEquals("Job Application Form", tags.get(0).getValue());
+      assertEquals("formName", tags.getFirst().getKey());
+      assertEquals("Job Application Form", tags.getFirst().getValue());
 
       String k = createDatabaseKey(siteId, di.getDocumentId());
       assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
 
       DocumentArtifact document1 = new DocumentArtifact(documentId1, null);
-      di = service.findDocument(siteId, document1, true, null, MAX_RESULTS).getResults().get(0);
+      di = service.findDocument(siteId, document1, true, null, MAX_RESULTS).getResults().getFirst();
       assertEquals("application/json", di.getContentType());
       assertEquals(documentId0, di.getBelongsToDocumentId());
       tags = service.findDocumentTags(siteId, document1, null, MAX_RESULTS).getResults();
       assertEquals(1, tags.size());
-      assertEquals("formData", tags.get(0).getKey());
-      assertEquals("", tags.get(0).getValue());
+      assertEquals("formData", tags.getFirst().getKey());
+      assertEquals("", tags.getFirst().getValue());
 
       k = createDatabaseKey(siteId, di.getDocumentId());
       assertEquals("application/json",
@@ -1036,7 +1037,7 @@ public class StagingS3CreateTest implements DbKeys {
   void testFkB64Extension06() throws IOException {
     String timeToLive = "1612061365";
     DynamicDocumentItem item = createDocumentItem();
-    item.put("TimeToLive", timeToLive);
+    item.put("timeToLive", timeToLive);
 
     item.put("tags",
         List.of(Map.of("documentId", item.getDocumentId(), "key", "category", "value", "person",
@@ -1190,7 +1191,7 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
-   * Test .fkb64 file with tagschema & without composite key.
+   * Test .fkb64 file with tags.
    *
    * @throws IOException IOException
    */
@@ -1236,7 +1237,7 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("joesmith", item.userId());
 
       int i = 0;
-      final int count = 3;
+      final int count = 2;
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, document, null, MAX_RESULTS).getResults();
       assertEquals(count, tags.size());
@@ -1244,11 +1245,8 @@ public class StagingS3CreateTest implements DbKeys {
       assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "category", "value",
           "document", "type", "USERDEFINED", "userId", "joesmith"));
 
-      assertEqualsTag(tags.get(i++), Map.of("documentId", documentId, "key", "status", "values",
+      assertEqualsTag(tags.get(i), Map.of("documentId", documentId, "key", "status", "values",
           Arrays.asList("active", "notactive"), "type", "USERDEFINED", "userId", "joesmith"));
-
-      assertEqualsTag(tags.get(i), Map.of("documentId", documentId, "key", "test", "value",
-          "novalue", "type", "USERDEFINED", "userId", "joe"));
     }
   }
 
@@ -1296,9 +1294,9 @@ public class StagingS3CreateTest implements DbKeys {
 
       List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(2, actions.size());
-      assertEquals("OCR", actions.get(0).type().name());
-      assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("System", actions.get(0).userId());
+      assertEquals("OCR", actions.getFirst().type().name());
+      assertEquals("PENDING", actions.getFirst().status().name());
+      assertEquals("joesmith", actions.get(0).userId());
       assertNotNull(actions.get(0).insertedDate());
 
       assertEquals("WEBHOOK", actions.get(1).type().name());
@@ -1322,9 +1320,9 @@ public class StagingS3CreateTest implements DbKeys {
       // then
       actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals("OCR", actions.get(0).type().name());
-      assertEquals("PENDING", actions.get(0).status().name());
-      assertEquals("System", actions.get(0).userId());
+      assertEquals("OCR", actions.getFirst().type().name());
+      assertEquals("PENDING", actions.getFirst().status().name());
+      assertEquals("joesmith", actions.getFirst().userId());
     }
   }
 
@@ -1442,7 +1440,7 @@ public class StagingS3CreateTest implements DbKeys {
       final int count = 2;
       DocumentRecord item = service.findDocument(siteId, document);
 
-      assertEquals(userId, item.userId());
+      assertEquals("joe", item.userId());
       assertEquals(contentLength, item.contentLength().longValue());
       assertNotEquals(item.insertedDate(), item.lastModifiedDate());
 
@@ -1685,7 +1683,7 @@ public class StagingS3CreateTest implements DbKeys {
           service.findDocumentAttributes(siteId, document, null, limit);
       assertEquals(1, documentAttributes.getResults().size());
 
-      DocumentAttributeRecord r = documentAttributes.getResults().get(0);
+      DocumentAttributeRecord r = documentAttributes.getResults().getFirst();
       assertEquals("security", r.getKey());
       assertEquals(DocumentAttributeValueType.STRING, r.getValueType());
       assertEquals("confidential", r.getStringValue());

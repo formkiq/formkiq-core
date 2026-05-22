@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.aws.dynamodb.actions;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
@@ -42,12 +42,6 @@ import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_HTML;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_SUBJECT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TEXT;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_BCC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TO_CC;
-import static com.formkiq.module.actions.ActionParameters.PARAMETER_NOTIFICATION_TYPE;
 
 /**
  * 
@@ -181,26 +175,26 @@ public enum ActionType {
         vb.addError("parameters.notificationEmail", "notificationEmail is not configured");
       } else {
 
-        for (String parameter : Arrays.asList(PARAMETER_NOTIFICATION_TYPE,
-            PARAMETER_NOTIFICATION_SUBJECT)) {
+        for (String parameter : Arrays.asList(ActionParameters.PARAMETER_NOTIFICATION_TYPE,
+            ActionParameters.PARAMETER_NOTIFICATION_SUBJECT)) {
           if (isMissingValue(parameters, parameter)) {
             vb.addError("parameters." + parameter,
                 "action '" + parameter + "' parameter is required");
           }
         }
 
-        if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_CC)
-            && isMissingValue(parameters, PARAMETER_NOTIFICATION_TO_BCC)) {
-          vb.addError("parameters." + PARAMETER_NOTIFICATION_TO_CC,
-              "action '" + PARAMETER_NOTIFICATION_TO_CC + "' or '" + PARAMETER_NOTIFICATION_TO_BCC
-                  + "' is required");
+        if (isMissingValue(parameters, ActionParameters.PARAMETER_NOTIFICATION_TO_CC)
+            && isMissingValue(parameters, ActionParameters.PARAMETER_NOTIFICATION_TO_BCC)) {
+          vb.addError("parameters." + ActionParameters.PARAMETER_NOTIFICATION_TO_CC,
+              "action '" + ActionParameters.PARAMETER_NOTIFICATION_TO_CC + "' or '"
+                  + ActionParameters.PARAMETER_NOTIFICATION_TO_BCC + "' is required");
         }
 
-        if (isMissingValue(parameters, PARAMETER_NOTIFICATION_TEXT)
-            && isMissingValue(parameters, PARAMETER_NOTIFICATION_HTML)) {
-          vb.addError("parameters." + PARAMETER_NOTIFICATION_TEXT,
-              "action '" + PARAMETER_NOTIFICATION_TEXT + "' or '" + PARAMETER_NOTIFICATION_HTML
-                  + "' is required");
+        if (isMissingValue(parameters, ActionParameters.PARAMETER_NOTIFICATION_TEXT)
+            && isMissingValue(parameters, ActionParameters.PARAMETER_NOTIFICATION_HTML)) {
+          vb.addError("parameters." + ActionParameters.PARAMETER_NOTIFICATION_TEXT,
+              "action '" + ActionParameters.PARAMETER_NOTIFICATION_TEXT + "' or '"
+                  + ActionParameters.PARAMETER_NOTIFICATION_HTML + "' is required");
         }
       }
     }

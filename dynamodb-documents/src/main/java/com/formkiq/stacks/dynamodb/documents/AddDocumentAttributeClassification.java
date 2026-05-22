@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
+
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Discriminated union (oneOf) for attribute payloads.
+ * Classification attribute.
  */
-public sealed interface AddDocumentAttribute
-    permits AddDocumentAttributeStandard, AddDocumentAttributeClassification,
-    AddDocumentAttributeRelationship, AddDocumentAttributeEntity, AddDocumentAttributeEntities {
+@Reflectable
+public record AddDocumentAttributeClassification(
+    String classificationId) implements AddDocumentAttribute {
 }

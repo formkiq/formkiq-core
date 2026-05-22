@@ -21,18 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.aws.dynamodb.actions;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-import java.util.List;
 
-/**
- * Standard key/value attribute. Only one of the value forms is typically used by the server, but
- * the model allows any combination to be present.
- */
 @Reflectable
-public record AddDocumentAttributeStandard(String key, String stringValue,
-    List<String> stringValues, Double numberValue, List<Double> numberValues,
-    Boolean booleanValue) implements AddDocumentAttribute {
+public record AddAction(ActionType type, AddActionParameters parameters, String queueId) {
 }

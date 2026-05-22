@@ -40,17 +40,18 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -128,7 +129,7 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
 
       List<DynamicObject> metadata = resp.getList("metadata");
       assertEquals(1, metadata.size());
-      assertEquals("{value=person, key=category}", metadata.get(0).toString());
+      assertEquals("{value=person, key=category}", metadata.getFirst().toString());
 
       assertEquals(resp.get("insertedDate"), resp.get("lastModifiedDate"));
       assertNull(resp.get("next"));
@@ -229,18 +230,26 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
   @Test
   public void testHandleGetRequest06() throws Exception {
     // given
-    Date date = new Date();
     String documentId0 = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
     String documentId1 = ID.uuid();
     String userId = "jsmith";
 
-    DocumentItem item = new DocumentItemDynamoDb(documentId0, date, userId);
-    DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
+    DocumentRecord documentRecord =
+        DocumentRecord.builder().documentId(documentId0).userId(userId).build((String) null);
 
-    DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-    doc.put("documents", List.of(new DocumentItemToDynamicDocumentItem().apply(citem)));
+    // DocumentItem item = new DocumentItemDynamoDb(documentId0, date, userId);
+    // DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
+    DocumentRecord cdocumentRecord = DocumentRecord.builder().belongsToDocumentId(documentId0)
+        .documentId(documentId1).userId(userId).build((String) null);
+    DocumentRecordSet child = new DocumentRecordSet(cdocumentRecord, null, null, null);
 
-    getDocumentService().saveDocumentItemWithTag(null, doc);
+    // DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
+    // doc.put("documents", List.of(new DocumentItemToDynamicDocumentItem().apply(citem)));
+
+    // getDocumentService().saveDocumentItemWithTag(null, doc);
+    getDocumentService().saveDocument(null,
+        new DocumentRecordSet(documentRecord, null, null, List.of(child)),
+        new SaveDocumentOptions());
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
 
@@ -267,11 +276,11 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     List<Map<String, Object>> children = (List<Map<String, Object>>) resp.get("documents");
     assertEquals(1, children.size());
 
-    assertEquals(documentId1, children.get(0).get("documentId"));
-    assertEquals(userId, children.get(0).get("userId"));
-    assertNotNull(children.get(0).get("belongsToDocumentId"));
-    assertNotNull(children.get(0).get("insertedDate"));
-    assertNull(children.get(0).get("siteId"));
+    assertEquals(documentId1, children.getFirst().get("documentId"));
+    assertEquals(userId, children.getFirst().get("userId"));
+    assertNotNull(children.getFirst().get("belongsToDocumentId"));
+    assertNotNull(children.getFirst().get("insertedDate"));
+    assertNull(children.getFirst().get("siteId"));
   }
 
   /**

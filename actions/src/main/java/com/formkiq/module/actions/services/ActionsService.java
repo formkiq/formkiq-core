@@ -29,9 +29,9 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**

@@ -25,6 +25,8 @@ package com.formkiq.module.ocr;
 
 import java.util.Collections;
 import java.util.List;
+
+import com.formkiq.aws.dynamodb.actions.AwsTextractQuery;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
@@ -39,8 +41,8 @@ public class OcrRequest {
   private boolean addPdfDetectedCharactersAsText = false;
   /** {@link String}. */
   private String ocrEngine;
-  /** {@link OcrOutputType}. */
-  private OcrOutputType ocrOutputType;
+  /** {@link com.formkiq.aws.dynamodb.ocr.OcrOutputType}. */
+  private com.formkiq.aws.dynamodb.ocr.OcrOutputType ocrOutputType;
   /** Number of OCR Pages. */
   private String ocrNumberOfPages;
   /** Parse Types. */
@@ -74,11 +76,11 @@ public class OcrRequest {
   }
 
   /**
-   * Get {@link OcrOutputType}.
+   * Get {@link com.formkiq.aws.dynamodb.ocr.OcrOutputType}.
    * 
    * @return OcrOutputType
    */
-  public OcrOutputType getOcrOutputType() {
+  public com.formkiq.aws.dynamodb.ocr.OcrOutputType getOcrOutputType() {
     return this.ocrOutputType;
   }
 
@@ -143,10 +145,10 @@ public class OcrRequest {
   /**
    * Set ocrExportToCsv.
    * 
-   * @param outputType {@link OcrOutputType}
+   * @param outputType {@link com.formkiq.aws.dynamodb.ocr.OcrOutputType}
    * @return {@link OcrRequest}
    */
-  public OcrRequest setOcrOutputType(final OcrOutputType outputType) {
+  public OcrRequest setOcrOutputType(final com.formkiq.aws.dynamodb.ocr.OcrOutputType outputType) {
     this.ocrOutputType = outputType;
     return this;
   }

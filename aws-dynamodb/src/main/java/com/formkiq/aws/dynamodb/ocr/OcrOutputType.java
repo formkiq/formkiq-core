@@ -21,14 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
-
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.ocr;
 
 /**
- * Classification attribute.
+ * Ocr Output Type.
  */
-@Reflectable
-public record AddDocumentAttributeClassification(
-    String classificationId) implements AddDocumentAttribute {
+public enum OcrOutputType {
+  /** CSV Output Format. */
+  CSV
 }

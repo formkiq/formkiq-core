@@ -21,82 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
 
-import java.util.List;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Add Document Tag.
+ * Entity reference for document entity attributes.
  */
 @Reflectable
-public class AddDocumentTag {
-
-  /** Document Tag Key. */
-  private String key;
-  /** Document Tag Value. */
-  private String value;
-  /** Document Tag Values. */
-  private List<String> values;
-
-  /**
-   * constructor.
-   */
-  public AddDocumentTag() {
-
-  }
-
-  /**
-   * Get Key.
-   * 
-   * @return {@link String}
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Get Tag Value.
-   * 
-   * @return {@link String}
-   */
-  public String getValue() {
-    return this.value;
-  }
-
-  /**
-   * Get Tag Values.
-   * 
-   * @return {@link List} {@link String}
-   */
-  public List<String> getValues() {
-    return this.values;
-  }
-
-  /**
-   * Set Tag Key.
-   * 
-   * @param tagKey {@link String}
-   */
-  public void setKey(final String tagKey) {
-    this.key = tagKey;
-  }
-
-  /**
-   * Set Tag Value.
-   * 
-   * @param tagValue {@link String}
-   */
-  public void setValue(final String tagValue) {
-    this.value = tagValue;
-  }
-
-  /**
-   * Set Tag Values.
-   * 
-   * @param tagValues {@link List} {@link String}
-   */
-  public void setValues(final List<String> tagValues) {
-    this.values = tagValues;
-  }
+public record AddDocumentAttributeEntityValue(String entityTypeId, String entityId,
+    EntityTypeNamespace namespace) {
 }

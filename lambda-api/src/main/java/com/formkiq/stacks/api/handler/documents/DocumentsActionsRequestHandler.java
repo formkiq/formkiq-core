@@ -42,7 +42,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -136,8 +136,9 @@ public class DocumentsActionsRequestHandler
     AddDocumentActionsRequest body =
         JsonToObject.fromJson(awsservice, event, AddDocumentActionsRequest.class);
 
-    List<Action> actions = body.actions().stream()
-        .map(a -> new AddActionsToAction().apply(siteId, document, a)).toList();
+    List<Action> actions = body.actions().stream().map(
+        a -> new com.formkiq.aws.dynamodb.actions.AddActionsToAction().apply(siteId, document, a))
+        .toList();
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
     validateActions(awsservice, config, siteId, actions);

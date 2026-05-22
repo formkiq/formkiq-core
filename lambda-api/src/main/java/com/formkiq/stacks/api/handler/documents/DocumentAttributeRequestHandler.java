@@ -58,6 +58,8 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeStandard;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeToDocumentAttributeRecord;
 import com.formkiq.validation.ValidationException;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/attributes/{attributeKey}". */
@@ -212,8 +214,9 @@ public class DocumentAttributeRequestHandler
     request.validate();
 
     AddDocumentAttributeValue a = request.attribute();
-    AddDocumentAttribute addAttribute = new AddDocumentAttributeStandard(attributeKey,
-        a.stringValue(), a.stringValues(), a.numberValue(), a.numberValues(), a.booleanValue());
+    com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute addAttribute =
+        new AddDocumentAttributeStandard(attributeKey, a.stringValue(), a.stringValues(),
+            a.numberValue(), a.numberValues(), a.booleanValue());
 
     return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
         DocumentArtifact.of(documentId, artifactId)).apply(addAttribute);

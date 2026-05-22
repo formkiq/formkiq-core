@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.validation.ValidationChecks;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * {@link BiFunction} that converts a {@link DocumentItem} into a {@link DocumentRecord}.
@@ -40,29 +41,27 @@ import java.util.function.BiFunction;
  * consistent PK/SK/GSI logic.
  */
 public class DocumentItemToDocumentRecordBuilder
-    implements BiFunction<String, DocumentItem, DocumentRecordBuilder> {
+    implements Function<DocumentItem, DocumentRecordBuilder> {
 
   /**
    * Convert a {@link DocumentItem} into a {@link DocumentRecord}.
    *
-   * @param parentDocumentId the parent document id
    * @param item the source document item
    * @return a new {@link DocumentRecordBuilder}
    * @throws NullPointerException if {@code siteId} or {@code item} is null
    */
-  public DocumentRecordBuilder apply(final String parentDocumentId, final DocumentItem item) {
+  public DocumentRecordBuilder apply(final DocumentItem item) {
 
     ValidationChecks.checkNotNull("item", item);
     ValidationChecks.checkNotNull("documentId", item.getDocumentId());
 
-    return DocumentRecord.builder().parentDocumentId(parentDocumentId)
-        .documentId(item.getDocumentId()).artifactId(item.getArtifactId())
-        .belongsToDocumentId(item.getBelongsToDocumentId()).path(item.getPath())
-        .deepLinkPath(item.getDeepLinkPath()).contentType(item.getContentType())
-        .contentLength(item.getContentLength()).checksum(item.getChecksum())
-        .checksumType(item.getChecksumType()).s3version(item.getS3version())
-        .userId(item.getUserId()).version(item.getVersion()).width(item.getWidth())
-        .height(item.getHeight()).timeToLive(item.getTimeToLive())
+    return DocumentRecord.builder().documentId(item.getDocumentId())
+        .artifactId(item.getArtifactId()).belongsToDocumentId(item.getBelongsToDocumentId())
+        .path(item.getPath()).deepLinkPath(item.getDeepLinkPath())
+        .contentType(item.getContentType()).contentLength(item.getContentLength())
+        .checksum(item.getChecksum()).checksumType(item.getChecksumType())
+        .s3version(item.getS3version()).userId(item.getUserId()).version(item.getVersion())
+        .width(item.getWidth()).height(item.getHeight()).timeToLive(item.getTimeToLive())
         .insertedDate(item.getInsertedDate()).lastModifiedDate(item.getLastModifiedDate())
         .metadata(item.getMetadata());
   }
