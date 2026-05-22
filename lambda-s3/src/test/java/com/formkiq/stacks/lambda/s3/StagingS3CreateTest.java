@@ -781,6 +781,46 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   /**
+   * S3 Object Create Event Unit Test where filename is uploaded twice.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testCopyFile04() throws Exception {
+    final String path = "something/where/test.txt";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      String key = siteId + "/" + path;
+      Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event1.json", UUID1, key);
+
+      s3.putObject(STAGING_BUCKET, key, "first".getBytes(UTF_8), "text/plain");
+      handleRequest(map);
+
+      Map<String, Object> index = folderIndexProcesor.getIndex(siteId, path);
+      String documentId = (String) index.get("documentId");
+
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentRecord item = service.findDocument(siteId, document);
+      assertNotNull(item);
+      assertEquals(item.insertedDate(), item.lastModifiedDate());
+
+      TimeUnit.SECONDS.sleep(1);
+
+      s3.putObject(STAGING_BUCKET, key, "second".getBytes(UTF_8), "text/plain");
+      handleRequest(map);
+
+      Map<String, Object> updatedIndex = folderIndexProcesor.getIndex(siteId, path);
+      assertEquals(documentId, updatedIndex.get("documentId"));
+      assertEquals("second",
+          s3.getContentAsString(DOCUMENTS_BUCKET, createS3Key(siteId, documentId, null), null));
+
+      item = service.findDocument(siteId, document);
+      assertNotEquals(item.insertedDate(), item.lastModifiedDate());
+    }
+  }
+
+  /**
    * Create folder.
    *
    * @throws Exception Exception

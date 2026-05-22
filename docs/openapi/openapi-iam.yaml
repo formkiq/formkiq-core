@@ -2220,6 +2220,37 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+  /documents/{documentId}/ai/prompts:
+    get:
+      operationId: GetDocumentAiPromptsResults
+      summary: Get document AI results from LLM prompts
+      description: Retrieve document AI results from LLM prompts; available as an Add-On Module
+      tags:
+      - Intelligent Document Processing
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentAiPromptsResultsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
   /documents/{documentId}/ai/prompts/{llmPromptEntityName}:
     get:
       operationId: GetDocumentAiPromptResults
@@ -10497,6 +10528,39 @@ components:
           description: List of document AI prompt result records
           items:
             $ref: '#/components/schemas/DocumentAiPromptResult'
+    GetDocumentAiPromptsResultsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        aiPromptResults:
+          type: array
+          description: List of document AI prompt result records
+          items:
+            $ref: '#/components/schemas/DocumentAiPromptNamedResult'
+    DocumentAiPromptNamedResult:
+      type: object
+      required:
+      - llmPromptEntityName
+      properties:
+        llmPromptEntityName:
+          type: string
+          description: Name of the LLM Prompt Entity
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        content:
+          type: string
+          description: Result content
+        userId:
+          type: string
+          description: UserId that created Result
+        values:
+          type: array
+          description: Document AI prompt values
+          items:
+            $ref: '#/components/schemas/DocumentAiPromptValue'
     DocumentAiPromptResult:
       type: object
       properties:
