@@ -442,7 +442,6 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       if (isUuid(documentId)) {
         request.setDocumentId(documentId);
       } else {
-        request.setDocumentId(ID.uuid());
         request.setPath(documentId);
       }
     }

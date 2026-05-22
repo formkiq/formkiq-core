@@ -524,12 +524,13 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
   }
 
-  private void waitForText(final String documentId) {
+  private void waitForText(final String documentId) throws InterruptedException {
     while (true) {
       String txt = getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null);
       if ("this is a another test".equals(txt)) {
         break;
       }
+      TimeUnit.SECONDS.sleep(1);
     }
   }
 

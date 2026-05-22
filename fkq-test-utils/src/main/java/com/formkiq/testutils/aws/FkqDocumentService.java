@@ -65,9 +65,9 @@ import com.formkiq.client.model.GetDocumentTagResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.GetDocumentVersionsResponse;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
-import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
+import com.formkiq.testutils.api.documents.WaitForDocumentContentRequestBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -619,29 +619,8 @@ public class FkqDocumentService {
       final String siteId, final String documentId, final String versionKey, final String content)
       throws InterruptedException, ApiException {
 
-    while (true) {
-
-      var getContent = new GetDocumentContentRequestBuilder(documentId).versionKey(versionKey)
-          .submit(client, siteId);
-
-      if (!getContent.isError()) {
-        GetDocumentContentResponse response = getContent.response();
-
-        if (content != null && content.equals(response.getContent())) {
-          return response;
-        }
-
-        if (content == null) {
-          return response;
-        }
-      }
-
-      if (getContent.is5XX()) {
-        throw getContent.exception();
-      }
-
-      TimeUnit.SECONDS.sleep(1);
-    }
+    return new WaitForDocumentContentRequestBuilder(documentId).versionKey(versionKey)
+        .content(content).waitFor(client, siteId);
   }
 
   /**
