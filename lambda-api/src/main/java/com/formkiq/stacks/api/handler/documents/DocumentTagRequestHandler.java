@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -190,8 +191,11 @@ public class DocumentTagRequestHandler
     List<DocumentTag> tags = new ArrayList<>(List.of(tag));
 
     validateTags(tags);
+    List<DocumentTagRecord> tagRecords = tags.stream().flatMap(
+        t -> DocumentTagRecord.builder().tag(t).document(documentArtifact).build(siteId).stream())
+        .toList();
 
-    documentService.addTags(siteId, documentArtifact, tags, null);
+    documentService.addTags(siteId, documentArtifact, tagRecords, null);
 
     return ApiRequestHandlerResponse.builder().ok()
         .body("message", "Updated tag '" + tagKey + "' on document '" + documentId + "'.").build();

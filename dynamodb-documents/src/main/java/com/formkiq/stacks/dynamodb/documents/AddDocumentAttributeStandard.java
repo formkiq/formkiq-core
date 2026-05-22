@@ -21,12 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.ocr;
+package com.formkiq.stacks.dynamodb.documents;
+
+import com.formkiq.graalvm.annotations.Reflectable;
+
+import java.util.List;
 
 /**
- * Ocr Output Type.
+ * Standard key/value attribute. Only one of the value forms is typically used by the server, but
+ * the model allows any combination to be present.
  */
-public enum OcrOutputType {
-  /** CSV Output Format. */
-  CSV
+@Reflectable
+public record AddDocumentAttributeStandard(String key, String stringValue,
+    List<String> stringValues, Double numberValue, List<Double> numberValues,
+    Boolean booleanValue) implements AddDocumentAttribute {
 }

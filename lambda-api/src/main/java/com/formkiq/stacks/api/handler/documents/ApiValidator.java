@@ -24,8 +24,8 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;

@@ -25,9 +25,10 @@ package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.AddAction;
 
 import java.util.function.BiFunction;
 

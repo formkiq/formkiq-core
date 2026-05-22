@@ -21,15 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
-
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.actions;
 
 /**
- * Entity reference for document entity attributes.
+ * Action Parameters.
  */
-@Reflectable
-public record AddDocumentAttributeEntityValue(String entityTypeId, String entityId,
-    EntityTypeNamespace namespace) {
+public interface ActionParameters {
+
+  /** Notification To Parameter. */
+  String PARAMETER_NOTIFICATION_TO_CC = "notificationToCc";
+
+  /** Notification To Parameter. */
+  String PARAMETER_NOTIFICATION_TO_BCC = "notificationToBcc";
+
+  /** Notification Type Parameter. */
+  String PARAMETER_NOTIFICATION_TYPE = "notificationType";
+
+  /** Notification Subject Parameter. */
+  String PARAMETER_NOTIFICATION_SUBJECT = "notificationSubject";
+
+  /** Notification Text Parameter. */
+  String PARAMETER_NOTIFICATION_TEXT = "notificationText";
+
+  /** Notification Html Parameter. */
+  String PARAMETER_NOTIFICATION_HTML = "notificationHtml";
+
+  /** Model Id Parameter. */
+  String PARAMETER_MODEL_ID = "modelId";
 }

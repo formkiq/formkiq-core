@@ -25,7 +25,7 @@ package com.formkiq.module.actions.services;
 
 import java.util.List;
 
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.validation.ValidationBuilder;
 
 /**

@@ -21,32 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.actions;
+package com.formkiq.stacks.dynamodb.documents;
+
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentRelationshipType;
 
 /**
- * 
- * Action Status.
- *
+ * Relationship to another document.
  */
-public enum ActionStatus {
-  /** Completed. */
-  COMPLETE,
-  /** FAILED. */
-  FAILED,
-  /** Failed Retry. */
-  FAILED_RETRY,
-  /** In Queue. */
-  IN_QUEUE,
-  /** In Progress. */
-  IN_PROGRESS,
-  /** Pending. */
-  PENDING,
-  /** Running. */
-  RUNNING,
-  /** Skipped. */
-  SKIPPED,
-  /** Max Retry Reachd. */
-  MAX_RETRIES_REACHED,
-  /** Waiting for Retry. */
-  WAITING_FOR_RETRY
+@Reflectable
+public record AddDocumentAttributeRelationship(String documentId, // required
+    DocumentRelationshipType relationship, // required
+    DocumentRelationshipType inverseRelationship // optional
+) implements AddDocumentAttribute {
 }

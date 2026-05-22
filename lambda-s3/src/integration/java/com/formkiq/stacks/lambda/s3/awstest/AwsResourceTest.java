@@ -28,7 +28,9 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -38,6 +40,7 @@ import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.AfterAll;
@@ -101,7 +104,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       final String event) {
     assertTrue(c.lambdaFunctionArn().contains("DocumentsS3Update"));
     assertEquals(1, c.events().size());
-    Event e = c.events().get(0);
+    Event e = c.events().getFirst();
     assertEquals(event, e.toString());
   }
 
@@ -130,7 +133,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     } while (receiveMessages.size() != 1);
 
-    Map<String, String> message = receiveMessages.get(0);
+    Map<String, String> message = receiveMessages.getFirst();
 
     assertNotNull(message.get("documentId"));
     assertNotNull(message.get("type"));
@@ -166,7 +169,7 @@ public class AwsResourceTest extends AbstractAwsTest {
   private void assertQueueConfigurations(final QueueConfiguration q) {
     assertTrue(q.queueArn().contains("DocumentsStagingQueue"));
     assertEquals(1, q.events().size());
-    Event e = q.events().get(0);
+    Event e = q.events().getFirst();
     assertEquals("s3:ObjectCreated:*", e.toString());
   }
 
@@ -262,33 +265,38 @@ public class AwsResourceTest extends AbstractAwsTest {
   public void testAddDeleteFile03() throws Exception {
     // given
     final int statusCode = 200;
-    HttpClient http = HttpClient.newHttpClient();
-    String key = ID.uuid();
+    try (HttpClient http = HttpClient.newHttpClient()) {
+      String key = ID.uuid();
 
-    String contentType = "text/plain";
-    String content = "test content";
+      String contentType = "text/plain";
+      String content = "test content";
 
-    DynamicDocumentItem doc = new DynamicDocumentItem(
-        Map.of("documentId", key, "insertedDate", new Date(), "userId", "joe"));
-    getDocumentService().saveDocumentItemWithTag(null, doc);
+      DocumentRecord document = DocumentRecord.builder().documentId(key).insertedDate(new Date())
+          .userId("joe").build((String) null);
+      DocumentRecordSet documentRecordSet = new DocumentRecordSet(document, null, null, null);
+      getDocumentService().saveDocument(null, documentRecordSet,
+          new SaveDocumentOptions().saveDocumentDate(true));
 
-    // when
-    URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
-        Duration.ofHours(1), null, null, Optional.empty(), null);
-    HttpResponse<String> put =
-        http.send(HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
-            .method("PUT", BodyPublishers.ofString(content)).build(), BodyHandlers.ofString());
+      // when
+      URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
+          Duration.ofHours(1), null, null, Optional.empty(), null);
+      HttpResponse<String> put =
+          http.send(
+              HttpRequest.newBuilder(url.toURI()).header("Content-Type", contentType)
+                  .method("PUT", BodyPublishers.ofString(content)).build(),
+              BodyHandlers.ofString());
 
-    // then
-    assertEquals(statusCode, put.statusCode());
-    verifyFileExistsInDocumentsS3(key, contentType);
-    assertSnsMessage(documentSnsQueue, "create");
+      // then
+      assertEquals(statusCode, put.statusCode());
+      verifyFileExistsInDocumentsS3(key, contentType);
+      assertSnsMessage(documentSnsQueue, "create");
 
-    // when
-    getS3Service().deleteObject(getDocumentsbucketname(), key, null);
+      // when
+      getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
-    // then
-    assertSnsMessage(documentSnsQueue, "delete");
+      // then
+      assertSnsMessage(documentSnsQueue, "delete");
+    }
   }
 
   /**
@@ -331,7 +339,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       TimeUnit.SECONDS.sleep(1);
     } while (results.getResults().isEmpty());
 
-    String documentId = results.getResults().get(0).getDocumentId();
+    String documentId = results.getResults().getFirst().getDocumentId();
 
     while (!getS3Service().getObjectMetadata(getDocumentsbucketname(), documentId, null)
         .isObjectExists()) {
@@ -368,7 +376,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, response1.queueConfigurations().size());
     assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertQueueConfigurations(response1.queueConfigurations().get(0));
+    assertQueueConfigurations(response1.queueConfigurations().getFirst());
   }
 
   /**
@@ -430,7 +438,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     assertEquals(1, response1.queueConfigurations().size());
     assertEquals(0, response1.lambdaFunctionConfigurations().size());
 
-    assertQueueConfigurations(response1.queueConfigurations().get(0));
+    assertQueueConfigurations(response1.queueConfigurations().getFirst());
   }
 
   /**
@@ -466,15 +474,16 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     assertEquals(1, result.getResults().size());
     assertSnsMessage(documentSnsQueue, "create");
-    String documentId = result.getResults().get(0).getDocumentId();
+    String documentId = result.getResults().getFirst().getDocumentId();
 
     DocumentArtifact document = DocumentArtifact.of(documentId, null);
     DocumentRecord item = getDocumentService().findDocument(siteId, document);
     assertEquals(item.insertedDate(), item.lastModifiedDate());
 
     // given
-    Collection<DocumentTag> tags =
-        List.of(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
+    Collection<DocumentTagRecord> tags = DocumentTagRecord.builder().document(document)
+        .tagKey("status").tagValue("active").userId("testuser").build(siteId);
+    // List.of(new DocumentTag(documentId, "status", "active", new Date(), "testuser"));
     getDocumentService().addTags(siteId, document, tags, null);
 
     // when

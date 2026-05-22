@@ -26,8 +26,8 @@ package com.formkiq.stacks.api;
 import com.formkiq.aws.services.lambda.GsonService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
-import com.formkiq.stacks.api.handler.documents.AddDocumentAttribute;
-import com.formkiq.stacks.api.handler.documents.AddDocumentAttributeDeserializer;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeDeserializer;
 import com.google.gson.Gson;
 
 /**

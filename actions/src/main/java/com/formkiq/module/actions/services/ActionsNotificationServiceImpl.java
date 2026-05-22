@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;

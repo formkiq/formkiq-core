@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction.SOFT_DELETE;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -86,12 +87,31 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private Date lastModifiedDate;
   /** {@link DocumentMetadata}. */
   private Collection<DocumentMetadata> metadata;
+  /** Metadata Keys to Delete. */
+  private Collection<String> metadataDeleteKeys = Collections.emptyList();
   /** Set GSI1. */
   private boolean gsi1;
   /** Parent Document Id. */
   private String parentDocumentId;
   /** Original Values default values. */
   private DocumentRecord defaultValues;
+
+  /**
+   * Add Metadata.
+   * 
+   * @param list {@link Collection} of {@link DocumentMetadata}
+   * @return {@link DocumentRecordBuilder}
+   */
+  public DocumentRecordBuilder addMetadata(final Collection<DocumentMetadata> list) {
+    Collection<DocumentMetadata> values = notNull(list);
+    Collection<String> keys = values.stream().map(DocumentMetadata::key).toList();
+
+    this.metadataDeleteKeys =
+        notNull(this.metadataDeleteKeys).stream().filter(k -> !keys.contains(k)).toList();
+    metadata = notNull(metadata).stream().filter(m -> !keys.contains(m.key())).toList();
+    metadata = Stream.concat(notNull(metadata).stream(), values.stream()).toList();
+    return this;
+  }
 
   /**
    * Set Artifact Id.
@@ -289,6 +309,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
   public DocumentRecordBuilder metadata(final Collection<DocumentMetadata> md) {
     this.metadata = md;
+    this.metadataDeleteKeys =
+        notNull(md).stream().filter(DocumentMetadata::isEmpty).map(DocumentMetadata::key).toList();
     return this;
   }
 
@@ -308,6 +330,20 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
   private String ps(final String current, final Map<String, AttributeValue> map, final String key) {
     return !isEmpty(current) ? current : DynamoDbTypes.toString(map.get(key));
+  }
+
+  /**
+   * Remove Metadata.
+   * 
+   * @param metadataKeys {@link Collection} of {@link String}
+   * @return {@link DocumentRecordBuilder}
+   */
+  public DocumentRecordBuilder removeMetadata(final Collection<String> metadataKeys) {
+    Collection<String> keys = notNull(metadataKeys);
+    this.metadataDeleteKeys =
+        Stream.concat(notNull(this.metadataDeleteKeys).stream(), keys.stream()).distinct().toList();
+    metadata = notNull(metadata).stream().filter(m -> !keys.contains(m.key())).toList();
+    return this;
   }
 
   public DocumentRecordBuilder s3version(final String v) {
@@ -383,20 +419,31 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
     Collection<DocumentMetadata> documentMetaData =
         metadata != null ? new ArrayList<>(metadata) : new ArrayList<>();
+    Collection<String> deleteKeys = notNull(this.metadataDeleteKeys);
 
     if (defaultValues != null) {
 
       var metadataKeys =
           notNull(documentMetaData.stream().map(DocumentMetadata::key).collect(Collectors.toSet()));
+      metadataKeys.addAll(deleteKeys);
 
       for (DocumentMetadata meta : notNull(defaultValues.metadata())) {
         if (!metadataKeys.contains(meta.key())) {
           documentMetaData.add(meta);
         }
       }
-    }
 
-    notNull(documentMetaData).removeIf(DocumentMetadata::isEmpty);
+      notNull(documentMetaData).removeIf(DocumentMetadata::isEmpty);
+    } else if (!deleteKeys.isEmpty()) {
+      var metadataKeys =
+          notNull(documentMetaData.stream().map(DocumentMetadata::key).collect(Collectors.toSet()));
+
+      for (String key : deleteKeys) {
+        if (!metadataKeys.contains(key)) {
+          documentMetaData.add(new DocumentMetadata(key, null, null));
+        }
+      }
+    }
 
     return documentMetaData;
   }

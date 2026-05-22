@@ -45,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -61,12 +62,17 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
 import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
-import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import com.formkiq.validation.ValidationException;
@@ -92,9 +98,9 @@ import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -102,7 +108,6 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
-import com.formkiq.stacks.dynamodb.DynamicDocumentTag;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -195,7 +200,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final int expected) throws InterruptedException {
     List<Message> messages = eventQueue.get(List.of("\\\"type\\\":\\\"" + eventType + "\\\""));
     assertEquals(expected, messages.size());
-    Message m = messages.get(0);
+    Message m = messages.getFirst();
 
     Map<String, String> map = GSON.fromJson(m.body(), Map.class);
     String message = map.get("Message");
@@ -283,9 +288,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
     return new ActionBuilder().document(document).type(ActionType.OCR).indexUlid().userId("joe");
   }
 
-  private static Map<String, Object> createS3Map(final String siteId,
-      final DynamicDocumentItem doc) {
-    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.getDocumentId(), doc.getArtifactId());
+  private static Map<String, Object> createS3Map(final String siteId, final DocumentRecordSet doc) {
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, doc.documentRecord().documentId(),
+        doc.documentRecord().artifactId());
     return new S3EventJsonBuilder()
         .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put").withS3(
             new S3EventJsonBuilder.S3Builder().withBucket("example-bucket").withObject(s3Key)))
@@ -351,7 +356,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       String documentId = ID.uuid();
       String key = createDatabaseKey(siteId, documentId);
 
-      DynamicDocumentItem doc = createDocument(siteId, documentId, path, contentType);
+      DocumentRecordSet doc = createDocument(siteId, documentId, path, contentType);
       addS3File(key, s3ContenType, false, "testdata");
 
       Map<String, Object> map = createS3Map(siteId, doc);
@@ -387,16 +392,21 @@ public class DocumentsS3UpdateTest implements DbKeys {
     return Date.from(localDate.atStartOfDay(defaultZoneId).toInstant());
   }
 
-  private DynamicDocumentItem createDocument(final String siteId, final String documentId,
+  private DocumentRecordSet createDocument(final String siteId, final String documentId,
       final String path, final String contentType) throws ValidationException {
-    DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-    doc.setInsertedDate(new Date());
-    doc.setDocumentId(documentId);
-    doc.setUserId("joe");
-    doc.setContentType(contentType);
-    doc.setPath(path);
-    service.saveDocumentItemWithTag(siteId, doc);
-    return doc;
+    // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+    // doc.setInsertedDate(new Date());
+    // doc.setDocumentId(documentId);
+    // doc.setUserId("joe");
+    // doc.setContentType(contentType);
+    // doc.setPath(path);
+    // service.saveDocumentItemWithTag(siteId, doc);
+    DocumentRecord documentRecord = DocumentRecord.builder().path(path).contentType(contentType)
+        .userId("joe").documentId(documentId).build(siteId);
+    DocumentRecordSet documentRecordSet = new DocumentRecordSet(documentRecord, null, null, null);
+    service.saveDocument(siteId, documentRecordSet,
+        new SaveDocumentOptions().saveDocumentDate(true));
+    return documentRecordSet;
   }
 
   /**
@@ -417,31 +427,52 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @param now {@link Date}
    * @return {@link DynamicDocumentItem}
    */
-  private DynamicDocumentItem createSubDocuments(final Date now) {
+  private DocumentRecordSet createSubDocuments(final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
+    String siteId = null;
 
-    DynamicDocumentItem doc = new DynamicDocumentItem(
-        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
-    doc.setContentType("text/plain");
-    doc.put("tags",
-        List.of(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
-            "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+    DocumentRecord documentRecord = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
+        .insertedDate(now).contentType("text/plain").build(siteId);
+    List<DocumentTagRecord> tags =
+        DocumentTagRecord.builder().documentId(documentRecord.documentId()).tagKey("category")
+            .tagValue("none").userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
 
-    DynamicDocumentItem doc1 = new DynamicDocumentItem(
-        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
-    doc1.setContentType("text/html");
-    doc1.put("tags", List.of(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
-        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+    // DynamicDocumentItem doc = new DynamicDocumentItem(
+    // Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
+    // doc.setContentType("text/plain");
+    // doc.put("tags",
+    // List.of(Map.of("documentId", doc.getDocumentId(), "key", "category", "value", "none",
+    // "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
-    DynamicDocumentItem doc2 = new DynamicDocumentItem(
-        Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
-    doc2.setContentType("application/json");
-    doc2.put("tags", List.of(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
-        "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+    DocumentRecord documentRecord1 = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
+        .insertedDate(now).contentType("text/html").build(siteId);
+    List<DocumentTagRecord> tags1 =
+        DocumentTagRecord.builder().documentId(documentRecord1.documentId()).tagKey("category1")
+            .userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
+    DocumentRecordSet doc1 = new DocumentRecordSet(documentRecord1, null, tags1, null);
 
-    doc.put("documents", Arrays.asList(doc1, doc2));
+    // DynamicDocumentItem doc1 = new DynamicDocumentItem(
+    // Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
+    // doc1.setContentType("text/html");
+    // doc1.put("tags", List.of(Map.of("documentId", doc1.getDocumentId(), "key", "category1",
+    // "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
 
-    return doc;
+    // DynamicDocumentItem doc2 = new DynamicDocumentItem(
+    // Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
+    // doc2.setContentType("application/json");
+    // doc2.put("tags", List.of(Map.of("documentId", doc2.getDocumentId(), "key", "category2",
+    // "insertedDate", now, "userId", username, "type", DocumentTagType.USERDEFINED.name())));
+
+    DocumentRecord documentRecord2 = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
+        .insertedDate(now).contentType("application/json").build(siteId);
+    List<DocumentTagRecord> tags2 =
+        DocumentTagRecord.builder().documentId(documentRecord1.documentId()).tagKey("category2")
+            .userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
+    DocumentRecordSet doc2 = new DocumentRecordSet(documentRecord2, null, tags2, null);
+
+    // doc.put("documents", Arrays.asList(doc1, doc2));
+
+    return new DocumentRecordSet(documentRecord, null, tags, List.of(doc1, doc2));
   }
 
   /**
@@ -479,7 +510,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String key = createDatabaseKey(siteId, BUCKET_KEY);
 
-      DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
+      DocumentRecordSet doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
 
       String content = "testdata";
       addS3File(key, "text/plain", false, content);
@@ -532,17 +563,24 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectupdate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(date);
-      doc.setDocumentId(documentId);
-      doc.setUserId("asd");
-      doc.setPath("test.txt");
-      doc.setChecksum("ASD");
+      DocumentRecord documentRecord = new DocumentRecordBuilder().insertedDate(date)
+          .documentId(documentId).userId("asd").path("test.txt").checksum("ASD").build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(date);
+      // doc.setDocumentId(documentId);
+      // doc.setUserId("asd");
+      // doc.setPath("test.txt");
+      // doc.setChecksum("ASD");
 
-      DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", documentId, "key",
-          "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
-      doc.put("tags", List.of(tag));
-      service.saveDocumentItemWithTag(siteId, doc);
+      // DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", documentId, "key",
+      // "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
+      // doc.put("tags", List.of(tag));
+      Collection<DocumentTagRecord> addTags = new DocumentTagRecordBuilder().documentId(documentId)
+          .tagKey("person").tagValue("category").userId("asd").build(siteId);
+      DocumentRecordSet documentRecordSet =
+          new DocumentRecordSet(documentRecord, null, addTags, null);
+      service.saveDocument(siteId, documentRecordSet,
+          new SaveDocumentOptions().saveDocumentDate(true));
 
       addS3File(key, "pdf", true, "testdata");
 
@@ -593,16 +631,22 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(BUCKET_KEY);
-      doc.setPath("test.txt");
+      DocumentRecord documentRecord = DocumentRecord.builder().path("test.txt").userId("asd")
+          .documentId(BUCKET_KEY).build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(new Date());
+      // doc.setDocumentId(BUCKET_KEY);
+      // doc.setPath("test.txt");
 
-      DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
-          "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
-      doc.put("tags", List.of(tag));
+      // DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", BUCKET_KEY, "key",
+      // "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
+      // doc.put("tags", List.of(tag));
 
-      service.saveDocumentItemWithTag(siteId, doc);
+      // service.saveDocumentItemWithTag(siteId, doc);
+      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().documentId(BUCKET_KEY)
+          .tagKey("person").tagValue("category").userId("asd").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, tags, null),
+          new SaveDocumentOptions());
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -629,16 +673,21 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setPath("test.txt");
+      DocumentRecord documentRecord = DocumentRecord.builder().path("test.txt").userId("asd")
+          .documentId(documentId).build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(new Date());
+      // doc.setDocumentId(documentId);
+      // doc.setPath("test.txt");
 
-      DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", documentId, "key",
-          "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
-      doc.put("tags", List.of(tag));
+      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().documentId(documentId)
+          .tagKey("person").tagValue("category").userId("asd").build(siteId);
+      // DynamicDocumentTag tag = new DynamicDocumentTag(Map.of("documentId", documentId, "key",
+      // "person", "value", "category", "insertedDate", new Date(), "userId", "asd"));
+      // doc.put("tags", List.of(tag));
 
-      service.saveDocumentItemWithTag(siteId, doc);
+      service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, tags, null),
+          new SaveDocumentOptions());
 
       // when
       DocumentRecord item = handleRequest(siteId, documentId, map);
@@ -666,24 +715,32 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setPath("test.txt");
-      doc.setUserId("joe");
+      DocumentRecord documentRecord = DocumentRecord.builder().path("test.txt").userId("joe")
+          .documentId(documentId).build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(new Date());
+      // doc.setDocumentId(documentId);
+      // doc.setPath("test.txt");
+      // doc.setUserId("joe");
 
-      DynamicDocumentItem child = new DynamicDocumentItem(Map.of());
-      child.setInsertedDate(new Date());
-      child.setDocumentId(childDocumentId);
-      child.setUserId("joe");
-      doc.put("documents", List.of(child));
+      DocumentRecord childDoc = DocumentRecord.builder().userId("joe")
+          .belongsToDocumentId(documentId).documentId(childDocumentId).build(siteId);
+      DocumentRecordSet child = new DocumentRecordSet(childDoc, null, null, null);
 
-      service.saveDocumentItemWithTag(siteId, doc);
+      // DynamicDocumentItem child = new DynamicDocumentItem(Map.of());
+      // child.setInsertedDate(new Date());
+      // child.setDocumentId(childDocumentId);
+      // child.setUserId("joe");
+      // doc.put("documents", List.of(child));
+
+      service.saveDocument(siteId,
+          new DocumentRecordSet(documentRecord, null, null, List.of(child)),
+          new SaveDocumentOptions().saveDocumentDate(true));
 
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      final DocumentRecord item = handleRequest(siteId, child.getDocumentId(), map);
+      final DocumentRecord item = handleRequest(siteId, childDoc.documentId(), map);
 
       // then
       DocumentArtifact childDocument = new DocumentArtifact(childDocumentId, null);
@@ -694,7 +751,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       try (DynamoDbClient client = dbBuilder.build()) {
         Map<String, AttributeValue> m =
             client.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-                .key(keysDocument(siteId, child.getDocumentId())).build()).item();
+                .key(keysDocument(siteId, childDoc.documentId())).build()).item();
         assertNull(m.get(GSI1_PK));
       }
 
@@ -722,24 +779,25 @@ public class DocumentsS3UpdateTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       Date now = new Date();
-      DynamicDocumentItem doc = createSubDocuments(now);
-      final DocumentArtifact document = new DocumentArtifact(doc.getDocumentId(), null);
-      service.saveDocumentItemWithTag(siteId, doc);
+      DocumentRecordSet doc = createSubDocuments(now);
+      String documentId = doc.documentRecord().documentId();
+      final DocumentArtifact document = new DocumentArtifact(documentId, null);
+      service.saveDocument(siteId, doc, new SaveDocumentOptions().saveDocumentDate(true));
 
-      String key = createDatabaseKey(siteId, doc.getDocumentId());
+      String key = createDatabaseKey(siteId, documentId);
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
       addS3File(key, "pdf", false, "testdata");
 
       // when
-      DocumentRecord item = handleRequest(siteId, doc.getDocumentId(), map);
-      DocumentRecord itemchild =
-          handleRequest(siteId, doc.getDocuments().get(0).getDocumentId(), map);
+      DocumentRecord item = handleRequest(siteId, documentId, map);
+      DocumentRecord itemchild = handleRequest(siteId,
+          doc.children().iterator().next().documentRecord().documentId(), map);
 
       // then
       Map<String, AttributeValue> m = db.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-          .key(keysDocument(siteId, doc.getDocumentId())).build()).item();
+          .key(keysDocument(siteId, documentId)).build()).item();
       assertNotNull(m.get(GSI1_PK));
 
       Map<String, AttributeValue> mchild =
@@ -747,19 +805,19 @@ public class DocumentsS3UpdateTest implements DbKeys {
               .key(keysDocument(siteId, itemchild.documentId())).build()).item();
       assertNull(mchild.get(GSI1_PK));
 
-      assertEquals(doc.getDocumentId(), item.documentId());
+      assertEquals(documentId, item.documentId());
       Pagination<DocumentTag> tags = service.findDocumentTags(siteId, document, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category").setValue("none")
-          .setType(DocumentTagType.USERDEFINED).setDocumentId(doc.getDocumentId()),
-          tags.getResults().get(0));
+          .setType(DocumentTagType.USERDEFINED).setDocumentId(documentId),
+          tags.getResults().getFirst());
 
       DocumentArtifact childDocument = new DocumentArtifact(itemchild.documentId(), null);
       tags = service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
       assertEquals(1, tags.getResults().size());
       assertDocumentTagEquals(new DocumentTag().setKey("category1").setValue("")
           .setType(DocumentTagType.USERDEFINED).setDocumentId(itemchild.documentId()),
-          tags.getResults().get(0));
+          tags.getResults().getFirst());
 
       assertCreateDocumentSnsMessage(siteId, "create", 2);
     }
@@ -872,13 +930,16 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(documentId);
-      doc.setUserId("joe");
-      doc.setPath("test.txt");
-      doc.put("TimeToLive", ttl);
-      service.saveDocumentItemWithTag(siteId, doc);
+      DocumentRecord documentRecord = DocumentRecord.builder().documentId(documentId).userId("joe")
+          .path("test.txt").timeToLive(ttl).build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(new Date());
+      // doc.setDocumentId(documentId);
+      // doc.setUserId("joe");
+      // doc.setPath("test.txt");
+      // doc.put("TimeToLive", ttl);
+      DocumentRecordSet doc = new DocumentRecordSet(documentRecord, null, null, null);
+      service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       addS3File(key, "pdf", false, "testdata");
 
@@ -911,8 +972,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
-      DocumentArtifact document = new DocumentArtifact(doc.getDocumentId(), null);
+      DocumentRecordSet doc = createDocument(siteId, BUCKET_KEY, "test.txt", null);
+      DocumentArtifact document = new DocumentArtifact(doc.documentRecord().documentId(), null);
       actionsService.saveNewActions(
           List.of(createAction(document).status(ActionStatus.COMPLETE).build(siteId)));
 
@@ -924,8 +985,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       // then
       List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
-      assertEquals(ActionType.OCR, actions.get(0).type());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
+      assertEquals(ActionType.OCR, actions.getFirst().type());
 
       assertCreateDocumentSnsMessage(siteId, "create");
     }
@@ -948,10 +1009,12 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
-      doc.setInsertedDate(new Date());
-      doc.setDocumentId(BUCKET_KEY);
-      service.saveDocumentItemWithTag(siteId, doc);
+      DocumentRecord documentRecord = DocumentRecord.builder().documentId(BUCKET_KEY).build(siteId);
+      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of());
+      // doc.setInsertedDate(new Date());
+      // doc.setDocumentId(BUCKET_KEY);
+      service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, null, null),
+          new SaveDocumentOptions());
 
       // when
       DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
@@ -974,7 +1037,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       String documentId = ID.uuid();
       String key = createDatabaseKey(siteId, documentId);
 
-      DynamicDocumentItem doc = createDocument(siteId, documentId, "test.txt", null);
+      DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", null);
       DocumentArtifact document = new DocumentArtifact(documentId, null);
       actionsService.saveNewActions(
           List.of(createAction(document).status(ActionStatus.RUNNING).build(siteId)));
@@ -989,8 +1052,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       // then
       List<Action> actions = actionsService.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionStatus.RUNNING, actions.get(0).status());
-      assertEquals(ActionType.OCR, actions.get(0).type());
+      assertEquals(ActionStatus.RUNNING, actions.getFirst().status());
+      assertEquals(ActionType.OCR, actions.getFirst().type());
       assertCreateDocumentSnsMessage(siteId, "create");
     }
   }

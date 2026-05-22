@@ -38,7 +38,6 @@ import java.net.URL;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,7 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -382,24 +381,25 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /**
    * Get Object Tags from S3.
-   * 
+   *
    * @param bucket {@link String}
-   * @param documentId {@link String}
-   * @return {@link List} {@link DocumentTag}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param s3Key {@link String}
+   * @return {@link List} {@link DocumentTagRecord}
    */
-  private List<DocumentTag> getObjectTags(final String bucket, final String documentId) {
+  private List<DocumentTagRecord> getObjectTags(final String bucket, final String siteId,
+      final DocumentArtifact document, final String s3Key) {
 
-    GetObjectTaggingResponse objectTags = s3service.getObjectTags(bucket, documentId);
-
-    List<DocumentTag> tags = objectTags.tagSet().stream()
-        .map(t -> new DocumentTag(documentId, t.key(), t.value(), new Date(), "System"))
-        .collect(Collectors.toList());
+    GetObjectTaggingResponse objectTags = s3service.getObjectTags(bucket, s3Key);
 
     // Any System Defined Tags in the S3 Metadata, set them to SystemDefined.
-    tags.stream().filter(t -> SYSTEM_DEFINED_TAGS.contains(t.getKey()))
-        .forEach(t -> t.setType(DocumentTagType.SYSTEMDEFINED));
-
-    return tags;
+    return objectTags.tagSet().stream().flatMap(t -> {
+      DocumentTagType type = SYSTEM_DEFINED_TAGS.contains(t.key()) ? DocumentTagType.SYSTEMDEFINED
+          : DocumentTagType.USERDEFINED;
+      return DocumentTagRecord.builder().document(document).tagKey(t.key()).tagValue(t.value())
+          .type(type).build(siteId).stream();
+    }).toList();
   }
 
   @Override
@@ -674,7 +674,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         service.updateDocument(siteId, document, attributes);
 
-        List<DocumentTag> tags = getObjectTags(s3bucket, key);
+        List<DocumentTagRecord> tags = getObjectTags(s3bucket, siteId, document, key);
         service.addTags(siteId, document, tags, null);
 
         service.deleteDocumentFormats(siteId, documentId);

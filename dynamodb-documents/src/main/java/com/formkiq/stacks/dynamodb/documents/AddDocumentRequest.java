@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
 
 import java.util.List;
+
+import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.graalvm.annotations.Reflectable;
 
@@ -65,6 +67,17 @@ public class AddDocumentRequest {
   private String height;
   /** Width. */
   private String width;
+  /** User Id. */
+  private String userId;
+
+  /** Time to Live. */
+  private String timeToLive;
+
+  /** Agent. */
+  private String agent;
+
+  /** Content Length. */
+  private Long contentLength;
 
   /**
    * constructor.
@@ -80,6 +93,15 @@ public class AddDocumentRequest {
    */
   public List<AddAction> getActions() {
     return this.actions;
+  }
+
+  /**
+   * Get Agent.
+   * 
+   * @return {@link String}
+   */
+  public String getAgent() {
+    return agent;
   }
 
   /**
@@ -116,6 +138,15 @@ public class AddDocumentRequest {
    */
   public String getContent() {
     return this.content;
+  }
+
+  /**
+   * Get Content Length.
+   * 
+   * @return {@link Long}
+   */
+  public Long getContentLength() {
+    return contentLength;
   }
 
   /**
@@ -191,6 +222,24 @@ public class AddDocumentRequest {
   }
 
   /**
+   * Get Time to Live.
+   * 
+   * @return {@link String}
+   */
+  public String getTimeToLive() {
+    return timeToLive;
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @return {@link String}
+   */
+  public String getUserId() {
+    return userId;
+  }
+
+  /**
    * Get Width.
    * 
    * @return String
@@ -224,6 +273,15 @@ public class AddDocumentRequest {
    */
   public void setActions(final List<AddAction> documentActions) {
     this.actions = documentActions;
+  }
+
+  /**
+   * Set User Agent.
+   * 
+   * @param userAgent {@link String}
+   */
+  public void setAgent(final String userAgent) {
+    this.agent = userAgent;
   }
 
   /**
@@ -280,6 +338,10 @@ public class AddDocumentRequest {
    */
   public void setContent(final String documentContent) {
     this.content = documentContent;
+  }
+
+  public void setContentLength(final Long documentContentLength) {
+    this.contentLength = documentContentLength;
   }
 
   /**
@@ -354,6 +416,24 @@ public class AddDocumentRequest {
    */
   public void setTags(final List<AddDocumentTag> documentTags) {
     this.tags = documentTags;
+  }
+
+  /**
+   * Set Time to Live.
+   * 
+   * @param ttl {@link String}
+   */
+  public void setTimeToLive(final String ttl) {
+    this.timeToLive = ttl;
+  }
+
+  /**
+   * Set User Id.
+   * 
+   * @param user {@link String}
+   */
+  public void setUserId(final String user) {
+    this.userId = user;
   }
 
   /**

@@ -66,7 +66,8 @@ public class DocumentsIdUploadRequestHandler
     final String artifactId = event.getQueryStringParameter("artifactId");
     final DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
-    AddDocumentRequest o = new AddDocumentRequest();
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest o =
+        new com.formkiq.stacks.dynamodb.documents.AddDocumentRequest();
     o.setDocumentId(documentId);
     o.setChecksum(event.getQueryStringParameter("checksum"));
     o.setChecksumType(event.getQueryStringParameter("checksumType"));
@@ -84,7 +85,7 @@ public class DocumentsIdUploadRequestHandler
             Optional.empty());
 
     DynamicDocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(ditem);
-    final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, item);
+    final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, artifactId);
 
     item.setChecksum(o.getChecksum());
     item.setChecksumType(o.getChecksumType());
@@ -106,7 +107,8 @@ public class DocumentsIdUploadRequestHandler
     return Optional.of(access);
   }
 
-  private void validate(final AddDocumentRequest request) throws ValidationException {
+  private void validate(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
+      throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 

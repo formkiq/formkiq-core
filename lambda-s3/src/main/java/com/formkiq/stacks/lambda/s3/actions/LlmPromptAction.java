@@ -24,8 +24,8 @@
 package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionParameters;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionParameters;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.urls.UrlPathEncoder;
 

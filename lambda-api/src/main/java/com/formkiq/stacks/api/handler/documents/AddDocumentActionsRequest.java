@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.actions.AddAction;
 
 import java.util.List;
 
