@@ -27,13 +27,13 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityContextData;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 import java.time.Duration;
@@ -53,7 +53,7 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  * Transforms {@link AddDocumentRequest} to a list of Presigned Urls.
  */
 public class AddDocumentRequestToPresignedUrls
-    implements BiFunction<AddDocumentRequest, DocumentItem, Map<String, Object>> {
+    implements BiFunction<AddDocumentRequest, String, Map<String, Object>> {
 
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3PresignerService;
@@ -100,12 +100,14 @@ public class AddDocumentRequestToPresignedUrls
       String checksumType = item.getChecksumType().toUpperCase();
       headers.put("x-amz-sdk-checksum-algorithm", item.getChecksumType().toUpperCase());
 
-      if ("SHA256".equals(checksumType)) {
-        headers.put("x-amz-checksum-sha256", this.s3PresignerService.toBase64(item.getChecksum()));
-      } else if ("SHA512".equals(checksumType)) {
-        headers.put("x-amz-checksum-sha512", this.s3PresignerService.toBase64(item.getChecksum()));
-      } else if ("SHA1".equals(checksumType)) {
-        headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
+      switch (checksumType) {
+        case "SHA256" -> headers.put("x-amz-checksum-sha256",
+            this.s3PresignerService.toBase64(item.getChecksum()));
+        case "SHA512" -> headers.put("x-amz-checksum-sha512",
+            this.s3PresignerService.toBase64(item.getChecksum()));
+        case "SHA1" ->
+          headers.put("x-amz-checksum-sha1", this.s3PresignerService.toBase64(item.getChecksum()));
+        default -> throw new IllegalStateException("Unexpected value: " + checksumType);
       }
     }
 
@@ -115,14 +117,14 @@ public class AddDocumentRequestToPresignedUrls
   }
 
   @Override
-  public Map<String, Object> apply(final AddDocumentRequest req, final DocumentItem item) {
+  public Map<String, Object> apply(final AddDocumentRequest req, final String artifactId) {
 
     Map<String, Object> map = new HashMap<>();
 
     String documentId = req.getDocumentId();
     map.put("documentId", documentId);
-    map.put("artifactId", item.getArtifactId());
-    DocumentArtifact document = DocumentArtifact.of(documentId, item.getArtifactId());
+    map.put("artifactId", artifactId);
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
     if (isEmpty(req.getDeepLinkPath())) {
       String docUrl = generatePresignedUrl(req, document);

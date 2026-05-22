@@ -32,6 +32,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.ocr.OcrEngine;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -58,7 +59,7 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
   /** Job Id. */
   private String jobId;
   /** Ocr Output Type. */
-  private OcrOutputType ocrOutputType;
+  private com.formkiq.aws.dynamodb.ocr.OcrOutputType ocrOutputType;
   /** {@link OcrScanStatus}. */
   private OcrScanStatus status;
   /** UserId. */
@@ -225,7 +226,8 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
     }
 
     if (attrs.containsKey("ocrOutputType")) {
-      ocr.ocrOutputType(OcrOutputType.valueOf(ss(attrs, "ocrOutputType")));
+      ocr.ocrOutputType(
+          com.formkiq.aws.dynamodb.ocr.OcrOutputType.valueOf(ss(attrs, "ocrOutputType")));
     }
 
     if (attrs.containsKey("insertedDate")) {
@@ -284,17 +286,17 @@ public class Ocr implements DynamodbRecord<Ocr>, DbKeys {
    *
    * @return OcrOutputType
    */
-  public OcrOutputType ocrOutputType() {
+  public com.formkiq.aws.dynamodb.ocr.OcrOutputType ocrOutputType() {
     return this.ocrOutputType;
   }
 
   /**
    * Set ocrOutputType.
    * 
-   * @param outputType {@link OcrOutputType}
+   * @param outputType {@link com.formkiq.aws.dynamodb.ocr.OcrOutputType}
    * @return {@link Ocr}
    */
-  public Ocr ocrOutputType(final OcrOutputType outputType) {
+  public Ocr ocrOutputType(final com.formkiq.aws.dynamodb.ocr.OcrOutputType outputType) {
     this.ocrOutputType = outputType;
     return this;
   }

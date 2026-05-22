@@ -53,9 +53,9 @@ import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionBuilder;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionStatusPredicate;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
@@ -135,8 +135,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
-import static com.formkiq.module.actions.ActionStatus.PENDING;
-import static com.formkiq.module.actions.ActionStatus.WAITING_FOR_RETRY;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.PENDING;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.WAITING_FOR_RETRY;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 

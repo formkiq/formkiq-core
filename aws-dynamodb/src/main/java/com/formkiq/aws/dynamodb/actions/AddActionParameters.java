@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.aws.dynamodb.actions;
 
+import com.formkiq.aws.dynamodb.ocr.OcrEngine;
+import com.formkiq.aws.dynamodb.ocr.OcrOutputType;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.ocr.AwsTextractQuery;
-import com.formkiq.module.ocr.OcrEngine;
-import com.formkiq.module.ocr.OcrOutputType;
 
 import java.util.ArrayList;
 import java.util.HashMap;

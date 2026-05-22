@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.model;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -229,10 +230,18 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setMetadata(final Collection<DocumentMetadata> metadata) {
 
-    List<Map<String, ? extends Object>> list = metadata.stream()
-        .map(m -> !Objects.isEmpty(m.values()) ? Map.of("key", m.key(), "values", m.values())
-            : Map.of("key", m.key(), "value", m.value()))
-        .collect(Collectors.toList());
+    List<Map<String, Object>> list = metadata.stream().map(m -> {
+      Map<String, Object> map = new HashMap<>();
+      map.put("key", m.key());
+
+      if (!Objects.isEmpty(m.values())) {
+        map.put("values", m.values());
+      } else if (m.value() != null) {
+        map.put("value", m.value());
+      }
+
+      return map;
+    }).collect(Collectors.toList());
 
     put("metadata", list);
   }

@@ -34,7 +34,8 @@ import java.util.List;
  * Add list of document attributes to a document.
  */
 @Reflectable
-public record AddDocumentAttributesRequest(List<AddDocumentAttribute> attributes) {
+public record AddDocumentAttributesRequest(
+    List<com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute> attributes) {
   /**
    * Validate.
    */

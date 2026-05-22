@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -54,11 +54,11 @@ public class AddDocumentRequestToDocumentItem
    * 
    * @param existingDocument {@link DocumentItem}
    * @param username {@link String}
-   * @param parentDocumentId {@link String}
+   * @param belongsToDocument {@link String}
    */
   public AddDocumentRequestToDocumentItem(final DocumentRecord existingDocument,
-      final String username, final String parentDocumentId) {
-    this.belongsToDocumentId = parentDocumentId;
+      final String username, final String belongsToDocument) {
+    this.belongsToDocumentId = belongsToDocument;
     this.userId = username;
     this.existing = existingDocument;
   }
@@ -117,6 +117,7 @@ public class AddDocumentRequestToDocumentItem
     item.setHeight(r.getHeight());
     item.setChecksum(r.getChecksum());
     item.setChecksumType(r.getChecksumType());
+    item.setTimeToLive(r.getTimeToLive());
 
     if (r.isArtifacts() && item.getArtifactId() == null) {
       item.setArtifactId(ID.ulid());

@@ -23,7 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3;
 
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 
 /**
  * Process Action Status.

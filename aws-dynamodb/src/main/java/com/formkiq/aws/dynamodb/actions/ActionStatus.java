@@ -21,15 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
-
-import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
-import com.formkiq.graalvm.annotations.Reflectable;
+package com.formkiq.aws.dynamodb.actions;
 
 /**
- * Entity attribute linking to an entity in a namespace.
+ * 
+ * Action Status.
+ *
  */
-@Reflectable
-public record AddDocumentAttributeEntity(String key, String entityTypeId, String entityId,
-    EntityTypeNamespace namespace) implements AddDocumentAttribute {
+public enum ActionStatus {
+  /** Completed. */
+  COMPLETE,
+  /** FAILED. */
+  FAILED,
+  /** Failed Retry. */
+  FAILED_RETRY,
+  /** In Queue. */
+  IN_QUEUE,
+  /** In Progress. */
+  IN_PROGRESS,
+  /** Pending. */
+  PENDING,
+  /** Running. */
+  RUNNING,
+  /** Skipped. */
+  SKIPPED,
+  /** Max Retry Reachd. */
+  MAX_RETRIES_REACHED,
+  /** Waiting for Retry. */
+  WAITING_FOR_RETRY
 }

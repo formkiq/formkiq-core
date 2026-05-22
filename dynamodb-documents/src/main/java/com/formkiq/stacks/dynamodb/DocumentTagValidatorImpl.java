@@ -28,7 +28,7 @@ import static com.formkiq.stacks.dynamodb.DocumentService.SYSTEM_DEFINED_TAGS;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
+
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.validation.ValidationBuilder;
 
@@ -41,7 +41,7 @@ public class DocumentTagValidatorImpl implements DocumentTagValidator {
 
   @Override
   public void validate(final ValidationBuilder vb, final Collection<DocumentTag> tags) {
-    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
+    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).toList();
     validateKeys(vb, tagKeys);
   }
 
@@ -52,7 +52,8 @@ public class DocumentTagValidatorImpl implements DocumentTagValidator {
 
   @Override
   public void validate(final ValidationBuilder vb, final DocumentTags tags) {
-    validate(vb, tags.getTags());
+    List<String> tagKeys = tags.getTags().stream().map(DocumentTag::getKey).toList();
+    validateKeys(vb, tagKeys);
   }
 
   @Override

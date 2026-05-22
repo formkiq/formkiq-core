@@ -26,7 +26,7 @@ package com.formkiq.module.actions.services;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 
 /**
  * 

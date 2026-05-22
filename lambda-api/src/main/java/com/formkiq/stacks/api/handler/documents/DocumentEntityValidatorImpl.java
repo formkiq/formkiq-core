@@ -26,10 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -40,7 +37,7 @@ import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
@@ -60,26 +57,21 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
   }
 
   @Override
-  public List<DocumentTag> validate(final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final SiteConfiguration config, final String siteId,
-      final AddDocumentRequest item, final boolean isUpdate)
-      throws ValidationException, BadException {
-
-    String userId = authorization.getUsername();
-    List<DocumentTag> tags = validateTagSchema(item, userId);
+  public void validate(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
+      throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
-    validateTags(vb, tags);
-    validateActions(awsservice, config, siteId, item, vb);
+    validateTags(vb, request);
+    validateActions(awsservice, config, siteId, request, vb);
 
     vb.check();
-
-    return tags;
   }
 
   // TODO merge with ApiValidator validateActions
   private void validateActions(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final AddDocumentRequest item, final ValidationBuilder vb) {
+      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item,
+      final ValidationBuilder vb) {
 
     initActionsValidator(awsservice);
     DocumentArtifact document =
@@ -104,34 +96,42 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     }
   }
 
-  /**
-   * Validate {@link AddDocumentRequest} against a TagSchema.
-   * 
-   * @param item {@link AddDocumentRequest}
-   * @param userId {@link String}
-   * @return {@link List} {@link DocumentTag}
-   */
-  private List<DocumentTag> validateTagSchema(final AddDocumentRequest item, final String userId) {
-
-    List<AddDocumentTag> doctags = notNull(item.getTags());
-    AddDocumentTagToDocumentTag transform =
-        new AddDocumentTagToDocumentTag(item.getDocumentId(), userId);
-
-    return doctags.stream().map(transform).collect(Collectors.toList());
-  }
-
+  // /**
+  // * Validate {@link AddDocumentRequest} against a TagSchema.
+  // *
+  // * @param item {@link AddDocumentRequest}
+  // * @param userId {@link String}
+  // * @return {@link List} {@link DocumentTag}
+  // */
+  // private List<DocumentTag> validateTagSchema(final AddDocumentRequest item, final String userId)
+  // {
+  //
+  // List<AddDocumentTag> doctags = notNull(item.getTags());
+  // AddDocumentTagToDocumentTag transform =
+  // new AddDocumentTagToDocumentTag(item.getDocumentId(), userId);
+  //
+  // return doctags.stream().map(transform).collect(Collectors.toList());
+  // }
 
   /**
    * Validate Document Tags.
    *
    * @param vb {@link ValidationBuilder}
-   * @param tags {@link List} {@link DocumentTag}
+   * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    */
-  private void validateTags(final ValidationBuilder vb, final List<DocumentTag> tags) {
-
-    List<String> tagKeys = tags.stream().map(DocumentTag::getKey).collect(Collectors.toList());
+  private void validateTags(final ValidationBuilder vb,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request) {
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
+
+    var tagKeys = Stream
+        .concat(
+            notNull(request.getTags()).stream()
+                .map(com.formkiq.stacks.dynamodb.documents.AddDocumentTag::getKey),
+            notNull(request.getDocuments()).stream().flatMap(doc -> notNull(doc.getTags()).stream())
+                .map(com.formkiq.stacks.dynamodb.documents.AddDocumentTag::getKey))
+        .distinct().toList();
+
     validator.validateKeys(vb, tagKeys);
   }
 }

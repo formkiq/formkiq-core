@@ -21,18 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.module.ocr;
+package com.formkiq.stacks.dynamodb.documents;
+
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * 
- * Supported OCR Engines.
- *
+ * Entity attribute linking to an entity in a namespace.
  */
-public enum OcrEngine {
-  /** Manually Set Ocr. */
-  MANUAL,
-  /** Tesseract. */
-  TESSERACT,
-  /** Textract OCR Engine. */
-  TEXTRACT;
+@Reflectable
+public record AddDocumentAttributeEntity(String key, String entityTypeId, String entityId,
+    EntityTypeNamespace namespace) implements AddDocumentAttribute {
 }

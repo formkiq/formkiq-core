@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.stacks.dynamodb.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -45,7 +45,8 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
- * Convert {@link AddDocumentAttribute} to {@link DocumentAttributeRecord}.
+ * Convert {@link com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute} to
+ * {@link DocumentAttributeRecord}.
  */
 public class AddDocumentAttributeToDocumentAttributeRecord
     implements Function<AddDocumentAttribute, Collection<DocumentAttributeRecord>> {
@@ -154,7 +155,8 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     addToList(c, DocumentAttributeValueType.ENTITY, key, val.getStringValue(), null, null);
   }
 
-  private void addRelationship(final AddDocumentAttributeRelationship a,
+  private void addRelationship(
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeRelationship a,
       final Collection<DocumentAttributeRecord> c) {
 
     DocumentArtifact toDocument = DocumentArtifact.of(a.documentId(), null);

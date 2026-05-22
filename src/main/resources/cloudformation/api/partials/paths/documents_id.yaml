@@ -238,6 +238,11 @@ components:
         belongsToDocumentId:
           type: "string"
           description: "Parent Document Identifier"
+        attributes:
+          type: "array"
+          description: "List of document attributes"
+          items:
+            $ref: "#/components/schemas/DocumentAttribute"
 
     #@overlay/match missing_ok=True
     UpdateDocumentRequest:

@@ -26,7 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -37,7 +37,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.ConflictException;
-import com.formkiq.module.actions.Action;
+import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -47,9 +47,9 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -70,6 +70,20 @@ public class DocumentsUploadRequestHandler
 
   /** Default Duration Hours. */
   private static final int DEFAULT_DURATION_HOURS = 48;
+
+  private static void setDocumentIdIfMissing(
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request) {
+    if (isEmpty(request.getDocumentId())) {
+      request.setDocumentId(ID.uuid());
+    }
+
+    notNull(request.getDocuments()).forEach(d -> {
+      if (isEmpty(d.getDocumentId())) {
+        d.setDocumentId(ID.uuid());
+      }
+    });
+  }
+
   /** {@link DocumentsRestrictionsMaxContentLength}. */
   private final DocumentsRestrictionsMaxContentLength restrictionMaxContentLength =
       new DocumentsRestrictionsMaxContentLength();
@@ -78,6 +92,7 @@ public class DocumentsUploadRequestHandler
       new DocumentsRestrictionsMaxDocuments();
   /** {@link DocumentEntityValidator}. */
   private final DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
+
   /** {@link DocumentValidator}. */
   private final DocumentValidator documentValidator = new DocumentValidatorImpl();
 
@@ -94,22 +109,20 @@ public class DocumentsUploadRequestHandler
    * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
    * @param siteId {@link String}
-   * @param request {@link AddDocumentRequest}
-   * @param tags {@link List} {@link DocumentTag}
+   * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
+   * @param documentRecordSet {@link List} {@link DocumentRecordSet}
    * @return {@link ApiRequestHandlerResponse.Builder}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
   private ApiRequestHandlerResponse.Builder buildPresignedResponse(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest request,
-      final List<DocumentTag> tags) throws BadException, ValidationException {
+      final AwsServiceCache awsservice, final String siteId,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request,
+      final DocumentRecordSet documentRecordSet) throws BadException, ValidationException {
 
-    String documentId = request.getDocumentId();
-
-    DocumentItem item =
-        new AddDocumentRequestToDocumentItem(null, authorization.getUsername(), null)
-            .apply(request);
+    String documentId = documentRecordSet.documentRecord().documentId();
+    String artifactId = documentRecordSet.documentRecord().artifactId();
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
@@ -120,27 +133,20 @@ public class DocumentsUploadRequestHandler
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
             caculateDuration(event.getQueryStringParameters()),
             calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, item);
-
-    AddDocumentAttributeToDocumentAttributeRecord tr =
-        new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-            DocumentArtifact.of(documentId, item.getArtifactId()));
-
-    List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
-    List<DocumentAttributeRecord> documentAttributes =
-        attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
-    service.saveDocument(siteId, item, tags, documentAttributes, options);
+    service.saveDocument(siteId, documentRecordSet, options);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
-    List<Action> actions = createActions(siteId, request, item);
+    List<Action> actions = createActions(siteId, request, documentId, artifactId);
     actionsService.saveNewActions(actions);
 
-    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+    var deepLinkPath = documentRecordSet.documentRecord().deepLinkPath();
+    if (!Strings.isEmpty(deepLinkPath) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =
           awsservice.getExtension(ActionsNotificationService.class);
-      notificationService.publishNextActionEvent(siteId, documentId, item.getArtifactId());
+      notificationService.publishNextActionEvent(siteId, documentId, artifactId);
     }
 
     return ApiRequestHandlerResponse.builder().created().body(map);
@@ -200,9 +206,10 @@ public class DocumentsUploadRequestHandler
     return contentLength != null ? Optional.of(contentLength) : Optional.empty();
   }
 
-  private List<Action> createActions(final String siteId, final AddDocumentRequest request,
-      final DocumentItem item) {
-    DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+  private List<Action> createActions(final String siteId,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request,
+      final String documentId, final String artifactId) {
+    DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
     return notNull(request.getActions()).stream()
         .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
   }
@@ -211,7 +218,8 @@ public class DocumentsUploadRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    AddDocumentRequest item = new AddDocumentRequest();
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item =
+        new com.formkiq.stacks.dynamodb.documents.AddDocumentRequest();
     item.setDocumentId(ID.uuid());
     item.setChecksum(event.getQueryStringParameter("checksum"));
     item.setChecksumType(event.getQueryStringParameter("checksumType"));
@@ -228,8 +236,9 @@ public class DocumentsUploadRequestHandler
     validateMaxDocuments(vb, awsservice, config, siteId);
     vb.check();
 
+    var documentRecordSet = getDocumentRecordSet(authorization, awsservice, item, siteId);
     ApiRequestHandlerResponse response =
-        buildPresignedResponse(event, authorization, awsservice, siteId, item, new ArrayList<>())
+        buildPresignedResponse(event, authorization, awsservice, siteId, item, documentRecordSet)
             .ok().build();
 
     if (!Strings.isEmpty(config.maxDocuments())) {
@@ -243,6 +252,14 @@ public class DocumentsUploadRequestHandler
       final ApiAuthorization authorization, final String siteId) {
     boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_CREATE : AttributeValidationAccess.CREATE;
+  }
+
+  private DocumentRecordSet getDocumentRecordSet(final ApiAuthorization authorization,
+      final AwsServiceCache awsservice,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request, final String siteId) {
+    var transformAddDocumentRequestToDocumentRecordSet =
+        new AddDocumentRequestToDocumentRecordSet(awsservice, null, authorization.getUsername());
+    return transformAddDocumentRequestToDocumentRecordSet.apply(siteId, request);
   }
 
   @Override
@@ -261,7 +278,8 @@ public class DocumentsUploadRequestHandler
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
-    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request = JsonToObject.fromJson(
+        awsservice, event, com.formkiq.stacks.dynamodb.documents.AddDocumentRequest.class);
     return post(event, authorization, awsservice, request);
   }
 
@@ -271,37 +289,30 @@ public class DocumentsUploadRequestHandler
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
-   * @param request {@link AddDocumentRequest}
+   * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    * @return ApiRequestHandlerResponse
    * @throws Exception Exception
    */
   protected ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice,
-      final AddDocumentRequest request) throws Exception {
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request) throws Exception {
 
     String siteId = authorization.getSiteId();
     validate(awsservice, siteId, request);
 
-    if (isEmpty(request.getDocumentId())) {
-      request.setDocumentId(ID.uuid());
-    }
-
-    notNull(request.getDocuments()).forEach(d -> {
-      if (isEmpty(d.getDocumentId())) {
-        d.setDocumentId(ID.uuid());
-      }
-    });
+    setDocumentIdIfMissing(request);
 
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get(siteId);
 
-    List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
-        config, siteId, request, false);
-
+    this.documentEntityValidator.validate(awsservice, config, siteId, request);
     validatePost(awsservice, config, siteId, request);
 
+    var documentRecordSet = getDocumentRecordSet(authorization, awsservice, request, siteId);
+
     ApiRequestHandlerResponse response =
-        buildPresignedResponse(event, authorization, awsservice, siteId, request, tags).build();
+        buildPresignedResponse(event, authorization, awsservice, siteId, request, documentRecordSet)
+            .build();
 
     if (!isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
@@ -311,7 +322,7 @@ public class DocumentsUploadRequestHandler
   }
 
   private void validate(final AwsServiceCache awsservice, final String siteId,
-      final AddDocumentRequest request)
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
       throws ConflictException, BadException, ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
@@ -333,7 +344,7 @@ public class DocumentsUploadRequestHandler
   }
 
   private void validateDocumentIds(final AwsServiceCache awsservice, final ValidationBuilder vb,
-      final String siteId, final AddDocumentRequest request)
+      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
       throws ConflictException, BadException {
 
     List<String> documentIds = new ArrayList<>();
@@ -342,7 +353,8 @@ public class DocumentsUploadRequestHandler
     }
 
     List<String> childDocIds = notNull(request.getDocuments()).stream()
-        .map(AddDocumentRequest::getDocumentId).filter(documentId -> !isEmpty(documentId)).toList();
+        .map(com.formkiq.stacks.dynamodb.documents.AddDocumentRequest::getDocumentId)
+        .filter(documentId -> !isEmpty(documentId)).toList();
     documentIds.addAll(childDocIds);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
@@ -373,7 +385,8 @@ public class DocumentsUploadRequestHandler
   }
 
   private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final AddDocumentRequest item) throws BadException, ValidationException {
+      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item)
+      throws BadException, ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());

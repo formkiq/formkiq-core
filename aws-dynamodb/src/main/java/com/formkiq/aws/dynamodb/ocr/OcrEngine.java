@@ -21,11 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.documents;
+package com.formkiq.aws.dynamodb.ocr;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.module.actions.ActionType;
-
-@Reflectable
-public record AddAction(ActionType type, AddActionParameters parameters, String queueId) {
+/**
+ * 
+ * Supported OCR Engines.
+ *
+ */
+public enum OcrEngine {
+  /** Manually Set Ocr. */
+  MANUAL,
+  /** Tesseract. */
+  TESSERACT,
+  /** Textract OCR Engine. */
+  TEXTRACT
 }

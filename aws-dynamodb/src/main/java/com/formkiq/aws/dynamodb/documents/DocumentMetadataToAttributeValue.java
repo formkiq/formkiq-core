@@ -61,7 +61,7 @@ public class DocumentMetadataToAttributeValue
       return Map.of();
     }
 
-    return metadataCollection.stream().collect(
+    return metadataCollection.stream().filter(meta -> !meta.isEmpty()).collect(
         Collectors.toMap(meta -> PREFIX_DOCUMENT_METADATA + meta.key(), this::toAttributeValue));
   }
 

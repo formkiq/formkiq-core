@@ -35,8 +35,9 @@ import java.util.Set;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -70,20 +71,20 @@ public interface DocumentService {
    * 
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentArtifact}
-   * @param tags {@link Collection} {@link DocumentTag}
+   * @param tags {@link Collection} {@link DocumentTagRecord}
    * @param timeToLive {@link String}
    */
-  void addTags(String siteId, DocumentArtifact document, Collection<DocumentTag> tags,
+  void addTags(String siteId, DocumentArtifact document, Collection<DocumentTagRecord> tags,
       String timeToLive);
 
   /**
    * Add Tags to {@link Collection} of Documents.
    * 
    * @param siteId Optional Grouping siteId
-   * @param tags {@link Map} {@link Collection} {@link DocumentTag}
+   * @param tags {@link Map} {@link Collection} {@link DocumentTagRecord}
    * @param timeToLive {@link String}
    */
-  void addTags(String siteId, Map<DocumentArtifact, Collection<DocumentTag>> tags,
+  void addTags(String siteId, Map<DocumentArtifact, Collection<DocumentTagRecord>> tags,
       String timeToLive);
 
   /**
@@ -553,6 +554,16 @@ public interface DocumentService {
       throws ValidationException;
 
   /**
+   * New Save Document method that should be used instead of the others.
+   * 
+   * @param siteId {@link String}
+   * @param documentRecordSet {@link DocumentRecordSet}
+   * @param options {@link SaveDocumentOptions}
+   */
+  void saveDocument(String siteId, DocumentRecordSet documentRecordSet,
+      SaveDocumentOptions options);
+
+  /**
    * Save Document Attributes.
    * 
    * @param siteId {@link String}
@@ -576,17 +587,6 @@ public interface DocumentService {
    */
   @Deprecated
   DocumentFormat saveDocumentFormat(String siteId, DocumentFormat format);
-
-  /**
-   * Save {@link DynamicDocumentItem}.
-   * 
-   * @param siteId {@link String}
-   * @param doc {@link DynamicDocumentItem}
-   * @return {@link DocumentItem}
-   * @throws ValidationException ValidationException
-   */
-  DocumentItem saveDocumentItemWithTag(String siteId, DynamicDocumentItem doc)
-      throws ValidationException;
 
   /**
    * Save Preset.

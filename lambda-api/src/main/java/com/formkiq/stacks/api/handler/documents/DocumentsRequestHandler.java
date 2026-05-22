@@ -59,7 +59,7 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.module.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -294,7 +294,7 @@ public class DocumentsRequestHandler
     return Map.of("next", nextToken, "documents", documents);
   }
 
-  private boolean isFolder(final AddDocumentRequest item) {
+  private boolean isFolder(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item) {
     return !isEmpty(item.getPath()) && item.getPath().endsWith("/");
   }
 
@@ -315,7 +315,8 @@ public class DocumentsRequestHandler
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
     String siteId = authorization.getSiteId();
-    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request = JsonToObject.fromJson(
+        awsservice, event, com.formkiq.stacks.dynamodb.documents.AddDocumentRequest.class);
 
     validatePost(request);
 
@@ -350,12 +351,13 @@ public class DocumentsRequestHandler
   }
 
   /**
-   * Update {@link AddDocumentRequest} request object.
+   * Update {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest} request object.
    *
    * @param awsservice {@link AwsServiceCache}
-   * @param o {@link AddDocumentRequest}
+   * @param o {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    */
-  private void updatePost(final AwsServiceCache awsservice, final AddDocumentRequest o) {
+  private void updatePost(final AwsServiceCache awsservice,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest o) {
 
     if (!isEmpty(o.getContent()) && isEmpty(o.getChecksum()) && !isEmpty(o.getChecksumType())) {
       S3PresignerService s3PresignerService = awsservice.getExtension(S3PresignerService.class);
@@ -370,7 +372,8 @@ public class DocumentsRequestHandler
     }
   }
 
-  private void validatePost(final AddDocumentRequest item) throws ValidationException {
+  private void validatePost(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item)
+      throws ValidationException {
 
     boolean isFolder = isFolder(item);
 

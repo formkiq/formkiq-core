@@ -29,14 +29,14 @@ import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.module.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.LogType;
 import com.formkiq.module.lambdaservices.logger.LoggerImpl;
 import org.junit.jupiter.api.Test;
-import com.formkiq.module.actions.Action;
-import com.formkiq.module.actions.ActionStatus;
-import com.formkiq.module.actions.ActionType;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.events.EventServiceMock;
 import com.formkiq.module.events.document.DocumentEvent;
 
