@@ -38,6 +38,8 @@ public class GetDocumentAiPromptsRequestsBuilder
 
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
+  /** Analysis Category. */
+  private String analysisCategory;
   /** Next Token. */
   private String next;
   /** Results limit. */
@@ -50,6 +52,17 @@ public class GetDocumentAiPromptsRequestsBuilder
    */
   public GetDocumentAiPromptsRequestsBuilder(final DocumentArtifact documentArtifact) {
     this.document = documentArtifact;
+  }
+
+  /**
+   * Set Analysis Category.
+   * 
+   * @param category {@link String}
+   * @return {@link GetDocumentAiPromptsRequestsBuilder}
+   */
+  public GetDocumentAiPromptsRequestsBuilder analysisCategory(final String category) {
+    this.analysisCategory = category;
+    return this;
   }
 
   /**
@@ -79,6 +92,6 @@ public class GetDocumentAiPromptsRequestsBuilder
       final String siteId) {
     return executeApiCall(() -> new IntelligentDocumentProcessingApi(apiClient)
         .getDocumentAiPromptsResults(this.document.documentId(), siteId, this.document.artifactId(),
-            this.resultsLimit, this.next));
+            this.analysisCategory, this.resultsLimit, this.next));
   }
 }
