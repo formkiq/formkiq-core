@@ -6139,6 +6139,48 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
+  /sites/global/opensearch/snapshotRepositories/{repositoryName}/cleanup:
+    post:
+      operationId: CleanupOpenSearchSnapshotRepository
+      description: |-
+        Cleans up stale data in the specified OpenSearch snapshot repository.
+
+        This endpoint clears data no longer referenced by any existing snapshot. This operation is not supported for OpenSearch Serverless.
+      summary: Cleanup OpenSearch snapshot repository
+      tags:
+      - System Management
+      parameters:
+      - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+      - name: cluster_manager_timeout
+        in: query
+        description: The amount of time to wait for a response from the cluster manager node.
+        required: false
+        schema:
+          type: string
+      - name: timeout
+        in: query
+        description: The amount of time to wait for the operation to complete.
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupOpenSearchSnapshotRepositoryResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200'
   /sites/{siteId}/opensearch/snapshotRepository:
     get:
       operationId: GetOpenSearchSnapshotRepository
@@ -14169,6 +14211,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OpenSearchS3Repository'
+    CleanupOpenSearchSnapshotRepositoryResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: The OpenSearch cleanup snapshot repository response.
     SetOpenSearchIndiceRequest:
       type: object
       properties:
