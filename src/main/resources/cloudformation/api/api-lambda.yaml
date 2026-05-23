@@ -138,6 +138,39 @@ Conditions:
 
 Resources:        
 
+  DelegationTokenHmacKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description:
+        Fn::Sub: "FormKiQ ${AppEnvironment} delegation token HMAC key"
+      KeySpec: HMAC_256
+      KeyUsage: GENERATE_VERIFY_MAC
+      Origin: AWS_KMS
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+          Action: "kms:*"
+          Resource: "*"
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+
+  DelegationTokenHmacKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName:
+        Fn::Sub: "alias/formkiq/${AppEnvironment}/delegation-token-hmac"
+      TargetKeyId:
+        Ref: DelegationTokenHmacKey
+
   DocumentsApiRequestsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -196,6 +229,8 @@ Resources:
             Ref: UserAuthentication
           OPERATIONAL_MODE:
             Ref: OperationalMode
+          DELEGATION_TOKEN_KMS_KEY_ID:
+            Ref: DelegationTokenHmacKey
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
@@ -291,6 +326,15 @@ Resources:
               Action:
                 - kms:Decrypt
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - kms:GenerateMac
+                - kms:VerifyMac
+                - kms:DescribeKey
+              Resource:
+                - Fn::GetAtt:
+                  - DelegationTokenHmacKey
+                  - Arn
             - Effect: Allow
               Action:
               - s3:GetObject
