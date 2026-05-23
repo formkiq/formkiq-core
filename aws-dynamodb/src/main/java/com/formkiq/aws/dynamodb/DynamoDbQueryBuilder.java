@@ -62,6 +62,8 @@ public class DynamoDbQueryBuilder implements DbKeys {
   private final Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
   /** Key Conditions. */
   private final StringJoiner keyConditions = new StringJoiner(" AND ");
+  /** Filter Conditions. */
+  private final StringJoiner filterConditions = new StringJoiner(" AND ");
   /** {@link Map} Start Key. */
   private Map<String, AttributeValue> startKey;
   /** Query limit. */
@@ -136,6 +138,11 @@ public class DynamoDbQueryBuilder implements DbKeys {
    */
   public QueryRequest build(final String tableName) {
 
+    if (indexName != null && this.filterConditions.length() > 0) {
+      throw new IllegalArgumentException(
+          "Filter expressions are only supported when indexName is null");
+    }
+
     if (indexName != null) {
       expressionAttributeNames.forEach((k, v) -> expressionAttributeNames.put(k, indexName + v));
     }
@@ -145,6 +152,7 @@ public class DynamoDbQueryBuilder implements DbKeys {
             .expressionAttributeNames(expressionAttributeNames)
             .projectionExpression(projectionExpression).scanIndexForward(scanIndexForward)
             .expressionAttributeValues(expressionAttributeValues).exclusiveStartKey(startKey)
+            .filterExpression(filterConditions.length() > 0 ? filterConditions.toString() : null)
             .limit(limit);
 
     if (indexName != null) {
@@ -176,6 +184,23 @@ public class DynamoDbQueryBuilder implements DbKeys {
     String nameKey = createExpressionAttributeName(SK);
     String valKey = addValue(SK, AttributeValue.builder().s(value).build());
     keyConditions.add(nameKey + " = " + valKey);
+    return this;
+  }
+
+  /**
+   * Adds an equality filter condition.
+   *
+   * @param name attribute name
+   * @param value attribute value
+   * @return this builder
+   */
+  public DynamoDbQueryBuilder filter(final String name, final String value) {
+    if (!isEmpty(name) && !isEmpty(value)) {
+      String nameKey = createExpressionAttributeName(name);
+      String valKey = addValue("filter_" + name, AttributeValue.builder().s(value).build());
+      filterConditions.add(nameKey + " = " + valKey);
+    }
+
     return this;
   }
 
@@ -340,4 +365,3 @@ public class DynamoDbQueryBuilder implements DbKeys {
     return this;
   }
 }
-

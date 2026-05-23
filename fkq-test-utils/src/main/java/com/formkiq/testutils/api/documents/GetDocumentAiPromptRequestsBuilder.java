@@ -40,6 +40,8 @@ public class GetDocumentAiPromptRequestsBuilder
   private final DocumentArtifact document;
   /** LLM Prompt Entity Name. */
   private final String llmPromptEntityName;
+  /** Analysis Category. */
+  private String analysisCategory;
   /** Next Token. */
   private String next;
   /** Results limit. */
@@ -55,6 +57,17 @@ public class GetDocumentAiPromptRequestsBuilder
       final String promptEntityName) {
     this.document = documentArtifact;
     this.llmPromptEntityName = promptEntityName;
+  }
+
+  /**
+   * Set Analysis Category.
+   * 
+   * @param category {@link String}
+   * @return {@link GetDocumentAiPromptRequestsBuilder}
+   */
+  public GetDocumentAiPromptRequestsBuilder analysisCategory(final String category) {
+    this.analysisCategory = category;
+    return this;
   }
 
   /**
@@ -84,6 +97,6 @@ public class GetDocumentAiPromptRequestsBuilder
       final String siteId) {
     return executeApiCall(() -> new IntelligentDocumentProcessingApi(apiClient)
         .getDocumentAiPromptResults(this.document.documentId(), this.llmPromptEntityName, siteId,
-            this.document.artifactId(), this.resultsLimit, this.next));
+            this.document.artifactId(), this.analysisCategory, this.resultsLimit, this.next));
   }
 }

@@ -2231,6 +2231,7 @@ paths:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/analysisCategoryParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
       responses:
@@ -2263,6 +2264,7 @@ paths:
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/llmPromptEntityNameParam'
+      - $ref: '#/components/parameters/analysisCategoryParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
       responses:
@@ -8332,6 +8334,13 @@ components:
       required: false
       schema:
         type: string
+    analysisCategoryParam:
+      name: analysisCategory
+      in: query
+      description: Analysis Category
+      required: false
+      schema:
+        type: string
     llmPromptEntityNameParam:
       name: llmPromptEntityName
       in: path
@@ -10547,6 +10556,9 @@ components:
         llmPromptEntityName:
           type: string
           description: Name of the LLM Prompt Entity
+        analysisCategory:
+          type: string
+          description: Analysis Category
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -10564,6 +10576,9 @@ components:
     DocumentAiPromptResult:
       type: object
       properties:
+        analysisCategory:
+          type: string
+          description: Analysis Category
         insertedDate:
           type: string
           description: Inserted Timestamp

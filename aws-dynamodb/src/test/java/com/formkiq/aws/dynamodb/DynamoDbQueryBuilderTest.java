@@ -31,6 +31,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -59,6 +60,31 @@ public class DynamoDbQueryBuilderTest {
     assertEquals("p", values.get(":PK").s());
     assertEquals("low", values.get(":SK_low").s());
     assertEquals("high", values.get(":SK_high").s());
+  }
+
+  @Test
+  void testFilter() {
+    QueryRequest req =
+        DynamoDbQueryBuilder.builder().pk("p").filter("analysisCategory", "mycategory").build("T");
+
+    assertEquals("#analysisCategory = :filter_analysisCategory", req.filterExpression());
+    assertEquals("analysisCategory", req.expressionAttributeNames().get("#analysisCategory"));
+    assertEquals("mycategory", req.expressionAttributeValues().get(":filter_analysisCategory").s());
+  }
+
+  @Test
+  void testFilterNotAllowedWithIndexName() {
+    assertThrows(IllegalArgumentException.class, () -> DynamoDbQueryBuilder.builder()
+        .indexName("GSI1").pk("p").filter("analysisCategory", "mycategory").build("T"));
+  }
+
+  @Test
+  void testFilterSkipsEmptyValues() {
+    QueryRequest req = DynamoDbQueryBuilder.builder().pk("p").filter("analysisCategory", null)
+        .filter("", "mycategory").build("T");
+
+    assertNull(req.filterExpression());
+    assertEquals(Map.of("#PK", "PK"), req.expressionAttributeNames());
   }
 
   @Test
