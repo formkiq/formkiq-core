@@ -109,7 +109,7 @@ public abstract class AbstractRequestHandler {
     assertEquals(expectedHeadersSize, headers.size());
     assertEquals("*", headers.get("Access-Control-Allow-Origin"));
     assertEquals("*", headers.get("Access-Control-Allow-Methods"));
-    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
         headers.get("Access-Control-Allow-Headers"));
     assertEquals("application/json", headers.get("Content-Type"));
   }
@@ -207,7 +207,7 @@ public abstract class AbstractRequestHandler {
 
     assertEquals("*", obj.getString("Access-Control-Allow-Origin"));
     assertEquals("*", obj.getString("Access-Control-Allow-Methods"));
-    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
         obj.getString("Access-Control-Allow-Headers"));
     assertEquals("*", obj.getString("Access-Control-Allow-Origin"));
     assertEquals("application/json", obj.getString("Content-Type"));

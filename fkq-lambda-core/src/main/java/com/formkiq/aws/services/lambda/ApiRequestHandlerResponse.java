@@ -328,8 +328,9 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
     private Map<String, String> createJsonHeaders() {
       return Map.of("Access-Control-Allow-Headers",
-          "Content-Type,X-Amz-Date,Authorization,X-Api-Key", "Access-Control-Allow-Methods", "*",
-          "Access-Control-Allow-Origin", "*", "Content-Type", "application/json");
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
+          "Access-Control-Allow-Methods", "*", "Access-Control-Allow-Origin", "*", "Content-Type",
+          "application/json");
     }
 
     /**

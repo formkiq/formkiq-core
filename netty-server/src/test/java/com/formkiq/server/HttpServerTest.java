@@ -93,7 +93,14 @@ public class HttpServerTest {
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
 
-  private void assertCorsHeaders(final HttpResponse<String> response) {
+  private void assertApiCorsHeaders(final HttpResponse<String> response) {
+    assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
+        response.headers().firstValue("access-control-allow-headers").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
+    assertEquals("*", response.headers().firstValue("access-control-allow-origin").get());
+  }
+
+  private void assertLoginCorsHeaders(final HttpResponse<String> response) {
     assertEquals("Content-Type,X-Amz-Date,Authorization,X-Api-Key",
         response.headers().firstValue("access-control-allow-headers").get());
     assertEquals("*", response.headers().firstValue("access-control-allow-methods").get());
@@ -215,7 +222,7 @@ public class HttpServerTest {
     assertEquals(NettyExtension.API_KEY, results.get("AccessToken"));
     assertEquals(NettyExtension.API_KEY, results.get("IdToken"));
     assertEquals("", results.get("RefreshToken"));
-    assertCorsHeaders(response);
+    assertLoginCorsHeaders(response);
   }
 
   /**
@@ -254,7 +261,7 @@ public class HttpServerTest {
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-    assertCorsHeaders(response);
+    assertApiCorsHeaders(response);
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
     assertEquals("admin", results.get("username"));
 
@@ -297,7 +304,7 @@ public class HttpServerTest {
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-    assertCorsHeaders(response);
+    assertApiCorsHeaders(response);
     Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
     assertEquals("1.17.0", results.get("version"));
     assertEquals("core", results.get("type"));

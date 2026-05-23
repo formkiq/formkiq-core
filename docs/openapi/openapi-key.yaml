@@ -7245,6 +7245,54 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /sites/{siteId}/delegationTokens:
+    post:
+      operationId: GenerateDelegationToken
+      description: |-
+        Creates a KMS-signed delegation token for a site. This endpoint requires ADMIN permission
+        for the requested siteId. The returned token is sent on later API requests in the
+        x-formkiq-delegation-token header and reduces the caller's effective permissions to the
+        requested subset for that site. It cannot grant ADMIN, add permissions the caller does not
+        already have, or add access to other sites. Token lifetime is controlled by
+        expiresInSeconds, which defaults to 300 seconds and can be set up to 3600 seconds. When
+        onBehalfOf is supplied, activity created while using the token is attributed to that
+        username while the signed token still records the ADMIN principal that issued it. The
+        optional reason is signed into the token for audit and support traceability.
+      summary: Generate a delegation token
+      tags:
+      - System Management
+      parameters:
+      - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateDelegationTokenRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateDelegationTokenResponse'
+        "400":
+          description: 400 Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /system/configuration:
     get:
       operationId: GetSystemConfiguration
@@ -14564,6 +14612,58 @@ components:
         hmacSignature:
           type: string
           description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
+    GenerateDelegationTokenRequest:
+      type: object
+      required:
+      - permissions
+      properties:
+        permissions:
+          type: array
+          description: Permissions to keep while the delegation token is applied. These must be a subset of the caller's current permissions for the site and cannot include ADMIN.
+          items:
+            type: string
+            enum:
+            - READ
+            - WRITE
+            - DELETE
+            - GOVERN
+        expiresInSeconds:
+          type: integer
+          description: Token lifetime in seconds. Defaults to 300 seconds and cannot exceed 3600 seconds.
+          default: 300
+          minimum: 1
+          maximum: 3600
+        onBehalfOf:
+          $ref: '#/components/schemas/DelegationTokenPrincipal'
+        reason:
+          type: string
+          description: Reason the delegation token is being generated. Stored in the signed token for audit/support traceability.
+          minLength: 1
+          maxLength: 1024
+    DelegationTokenPrincipal:
+      type: object
+      description: User identity to store in the signed delegation token.
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          description: Username to use for activity/audit attribution when the delegation token is applied.
+          minLength: 1
+          maxLength: 256
+    GenerateDelegationTokenResponse:
+      type: object
+      properties:
+        headerName:
+          type: string
+          example: x-formkiq-delegation-token
+        delegationToken:
+          type: string
+          description: Signed token to send in the x-formkiq-delegation-token request header.
+        expires:
+          type: integer
+          format: int64
+          description: Expiration epoch seconds
     SystemConfigurationWebUi:
       type: object
       required:
@@ -15211,7 +15311,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15225,7 +15325,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15239,7 +15339,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15253,7 +15353,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15267,7 +15367,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15281,7 +15381,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15295,7 +15395,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15309,7 +15409,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15323,7 +15423,7 @@ components:
           statusCode: "201"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15337,7 +15437,7 @@ components:
           statusCode: "201"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15351,7 +15451,7 @@ components:
           statusCode: "201"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15365,7 +15465,7 @@ components:
           statusCode: "200"
           responseParameters:
             method.response.header.Access-Control-Allow-Methods: '''*'''
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: when_no_templates
       httpMethod: POST
@@ -15378,7 +15478,7 @@ components:
         default:
           statusCode: "201"
           responseParameters:
-            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
             method.response.header.Access-Control-Allow-Methods: '''*'''
             method.response.header.Access-Control-Allow-Origin: '''*'''
       passthroughBehavior: WHEN_NO_TEMPLATES
@@ -15391,7 +15491,7 @@ x-amazon-apigateway-gateway-responses:
     responseParameters:
       gatewayresponse.header.Access-Control-Allow-Methods: '''*'''
       gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
-      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'''
 x-amazon-apigateway-cors:
   allowOrigins:
   - '*'
