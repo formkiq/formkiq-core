@@ -27,10 +27,10 @@ import java.util.List;
 
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDelegationTokenRequest;
+import com.formkiq.client.model.AddDelegationTokenResponse;
 import com.formkiq.client.model.DelegationTokenPrincipal;
-import com.formkiq.client.model.GenerateDelegationTokenRequest;
-import com.formkiq.client.model.GenerateDelegationTokenRequest.PermissionsEnum;
-import com.formkiq.client.model.GenerateDelegationTokenResponse;
+import com.formkiq.client.model.DelegationTokenPermission;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -38,10 +38,10 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  * POST /sites/{siteId}/delegationTokens.
  */
 public class AddDelegationTokenRequestBuilder
-    implements HttpRequestBuilder<GenerateDelegationTokenResponse> {
+    implements HttpRequestBuilder<AddDelegationTokenResponse> {
 
-  /** {@link GenerateDelegationTokenRequest}. */
-  private final GenerateDelegationTokenRequest req = new GenerateDelegationTokenRequest();
+  /** {@link AddDelegationTokenRequest}. */
+  private final AddDelegationTokenRequest req = new AddDelegationTokenRequest();
 
   /**
    * constructor.
@@ -51,10 +51,11 @@ public class AddDelegationTokenRequestBuilder
   /**
    * Add permission.
    *
-   * @param permission {@link PermissionsEnum}
+   * @param permission {@link DelegationTokenPermission}
    * @return {@link AddDelegationTokenRequestBuilder}
    */
-  public AddDelegationTokenRequestBuilder addPermission(final PermissionsEnum permission) {
+  public AddDelegationTokenRequestBuilder addPermission(
+      final DelegationTokenPermission permission) {
     this.req.addPermissionsItem(permission);
     return this;
   }
@@ -84,10 +85,11 @@ public class AddDelegationTokenRequestBuilder
   /**
    * Set permissions.
    *
-   * @param permissions {@link PermissionsEnum}
+   * @param permissions {@link DelegationTokenPermission}
    * @return {@link AddDelegationTokenRequestBuilder}
    */
-  public AddDelegationTokenRequestBuilder permissions(final List<PermissionsEnum> permissions) {
+  public AddDelegationTokenRequestBuilder permissions(
+      final List<DelegationTokenPermission> permissions) {
     this.req.permissions(permissions);
     return this;
   }
@@ -104,7 +106,7 @@ public class AddDelegationTokenRequestBuilder
   }
 
   @Override
-  public ApiHttpResponse<GenerateDelegationTokenResponse> submit(final ApiClient apiClient,
+  public ApiHttpResponse<AddDelegationTokenResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
         () -> new SystemManagementApi(apiClient).generateDelegationToken(siteId, this.req));
