@@ -7254,7 +7254,7 @@ paths:
         x-formkiq-delegation-token header and reduces the caller's effective permissions to the
         requested subset for that site. It cannot grant ADMIN, add permissions the caller does not
         already have, or add access to other sites. Token lifetime is controlled by
-        expiresInSeconds, which defaults to 300 seconds and can be set up to 3600 seconds. When
+        expiresInSeconds. When expiresInSeconds is not set, the token does not expire. When
         onBehalfOf is supplied, activity created while using the token is attributed to that
         username while the signed token still records the ADMIN principal that issued it. The
         optional reason is signed into the token for audit and support traceability.
@@ -7268,7 +7268,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenerateDelegationTokenRequest'
+              $ref: '#/components/schemas/AddDelegationTokenRequest'
       responses:
         "200":
           description: 200 OK
@@ -7282,7 +7282,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerateDelegationTokenResponse'
+                $ref: '#/components/schemas/AddDelegationTokenResponse'
         "400":
           description: 400 Bad Request
           content:
@@ -14612,7 +14612,7 @@ components:
         hmacSignature:
           type: string
           description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
-    GenerateDelegationTokenRequest:
+    AddDelegationTokenRequest:
       type: object
       required:
       - permissions
@@ -14621,18 +14621,10 @@ components:
           type: array
           description: Permissions to keep while the delegation token is applied. These must be a subset of the caller's current permissions for the site and cannot include ADMIN.
           items:
-            type: string
-            enum:
-            - READ
-            - WRITE
-            - DELETE
-            - GOVERN
+            $ref: '#/components/schemas/DelegationTokenPermission'
         expiresInSeconds:
           type: integer
-          description: Token lifetime in seconds. Defaults to 300 seconds and cannot exceed 3600 seconds.
-          default: 300
-          minimum: 1
-          maximum: 3600
+          description: Optional token lifetime in seconds. When not set, the token does not expire.
         onBehalfOf:
           $ref: '#/components/schemas/DelegationTokenPrincipal'
         reason:
@@ -14640,6 +14632,13 @@ components:
           description: Reason the delegation token is being generated. Stored in the signed token for audit/support traceability.
           minLength: 1
           maxLength: 1024
+    DelegationTokenPermission:
+      type: string
+      enum:
+      - READ
+      - WRITE
+      - DELETE
+      - GOVERN
     DelegationTokenPrincipal:
       type: object
       description: User identity to store in the signed delegation token.
@@ -14651,7 +14650,7 @@ components:
           description: Username to use for activity/audit attribution when the delegation token is applied.
           minLength: 1
           maxLength: 256
-    GenerateDelegationTokenResponse:
+    AddDelegationTokenResponse:
       type: object
       properties:
         headerName:
@@ -14663,7 +14662,7 @@ components:
         expires:
           type: integer
           format: int64
-          description: Expiration epoch seconds
+          description: Expiration epoch seconds. Omitted when the token does not expire.
     SystemConfigurationWebUi:
       type: object
       required:
