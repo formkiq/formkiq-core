@@ -197,7 +197,7 @@ public class ApiAuthorizationBuilder {
 
     if (this.interceptors != null) {
       for (ApiAuthorizationInterceptor i : this.interceptors) {
-        i.update(event, authorization);
+        i.afterBuildAuthorization(event, authorization);
       }
     }
 

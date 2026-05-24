@@ -166,6 +166,22 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   /**
+   * Execute {@link ApiAuthorizationInterceptor} before-build hooks.
+   * 
+   * @param interceptors {@link List} {@link ApiAuthorizationInterceptor}
+   * @param event {@link ApiGatewayRequestEvent}
+   * @throws Exception Exception
+   */
+  private void executeBeforeBuildAuthorizationInterceptors(
+      final List<ApiAuthorizationInterceptor> interceptors, final ApiGatewayRequestEvent event)
+      throws Exception {
+
+    for (ApiAuthorizationInterceptor interceptor : interceptors) {
+      interceptor.beforeBuildAuthorization(event);
+    }
+  }
+
+  /**
    * Execute Before Request Interceptor.
    * 
    * @param requestInterceptors {@link List} {@link ApiRequestHandlerInterceptor}
@@ -472,6 +488,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       List<ApiAuthorizationInterceptor> interceptors =
           setupApiAuthorizationInterceptor(awsServices);
+
+      executeBeforeBuildAuthorizationInterceptors(interceptors, event);
 
       authorization = buildApiAuthorization(event, interceptors);
 
