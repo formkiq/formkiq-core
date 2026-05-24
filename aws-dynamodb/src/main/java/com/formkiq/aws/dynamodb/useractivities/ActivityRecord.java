@@ -39,8 +39,8 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
     String classificationId, String mappingId, String rulesetId, String ruleId, String entityTypeId,
     String entityId, String documentId, String artifactId, String workflowId, String attributeKey,
     String queueId, String webhookId, String locale, String apiKey, String controlPolicy,
-    String message, Date insertedDate, String versionPk, String versionSk,
-    Map<String, Object> changes) {
+    String message, String delegationUsedByUserId, String delegationReason, Date insertedDate,
+    String versionPk, String versionSk, Map<String, Object> changes) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date.
@@ -66,14 +66,15 @@ public record ActivityRecord(DynamoDbShardKey key, String resource, UserActivity
         .withString("type", type.name()).withString("status", status.name())
         .withString("sourceIpAddress", sourceIpAddress).withString("source", source)
         .withString("userId", userId).withString("message", message).withString("schema", schema)
-        .withString("mappingId", mappingId).withString("classificationId", classificationId)
-        .withString("entityTypeId", entityTypeId).withString("entityId", entityId)
-        .withString("rulesetId", rulesetId).withString("ruleId", ruleId)
-        .withString("apiKey", apiKey).withString("documentId", documentId)
-        .withString("artifactId", artifactId).withString("controlPolicy", controlPolicy)
-        .withString("workflowId", workflowId).withString("attributeKey", attributeKey)
-        .withString("queueId", queueId).withString("webhookId", webhookId)
-        .withString("locale", locale).withDate("inserteddate", insertedDate)
-        .withMap("changes", changes).build();
+        .withString("delegationUsedByUserId", delegationUsedByUserId)
+        .withString("delegationReason", delegationReason).withString("mappingId", mappingId)
+        .withString("classificationId", classificationId).withString("entityTypeId", entityTypeId)
+        .withString("entityId", entityId).withString("rulesetId", rulesetId)
+        .withString("ruleId", ruleId).withString("apiKey", apiKey)
+        .withString("documentId", documentId).withString("artifactId", artifactId)
+        .withString("controlPolicy", controlPolicy).withString("workflowId", workflowId)
+        .withString("attributeKey", attributeKey).withString("queueId", queueId)
+        .withString("webhookId", webhookId).withString("locale", locale)
+        .withDate("inserteddate", insertedDate).withMap("changes", changes).build();
   }
 }

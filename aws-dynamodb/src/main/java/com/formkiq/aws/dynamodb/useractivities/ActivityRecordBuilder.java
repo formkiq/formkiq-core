@@ -86,6 +86,10 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
   private String attributeKey;
   /** Activity Message. */
   private String message;
+  /** Delegation Used By UserId. */
+  private String delegationUsedByUserId;
+  /** Delegation Reason. */
+  private String delegationReason;
   /** Activity Inserted Date. */
   private Date insertedDate = new Date();
   /** Activity Changes. */
@@ -147,7 +151,8 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     return new ActivityRecord(key, resource, type, status, sourceIpAddress, source, userId, schema,
         classificationId, mappingId, rulesetId, ruleId, entityTypeId, entityId, documentId,
         artifactId, workflowId, attributeKey, queueId, webhookId, locale, apiKey, controlPolicy,
-        message, insertedDate, versionPk, versionSk, changes);
+        message, delegationUsedByUserId, delegationReason, insertedDate, versionPk, versionSk,
+        changes);
   }
 
   private DynamoDbShardKey buildActivityKey(final String siteId, final String pk,
@@ -360,6 +365,28 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
    */
   public ActivityRecordBuilder changes(final Map<String, Object> activityChanges) {
     this.changes = activityChanges;
+    return this;
+  }
+
+  /**
+   * Sets the reason for delegated activity.
+   *
+   * @param activityDelegationReason reason for delegation
+   * @return this Builder
+   */
+  public ActivityRecordBuilder delegationReason(final String activityDelegationReason) {
+    this.delegationReason = activityDelegationReason;
+    return this;
+  }
+
+  /**
+   * Sets the user ID that used delegated activity.
+   *
+   * @param activityDelegationUsedByUserId user ID that used delegation
+   * @return this Builder
+   */
+  public ActivityRecordBuilder delegationUsedByUserId(final String activityDelegationUsedByUserId) {
+    this.delegationUsedByUserId = activityDelegationUsedByUserId;
     return this;
   }
 

@@ -239,6 +239,8 @@ components:
         userId:
           type: string
           description: User who added document
+        delegation:
+          $ref: '#/components/schemas/ActivityDelegation'
         documentId:
           description: Document Identifier
         artifactId:
@@ -288,3 +290,13 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/UserActivityChanges'
+    #@overlay/match missing_ok=True
+    ActivityDelegation:
+      type: object
+      properties:
+        usedByUserId:
+          type: string
+          description: User who used the delegation token for the activity
+        reason:
+          type: string
+          description: Reason supplied when the delegation token was generated
