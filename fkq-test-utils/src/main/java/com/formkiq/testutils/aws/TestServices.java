@@ -214,6 +214,16 @@ public final class TestServices {
   }
 
   /**
+   * Get KMS Endpoint.
+   *
+   * @return {@link URI}
+   * @throws URISyntaxException URISyntaxException
+   */
+  public static URI getKmsEndpoint() throws URISyntaxException {
+    return getEndpointOverride(Service.KMS);
+  }
+
+  /**
    * Get Messages from SQS queue.
    * 
    * @param queueUrl {@link String}
