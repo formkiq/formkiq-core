@@ -103,7 +103,3 @@ components:
         delegationToken:
           type: string
           description: Signed token to send in the x-formkiq-delegation-token request header.
-        expires:
-          type: integer
-          format: int64
-          description: Expiration epoch seconds. Omitted when the token does not expire.
