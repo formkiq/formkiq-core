@@ -15,7 +15,7 @@ paths:
         expiresInSeconds. When expiresInSeconds is not set, the token does not expire. When
         onBehalfOf is supplied, activity created while using the token is attributed to that
         username while the signed token still records the ADMIN principal that issued it. The
-        optional reason is signed into the token for audit and support traceability.
+        reason is signed into the token for audit and support traceability.
       summary: Generate a delegation token
       tags:
         - System Management
@@ -60,6 +60,7 @@ components:
       type: object
       required:
         - permissions
+        - reason
       properties:
         permissions:
           type: array

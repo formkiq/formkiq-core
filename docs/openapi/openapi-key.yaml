@@ -7257,7 +7257,7 @@ paths:
         expiresInSeconds. When expiresInSeconds is not set, the token does not expire. When
         onBehalfOf is supplied, activity created while using the token is attributed to that
         username while the signed token still records the ADMIN principal that issued it. The
-        optional reason is signed into the token for audit and support traceability.
+        reason is signed into the token for audit and support traceability.
       summary: Generate a delegation token
       tags:
       - System Management
@@ -8731,6 +8731,8 @@ components:
         userId:
           type: string
           description: User who added document
+        delegation:
+          $ref: '#/components/schemas/ActivityDelegation'
         documentId:
           description: Document Identifier
         artifactId:
@@ -8780,6 +8782,15 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/UserActivityChanges'
+    ActivityDelegation:
+      type: object
+      properties:
+        usedByUserId:
+          type: string
+          description: User who used the delegation token for the activity
+        reason:
+          type: string
+          description: Reason supplied when the delegation token was generated
     GetAttributesResponse:
       type: object
       properties:
@@ -14616,6 +14627,7 @@ components:
       type: object
       required:
       - permissions
+      - reason
       properties:
         permissions:
           type: array
