@@ -11,11 +11,10 @@ paths:
         for the requested siteId. The returned token is sent on later API requests in the
         x-formkiq-delegation-token header and reduces the caller's effective permissions to the
         requested subset for that site. It cannot grant ADMIN, add permissions the caller does not
-        already have, or add access to other sites. Token lifetime is controlled by
-        expiresInSeconds. When expiresInSeconds is not set, the token does not expire. When
-        onBehalfOf is supplied, activity created while using the token is attributed to that
-        username while the signed token still records the ADMIN principal that issued it. The
-        reason is signed into the token for audit and support traceability.
+        already have, or add access to other sites. When onBehalfOf is supplied, activity created
+        while using the token is attributed to that username while the signed token still records
+        the ADMIN principal that issued it. The reason is signed into the token for audit and
+        support traceability.
       summary: Generate a delegation token
       tags:
         - System Management
@@ -67,9 +66,6 @@ components:
           description: Permissions to keep while the delegation token is applied. These must be a subset of the caller's current permissions for the site and cannot include ADMIN.
           items:
             $ref: '#/components/schemas/DelegationTokenPermission'
-        expiresInSeconds:
-          type: integer
-          description: Optional token lifetime in seconds. When not set, the token does not expire.
         onBehalfOf:
           $ref: '#/components/schemas/DelegationTokenPrincipal'
         reason:

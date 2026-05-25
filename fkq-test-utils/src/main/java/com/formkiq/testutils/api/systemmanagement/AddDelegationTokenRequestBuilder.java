@@ -61,17 +61,6 @@ public class AddDelegationTokenRequestBuilder
   }
 
   /**
-   * Expires in seconds.
-   *
-   * @param seconds {@link Integer}
-   * @return {@link AddDelegationTokenRequestBuilder}
-   */
-  public AddDelegationTokenRequestBuilder expiresInSeconds(final Integer seconds) {
-    this.req.expiresInSeconds(seconds);
-    return this;
-  }
-
-  /**
    * Set on behalf of username.
    *
    * @param username {@link String}
