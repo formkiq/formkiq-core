@@ -46,6 +46,12 @@ public record UserActivity(
     /* The identifier of the user who performed the activity. */
     String userId,
 
+    /* The identifier of the user who used delegated activity. */
+    String delegationUsedByUserId,
+
+    /* The reason supplied for delegated activity. */
+    String delegationReason,
+
     /* The timestamp when the activity was recorded. */
     Date insertedDate,
 
@@ -85,6 +91,10 @@ public record UserActivity(
     private UserActivityType type;
     /** User Id. */
     private String userId;
+    /** Delegation Used By UserId. */
+    private String delegationUsedByUserId;
+    /** Delegation Reason. */
+    private String delegationReason;
     /** Inserted Date. */
     private Instant insertedDate;
     /** Activity Message. */
@@ -117,12 +127,23 @@ public record UserActivity(
      * @return a new {@link UserActivity} object
      */
     public UserActivity build(final String siteId) {
-      return new UserActivity(siteId, resource, type, userId, Date.from(insertedDate), message,
-          status, sourceIpAddress, source, resourceIds, body, changes);
+      return new UserActivity(siteId, resource, type, userId, delegationUsedByUserId,
+          delegationReason, Date.from(insertedDate), message, status, sourceIpAddress, source,
+          resourceIds, body, changes);
     }
 
     public Builder changes(final Map<String, ChangeRecord> userActivityChanges) {
       this.changes = userActivityChanges;
+      return this;
+    }
+
+    public Builder delegationReason(final String userActivityDelegationReason) {
+      this.delegationReason = userActivityDelegationReason;
+      return this;
+    }
+
+    public Builder delegationUsedByUserId(final String userActivityDelegationUsedByUserId) {
+      this.delegationUsedByUserId = userActivityDelegationUsedByUserId;
       return this;
     }
 

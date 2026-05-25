@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.useractivities;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbShardKey;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -75,6 +76,22 @@ public class ActivityRecordBuilderTest {
 
   private void assertKeyEquals(final String siteId, final String expectedKey, final String gotKey) {
     assertEquals(siteId != null ? siteId + "/" + expectedKey : expectedKey, gotKey);
+  }
+
+  @Test
+  void testBuildDelegationMetadata() {
+    ActivityRecord record = new ActivityRecordBuilder("", "").resource("documents")
+        .resourceIds(Map.of("documentId", "doc-1")).userId(USER_ID)
+        .delegationUsedByUserId("admin@example.com").delegationReason("Support case 123")
+        .type(UserActivityType.CREATE).status(UserActivityStatus.COMPLETE)
+        .insertedDate(INSERTED_DATE).build(SITE_ID);
+
+    Map<String, AttributeValue> attributes = record.getAttributes();
+
+    assertEquals("admin@example.com", record.delegationUsedByUserId());
+    assertEquals("Support case 123", record.delegationReason());
+    assertEquals("admin@example.com", attributes.get("delegationUsedByUserId").s());
+    assertEquals("Support case 123", attributes.get("delegationReason").s());
   }
 
   @Test
