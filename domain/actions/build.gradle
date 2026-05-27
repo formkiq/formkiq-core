@@ -16,7 +16,7 @@ dependencies {
   implementation project(':libs:validation')
 
   testImplementation project(':domain:documents')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation project(':domain:plugins')
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher

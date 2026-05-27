@@ -37,7 +37,7 @@ dependencies {
   testImplementation project(':adapters:aws:cognito-identityprovider')
   testImplementation project(':adapters:aws:dynamodb')
   testImplementation project(':domain:documents')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
 
   testImplementation libs.aws.sdk.dynamodb
 

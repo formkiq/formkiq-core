@@ -33,7 +33,7 @@ dependencies {
 
   testImplementation project(':adapters:aws:cognito-identity')
   testImplementation project(':adapters:aws:cognito-identityprovider')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation libs.gson
   testImplementation libs.slf4j.simple
 

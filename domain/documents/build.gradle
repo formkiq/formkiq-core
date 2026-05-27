@@ -30,7 +30,7 @@ dependencies {
   implementation libs.gson
 
   testImplementation project(':adapters:aws:ssm')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation libs.slf4j.api
   testImplementation libs.guava
   testImplementation libs.slf4j.simple

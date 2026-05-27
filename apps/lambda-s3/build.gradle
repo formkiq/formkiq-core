@@ -49,7 +49,7 @@ dependencies {
   implementation libs.slf4j.simple
 
   testImplementation project(':adapters:aws:sqs')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation project(':libs:validation')
   testImplementation libs.commons.lang3
 

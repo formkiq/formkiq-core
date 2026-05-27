@@ -23,7 +23,7 @@ dependencies {
   implementation libs.formkiq.lambda.runtime.graalvm
   implementation libs.formkiq.graalvm.annotations
 
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher

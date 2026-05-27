@@ -18,7 +18,7 @@ dependencies {
   implementation libs.formkiq.graalvm.annotations
   implementation libs.aws.sdk.utils
 
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
   testImplementation libs.testcontainers

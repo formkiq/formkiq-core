@@ -57,7 +57,7 @@ dependencies {
   testImplementation project(':adapters:aws:iam')
   testImplementation project(':adapters:aws:sts')
   testImplementation project(':apps:lambda-s3')
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
   testImplementation project(':apps:lambda-typesense')
 
   testImplementation libs.aws.sdk.apigateway

@@ -25,7 +25,7 @@ dependencies {
   implementation libs.poi.ooxml
   implementation libs.poi.scratchpad
 
-  testImplementation project(':fkq-test-utils')
+  testImplementation project(':testing:test-utils')
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
