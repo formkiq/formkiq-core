@@ -3,10 +3,10 @@ description = "Http Sigv4"
 
 dependencies {
   api project(':libs:http')
-  implementation group: 'software.amazon.awssdk', name: 'http-client-spi', version: '2.42.8'
-  api group: 'software.amazon.awssdk', name: 'auth', version: '2.42.8'
+  implementation libs.aws.sdk.http.client.spi
+  api libs.aws.sdk.auth
 
-  testImplementation platform("org.junit:junit-bom:6.0.3")
-  testImplementation "org.junit.jupiter:junit-jupiter"
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
 }

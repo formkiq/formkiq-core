@@ -32,9 +32,9 @@ dependencies {
   testImplementation project(':adapters:aws:ssm')
   testImplementation project(':adapters:aws:sns')
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
-  testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.gson
 }
 
 // -------------------------------

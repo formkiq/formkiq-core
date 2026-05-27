@@ -3,19 +3,19 @@ description = "AWS DynamoDB"
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.2'
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
 
-  api group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.42.8'
+  api libs.aws.sdk.dynamodb
   implementation project(':fkq-lambda-services')
   implementation project(':libs:validation')
   implementation project(':libs:strings')
   //implementation project(':adapters:aws:xray')
-  implementation group: 'software.amazon.awssdk', name: 'url-connection-client', version: '2.42.8'
-  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-  implementation group: 'com.github.f4b6a3', name: 'ulid-creator', version: '5.2.4'
+  implementation libs.aws.sdk.url.connection.client
+  implementation libs.formkiq.graalvm.annotations
+  implementation libs.ulid.creator
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
   testImplementation project(':fkq-test-utils')
 
   configurations.all {

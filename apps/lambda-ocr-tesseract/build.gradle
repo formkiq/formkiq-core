@@ -16,22 +16,22 @@ dependencies {
   implementation project(':fkq-lambda-services')
   implementation project(':fkq-lambda-core')
   // 5.16.0 of tess4j breaks everything - should look at removing this
-  implementation("net.sourceforge.tess4j:tess4j:5.13.0")
-  implementation("org.slf4j:slf4j-simple:2.0.17")
-  implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.4.0'
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
-  implementation group: 'net.java.dev.jna', name: 'jna', version: '5.18.1'
+  implementation(libs.tess4j)
+  implementation(libs.slf4j.simple)
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+  implementation libs.jna
 
-  implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.5.1'
-  implementation group: 'org.apache.poi', name: 'poi-scratchpad', version: '5.5.1'
+  implementation libs.poi.ooxml
+  implementation libs.poi.scratchpad
 
   testImplementation project(':fkq-test-utils')
 
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
-  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '2.0.3'
-  testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: '1.21.4'
-  testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.4'
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack
 }
 
 tasks.register('downloadZipFile', Download) {

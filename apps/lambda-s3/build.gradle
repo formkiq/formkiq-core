@@ -17,7 +17,7 @@ configurations {
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.2'
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
 
   implementation project(':adapters:aws:s3')
   implementation project(':adapters:aws:sns')
@@ -37,34 +37,34 @@ dependencies {
   implementation project(':libs:strings')
 
   // remove at some point and replace with custom light-weight records
-  implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.4.0'
-  implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
-  implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.21'
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+  implementation libs.thumbnailator
 
-  implementation group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.6.0'
-  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+  implementation libs.formkiq.lambda.runtime.graalvm
+  implementation libs.formkiq.graalvm.annotations
 
-  implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+  implementation libs.slf4j.simple
 
   testImplementation project(':adapters:aws:sqs')
   testImplementation project(':fkq-test-utils')
   testImplementation project(':libs:validation')
-  testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.20.0'
+  testImplementation libs.commons.lang3
 
-  testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.42.8'
-  testImplementation group: 'software.amazon.awssdk', name: 's3', version: '2.42.8'
-  testImplementation group: 'software.amazon.awssdk', name: 'iam', version: '2.42.8'
+  testImplementation libs.aws.sdk.dynamodb
+  testImplementation libs.aws.sdk.s3
+  testImplementation libs.aws.sdk.iam
 
-  testImplementation platform("org.junit:junit-bom:6.0.3")
-  testImplementation "org.junit.jupiter:junit-jupiter"
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
 
-  testImplementation platform("org.testcontainers:testcontainers-bom:2.0.3")
-  testImplementation "org.testcontainers:testcontainers"
-  testImplementation "org.testcontainers:testcontainers-junit-jupiter"
-  testImplementation "org.testcontainers:testcontainers-localstack"
+  testImplementation platform(libs.testcontainers.bom)
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack.bom
 
-  testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
+  testImplementation libs.mockserver.netty
 }
 
 compileJava {

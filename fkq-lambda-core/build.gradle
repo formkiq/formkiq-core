@@ -2,7 +2,7 @@
 description = "FormKiQ Lambda Core"
 
 dependencies {
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.2'
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
   implementation project(':libs:strings')
   implementation project(':adapters:aws:s3')
   implementation project(':adapters:aws:sqs')
@@ -13,14 +13,14 @@ dependencies {
   implementation project(':libs:validation')
   implementation project(':fkq-lambda-services')
 
-  implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.4.0'
-  api group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
-  implementation group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
-  implementation group: 'software.amazon.awssdk', name: 'utils', version: '2.42.8'
+  implementation libs.aws.lambda.core
+  api libs.gson
+  implementation libs.formkiq.graalvm.annotations
+  implementation libs.aws.sdk.utils
 
   testImplementation project(':fkq-test-utils')
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
-  testImplementation group: 'org.testcontainers', name: 'testcontainers', version: '2.0.3'
-  testImplementation group: 'org.testcontainers', name: 'localstack', version: '1.21.4'
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.localstack
 }

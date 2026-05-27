@@ -4,11 +4,11 @@ import com.github.jk1.license.render.JsonReportRenderer
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
-  id 'com.formkiq.gradle.java-base' version '1.0.10'
-  id 'com.formkiq.gradle.ytt' version '1.0.1'
-  id 'de.undercouch.download' version '5.7.0'
-  id 'org.openapi.generator' version '7.20.0'
-  id 'com.github.jk1.dependency-license-report' version '3.1.1'
+  alias(libs.plugins.formkiq.java.base)
+  alias(libs.plugins.formkiq.ytt)
+  alias(libs.plugins.undercouch.download)
+  alias(libs.plugins.openapi.generator)
+  alias(libs.plugins.license.report)
 }
 
 repositories { mavenCentral() }

@@ -21,7 +21,7 @@ tasks.processIntegrationResources {
 
 dependencies {
 
-  annotationProcessor group: 'com.formkiq', name: 'graalvm-annotations-processor', version: '1.5.2'
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
 
   api project(':libs:strings')
   api project(':domain:document-events')
@@ -42,13 +42,13 @@ dependencies {
   api project(':domain:ocr')
   api project(':libs:http-sigv4')
 
-  api group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.4.0'
-  api group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
+  api libs.aws.lambda.core
+  api libs.gson
 
-  api group: 'com.formkiq', name: 'lambda-runtime-graalvm', version:'2.6.0'
-  api group: 'com.formkiq', name: 'graalvm-annotations', version: '1.2.0'
+  api libs.formkiq.lambda.runtime.graalvm
+  api libs.formkiq.graalvm.annotations
 
-  api group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+  api libs.slf4j.simple
 
   testImplementation project(':adapters:aws:cognito-identity')
   testImplementation project(':adapters:aws:cognito-identityprovider')
@@ -58,21 +58,21 @@ dependencies {
   testImplementation project(':fkq-test-utils')
   testImplementation project(':apps:lambda-typesense')
 
-  testImplementation group: 'software.amazon.awssdk', name: 'apigateway', version: '2.42.8'
-  testImplementation group: 'software.amazon.awssdk', name: 'sts', version: '2.42.8'
+  testImplementation libs.aws.sdk.apigateway
+  testImplementation libs.aws.sdk.sts
 
-  testImplementation group: 'commons-codec', name: 'commons-codec', version: '1.20.0'
+  testImplementation libs.commons.codec
 
-  testImplementation platform("org.junit:junit-bom:6.0.3")
-  testImplementation "org.junit.jupiter:junit-jupiter"
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
 
-  testImplementation platform("org.testcontainers:testcontainers-bom:2.0.3")
-  testImplementation "org.testcontainers:testcontainers"
-  testImplementation "org.testcontainers:testcontainers-junit-jupiter"
-  testImplementation "org.testcontainers:testcontainers-localstack"
+  testImplementation platform(libs.testcontainers.bom)
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack.bom
 
-  testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '5.15.0'
+  testImplementation libs.mockserver.netty
 }
 
 compileJava {
