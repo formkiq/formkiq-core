@@ -39,7 +39,6 @@
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.aws.ssm" />
 		<allow pkg="com.formkiq.lambda.runtime.graalvm" />
-		<allow pkg="com.formkiq.plugins.tagschema" />
 		<allow pkg="com.formkiq.stacks.api" />
 		<allow pkg="com.google.gson" />
 

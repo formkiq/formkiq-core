@@ -9,10 +9,7 @@
 			<allow pkg="com.formkiq.graalvm.annotations" />
 
 			<allow pkg="com.formkiq.aws.services.lambda" />
-			<allow pkg="com.formkiq.lambda.apigateway.ApiResponseStatus" />
-			<allow pkg="com.formkiq.lambda.apigateway.exception" />
 			<allow pkg="com.formkiq.lambda.apigateway.util" />
-			<allow pkg="com.formkiq.stacks.common.objects" />
 
 			<allow pkg="com.google.gson" />
 
@@ -60,14 +57,11 @@
 			<allow pkg="com.formkiq.module.actions" />
 			<allow pkg="com.formkiq.module.actions.services" />
 			<allow pkg="com.formkiq.module.lambdaservices" />
-			<allow pkg="com.formkiq.plugins.tagschema" />
 			<allow pkg="com.formkiq.validation" />
-			<allow pkg="com.formkiq.stacks.common.objects" />
 			<allow pkg="com.formkiq.stacks.dynamodb" />
 
 			<allow pkg="com.formkiq.stacks.api" />
 			<allow pkg="com.formkiq.stacks.api.handler" />
-			<allow pkg="com.formkiq.stacks.api.util" />
 
 			<allow pkg="com.google.gson" />
 			<allow pkg="java.io" />
@@ -89,8 +83,6 @@
 				<allow pkg="com.formkiq.module.ocr" />
 				<allow pkg="com.formkiq.plugins.useractivity" />
 				<allow pkg="com.formkiq.stacks.api" />
-				<allow pkg="com.formkiq.stacks.common.formats" />
-				<allow pkg="com.formkiq.stacks.common.objects" />
 				<allow pkg="com.formkiq.validation" />
 
 				<allow pkg="java.lang.reflect" />

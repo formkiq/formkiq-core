@@ -22,9 +22,6 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
-		<allow pkg="com.formkiq.plugins.tagschema" />
-		<allow pkg="com.formkiq.plugins.version" />
-		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
 
@@ -72,7 +69,6 @@
 
 	<subpackage name="common">
 		<subpackage name="formats">
-			<allow pkg="com.formkiq.stacks.common.formats" />
 			<allow pkg="java.util" />
 		</subpackage>
 		<subpackage name="objects">
