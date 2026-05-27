@@ -190,8 +190,30 @@ ytt {
   }
 }
 
+def awsCloudPackageTasks = [
+  ':apps:console:distZip',
+  ':apps:lambda-api:distZip',
+  ':apps:lambda-s3:distZip',
+  ':apps:lambda-typesense:distZip',
+  ':apps:lambda-ocr-tesseract:distZip',
+  ':apps:lambda-apikey-authorizer:distZip'
+]
+
 tasks.named('distZip') {
-  dependsOn subprojects.collect { it.tasks.named('build') }, yttRenderAll
+  description = 'Builds the AWS Cloud distribution package.'
+  dependsOn awsCloudPackageTasks, yttRenderAll
+}
+
+tasks.register('assembleAwsCloud') {
+  group = 'build'
+  description = 'Assembles the AWS Cloud distribution package.'
+  dependsOn tasks.named('distZip')
+}
+
+tasks.register('assembleNettyServer') {
+  group = 'build'
+  description = 'Assembles the Netty server Docker images.'
+  dependsOn ':netty-server:composeBuild'
 }
 
 tasks.distTar.enabled = false
