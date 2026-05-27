@@ -1,5 +1,7 @@
 description = "Lambda API"
 
+apply plugin: 'distribution'
+
 sourceSets {
   integration {
     java.srcDir "$projectDir/src/integration/java"
@@ -79,6 +81,18 @@ compileJava {
   options.annotationProcessorPath += configurations.runtimeClasspath
 }
 
+nativeImage {
+  outputFileName = "server"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  dockerImage = "ghcr.io/graalvm/native-image-community:25"
+  enableHttp = true
+  enableHttps = true
+  buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
+}
+
 tasks.register("integrationTest", Test) {
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
@@ -93,3 +107,24 @@ task buildJava11Zip(type: Zip) {
 }
 
 buildJava11Zip.dependsOn jar
+
+tasks.distTar.enabled = false
+
+distZip {
+  dependsOn graalvmNativeImage
+  archiveFileName = "api/lambda-api-graalvm.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+      }
+      from ("${buildDir}/graalvm/output") {
+        include("server")
+      }
+      into '/'
+    }
+  }
+}
