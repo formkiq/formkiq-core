@@ -213,7 +213,7 @@ tasks.register('assembleAwsCloud') {
 tasks.register('assembleNettyServer') {
   group = 'build'
   description = 'Assembles the Netty server Docker images.'
-  dependsOn ':netty-server:composeBuild'
+  dependsOn ':apps:netty-server:composeBuild'
 }
 
 tasks.distTar.enabled = false
