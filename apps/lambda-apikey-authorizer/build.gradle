@@ -10,7 +10,7 @@ dependencies {
 
   implementation project(':adapters:aws:dynamodb')
   implementation project(':domain:documents')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
 
   implementation libs.slf4j.simple
 

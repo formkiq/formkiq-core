@@ -25,7 +25,7 @@ dependencies {
   implementation project(':domain:documents')
   implementation project(':libs:http')
   implementation project(':libs:strings')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
 
   implementation libs.slf4j.simple
   implementation libs.aws.lambda.core

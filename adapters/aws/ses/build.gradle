@@ -4,7 +4,7 @@ description = "AWS SES"
 dependencies {
   api libs.aws.sdk.ses
   implementation libs.aws.sdk.url.connection.client
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   //implementation project(':adapters:aws:xray')
 
   testImplementation libs.junit.jupiter.engine

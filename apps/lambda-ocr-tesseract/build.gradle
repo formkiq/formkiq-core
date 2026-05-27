@@ -13,7 +13,7 @@ dependencies {
   implementation project(':adapters:aws:sns')
   implementation project(':adapters:aws:dynamodb')
   implementation project(':domain:ocr')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':fkq-lambda-core')
   // 5.16.0 of tess4j breaks everything - should look at removing this
   implementation(libs.tess4j)

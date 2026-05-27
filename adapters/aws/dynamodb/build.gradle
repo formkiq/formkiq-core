@@ -6,7 +6,7 @@ dependencies {
   annotationProcessor libs.formkiq.graalvm.annotations.processor
 
   api libs.aws.sdk.dynamodb
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':libs:validation')
   implementation project(':libs:strings')
   //implementation project(':adapters:aws:xray')

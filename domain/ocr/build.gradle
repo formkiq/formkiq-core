@@ -13,7 +13,7 @@ dependencies {
   implementation project(':adapters:aws:s3')
   implementation project(':adapters:aws:sqs')
   implementation project(':libs:validation')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':fkq-lambda-core')
   implementation project(':domain:plugins')
   implementation libs.aws.lambda.core

@@ -25,7 +25,7 @@ dependencies {
   implementation project(':adapters:aws:dynamodb')
   implementation project(':domain:plugins')
   implementation project(':libs:validation')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation libs.formkiq.graalvm.annotations
   implementation libs.gson
 

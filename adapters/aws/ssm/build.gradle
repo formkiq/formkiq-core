@@ -5,7 +5,7 @@ dependencies {
   api libs.aws.sdk.ssm
   implementation libs.aws.sdk.url.connection.client
   //implementation project(':adapters:aws:xray')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
 
   configurations.all {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'

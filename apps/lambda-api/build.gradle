@@ -27,7 +27,7 @@ dependencies {
 
   api project(':libs:strings')
   api project(':domain:document-events')
-  api project(':fkq-lambda-services')
+  api project(':libs:lambda-services')
   api project(':fkq-lambda-core')
   api project(':libs:validation')
   api project(':domain:plugins')

@@ -10,7 +10,7 @@ dependencies {
 
   implementation libs.gson
   implementation libs.aws.sdk.url.connection.client.s3
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   //implementation project(':adapters:aws:xray')
 
   configurations.all {

@@ -10,7 +10,7 @@ dependencies {
   implementation project(':adapters:aws:ssm')
   implementation project(':adapters:aws:secrets-manager')
   implementation project(':adapters:aws:dynamodb')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':libs:strings')
 
   implementation libs.aws.sdk.sso

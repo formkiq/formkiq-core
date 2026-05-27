@@ -31,7 +31,7 @@ dependencies {
   implementation project(':domain:documents')
   implementation project(':domain:document-events')
   implementation project(':domain:actions')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':libs:validation')
   implementation project(':adapters:typesense')
   implementation project(':libs:http')

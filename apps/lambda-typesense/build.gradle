@@ -18,7 +18,7 @@ dependencies {
   annotationProcessor libs.formkiq.graalvm.annotations.processor
 
   implementation project(':adapters:aws:dynamodb')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':domain:documents')
   implementation project(':adapters:typesense')
   implementation project(':libs:http')

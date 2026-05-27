@@ -10,7 +10,7 @@ dependencies {
 
   implementation libs.gson.secrets.manager
   implementation libs.aws.sdk.url.connection.client.secrets.manager
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   //implementation project(':adapters:aws:xray')
 
   configurations.all {

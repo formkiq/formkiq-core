@@ -12,7 +12,7 @@ dependencies {
   implementation project(':adapters:aws:dynamodb')
   implementation project(':adapters:aws:sns')
   implementation project(':domain:document-events')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
   implementation project(':libs:validation')
 
   testImplementation project(':domain:documents')

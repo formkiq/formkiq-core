@@ -3,7 +3,7 @@ description = "Typesense"
 
 dependencies {
   implementation project(':libs:http-sigv4')
-  implementation project(':fkq-lambda-services')
+  implementation project(':libs:lambda-services')
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
