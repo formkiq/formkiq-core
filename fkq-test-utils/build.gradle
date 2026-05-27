@@ -2,16 +2,16 @@
 description = "FormKiQ Test Utils"
 
 dependencies {
-  implementation project(':aws-cognito-identity')
-  implementation project(':aws-cognito-identityprovider')
-  implementation project(':aws-s3')
-  api project(':aws-sns')
-  api project(':aws-sqs')
-  implementation project(':aws-ssm')
-  implementation project(':aws-secrets-manager')
-  implementation project(':aws-dynamodb')
+  implementation project(':adapters:aws:cognito-identity')
+  implementation project(':adapters:aws:cognito-identityprovider')
+  implementation project(':adapters:aws:s3')
+  api project(':adapters:aws:sns')
+  api project(':adapters:aws:sqs')
+  implementation project(':adapters:aws:ssm')
+  implementation project(':adapters:aws:secrets-manager')
+  implementation project(':adapters:aws:dynamodb')
   implementation project(':fkq-lambda-services')
-  implementation project(':strings')
+  implementation project(':libs:strings')
 
   implementation group: 'software.amazon.awssdk', name: 'sso', version: '2.42.8'
   implementation group: 'software.amazon.awssdk', name: 'ssooidc', version: '2.42.8'

@@ -1,0 +1,135 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+description = "FormKiQ Core - WebSocket"
+
+apply plugin: 'distribution'
+
+sourceSets {
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+    compileClasspath += main.output + test.output
+    runtimeClasspath += main.output + test.output
+  }
+}
+
+configurations {
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntime.extendsFrom testRuntime
+}
+
+def getCmd() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
+}
+
+jar.enabled = false
+
+dependencies {
+  testImplementation project(':adapters:aws:sqs')
+  testImplementation project(':adapters:aws:ssm')
+  testImplementation project(':adapters:aws:cognito-identity')
+  testImplementation project(':adapters:aws:cognito-identityprovider')
+  testImplementation project(':adapters:aws:dynamodb')
+  testImplementation project(':domain:documents')
+  testImplementation project(':fkq-test-utils')
+
+  testImplementation group: 'software.amazon.awssdk', name: 'dynamodb', version: '2.42.8'
+
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
+  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
+  
+  testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
+  testImplementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.6.0'
+  testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
+}
+
+task integrationTest(type: Test) {
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+}
+
+task npmInstall {
+
+  dependsOn processResources
+
+  doLast {
+
+    delete("${buildDir}/resources/main/js/websocket-api.zip")
+
+    exec {
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm install"
+    }
+
+    exec {
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm run pack"
+    }
+  }
+}
+
+jar.dependsOn npmInstall
+
+task npmtest {
+  onlyIf { !Os.isFamily(Os.FAMILY_WINDOWS) }
+  inputs.dir("src/main/resources/js")
+  outputs.dir("${buildDir}/resources/main/js/coverage")
+  doLast {
+    exec {
+      workingDir "${buildDir}/resources/main/js"
+      commandLine getCmd(), getCmdParam(), "npm test"
+    }
+  }
+}
+
+npmtest.dependsOn compileIntegrationJava,checkstyleIntegration,spotbugsIntegration
+
+//task buildTemplate {
+//  inputs.files("src/main/resources/cloudformation/template.yaml")
+//  outputs.files("${buildDir}/distributions/websocket-api/template.yaml")
+//
+//  doLast {
+//    copy {
+//      from layout.buildDirectory.dir("${buildDir}/../src/main/resources/cloudformation")
+//      include "template*"
+//      into "${buildDir}/distributions/websocket-api"
+//    }
+//  }
+//}
+
+task unzipPack(type: Copy) {
+  dependsOn npmInstall
+  def zipFile = file("${buildDir}/resources/main/js/websocket-api.zip")
+  def outputDir = file("${buildDir}/pack")
+
+  from zipTree(zipFile)
+  into outputDir
+}
+
+npmtest.dependsOn npmInstall
+test.dependsOn npmtest
+
+distZip.dependsOn npmInstall, unzipPack
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "websocket-api/websocket-api.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("${buildDir}/pack") {
+        include "**/**"
+      }
+      into '/'
+    }
+  }
+}

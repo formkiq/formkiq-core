@@ -20,9 +20,9 @@ configurations {
 
 dependencies {
 
-  implementation project(':lambda-s3')
-  implementation project(':lambda-api')
-  implementation project(':lambda-typesense')
+  implementation project(':apps:lambda-s3')
+  implementation project(':apps:lambda-api')
+  implementation project(':apps:lambda-typesense')
   implementation group: 'io.netty', name: 'netty-all', version: '4.2.10.Final'
   implementation group: 'commons-cli', name: 'commons-cli', version: '1.11.0'
   implementation group: 'io.minio', name: 'minio', version: '8.6.0'

@@ -3,7 +3,7 @@ description = "Lambda API Graalvm"
 apply plugin: 'distribution'
 
 dependencies {
-  implementation project(':lambda-api')
+  implementation project(':apps:lambda-api')
 }
 
 compileJava {

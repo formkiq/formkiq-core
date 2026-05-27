@@ -3,7 +3,7 @@ description = "FormKiQ Core - Lambda S3 Graalvm"
 apply plugin: 'distribution'
 
 dependencies {
-  implementation project(':lambda-s3')
+  implementation project(':apps:lambda-s3')
 }
 
 nativeImage {
