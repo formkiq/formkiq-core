@@ -124,6 +124,13 @@ Parameters:
     Type: Number
     Description: The number of days to retain the log events
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
 Conditions:
   HasWAF:
     Fn::Not:
@@ -420,6 +427,8 @@ Resources:
       Handler: com.formkiq.stacks.console.ConsoleInstallHandler
       Description: Lambda function that Installs the FormKiQ Console
       Runtime: java25
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 300
       MemorySize: 512
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")

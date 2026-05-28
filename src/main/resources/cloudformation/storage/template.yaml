@@ -24,6 +24,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   FormKiQType:
     Description: The type of FormKiQ installation
     Type: String
@@ -340,6 +347,8 @@ Resources:
       Handler: com.formkiq.stacks.lambda.s3.DocumentActionsProcessor
       Description: Lambda function to process Document Actions requests
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -436,6 +445,8 @@ Resources:
       Handler: com.formkiq.stacks.lambda.s3.StagingS3Create
       Description: Lambda function that processes document written to the Staging S3 Bucket
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 300
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
@@ -540,6 +551,8 @@ Resources:
       Handler: com.formkiq.stacks.lambda.s3.DocumentsS3Update
       Description: Lambda function that processes document written to the Documents S3 Bucket
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

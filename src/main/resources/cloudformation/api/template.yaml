@@ -34,6 +34,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   EnablePublicUrls:
     Description: Whether to enable public urls
     Default: "false"
@@ -266,6 +273,8 @@ Resources:
           Ref: VpcStackName
         EnablePublicUrls:
           Ref: EnablePublicUrls
+        LambdaArchitecture:
+          Ref: LambdaArchitecture
 
   HttpApi:
     Type: AWS::Serverless::Application
@@ -336,6 +345,8 @@ Resources:
           - Outputs.OcrProcessorArn
         VpcStackName:
           Ref: VpcStackName
+        LambdaArchitecture:
+          Ref: LambdaArchitecture
 
   UserAuthApi:
     Type: AWS::Serverless::Application

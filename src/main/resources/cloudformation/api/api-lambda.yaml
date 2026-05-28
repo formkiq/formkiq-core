@@ -34,6 +34,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   CognitoUserPool:
     Type: String
     Description: The Cognito User Pool Id
@@ -191,6 +198,8 @@ Resources:
       Handler: com.formkiq.stacks.api.CoreRequestHandler
       Description: Lambda function that processes API requests
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

@@ -8,9 +8,16 @@ def cloudFormationResources = rootProject.file("src/main/resources/cloudformatio
 def openApiTemplate = rootProject.file("src/main/resources/cloudformation/api/openapi.gotmpl")
 def openApiPartials = rootProject.file("src/main/resources/cloudformation/api/partials")
 def openApiPathPartials = rootProject.file("src/main/resources/cloudformation/api/partials/paths")
+def detectedLambdaArchitecture = ["aarch64", "arm64"].contains(System.getProperty("os.arch")) ? "arm64" : "x86_64"
+def lambdaArchitecture = providers.gradleProperty("lambdaArchitecture").orElse(detectedLambdaArchitecture)
+
+if (!["x86_64", "arm64"].contains(lambdaArchitecture.get())) {
+  throw new GradleException("Invalid lambdaArchitecture '${lambdaArchitecture.get()}'. Expected one of: x86_64, arm64")
+}
 
 ytt {
   defaultDataValues.put("version", project.version.toString())
+  defaultDataValues.put("lambdaArchitecture", lambdaArchitecture.get())
 
   specs {
     apiLambda {
