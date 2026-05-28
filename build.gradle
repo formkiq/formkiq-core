@@ -1,13 +1,10 @@
 import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.InventoryHtmlReportRenderer
 import com.github.jk1.license.render.JsonReportRenderer
-import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
   alias(libs.plugins.formkiq.java.base)
-  alias(libs.plugins.formkiq.ytt)
   alias(libs.plugins.undercouch.download)
-  alias(libs.plugins.openapi.generator)
   alias(libs.plugins.license.report)
 }
 
@@ -25,7 +22,6 @@ allprojects {
     }
   }
 
-  //  ext.awsCognitoVersion = '1.6.5'
   group = 'com.formkiq.stacks'
 
   configurations.all {
@@ -60,154 +56,21 @@ subprojects {
 
 description = "FormKiQ Core"
 
-apply plugin: 'distribution'
-
-//tasks.register("downloadAwsCognito", Download) {
-//  src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-//  dest(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
-//  overwrite false
-//}
-
-/*
- task downloadAwsCognito(type: Copy) {
- dependsOn jar
- from file("$buildDir/../../../github/aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
- into file("${buildDir}")
- }*/
-
-/*
- tasks.register("unzipAwsCognito", Copy) {
- dependsOn downloadAwsCognito
- from({
- zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
- }) {
- include("CognitoCustomMessage/**")
- }
- into(layout.buildDirectory.dir("modules/cognito"))
- }*/
-
-ytt {
-  defaultDataValues.put("version", project.version.toString())
-
-  specs {
-    apiLambda {
-      from("src/main/resources/cloudformation/api/api-lambda.yaml")
-      into("api/api-lambda.yaml")
-      hash "sha256"
-    }
-
-    api {
-      from("build/cloudformation/api/api.yaml")
-      into("api/api.yaml")
-      hash "sha256"
-    }
-
-    apiIam {
-      from("build/cloudformation/api/api-iam.yaml")
-      into("api/api-iam.yaml")
-      hash "sha256"
-    }
-
-    apiApikey {
-      from("build/cloudformation/api/api-apikey.yaml")
-      into("api/api-apikey.yaml")
-      hash "sha256"
-    }
-
-    apiUserAuth {
-      from("src/main/resources/cloudformation/api/api-userauth.yaml",
-          "src/main/resources/cloudformation/api/openapi-userauth.yaml")
-      into("api/api-userauth.yaml")
-      hash "sha256"
-    }
-
-    apiTemplate {
-      from("src/main/resources/cloudformation/api/template.yaml",
-          "src/main/resources/cloudformation/api/module-extra-core-ocr.yaml")
-      into("api/template.yaml")
-      hash "sha256"
-    }
-
-    ocr {
-      from("src/main/resources/cloudformation/api/template-ocr.yaml")
-      into("api/template-ocr.yaml")
-      hash "sha256"
-    }
-
-    typesense {
-      from("src/main/resources/cloudformation/typesense/template.yaml")
-      into("typesense/template.yaml")
-      hash "sha256"
-    }
-
-    storage {
-      from("src/main/resources/cloudformation/storage/template.yaml")
-      into("storage/template.yaml")
-      hash "sha256"
-    }
-
-    console {
-      from("src/main/resources/cloudformation/console/template.yaml")
-      into("console/template.yaml")
-      hash "sha256"
-    }
-
-    template {
-      from("src/main/resources/cloudformation/template.yaml")
-      into("template.yaml")
-      hash "sha256"
-    }
-
-    openJwtDocs {
-      from("build/gomplate/jwt/docs/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("docs/openapi/openapi-jwt.yaml")
-    }
-
-    openIamDocs {
-      from("build/gomplate/iam/docs/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("docs/openapi/openapi-iam.yaml")
-    }
-
-    openKeyDocs {
-      from("build/gomplate/key/docs/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("docs/openapi/openapi-key.yaml")
-    }
-
-    cloudFormationOpenApiJwtCf {
-      from("build/gomplate/jwt/api/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("cloudformation/jwt/api/openapi.yaml")
-    }
-
-    cloudFormationOpenApiIamCf {
-      from("build/gomplate/iam/api/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("cloudformation/iam/api/openapi.yaml")
-    }
-
-    cloudFormationOpenApiKeyCf {
-      from("build/gomplate/key/api/openapi.yaml", "src/main/resources/cloudformation/api/partials/paths")
-      into("cloudformation/key/api/openapi.yaml")
-    }
-  }
+tasks.named('distZip') {
+  group = 'distribution'
+  description = 'Builds the AWS Cloud distribution package.'
+  dependsOn ':packaging:aws-cloud:distZip'
+  enabled = false
 }
 
-def awsCloudPackageTasks = [
-  ':apps:console:distZip',
-  ':apps:lambda-api:distZip',
-  ':apps:lambda-s3:distZip',
-  ':apps:lambda-typesense:distZip',
-  ':apps:lambda-ocr-tesseract:distZip',
-  ':apps:lambda-apikey-authorizer:distZip'
-]
-
-tasks.named('distZip') {
-  description = 'Builds the AWS Cloud distribution package.'
-  dependsOn awsCloudPackageTasks, yttRenderAll
+tasks.named('distTar') {
+  enabled = false
 }
 
 tasks.register('assembleAwsCloud') {
   group = 'build'
   description = 'Assembles the AWS Cloud distribution package.'
-  dependsOn tasks.named('distZip')
+  dependsOn ':packaging:aws-cloud:distZip'
 }
 
 tasks.register('assembleNettyServer') {
@@ -216,221 +79,18 @@ tasks.register('assembleNettyServer') {
   dependsOn ':apps:netty-server:composeBuild'
 }
 
-tasks.distTar.enabled = false
-
-distributions {
-  main {
-    contents {
-      duplicatesStrategy = DuplicatesStrategy.FAIL
-
-      from(".") {
-        include "INSTALL.md"
-        include "LICENSE"
-      }
-      from("src/main/resources/cloudformation") {
-        exclude "api/**"
-        exclude "typesense/**"
-        exclude "storage/**"
-        exclude "console/template.yaml"
-        exclude "template.yaml"
-      }
-      from 'build/ytt'
-      from 'apps/console/build/distributions'
-      from 'build/modules'
-      from 'apps/lambda-api/build/distributions'
-      from 'apps/lambda-s3/build/distributions'
-      from 'apps/lambda-typesense/build/distributions'
-      from 'apps/lambda-ocr-tesseract/build/distributions'
-      from 'apps/lambda-apikey-authorizer/build/distributions'
-      into '/'
-    }
-  }
-}
-
-tasks.register("validateOpenApiJwtSpec", ValidateTask) {
-  dependsOn("copyDocsOpenApi")
-  inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
-  recommend = true
-}
-
-tasks.register("validateOpenApiIamSpec", ValidateTask) {
-  dependsOn("copyDocsOpenApi")
-  inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
-  recommend = true
-}
-
-tasks.register("validateOpenApiKeySpec", ValidateTask) {
-  dependsOn("copyDocsOpenApi")
-  inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
-  recommend = true
-}
-
-tasks.register("validateOpenApiSpecs") {
-  dependsOn(
-      "validateOpenApiJwtSpec",
-      "validateOpenApiIamSpec",
-      "validateOpenApiKeySpec"
-      )
-}
-
-def gomplateOpenApiVariants = [
-  Jwt: [ dirName: "jwt/docs"],
-  JwtCf: [ dirName: "jwt/api"],
-  Iam: [ dirName: "iam/docs"],
-  IamCf: [ dirName: "iam/api"],
-  Key: [ dirName: "key/docs"],
-  KeyCf: [ dirName: "key/api"]
-]
-
-gomplateOpenApiVariants.each { suffix, cfg ->
-  tasks.register("gomplateOpenApi${suffix}", Exec) {
-    dependsOn tasks.named('gomplateRenderOpenAPIPartials')
-
-    def openApiSpecFile = "src/main/resources/cloudformation/api/openapi.gotmpl"
-    def openApiSpecDatasourceDir = new File("$buildDir/gomplate/${cfg.dirName}")
-    def openApiSpecOutputFile    = "$buildDir/gomplate/${cfg.dirName}/openapi.yaml"
-
-    group = 'build'
-    description = "Generate API Paths Gomplate templates"
-
-    inputs.file new File(openApiSpecFile)
-    outputs.file new File(openApiSpecOutputFile)
-
-    def cmd = [
-      "gomplate",
-      "-f",
-      openApiSpecFile,
-      "-d",
-      "path=${openApiSpecDatasourceDir}${File.separator}",
-      "-o",
-      openApiSpecOutputFile,
-      "-t",
-      "src/main/resources/cloudformation/api/partials/",
-    ]
-
-    commandLine cmd
-  }
-}
-
-tasks.register("gomplateOpenApi") {
-  group = "openapi"
-  description = "Generate all OpenAPI specs using gomplate"
-  dependsOn gomplateOpenApiVariants.keySet().collect { "gomplateOpenApi${it}" }
-}
-
-def cloudFormationApiTemplateVariants = [
-  JwtCf: [dirName: "jwt/api", template: "api.gotmpl", outputFile: "api.yaml"],
-  IamCf: [dirName: "iam/api", template: "api-iam.gotmpl", outputFile: "api-iam.yaml"],
-  KeyCf: [dirName: "key/api", template: "api-apikey.gotmpl", outputFile: "api-apikey.yaml"]
-]
-
-cloudFormationApiTemplateVariants.each { suffix, cfg ->
-  def cloudFormationTemplateFile = file("src/main/resources/cloudformation/api/${cfg.template}")
-  def openApiSpecFile = layout.buildDirectory.file("ytt/cloudformation/${cfg.dirName}/openapi.yaml")
-  def openApiSpecOutputFile = layout.buildDirectory.file("cloudformation/api/${cfg.outputFile}")
-
-  tasks.register("cloudFormationApiTemplate${suffix}", Exec) {
-    dependsOn tasks.named("yttRender_cloudFormationOpenApi${suffix}")
-    group = "build"
-    description = "Generate CloudFormation API templates using gomplate (${cfg.template})"
-    commandLine "gomplate",
-        "-f", cloudFormationTemplateFile.absolutePath,
-        "-o", openApiSpecOutputFile.get().asFile.absolutePath,
-        "-t", "openapi=${openApiSpecFile.get().asFile.absolutePath}"
-  }
-}
-
-tasks.register("cloudFormationApiTemplate") {
-  group = "build"
-  description = "Generate CloudFormation API templates using gomplate"
-  dependsOn cloudFormationApiTemplateVariants.keySet().collect { "cloudFormationApiTemplate${it}" }
-}
-
-gomplateOpenApi.dependsOn 'gomplateRenderOpenAPIPartials'
-
-def yttDeps = [
-  "yttRender_cloudFormationOpenApiIamCf" : "gomplateOpenApiIamCf",
-  "yttRender_cloudFormationOpenApiKeyCf" : "gomplateOpenApiKeyCf",
-  "yttRender_cloudFormationOpenApiJwtCf" : "gomplateOpenApiJwtCf",
-  "yttRender_openIamDocs" : "gomplateOpenApiIam",
-  "yttRender_openJwtDocs" : "gomplateOpenApiJwt",
-  "yttRender_openKeyDocs" : "gomplateOpenApiKey",
-  "yttRender_api" : "cloudFormationApiTemplateJwtCf",
-  "yttRender_apiIam" : "cloudFormationApiTemplateIamCf",
-  "yttRender_apiApikey" : "cloudFormationApiTemplateKeyCf",
-  // "yttRender_api" : "yttRender_cloudFormationApiJwtDocs",
-  // "yttRender_apiIam" : "yttRender_cloudFormationApiIamDocs",
-  // "yttRender_apiApikey" : "yttRender_cloudFormationApiKeyDocs",
-  // "cloudFormationApiTemplateIamCf" : "yttRender_cloudFormationApiIamDocs",
-  // "cloudFormationApiTemplateKeyCf" : "yttRender_cloudFormationApiKeyDocs",
-  // "cloudFormationApiTemplateJwtCf" : "yttRender_cloudFormationApiJwtDocs"
-]
-
-tasks.withType(com.formkiq.gradle.AbstractYttRenderTask).configureEach { t ->
-  def genTaskName = yttDeps[t.name]
-  if (genTaskName != null) {
-    t.dependsOn(tasks.named(genTaskName))
-  }
-}
-
-tasks.register('copyDocsOpenApi', Copy) {
-  description = 'Copy OpenAPI specs into docs folder'
+tasks.register('copyDocsOpenApi') {
   group = 'build'
-  dependsOn 'yttRenderAll'
-
-  into("docs/openapi")
-  from('./build/ytt/docs/openapi/openapi-jwt.yaml')
-  from('./build/ytt/docs/openapi/openapi-iam.yaml')
-  from('./build/ytt/docs/openapi/openapi-key.yaml')
+  description = 'Copy OpenAPI specs into docs folder.'
+  dependsOn ':packaging:openapi:copyDocsOpenApi'
 }
 
-check.dependsOn 'validateOpenApiSpecs'
+tasks.register('validateOpenApiSpecs') {
+  group = 'verification'
+  description = 'Validate generated OpenAPI specs.'
+  dependsOn ':packaging:openapi:validateOpenApiSpecs'
+}
 
-tasks.register('gomplateRenderOpenAPIPartials', Copy) {
-  description = 'Generate Gomplate resources for OpenAPI specs'
-  group = 'build'
-
-  into("$buildDir/gomplate")
-
-  from('src/main/resources/cloudformation/api/jwt') {
-    into('jwt/docs')
-    exclude '**-api.yaml'
-    rename('title-docs.yaml', 'title.yaml')
-    rename('desc-docs.yaml', 'desc.yaml')
-  }
-
-  from('src/main/resources/cloudformation/api/jwt') {
-    into('jwt/api')
-    exclude '**-docs.yaml'
-    rename('title-api.yaml', 'title.yaml')
-    rename('desc-api.yaml', 'desc.yaml')
-  }
-
-  from('src/main/resources/cloudformation/api/iam') {
-    into('iam/docs')
-    exclude '**-api.yaml'
-    rename('title-docs.yaml', 'title.yaml')
-    rename('desc-docs.yaml', 'desc.yaml')
-  }
-
-  from('src/main/resources/cloudformation/api/iam') {
-    into('iam/api')
-    exclude '**-docs.yaml'
-    rename('title-api.yaml', 'title.yaml')
-    rename('desc-api.yaml', 'desc.yaml')
-  }
-
-  from('src/main/resources/cloudformation/api/key') {
-    into('key/docs')
-    exclude '**-api.yaml'
-    rename('title-docs.yaml', 'title.yaml')
-    rename('desc-docs.yaml', 'desc.yaml')
-  }
-
-  from('src/main/resources/cloudformation/api/key') {
-    into('key/api')
-    exclude '**-docs.yaml'
-    rename('title-api.yaml', 'title.yaml')
-    rename('desc-api.yaml', 'desc.yaml')
-  }
+tasks.named('check') {
+  dependsOn tasks.named('validateOpenApiSpecs')
 }

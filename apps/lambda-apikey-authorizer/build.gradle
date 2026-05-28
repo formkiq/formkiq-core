@@ -86,9 +86,15 @@ distributions {
     contents {
       from("runtime/") {
         include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
       }
-      from ("${buildDir}/graalvm/output") {
+      from("${buildDir}/graalvm/output") {
         include("server")
+        filePermissions {
+          unix('0755')
+        }
       }
       into '/'
     }

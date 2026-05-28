@@ -1,7 +1,9 @@
-/*
- pluginManagement {
- includeBuild '../java-base-plugin'
- }*/
+pluginManagement {
+  def javaBasePluginDir = file('../java-base-plugin')
+  if (javaBasePluginDir.isDirectory()) {
+    includeBuild javaBasePluginDir
+  }
+}
 
 plugins {
   id("com.gradle.develocity") version("4.2.1")
@@ -56,3 +58,6 @@ include ':apps:lambda-apikey-authorizer'
 include ':apps:netty-server'
 include ':libs:strings'
 include ':adapters:aws:secrets-manager'
+include ':packaging:openapi'
+include ':packaging:cloudformation'
+include ':packaging:aws-cloud'

@@ -93,9 +93,18 @@ distributions {
     contents {
       from("runtime/") {
         include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
       }
-      from ("${buildDir}/graalvm") {
-        include '**/**'
+      from("${buildDir}/graalvm") {
+        include 'server'
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm") {
+        include 'lib*.so*'
       }
       into '/'
     }
@@ -112,9 +121,18 @@ tasks.register('buildZip', Zip) {
   }
   from("${project.projectDir}/runtime") {
     include 'bootstrap'
+    filePermissions {
+      unix('0755')
+    }
   }
   from("build/graalvm") {
-    include '**/**'
+    include 'server'
+    filePermissions {
+      unix('0755')
+    }
+  }
+  from("build/graalvm") {
+    include 'lib*.so*'
   }
 }
 
