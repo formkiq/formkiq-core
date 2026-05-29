@@ -29,16 +29,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.formkiq.aws.dynamodb.ID;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.GetDocumentResponse;
+import com.google.gson.Gson;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.util.Objects;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(DockerComposeExtension.class)
 class IntegrationTest {
@@ -47,12 +55,37 @@ class IntegrationTest {
   private static final int BASE_HTTP_SERVER_PORT = 8080;
   /** Base Url. */
   private static final String BASE_URL = "http://localhost:" + BASE_HTTP_SERVER_PORT;
+  /** Admin Password. */
+  private static final String ADMIN_PASSWORD = "password";
+  /** Admin Username. */
+  private static final String ADMIN_USERNAME = "admin@me.com";
   /** Test Timeout. */
   private static final int TEST_TIMEOUT = 30;
   /** {@link ApiClient}. */
   private final ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL);
   /** {@link DocumentsApi}. */
   private final DocumentsApi documentsApi = new DocumentsApi(this.apiClient);
+  /** {@link Gson}. */
+  private final Gson gson = new Gson();
+
+  @SuppressWarnings("unchecked")
+  private String login(final String username, final String password) throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    String body = this.gson.toJson(Map.of("username", username, "password", password));
+    HttpRequest request = HttpRequest.newBuilder().POST(BodyPublishers.ofString(body))
+        .uri(new URI(BASE_URL + "/login")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+
+    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
+    results = (Map<String, Object>) results.get("AuthenticationResult");
+
+    String accessToken = (String) results.get("AccessToken");
+    assertNotNull(accessToken);
+
+    return accessToken;
+  }
 
   /**
    * Set BearerToken.
@@ -70,12 +103,13 @@ class IntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  void testAddDocument01() throws Exception {
+  void testLoginAndAddDocument01() throws Exception {
     // given
     String content = ID.uuid();
     AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
 
-    setBearerToken("changeme");
+    String accessToken = login(ADMIN_USERNAME, ADMIN_PASSWORD);
+    setBearerToken(accessToken);
 
     // when
     AddDocumentResponse addDocument = this.documentsApi.addDocument(req, null, null);
@@ -91,5 +125,4 @@ class IntegrationTest {
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), Objects.requireNonNull(response.getContentLength()).intValue());
   }
-
 }

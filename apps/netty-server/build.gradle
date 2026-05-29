@@ -16,7 +16,7 @@ sourceSets {
 
 configurations {
   integrationImplementation.extendsFrom testImplementation
-  integrationRuntime.extendsFrom testRuntime
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -35,9 +35,12 @@ dependencies {
   testImplementation libs.testcontainers
 }
 
-task integrationTest(type: Test) {
+tasks.register("integrationTest", Test) {
+  group = 'verification'
+  description = 'Runs the Netty server integration tests.'
   testClassesDirs = sourceSets.integration.output.classesDirs
   classpath = sourceSets.integration.runtimeClasspath
+  shouldRunAfter test
 }
 
 task copyLibs(type: Copy) {
@@ -111,5 +114,7 @@ distributions {
 
 composeBuild.dependsOn(jar)
 test.dependsOn(composeBuild)
-integrationTest.dependsOn(composeBuild)
+tasks.named('integrationTest') {
+  dependsOn composeBuild
+}
 check.dependsOn(composeBuild)
