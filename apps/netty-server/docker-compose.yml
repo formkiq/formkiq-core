@@ -38,8 +38,6 @@ services:
       S3_PRESIGNER_URL: http://localhost:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-      ADMIN_USERNAME: admin@me1.com
-      ADMIN_PASSWORD: password
       API_KEY: changeme
       TYPESENSE_HOST: http://typesense:8108
       TYPESENSE_API_KEY: xyz
@@ -47,6 +45,9 @@ services:
       KEYCLOAK_TOKEN_ENDPOINT: http://keycloak:8081/realms/formkiq/protocol/openid-connect/token
       KEYCLOAK_CLIENT_ID: formkiq-jwt
       KEYCLOAK_CLIENT_SECRET: dC0dK4DoQK1f8lrsoxDC3svoD3JuHa5x
+      # uncomment lines below when KEYCLOAK_TOKEN_ENDPOINT is disabled
+      # ADMIN_USERNAME: admin@me.com
+      # ADMIN_PASSWORD: password
 
   minio:
     image: minio/minio:RELEASE.2024-12-13T22-19-12Z

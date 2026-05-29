@@ -75,7 +75,13 @@ tasks.register('assembleAwsCloud') {
 
 tasks.register('assembleNettyServer') {
   group = 'build'
-  description = 'Assembles the Netty server Docker images.'
+  description = 'Assembles the Netty server Docker distribution package.'
+  dependsOn ':apps:netty-server:distZip'
+}
+
+tasks.register('composeBuildNettyServer') {
+  group = 'build'
+  description = 'Builds the Netty server Docker images.'
   dependsOn ':apps:netty-server:composeBuild'
 }
 

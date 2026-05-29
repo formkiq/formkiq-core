@@ -1,4 +1,5 @@
 plugins {
+  id 'distribution'
   alias(libs.plugins.docker.compose)
 }
 
@@ -67,6 +68,45 @@ dockerCompose {
 tasks.named('jar') {
   archiveBaseName.set('netty-server') // Set the desired name
   archiveVersion.set('')               // Remove the version number
+}
+
+tasks.named('distZip') {
+  group = 'distribution'
+  description = 'Builds the Netty server Docker distribution package.'
+  archiveBaseName.set("${rootProject.name}-netty-server")
+  destinationDirectory.set(rootProject.layout.buildDirectory.dir("distributions"))
+  dependsOn tasks.named('jar')
+}
+
+tasks.named('distTar') {
+  enabled = false
+}
+
+distributions {
+  main {
+    contents {
+      duplicatesStrategy = DuplicatesStrategy.FAIL
+
+      from(projectDir) {
+        include 'Dockerfile'
+        include 'docker-compose.yml'
+        include 'keycloak/**'
+      }
+
+      from(projectDir) {
+        include 'docker-compose-override.yml'
+        rename 'docker-compose-override.yml', 'docker-compose.override.yml'
+      }
+
+      from(tasks.named('jar')) {
+        into 'build/libs'
+      }
+
+      from(configurations.runtimeClasspath) {
+        into 'build/libs'
+      }
+    }
+  }
 }
 
 composeBuild.dependsOn(jar)
