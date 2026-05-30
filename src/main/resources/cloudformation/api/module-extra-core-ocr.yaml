@@ -3,6 +3,12 @@
 #@ load("@ytt:assert", "assert")
 #@overlay/match by=overlay.all
 ---
+Parameters:
+  #@overlay/match missing_ok=True
+  DocumentsDeadLetterQueueArn:
+    Type: String
+    Description: Documents Dead Letter Queue Arn
+
 Resources:
 
   #@overlay/match missing_ok=True
@@ -79,7 +85,7 @@ Resources:
       RedrivePolicy:
         maxReceiveCount: 3
         deadLetterTargetArn:
-          Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
+          Ref: DocumentsDeadLetterQueueArn
       Tags:
         - Key: "Application"
           Value: "FormKiQ"

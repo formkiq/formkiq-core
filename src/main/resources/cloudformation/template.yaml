@@ -460,6 +460,34 @@ Resources:
           Fn::GetAtt:
           - TypeSenseService
           - Outputs.TypesenseApiEndpoint
+        DocumentsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsTableName
+        CacheTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.CacheTableName
+        DocumentSyncsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentSyncsTableName
+        DocumentsS3Bucket:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsS3Buckets
+        DocumentsStageS3Bucket:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsStageS3Bucket
+        SnsDocumentEventArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.SnsDocumentEventArn
+        DocumentsDeadLetterQueueArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsDeadLetterQueueArn
         VpcStackName:
           Ref: VpcStackName
         FormKiQType:
@@ -550,6 +578,18 @@ Resources:
           Fn::GetAtt: 
           - EcsCluster
           - Outputs.ECSCluster
+        DocumentsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsTableName
+        DocumentSyncsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentSyncsTableName
+        DocumentsStreamArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsStreamArn
         TypesenseMemory:
           Ref: TypesenseMemory
         LogRetentionInDays:
@@ -593,6 +633,38 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        DocumentsApiRequests:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsApiRequests
+        DocumentsUpdateObject:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsUpdateObject
+        StagingCreateObject:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.StagingCreateObject
+        DocumentActionsProcessor:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentActionsProcessor
+        DocumentsHttpApi:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsHttpApi
+        DocumentsIamApi:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsIamApi
+        UserAuthApiUrl:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.UserAuthApiUrl
+        DocumentsDeadLetterQueueName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsDeadLetterQueueName
                     
 Outputs:
   AppEnvironment:

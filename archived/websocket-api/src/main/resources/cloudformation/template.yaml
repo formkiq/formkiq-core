@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
+
+  DocumentsDeadLetterQueueArn:
+    Type: String
+    Description: Documents Dead Letter Queue Arn
   
   StageName:
     Type: String
@@ -158,7 +162,7 @@ Resources:
       RedrivePolicy:
         maxReceiveCount: 3
         deadLetterTargetArn:
-          Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/sqs/DocumentsDeadLetterQueueArn}}'
+          Ref: DocumentsDeadLetterQueueArn
       Tags:
         - Key: "Application"
           Value: "FormKiQ"
@@ -416,4 +420,3 @@ Outputs:
     Description: "SQS URL for processing Websocket Messages"
     Value: 
       Ref: SqsQueue
-    
