@@ -1,0 +1,30 @@
+
+description = "Ocr"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation libs.formkiq.graalvm.annotations
+
+  implementation project(':domain:actions')
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':domain:documents')
+  implementation project(':adapters:aws:s3')
+  implementation project(':adapters:aws:sqs')
+  implementation project(':libs:validation')
+  implementation project(':libs:lambda-services')
+  implementation project(':fkq-lambda-core')
+  implementation project(':domain:plugins')
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+
+  implementation libs.pdfbox
+
+  testImplementation project(':testing:test-utils')
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack
+}

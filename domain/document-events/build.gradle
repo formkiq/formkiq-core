@@ -1,0 +1,16 @@
+
+description = "FormKiQ Document Events"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+  implementation project(':adapters:aws:sns')
+  implementation project(':libs:lambda-services')
+  implementation libs.aws.lambda.core
+  implementation libs.formkiq.graalvm.annotations
+  implementation libs.gson
+
+  testImplementation project(':testing:test-utils')
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+}

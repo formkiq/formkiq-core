@@ -1,0 +1,24 @@
+
+description = "FormKiQ Actions"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation libs.formkiq.graalvm.annotations
+  implementation libs.ulid.creator
+
+  implementation project(':libs:strings')
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':adapters:aws:sns')
+  implementation project(':domain:document-events')
+  implementation project(':libs:lambda-services')
+  implementation project(':libs:validation')
+
+  testImplementation project(':domain:documents')
+  testImplementation project(':testing:test-utils')
+  testImplementation project(':domain:plugins')
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+}

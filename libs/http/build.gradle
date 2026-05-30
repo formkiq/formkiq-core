@@ -1,0 +1,6 @@
+
+description = "Http"
+
+dependencies {
+  implementation libs.gson
+}

@@ -1,0 +1,9 @@
+
+description = "FormKiQ Lambda Services"
+
+dependencies {
+  implementation libs.aws.sdk.auth
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.gson
+}

@@ -26,11 +26,9 @@
 
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />
-		<allow pkg="com.formkiq.plugins.tagschema" />
 		<allow pkg="com.formkiq.plugins.useractivity" />
 
 		<allow pkg="com.formkiq.validation" />
-		<allow pkg="com.formkiq.stacks.common.objects" />
 		<allow pkg="com.formkiq.stacks.dynamodb" />
 		<allow pkg="com.formkiq.validation" />
 		<allow pkg="com.google.gson" />
@@ -48,8 +46,6 @@
 		</subpackage>
 
 		<subpackage name="eventsourcing">
-			<allow pkg="com.formkiq.module.eventsourcing.adapters" />
-			<allow pkg="com.formkiq.module.eventsourcing.commands" />
 		</subpackage>
 	</subpackage>
 

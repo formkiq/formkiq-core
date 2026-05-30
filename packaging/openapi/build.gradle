@@ -1,0 +1,154 @@
+import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
+
+plugins {
+  alias(libs.plugins.formkiq.ytt)
+  alias(libs.plugins.openapi.generator)
+}
+
+description = "FormKiQ OpenAPI Packaging"
+
+def cloudFormationResources = rootProject.file("src/main/resources/cloudformation")
+def openApiTemplate = rootProject.file("src/main/resources/cloudformation/api/openapi.gotmpl")
+def openApiPartials = rootProject.file("src/main/resources/cloudformation/api/partials")
+def openApiPathPartials = rootProject.file("src/main/resources/cloudformation/api/partials/paths")
+
+ytt {
+  defaultDataValues.put("version", project.version.toString())
+
+  specs {
+    openJwtDocs {
+      from(layout.buildDirectory.file("gomplate/jwt/docs/openapi.yaml").get().asFile.absolutePath,
+          openApiPathPartials.absolutePath)
+      into("docs/openapi/openapi-jwt.yaml")
+    }
+
+    openIamDocs {
+      from(layout.buildDirectory.file("gomplate/iam/docs/openapi.yaml").get().asFile.absolutePath,
+          openApiPathPartials.absolutePath)
+      into("docs/openapi/openapi-iam.yaml")
+    }
+
+    openKeyDocs {
+      from(layout.buildDirectory.file("gomplate/key/docs/openapi.yaml").get().asFile.absolutePath,
+          openApiPathPartials.absolutePath)
+      into("docs/openapi/openapi-key.yaml")
+    }
+  }
+}
+
+def gomplateOpenApiVariants = [
+  Jwt: [ dirName: "jwt/docs"],
+  Iam: [ dirName: "iam/docs"],
+  Key: [ dirName: "key/docs"]
+]
+
+gomplateOpenApiVariants.each { suffix, cfg ->
+  tasks.register("gomplateOpenApi${suffix}", Exec) {
+    dependsOn tasks.named('gomplateRenderOpenApiPartials')
+
+    def openApiSpecDatasourceDir = layout.buildDirectory.dir("gomplate/${cfg.dirName}")
+    def openApiSpecOutputFile = layout.buildDirectory.file("gomplate/${cfg.dirName}/openapi.yaml")
+
+    group = 'openapi'
+    description = "Generate ${suffix} OpenAPI spec using gomplate."
+
+    inputs.file openApiTemplate
+    outputs.file openApiSpecOutputFile
+
+    commandLine "gomplate",
+        "-f", openApiTemplate.absolutePath,
+        "-d", "path=${openApiSpecDatasourceDir.get().asFile}${File.separator}",
+        "-o", openApiSpecOutputFile.get().asFile.absolutePath,
+        "-t", "${openApiPartials.absolutePath}${File.separator}"
+  }
+}
+
+tasks.register("gomplateOpenApi") {
+  group = "openapi"
+  description = "Generate all OpenAPI specs using gomplate."
+  dependsOn gomplateOpenApiVariants.keySet().collect { "gomplateOpenApi${it}" }
+}
+
+def yttDeps = [
+  "yttRender_openIamDocs" : "gomplateOpenApiIam",
+  "yttRender_openJwtDocs" : "gomplateOpenApiJwt",
+  "yttRender_openKeyDocs" : "gomplateOpenApiKey"
+]
+
+tasks.withType(com.formkiq.gradle.AbstractYttRenderTask).configureEach { t ->
+  def genTaskName = yttDeps[t.name]
+  if (genTaskName != null) {
+    t.dependsOn(tasks.named(genTaskName))
+  }
+}
+
+tasks.register('copyDocsOpenApi', Copy) {
+  description = 'Copy OpenAPI specs into docs folder.'
+  group = 'openapi'
+  dependsOn 'yttRenderAll'
+
+  into(rootProject.file("docs/openapi"))
+  from(layout.buildDirectory.file('ytt/docs/openapi/openapi-jwt.yaml'))
+  from(layout.buildDirectory.file('ytt/docs/openapi/openapi-iam.yaml'))
+  from(layout.buildDirectory.file('ytt/docs/openapi/openapi-key.yaml'))
+}
+
+tasks.register("validateOpenApiJwtSpec", ValidateTask) {
+  dependsOn("copyDocsOpenApi")
+  inputSpec = rootProject.file("docs/openapi/openapi-jwt.yaml").absolutePath
+  recommend = true
+}
+
+tasks.register("validateOpenApiIamSpec", ValidateTask) {
+  dependsOn("copyDocsOpenApi")
+  inputSpec = rootProject.file("docs/openapi/openapi-iam.yaml").absolutePath
+  recommend = true
+}
+
+tasks.register("validateOpenApiKeySpec", ValidateTask) {
+  dependsOn("copyDocsOpenApi")
+  inputSpec = rootProject.file("docs/openapi/openapi-key.yaml").absolutePath
+  recommend = true
+}
+
+tasks.register("validateOpenApiSpecs") {
+  group = "verification"
+  description = "Validate generated OpenAPI specs."
+  dependsOn(
+      "validateOpenApiJwtSpec",
+      "validateOpenApiIamSpec",
+      "validateOpenApiKeySpec"
+      )
+}
+
+tasks.matching { it.name == 'check' }.configureEach {
+  dependsOn tasks.named('validateOpenApiSpecs')
+}
+
+tasks.register('gomplateRenderOpenApiPartials', Copy) {
+  description = 'Generate gomplate resources for OpenAPI specs.'
+  group = 'openapi'
+
+  into(layout.buildDirectory.dir("gomplate"))
+
+  from("${cloudFormationResources}/api/jwt") {
+    into('jwt/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+
+  from("${cloudFormationResources}/api/iam") {
+    into('iam/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+
+  from("${cloudFormationResources}/api/key") {
+    into('key/docs')
+    exclude '**-api.yaml'
+    rename('title-docs.yaml', 'title.yaml')
+    rename('desc-docs.yaml', 'desc.yaml')
+  }
+}
