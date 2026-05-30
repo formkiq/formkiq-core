@@ -1254,6 +1254,13 @@ Outputs:
         - Documents
         - Arn
 
+  DocumentsStreamArn:
+    Description: Documents DynamoDb Table Stream Arn.
+    Value:
+      Fn::GetAtt:
+        - Documents
+        - StreamArn
+
   DocumentSyncsTableName:
     Value:
       Ref: DocumentSyncs
@@ -1283,6 +1290,20 @@ Outputs:
       Fn::GetAtt: 
       - DocumentsUpdateQueue
       - Arn
+
+  DocumentsDeadLetterQueueArn:
+    Description: Documents Dead Letter Queue Arn
+    Value:
+      Fn::GetAtt:
+      - DocumentsDeadLetterQueue
+      - Arn
+
+  DocumentsDeadLetterQueueName:
+    Description: Documents Dead Letter Queue Name
+    Value:
+      Fn::GetAtt:
+      - DocumentsDeadLetterQueue
+      - QueueName
         
   SnsDocumentEventArn:
     Description: SNS Topic for Document Events
@@ -1293,3 +1314,18 @@ Outputs:
     Description: Documents MetaData Object Lambda
     Value: 
       Ref: DocumentsS3Update
+
+  StagingCreateObject:
+    Description: Documents Staging Create Object Lambda
+    Value:
+      Ref: StagingS3Create
+
+  DocumentsUpdateObject:
+    Description: Documents Update Object Lambda
+    Value:
+      Ref: DocumentsS3Update
+
+  DocumentActionsProcessor:
+    Description: Document Actions Processor Lambda
+    Value:
+      Ref: DocumentActionsProcessor

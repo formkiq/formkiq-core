@@ -107,6 +107,34 @@ Parameters:
     Type: String
     Description: TypeSense API Endpoint
 
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  CacheTableName:
+    Type: String
+    Description: Cache DynamoDB Table Name
+
+  DocumentSyncsTableName:
+    Type: String
+    Description: Document Syncs DynamoDB Table Name
+
+  DocumentsS3Bucket:
+    Type: String
+    Description: Documents S3 Bucket Name
+
+  DocumentsStageS3Bucket:
+    Type: String
+    Description: Documents Stage S3 Bucket Name
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
+
+  DocumentsDeadLetterQueueArn:
+    Type: String
+    Description: Documents Dead Letter Queue Arn
+
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
@@ -259,6 +287,18 @@ Resources:
           Ref: TypesenseApiKey
         TypesenseApiEndpoint:
           Ref: TypesenseApiEndpoint
+        DocumentsTableName:
+          Ref: DocumentsTableName
+        CacheTableName:
+          Ref: CacheTableName
+        DocumentSyncsTableName:
+          Ref: DocumentSyncsTableName
+        DocumentsS3Bucket:
+          Ref: DocumentsS3Bucket
+        DocumentsStageS3Bucket:
+          Ref: DocumentsStageS3Bucket
+        SnsDocumentEventArn:
+          Ref: SnsDocumentEventArn
         OcrBucket:
           Ref: OcrBucket
         OcrQueueUrl:
@@ -335,6 +375,8 @@ Resources:
           Ref: LogLevelSystem
         FormKiQType:
           Ref: FormKiQType
+        DocumentsTableName:
+          Ref: DocumentsTableName
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -817,6 +859,16 @@ Resources:
           Fn::GetAtt:
             - OcrQueue
             - Arn
+        DocumentsTableName:
+          Ref: DocumentsTableName
+        DocumentsS3Bucket:
+          Ref: DocumentsS3Bucket
+        DocumentsStageS3Bucket:
+          Ref: DocumentsStageS3Bucket
+        OcrBucket:
+          Ref: OcrBucket
+        SnsDocumentEventArn:
+          Ref: SnsDocumentEventArn
           
 Outputs:
   ApiGatewayInvokeRole:
@@ -835,6 +887,18 @@ Outputs:
       Fn::GetAtt: 
       - ApiLambda
       - Outputs.DocumentsApiRequests
+  DocumentsHttpApi:
+    Description: HTTP API
+    Value:
+      Fn::GetAtt:
+        - HttpApi
+        - Outputs.DocumentsHttpApi
+  DocumentsIamApi:
+    Description: IAM API
+    Value:
+      Fn::GetAtt:
+        - IamApi
+        - Outputs.DocumentsIamApi
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 

@@ -64,6 +64,30 @@ Parameters:
   TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
+
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  CacheTableName:
+    Type: String
+    Description: Cache DynamoDB Table Name
+
+  DocumentSyncsTableName:
+    Type: String
+    Description: Document Syncs DynamoDB Table Name
+
+  DocumentsS3Bucket:
+    Type: String
+    Description: Documents S3 Bucket Name
+
+  DocumentsStageS3Bucket:
+    Type: String
+    Description: Documents Stage S3 Bucket Name
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
     
   OcrBucket:
     Type: String
@@ -219,15 +243,15 @@ Resources:
           COGNITO_USER_POOL_ID:
             Ref: CognitoUserPool
           DOCUMENTS_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            Ref: DocumentsTableName
           CACHE_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+            Ref: CacheTableName
           DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+            Ref: DocumentsS3Bucket
           STAGE_DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+            Ref: DocumentsStageS3Bucket
           SNS_DOCUMENT_EVENT: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            Ref: SnsDocumentEventArn
           ENABLE_PUBLIC_URLS: 
             Ref: EnablePublicUrls
           FORMKIQ_TYPE: 
@@ -242,7 +266,7 @@ Resources:
             Ref: DelegationTokenHmacKey
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            Ref: DocumentSyncsTableName
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
@@ -359,20 +383,20 @@ Resources:
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - Ref: DocumentsS3Bucket
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - Ref: DocumentsS3Bucket
                   - '/*'
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - Ref: DocumentsStageS3Bucket
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - Ref: DocumentsStageS3Bucket
                   - '/*'
             - Effect: Allow
               Action:
@@ -385,19 +409,19 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CacheTableName}"
             - Effect: Allow
               Action:
               - ssm:GetParameter
@@ -418,17 +442,17 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:Query
               Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}"
             - Effect: Allow
               Action:
                 - dynamodb:Query
               Resource:
-                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
+                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}/index/*"
             - Effect: Allow
               Action:
               - sns:Publish
               Resource:
-              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+              - Ref: SnsDocumentEventArn
             - Effect: Allow
               Action:
               - cognito-idp:ListGroups

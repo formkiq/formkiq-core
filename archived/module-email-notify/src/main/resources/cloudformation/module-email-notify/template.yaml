@@ -17,6 +17,14 @@ Parameters:
     Description: Email (required)
     AllowedPattern: ".+"
 
+  ConsoleUrl:
+    Type: String
+    Description: The FormKiQ Console URL
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
+
   FormKiQType:
     Description: The type of FormKiQ installation
     Default: "core"
@@ -90,6 +98,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        SnsDocumentEventArn:
+          Ref: SnsDocumentEventArn
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -125,7 +135,7 @@ Resources:
           EMAIL_TOPIC_ARN: 
             Ref: DocumentsEmailNotification
           CONSOLE_URL: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/console/Url}}" 
+            Ref: ConsoleUrl
       Role: 
         Fn::GetAtt: 
         - EmailNotifyRole
@@ -203,4 +213,4 @@ Resources:
               Action:
               - sns:Publish
               Resource:
-              - Ref: DocumentsEmailNotification              
+              - Ref: DocumentsEmailNotification

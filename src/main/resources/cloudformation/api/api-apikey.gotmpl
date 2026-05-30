@@ -23,6 +23,10 @@ Parameters:
   FormKiQType:
     Description: The type of FormKiQ installation
     Type: String
+
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
     
   LambdaMemory:
     Type: Number
@@ -134,7 +138,7 @@ Resources:
             Ref: LogLevelApplication
           ENABLE_AWS_X_RAY: true
           DOCUMENTS_TABLE: 
-            Fn::Sub: {{ `"{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"` }}
+            Ref: DocumentsTableName
           FORMKIQ_TYPE: 
             Ref: FormKiQType
       LoggingConfig:
@@ -213,7 +217,7 @@ Resources:
               - dynamodb:Get*
               - dynamodb:Query
               Resource: 
-              - Fn::Sub: {{ `"arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"` }}
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
 
 Outputs:
   DocumentsKeyApi:

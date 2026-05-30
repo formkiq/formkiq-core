@@ -13,6 +13,10 @@ Parameters:
     AllowedPattern: ".+"
     Default: '{"type": ["create"]}'
 
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
+
 Resources:
 
   SqsQueue:
@@ -47,7 +51,7 @@ Resources:
           Condition:
             ArnLike:
               aws:SourceArn: 
-                Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+                Ref: SnsDocumentEventArn
       Queues:
       - Ref: SqsQueue
       
@@ -60,7 +64,7 @@ Resources:
         - SqsQueue
         - Arn
       TopicArn: 
-        Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+        Ref: SnsDocumentEventArn
       FilterPolicy: 
         Ref: FilterPolicy
           
