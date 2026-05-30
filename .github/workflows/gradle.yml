@@ -64,7 +64,7 @@ jobs:
         env:
           PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
             && (github.ref_name == 'master' ||  github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-        run: ./gradlew build --scan --no-daemon --console=plain
+        run: ./gradlew assembleAwsCloud assembleNettyServer --scan --no-daemon --console=plain
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -85,4 +85,7 @@ jobs:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
         run: |
-          aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
+          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-*.zip' ! -name 'formkiq-core-netty-server-*.zip' \
+            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core/ \;
+          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-netty-server-*.zip' \
+            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core-netty-server/ \;

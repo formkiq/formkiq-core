@@ -29,6 +29,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   FormKiQType:
     Description: The type of FormKiQ installation
     Type: String
@@ -144,6 +151,8 @@ Resources:
       Handler: com.formkiq.module.lambda.typesense.TypesenseProcessor
       Description: Lambda function to add DynamoDB records to Typesense
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

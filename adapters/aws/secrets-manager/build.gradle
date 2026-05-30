@@ -1,0 +1,20 @@
+
+description = "AWS Secrets Manager"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor.secrets.manager
+  implementation libs.formkiq.graalvm.annotations
+
+  api libs.aws.sdk.secretsmanager
+
+  implementation libs.gson.secrets.manager
+  implementation libs.aws.sdk.url.connection.client.secrets.manager
+  implementation project(':libs:lambda-services')
+  //implementation project(':adapters:aws:xray')
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+}

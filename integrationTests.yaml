@@ -5,6 +5,16 @@ Parameters:
   AppEnvironment:
     Type: String
     Description: Application environment (e.g., dev, qa, prod)
+  DeploymentType:
+    Type: String
+    Description: FormKiQ deployment type for integration tests.
+    Default: core
+    AllowedValues:
+      - core
+      - platform
+
+Conditions:
+  IsPlatform: !Equals [!Ref DeploymentType, platform]
 
 Resources:
   # === NEW Event Bus we are creating ===
@@ -34,11 +44,12 @@ Resources:
 
   # === Rule on the EXISTING bus -> EventBridgeQueue ===
   EventBridgeRuleToEventBridgeQueue:
+    Condition: IsPlatform
     Type: AWS::Events::Rule
     Properties:
       Name: !Sub 'event-to-sqs-${AppEnvironment}'
       Description: !Sub 'Route formkiq.${AppEnvironment} events to EventBridgeQueue (existing bus)'
-      EventBusName: !Sub 'FormKiQ-DocumentEvents-${AppEnvironment}' # existing bus, not created here
+      EventBusName: !Sub 'FormKiQ-DocumentEvents-${AppEnvironment}'
       EventPattern:
         source:
           - !Sub 'formkiq.${AppEnvironment}'
@@ -47,6 +58,7 @@ Resources:
           Arn: !GetAtt EventBridgeQueue.Arn
 
   EventBridgeQueuePolicy:
+    Condition: IsPlatform
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues:

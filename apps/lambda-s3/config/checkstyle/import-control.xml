@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.stacks">
+
+	<subpackage name="lambda">
+
+		<subpackage name="s3">
+
+            <allow pkg="java.security" />
+			<allow pkg="org.mockserver.mock.action" />
+			<allow pkg="org.mockserver.model" />
+
+			<allow pkg="software.amazon.awssdk.auth.credentials" />
+			<allow pkg="com.amazonaws.services.lambda.runtime" />
+
+			<allow pkg="com.formkiq.plugins.useractivity" />
+			<allow pkg="com.formkiq.stacks.lambda.s3" />
+			<allow pkg="com.formkiq.aws.dynamodb" />
+			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="com.formkiq.aws.sns" />
+			<allow pkg="com.formkiq.aws.sqs" />
+			<allow pkg="com.formkiq.aws.ssm" />
+			<allow pkg="com.formkiq.aws.ses" />
+			<allow pkg="com.formkiq.aws.eventbridge" />
+
+			<allow pkg="com.formkiq.validation" />
+			<allow pkg="software.amazon.awssdk.services.ses.model" />
+			<allow pkg="com.formkiq.graalvm.annotations" />
+			<allow pkg="com.formkiq.module.actions" />
+			<allow pkg="com.formkiq.module.actions.services" />
+			<allow pkg="com.formkiq.module.events" />
+			<allow pkg="com.formkiq.module.events.document" />
+			<allow pkg="com.formkiq.module.http" />
+			<allow pkg="com.formkiq.module.httpsigv4" />
+			<allow pkg="com.formkiq.module.lambdaservices" />
+			<allow pkg="com.formkiq.module.typesense" />
+			<allow pkg="com.formkiq.stacks.dynamodb" />
+
+			<allow pkg="com.google.gson" />
+
+			<allow pkg="edu.umd.cs.findbugs.annotations" />
+
+			<allow pkg="java.io" />
+			<allow pkg="java.lang" />
+			<allow pkg="java.net" />
+			<allow pkg="java.nio.charset" />
+			<allow pkg="java.text" />
+			<allow pkg="java.time" />
+
+			<allow pkg="java.util" />
+
+			<allow pkg="software.amazon.awssdk.awscore.exception" />
+			<allow pkg="software.amazon.awssdk.core" />
+			<allow pkg="software.amazon.awssdk.regions" />
+            <allow pkg="software.amazon.awssdk.services.dynamodb" />
+			<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+			<allow pkg="software.amazon.awssdk.services.s3" />
+			<allow pkg="software.amazon.awssdk.services.ssm" />
+			<allow pkg="software.amazon.awssdk.utils" />
+			<allow pkg="software.amazon.awssdk.utils.http" />
+
+			<subpackage name="actions">
+				<allow pkg="com.formkiq.strings" />
+				<allow pkg="com.formkiq.urls" />
+
+				<subpackage name="resize">
+					<allow pkg="javax.imageio" />
+					<allow class="java.awt.image.BufferedImage" />
+					<allow class="net.coobird.thumbnailator.Thumbnails" />
+				</subpackage>
+			</subpackage>
+
+			<subpackage name="text">
+				<allow pkg="com.formkiq.strings" />
+			</subpackage>
+
+			<subpackage name="util">
+
+				<allow pkg="com.amazonaws.services.lambda.runtime" />
+
+				<allow pkg="com.google.gson" />
+				<allow pkg="java.io" />
+				<allow pkg="java.util" />
+
+				<allow pkg="software.amazon.awssdk.auth.credentials" />
+				<allow pkg="software.amazon.awssdk.core" />
+				<allow pkg="software.amazon.awssdk.regions" />
+				<allow pkg="software.amazon.awssdk.services.cloudformation" />
+				<allow pkg="software.amazon.awssdk.services.s3" />
+				<allow pkg="software.amazon.awssdk.utils" />
+
+			</subpackage>
+
+			<subpackage name="awstest">
+				<allow pkg="software.amazon.awssdk.services.iam" />
+			</subpackage>
+		</subpackage>
+	</subpackage>
+
+</import-control>

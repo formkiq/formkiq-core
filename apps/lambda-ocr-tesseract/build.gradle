@@ -1,0 +1,95 @@
+description = "FormKiQ Core - Lambda OCR Tesseract"
+
+apply plugin: 'distribution'
+
+def moduleName = "formkiq-module-lambda-ocr-tesseract"
+
+dependencies {
+
+  implementation project(':domain:actions')
+  implementation project(':domain:document-events')
+  implementation project(':adapters:aws:s3')
+  implementation project(':adapters:aws:sqs')
+  implementation project(':adapters:aws:sns')
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':domain:ocr')
+  implementation project(':libs:lambda-services')
+  implementation project(':fkq-lambda-core')
+  // 5.16.0 of tess4j breaks everything - should look at removing this
+  implementation(libs.tess4j)
+  implementation(libs.slf4j.simple)
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+  implementation libs.jna
+
+  implementation libs.poi.ooxml
+  implementation libs.poi.scratchpad
+
+  testImplementation project(':testing:test-utils')
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack
+}
+
+tasks.register('downloadZipFile', Download) {
+  src('https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip')
+  dest(layout.buildDirectory.file('tesseract-al2-x86.zip'))
+  overwrite(false)
+}
+
+tasks.register('downloadAndUnzipFile', Copy) {
+  dependsOn(tasks.named('downloadZipFile'))
+  from({ zipTree(layout.buildDirectory.file('tesseract-al2-x86.zip')) })
+  into(layout.buildDirectory.dir('tesseract'))
+}
+
+tasks.register('buildTesseractLayer', Zip) {
+  dependsOn 'downloadAndUnzipFile'
+  archiveFileName = 'layer-tesseract-5.3.9.zip'
+  destinationDirectory = layout.buildDirectory.dir('distributions/api')
+
+  from(layout.buildDirectory.dir('tesseract')) { spec ->
+    eachFile { details ->
+      if (details.path.matches('lib/libtesseract\\.so\\..*')) {
+        details.path = 'lib/libtesseract.so'
+      }
+    }
+    includeEmptyDirs = false
+
+    // 2) keep only eng/osd traineddata; drop the rest
+    exclude { details ->
+      if (details.path.startsWith('tesseract/tesseract/share/tessdata/')) {
+        def name = details.file.name
+        return !(name in [
+          'eng.traineddata',
+          'osd.traineddata'
+        ])
+      }
+      return false
+    }
+  }
+}
+
+distZip.dependsOn buildTesseractLayer
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "api/${moduleName}.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from compileJava
+      from processResources
+      into('lib') {
+        from configurations.runtimeClasspath
+      }
+      into '/'
+    }
+  }
+}

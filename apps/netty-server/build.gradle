@@ -1,0 +1,120 @@
+plugins {
+  id 'distribution'
+  alias(libs.plugins.docker.compose)
+}
+
+description = "Netty Server"
+
+sourceSets {
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+    compileClasspath += main.output + test.output
+    runtimeClasspath += main.output + test.output
+  }
+}
+
+configurations {
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+
+  implementation project(':apps:lambda-s3')
+  implementation project(':apps:lambda-api')
+  implementation project(':apps:lambda-typesense')
+  implementation libs.netty.all
+  implementation libs.commons.cli
+  implementation libs.minio
+  implementation libs.aws.sdk.dynamodb
+
+  testImplementation project(':testing:test-utils')
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+}
+
+tasks.register("integrationTest", Test) {
+  group = 'verification'
+  description = 'Runs the Netty server integration tests.'
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+  shouldRunAfter test
+}
+
+task copyLibs(type: Copy) {
+  from configurations.runtimeClasspath
+  into "$buildDir/libs"
+}
+
+jar {
+  manifest {
+    attributes(
+        'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
+        'Main-Class': 'com.formkiq.server.HttpServer'
+        )
+  }
+}
+
+jar.dependsOn(copyLibs)
+
+dockerCompose {
+  useComposeFiles = [
+    "docker-compose.yml",
+    "docker-compose-override.yml"] // Compose files
+  buildAdditionalArgs = [
+    "--no-cache"] // Optional: additional build arguments
+  captureContainersOutput = true
+}
+
+tasks.named('jar') {
+  archiveBaseName.set('netty-server') // Set the desired name
+  archiveVersion.set('')               // Remove the version number
+}
+
+tasks.named('distZip') {
+  group = 'distribution'
+  description = 'Builds the Netty server Docker distribution package.'
+  archiveBaseName.set("${rootProject.name}-netty-server")
+  destinationDirectory.set(rootProject.layout.buildDirectory.dir("distributions"))
+  dependsOn tasks.named('jar')
+}
+
+tasks.named('distTar') {
+  enabled = false
+}
+
+distributions {
+  main {
+    contents {
+      duplicatesStrategy = DuplicatesStrategy.FAIL
+
+      from(projectDir) {
+        include 'Dockerfile'
+        include 'docker-compose.yml'
+        include 'keycloak/**'
+      }
+
+      from(projectDir) {
+        include 'docker-compose-override.yml'
+        rename 'docker-compose-override.yml', 'docker-compose.override.yml'
+      }
+
+      from(tasks.named('jar')) {
+        into 'build/libs'
+      }
+
+      from(configurations.runtimeClasspath) {
+        into 'build/libs'
+      }
+    }
+  }
+}
+
+composeBuild.dependsOn(jar)
+test.dependsOn(composeBuild)
+tasks.named('integrationTest') {
+  dependsOn composeBuild
+}
+check.dependsOn(composeBuild)

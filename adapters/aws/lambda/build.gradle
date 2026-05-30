@@ -1,0 +1,12 @@
+
+description = "AWS Lambda"
+
+dependencies {
+  api libs.aws.sdk.lambda
+  implementation libs.aws.sdk.url.connection.client
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+}

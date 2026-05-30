@@ -1,0 +1,99 @@
+description = "FormKiQ Core - Lambda TypeSense"
+
+apply plugin: 'distribution'
+
+def moduleName = "formkiq-module-lambda-typesense"
+def getCmd() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "cmd" : "bash"
+}
+
+def getCmdParam() {
+  String os = System.getProperty("os.name").toLowerCase()
+  return os.contains("win") ? "/c" : "-c"
+}
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':libs:lambda-services')
+  implementation project(':domain:documents')
+  implementation project(':adapters:typesense')
+  implementation project(':libs:http')
+
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+
+  implementation libs.formkiq.lambda.runtime.graalvm
+  implementation libs.formkiq.graalvm.annotations
+
+  implementation libs.slf4j.simple
+  testImplementation project(':testing:test-utils')
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack
+}
+
+compileJava {
+  options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage {
+  outputFileName = "server"
+  dockerImage = "ghcr.io/graalvm/native-image-community:25"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  enableHttp = true
+  enableHttps = true
+  buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
+}
+
+// task buildTemplate {
+//   inputs.files("src/main/resources/cloudformation/typesense/template.yaml")
+//   outputs.files("${buildDir}/distributions/typesense/template.yaml")
+
+//   def randomtext = ('0'..'z').shuffled().take(10).join();
+//   def sha256 = randomtext.digest('SHA-256')
+
+//   doLast {
+//     exec {
+//       commandLine getCmd(), getCmdParam(), "ytt --data-value hash=${sha256} -f src/main/resources/cloudformation/typesense/template.yaml > ${buildDir}/distributions/typesense/template.yaml"
+//     }
+//   }
+// }
+
+// graalvmNativeImage.dependsOn(buildTemplate)
+// distZip.dependsOn buildTemplate, graalvmNativeImage
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "typesense/${moduleName}-graalvm.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm/output") {
+        include("server")
+        filePermissions {
+          unix('0755')
+        }
+      }
+      into '/'
+    }
+  }
+}

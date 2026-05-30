@@ -99,6 +99,8 @@ Resources:
       Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
       Description: Lambda function to convert document to Tesseract
       Runtime: java25
+      Architectures:
+        - x86_64
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

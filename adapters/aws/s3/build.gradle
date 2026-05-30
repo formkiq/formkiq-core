@@ -1,0 +1,20 @@
+
+description = "AWS S3"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+  implementation libs.formkiq.graalvm.annotations
+
+  api libs.aws.sdk.s3.adapter
+
+  implementation libs.gson
+  implementation libs.aws.sdk.url.connection.client.s3
+  implementation project(':libs:lambda-services')
+  //implementation project(':adapters:aws:xray')
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+}

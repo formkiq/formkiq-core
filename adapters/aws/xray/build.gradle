@@ -1,0 +1,6 @@
+
+description = "AWS X-Ray"
+
+dependencies {
+  api libs.aws.xray.recorder.sdk.aws.sdk.v2
+}

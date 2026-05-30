@@ -36,6 +36,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   LogRetentionInDays:
     Type: Number
     Description: The number of days to retain the log events
@@ -110,6 +117,8 @@ Resources:
       Handler: com.formkiq.module.lambda.authorizer.apikey.ApiKeyAuthorizerRequestHandler
       Description: Lambda function that processes ApiKey Authorizer
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

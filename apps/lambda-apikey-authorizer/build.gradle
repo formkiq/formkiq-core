@@ -1,0 +1,102 @@
+description = "FormKiQ Core - API Key Authorizer"
+
+apply plugin: 'distribution'
+
+def moduleName = "formkiq-module-lambda-authorizer-apikey"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':domain:documents')
+  implementation project(':libs:lambda-services')
+
+  implementation libs.slf4j.simple
+
+  implementation(libs.aws.lambda.events)
+  implementation libs.slf4j.simple
+  implementation libs.slf4j.simple
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+
+  implementation libs.formkiq.lambda.runtime.graalvm
+  implementation libs.formkiq.graalvm.annotations
+
+  testImplementation project(':testing:test-utils')
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.junit.jupiter
+}
+
+compileJava {
+  options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage {
+  outputFileName = "server"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  dockerImage = "ghcr.io/graalvm/native-image-community:25"
+  enableHttp = true
+  enableHttps = true
+  buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
+}
+
+/*
+ task buildZip(type: Zip) {
+ dependsOn test, graalvmNativeImage
+ inputs.files("${project.projectDir}/runtime/bootstrap", "${buildDir}/graalvm/server")
+ outputs.file("${buildDir}/${moduleName}.zip")
+ archiveFileName = "${moduleName}.zip"
+ destinationDirectory = file("${buildDir}")
+ from("${project.projectDir}/runtime") {
+ include 'bootstrap'
+ }
+ from("${buildDir}/graalvm") {
+ include 'server'
+ }
+ }*/
+/*
+ task buildJava11Zip(type: Zip) {
+ from compileJava
+ into('lib') {
+ from configurations.default
+ }
+ }*/
+
+//task buildDeploy {
+//	dependsOn assembleTemplate
+//}
+
+//distZip.dependsOn graalvmNativeImage
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "api/${moduleName}.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm/output") {
+        include("server")
+        filePermissions {
+          unix('0755')
+        }
+      }
+      into '/'
+    }
+  }
+}

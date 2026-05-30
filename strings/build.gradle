@@ -1,7 +1,0 @@
-
-description = "Strings utils"
-
-dependencies {
-  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version:'6.0.3'
-  testRuntimeOnly  "org.junit.platform:junit-platform-launcher"
-}

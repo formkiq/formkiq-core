@@ -1,0 +1,16 @@
+
+description = "AWS STS"
+
+dependencies {
+  api libs.aws.sdk.sts
+  implementation libs.aws.sdk.url.connection.client
+  implementation libs.commons.codec
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+}

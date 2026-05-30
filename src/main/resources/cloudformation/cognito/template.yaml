@@ -143,6 +143,13 @@ Parameters:
       - "true"
       - "false"
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
 Conditions:
 
   HasDomainCertificate:
@@ -289,6 +296,8 @@ Resources:
       CodeUri: ../storage/lambda-s3-graalvm.zip
       Handler: com.formkiq.stacks.lambda.s3.cognito.CustomMessageHandler
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Description: Lambda function that processes Cognito Custom Email Messages
       MemorySize: 1024
       Role:
