@@ -1323,6 +1323,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotNull(resp.response());
       String documentId = resp.response().getDocumentId();
+      assertEquals(Boolean.FALSE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
 
       // when
       resp =
@@ -1333,11 +1335,17 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(documentId, resp.response().getDocumentId());
       String artifactId = resp.response().getArtifactId();
       assertNotNull(artifactId);
-      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
 
+      assertEquals(Boolean.TRUE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
+
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
       var doc = new GetDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
       assertEquals(path1, doc.response().getPath());
       assertEquals(artifactId, doc.response().getArtifactId());
+      assertEquals(Boolean.FALSE, doc.response().getHasArtifacts());
+      assertEquals(Boolean.TRUE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
 
       // when
       var content = new GetDocumentContentRequestBuilder(documentId).setArtifactId(artifactId)
@@ -1355,6 +1363,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       List<Document> documents = notNull(artifacts.response().getDocuments());
       assertEquals(1, documents.size());
       assertEquals(path1, documents.getFirst().getPath());
+      assertEquals(Boolean.FALSE, documents.getFirst().getHasArtifacts());
 
       var baseFolderDocuments = getFilesInFolder(siteId, folder0);
       assertEquals(1, baseFolderDocuments.size());
@@ -1448,6 +1457,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
         assertEquals(documentId, document.response().getDocumentId());
         assertNull(document.response().getArtifactId());
+        assertEquals(Boolean.TRUE, document.response().getHasArtifacts());
 
         DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
         var artifactDocument =
@@ -1455,12 +1465,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(documentId, artifactDocument.response().getDocumentId());
         assertEquals(artifactId, artifactDocument.response().getArtifactId());
         assertEquals(expectedFilename, artifactDocument.response().getPath());
+        assertEquals(Boolean.FALSE, artifactDocument.response().getHasArtifacts());
 
         var artifacts = new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId)
             .throwIfError();
         List<Document> documents = notNull(artifacts.response().getDocuments());
         assertEquals(1, documents.size());
         assertEquals(artifactId, documents.getFirst().getArtifactId());
+        assertEquals(Boolean.FALSE, documents.getFirst().getHasArtifacts());
 
         var folders = new GetFoldersRequestBuilder().submit(client, siteId).response();
         var filenames = notNull(folders.getDocuments()).stream().map(SearchResultDocument::getPath)

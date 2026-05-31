@@ -110,6 +110,8 @@ public class AttributeValueToDocumentItem
     item.setArtifactId((String) map.get("artifactId"));
     item.setBelongsToDocumentId((String) map.get("belongsToDocumentId"));
     item.setChecksumType((String) map.get("checksumType"));
+    item.setHasArtifacts(
+        item.getArtifactId() == null ? (Boolean) map.get("hasArtifacts") : Boolean.FALSE);
 
     item.setVersion(getString(attrs.get("version")));
     item.setS3version(getString(attrs.get(DocumentVersionService.S3VERSION_ATTRIBUTE)));

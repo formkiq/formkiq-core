@@ -58,6 +58,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.ExistsDocumentById;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.documents.GetChildDocumentsQuery;
+import com.formkiq.aws.dynamodb.documents.GetDocumentArtifactsQuery;
 import com.formkiq.aws.dynamodb.documents.GetSoftDeletedDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.SoftDeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
@@ -110,6 +111,7 @@ import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -470,6 +472,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     if (!softDelete && deleted.deleted() && document.artifactId() == null) {
       this.versionsService.deleteAllVersionIds(siteId, document);
+    }
+
+    if (deleted.deleted() && document.artifactId() != null) {
+      updateDocumentHasArtifacts(siteId, document.documentId(),
+          hasArtifactDocuments(siteId, document));
     }
 
     // check if folder index exists
@@ -1556,6 +1563,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
             new WriteRequestBuilder().append(this.documentTableName, record.getAttributes(siteId));
 
         writeBuilder.batchWriteItem(this.dbClient);
+      } else {
+        updateDocumentHasArtifacts(siteId, documentId, Boolean.TRUE);
       }
     }
 
@@ -1613,9 +1622,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (previous != null) {
       builder.lastModifiedDate(new Date());
       builder.setDefaultValues(previous);
+    } else if (documentArtifact.artifactId() == null && item.hasArtifacts() == null) {
+      builder.hasArtifacts(Boolean.FALSE);
     }
 
     return builder;
+  }
+
+  private boolean hasArtifactDocuments(final String siteId, final DocumentArtifact document) {
+    QueryResult response = new GetDocumentArtifactsQuery(document.documentId()).query(dbService,
+        dbService.getTableName(), siteId, null, 1);
+    return !response.items().isEmpty();
   }
 
   /**
@@ -1721,6 +1738,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     saveDocumentInternal(siteId, documentRecordSet, options);
 
+    if (!isEmpty(documentRecord.artifactId())) {
+      updateDocumentHasArtifacts(siteId, documentId, Boolean.TRUE);
+    }
+
     for (DocumentRecordSet childDoc : notNull(documentRecordSet.children())) {
 
       SaveDocumentOptions childLinkOptions = new SaveDocumentOptions().saveDocumentDate(false)
@@ -1756,8 +1777,21 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final DocumentRecord documentRecord) {
     var record =
         DocumentRecord.builder().document(DocumentArtifact.of(documentRecord.documentId(), null))
-            .path(documentRecord.path()).userId(documentRecord.userId()).build(siteId);
+            .path(documentRecord.path()).userId(documentRecord.userId()).hasArtifacts(Boolean.TRUE)
+            .build(siteId);
     return new DocumentRecordSet(record, null, null, null);
+  }
+
+  private void updateDocumentHasArtifacts(final String siteId, final String documentId,
+      final Boolean hasArtifacts) {
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+    if (exists(siteId, document)) {
+      DynamoDbKey key = new DocumentRecordBuilder().document(document).buildKey(siteId);
+      Map<String, AttributeValueUpdate> updateValues = Map.of("hasArtifacts",
+          AttributeValueUpdate.builder().value(AttributeValue.fromBool(hasArtifacts)).build());
+      this.dbService.updateItem(fromS(key.pk()), fromS(key.sk()), updateValues);
+    }
   }
 
   private DocumentRecordSet createChildDocumentLink(final String siteId,

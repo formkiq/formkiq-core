@@ -499,6 +499,9 @@ components:
         artifactId:
           type: "string"
           description: "Document Artifact Identifier"
+        hasArtifacts:
+          type: "boolean"
+          description: "Whether the document has artifact documents"
         contentType:
           type: "string"
           description: "Document Content-Type"

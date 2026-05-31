@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.documents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
@@ -39,6 +40,24 @@ public class DocumentRecordBuilderTest {
 
   private void assertKeyEquals(final String siteId, final String expected, final String actual) {
     assertEquals(siteId != null ? siteId + "/" + expected : expected, actual);
+  }
+
+  @Test
+  void testBuildHasArtifacts01() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid())
+        .hasArtifacts(Boolean.TRUE).build((String) null);
+
+    assertTrue(record.hasArtifacts());
+    assertTrue(record.getAttributes().get("hasArtifacts").bool());
+  }
+
+  @Test
+  void testBuildHasArtifacts02() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid()).artifactId(ID.ulid())
+        .hasArtifacts(Boolean.TRUE).build((String) null);
+
+    assertFalse(record.hasArtifacts());
+    assertFalse(record.getAttributes().get("hasArtifacts").bool());
   }
 
   @Test

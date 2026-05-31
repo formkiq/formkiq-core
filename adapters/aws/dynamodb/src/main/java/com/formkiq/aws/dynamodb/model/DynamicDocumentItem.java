@@ -100,6 +100,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public Boolean getHasArtifacts() {
+    return (Boolean) get("hasArtifacts");
+  }
+
+  @Override
   public String getHeight() {
     return getString("height");
   }
@@ -169,6 +174,9 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setArtifactId(final String artifactId) {
     put("artifactId", artifactId);
+    if (artifactId != null) {
+      put("hasArtifacts", Boolean.FALSE);
+    }
   }
 
   @Override
@@ -210,6 +218,15 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   public void setDocuments(final List<DocumentItem> list) {
     put("documents", list);
 
+  }
+
+  @Override
+  public void setHasArtifacts(final Boolean hasArtifacts) {
+    if (getArtifactId() == null) {
+      put("hasArtifacts", hasArtifacts);
+    } else {
+      put("hasArtifacts", Boolean.FALSE);
+    }
   }
 
   @Override
