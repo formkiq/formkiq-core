@@ -1,0 +1,147 @@
+name: Schemathesis API Fuzzing
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_examples:
+        description: 'Generated examples per operation'
+        required: false
+        default: '10'
+      max_failures:
+        description: 'Stop after this many unique failures'
+        required: false
+        default: '50'
+
+permissions:
+  contents: read
+
+jobs:
+  schemathesis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      REPORT_DIR: build/reports/schemathesis/value-profile
+      SCHEMATHESIS_MAX_EXAMPLES: ${{ github.event.inputs.max_examples || '10' }}
+      SCHEMATHESIS_MAX_FAILURES: ${{ github.event.inputs.max_failures || '50' }}
+      SCHEMATHESIS_SEED: '20260530'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build Netty server jar
+        run: ./gradlew :apps:netty-server:jar --no-daemon --console=plain
+
+      - name: Start Netty API stack
+        working-directory: apps/netty-server
+        run: docker compose -f docker-compose.yml -f docker-compose-integration-override.yml up -d --build api
+
+      - name: Wait for API login
+        run: |
+          for i in {1..60}; do
+            if curl -fsS \
+              -H 'Content-Type: application/json' \
+              --data '{"username":"admin@me.com","password":"password"}' \
+              http://localhost:8080/login > /tmp/formkiq-login.json; then
+              cat /tmp/formkiq-login.json
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          docker compose -f apps/netty-server/docker-compose.yml -f apps/netty-server/docker-compose-integration-override.yml logs api
+          exit 1
+
+      - name: Run Schemathesis value profile
+        run: |
+          mkdir -p "${REPORT_DIR}"
+          set -o pipefail
+
+          docker run --rm --network host \
+            -v "${PWD}/docs/openapi/openapi-key.yaml:/app/openapi-key.yaml:ro" \
+            -v "${PWD}/${REPORT_DIR}:/reports" \
+            ghcr.io/schemathesis/schemathesis:stable \
+            run /app/openapi-key.yaml \
+            --url http://127.0.0.1:8080 \
+            -H 'Authorization: changeme' \
+            --phases fuzzing \
+            --mode all \
+            --max-examples "${SCHEMATHESIS_MAX_EXAMPLES}" \
+            --max-failures "${SCHEMATHESIS_MAX_FAILURES}" \
+            --checks not_a_server_error \
+            --report junit,har,ndjson \
+            --report-junit-path /reports/junit.xml \
+            --report-har-path /reports/requests.har \
+            --report-ndjson-path /reports/events.ndjson \
+            --coverage-format html \
+            --coverage-report-html-path /reports/schema-coverage.html \
+            --seed "${SCHEMATHESIS_SEED}" \
+            --no-color | tee "${REPORT_DIR}/schemathesis.log"
+
+      - name: Generate readable summary
+        if: always()
+        run: |
+          mkdir -p "${REPORT_DIR}"
+          SUMMARY="${REPORT_DIR}/summary.md"
+          LOG="${REPORT_DIR}/schemathesis.log"
+
+          {
+            echo "# Schemathesis API Fuzzing Summary"
+            echo
+            echo "- Target: \`http://127.0.0.1:8080\`"
+            echo "- Schema: \`docs/openapi/openapi-key.yaml\`"
+            echo "- Max examples: \`${SCHEMATHESIS_MAX_EXAMPLES}\`"
+            echo "- Max failures: \`${SCHEMATHESIS_MAX_FAILURES}\`"
+            echo "- Seed: \`${SCHEMATHESIS_SEED}\`"
+            echo
+
+            if [ -f "${LOG}" ]; then
+              echo "## Summary"
+              echo
+              grep -E 'Selected:|Tested:|generated|Server error:|Failed Health Check:|Missing authentication:|Missing valid test data:|Schema validation mismatch:|Seed:' "${LOG}" || true
+              echo
+              echo "## Failing Endpoints"
+              echo
+              if [ -f "${REPORT_DIR}/junit.xml" ]; then
+                grep -B1 '<failure' "${REPORT_DIR}/junit.xml" \
+                  | grep '<testcase name=' \
+                  | sed -E 's/.*name="([^"]+)".*/- `\1`/' || true
+              else
+                echo "No JUnit report was produced."
+              fi
+              echo
+              echo "## Full Details"
+              echo
+              echo "See the uploaded \`junit.xml\`, \`requests.har\`, \`events.ndjson\`, and \`schemathesis.log\` artifacts."
+            else
+              echo "Schemathesis did not produce a log. Check the workflow step output."
+            fi
+          } > "${SUMMARY}"
+
+          cat "${SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload Schemathesis reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schemathesis-reports
+          path: build/reports/schemathesis/value-profile
+          retention-days: 14
+
+      - name: Stop Netty API stack
+        if: always()
+        working-directory: apps/netty-server
+        run: docker compose -f docker-compose.yml -f docker-compose-integration-override.yml down -v
