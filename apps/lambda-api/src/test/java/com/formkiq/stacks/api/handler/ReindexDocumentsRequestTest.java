@@ -376,4 +376,32 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, getDocumentAttributes(siteId, documentId).size());
     }
   }
+
+  /**
+   * POST /reindex/documents/{documentId} with document that does not exist.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddReindexDocumentsNotExists() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String documentId = ID.uuid();
+      AddReindexDocumentRequest req =
+          new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
+
+      // when
+      try {
+        reindexApi.addReindexDocument(documentId, req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"document\","
+            + "\"error\":\"'document' is required\"}]}", e.getResponseBody());
+      }
+    }
+  }
 }

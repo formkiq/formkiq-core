@@ -68,6 +68,7 @@ import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
+import com.formkiq.testutils.api.ApiHttpClient;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
@@ -76,6 +77,7 @@ import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -958,10 +960,31 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/{documentId}/attributes. PRESET namespace.
+   * POST /documents/{documentId}/attributes. Invalid request.
    *
    * @throws ApiException an error has occurred
    */
+  @Test
+  public void testAddDocumentAttributeInvalidRequest()
+      throws ApiException, IOException, InterruptedException {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+    var documentId = new AddDocumentRequestBuilder().content().submit(client, DEFAULT_SITE_ID).throwIfError().response().getDocumentId();
+
+    // when
+    var resp = ApiHttpClient.send(DEFAULT_SITE_ID, server.getBasePath() + "/documents/" + documentId + "/attributes", "POST", "{\"attributes\":[[true]]}");
+
+    // then
+    assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+    assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
+
+  }
+
+    /**
+     * POST /documents/{documentId}/attributes. PRESET namespace.
+     *
+     * @throws ApiException an error has occurred
+     */
   @Test
   public void testAddDocumentAttribute12() throws ApiException {
     // given

@@ -1839,6 +1839,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       throws ValidationException {
 
     DocumentRecord doc = new FindDocumentById().find(dbService, siteId, document);
+    ValidationChecks.checkNotNull("document", doc);
+
     validateDocumentPath(siteId, doc.path(), null);
 
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document, doc, attributes, validation,

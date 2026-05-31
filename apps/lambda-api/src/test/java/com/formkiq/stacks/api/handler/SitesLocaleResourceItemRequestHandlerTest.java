@@ -53,6 +53,8 @@ import com.formkiq.client.model.SetLocaleResourceItemRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.testutils.api.ApiHttpClient;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -181,7 +183,7 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       List<LocaleInfo> locales =
           notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
       assertEquals(1, locales.size());
-      assertEquals("en", locales.get(0).getLocale());
+      assertEquals("en", locales.getFirst().getLocale());
 
       // when
       DeleteResponse deleteResponse = this.systemApi.deleteLocale(siteId, locale);
@@ -190,6 +192,63 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       assertEquals("deleted locale 'en'", deleteResponse.getMessage());
       locales = notNull(this.systemApi.getLocales(siteId, null, null).getLocales());
       assertEquals(0, locales.size());
+    }
+  }
+
+  /**
+   * Post /sites/{siteId}/locales with invalid request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocaleInvalid() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // when
+      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales", "POST", "{\"locale\":[[]],\"__main__\":{}}");
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+      assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
+    }
+  }
+
+  /**
+   * Post //sites/{siteId}/locales/{locale}/resourceItems with invalid request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocaleResourceItemsInvalid() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // when
+      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems", "POST", "{}");
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+      assertEquals("{\"message\":\"Invalid request\"}", resp.body());
+    }
+  }
+
+  /**
+   * Post //sites/{siteId}/locales/{locale}/resourceItems/{itemKey} with invalid request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocaleResourceItemKeyInvalid() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // when
+      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems/0", "PUT", "{}");
+
+      // then
+      assertEquals(HttpStatus.NOT_FOUND, resp.statusCode());
+      assertEquals("{\"message\":\"itemKey '0' not found\"}", resp.body());
     }
   }
 
@@ -222,7 +281,7 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       List<ResourceItem> items = notNull(
           this.systemApi.getLocaleResourceItems(siteId, locale, null, null).getResourceItems());
       assertEquals(1, items.size());
-      assertResourceInterface(items.get(0), "mykey", "bbb", "INTERFACE##mykey");
+      assertResourceInterface(items.getFirst(), "mykey", "bbb", "INTERFACE##mykey");
 
       GetLocaleResourceItemResponse lri =
           this.systemApi.getLocaleResourceItem(siteId, locale, response.getItemKey());
@@ -603,14 +662,14 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
 
       List<AttributeSchemaRequired> required = notNull(c0.getAttributes().getRequired());
       assertEquals(1, required.size());
-      AttributeSchemaRequired attr0 = required.get(0);
+      AttributeSchemaRequired attr0 = required.getFirst();
       assertEquals(attributeKey, attr0.getAttributeKey());
       assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
       assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
 
       assertNotNull(c1);
       assertNotNull(c1.getAttributes());
-      AttributeSchemaRequired attr1 = notNull(c1.getAttributes().getRequired()).get(0);
+      AttributeSchemaRequired attr1 = notNull(c1.getAttributes().getRequired()).getFirst();
       assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
 
       // when
@@ -659,14 +718,14 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
 
       List<AttributeSchemaOptional> optional = notNull(c0.getAttributes().getOptional());
       assertEquals(1, optional.size());
-      AttributeSchemaOptional attr0 = optional.get(0);
+      AttributeSchemaOptional attr0 = optional.getFirst();
       assertEquals(attributeKey, attr0.getAttributeKey());
       assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
       assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
 
       assertNotNull(c1);
       assertNotNull(c1.getAttributes());
-      AttributeSchemaOptional attr1 = notNull(c1.getAttributes().getOptional()).get(0);
+      AttributeSchemaOptional attr1 = notNull(c1.getAttributes().getOptional()).getFirst();
       assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
 
       // when
@@ -712,7 +771,7 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
         if (flag) {
           List<AttributeSchemaRequired> reqd = notNull(sitesSchema0.getAttributes().getRequired());
           assertEquals(1, reqd.size());
-          AttributeSchemaRequired attr0 = reqd.get(0);
+          AttributeSchemaRequired attr0 = reqd.getFirst();
           assertEquals(attributeKey, attr0.getAttributeKey());
           assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
           assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
@@ -720,7 +779,7 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
           List<AttributeSchemaOptional> required =
               notNull(sitesSchema0.getAttributes().getOptional());
           assertEquals(1, required.size());
-          AttributeSchemaOptional attr0 = required.get(0);
+          AttributeSchemaOptional attr0 = required.getFirst();
           assertEquals(attributeKey, attr0.getAttributeKey());
           assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
           assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
@@ -729,11 +788,11 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
         assertNotNull(sitesSchema1.getAttributes());
         if (flag) {
           AttributeSchemaRequired attr1 =
-              notNull(sitesSchema1.getAttributes().getRequired()).get(0);
+              notNull(sitesSchema1.getAttributes().getRequired()).getFirst();
           assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
         } else {
           AttributeSchemaOptional attr1 =
-              notNull(sitesSchema1.getAttributes().getOptional()).get(0);
+              notNull(sitesSchema1.getAttributes().getOptional()).getFirst();
           assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
         }
 
@@ -778,13 +837,13 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       assertNotNull(sitesSchema0.getAttributes());
       List<AttributeSchemaOptional> optional = notNull(sitesSchema0.getAttributes().getOptional());
       assertEquals(1, optional.size());
-      AttributeSchemaOptional attr0 = optional.get(0);
+      AttributeSchemaOptional attr0 = optional.getFirst();
       assertEquals(attributeKey, attr0.getAttributeKey());
       assertEquals(1, notNull(attr0.getLocalizedAllowedValues()).size());
       assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
 
       assertNotNull(sitesSchema1.getAttributes());
-      AttributeSchemaOptional attr1 = notNull(sitesSchema1.getAttributes().getOptional()).get(0);
+      AttributeSchemaOptional attr1 = notNull(sitesSchema1.getAttributes().getOptional()).getFirst();
       assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
 
       // when
