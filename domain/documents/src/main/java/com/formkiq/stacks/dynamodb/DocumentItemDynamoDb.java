@@ -91,6 +91,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Height. */
   @Reflectable
   private String height;
+  /** Whether this non-artifact document has artifact documents. */
+  @Reflectable
+  private Boolean hasArtifacts;
 
   /** constructor. */
   public DocumentItemDynamoDb() {}
@@ -155,6 +158,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public Boolean getHasArtifacts() {
+    return this.hasArtifacts;
+  }
+
+  @Override
   public String getHeight() {
     return this.height;
   }
@@ -207,6 +215,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setArtifactId(final String id) {
     this.artifactId = id;
+    if (id != null) {
+      this.hasArtifacts = Boolean.FALSE;
+    }
   }
 
   @Override
@@ -247,6 +258,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setDocuments(final List<DocumentItem> objects) {
     this.documents = objects;
+  }
+
+  @Override
+  public void setHasArtifacts(final Boolean documentHasArtifacts) {
+    this.hasArtifacts = this.artifactId == null ? documentHasArtifacts : Boolean.FALSE;
   }
 
   @Override

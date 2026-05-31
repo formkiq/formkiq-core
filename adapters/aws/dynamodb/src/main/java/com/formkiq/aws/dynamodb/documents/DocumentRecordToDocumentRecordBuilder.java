@@ -54,6 +54,7 @@ public class DocumentRecordToDocumentRecordBuilder
         .checksumType(record.checksumType()).s3version(record.s3version()).userId(record.userId())
         .version(record.version()).width(record.width()).height(record.height())
         .timeToLive(record.timeToLive()).insertedDate(record.insertedDate())
-        .lastModifiedDate(record.lastModifiedDate()).metadata(record.metadata());
+        .lastModifiedDate(record.lastModifiedDate()).metadata(record.metadata())
+        .hasArtifacts(record.hasArtifacts());
   }
 }

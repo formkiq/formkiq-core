@@ -40,7 +40,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     String belongsToDocumentId, String path, String deepLinkPath, String contentType,
     Long contentLength, String checksum, String checksumType, String s3version, String userId,
     String version, String width, String height, String timeToLive, Date insertedDate,
-    Date lastModifiedDate, Collection<DocumentMetadata> metadata) {
+    Date lastModifiedDate, Collection<DocumentMetadata> metadata, Boolean hasArtifacts) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
@@ -48,6 +48,10 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
   public DocumentRecord {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(documentId, "documentId must not be null");
+
+    if (artifactId != null) {
+      hasArtifacts = Boolean.FALSE;
+    }
 
     if (insertedDate != null) {
       insertedDate = new Date(insertedDate.getTime());
@@ -92,7 +96,10 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         DynamoDbTypes.toString(attributes.get("height")),
         DynamoDbTypes.toString(attributes.get("timeToLive")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")),
-        DynamoDbTypes.toDate(attributes.get("lastModifiedDate")), metadata);
+        DynamoDbTypes.toDate(attributes.get("lastModifiedDate")), metadata,
+        attributes.containsKey("hasArtifacts")
+            ? DynamoDbTypes.toBoolean(attributes.get("hasArtifacts"))
+            : null);
   }
 
   /**
@@ -117,7 +124,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         .withString("userId", userId).withString("version", version).withString("width", width)
         .withString("height", height).withNumber("TimeToLive", timeToLive)
         .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate)
-        .withMap(metadataAttrs);
+        .withMap(metadataAttrs).withBoolean("hasArtifacts", hasArtifacts);
 
     return map.build();
   }
