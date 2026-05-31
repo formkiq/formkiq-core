@@ -156,7 +156,8 @@ public class DocumentTagRequestHandler
 
     final String tagKey = event.getPathParameter("tagKey");
 
-    SetDocumentTagKeyRequest body = JsonToObject.fromJson(awsservice, event, SetDocumentTagKeyRequest.class);
+    SetDocumentTagKeyRequest body =
+        JsonToObject.fromJson(awsservice, event, SetDocumentTagKeyRequest.class);
 
     String value = body.value();
     List<String> values = body.values();

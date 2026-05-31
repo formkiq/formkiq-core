@@ -399,8 +399,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       } catch (ApiException e) {
         // then
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"document\","
-            + "\"error\":\"'document' is required\"}]}", e.getResponseBody());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"document\"," + "\"error\":\"'document' is required\"}]}",
+            e.getResponseBody());
       }
     }
   }

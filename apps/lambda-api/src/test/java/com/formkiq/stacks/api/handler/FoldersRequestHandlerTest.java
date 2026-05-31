@@ -96,6 +96,21 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Add Folder Null Request.
+   */
+  @Test
+  void addFolderInvalidRequest() throws IOException, InterruptedException {
+    // given
+    // when
+    var response =
+        ApiHttpClient.send(DEFAULT_SITE_ID, server.getBasePath() + "/folders", "POST", "null");
+
+    // then
+    assertEquals(HttpStatus.BAD_REQUEST, response.statusCode());
+    assertEquals("{\"message\":\"invalid JSON body\"}", response.body());
+  }
+
+  /**
    * Assert Document Forbidden.
    * 
    * @param siteId {@link String}
@@ -250,20 +265,6 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         "{\"errors\":[{\"key\":\"roleName\",\"error\":\"'roleName' is required\"},"
             + "{\"key\":\"permissions\",\"error\":\"'permissions' is required\"}]}",
         resp.exception().getResponseBody());
-  }
-
-  /**
-   * Add Folder Null Request.
-   */
-  @Test
-  void addFolderInvalidRequest() throws IOException, InterruptedException {
-    // given
-    // when
-    var response = ApiHttpClient.send(DEFAULT_SITE_ID, server.getBasePath() + "/folders", "POST", "null");
-
-    // then
-    assertEquals(HttpStatus.BAD_REQUEST, response.statusCode());
-    assertEquals("{\"message\":\"invalid JSON body\"}", response.body());
   }
 
   /**
@@ -782,17 +783,17 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       latch.await();
       executorService.shutdown();
 
-    List<SearchResultDocument> docs = notNull(new GetFoldersRequestBuilder().limit("200")
-        .submit(client, siteId).response().getDocuments());
+      List<SearchResultDocument> docs = notNull(new GetFoldersRequestBuilder().limit("200")
+          .submit(client, siteId).response().getDocuments());
 
-    assertEquals(1, docs.size());
-    assertEquals(TRUE, docs.getFirst().getFolder());
-    assertEquals("Chicago", docs.getFirst().getPath());
+      assertEquals(1, docs.size());
+      assertEquals(TRUE, docs.getFirst().getFolder());
+      assertEquals("Chicago", docs.getFirst().getPath());
 
-    docs = notNull(new GetFoldersRequestBuilder().path("Chicago").limit("200")
-        .submit(client, siteId).response().getDocuments());
+      docs = notNull(new GetFoldersRequestBuilder().path("Chicago").limit("200")
+          .submit(client, siteId).response().getDocuments());
 
-    assertEquals(numberOfThreads, docs.size());
+      assertEquals(numberOfThreads, docs.size());
     }
   }
 

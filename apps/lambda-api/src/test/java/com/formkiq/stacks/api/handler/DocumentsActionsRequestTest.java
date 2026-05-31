@@ -482,8 +482,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.service.saveNewActions(List.of(
           createAction(documentId, ActionType.FULLTEXT).userId("joe").status(ActionStatus.FAILED)
               .build(siteId),
-          createAction(document).userId("joe").status(ActionStatus.FAILED)
-              .build(siteId)));
+          createAction(document).userId("joe").status(ActionStatus.FAILED).build(siteId)));
 
       // when
       AddResponse retry = this.documentActionsApi.addDocumentRetryAction(document.documentId(),
@@ -737,38 +736,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/{documentId}/actions invalid action.
+   * POST /documents/{documentId}/actions missing 'parameters' for documenttagging.
    *
    * @throws Exception an error has occurred
    */
-  @Test
-  public void testHandlePostDocumentActionsInvalidAction() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-      String documentId = saveDocument(siteId);
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
-
-      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(null);
-
-      // when
-      try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertEquals("{\"errors\":[{\"key\":\"actions\",\"error\":\"'actions' is required\"}]}", e.getResponseBody());
-      }
-    }
-  }
-
-      /**
-       * POST /documents/{documentId}/actions missing 'parameters' for documenttagging.
-       *
-       * @throws Exception an error has occurred
-       */
   @Test
   public void testHandlePostDocumentActions03() throws Exception {
 
@@ -1150,6 +1121,35 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'DELETE'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions invalid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActionsInvalidAction() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(null);
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"actions\",\"error\":\"'actions' is required\"}]}",
             e.getResponseBody());
       }
     }

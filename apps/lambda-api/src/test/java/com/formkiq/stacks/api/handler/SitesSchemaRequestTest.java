@@ -960,31 +960,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * POST /documents/{documentId}/attributes. Invalid request.
+   * POST /documents/{documentId}/attributes. PRESET namespace.
    *
    * @throws ApiException an error has occurred
    */
-  @Test
-  public void testAddDocumentAttributeInvalidRequest()
-      throws ApiException, IOException, InterruptedException {
-    // given
-    setBearerToken(DEFAULT_SITE_ID);
-    var documentId = new AddDocumentRequestBuilder().content().submit(client, DEFAULT_SITE_ID).throwIfError().response().getDocumentId();
-
-    // when
-    var resp = ApiHttpClient.send(DEFAULT_SITE_ID, server.getBasePath() + "/documents/" + documentId + "/attributes", "POST", "{\"attributes\":[[true]]}");
-
-    // then
-    assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
-    assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
-
-  }
-
-    /**
-     * POST /documents/{documentId}/attributes. PRESET namespace.
-     *
-     * @throws ApiException an error has occurred
-     */
   @Test
   public void testAddDocumentAttribute12() throws ApiException {
     // given
@@ -1016,6 +995,30 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
             + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
       }
     }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Invalid request.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttributeInvalidRequest()
+      throws ApiException, IOException, InterruptedException {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+    var documentId = new AddDocumentRequestBuilder().content().submit(client, DEFAULT_SITE_ID)
+        .throwIfError().response().getDocumentId();
+
+    // when
+    var resp = ApiHttpClient.send(DEFAULT_SITE_ID,
+        server.getBasePath() + "/documents/" + documentId + "/attributes", "POST",
+        "{\"attributes\":[[true]]}");
+
+    // then
+    assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+    assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
+
   }
 
   /**

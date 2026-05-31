@@ -155,7 +155,7 @@ public class DocumentsActionsRequestHandler
     return ApiRequestHandlerResponse.builder().ok().body("message", "Actions saved").build();
   }
 
-  private void validate(AddDocumentActionsRequest req) {
+  private void validate(final AddDocumentActionsRequest req) {
     ValidationChecks.checkNotNull(null, req);
     ValidationChecks.checkNotNull("actions", req.actions());
   }

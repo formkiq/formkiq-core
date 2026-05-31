@@ -27,7 +27,6 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

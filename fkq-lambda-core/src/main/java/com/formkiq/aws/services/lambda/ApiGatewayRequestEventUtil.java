@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
@@ -143,6 +144,9 @@ public interface ApiGatewayRequestEventUtil {
     } else if (isPaginationPrevious(q)) {
 
       pagination = toPaginationToken(cacheService, q.get("previous"));
+      if (pagination == null) {
+        throw new BadException("Invalid previous pagnination token");
+      }
 
       if (pagination.getPrevious() != null) {
 

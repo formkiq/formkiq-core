@@ -206,49 +206,12 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       // when
-      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales", "POST", "{\"locale\":[[]],\"__main__\":{}}");
+      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales",
+          "POST", "{\"locale\":[[]],\"__main__\":{}}");
 
       // then
       assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
       assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
-    }
-  }
-
-  /**
-   * Post //sites/{siteId}/locales/{locale}/resourceItems with invalid request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testAddLocaleResourceItemsInvalid() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      // when
-      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems", "POST", "{}");
-
-      // then
-      assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
-      assertEquals("{\"message\":\"Invalid request\"}", resp.body());
-    }
-  }
-
-  /**
-   * Post //sites/{siteId}/locales/{locale}/resourceItems/{itemKey} with invalid request.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testAddLocaleResourceItemKeyInvalid() throws Exception {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      // when
-      var resp = ApiHttpClient.send(siteId, server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems/0", "PUT", "{}");
-
-      // then
-      assertEquals(HttpStatus.NOT_FOUND, resp.statusCode());
-      assertEquals("{\"message\":\"itemKey '0' not found\"}", resp.body());
     }
   }
 
@@ -582,6 +545,46 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
   }
 
   /**
+   * Post //sites/{siteId}/locales/{locale}/resourceItems/{itemKey} with invalid request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocaleResourceItemKeyInvalid() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // when
+      var resp = ApiHttpClient.send(siteId,
+          server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems/0", "PUT", "{}");
+
+      // then
+      assertEquals(HttpStatus.NOT_FOUND, resp.statusCode());
+      assertEquals("{\"message\":\"itemKey '0' not found\"}", resp.body());
+    }
+  }
+
+  /**
+   * Post //sites/{siteId}/locales/{locale}/resourceItems with invalid request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testAddLocaleResourceItemsInvalid() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      // when
+      var resp = ApiHttpClient.send(siteId,
+          server.getBasePath() + "/sites/" + siteId + "/locales/en/resourceItems", "POST", "{}");
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+      assertEquals("{\"message\":\"Invalid request\"}", resp.body());
+    }
+  }
+
+  /**
    * DELETE /sites/{siteId}/locales.
    *
    */
@@ -843,7 +846,8 @@ public class SitesLocaleResourceItemRequestHandlerTest extends AbstractApiClient
       assertEquals("localVal", attr0.getLocalizedAllowedValues().get("222"));
 
       assertNotNull(sitesSchema1.getAttributes());
-      AttributeSchemaOptional attr1 = notNull(sitesSchema1.getAttributes().getOptional()).getFirst();
+      AttributeSchemaOptional attr1 =
+          notNull(sitesSchema1.getAttributes().getOptional()).getFirst();
       assertEquals(0, notNull(attr1.getLocalizedAllowedValues()).size());
 
       // when

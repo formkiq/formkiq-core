@@ -186,8 +186,8 @@ class OcrTesseractProcessorTest {
       assertEquals("FAILED", obj.status().name());
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.FAILED, actions.get(0).status());
-      assertEquals("unsupported Content-Type: MIME_JPEG", actions.get(0).message());
+      assertEquals(ActionStatus.FAILED, actions.getFirst().status());
+      assertEquals("unsupported Content-Type: MIME_JPEG", actions.getFirst().message());
     }
   }
 
@@ -234,7 +234,7 @@ class OcrTesseractProcessorTest {
       assertEquals(OCR_TEXT, s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -274,7 +274,7 @@ class OcrTesseractProcessorTest {
       assertEquals("FAILED", obj.status().name());
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.FAILED, actions.get(0).status());
+      assertEquals(ActionStatus.FAILED, actions.getFirst().status());
     }
   }
 
@@ -320,7 +320,7 @@ class OcrTesseractProcessorTest {
           .contains("Vestibulum neque massa"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -366,7 +366,7 @@ class OcrTesseractProcessorTest {
           .contains("Vestibulum neque massa"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -411,7 +411,7 @@ class OcrTesseractProcessorTest {
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -456,7 +456,7 @@ class OcrTesseractProcessorTest {
       assertTrue(s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null).contains("And more text"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -505,7 +505,7 @@ class OcrTesseractProcessorTest {
           s3.getContentAsString(OCR_BUCKET_NAME, ocrS3Key, null));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -563,7 +563,7 @@ class OcrTesseractProcessorTest {
       assertFalse(text.substring(pos + match.length()).contains(match));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -610,7 +610,7 @@ class OcrTesseractProcessorTest {
       assertTrue(text.contains("Sales Breakdown"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 
@@ -657,7 +657,7 @@ class OcrTesseractProcessorTest {
       assertTrue(text.contains("Accessories\tWest"));
 
       actions = actionsService.getActions(siteId, document);
-      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
     }
   }
 }
