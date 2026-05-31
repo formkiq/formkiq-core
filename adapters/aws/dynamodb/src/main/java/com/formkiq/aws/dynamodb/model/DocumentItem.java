@@ -96,6 +96,13 @@ public interface DocumentItem {
   List<DocumentItem> getDocuments();
 
   /**
+   * Whether this non-artifact document has artifact documents.
+   *
+   * @return {@link Boolean}
+   */
+  Boolean getHasArtifacts();
+
+  /**
    * Get Height.
    *
    * @return {@link String}
@@ -227,6 +234,13 @@ public interface DocumentItem {
    * @param ids {@link List} {@link DocumentItem}
    */
   void setDocuments(List<DocumentItem> ids);
+
+  /**
+   * Set whether this non-artifact document has artifact documents.
+   *
+   * @param hasArtifacts {@link Boolean}
+   */
+  void setHasArtifacts(Boolean hasArtifacts);
 
   /**
    * Set Height.

@@ -138,6 +138,9 @@ components:
         artifactId:
           type: "string"
           description: "Artifact Identifier"
+        hasArtifacts:
+          type: "boolean"
+          description: "Whether the document has artifact documents"
         siteId:
           type: "string"
           description: "Site Identifier"
@@ -223,6 +226,9 @@ components:
         documentId:
           type: "string"
           description: "Document Identifier"
+        hasArtifacts:
+          type: "boolean"
+          description: "Whether the document has artifact documents"
         contentType:
           type: "string"
           description: "Document Content-Type"

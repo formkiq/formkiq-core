@@ -203,8 +203,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   private List<Document> getDocuments(final String siteId) throws ApiException {
     return notNull(new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response()
         .getDocuments());
-    // return notNull(this.documentsApi
-    // .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
   }
 
   private List<Document> getDocuments(final String siteId, final int expected)
@@ -222,8 +220,6 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   private List<Document> getSoftDeletedDocuments(final String siteId) throws ApiException {
     return notNull(new GetDocumentsRequestBuilder().deleted(true).submit(client, siteId)
         .throwIfError().response().getDocuments());
-    // return notNull(this.documentsApi
-    // .getDocuments(siteId, null, null, TRUE, null, null, null, null, null, null).getDocuments());
   }
 
   private String getTagValue(final String siteId, final DocumentArtifact artifact) {
@@ -334,7 +330,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
-      assertEquals(document.documentId(), softDeletedDocuments.get(0).getDocumentId());
+      assertEquals(document.documentId(), softDeletedDocuments.getFirst().getDocumentId());
 
       List<Document> documents = getDocuments(siteId);
       assertEquals(0, documents.size());
@@ -421,7 +417,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       docs = searchDocumentAttribute(siteId, attributeKey, "1");
       assertEquals(1, docs.size());
-      assertEquals(document1.documentId(), docs.get(0).getDocumentId());
+      assertEquals(document1.documentId(), docs.getFirst().getDocumentId());
 
       // when - restore document
       this.documentsApi.setDocumentRestore(document0.documentId(), siteId, document0.artifactId());
@@ -447,19 +443,29 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String path0 = ID.ulid() + ".txt";
       String path1 = ID.ulid() + ".txt";
 
+      // when
       AddDocumentResponse document = new AddDocumentRequestBuilder().content().path(path0)
           .submit(client, siteId).throwIfError().response();
 
       AddDocumentResponse addArtifact =
           new AddDocumentRequestBuilder().documentId(document.getDocumentId()).content().path(path1)
               .artifacts(true).submit(client, siteId).throwIfError().response();
+
+      // then
       DocumentArtifact artifact =
           DocumentArtifact.of(addArtifact.getDocumentId(), addArtifact.getArtifactId());
 
       assertNotNull(document.getDocumentId());
       assertNotNull(artifact.artifactId());
-      assertNotNull(getDocument(siteId, document.getDocumentId()).throwIfError().response());
-      assertNotNull(getDocument(siteId, artifact).throwIfError().response());
+
+      GetDocumentResponse baseDocument =
+          getDocument(siteId, document.getDocumentId()).throwIfError().response();
+      GetDocumentResponse artifactDocument =
+          getDocument(siteId, artifact).throwIfError().response();
+      assertNotNull(baseDocument);
+      assertNotNull(artifactDocument);
+      assertEquals(Boolean.TRUE, baseDocument.getHasArtifacts());
+      assertEquals(Boolean.FALSE, artifactDocument.getHasArtifacts());
 
       // when
       this.documentsApi.deleteDocument(document.getDocumentId(), siteId, artifact.artifactId(),
@@ -469,7 +475,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(0, softDeletedDocuments.size());
 
-      assertNotNull(getDocument(siteId, document.getDocumentId()).throwIfError().response());
+      baseDocument = getDocument(siteId, document.getDocumentId()).throwIfError().response();
+      assertNotNull(baseDocument);
+      assertEquals(Boolean.FALSE, baseDocument.getHasArtifacts());
 
       ApiHttpResponse<GetDocumentResponse> artifactResponse = getDocument(siteId, artifact);
       assertNotNull(artifactResponse.exception());
@@ -516,8 +524,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
-      assertEquals(artifact.documentId(), softDeletedDocuments.get(0).getDocumentId());
-      assertEquals(artifact.artifactId(), softDeletedDocuments.get(0).getArtifactId());
+      assertEquals(artifact.documentId(), softDeletedDocuments.getFirst().getDocumentId());
+      assertEquals(artifact.artifactId(), softDeletedDocuments.getFirst().getArtifactId());
 
 
       // when
@@ -525,8 +533,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, list.size());
-      assertEquals(document.documentId(), list.get(0).getDocumentId());
-      assertNull(list.get(0).getArtifactId());
+      assertEquals(document.documentId(), list.getFirst().getDocumentId());
+      assertNull(list.getFirst().getArtifactId());
 
       // when
       new RestoreDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
@@ -605,10 +613,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents request, with workflow-only DELETE action.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleAddDocumentDelete01() throws Exception {
+  public void testHandleAddDocumentDelete01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
@@ -633,10 +640,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   /**
    * POST /documents request, with workflow-only MOVE action.
    *
-   * @throws Exception an error has occurred
    */
   @Test
-  public void testHandleAddDocumentMove01() throws Exception {
+  public void testHandleAddDocumentMove01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
@@ -764,7 +770,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
-      assertEquals(path, softDeletedDocuments.get(0).getPath());
+      assertEquals(path, softDeletedDocuments.getFirst().getPath());
 
       List<Document> documents = getDocuments(siteId, 0);
       assertEquals(0, documents.size());
@@ -779,7 +785,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, softDeletedDocuments.size());
       documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
-      assertEquals(path, documents.get(0).getPath());
+      assertEquals(path, documents.getFirst().getPath());
     }
   }
 
@@ -892,7 +898,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<DocumentAction> actions = notNull(this.documentActionsApi
           .getDocumentActions(documentId, siteId, null, null, null, null).getActions());
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
+      assertEquals(DocumentActionType.FULLTEXT, actions.getFirst().getType());
     }
   }
 
@@ -1392,7 +1398,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(1, docs.size());
-      assertEquals(path0, docs.get(0).getPath());
+      assertEquals(path0, docs.getFirst().getPath());
 
       // given
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path(path1);
@@ -1405,7 +1411,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       docs = search(siteId, sreq);
       assertEquals(1, docs.size());
-      assertEquals(path1, docs.get(0).getPath());
+      assertEquals(path1, docs.getFirst().getPath());
     }
   }
 

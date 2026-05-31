@@ -74,6 +74,8 @@ public class Document implements DocumentItem {
   private String width;
   /** Height. */
   private String height;
+  /** Whether this non-artifact document has artifact documents. */
+  private Boolean hasArtifacts;
 
   /**
    * constructor.
@@ -123,6 +125,11 @@ public class Document implements DocumentItem {
   @Override
   public List<DocumentItem> getDocuments() {
     return this.documents;
+  }
+
+  @Override
+  public Boolean getHasArtifacts() {
+    return this.hasArtifacts;
   }
 
   @Override
@@ -178,6 +185,9 @@ public class Document implements DocumentItem {
   @Override
   public void setArtifactId(final String id) {
     this.artifactId = id;
+    if (id != null) {
+      this.hasArtifacts = Boolean.FALSE;
+    }
   }
 
   @Override
@@ -218,6 +228,11 @@ public class Document implements DocumentItem {
   @Override
   public void setDocuments(final List<DocumentItem> childDocuments) {
     this.documents = childDocuments;
+  }
+
+  @Override
+  public void setHasArtifacts(final Boolean documentHasArtifacts) {
+    this.hasArtifacts = this.artifactId == null ? documentHasArtifacts : Boolean.FALSE;
   }
 
   @Override

@@ -87,6 +87,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private Date lastModifiedDate;
   /** {@link DocumentMetadata}. */
   private Collection<DocumentMetadata> metadata;
+  /** Whether this non-artifact document has artifact documents. */
+  private Boolean hasArtifacts;
   /** Metadata Keys to Delete. */
   private Collection<String> metadataDeleteKeys = Collections.emptyList();
   /** Set GSI1. */
@@ -146,13 +148,18 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         defaultValues != null ? defaultValues.getAttributes() : Collections.emptyMap();
 
     String cs = ps(checksum, prev, "checksum");
+    Boolean ha = hasArtifacts;
+    if (ha == null && prev.containsKey("hasArtifacts")) {
+      ha = DynamoDbTypes.toBoolean(prev.get("hasArtifacts"));
+    }
     return new DocumentRecord(key, documentId, ps(artifactId, prev, "artifactId"),
         ps(belongsToDocumentId, prev, "belongsToDocumentId"), ps(path, prev, "path"), deepLinkPath,
         ps(contentType, prev, "contentType"), ps(contentLength, prev, "contentLength"),
         cs != null ? removeQuotes(cs) : null, ps(checksumType, prev, "checksumType"),
         ps(s3version, prev, "s3version"), ps(userId, prev, "userId"), ps(version, prev, "version"),
         ps(width, prev, "width"), ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"),
-        insertedDate, lastModifiedDate, documentMetadata);
+        insertedDate, lastModifiedDate, documentMetadata,
+        !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha);
   }
 
   @Override
@@ -289,6 +296,11 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
    */
   public DocumentRecordBuilder gsi1(final boolean setGsi1) {
     this.gsi1 = setGsi1;
+    return this;
+  }
+
+  public DocumentRecordBuilder hasArtifacts(final Boolean value) {
+    this.hasArtifacts = value;
     return this;
   }
 

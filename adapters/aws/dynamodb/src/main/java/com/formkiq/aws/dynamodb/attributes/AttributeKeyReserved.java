@@ -39,6 +39,8 @@ public enum AttributeKeyReserved {
   MALWARE_SCAN_RESULT("MalwareScanResult"),
   /** Relationships. */
   RELATIONSHIPS("Relationships"),
+  /** Artifact Status. */
+  ARTIFACT_STATUS("ArtifactStatus"),
   /** Checkout. */
   CHECKOUT("Checkout"),
   /** CheckoutForLegalHold. */
