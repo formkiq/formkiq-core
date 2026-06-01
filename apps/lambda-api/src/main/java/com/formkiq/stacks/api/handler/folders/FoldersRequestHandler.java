@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -127,8 +126,8 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    DynamicObject o = new DynamicObject(JsonToObject.fromJson(awsservice, event, Map.class));
-    String path = o.getString("path");
+    AddFolderRequest request = JsonToObject.fromJson(awsservice, event, AddFolderRequest.class);
+    String path = request.path();
     if (Strings.isEmpty(path)) {
       throw new BadException("missing 'path' parameters");
     }

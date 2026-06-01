@@ -26,7 +26,7 @@ package com.formkiq.aws.services.lambda;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonParseException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -93,8 +93,12 @@ public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class
   public T apply(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
         StandardCharsets.UTF_8)) {
-      return gson.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException | IOException e) {
+      var result = gson.fromJson(reader, classOfT);
+      if (result == null) {
+        throw new BadException("invalid JSON body");
+      }
+      return result;
+    } catch (JsonParseException | IOException e) {
       throw new BadException("invalid JSON body");
     }
   }

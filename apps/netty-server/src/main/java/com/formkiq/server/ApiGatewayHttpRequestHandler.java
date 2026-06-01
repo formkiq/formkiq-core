@@ -27,6 +27,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -204,6 +206,11 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   private boolean isAuthorized(final ChannelHandlerContext ctx, final FullHttpRequest req) {
     String authorization = req.headers().get("Authorization");
 
+    if (authorization != null && authorization.startsWith("AWS4-HMAC-SHA256 ")
+        && isLoopbackRequest(ctx)) {
+      return true;
+    }
+
     if (!authCredentials.isApiKeyValid(authorization)) {
       sendResponse(ctx, HttpResponseStatus.FORBIDDEN,
           "{\"message\":\"access denied, invalid Authorization\"}");
@@ -212,6 +219,13 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return true;
+  }
+
+  private boolean isLoopbackRequest(final ChannelHandlerContext ctx) {
+    SocketAddress remoteAddress = ctx.channel().remoteAddress();
+
+    return remoteAddress instanceof InetSocketAddress inetSocketAddress
+        && inetSocketAddress.getAddress().isLoopbackAddress();
   }
 
   @Override

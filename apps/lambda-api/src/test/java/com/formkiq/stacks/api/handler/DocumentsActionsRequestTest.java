@@ -44,7 +44,6 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -139,8 +138,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     this.configService = awsServices.getExtension(ConfigService.class);
   }
 
-  private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
-    return new ActionBuilder().document(document).type(actionType).userId("joe").indexUlid();
+  private ActionBuilder createAction(final DocumentArtifact document) {
+    return new ActionBuilder().document(document).type(ActionType.OCR).userId("joe").indexUlid();
   }
 
   private ActionBuilder createAction(final String documentId, final ActionType actionType) {
@@ -168,10 +167,6 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
     return notNull(new GetDocumentsRequestBuilder().actionStatus(FAILED.name())
         .submit(client, siteId).throwIfError().response().getDocuments());
-  }
-
-  private Collection<PresetEntity> getPresets() {
-    return getAwsServices().getExtensions(PresetEntity.class);
   }
 
   private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
@@ -237,8 +232,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           assertFalse(resp.isError());
           List<Document> docs = notNull(resp.response().getDocuments());
           assertEquals(1, docs.size());
-          assertEquals(documentId, docs.get(0).getDocumentId());
-          assertEquals(path, docs.get(0).getPath());
+          assertEquals(documentId, docs.getFirst().getDocumentId());
+          assertEquals(path, docs.getFirst().getPath());
         }
       }
     }
@@ -372,12 +367,12 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       List<Document> failed = getFailedActionDocuments(siteId);
       assertEquals(1, failed.size());
-      assertEquals(documentId, failed.get(0).getDocumentId());
+      assertEquals(documentId, failed.getFirst().getDocumentId());
 
       // then
       List<DocumentAction> actions = getDocumentActions(siteId, documentId);
       assertEquals(1, actions.size());
-      assertDocumentAction(actions.get(0), DocumentActionType.OCR, FAILED, "some message");
+      assertDocumentAction(actions.getFirst(), DocumentActionType.OCR, FAILED, "some message");
 
       // when
       AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
@@ -462,11 +457,11 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           this.documentActionsApi.getDocumentActions(documentId, siteId, null, "1", null, null);
       actions = notNull(response.getActions());
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
+      assertEquals(DocumentActionType.OCR, actions.getFirst().getType());
 
       actions = getDocumentActions(siteId, document, response.getNext());
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
+      assertEquals(DocumentActionType.FULLTEXT, actions.getFirst().getType());
     }
   }
 
@@ -487,8 +482,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       this.service.saveNewActions(List.of(
           createAction(documentId, ActionType.FULLTEXT).userId("joe").status(ActionStatus.FAILED)
               .build(siteId),
-          createAction(document, ActionType.OCR).userId("joe").status(ActionStatus.FAILED)
-              .build(siteId)));
+          createAction(document).userId("joe").status(ActionStatus.FAILED).build(siteId)));
 
       // when
       AddResponse retry = this.documentActionsApi.addDocumentRetryAction(document.documentId(),
@@ -499,7 +493,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       List<DocumentAction> actions = getDocumentActions(siteId, documentId);
       assertEquals(1, actions.size());
-      assertDocumentAction(actions.get(0), DocumentActionType.FULLTEXT, FAILED, null);
+      assertDocumentAction(actions.getFirst(), DocumentActionType.FULLTEXT, FAILED, null);
 
       actions = getDocumentActions(siteId, document);
       assertEquals(2, actions.size());
@@ -540,9 +534,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       List<DocumentAction> actions =
           getDocumentActions(siteId, DocumentArtifact.of(documentId, null));
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
-      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
-      assertEquals("{test=this}", notNull(actions.get(0).getParameters()).toString());
+      assertEquals(DocumentActionType.OCR, actions.getFirst().getType());
+      assertEquals(DocumentActionStatus.COMPLETE, actions.getFirst().getStatus());
+      assertEquals("{test=this}", notNull(actions.getFirst().getParameters()).toString());
     }
   }
 
@@ -608,9 +602,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // when
       List<DocumentAction> actions = getDocumentActions(siteId, documentId);
       assertEquals(1, actions.size());
-      assertEquals(DocumentActionType.OCR, actions.get(0).getType());
-      assertEquals(DocumentActionStatus.COMPLETE, actions.get(0).getStatus());
-      assertEquals("{test=this}", notNull(actions.get(0).getParameters()).toString());
+      assertEquals(DocumentActionType.OCR, actions.getFirst().getType());
+      assertEquals(DocumentActionStatus.COMPLETE, actions.getFirst().getStatus());
+      assertEquals("{test=this}", notNull(actions.getFirst().getParameters()).toString());
     }
   }
 
@@ -640,12 +634,12 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, actions0.size());
-      assertEquals(DocumentActionType.FULLTEXT, actions0.get(0).getType());
-      assertEquals(PENDING, actions0.get(0).getStatus());
+      assertEquals(DocumentActionType.FULLTEXT, actions0.getFirst().getType());
+      assertEquals(PENDING, actions0.getFirst().getStatus());
 
       assertEquals(1, actions1.size());
-      assertEquals(DocumentActionType.OCR, actions1.get(0).getType());
-      assertEquals(PENDING, actions1.get(0).getStatus());
+      assertEquals(DocumentActionType.OCR, actions1.getFirst().getType());
+      assertEquals(PENDING, actions1.getFirst().getStatus());
     }
   }
 
@@ -799,7 +793,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       actions = this.service.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionType.DOCUMENTTAGGING, actions.get(0).type());
+      assertEquals(ActionType.DOCUMENTTAGGING, actions.getFirst().type());
     }
   }
 
@@ -873,7 +867,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Actions saved", response.getMessage());
       List<Action> actions = this.service.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionType.NOTIFICATION, actions.get(0).type());
+      assertEquals(ActionType.NOTIFICATION, actions.getFirst().type());
     }
   }
 
@@ -1061,8 +1055,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("Actions saved", response.getMessage());
       List<Action> actions = this.service.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionType.IDP, actions.get(0).type());
-      assertEquals(mappingId, actions.get(0).parameters().get("mappingId"));
+      assertEquals(ActionType.IDP, actions.getFirst().type());
+      assertEquals(mappingId, actions.getFirst().parameters().get("mappingId"));
     }
   }
 
@@ -1093,9 +1087,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       List<Action> actions = this.service.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals(ActionType.OCR, actions.get(0).type());
-      assertEquals(ActionStatus.PENDING, actions.get(0).status());
-      assertEquals("{ocrParseTypes=text}", actions.get(0).parameters().toString());
+      assertEquals(ActionType.OCR, actions.getFirst().type());
+      assertEquals(ActionStatus.PENDING, actions.getFirst().status());
+      assertEquals("{ocrParseTypes=text}", actions.getFirst().parameters().toString());
 
       assertEquals(0, getDocumentActions(siteId, documentId).size());
     }
@@ -1127,6 +1121,35 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'DELETE'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/actions invalid action.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActionsInvalidAction() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String documentId = saveDocument(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(null);
+
+      // when
+      try {
+        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"actions\",\"error\":\"'actions' is required\"}]}",
             e.getResponseBody());
       }
     }
@@ -1196,16 +1219,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           notNull(this.documentActionsApi.getDocumentActions(document.documentId(), siteId,
               document.artifactId(), null, null, null).getActions());
       assertEquals(1, actions.size());
-      DocumentAction action = actions.get(0);
+      DocumentAction action = actions.getFirst();
       Map<String, Object> params = notNull(action.getParameters());
       assertEquals("QUERIES", params.get("ocrParseTypes"));
 
       List<Map<String, Object>> queries =
           (List<Map<String, Object>>) params.get("ocrTextractQueries");
       assertEquals(1, queries.size());
-      assertEquals("mytext", queries.get(0).get("text"));
-      assertEquals("query", queries.get(0).get("alias"));
-      assertEquals("1,5", String.join(",", ((List<String>) queries.get(0).get("pages"))));
+      assertEquals("mytext", queries.getFirst().get("text"));
+      assertEquals("query", queries.getFirst().get("alias"));
+      assertEquals("1,5", String.join(",", ((List<String>) queries.getFirst().get("pages"))));
     }
   }
 }

@@ -36,10 +36,15 @@ import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceNoOpExtension;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.lambda.s3.DocumentActionsProcessor;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import io.minio.BucketExistsArgs;
@@ -82,6 +87,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -105,10 +111,16 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
   private static final int INITIAL_TIME_DELAY_IN_SECONDS = 0;
   /** Max Content Length. */
   private static final int MAX_CONTENT_LENGTH = 5242880;
+  /** OCR S3 Bucket. */
+  private static final String OCR_BUCKET = "ocr";
+  /** Local OCR Queue. */
+  private static final String OCR_QUEUE_URL = "local-ocr-queue";
   /** Scheduled Time Delay. */
   private static final int SCHEDULED_TIME_DELAY_IN_SECONDS = 5;
   /** Documents Stating S3 Bucket. */
   private static final String STAGING_DOCUMENTS_BUCKET = "stagingdocuments";
+  /** {@link ExecutorService}. */
+  private final ExecutorService actionExecutorService = Executors.newSingleThreadExecutor();
   /** {@link ScheduledExecutorService}. */
   private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
   /** {@link NettyRequestHandler}. */
@@ -195,6 +207,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     try {
 
       makeBucket(mc, DOCUMENTS_BUCKET, Boolean.TRUE);
+      makeBucket(mc, OCR_BUCKET, Boolean.FALSE);
       makeBucket(mc, STAGING_DOCUMENTS_BUCKET, Boolean.FALSE);
 
       addEventNotification(mc, DOCUMENTS_BUCKET, "DOCUMENTS");
@@ -233,6 +246,8 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("FORMKIQ_VERSION", "1.17.0");
     env.put("FORMKIQ_TYPE", "core");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("OCR_S3_BUCKET", OCR_BUCKET);
+    env.put("OCR_SQS_QUEUE_URL", OCR_QUEUE_URL);
     env.put("CACHE_TABLE", CACHE_TABLE);
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
     env.put("STAGE_DOCUMENTS_S3_BUCKET", STAGING_DOCUMENTS_BUCKET);
@@ -316,6 +331,15 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
       aws.deregister(SqsService.class);
       aws.deregister(SnsService.class);
 
+      DocumentActionsProcessor actionsProcessor = new DocumentActionsProcessor(aws);
+      OcrTesseractProcessor ocrProcessor = new OcrTesseractProcessor(aws);
+      aws.register(ActionsNotificationService.class,
+          new ClassServiceExtension<>(
+              new LocalActionsNotificationService(aws.getExtension(ActionsService.class),
+                  actionsProcessor, aws.getLogger(), this.actionExecutorService)));
+      aws.register(SqsService.class, new ClassServiceExtension<>(
+          new LocalOcrSqsService(aws, ocrProcessor, this.actionExecutorService)));
+
       DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
 
       try (DynamoDbClient dbClient = db.build()) {
@@ -384,8 +408,11 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
    * Shutdown Http Server.
    */
   public void shutdownGracefully() {
+    this.actionExecutorService.shutdown();
+
     try {
       this.executorService.awaitTermination(1, TimeUnit.MINUTES);
+      this.actionExecutorService.awaitTermination(1, TimeUnit.MINUTES);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }

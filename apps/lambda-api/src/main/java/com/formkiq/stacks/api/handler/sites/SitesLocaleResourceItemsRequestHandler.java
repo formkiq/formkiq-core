@@ -88,7 +88,7 @@ public class SitesLocaleResourceItemsRequestHandler
     AddLocaleResourceItemRequest record =
         JsonToObject.fromJson(awsservice, event, AddLocaleResourceItemRequest.class);
 
-    if (record == null) {
+    if (record == null || record.getResourceItem() == null) {
       throw new BadException("Invalid request");
     }
 

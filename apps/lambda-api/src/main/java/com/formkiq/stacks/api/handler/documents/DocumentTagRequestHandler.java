@@ -156,9 +156,11 @@ public class DocumentTagRequestHandler
 
     final String tagKey = event.getPathParameter("tagKey");
 
-    Map<String, Object> body = JsonToObject.fromJson(awsservice, event, Map.class);
-    String value = body != null ? (String) body.getOrDefault("value", null) : null;
-    List<String> values = body != null ? (List<String>) body.getOrDefault("values", null) : null;
+    SetDocumentTagKeyRequest body =
+        JsonToObject.fromJson(awsservice, event, SetDocumentTagKeyRequest.class);
+
+    String value = body.value();
+    List<String> values = body.values();
 
     if (value == null && values == null) {
       throw new BadException("request body is invalid");
