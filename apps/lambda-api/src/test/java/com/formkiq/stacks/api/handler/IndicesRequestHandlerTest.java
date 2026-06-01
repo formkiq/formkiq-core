@@ -44,8 +44,10 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.IndexSearchRequest;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -113,7 +115,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
       Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().get(0);
+      DynamicDocumentItem folder = results.getResults().getFirst();
       String indexKey = folder.get("indexKey").toString();
 
       // when
@@ -147,7 +149,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
       Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().get(0);
+      DynamicDocumentItem folder = results.getResults().getFirst();
       String indexKey = folder.get("indexKey").toString();
 
       // when
@@ -224,7 +226,6 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
     }
   }
 
-
   /**
    * DELETE /indices/{type}/{indexKey} request, invalid type.
    *
@@ -248,6 +249,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
     }
   }
 
+
   /**
    * DELETE /indices/{type}/{indexKey} with invalid siteId.
    *
@@ -270,7 +272,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
       Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().get(0);
+      DynamicDocumentItem folder = results.getResults().getFirst();
       String indexKey = folder.get("indexKey").toString();
 
       // when
@@ -319,7 +321,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      SearchResultDocument doc = docs.get(0);
+      SearchResultDocument doc = docs.getFirst();
       assertNotNull(doc.getIndexKey());
       assertEquals("test", doc.getPath());
       assertEquals(Boolean.TRUE, doc.getFolder());
@@ -333,7 +335,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      doc = docs.get(0);
+      doc = docs.getFirst();
       assertEquals(Boolean.TRUE, doc.getFolder());
       assertEquals("4000007025   text .pdf", doc.getPath());
       assertNotNull(doc.getIndexKey());
@@ -400,10 +402,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      assertNotNull(docs.get(0).getIndexKey());
-      assertEquals("test", docs.get(0).getPath());
-      assertEquals(Boolean.TRUE, docs.get(0).getFolder());
-      assertNotNull(docs.get(0).getDocumentId());
+      assertNotNull(docs.getFirst().getIndexKey());
+      assertEquals("test", docs.getFirst().getPath());
+      assertEquals(Boolean.TRUE, docs.getFirst().getFolder());
+      assertNotNull(docs.getFirst().getDocumentId());
 
       // given
       meta.folder("test");
@@ -413,9 +415,9 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, docs.size());
-      assertNull(docs.get(0).getFolder());
-      assertEquals(path, docs.get(0).getPath());
-      assertNull(docs.get(0).getIndexKey());
+      assertNull(docs.getFirst().getFolder());
+      assertEquals(path, docs.getFirst().getPath());
+      assertNull(docs.getFirst().getIndexKey());
 
       // when
       DeleteIndicesResponse response = this.indexApi.deleteIndex(path, "folder", siteId);
@@ -424,6 +426,40 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("File deleted", response.getMessage());
       docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
       assertEquals(0, docs.size());
+    }
+  }
+
+  /**
+   * POST /indices/search request, invalid pagination.
+   *
+   */
+  @Test
+  public void testSearchInvalidPagination() {
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      IndexSearchRequest req = new IndexSearchRequest();
+
+      // when
+      try {
+        this.indexApi.indexSearch(req, siteId, null, null, "invalid");
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(HttpStatus.BAD_REQUEST, e.getCode());
+        assertEquals("{\"message\":\"Invalid previous pagnination token\"}", e.getResponseBody());
+      }
+
+      // when
+      try {
+        this.indexApi.indexSearch(req, siteId, null, "invalid", null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(HttpStatus.BAD_REQUEST, e.getCode());
+        assertEquals("{\"errors\":[{\"error\":\"invalid body\"}]}", e.getResponseBody());
+      }
     }
   }
 }

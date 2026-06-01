@@ -15,6 +15,9 @@
 	</subpackage>
 
 	<subpackage name="api">
+
+		<allow pkg="java.net" />
+		<allow pkg="java.net.http" />
 		<allow pkg="org.junit.jupiter.api" />
 
         <allow pkg="software.amazon.awssdk.regions" />

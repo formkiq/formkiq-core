@@ -108,7 +108,7 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       assertEquals(mapsize, m.size());
       assertEquals("400.0", String.valueOf(m.get("statusCode")));
       assertCorsHeaders((Map<String, Object>) m.get("headers"));
-      assertEquals("{\"errors\":[{\"error\":\"invalid body\"}]}", m.get("body"));
+      assertEquals("{\"message\":\"invalid JSON body\"}", m.get("body"));
     }
   }
 

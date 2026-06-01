@@ -116,6 +116,10 @@ public class SitesLocaleResourceItemRequestHandler
     final LocaleTypeRecord oldItem = service.find(siteId, locale, itemKey);
 
     LocaleTypeRecord item = record.getResourceItem();
+    if (item == null) {
+      throw new NotFoundException("itemKey '" + itemKey + "' not found");
+    }
+
     item.setLocale(locale);
     if (!itemKey.equals(item.getItemKey())) {
       throw new NotFoundException("itemKey '" + itemKey + "' not found");

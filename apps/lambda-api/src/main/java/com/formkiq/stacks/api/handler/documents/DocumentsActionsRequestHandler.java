@@ -49,6 +49,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.validation.ValidationChecks;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/actions". */
 public class DocumentsActionsRequestHandler
@@ -135,6 +136,7 @@ public class DocumentsActionsRequestHandler
 
     AddDocumentActionsRequest body =
         JsonToObject.fromJson(awsservice, event, AddDocumentActionsRequest.class);
+    validate(body);
 
     List<Action> actions = body.actions().stream().map(
         a -> new com.formkiq.aws.dynamodb.actions.AddActionsToAction().apply(siteId, document, a))
@@ -151,5 +153,10 @@ public class DocumentsActionsRequestHandler
     notificationService.publishNextActionEvent(siteId, documentId, artifactId);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Actions saved").build();
+  }
+
+  private void validate(final AddDocumentActionsRequest req) {
+    ValidationChecks.checkNotNull(null, req);
+    ValidationChecks.checkNotNull("actions", req.actions());
   }
 }

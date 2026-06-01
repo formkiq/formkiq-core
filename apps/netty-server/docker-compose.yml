@@ -67,6 +67,7 @@ services:
       default:
         aliases:
           - documents.minio
+          - ocr.minio
           - stagingdocuments.minio
     volumes:
       - ~/.formkiq/minio-data:/data

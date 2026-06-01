@@ -38,6 +38,7 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.locale.LocaleRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleService;
+import com.formkiq.validation.ValidationChecks;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -79,11 +80,13 @@ public class SitesLocalesRequestHandler
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    Map<String, Object> record = JsonToObject.fromJson(awsservice, event, Map.class);
+    AddLocaleRequest record = JsonToObject.fromJson(awsservice, event, AddLocaleRequest.class);
+    ValidationChecks.checkNotNull(null, record);
+    ValidationChecks.checkNotNull("locale", record.locale());
 
     String siteId = authorization.getSiteId();
     LocaleService service = awsservice.getExtension(LocaleService.class);
-    String locale = (String) record.get("locale");
+    String locale = record.locale();
     List<ValidationError> errors = service.saveLocale(siteId, locale);
 
     if (!errors.isEmpty()) {
