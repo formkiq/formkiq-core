@@ -23,6 +23,7 @@ dependencies {
 
   implementation project(':apps:lambda-s3')
   implementation project(':apps:lambda-api')
+  implementation project(':apps:lambda-ocr-tesseract')
   implementation project(':apps:lambda-typesense')
   implementation libs.netty.all
   implementation libs.commons.cli

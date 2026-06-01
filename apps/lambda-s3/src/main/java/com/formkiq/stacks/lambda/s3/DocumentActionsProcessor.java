@@ -172,7 +172,9 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(MappingService.class, new MappingServiceExtension());
-    awsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    if (!awsServiceCache.containsExtension(SsmService.class)) {
+      awsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    }
     awsServiceCache.register(S3Service.class, new S3ServiceExtension());
     awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
@@ -197,6 +199,14 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     String typeSenseApiKey =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
 
+    if (isEmpty(typeSenseHost)) {
+      typeSenseHost = awsServiceCache.environment("TYPESENSE_HOST");
+    }
+
+    if (isEmpty(typeSenseApiKey)) {
+      typeSenseApiKey = awsServiceCache.environment("TYPESENSE_API_KEY");
+    }
+
     if (!isEmpty(typeSenseHost) && !isEmpty(typeSenseApiKey)) {
       awsServiceCache.environment().put("TYPESENSE_HOST", typeSenseHost);
       awsServiceCache.environment().put("TYPESENSE_API_KEY", typeSenseApiKey);
@@ -206,7 +216,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     String documentsIamUrl =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
-    awsServiceCache.environment().put("documentsIamUrl", documentsIamUrl);
+    if (isEmpty(documentsIamUrl)) {
+      documentsIamUrl = awsServiceCache.environment("DOCUMENTS_IAM_URL");
+    }
+
+    if (!isEmpty(documentsIamUrl)) {
+      awsServiceCache.environment().put("documentsIamUrl", documentsIamUrl);
+    }
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
         new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
