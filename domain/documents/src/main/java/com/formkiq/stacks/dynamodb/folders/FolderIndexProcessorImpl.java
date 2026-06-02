@@ -156,8 +156,13 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     Map<String, AttributeValue> a = this.db.get(r.fromS(r.pk(siteId)), r.fromS(r.sk()));
     if (!a.isEmpty() && !documentId.equals(a.get("documentId").s())) {
       String extension = Strings.getExtension(r.path());
-      String newFilename =
-          r.path().replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
+
+      String newFilename = r.path() + " (" + documentId + ")";
+      if (!isEmpty(extension)) {
+        newFilename =
+            r.path().replaceAll("\\." + extension, " (" + documentId + ")" + "." + extension);
+      }
+
       r.path(newFilename);
     }
 

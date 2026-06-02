@@ -68,6 +68,9 @@ class StringsTest {
     assertEquals("txt", Strings.getExtension("test.txt"));
     assertEquals("txt", Strings.getExtension("/bleh/something/test.txt"));
     assertEquals("txt", Strings.getExtension("/bleh/something/test (something).txt"));
+    assertEquals("", Strings.getExtension("supplemental Letter (H.K.) Limited"));
+    assertEquals("", Strings.getExtension("/bleh/something/supplemental Letter (H.K.) Limited"));
+    assertEquals("", Strings.getExtension("/bleh.test/something"));
   }
 
   @Test

@@ -116,7 +116,14 @@ public class Strings {
    */
   public static String getExtension(final String filename) {
     int pos = filename.lastIndexOf(".");
-    return pos > -1 ? filename.substring(pos + 1) : "";
+    String extension = "";
+
+    if (pos < filename.length() - 1) {
+      String ext = filename.substring(pos + 1);
+      extension = ext.matches("[A-Za-z0-9]+") ? ext : "";
+    }
+
+    return extension;
   }
 
   /**
