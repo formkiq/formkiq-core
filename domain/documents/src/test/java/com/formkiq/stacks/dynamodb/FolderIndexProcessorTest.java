@@ -117,6 +117,28 @@ class FolderIndexProcessorTest implements DbKeys {
     clearSqsQueue(sqsQueueUrl);
   }
 
+  @Test
+  void testAddFileToFolderDuplicateFilenameWithRegexCharactersInExtension() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
+      String path = "/supplemental Letter (H.K.) Limited";
+
+      FolderIndexRecord first = index.addFileToFolder(siteId, documentId0, null, path);
+      dbService.putItem(first.getAttributes(siteId));
+
+      // when
+      FolderIndexRecord second = index.addFileToFolder(siteId, documentId1, null, path);
+
+      // then
+      String filename = "supplemental Letter (H.K.) Limited";
+      assertEquals(filename + " (" + documentId1 + ")", second.path());
+      assertEquals("fi#" + (filename + " (" + documentId1 + ")").toLowerCase(), second.sk());
+    }
+  }
+
   /**
    * Test Create all new directories with starting '/'.
    */

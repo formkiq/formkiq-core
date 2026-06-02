@@ -61,14 +61,15 @@ final class LocalActionsNotificationService implements ActionsNotificationServic
    * constructor.
    *
    * @param service {@link ActionsService}
-   * @param processor {@link DocumentActionsProcessor}
+   * @param actionsProcessor {@link DocumentActionsProcessor}
    * @param log {@link Logger}
    * @param executor {@link ExecutorService}
    */
   LocalActionsNotificationService(final ActionsService service,
-      final DocumentActionsProcessor processor, final Logger log, final ExecutorService executor) {
+      final DocumentActionsProcessor actionsProcessor, final Logger log,
+      final ExecutorService executor) {
     this.actionsService = service;
-    this.processor = processor;
+    this.processor = actionsProcessor;
     this.logger = log;
     this.executorService = executor;
   }
