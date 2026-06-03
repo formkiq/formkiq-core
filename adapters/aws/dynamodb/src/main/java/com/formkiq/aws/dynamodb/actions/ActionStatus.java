@@ -31,6 +31,8 @@ package com.formkiq.aws.dynamodb.actions;
 public enum ActionStatus {
   /** Completed. */
   COMPLETE,
+  /** Async processing completed. */
+  ASYNC_COMPLETE,
   /** FAILED. */
   FAILED,
   /** Failed Retry. */

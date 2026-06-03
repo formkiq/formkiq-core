@@ -493,7 +493,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
       actionsService.saveNewActions(syncs);
 
       logger.trace("publishing actions message to " + snsDocumentEvent);
-      notificationService.publishNextActionEvent(syncs, siteId, document.documentId());
+      notificationService.publishNextActionEvent(siteId, document.documentId(), null);
     }
 
     deleteObject(bucket, s3Key);

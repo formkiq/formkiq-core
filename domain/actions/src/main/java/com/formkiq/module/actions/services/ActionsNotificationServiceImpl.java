@@ -26,12 +26,8 @@ package com.formkiq.module.actions.services;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
-import java.util.List;
-import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.actions.Action;
-import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
@@ -63,27 +59,6 @@ public final class ActionsNotificationServiceImpl implements ActionsNotification
     }
     this.log = logger;
     this.documentEventService = eventService;
-  }
-
-  @Override
-  public boolean publishNextActionEvent(final List<Action> actions, final String siteId,
-      final String documentId) {
-
-    boolean publishedEvent = false;
-
-    Optional<Action> o =
-        actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findFirst();
-
-    if (o.isEmpty()) {
-
-      o = actions.stream().filter(new ActionStatusPredicate(ActionStatus.PENDING)).findFirst();
-
-      if (o.isPresent()) {
-        publishedEvent = publishNextActionEvent(siteId, documentId, null);
-      }
-    }
-
-    return publishedEvent;
   }
 
   @Override

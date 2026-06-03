@@ -28,7 +28,6 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 import com.formkiq.aws.dynamodb.actions.Action;
@@ -82,34 +81,13 @@ final class LocalActionsNotificationService implements ActionsNotificationServic
 
       List<Action> actions = this.actionsService.getActions(event.siteId(), document);
       boolean running = actions.stream().anyMatch(new ActionStatusPredicate(ActionStatus.RUNNING));
-      boolean pending = actions.stream().anyMatch(
-          new ActionStatusPredicate(ActionStatus.PENDING, ActionStatus.WAITING_FOR_RETRY));
+      boolean pending = actions.stream().anyMatch(new ActionStatusPredicate(ActionStatus.PENDING,
+          ActionStatus.WAITING_FOR_RETRY, ActionStatus.ASYNC_COMPLETE));
 
       if (running || !pending) {
         break;
       }
     }
-  }
-
-  @Override
-  public boolean publishNextActionEvent(final List<Action> actions, final String siteId,
-      final String documentId) {
-
-    boolean publishedEvent = false;
-
-    Optional<Action> running =
-        actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findFirst();
-
-    if (running.isEmpty()) {
-      Optional<Action> pending =
-          actions.stream().filter(new ActionStatusPredicate(ActionStatus.PENDING)).findFirst();
-
-      if (pending.isPresent()) {
-        publishedEvent = publishNextActionEvent(siteId, documentId, null);
-      }
-    }
-
-    return publishedEvent;
   }
 
   @Override

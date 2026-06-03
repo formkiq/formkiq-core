@@ -1757,6 +1757,42 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle ASYNC_COMPLETE and PENDING actions.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleAsyncCompletePendingAction() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      CALLBACK.reset();
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = Arrays.asList(
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.ASYNC_COMPLETE)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNotNull(lastRequest);
+      assertEquals("/callback2", lastRequest.getPath().getValue());
+    }
+  }
+
+  /**
    * Handle Fulltext that needs OCR Action.
    *
    * @throws ValidationException ValidationException

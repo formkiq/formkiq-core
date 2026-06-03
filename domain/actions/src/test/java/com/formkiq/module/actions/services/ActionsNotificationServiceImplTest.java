@@ -25,18 +25,12 @@ package com.formkiq.module.actions.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
-import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.LogType;
 import com.formkiq.module.lambdaservices.logger.LoggerImpl;
 import org.junit.jupiter.api.Test;
-import com.formkiq.aws.dynamodb.actions.Action;
-import com.formkiq.aws.dynamodb.actions.ActionStatus;
-import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.events.EventServiceMock;
 import com.formkiq.module.events.document.DocumentEvent;
 
@@ -60,15 +54,13 @@ public class ActionsNotificationServiceImplTest {
     String documentId = ID.uuid();
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      List<Action> actions = List.of(new ActionBuilder().userId("J").indexUlid()
-          .document(DocumentArtifact.of(documentId, null)).type(ActionType.OCR).build(siteId));
 
       // when
-      SERVICE.publishNextActionEvent(actions, siteId, documentId);
+      SERVICE.publishNextActionEvent(siteId, documentId, null);
 
       // then
       assertEquals(1, ES.getDocumentEvents().size());
-      DocumentEvent e = ES.getDocumentEvents().get(0);
+      DocumentEvent e = ES.getDocumentEvents().getFirst();
       assertEquals(documentId, e.documentId());
       assertEquals("actions", e.type());
 
@@ -77,46 +69,25 @@ public class ActionsNotificationServiceImplTest {
   }
 
   /**
-   * Test adding failing action.
+   * Test adding async complete action.
    */
   @Test
-  void publishNextActionEvent02() {
+  void publishNextActionEvent04() {
     // given
+    String documentId = ID.uuid();
+
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      String documentId = ID.uuid();
-      List<Action> actions = List.of(
-          new ActionBuilder().document(DocumentArtifact.of(documentId, null)).type(ActionType.OCR)
-              .status(ActionStatus.FAILED).userId("J").indexUlid().build(siteId));
-
       // when
-      SERVICE.publishNextActionEvent(actions, siteId, documentId);
+      SERVICE.publishNextActionEvent(siteId, documentId, null);
 
       // then
-      assertEquals(0, ES.getDocumentEvents().size());
-    }
-  }
+      assertEquals(1, ES.getDocumentEvents().size());
+      DocumentEvent e = ES.getDocumentEvents().getFirst();
+      assertEquals(documentId, e.documentId());
+      assertEquals("actions", e.type());
 
-  /**
-   * Test adding running action.
-   */
-  @Test
-  void publishNextActionEvent03() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      String documentId = ID.uuid();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
-      List<Action> actions = Arrays.asList(
-          new ActionBuilder().document(document).type(ActionType.OCR).userId("J").indexUlid()
-              .status(ActionStatus.RUNNING).build(siteId),
-          new ActionBuilder().document(document).type(ActionType.OCR).userId("J").indexUlid()
-              .status(ActionStatus.PENDING).build(siteId));
-
-      // when
-      SERVICE.publishNextActionEvent(actions, siteId, documentId);
-
-      // then
-      assertEquals(0, ES.getDocumentEvents().size());
+      ES.getDocumentEvents().clear();
     }
   }
 }

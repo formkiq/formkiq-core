@@ -10018,6 +10018,7 @@ components:
       description: Status of the Document Action
       enum:
       - COMPLETE
+      - ASYNC_COMPLETE
       - FAILED
       - IN_QUEUE
       - PENDING
