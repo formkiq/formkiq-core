@@ -362,7 +362,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     updateOcrScanStatus(siteId, document, status);
 
     ActionStatus actionStatus = OcrScanStatus.FAILED.equals(status) ? ActionStatus.FAILED
-        : OcrScanStatus.SKIPPED.equals(status) ? ActionStatus.SKIPPED : ActionStatus.COMPLETE;
+        : OcrScanStatus.SKIPPED.equals(status) ? ActionStatus.SKIPPED : ActionStatus.ASYNC_COMPLETE;
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     List<Action> actions = service.getAction(siteId, document, ActionStatus.RUNNING);

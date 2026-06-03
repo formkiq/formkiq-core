@@ -135,6 +135,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.ASYNC_COMPLETE;
 import static com.formkiq.aws.dynamodb.actions.ActionStatus.PENDING;
 import static com.formkiq.aws.dynamodb.actions.ActionStatus.WAITING_FOR_RETRY;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
@@ -428,6 +429,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       Optional<Action> running =
           actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
+      Optional<Action> asyncComplete =
+          actions.stream().filter(new ActionStatusPredicate(ASYNC_COMPLETE)).findFirst();
       Optional<Action> o = actions.stream()
           .filter(new ActionStatusPredicate(PENDING, WAITING_FOR_RETRY)).findFirst();
 
@@ -436,22 +439,25 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         logger.debug(
             String.format("ACTIONS already RUNNING for SiteId %s Document %s", siteId, documentId));
 
-      } else if (o.isPresent()) {
+      } else if (asyncComplete.isPresent()) {
 
-        Action action = o.get();
-
-        Action runningAction = new ActionBuilder().action(action).status(ActionStatus.RUNNING)
-            .startDate(new Date()).build(siteId);
-        actionsService.updateAction(runningAction);
+        Action action = asyncComplete.get();
+        ProcessActionStatus status = new ProcessActionStatus(ActionStatus.COMPLETE);
 
         try {
-
-          processAction(logger, siteId, document, actions, action);
-
+          updateComplete(logger, siteId, document, action, status);
         } catch (Throwable e) {
-
           handleException(logger, siteId, document, action, e);
+          return;
         }
+
+        if (o.isPresent()) {
+          processPendingAction(logger, siteId, document, actions, o.get());
+        }
+
+      } else if (o.isPresent()) {
+
+        processPendingAction(logger, siteId, document, actions, o.get());
 
       } else {
         logger.trace(
@@ -459,6 +465,23 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
       }
     } else {
       logger.trace(String.format("Skipping event %s", event.type()));
+    }
+  }
+
+  private void processPendingAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action) {
+
+    Action runningAction = new ActionBuilder().action(action).status(ActionStatus.RUNNING)
+        .startDate(new Date()).build(siteId);
+    getActionsService().updateAction(runningAction);
+
+    try {
+
+      processAction(logger, siteId, document, actions, action);
+
+    } catch (Throwable e) {
+
+      handleException(logger, siteId, document, action, e);
     }
   }
 
