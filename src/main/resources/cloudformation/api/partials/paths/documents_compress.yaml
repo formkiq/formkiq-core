@@ -43,14 +43,35 @@ components:
     #@overlay/match missing_ok=True
     DocumentsCompressRequest:
       type: "object"
-      required:
-        - "documentIds"
+      anyOf:
+        - required:
+            - "documentIds"
+        - required:
+            - "documents"
       properties:
         documentIds:
           type: "array"
           description: "Documents to compress"
           items:
             type: "string"
+        documents:
+          type: "array"
+          description: "Documents to compress with optional artifact identifiers"
+          items:
+            $ref: '#/components/schemas/DocumentsCompressDocument'
+
+    #@overlay/match missing_ok=True
+    DocumentsCompressDocument:
+      type: "object"
+      required:
+        - "documentId"
+      properties:
+        documentId:
+          type: "string"
+          description: "Document Identifier"
+        artifactId:
+          type: "string"
+          description: "Artifact Identifier"
 
     #@overlay/match missing_ok=True
     DocumentsCompressResponse:

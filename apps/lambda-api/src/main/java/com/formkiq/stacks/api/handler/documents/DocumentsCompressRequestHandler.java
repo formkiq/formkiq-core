@@ -25,19 +25,17 @@ package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
-import static java.util.Map.entry;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
@@ -80,27 +78,6 @@ public class DocumentsCompressRequestHandler
     return key + fileType;
   }
 
-  /**
-   * Create S3 Object that is processed in the StagingS3Create lambda.
-   * 
-   * @param requestBodyObject {@link DynamicObject}
-   * @param siteId {@link String}
-   * @param compressionId {@link String}
-   * @param downloadUrl {@link String}
-   * @return {@link DynamicObject}
-   */
-  private DynamicObject getS3TaskObject(final DynamicObject requestBodyObject, final String siteId,
-      final String compressionId, final String downloadUrl) {
-    final String documentIdsKey = "documentIds";
-    final Object documentIds = requestBodyObject.get(documentIdsKey);
-    final String compressionIdKey = "compressionId";
-    final String downloadUrlKey = "downloadUrl";
-    final String siteIdKey = "siteId";
-    return new DynamicObject(Map.ofEntries(entry(documentIdsKey, documentIds),
-        entry(compressionIdKey, compressionId), entry(downloadUrlKey, downloadUrl),
-        entry(siteIdKey, siteId == null ? DEFAULT_SITE_ID : siteId)));
-  }
-
   @Override
   public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
@@ -120,17 +97,18 @@ public class DocumentsCompressRequestHandler
 
     S3Service s3 = awsServices.getExtension(S3Service.class);
     S3PresignerService s3Presigner = awsServices.getExtension(S3PresignerService.class);
-    DynamicObject requestBodyObject =
-        new DynamicObject(JsonToObject.fromJson(awsServices, event, Map.class));
+    DocumentsCompressRequest requestBody =
+        JsonToObject.fromJson(awsServices, event, DocumentsCompressRequest.class);
 
     DocumentService documentService = awsServices.getExtension(DocumentService.class);
-    validateRequestBody(documentService, requestBodyObject, siteId);
+    validateRequestBody(documentService, requestBody, siteId);
 
     String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
     String downloadUrl =
         getArchiveDownloadUrl(s3Presigner, stagingBucket, getS3Key(siteId, documentId, true));
 
-    DynamicObject taskObject = getS3TaskObject(requestBodyObject, siteId, documentId, downloadUrl);
+    DocumentsCompressRequest taskObject = requestBody.withTaskDetails(documentId, downloadUrl,
+        siteId == null ? DEFAULT_SITE_ID : siteId);
 
     putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
 
@@ -156,25 +134,25 @@ public class DocumentsCompressRequestHandler
    * Validate Request body.
    * 
    * @param documentService {@link DocumentService}
-   * @param requestBody {@link DynamicObject}
+   * @param requestBody {@link DocumentsCompressRequest}
    * @param siteId {@link String}
    * @throws ValidationException ValidationException
    */
   private void validateRequestBody(final DocumentService documentService,
-      final DynamicObject requestBody, final String siteId) throws ValidationException {
+      final DocumentsCompressRequest requestBody, final String siteId) throws ValidationException {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
     try {
-      List<String> documentIds = requestBody.getStringList("documentIds");
+      List<DocumentArtifact> documents = requestBody.documentArtifacts();
 
-      if (documentIds.isEmpty()) {
+      if (documents.isEmpty()) {
         errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
       } else {
-        for (String documentId : documentIds) {
-          if (!documentService.exists(siteId, DocumentArtifact.of(documentId, null))) {
+        for (DocumentArtifact document : documents) {
+          if (!documentService.exists(siteId, document)) {
             errors.add(new ValidationErrorImpl().key("documentId")
-                .error(String.format("Document '%s' does not exist", documentId)));
+                .error(String.format("Document '%s' does not exist", document.documentId())));
           }
         }
       }
