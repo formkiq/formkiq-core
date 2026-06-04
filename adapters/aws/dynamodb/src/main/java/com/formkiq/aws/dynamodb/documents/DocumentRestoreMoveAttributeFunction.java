@@ -74,6 +74,7 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
 
       a.remove(GSI2_PK);
       a.remove(GSI2_SK);
+      a.remove("deletedDate");
 
     } else {
 

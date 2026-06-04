@@ -23,10 +23,12 @@
  */
 package com.formkiq.aws.dynamodb.documents;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.MoveAttributeFunction;
+import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
@@ -69,6 +71,9 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
 
       a.put(PK, fromS(key.pk()));
       a.put(SK, fromS(key.sk()));
+
+      var attrs = DynamoDbAttributeMapBuilder.builder().withDate("deletedDate", new Date()).build();
+      a.putAll(attrs);
 
       if (a.containsKey(GSI1_PK)) {
         a.put(GSI1_PK, fromS(SOFT_DELETE + a.get(GSI1_PK).s()));

@@ -615,6 +615,7 @@ public class DocumentServiceImplTest implements DbKeys {
       Collection<DocumentAttributeRecord> attrs = List.of(createDocumentAttribute(document));
       service.saveDocument(siteId, item, tags, attrs, new SaveDocumentOptions());
       assertNotNull(service.findDocument(siteId, document));
+      assertNull(service.findDocument(siteId, document).deletedDate());
       assertFalse(getDocumentTags(siteId, document, tagCount).isEmpty());
       assertFalse(getDocumentAttributes(siteId, document).isEmpty());
 
@@ -628,10 +629,11 @@ public class DocumentServiceImplTest implements DbKeys {
       assertTrue(getDocumentTags(siteId, document, tagCount).isEmpty());
       assertTrue(getDocumentAttributes(siteId, document).isEmpty());
 
-      List<DocumentItem> results =
+      List<DocumentRecord> results =
           service.findSoftDeletedDocuments(siteId, null, tagCount).getResults();
       assertFalse(results.isEmpty());
-      assertEquals(document.documentId(), results.getFirst().getDocumentId());
+      assertEquals(document.documentId(), results.getFirst().documentId());
+      assertNotNull(results.getFirst().deletedDate());
 
       // when
       assertTrue(service.restoreSoftDeletedDocument(siteId, document));
@@ -641,6 +643,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(0, results.size());
 
       assertNotNull(service.findDocument(siteId, document));
+      assertNull(service.findDocument(siteId, document).deletedDate());
 
       Map<String, Object> map = folderIndexProcessor.getIndex(siteId, item.getPath());
       assertEquals("test.txt", map.get("path"));
@@ -686,9 +689,9 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(service.findDocument(siteId, documentArtifact));
       assertEquals(0, getDocumentTags(siteId, documentArtifact, MAX_RESULTS).size());
 
-      List<DocumentItem> results =
+      List<DocumentRecord> results =
           service.findSoftDeletedDocuments(siteId, null, MAX_RESULTS).getResults();
-      assertEquals(documentId, results.getFirst().getDocumentId());
+      assertEquals(documentId, results.getFirst().documentId());
 
       // given
 
@@ -1539,15 +1542,15 @@ public class DocumentServiceImplTest implements DbKeys {
           .updateExpression("REMOVE GSI2PK, GSI2SK").build());
 
       // when
-      List<DocumentItem> results =
+      List<DocumentRecord> results =
           service.findSoftDeletedDocuments(siteId, null, MAX_RESULTS).getResults();
-      List<DocumentItem> rangeResults =
+      List<DocumentRecord> rangeResults =
           service.findSoftDeletedDocuments(siteId, now, new Date(), "DESC", null, MAX_RESULTS)
               .getResults();
 
       // then
       assertEquals(1, results.size());
-      assertEquals(document.documentId(), results.getFirst().getDocumentId());
+      assertEquals(document.documentId(), results.getFirst().documentId());
       assertEquals(0, rangeResults.size());
       assertTrue(service.deleteDocument(siteId, document, false));
     }

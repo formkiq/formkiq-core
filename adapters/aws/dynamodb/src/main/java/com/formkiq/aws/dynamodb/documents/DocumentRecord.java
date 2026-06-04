@@ -40,7 +40,8 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     String belongsToDocumentId, String path, String deepLinkPath, String contentType,
     Long contentLength, String checksum, String checksumType, String s3version, String userId,
     String version, String width, String height, String timeToLive, Date insertedDate,
-    Date lastModifiedDate, Collection<DocumentMetadata> metadata, Boolean hasArtifacts) {
+    Date lastModifiedDate, Collection<DocumentMetadata> metadata, Boolean hasArtifacts,
+    Date deletedDate) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
@@ -58,6 +59,9 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     }
     if (lastModifiedDate != null) {
       lastModifiedDate = new Date(lastModifiedDate.getTime());
+    }
+    if (deletedDate != null) {
+      deletedDate = new Date(deletedDate.getTime());
     }
   }
 
@@ -99,7 +103,8 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         DynamoDbTypes.toDate(attributes.get("lastModifiedDate")), metadata,
         attributes.containsKey("hasArtifacts")
             ? DynamoDbTypes.toBoolean(attributes.get("hasArtifacts"))
-            : null);
+            : null,
+        DynamoDbTypes.toDate(attributes.get("deletedDate")));
   }
 
   /**
@@ -124,7 +129,8 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         .withString("userId", userId).withString("version", version).withString("width", width)
         .withString("height", height).withNumber("TimeToLive", timeToLive)
         .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate)
-        .withMap(metadataAttrs).withBoolean("hasArtifacts", hasArtifacts);
+        .withDate("deletedDate", deletedDate).withMap(metadataAttrs)
+        .withBoolean("hasArtifacts", hasArtifacts);
 
     return map.build();
   }

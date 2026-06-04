@@ -159,7 +159,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         ps(s3version, prev, "s3version"), ps(userId, prev, "userId"), ps(version, prev, "version"),
         ps(width, prev, "width"), ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"),
         insertedDate, lastModifiedDate, documentMetadata,
-        !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha);
+        !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha, null);
   }
 
   @Override
