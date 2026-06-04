@@ -771,6 +771,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
       assertEquals(path, softDeletedDocuments.getFirst().getPath());
+      assertNotNull(softDeletedDocuments.getFirst().getDeletedDate());
 
       List<Document> documents = getDocuments(siteId, 0);
       assertEquals(0, documents.size());
@@ -786,6 +787,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       documents = getDocuments(siteId, 1);
       assertEquals(1, documents.size());
       assertEquals(path, documents.getFirst().getPath());
+      assertNull(documents.getFirst().getDeletedDate());
     }
   }
 

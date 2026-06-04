@@ -450,9 +450,9 @@ public interface DocumentService {
    * @param sort {@link String}
    * @param nextToken {@link String}
    * @param limit int
-   * @return {@link Pagination} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentRecord}
    */
-  Pagination<DocumentItem> findSoftDeletedDocuments(String siteId, Date start, Date end,
+  Pagination<DocumentRecord> findSoftDeletedDocuments(String siteId, Date start, Date end,
       String sort, String nextToken, int limit);
 
   /**
@@ -461,9 +461,9 @@ public interface DocumentService {
    * @param siteId Optional Grouping siteId
    * @param nextToken {@link String}
    * @param limit int
-   * @return {@link Pagination} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentRecord}
    */
-  default Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId,
+  default Pagination<DocumentRecord> findSoftDeletedDocuments(final String siteId,
       final String nextToken, final int limit) {
     return findSoftDeletedDocuments(siteId, null, null, null, nextToken, limit);
   }

@@ -88,7 +88,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -162,8 +161,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
     DynamoDbService db = awsServices.getExtension(DynamoDbService.class);
     var key = new DocumentRecordBuilder().documentId(documentId).buildSoftDeleteKey(siteId);
     String deletedDate = db.get(key).get(DbKeys.GSI2_SK).s().substring("date#".length());
-    return OffsetDateTime.ofInstant(Instant.from(DateUtil.getIso8601Formatter().parse(deletedDate)),
-        ZoneOffset.UTC);
+    return toOffsetDateTime(deletedDate);
   }
 
   @Test
@@ -472,8 +470,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError().response();
 
       // then
+      List<Document> descDocuments = notNull(desc.getDocuments());
       assertEquals(List.of(doc2, doc1, doc0),
-          notNull(desc.getDocuments()).stream().map(Document::getDocumentId).toList());
+          descDocuments.stream().map(Document::getDocumentId).toList());
+      assertEquals(deleted2,
+          toOffsetDateTime(descDocuments.get(0).getDeletedDate()).truncatedTo(ChronoUnit.SECONDS));
+      assertEquals(deleted1,
+          toOffsetDateTime(descDocuments.get(1).getDeletedDate()).truncatedTo(ChronoUnit.SECONDS));
 
       // when
       var asc = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
@@ -1694,6 +1697,20 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  private OffsetDateTime toOffsetDateTime(final String date) {
+    try {
+      return OffsetDateTime.ofInstant(DateUtil.toDateFromString(date, ZoneOffset.UTC).toInstant(),
+          ZoneOffset.UTC);
+    } catch (java.time.DateTimeException e) {
+      try {
+        return OffsetDateTime.ofInstant(DateUtil.getIsoDateFormatter().parse(date).toInstant(),
+            ZoneOffset.UTC);
+      } catch (java.text.ParseException pe) {
+        throw new IllegalArgumentException(pe);
       }
     }
   }

@@ -1193,7 +1193,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Pagination<DocumentItem> findSoftDeletedDocuments(final String siteId, final Date start,
+  public Pagination<DocumentRecord> findSoftDeletedDocuments(final String siteId, final Date start,
       final Date end, final String sort, final String nextToken, final int limit) {
 
     boolean scanForward = "ASC".equalsIgnoreCase(sort);
@@ -1209,10 +1209,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       response = this.dbService.query(query, false);
     }
 
-    List<DocumentItem> items =
-        response.items().stream().map(DynamoDbKey::fromAttributeMap).map(this.dbService::get)
-            .map(a -> new AttributeValueToDocumentItem().apply(a)).collect(Collectors.toList());
-    return new Pagination<>(items, response.lastEvaluatedKey());
+    var keys = response.items().stream().map(DynamoDbKey::fromAttributeMap).toList();
+    List<DocumentRecord> documents = this.dbService.getBatchByKey(new BatchGetConfig(), keys)
+        .stream().map(DocumentRecord::fromAttributeMap).toList();
+    return new Pagination<>(documents, response.lastEvaluatedKey());
   }
 
   private boolean shouldFallbackToLegacySoftDeletedDocuments(final Date start, final Date end,

@@ -9633,6 +9633,9 @@ components:
         lastModifiedDate:
           type: string
           description: Last Modified Timestamp
+        deletedDate:
+          type: string
+          description: Soft Deleted Timestamp
         checksum:
           type: string
           description: Document checksum, changes when document file changes

@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
@@ -38,6 +39,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentDeleteMoveAttributeFunction;
 import com.formkiq.aws.dynamodb.documents.DocumentRestoreMoveAttributeFunction;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -50,7 +52,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
    * Test Soft delete a document.
    */
   @Test
-  void testTransformDocument() {
+  void testTransformDocument() throws Exception {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
@@ -71,6 +73,8 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
       }
 
       assertEquals("softdelete#document#" + documentId, result.get(DbKeys.SK).s());
+      assertTrue(result.containsKey("deletedDate"));
+      assertNotNull(DateUtil.getIsoDateFormatter().parse(result.get("deletedDate").s()));
       if (siteId != null) {
         assertEquals(siteId + "/softdelete#docs#", result.get(DbKeys.GSI2_PK).s());
       } else {
@@ -95,6 +99,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
       assertEquals("document", restore.get(DbKeys.SK).s());
       assertFalse(restore.containsKey(DbKeys.GSI2_PK));
       assertFalse(restore.containsKey(DbKeys.GSI2_SK));
+      assertFalse(restore.containsKey("deletedDate"));
     }
   }
 

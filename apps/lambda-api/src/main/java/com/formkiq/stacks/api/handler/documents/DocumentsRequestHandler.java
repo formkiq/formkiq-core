@@ -41,6 +41,7 @@ import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -65,6 +66,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
 import com.formkiq.validation.ValidationBuilder;
@@ -251,13 +253,15 @@ public class DocumentsRequestHandler
     Date start = getQueryDateTime(event, "start");
     Date end = getQueryDateTime(event, "end");
     String sort = getQuerySort(event);
-    Pagination<DocumentItem> results =
+    Pagination<DocumentRecord> results =
         service.findSoftDeletedDocuments(siteId, start, end, sort, nextToken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    map.put("documents", results.getResults());
+    List<DynamicDocumentItem> docs = results.getResults().stream()
+        .map(l -> new DocumentRecordToDynamicDocumentItem().apply(l)).toList();
+    map.put("documents", docs);
     return current;
   }
 
