@@ -194,8 +194,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
-    awsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    if (!awsServiceCache.containsExtension(ActionsNotificationService.class)) {
+      awsServiceCache.register(ActionsNotificationService.class,
+          new ActionsNotificationServiceExtension());
+    }
     awsServiceCache.register(S3ServiceInterceptor.class, new S3ServiceInterceptorExtension());
     awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     awsServiceCache.register(CacheService.class, new CacheServiceExtension());

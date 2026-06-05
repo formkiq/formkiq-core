@@ -24,13 +24,24 @@
 package com.formkiq.server;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.client.api.DocumentActionsApi;
+import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddDocumentActionsRequest;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.DocumentActionStatus;
+import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TypesenseExtension;
@@ -49,16 +60,22 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplete;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentFulltext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit Test for {@link HttpServer}.
@@ -82,6 +99,10 @@ public class HttpServerTest {
   private static final String BASE_URL = "http://localhost:" + BASE_HTTP_SERVER_PORT;
   /** Test Time. */
   private static final int TEST_TIME = 30;
+  /** OCR Test Time. */
+  private static final int OCR_TEST_TIME = 60;
+  /** OCR sample text. */
+  private static final String OCR_SAMPLE_TEXT = "This is a small demonstration";
 
   /** {@link ApiClient}. */
   private final ApiClient apiClient = new ApiClient().setReadTimeout(0).setBasePath(BASE_URL)
@@ -138,6 +159,45 @@ public class HttpServerTest {
     GetDocumentFulltextResponse fulltext =
         waitForDocumentFulltext(this.apiClient, null, documentId);
     assertEquals(path, fulltext.getPath());
+  }
+
+  /**
+   * Test add PDF document, OCR/fulltext action and search.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = OCR_TEST_TIME)
+  void testAddPdfDocumentFulltextSearch01() throws Exception {
+    // given
+    byte[] content = Files
+        .readAllBytes(Path.of("..", "lambda-api", "src", "test", "resources", "ocr", "sample.pdf"));
+    String path = "sample.pdf";
+    String documentId = addDocument(this.apiClient, null, path, content, "application/pdf", null);
+    waitForDocumentContent(this.apiClient, null, documentId);
+
+    DocumentActionsApi actionsApi = new DocumentActionsApi(this.apiClient);
+    AddDocumentActionsRequest req = new AddDocumentActionsRequest()
+        .addActionsItem(new AddAction().type(DocumentActionType.FULLTEXT));
+
+    // when
+    actionsApi.addDocumentActions(documentId, null, null, req);
+
+    // then
+    GetDocumentActionsResponse actions = waitForActionsComplete(this.apiClient, null, documentId);
+    assertEquals(2, actions.getActions().size());
+    assertEquals(DocumentActionType.OCR, actions.getActions().get(0).getType());
+    assertEquals(DocumentActionStatus.COMPLETE, actions.getActions().get(0).getStatus());
+    assertEquals(DocumentActionType.FULLTEXT, actions.getActions().get(1).getType());
+    assertEquals(DocumentActionStatus.COMPLETE, actions.getActions().get(1).getStatus());
+
+    GetDocumentFulltextResponse fulltext =
+        waitForDocumentFulltext(this.apiClient, null, documentId);
+    assertTrue(fulltext.getContent().contains(OCR_SAMPLE_TEXT));
+
+    DocumentSearchResponse search = waitForFulltextSearch(documentId, OCR_SAMPLE_TEXT);
+    assertTrue(search.getDocuments().stream()
+        .anyMatch(document -> documentId.equals(document.getDocumentId())));
   }
 
   /**
@@ -310,5 +370,28 @@ public class HttpServerTest {
     assertEquals("core", results.get("type"));
     assertEquals("typesense",
         ((List<String>) results.get("modules")).stream().sorted().collect(Collectors.joining(",")));
+  }
+
+  private DocumentSearchResponse waitForFulltextSearch(final String documentId, final String text)
+      throws Exception {
+    DocumentSearchApi searchApi = new DocumentSearchApi(this.apiClient);
+    DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch().text(text));
+    DocumentSearchResponse response = null;
+    boolean found = false;
+
+    for (int i = 0; i < OCR_TEST_TIME && !found; i++) {
+      response = searchApi.documentSearch(req, null, null, null, null);
+      List<SearchResultDocument> documents = response.getDocuments();
+      found = documents != null
+          && documents.stream().anyMatch(document -> documentId.equals(document.getDocumentId()));
+
+      if (!found) {
+        TimeUnit.SECONDS.sleep(1);
+      }
+    }
+
+    assertNotNull(response);
+    assertTrue(found, "Fulltext search did not return documentId " + documentId);
+    return response;
   }
 }

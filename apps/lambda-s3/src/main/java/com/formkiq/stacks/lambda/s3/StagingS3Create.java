@@ -201,8 +201,10 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
     awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
-    awsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    if (!awsServiceCache.containsExtension(ActionsNotificationService.class)) {
+      awsServiceCache.register(ActionsNotificationService.class,
+          new ActionsNotificationServiceExtension());
+    }
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
 
