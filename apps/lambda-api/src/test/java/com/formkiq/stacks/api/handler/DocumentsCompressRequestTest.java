@@ -36,15 +36,19 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.DocumentsCompressDocument;
 import com.formkiq.client.model.DocumentsCompressRequest;
 import com.formkiq.client.model.DocumentsCompressResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
@@ -71,7 +75,7 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
   }
 
   /** {@link Gson}. */
-  private Gson gson = new GsonBuilder().create();
+  private final Gson gson = new GsonBuilder().create();
 
   /**
    * Create Dummy document.
@@ -85,22 +89,31 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
     return this.documentsApi.addDocumentUpload(req, siteId, null, null, null).getDocumentId();
   }
 
+  private DocumentArtifact createDocumentAndArtifact(final String siteId) throws ApiException {
+    AddDocumentResponse document = new AddDocumentRequestBuilder().content("A")
+        .contentType("text/plain").submit(client, siteId).throwIfError().response();
+    AddDocumentResponse artifact = new AddDocumentRequestBuilder()
+        .documentId(document.getDocumentId()).content("B").contentType("text/plain").artifacts(true)
+        .submit(client, siteId).throwIfError().response();
+
+    return DocumentArtifact.of(document.getDocumentId(), artifact.getArtifactId());
+  }
+
   /**
    * Test compress documents where they do not all exist.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  void testHandlePostDocumentsCompress01() throws ApiException {
+  void testHandlePostDocumentsCompress01() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (Boolean read : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-        setBearerToken(siteId, read.booleanValue());
+        setBearerToken(siteId, read);
 
         String doc1 = ID.uuid();
-        List<String> documentIds = Arrays.asList(doc1);
+        List<String> documentIds = List.of(doc1);
         DocumentsCompressRequest req = new DocumentsCompressRequest().documentIds(documentIds);
 
         // when
@@ -118,11 +131,10 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
   /**
    * Test empty documentIds.
-   * 
-   * @throws ApiException ApiException
+   *
    */
   @Test
-  void testHandlePostDocumentsCompress02() throws ApiException {
+  void testHandlePostDocumentsCompress02() {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -146,7 +158,6 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
    * 
    * @throws Exception Exception
    */
-  @SuppressWarnings("unchecked")
   @Test
   void testHandlePostDocumentsCompress03() throws Exception {
     // given
@@ -169,12 +180,12 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
         assertTrue(url.contains("/" + STAGE_BUCKET_NAME + "/tempfiles/" + siteId));
       } else {
         assertTrue(url.contains("/" + STAGE_BUCKET_NAME + "/tempfiles/"));
-        assertFalse(url.contains("/" + STAGE_BUCKET_NAME + "/tempfiles/" + siteId));
+        assertFalse(url.contains("/" + STAGE_BUCKET_NAME + "/tempfiles/" + null));
       }
 
       ListObjectsResponse listObjects = s3.listObjects(STAGE_BUCKET_NAME, "tempfiles/");
       assertEquals(1, listObjects.contents().size());
-      String key = listObjects.contents().get(0).key();
+      String key = listObjects.contents().getFirst().key();
       assertTrue(key.endsWith(".json"));
 
       String content = s3.getContentAsString(STAGE_BUCKET_NAME, key, null);
@@ -187,6 +198,45 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
       assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, s3FileMap.get("siteId"));
       assertEquals(documentIds, s3FileMap.get("documentIds"));
+    }
+  }
+
+  /**
+   * Test compressing documents with artifactIds.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testHandlePostDocumentsCompress04() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      DocumentArtifact artifact = createDocumentAndArtifact(siteId);
+      DocumentsCompressDocument document = new DocumentsCompressDocument()
+          .documentId(artifact.documentId()).artifactId(artifact.artifactId());
+      DocumentsCompressRequest req = new DocumentsCompressRequest().documents(List.of(document));
+
+      // when
+      this.documentsApi.compressDocuments(req, siteId);
+
+      // then
+      ListObjectsResponse listObjects = s3.listObjects(STAGE_BUCKET_NAME, "tempfiles/");
+      assertEquals(1, listObjects.contents().size());
+      String key = listObjects.contents().getFirst().key();
+      assertTrue(key.endsWith(".json"));
+
+      String content = s3.getContentAsString(STAGE_BUCKET_NAME, key, null);
+      s3.deleteObject(STAGE_BUCKET_NAME, key, null);
+
+      Map<String, Object> s3FileMap = this.gson.fromJson(content, Map.class);
+      assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, s3FileMap.get("siteId"));
+
+      List<Map<String, Object>> documents = (List<Map<String, Object>>) s3FileMap.get("documents");
+      assertEquals(1, documents.size());
+      assertEquals(artifact.documentId(), documents.getFirst().get("documentId"));
+      assertEquals(artifact.artifactId(), documents.getFirst().get("artifactId"));
     }
   }
 }

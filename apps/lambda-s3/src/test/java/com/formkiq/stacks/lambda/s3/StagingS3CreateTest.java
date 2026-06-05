@@ -459,6 +459,20 @@ public class StagingS3CreateTest implements DbKeys {
     s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
   }
 
+  private void createDocumentArtifact(final byte[] content, final String documentId,
+      final String artifactId, final String path) throws ValidationException {
+    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
+    item.setDocumentId(documentId);
+    item.setArtifactId(artifactId);
+    item.setPath(path);
+    item.setUserId("JohnDoe");
+    item.setInsertedDate(new Date());
+    service.saveDocument(DEFAULT_SITE_ID, item, null);
+
+    final String key = createS3Key(DEFAULT_SITE_ID, documentId, artifactId);
+    s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
+  }
+
   /**
    * Create {@link DynamicDocumentItem}.
    *
@@ -914,6 +928,38 @@ public class StagingS3CreateTest implements DbKeys {
       expectedChecksums.put(docId, DocumentCompressorTest.getContentChecksum(content));
     }
     assertFalse(expectedChecksums.isEmpty());
+
+    // when
+    Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");
+    this.handleRequest(map);
+
+    // then
+    String zipKey = "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.zip";
+    try (InputStream zipContent = s3.getContentAsInputStream(STAGING_BUCKET, zipKey)) {
+      DocumentCompressorTest.validateZipContent(zipContent, expectedChecksums);
+    }
+  }
+
+  /**
+   * Tests document compression event with artifactId.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testDocumentsCompressArtifact() throws Exception {
+    // given
+    String fileContent = loadFile(this, "/compression-request-file-artifact.json");
+    s3.putObject(STAGING_BUCKET, "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json",
+        fileContent.getBytes(UTF_8), null, null);
+    String documentId = "56dbfd71-bdd4-4fa8-96ca-4cf69fe93cb8";
+    String artifactId = "6e775220-ff21-4bb0-a9e5-4d5f383c8881";
+    String path = "artifact.txt";
+    byte[] content = "artifact content".getBytes(UTF_8);
+    this.createDocumentArtifact(content, documentId, artifactId, path);
+
+    Map<String, Long> expectedChecksums =
+        Map.of(path, DocumentCompressorTest.getContentChecksum(content));
 
     // when
     Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json");

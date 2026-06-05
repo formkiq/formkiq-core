@@ -35,6 +35,7 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -93,7 +94,6 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
@@ -101,7 +101,6 @@ import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
@@ -366,16 +365,11 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private void handleCompressionRequest(final String bucket, final String key) throws IOException {
 
     final String contentString = s3.getContentAsString(bucket, key, null);
-    Type mapStringObject = new TypeToken<Map<String, Object>>() {}.getType();
-    final Map<String, Object> content = this.gson.fromJson(contentString, mapStringObject);
-    final String siteId = content.get("siteId").toString();
+    DocumentsCompressRequest content =
+        this.gson.fromJson(contentString, DocumentsCompressRequest.class);
+    final String siteId = content.siteId();
     final String archiveKey = key.replace(".json", ".zip");
-    Type jsonStringList = new TypeToken<List<String>>() {}.getType();
-    final List<String> documentIds =
-        this.gson.fromJson(content.get("documentIds").toString(), jsonStringList);
-
-    List<DocumentArtifact> documents =
-        documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
+    List<DocumentArtifact> documents = content.documentArtifacts();
 
     DocumentCompressor documentCompressor = new DocumentCompressor(serviceCache);
     documentCompressor.compressDocuments(siteId, documentsBucket, bucket, archiveKey, documents);
