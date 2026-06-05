@@ -35,5 +35,7 @@ public enum MappingClassificationConditionSourceType {
   /** Data Classification. */
   DATA_CLASSIFICATION,
   /** Metadata Extraction Result. */
-  METADATA_EXTRACTION_RESULT
+  METADATA_EXTRACTION_RESULT,
+  /** AI Prompt Result. */
+  AI_PROMPT_RESULT
 }

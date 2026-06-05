@@ -279,12 +279,14 @@ components:
         - $ref: '#/components/schemas/MappingClassificationConditionContent'
         - $ref: '#/components/schemas/MappingClassificationConditionDataClassification'
         - $ref: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+        - $ref: '#/components/schemas/MappingClassificationConditionAiPromptResult'
       discriminator:
         propertyName: "sourceType"
         mapping:
           CONTENT: "#/components/schemas/MappingClassificationConditionContent"
           DATA_CLASSIFICATION: "#/components/schemas/MappingClassificationConditionDataClassification"
           METADATA_EXTRACTION_RESULT: "#/components/schemas/MappingClassificationConditionMetadataExtractionResult"
+          AI_PROMPT_RESULT: "#/components/schemas/MappingClassificationConditionAiPromptResult"
 
     #@overlay/match missing_ok=True
     MappingClassificationConditionContent:
@@ -350,6 +352,31 @@ components:
           $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
 
     #@overlay/match missing_ok=True
+    MappingClassificationConditionAiPromptResult:
+      required:
+        - "sourceType"
+        - "resultKey"
+        - "resultValue"
+        - "matchingType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingClassificationConditionSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+        resultKey:
+          type: "string"
+          description: "Result key"
+        resultValue:
+          type: "string"
+          description: "Result value"
+        matchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
+
+    #@overlay/match missing_ok=True
     MappingAttribute:
       oneOf:
         - $ref: '#/components/schemas/MappingAttributeContent'
@@ -357,6 +384,7 @@ components:
         - $ref: '#/components/schemas/MappingAttributeManual'
         - $ref: '#/components/schemas/MappingAttributeDataClassification'
         - $ref: '#/components/schemas/MappingAttributeMetadataExtractionResult'
+        - $ref: '#/components/schemas/MappingAttributeAiPromptResult'
         - $ref: '#/components/schemas/MappingAttributeMalwareScan'
       discriminator:
         propertyName: "sourceType"
@@ -367,6 +395,7 @@ components:
           MANUAL: "#/components/schemas/MappingAttributeManual"
           DATA_CLASSIFICATION: "#/components/schemas/MappingAttributeDataClassification"
           METADATA_EXTRACTION_RESULT: "#/components/schemas/MappingAttributeMetadataExtractionResult"
+          AI_PROMPT_RESULT: "#/components/schemas/MappingAttributeAiPromptResult"
           MALWARE_SCAN: "#/components/schemas/MappingAttributeMalwareScan"
 
     #@overlay/match missing_ok=True
@@ -494,6 +523,24 @@ components:
           description: "LLM prompt entity name"
 
     #@overlay/match missing_ok=True
+    MappingAttributeAiPromptResult:
+      required:
+        - "attributeKey"
+        - "sourceType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Attribute from document AI Prompt result"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+
+    #@overlay/match missing_ok=True
     MappingAttributeMalwareScan:
       required:
         - "attributeKey"
@@ -556,3 +603,4 @@ components:
         - CONTENT
         - DATA_CLASSIFICATION
         - METADATA_EXTRACTION_RESULT
+        - AI_PROMPT_RESULT
