@@ -137,13 +137,16 @@ public class IdpAction implements DocumentAction {
         createDataClassificationMap(siteId, document, mappingAttributes, mappingClassifications);
     var docMetadataExtractionMap = createMetadataExtractionResultMap(siteId, document,
         mappingAttributes, mappingClassifications);
+    var docAiPromptResultMap =
+        createAiPromptResultMap(siteId, document, mappingAttributes, mappingClassifications);
     var documentContent = createDocumentContent(logger, siteId, document, mappingClassifications);
 
-    Collection<DocumentAttributeRecord> records = addAttributesForMappingAttributes(logger, siteId,
-        document, mappingAttributes, dataClassificationMap, docMetadataExtractionMap);
+    Collection<DocumentAttributeRecord> records =
+        addAttributesForMappingAttributes(logger, siteId, document, mappingAttributes,
+            dataClassificationMap, docMetadataExtractionMap, docAiPromptResultMap);
 
     records.addAll(addAttributesForMappingClassifications(document, mappingClassifications,
-        dataClassificationMap, docMetadataExtractionMap, documentContent));
+        dataClassificationMap, docMetadataExtractionMap, docAiPromptResultMap, documentContent));
 
     if (!records.isEmpty()) {
       this.documentService.saveDocumentAttributes(siteId, document, records,
@@ -157,6 +160,7 @@ public class IdpAction implements DocumentAction {
       final DocumentArtifact document, final List<MappingClassification> mappingClassifications,
       final Map<String, String> dataClassificationMap,
       final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final Map<String, Map<String, List<String>>> docAiPromptResultMap,
       final String documentContent) {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
@@ -166,7 +170,7 @@ public class IdpAction implements DocumentAction {
       List<MappingClassificationCondition> conditions = notNull(mapping.conditions());
 
       MappingClassificationCondition condition = findMatchingCondition(conditions,
-          dataClassificationMap, docMetadataExtractionMap, documentContent);
+          dataClassificationMap, docMetadataExtractionMap, docAiPromptResultMap, documentContent);
 
       if (condition != null) {
         String username = ApiAuthorization.getAuthorization().getUsername();
@@ -184,37 +188,53 @@ public class IdpAction implements DocumentAction {
       final List<MappingClassificationCondition> conditions,
       final Map<String, String> dataClassificationMap,
       final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final Map<String, Map<String, List<String>>> docAiPromptResultMap,
       final String documentContent) {
 
-    return notNull(conditions).stream().filter(condition -> matchesCondition(condition,
-        dataClassificationMap, docMetadataExtractionMap, documentContent)).findFirst().orElse(null);
+    return notNull(conditions).stream()
+        .filter(condition -> matchesCondition(condition, dataClassificationMap,
+            docMetadataExtractionMap, docAiPromptResultMap, documentContent))
+        .findFirst().orElse(null);
   }
 
   private boolean matchesCondition(final MappingClassificationCondition condition,
       final Map<String, String> dataClassificationMap,
       final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final Map<String, Map<String, List<String>>> docAiPromptResultMap,
       final String documentContent) {
 
-    String value;
+    List<String> values;
     String expected = condition.resultValue();
     MappingClassificationConditionMatchingType matchingType = condition.matchingType();
 
     switch (condition.sourceType()) {
       case CONTENT -> {
-        value = documentContent;
+        values = documentContent != null ? List.of(documentContent) : List.of();
         expected = condition.text();
       }
-      case DATA_CLASSIFICATION -> value = dataClassificationMap.get(condition.resultKey());
+      case DATA_CLASSIFICATION -> {
+        String value = dataClassificationMap.get(condition.resultKey());
+        values = value != null ? List.of(value) : List.of();
+      }
       case METADATA_EXTRACTION_RESULT -> {
         Map<String, String> extractionResult =
             docMetadataExtractionMap.get(condition.llmPromptEntityName());
-        value = extractionResult != null ? extractionResult.get(condition.resultKey()) : null;
+        String value =
+            extractionResult != null ? extractionResult.get(condition.resultKey()) : null;
+        values = value != null ? List.of(value) : List.of();
+      }
+      case AI_PROMPT_RESULT -> {
+        Map<String, List<String>> aiPromptResult =
+            docAiPromptResultMap.get(condition.llmPromptEntityName());
+        values =
+            aiPromptResult != null ? notNull(aiPromptResult.get(condition.resultKey())) : List.of();
       }
       default -> throw new IllegalArgumentException(
           "Unsupported classification condition source type: " + condition.sourceType());
     }
 
-    return matchesResult(value, expected, matchingType);
+    String expectedValue = expected;
+    return values.stream().anyMatch(value -> matchesResult(value, expectedValue, matchingType));
   }
 
   private boolean matchesResult(final String value, final String expected,
@@ -239,7 +259,8 @@ public class IdpAction implements DocumentAction {
       final String siteId, final DocumentArtifact document,
       final List<MappingAttribute> mappingAttributes,
       final Map<String, String> dataClassificationMap,
-      final Map<String, Map<String, String>> docMetadataExtractionMap) throws IOException {
+      final Map<String, Map<String, String>> docMetadataExtractionMap,
+      final Map<String, Map<String, List<String>>> docAiPromptResultMap) throws IOException {
 
     Collection<DocumentAttributeRecord> records = new ArrayList<>();
 
@@ -263,6 +284,8 @@ public class IdpAction implements DocumentAction {
         }
         case METADATA_EXTRACTION_RESULT -> records.addAll(processMetadataExtraction(siteId,
             document, mappingAttribute, docMetadataExtractionMap));
+        case AI_PROMPT_RESULT -> records.addAll(
+            processAiPromptResult(siteId, document, mappingAttribute, docAiPromptResultMap));
 
         case MALWARE_SCAN -> {
           String value = getScanStatus(siteId, document);
@@ -276,6 +299,25 @@ public class IdpAction implements DocumentAction {
     }
 
     return records;
+  }
+
+  private List<DocumentAttributeRecord> processAiPromptResult(final String siteId,
+      final DocumentArtifact document, final MappingAttribute mappingAttribute,
+      final Map<String, Map<String, List<String>>> docAiPromptResultMap) {
+    String llmPromptEntityName = mappingAttribute.getLlmPromptEntityName();
+
+    if (docAiPromptResultMap.containsKey(llmPromptEntityName)) {
+
+      Map<String, List<String>> attributeMap = docAiPromptResultMap.get(llmPromptEntityName);
+      List<String> values = notNull(attributeMap.get(mappingAttribute.getAttributeKey()));
+      if (!values.isEmpty()) {
+        return createDocumentAttribute(siteId, document, mappingAttribute, values);
+      }
+
+      return Collections.emptyList();
+    } else {
+      throw new IllegalArgumentException("No AI Prompt Result found");
+    }
   }
 
   private List<DocumentAttributeRecord> processMetadataExtraction(final String siteId,
@@ -335,6 +377,61 @@ public class IdpAction implements DocumentAction {
             .equals(condition.sourceType()));
 
     return hasContentCondition ? getDocumentContent(logger, siteId, document) : null;
+  }
+
+  private Map<String, Map<String, List<String>>> createAiPromptResultMap(final String siteId,
+      final DocumentArtifact document, final List<MappingAttribute> mappingAttributes,
+      final List<MappingClassification> classifications) throws IOException {
+
+    var llmPromptEntityNames1 = mappingAttributes.stream()
+        .filter(a -> MappingAttributeSourceType.AI_PROMPT_RESULT.equals(a.getSourceType()))
+        .map(MappingAttribute::getLlmPromptEntityName).collect(Collectors.toSet());
+
+    var llmPromptEntityNames2 = notNull(classifications).stream()
+        .flatMap(c -> notNull(c.conditions()).stream())
+        .filter(
+            a -> MappingClassificationConditionSourceType.AI_PROMPT_RESULT.equals(a.sourceType()))
+        .map(MappingClassificationCondition::llmPromptEntityName).collect(Collectors.toSet());
+
+    var llmPromptEntityNames =
+        Stream.concat(llmPromptEntityNames1.stream(), llmPromptEntityNames2.stream())
+            .collect(Collectors.toSet());
+
+    String documentId = document.documentId();
+    Map<String, Map<String, List<String>>> results = new HashMap<>();
+
+    for (String llmPromptEntityName : llmPromptEntityNames) {
+
+      HttpResponse<String> response =
+          this.http.sendRequest(siteId, "get", "/documents/" + documentId + "/ai/prompts/"
+              + UrlPathEncoder.encodePathSegment(llmPromptEntityName) + "?limit=1", "");
+
+      String body = response.body();
+      AiPromptResultsResponse data = gson.fromJson(body, AiPromptResultsResponse.class);
+      List<AiPromptResult> aiPromptResults = notNull(data.aiPromptResults());
+      if (!aiPromptResults.isEmpty()) {
+        results.put(llmPromptEntityName, createAiPromptAttributeMap(aiPromptResults));
+      }
+    }
+
+    return results;
+  }
+
+  private Map<String, List<String>> createAiPromptAttributeMap(
+      final List<AiPromptResult> aiPromptResults) {
+
+    Map<String, List<String>> attributeMap = new HashMap<>();
+
+    for (int i = aiPromptResults.size() - 1; i >= 0; i--) {
+      AiPromptResult aiPromptResult = aiPromptResults.get(i);
+      for (AiPromptValue value : notNull(aiPromptResult.values())) {
+        for (AiPromptResultAttribute attribute : notNull(value.attributes())) {
+          attributeMap.put(attribute.key(), notNull(attribute.stringValues()));
+        }
+      }
+    }
+
+    return attributeMap;
   }
 
   private Map<String, Map<String, String>> createMetadataExtractionResultMap(final String siteId,

@@ -21,29 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.dynamodb.mappings;
+package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/**
- * Mapping Attribute Source Type.
- */
+import java.util.List;
+
 @Reflectable
-public enum MappingAttributeSourceType {
-  /** Source Type Content. */
-  CONTENT,
-  /** Source Type Content Key value. */
-  CONTENT_KEY_VALUE,
-  /** Source Type Metadata. */
-  METADATA,
-  /** Manual. */
-  MANUAL,
-  /** Data Classification. */
-  DATA_CLASSIFICATION,
-  /** Metadata Extraction Result. */
-  METADATA_EXTRACTION_RESULT,
-  /** AI Prompt Result. */
-  AI_PROMPT_RESULT,
-  /** Malware Scan. */
-  MALWARE_SCAN
+public record AiPromptResultsResponse(String next, List<AiPromptResult> aiPromptResults) {
+}
+
+
+@Reflectable
+record AiPromptResult(String analysisCategory, String insertedDate, String content, String userId,
+    List<AiPromptValue> values) {
+}
+
+
+@Reflectable
+record AiPromptValue(String resultType, String entityType, String entityNamespace,
+    List<AiPromptResultAttribute> attributes) {
+}
+
+
+@Reflectable
+record AiPromptResultAttribute(String key, List<String> stringValues) {
 }

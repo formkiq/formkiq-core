@@ -306,6 +306,16 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
             {"metadataExtractions":[{"attributes":[{"key":"classification","value":"INVOICE"}]}]}
             """));
 
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/ai/prompts/.*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"aiPromptResults":[{"values":[{"resultType":"KEY_VALUE","attributes":[
+                {"key":"classification","stringValues":["INVOICE"]},
+                {"key":"invoiceNumber","stringValues":["INV-123","INV-456"]}
+            ]}]}]}
+            """));
+
     mockServer.when(request().withMethod("GET").withPath("/documents/.*/dataClassification.*"))
         .respond(org.mockserver.model.HttpResponse.response("""
             {"dataClassifications":[{"attributes":[{"key":"classification","value":"INVOICE"}]}]}
@@ -925,6 +935,105 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType AI_PROMPT_RESULT.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpAiPromptResult() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = addPdfToBucket(siteId);
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "invoiceNumber", null,
+          null);
+
+      Mapping mapping = createMapping("invoiceNumber", null, null,
+          MappingAttributeSourceType.AI_PROMPT_RESULT, null, null, null);
+      mapping.attributes().getFirst().setLlmPromptEntityName("myPrompt");
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(2, results.size());
+      assertDocumentAttributeEquals(results.get(0), "invoiceNumber", "INV-123", null);
+      assertDocumentAttributeEquals(results.get(1), "invoiceNumber", "INV-456", null);
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action and SourceType AI_PROMPT_RESULT classification.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationAiPromptResult() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      var classificationId = createClassification(siteId);
+
+      var conditions = List.of(new MappingClassificationCondition(
+          MappingClassificationConditionSourceType.AI_PROMPT_RESULT, "classification", "INVOICE",
+          "myPrompt", MappingClassificationConditionMatchingType.EXACT, null));
+
+      MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+      // when
+      DocumentArtifact document = DocumentArtifact.of(DOCUMENT_ID_OCR_KEY_VALUE, null);
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+
+      DocumentAttributeRecord record = results.get(0);
+      assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
+      assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
+      assertEquals(classificationId, record.getStringValue());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action and non-matching SourceType AI_PROMPT_RESULT classification.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testMappingClassificationAiPromptResultNoMatch() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      var classificationId = createClassification(siteId);
+
+      var conditions = List.of(new MappingClassificationCondition(
+          MappingClassificationConditionSourceType.AI_PROMPT_RESULT, "classification", "RECEIPT",
+          "myPrompt", MappingClassificationConditionMatchingType.EXACT, null));
+
+      MappingRecord mappingRecord = saveMappingRecord(siteId, classificationId, conditions);
+
+      // when
+      DocumentArtifact document = DocumentArtifact.of(DOCUMENT_ID_OCR_KEY_VALUE, null);
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(0, results.size());
     }
   }
 

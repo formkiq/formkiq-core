@@ -156,6 +156,7 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
   private boolean isLabelRequired(final MappingAttributeSourceType type) {
     return !MappingAttributeSourceType.DATA_CLASSIFICATION.equals(type)
         && !MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(type)
+        && !MappingAttributeSourceType.AI_PROMPT_RESULT.equals(type)
         && !MappingAttributeSourceType.MALWARE_SCAN.equals(type);
   }
 
@@ -232,7 +233,8 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       validateManual(vb, attributes, attribute, index);
 
     } else if (MappingAttributeSourceType.METADATA_EXTRACTION_RESULT
-        .equals(attribute.getSourceType())) {
+        .equals(attribute.getSourceType())
+        || MappingAttributeSourceType.AI_PROMPT_RESULT.equals(attribute.getSourceType())) {
 
       if (isEmpty(attribute.getLlmPromptEntityName())) {
         vb.addError("attribute[" + index + "].llmPromptEntityName",
@@ -305,7 +307,8 @@ public class MappingServiceDynamodb implements MappingService, DbKeys {
       vb.isRequired(key + ".resultValue", condition.resultValue());
       vb.isRequired(key + ".matchingType", condition.matchingType());
     } else if (MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT
-        .equals(sourceType)) {
+        .equals(sourceType)
+        || MappingClassificationConditionSourceType.AI_PROMPT_RESULT.equals(sourceType)) {
       vb.isRequired(key + ".resultKey", condition.resultKey());
       vb.isRequired(key + ".resultValue", condition.resultValue());
       vb.isRequired(key + ".matchingType", condition.matchingType());

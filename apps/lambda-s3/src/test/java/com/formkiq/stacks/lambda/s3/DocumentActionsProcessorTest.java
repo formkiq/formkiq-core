@@ -401,6 +401,15 @@ public class DocumentActionsProcessorTest implements DbKeys {
                 + "/metadataExtractionResults/Another%20Prompt"))
         .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(metadataExtractions)));
 
+    Map<String, Object> aiPromptResults =
+        Map.of("aiPromptResults", List.of(Map.of("values", List.of(Map.of("attributes",
+            List.of(Map.of("key", "certificate_number", "stringValues", List.of("12"))))))));
+
+    mockServer
+        .when(request().withMethod("GET").withPath(
+            "/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/ai/prompts/Another%20Prompt"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(aiPromptResults)));
+
     MalwareScanResponse malwareScanResponse =
         new MalwareScanResponse(List.of(new MalwareScanResult("CLEAN", "", "", "")));
     mockServer
@@ -2048,6 +2057,45 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Idp with Mapping Action AI Prompt Result.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceAiPromptResult() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping =
+          createMapping("certificate_number", MappingAttributeSourceType.AI_PROMPT_RESULT);
+      mapping.attributes().forEach(a -> a.setLlmPromptEntityName("Another Prompt"));
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      // when
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
+    }
+  }
+
+  /**
    * Handle Idp with Mapping Action DATA_CLASSIFICATION.
    *
    * @throws ValidationException ValidationException
@@ -2098,15 +2146,18 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       for (MappingAttributeSourceType sourceType : List.of(
           MappingAttributeSourceType.DATA_CLASSIFICATION,
-          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT)) {
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT,
+          MappingAttributeSourceType.AI_PROMPT_RESULT)) {
 
         String documentId = ID.uuid();
         DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
         Mapping mapping = createMapping("certificate_number", sourceType);
 
-        boolean metadata = MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType);
-        if (metadata) {
+        boolean hasLlmPromptEntityName =
+            MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType)
+                || MappingAttributeSourceType.AI_PROMPT_RESULT.equals(sourceType);
+        if (hasLlmPromptEntityName) {
           mapping.attributes().forEach(a -> a.setLlmPromptEntityName("MyPrompt"));
         }
 
@@ -2117,8 +2168,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
         // then
         Action action = actionsService.getActions(siteId, document).getFirst();
 
-        if (metadata) {
+        if (MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType)) {
           assertEquals("No Metadata Extraction Result found", action.message());
+        } else if (MappingAttributeSourceType.AI_PROMPT_RESULT.equals(sourceType)) {
+          assertEquals("No AI Prompt Result found", action.message());
         } else {
           assertEquals("No Data Classifications found", action.message());
         }

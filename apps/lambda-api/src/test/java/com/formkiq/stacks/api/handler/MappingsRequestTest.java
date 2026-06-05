@@ -80,7 +80,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   private static void assertMapping(final GetMappingsResponse response, final String name,
       final String description) {
     assertEquals(1, notNull(response.getMappings()).size());
-    assertMapping(response.getMappings().get(0), name, description);
+    assertMapping(response.getMappings().getFirst(), name, description);
   }
 
   private static void assertMapping(final Mapping mapping, final String name,
@@ -94,7 +94,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
     var mappings = notNull(response.getMappings());
     assertEquals(1, mappings.size());
 
-    assertMappingAttributeContent(mappings.get(0));
+    assertMappingAttributeContent(mappings.getFirst());
   }
 
   private static void assertMappingAttributeContent(final Mapping mapping) {
@@ -104,7 +104,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
     var mappingAttributes = notNull(mapping.getAttributes());
     assertEquals(1, mappingAttributes.size());
 
-    var attribute = mappingAttributes.get(0).getMappingAttributeContent();
+    var attribute = mappingAttributes.getFirst().getMappingAttributeContent();
     assertEquals("invoice", attribute.getAttributeKey());
     assertEquals(MappingAttributeSourceType.CONTENT, attribute.getSourceType());
     assertEquals(MappingAttributeLabelMatchingType.CONTAINS, attribute.getLabelMatchingType());
@@ -117,7 +117,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
     var mappingAttributes = notNull(mapping.getAttributes());
     assertEquals(1, mappingAttributes.size());
 
-    var mappingAttribute = mappingAttributes.get(0).getMappingAttributeManual();
+    var mappingAttribute = mappingAttributes.getFirst().getMappingAttributeManual();
     assertEquals("invoice", mappingAttribute.getAttributeKey());
     assertEquals(MappingAttributeSourceType.MANUAL, mappingAttribute.getSourceType());
     assertEquals(defaultValue, mappingAttribute.getDefaultValue());
@@ -415,12 +415,12 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       List<MappingClassification> classifications = notNull(mapping.getClassifications());
       assertEquals(1, classifications.size());
 
-      MappingClassification classification = classifications.get(0);
+      MappingClassification classification = classifications.getFirst();
       assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
 
       List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
       assertEquals(1, conditions.size());
-      var result = conditions.get(0).getMappingClassificationConditionMetadataExtractionResult();
+      var result = conditions.getFirst().getMappingClassificationConditionMetadataExtractionResult();
       assertEquals(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT,
           result.getSourceType());
       assertEquals("classification", result.getResultKey());
@@ -467,12 +467,12 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       List<MappingClassification> classifications = notNull(mapping.getClassifications());
       assertEquals(1, classifications.size());
 
-      MappingClassification classification = classifications.get(0);
+      MappingClassification classification = classifications.getFirst();
       assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
 
       List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
       assertEquals(1, conditions.size());
-      var result = conditions.get(0).getMappingClassificationConditionContent();
+      var result = conditions.getFirst().getMappingClassificationConditionContent();
       assertEquals(MappingClassificationConditionSourceType.CONTENT, result.getSourceType());
       assertEquals("invoice", result.getText());
       assertEquals(MappingClassificationConditionMatchingType.CONTAINS, result.getMatchingType());
@@ -517,12 +517,12 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       List<MappingClassification> classifications = notNull(mapping.getClassifications());
       assertEquals(1, classifications.size());
 
-      MappingClassification classification = classifications.get(0);
+      MappingClassification classification = classifications.getFirst();
       assertEquals(CLASSIFICATION_ID, classification.getClassificationId());
 
       List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
       assertEquals(1, conditions.size());
-      var result = conditions.get(0).getMappingClassificationConditionDataClassification();
+      var result = conditions.getFirst().getMappingClassificationConditionDataClassification();
       assertEquals(MappingClassificationConditionSourceType.DATA_CLASSIFICATION,
           result.getSourceType());
       assertEquals("classification", result.getResultKey());
