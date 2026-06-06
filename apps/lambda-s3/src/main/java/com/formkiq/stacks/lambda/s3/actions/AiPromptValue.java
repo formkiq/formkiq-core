@@ -27,7 +27,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.List;
 
-@Reflectable
+@Reflectable(allDeclaredConstructors = true)
 public record AiPromptValue(String resultType, String entityType, String entityNamespace,
     List<AiPromptResultAttribute> attributes) {
 }
