@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetDocumentContentResponse;
@@ -35,10 +36,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class GetDocumentContentRequestBuilder
     implements HttpRequestBuilder<GetDocumentContentResponse> {
 
-  /** {@link String}. */
-  private final String document;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** Version Key. */
   private String versionKey;
 
@@ -48,19 +47,23 @@ public class GetDocumentContentRequestBuilder
    * @param documentId {@link String}
    */
   public GetDocumentContentRequestBuilder(final String documentId) {
-    this.document = documentId;
+    this(DocumentArtifact.of(documentId, null));
   }
 
-  public GetDocumentContentRequestBuilder setArtifactId(final String id) {
-    this.artifactId = id;
-    return this;
+  /**
+   * constructor.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
+   */
+  public GetDocumentContentRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(this.document,
-        siteId, this.artifactId, this.versionKey, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(this.document.documentId(),
+        siteId, this.document.artifactId(), this.versionKey, null));
   }
 
   /**

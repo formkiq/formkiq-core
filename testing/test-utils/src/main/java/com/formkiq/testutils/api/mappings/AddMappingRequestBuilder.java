@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.mappings;
 
 import com.formkiq.client.api.MappingsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentWorkflowRequest;
 import com.formkiq.client.model.AddMapping;
 import com.formkiq.client.model.AddMappingRequest;
@@ -113,5 +114,15 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
   public ApiHttpResponse<AddMappingResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new MappingsApi(apiClient).addMapping(req, siteId));
+  }
+
+  /**
+   * Get Mapping Id.
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String getMappingId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getMappingId();
   }
 }

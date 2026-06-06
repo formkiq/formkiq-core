@@ -127,6 +127,11 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
       dwr.status(status.name());
     }
 
-    return dwr.build(r.key()).getAttributes();
+    Map<String, AttributeValue> attributes = dwr.build(r.key()).getAttributes();
+    if (!ActionType.IDP.equals(action.type())) {
+      attributes.put(ATTR_CURRENT_MAPPING_STATUS, null);
+    }
+
+    return attributes;
   }
 }

@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.documents;
 
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentContentResponse;
@@ -36,11 +37,17 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class WaitForDocumentContentRequestBuilder
     implements HttpRequestBuilder<GetDocumentContentResponse> {
+  /** Default Max Attempts. */
+  private static final int DEFAULT_MAX_ATTEMPTS = 120;
 
   /** {@link GetDocumentContentRequestBuilder}. */
   private final GetDocumentContentRequestBuilder getDocumentContent;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** Expected Content. */
   private String content;
+  /** Max Attempts. */
+  private int maxAttempts = DEFAULT_MAX_ATTEMPTS;
 
   /**
    * constructor.
@@ -48,7 +55,17 @@ public class WaitForDocumentContentRequestBuilder
    * @param documentId {@link String}
    */
   public WaitForDocumentContentRequestBuilder(final String documentId) {
-    this.getDocumentContent = new GetDocumentContentRequestBuilder(documentId);
+    this(DocumentArtifact.of(documentId, null));
+  }
+
+  /**
+   * constructor.
+   *
+   * @param document {@link DocumentArtifact}
+   */
+  public WaitForDocumentContentRequestBuilder(final DocumentArtifact document) {
+    this.document = document;
+    this.getDocumentContent = new GetDocumentContentRequestBuilder(document);
   }
 
   /**
@@ -60,6 +77,26 @@ public class WaitForDocumentContentRequestBuilder
   public WaitForDocumentContentRequestBuilder content(final String documentContent) {
     this.content = documentContent;
     return this;
+  }
+
+  private String describeResponse(final ApiHttpResponse<GetDocumentContentResponse> response) {
+    if (response == null) {
+      return "none";
+    }
+
+    if (response.isError()) {
+      return "error " + response.exception().getCode() + " "
+          + response.exception().getMessage();
+    }
+
+    GetDocumentContentResponse documentContent = response.response();
+    if (documentContent == null) {
+      return "no content response";
+    }
+
+    String responseContent = documentContent.getContent();
+    return responseContent != null ? "content length " + responseContent.length()
+        : "content null";
   }
 
   private boolean isMatch(final ApiHttpResponse<GetDocumentContentResponse> response) {
@@ -90,13 +127,13 @@ public class WaitForDocumentContentRequestBuilder
   }
 
   /**
-   * Set Artifact Id.
+   * Set Max Attempts.
    *
-   * @param id {@link String}
+   * @param attempts {@link Integer}
    * @return {@link WaitForDocumentContentRequestBuilder}
    */
-  public WaitForDocumentContentRequestBuilder setArtifactId(final String id) {
-    this.getDocumentContent.setArtifactId(id);
+  public WaitForDocumentContentRequestBuilder maxAttempts(final int attempts) {
+    this.maxAttempts = attempts;
     return this;
   }
 
@@ -146,10 +183,13 @@ public class WaitForDocumentContentRequestBuilder
   public GetDocumentContentResponse waitFor(final ApiClient apiClient, final String siteId)
       throws ApiException, InterruptedException {
 
-    while (true) {
+    ApiHttpResponse<GetDocumentContentResponse> lastResponse = null;
+
+    for (int i = 0; i < this.maxAttempts; i++) {
 
       ApiHttpResponse<GetDocumentContentResponse> response =
           this.getDocumentContent.submit(apiClient, siteId);
+      lastResponse = response;
 
       if (isMatch(response)) {
         return response.response();
@@ -161,5 +201,9 @@ public class WaitForDocumentContentRequestBuilder
 
       TimeUnit.SECONDS.sleep(1);
     }
+
+    throw new ApiException("Timed out waiting for document content after " + this.maxAttempts
+        + " attempts for site " + siteId + " documentId " + this.document.documentId()
+        + ". Last response: " + describeResponse(lastResponse));
   }
 }

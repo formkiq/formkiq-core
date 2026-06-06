@@ -25,12 +25,15 @@ package com.formkiq.testutils.api.entity;
 
 import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddEntityType;
 import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AddEntityTypeResponse;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.Objects;
 
 /**
  * Builder for {@link AddEntityTypeRequest}.
@@ -64,5 +67,34 @@ public class AddEntityTypeRequestBuilder implements HttpRequestBuilder<AddEntity
   public ApiHttpResponse<AddEntityTypeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new EntityApi(apiClient).addEntityType(this.request, siteId));
+  }
+
+  /**
+   * Set Llm Prompt Entity Type.
+   * @return {@link AddEntityTypeRequestBuilder}
+   */
+  public AddEntityTypeRequestBuilder presetLlmPrompt() {
+    setEntityType("LlmPrompt", EntityTypeNamespace.PRESET);
+    return this;
+  }
+
+  /**
+   * Get Entity Type Id.
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String} Site ID (siteId)
+   * @return {@link String}
+   */
+  public String getEntityTypeId(final ApiClient apiClient,
+      final String siteId) throws ApiException {
+
+    var response = submit(apiClient, siteId);
+
+    if (response.isError()) {
+      Objects.requireNonNull(request.getEntityType());
+      return new GetEntityTypeRequestBuilder(request.getEntityType().getName(), request.getEntityType().getNamespace())
+          .getEntityTypeId(apiClient, siteId);
+    } else {
+      return response.response().getEntityTypeId();
+    }
   }
 }

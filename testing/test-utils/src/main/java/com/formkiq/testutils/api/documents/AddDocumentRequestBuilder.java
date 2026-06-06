@@ -24,8 +24,10 @@
 package com.formkiq.testutils.api.documents;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddDocumentAttribute;
@@ -329,5 +331,16 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
       final String siteId) {
     return executeApiCall(
         () -> new DocumentsApi(apiClient).addDocument(this.request, siteId, null));
+  }
+
+  /**
+   * Get Document Id.
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link DocumentArtifact}
+   */
+  public DocumentArtifact getDocument(final ApiClient apiClient, final String siteId) throws ApiException {
+    var resp =  submit(apiClient, siteId).throwIfError().response();
+    return DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
   }
 }
