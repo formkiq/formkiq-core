@@ -28,5 +28,6 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import java.util.List;
 
 @Reflectable
-public record AiPromptResultsResponse(String next, List<AiPromptResult> aiPromptResults) {
+public record AiPromptValue(String resultType, String entityType, String entityNamespace,
+    List<AiPromptResultAttribute> attributes) {
 }

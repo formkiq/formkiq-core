@@ -219,6 +219,10 @@ components:
         currentStepId:
           type: "string"
           description: The current step workflow is on
+        currentActionStatus:
+          $ref: "#/components/schemas/DocumentActionStatus"
+        currentMappingStatus:
+          $ref: "#/components/schemas/DocumentActionStatus"
         status:
           $ref: "#/components/schemas/DocumentWorkflowStatus"
         insertedDate:

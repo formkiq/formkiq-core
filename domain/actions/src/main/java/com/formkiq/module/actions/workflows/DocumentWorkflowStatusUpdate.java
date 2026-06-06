@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.DocumentWorkflowRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -65,6 +66,8 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
 
+  /** DynamoDB attribute name for current mapping status. */
+  private static final String ATTR_CURRENT_MAPPING_STATUS = "currentMappingStatus";
   /** Attributes to update. */
   private final Map<String, AttributeValue> attributes;
   /** Dynamodb Table Name. */
@@ -113,7 +116,9 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
 
     DocumentWorkflowRecord.Builder dwr = DocumentWorkflowRecord.builder()
         .documentId(document.documentId()).workflowId(workflowId).artifactId(document.artifactId())
-        .currentStepId(stepId).actionPk(action.key().pk()).actionSk(action.key().sk());
+        .currentStepId(stepId).currentActionStatus(newStatus.name())
+        .currentMappingStatus(ActionType.IDP.equals(action.type()) ? newStatus.name() : null)
+        .actionPk(action.key().pk()).actionSk(action.key().sk());
 
     dwr.status(newStatus.name());
     if (!ActionStatus.FAILED.equals(newStatus)) {
