@@ -23,52 +23,64 @@
  */
 package com.formkiq.testutils.api.entity;
 
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.EntityTypeNamespace;
-import com.formkiq.client.model.GetEntityTypeResponse;
+import com.formkiq.client.model.GetEntitiesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Builder for Get Entity Type.
+ * Builder for Get Entities.
  */
-public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntityTypeResponse> {
+public class GetEntitiesRequestBuilder implements HttpRequestBuilder<GetEntitiesResponse> {
 
   /** Entity Type Id. */
   private final String entityType;
-  /** {@link EntityTypeNamespace}. */
-  private final EntityTypeNamespace namespace;
+  /** {@link String}. */
+  private final String namespace;
+  /** Limit. */
+  private String limit;
+  /** Next Token. */
+  private String next;
 
   /**
    * constructor.
-   * 
+   *
    * @param entityTypeId {@link String}
-   * @param entityTypeNamespace {@link EntityTypeNamespace}
+   * @param entityNamespace {@link String}
    */
-  public GetEntityTypeRequestBuilder(final String entityTypeId,
-      final EntityTypeNamespace entityTypeNamespace) {
+  public GetEntitiesRequestBuilder(final String entityTypeId, final String entityNamespace) {
     this.entityType = entityTypeId;
-    this.namespace = entityTypeNamespace;
-  }
-
-  @Override
-  public ApiHttpResponse<GetEntityTypeResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(
-        () -> new EntityApi(apiClient).getEntityType(this.entityType, siteId, namespace.name()));
+    this.namespace = entityNamespace;
   }
 
   /**
-   * Get Entity Type Id.
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @return {@link String}
-   * @throws ApiException ApiException
+   * Set Limit.
+   *
+   * @param entityLimit int
+   * @return {@link GetEntitiesRequestBuilder}
    */
-  public String getEntityTypeId(final ApiClient apiClient, final String siteId)
-      throws ApiException {
-    return submit(apiClient, siteId).throwIfError().response().getEntityType().getEntityTypeId();
+  public GetEntitiesRequestBuilder limit(final int entityLimit) {
+    this.limit = String.valueOf(entityLimit);
+    return this;
+  }
+
+  /**
+   * Set Next token.
+   *
+   * @param nextToken {@link String}
+   * @return {@link GetEntitiesRequestBuilder}
+   */
+  public GetEntitiesRequestBuilder next(final String nextToken) {
+    this.next = nextToken;
+    return this;
+  }
+
+  @Override
+  public ApiHttpResponse<GetEntitiesResponse> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(
+        () -> new EntityApi(apiClient).getEntities(this.entityType, siteId, namespace, next, limit));
   }
 }

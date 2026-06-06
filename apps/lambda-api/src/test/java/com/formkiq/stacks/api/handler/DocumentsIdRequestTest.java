@@ -1450,11 +1450,11 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals("A", new GetDocumentContentRequestBuilder(documentId0).submit(client, siteId)
           .throwIfError().response().getContent());
 
-      doc = getDocument(siteId, DocumentArtifact.of(documentId0, resp.getArtifactId()))
-          .throwIfError().response();
+      var document = DocumentArtifact.of(documentId0, resp.getArtifactId());
+      doc = getDocument(siteId, document).throwIfError().response();
       assertEquals("b2.txt", doc.getPath());
       assertEquals("BB",
-          new GetDocumentContentRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
+          new GetDocumentContentRequestBuilder(document)
               .submit(client, siteId).throwIfError().response().getContent());
 
       // when

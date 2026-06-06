@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.workflows;
 
 import com.formkiq.client.api.DocumentWorkflowsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
 import com.formkiq.client.model.AddWorkflowRequest;
@@ -225,5 +226,16 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
       final String siteId) {
     return executeApiCall(
         () -> new DocumentWorkflowsApi(apiClient).addWorkflow(this.request, siteId));
+  }
+
+  /**
+   * Get Workflow Id.
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public String getWorkflowId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getWorkflowId();
   }
 }
