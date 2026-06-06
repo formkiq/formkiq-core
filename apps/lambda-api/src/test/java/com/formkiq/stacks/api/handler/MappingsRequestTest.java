@@ -420,7 +420,8 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       List<MappingClassificationCondition> conditions = notNull(classification.getConditions());
       assertEquals(1, conditions.size());
-      var result = conditions.getFirst().getMappingClassificationConditionMetadataExtractionResult();
+      var result =
+          conditions.getFirst().getMappingClassificationConditionMetadataExtractionResult();
       assertEquals(MappingClassificationConditionSourceType.METADATA_EXTRACTION_RESULT,
           result.getSourceType());
       assertEquals("classification", result.getResultKey());
