@@ -204,6 +204,18 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
     return this;
   }
 
+  /**
+   * Get Workflow Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public String getWorkflowId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getWorkflowId();
+  }
+
   private AddWorkflowStep getWorkflowStep(final String stepId) {
     AddWorkflowStep step = workflowSteps.get(stepId);
     if (step == null) {
@@ -226,16 +238,5 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
       final String siteId) {
     return executeApiCall(
         () -> new DocumentWorkflowsApi(apiClient).addWorkflow(this.request, siteId));
-  }
-
-  /**
-   * Get Workflow Id.
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @return {@link String}
-   * @throws ApiException ApiException
-   */
-  public String getWorkflowId(final ApiClient apiClient, final String siteId) throws ApiException {
-    return submit(apiClient, siteId).throwIfError().response().getWorkflowId();
   }
 }

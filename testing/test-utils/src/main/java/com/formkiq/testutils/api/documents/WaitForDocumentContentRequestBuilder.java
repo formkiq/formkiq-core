@@ -52,20 +52,20 @@ public class WaitForDocumentContentRequestBuilder
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public WaitForDocumentContentRequestBuilder(final String documentId) {
-    this(DocumentArtifact.of(documentId, null));
+  public WaitForDocumentContentRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
+    this.getDocumentContent = new GetDocumentContentRequestBuilder(document);
   }
 
   /**
    * constructor.
    *
-   * @param document {@link DocumentArtifact}
+   * @param documentId {@link String}
    */
-  public WaitForDocumentContentRequestBuilder(final DocumentArtifact document) {
-    this.document = document;
-    this.getDocumentContent = new GetDocumentContentRequestBuilder(document);
+  public WaitForDocumentContentRequestBuilder(final String documentId) {
+    this(DocumentArtifact.of(documentId, null));
   }
 
   /**
@@ -85,8 +85,7 @@ public class WaitForDocumentContentRequestBuilder
     }
 
     if (response.isError()) {
-      return "error " + response.exception().getCode() + " "
-          + response.exception().getMessage();
+      return "error " + response.exception().getCode() + " " + response.exception().getMessage();
     }
 
     GetDocumentContentResponse documentContent = response.response();
@@ -95,8 +94,7 @@ public class WaitForDocumentContentRequestBuilder
     }
 
     String responseContent = documentContent.getContent();
-    return responseContent != null ? "content length " + responseContent.length()
-        : "content null";
+    return responseContent != null ? "content length " + responseContent.length() : "content null";
   }
 
   private boolean isMatch(final ApiHttpResponse<GetDocumentContentResponse> response) {

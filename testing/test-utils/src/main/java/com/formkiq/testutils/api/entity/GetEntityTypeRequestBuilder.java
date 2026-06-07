@@ -53,15 +53,9 @@ public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntity
     this.namespace = entityTypeNamespace;
   }
 
-  @Override
-  public ApiHttpResponse<GetEntityTypeResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(
-        () -> new EntityApi(apiClient).getEntityType(this.entityType, siteId, namespace.name()));
-  }
-
   /**
    * Get Entity Type Id.
+   * 
    * @param apiClient {@link ApiClient}
    * @param siteId {@link String}
    * @return {@link String}
@@ -70,5 +64,12 @@ public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntity
   public String getEntityTypeId(final ApiClient apiClient, final String siteId)
       throws ApiException {
     return submit(apiClient, siteId).throwIfError().response().getEntityType().getEntityTypeId();
+  }
+
+  @Override
+  public ApiHttpResponse<GetEntityTypeResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(
+        () -> new EntityApi(apiClient).getEntityType(this.entityType, siteId, namespace.name()));
   }
 }

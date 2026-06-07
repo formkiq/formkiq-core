@@ -1351,8 +1351,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .throwIfError().response().getHasArtifacts());
 
       // when
-      var content = new GetDocumentContentRequestBuilder(artifact)
-          .submit(client, siteId).throwIfError();
+      var content =
+          new GetDocumentContentRequestBuilder(artifact).submit(client, siteId).throwIfError();
 
       // then
       assertEquals("mycontent", content.response().getContent());

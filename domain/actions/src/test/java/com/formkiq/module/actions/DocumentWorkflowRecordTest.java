@@ -91,8 +91,8 @@ public class DocumentWorkflowRecordTest {
 
     DocumentWorkflowRecord record = DocumentWorkflowRecord.builder().documentId(documentId)
         .artifactId(artifactId).workflowId(workflowId).workflowName(workflowName).status("PENDING")
-        .actionPk("pk").actionSk("sk").currentStepId("step-1").currentActionStatus("COMPLETE")
-        .currentMappingStatus("COMPLETE").build((String) null);
+        .actionPk("pk").actionSk("sk").currentStepId("step-1").actionCount(Integer.valueOf(2))
+        .completedActionCount(Integer.valueOf(1)).build((String) null);
 
     DocumentWorkflowRecord fromMap =
         DocumentWorkflowRecord.fromAttributeMap(record.getAttributes());
@@ -106,7 +106,7 @@ public class DocumentWorkflowRecordTest {
     assertEquals(record.actionPk(), fromMap.actionPk());
     assertEquals(record.actionSk(), fromMap.actionSk());
     assertEquals(record.currentStepId(), fromMap.currentStepId());
-    assertEquals(record.currentActionStatus(), fromMap.currentActionStatus());
-    assertEquals(record.currentMappingStatus(), fromMap.currentMappingStatus());
+    assertEquals(record.actionCount(), fromMap.actionCount());
+    assertEquals(record.completedActionCount(), fromMap.completedActionCount());
   }
 }

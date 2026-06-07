@@ -64,11 +64,32 @@ public class WaitForDocumentActionsRequestBuilder
   /**
    * constructor.
    *
-   * @param document {@link DocumentArtifact}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public WaitForDocumentActionsRequestBuilder(final DocumentArtifact document) {
-    this.document = document;
+  public WaitForDocumentActionsRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
     this.actionReq = new GetDocumentActionsRequestBuilder(document).limit("1000");
+  }
+
+  private String describeStatuses(final ApiHttpResponse<GetDocumentActionsResponse> response) {
+    if (response == null) {
+      return "none";
+    }
+
+    if (response.isError()) {
+      return "error " + response.exception().getCode() + " " + response.exception().getMessage();
+    }
+
+    return describeStatuses(notNull(response.response().getActions()));
+  }
+
+  private String describeStatuses(final List<DocumentAction> actions) {
+    if (actions.isEmpty()) {
+      return "none";
+    }
+
+    return actions.stream().map(a -> a.getType() + "=" + a.getStatus())
+        .collect(Collectors.joining(", "));
   }
 
   /**
@@ -77,10 +98,26 @@ public class WaitForDocumentActionsRequestBuilder
    * @param numberOfActions {@link Integer}
    * @return {@link WaitForDocumentActionsRequestBuilder}
    */
-  public WaitForDocumentActionsRequestBuilder expectedNumberOfActions(
-      final int numberOfActions) {
+  public WaitForDocumentActionsRequestBuilder expectedNumberOfActions(final int numberOfActions) {
     this.expectedNumberOfActions = numberOfActions;
     return this;
+  }
+
+  private boolean hasFailure(final List<DocumentAction> actions) {
+    return actions.stream().anyMatch(a -> FAILURE_STATUSES.contains(a.getStatus()));
+  }
+
+  private boolean isExpectedNumberOfActions(final List<DocumentAction> actions) {
+    return this.expectedNumberOfActions == null
+        || this.expectedNumberOfActions.equals(actions.size());
+  }
+
+  private boolean isMatch(final List<DocumentAction> actions) {
+    return !actions.isEmpty() && isExpectedNumberOfActions(actions)
+        && actions.stream()
+            .allMatch(a -> DocumentActionStatus.COMPLETE.equals(a.getStatus())
+                || DocumentActionStatus.SKIPPED.equals(a.getStatus())
+                || DocumentActionStatus.IN_QUEUE.equals(a.getStatus()));
   }
 
   /**
@@ -116,8 +153,8 @@ public class WaitForDocumentActionsRequestBuilder
    * @throws ApiException ApiException
    * @throws InterruptedException InterruptedException
    */
-  public ApiHttpResponse<GetDocumentActionsResponse> waitFor(final ApiClient apiClient, final String siteId)
-      throws ApiException, InterruptedException {
+  public ApiHttpResponse<GetDocumentActionsResponse> waitFor(final ApiClient apiClient,
+      final String siteId) throws ApiException, InterruptedException {
 
     ApiHttpResponse<GetDocumentActionsResponse> lastResponse = null;
 
@@ -150,44 +187,5 @@ public class WaitForDocumentActionsRequestBuilder
     throw new ApiException("Timed out waiting for document actions after " + this.maxAttempts
         + " attempts for site " + siteId + " documentId " + this.document.documentId()
         + ". Last statuses: " + describeStatuses(lastResponse));
-  }
-
-  private String describeStatuses(final ApiHttpResponse<GetDocumentActionsResponse> response) {
-    if (response == null) {
-      return "none";
-    }
-
-    if (response.isError()) {
-      return "error " + response.exception().getCode() + " "
-          + response.exception().getMessage();
-    }
-
-    return describeStatuses(notNull(response.response().getActions()));
-  }
-
-  private String describeStatuses(final List<DocumentAction> actions) {
-    if (actions.isEmpty()) {
-      return "none";
-    }
-
-    return actions.stream()
-        .map(a -> a.getType() + "=" + a.getStatus())
-        .collect(Collectors.joining(", "));
-  }
-
-  private boolean hasFailure(final List<DocumentAction> actions) {
-    return actions.stream().anyMatch(a -> FAILURE_STATUSES.contains(a.getStatus()));
-  }
-
-  private boolean isMatch(final List<DocumentAction> actions) {
-    return !actions.isEmpty() && isExpectedNumberOfActions(actions)
-        && actions.stream().allMatch(a -> DocumentActionStatus.COMPLETE.equals(a.getStatus())
-            || DocumentActionStatus.SKIPPED.equals(a.getStatus())
-            || DocumentActionStatus.IN_QUEUE.equals(a.getStatus()));
-  }
-
-  private boolean isExpectedNumberOfActions(final List<DocumentAction> actions) {
-    return this.expectedNumberOfActions == null
-        || this.expectedNumberOfActions.equals(actions.size());
   }
 }

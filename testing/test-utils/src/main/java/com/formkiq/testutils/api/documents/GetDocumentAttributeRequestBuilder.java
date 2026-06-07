@@ -26,9 +26,12 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.GetDocumentAttributeResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
 
 /**
  * Builder for Get Document Attribute Request.
@@ -61,6 +64,23 @@ public class GetDocumentAttributeRequestBuilder
    */
   public GetDocumentAttributeRequestBuilder(final String documentId, final String attributeKey) {
     this(DocumentArtifact.of(documentId, null), attributeKey);
+  }
+
+  private DocumentAttribute getAttribute(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getAttribute();
+  }
+
+  /**
+   * Get String Value.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public String getStringValue(final ApiClient apiClient, final String siteId) throws ApiException {
+    return getAttribute(apiClient, siteId).getStringValue();
   }
 
   @Override

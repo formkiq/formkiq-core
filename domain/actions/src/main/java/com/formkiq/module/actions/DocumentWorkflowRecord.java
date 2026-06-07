@@ -39,8 +39,7 @@ import java.util.Objects;
  */
 public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String artifactId,
     String workflowId, String workflowName, String status, String actionPk, String actionSk,
-    String currentStepId, String currentActionStatus, String currentMappingStatus,
-    Date insertedDate) {
+    String currentStepId, Integer actionCount, Integer completedActionCount, Date insertedDate) {
 
   /** DynamoDB attribute name for artifact id. */
   private static final String ATTR_ARTIFACT_ID = "artifactId";
@@ -58,10 +57,10 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
   private static final String ATTR_ACTION_SK = "actionSk";
   /** DynamoDB attribute name for current step id. */
   private static final String ATTR_CURRENT_STEP_ID = "currentStepId";
-  /** DynamoDB attribute name for current action status. */
-  private static final String ATTR_CURRENT_ACTION_STATUS = "currentActionStatus";
-  /** DynamoDB attribute name for current mapping status. */
-  private static final String ATTR_CURRENT_MAPPING_STATUS = "currentMappingStatus";
+  /** DynamoDB attribute name for action count. */
+  private static final String ATTR_ACTION_COUNT = "actionCount";
+  /** DynamoDB attribute name for completed action count. */
+  private static final String ATTR_COMPLETED_ACTION_COUNT = "completedActionCount";
   /** DynamoDB attribute name for inserted date. */
   private static final String ATTR_INSERTED_DATE = "inserteddate";
 
@@ -96,14 +95,13 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
       String actionPk = DynamoDbTypes.toString(attributes.get(ATTR_ACTION_PK));
       String actionSk = DynamoDbTypes.toString(attributes.get(ATTR_ACTION_SK));
       String currentStepId = DynamoDbTypes.toString(attributes.get(ATTR_CURRENT_STEP_ID));
-      String currentActionStatus =
-          DynamoDbTypes.toString(attributes.get(ATTR_CURRENT_ACTION_STATUS));
-      String currentMappingStatus =
-          DynamoDbTypes.toString(attributes.get(ATTR_CURRENT_MAPPING_STATUS));
+      Integer actionCount = DynamoDbTypes.toInteger(attributes.get(ATTR_ACTION_COUNT));
+      Integer completedActionCount =
+          DynamoDbTypes.toInteger(attributes.get(ATTR_COMPLETED_ACTION_COUNT));
       Date insertedDate = DynamoDbTypes.toDate(attributes.get(ATTR_INSERTED_DATE));
 
       return new DocumentWorkflowRecord(key, documentId, artifactId, workflowId, workflowName,
-          status, actionPk, actionSk, currentStepId, currentActionStatus, currentMappingStatus,
+          status, actionPk, actionSk, currentStepId, actionCount, completedActionCount,
           insertedDate);
     }
 
@@ -121,9 +119,8 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
         .withString(ATTR_ARTIFACT_ID, artifactId).withString(ATTR_WORKFLOW_ID, workflowId)
         .withString(ATTR_WORKFLOW_NAME, workflowName).withString(ATTR_STATUS, status)
         .withString(ATTR_ACTION_PK, actionPk).withString(ATTR_ACTION_SK, actionSk)
-        .withString(ATTR_CURRENT_STEP_ID, currentStepId)
-        .withString(ATTR_CURRENT_ACTION_STATUS, currentActionStatus)
-        .withString(ATTR_CURRENT_MAPPING_STATUS, currentMappingStatus)
+        .withString(ATTR_CURRENT_STEP_ID, currentStepId).withInteger(ATTR_ACTION_COUNT, actionCount)
+        .withInteger(ATTR_COMPLETED_ACTION_COUNT, completedActionCount)
         .withDate(ATTR_INSERTED_DATE, insertedDate).build();
   }
 
@@ -157,12 +154,23 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
     private String actionSk;
     /** Current Step Id. */
     private String currentStepId;
-    /** Current Action Status. */
-    private String currentActionStatus;
-    /** Current Mapping Status. */
-    private String currentMappingStatus;
+    /** Action count. */
+    private Integer actionCount;
+    /** Completed action count. */
+    private Integer completedActionCount;
     /** Inserted Date. */
     private Date insertedDate = new Date();
+
+    /**
+     * Sets the action count.
+     *
+     * @param count the action count
+     * @return this {@link Builder}
+     */
+    public Builder actionCount(final Integer count) {
+      this.actionCount = count;
+      return this;
+    }
 
     /**
      * Sets the action partition key.
@@ -200,7 +208,7 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
     @Override
     public DocumentWorkflowRecord build(final DynamoDbKey key) {
       return new DocumentWorkflowRecord(key, documentId, artifactId, workflowId, workflowName,
-          status, actionPk, actionSk, currentStepId, currentActionStatus, currentMappingStatus,
+          status, actionPk, actionSk, currentStepId, actionCount, completedActionCount,
           insertedDate);
     }
 
@@ -266,24 +274,13 @@ public record DocumentWorkflowRecord(DynamoDbKey key, String documentId, String 
     }
 
     /**
-     * Sets the current action status.
+     * Sets the completed action count.
      *
-     * @param actionStatus the current action status
+     * @param count the completed action count
      * @return this {@link Builder}
      */
-    public Builder currentActionStatus(final String actionStatus) {
-      this.currentActionStatus = actionStatus;
-      return this;
-    }
-
-    /**
-     * Sets the current mapping status.
-     *
-     * @param mappingStatus the current mapping status
-     * @return this {@link Builder}
-     */
-    public Builder currentMappingStatus(final String mappingStatus) {
-      this.currentMappingStatus = mappingStatus;
+    public Builder completedActionCount(final Integer count) {
+      this.completedActionCount = count;
       return this;
     }
 

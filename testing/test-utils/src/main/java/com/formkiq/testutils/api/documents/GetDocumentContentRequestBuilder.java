@@ -44,26 +44,26 @@ public class GetDocumentContentRequestBuilder
   /**
    * constructor.
    *
-   * @param documentId {@link String}
-   */
-  public GetDocumentContentRequestBuilder(final String documentId) {
-    this(DocumentArtifact.of(documentId, null));
-  }
-
-  /**
-   * constructor.
-   *
    * @param documentArtifact {@link DocumentArtifact}
    */
   public GetDocumentContentRequestBuilder(final DocumentArtifact documentArtifact) {
     this.document = documentArtifact;
   }
 
+  /**
+   * constructor.
+   *
+   * @param documentId {@link String}
+   */
+  public GetDocumentContentRequestBuilder(final String documentId) {
+    this(DocumentArtifact.of(documentId, null));
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(this.document.documentId(),
-        siteId, this.document.artifactId(), this.versionKey, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(
+        this.document.documentId(), siteId, this.document.artifactId(), this.versionKey, null));
   }
 
   /**

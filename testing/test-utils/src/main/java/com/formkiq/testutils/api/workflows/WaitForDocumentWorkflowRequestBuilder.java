@@ -64,6 +64,26 @@ public class WaitForDocumentWorkflowRequestBuilder
     this.workflowReq = new GetDocumentWorkflowRequestBuilder(documentArtifact, documentWorkflowId);
   }
 
+  private String describeStatus(final ApiHttpResponse<GetDocumentWorkflowResponse> response) {
+    if (response == null) {
+      return "none";
+    }
+
+    if (response.isError()) {
+      return "error " + response.exception().getCode() + " " + response.exception().getMessage();
+    }
+
+    return describeStatus(response.response().getWorkflow());
+  }
+
+  private String describeStatus(final DocumentWorkflow workflow) {
+    if (workflow == null) {
+      return "none";
+    }
+
+    return String.valueOf(workflow.getStatus());
+  }
+
   /**
    * Set Max Attempts.
    *
@@ -132,26 +152,5 @@ public class WaitForDocumentWorkflowRequestBuilder
     throw new ApiException("Timed out waiting for document workflow after " + this.maxAttempts
         + " attempts for site " + siteId + " documentId " + this.document.documentId()
         + " workflowId " + this.workflowId + ". Last status: " + describeStatus(lastResponse));
-  }
-
-  private String describeStatus(final ApiHttpResponse<GetDocumentWorkflowResponse> response) {
-    if (response == null) {
-      return "none";
-    }
-
-    if (response.isError()) {
-      return "error " + response.exception().getCode() + " "
-          + response.exception().getMessage();
-    }
-
-    return describeStatus(response.response().getWorkflow());
-  }
-
-  private String describeStatus(final DocumentWorkflow workflow) {
-    if (workflow == null) {
-      return "none";
-    }
-
-    return String.valueOf(workflow.getStatus());
   }
 }

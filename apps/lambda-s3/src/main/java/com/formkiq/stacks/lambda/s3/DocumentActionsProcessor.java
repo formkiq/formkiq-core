@@ -746,8 +746,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
   private void updateDocumentWorkflow(final WriteRequestBuilder wrb, final String siteId,
       final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
-    new DocumentWorkflowStatusUpdate(getDb().getTableName(), siteId, document, action, newStatus)
-        .appendTo(wrb);
+    new DocumentWorkflowStatusUpdate(getDb(), siteId, document, action, newStatus).appendTo(wrb);
   }
 
   private DynamoDbService getDb() {
