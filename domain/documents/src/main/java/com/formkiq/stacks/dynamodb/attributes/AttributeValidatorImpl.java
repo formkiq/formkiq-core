@@ -435,10 +435,10 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
     if (!attributes.isAllowAdditionalAttributes()) {
 
-      List<String> requiredKeys =
-          attributes.getRequired().stream().map(SchemaAttributesRequired::getAttributeKey).toList();
-      List<String> optionalKeys =
-          attributes.getOptional().stream().map(SchemaAttributesOptional::getAttributeKey).toList();
+      List<String> requiredKeys = notNull(attributes.getRequired()).stream()
+          .map(SchemaAttributesRequired::getAttributeKey).toList();
+      List<String> optionalKeys = notNull(attributes.getOptional()).stream()
+          .map(SchemaAttributesOptional::getAttributeKey).toList();
 
       for (DocumentAttributeRecord documentAttribute : documentAttributes) {
 

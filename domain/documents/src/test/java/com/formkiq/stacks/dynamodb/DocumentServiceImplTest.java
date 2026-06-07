@@ -92,6 +92,11 @@ import com.formkiq.stacks.dynamodb.attributes.Watermark;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.schemas.Schema;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
+import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -2317,6 +2322,30 @@ public class DocumentServiceImplTest implements DbKeys {
       DocumentRecord item = service.findDocument(siteId, documentArtifact);
       assertNotNull(item);
     }
+  }
+
+  /** Test save document when site schema has no optional attributes. */
+  @Test
+  public void testSaveDocumentRequiredOnlySchema() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String attributeKey = "myattr";
+    createAttributeString(siteId, attributeKey);
+
+    SchemaService schemaService = new SchemaServiceDynamodb(db);
+    Schema schema = new Schema().attributes(new SchemaAttributes()
+        .required(List.of(new SchemaAttributesRequired().attributeKey(attributeKey))));
+    assertEquals(0, schemaService.setSitesSchema(siteId, "requiredOnly", schema).size());
+
+    DocumentItem item = createDocument(ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), null);
+    Collection<DocumentAttributeRecord> attributes = List.of(createDocumentAttribute(document));
+
+    // when
+    service.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+
+    // then
+    assertNotNull(service.findDocument(siteId, document));
   }
 
   /**
