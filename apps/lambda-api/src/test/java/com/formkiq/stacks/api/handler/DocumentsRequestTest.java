@@ -74,6 +74,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentPurgeRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
@@ -104,6 +105,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.strings.Strings.isEmpty;
+import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -162,6 +164,53 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
     var key = new DocumentRecordBuilder().documentId(documentId).buildSoftDeleteKey(siteId);
     String deletedDate = db.get(key).get(DbKeys.GSI2_SK).s().substring("date#".length());
     return toOffsetDateTime(deletedDate);
+  }
+
+  /**
+   * DELETE root document with artifacts.
+   */
+  @Test
+  public void testDeleteRootDocumentWithArtifacts() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .content("artifact").contentType("text/plain").artifacts(true).submit(client, siteId)
+          .throwIfError().response();
+      final DocumentArtifact documentArtifact =
+          DocumentArtifact.of(document.documentId(), artifact.getArtifactId());
+
+      // when
+      var deleteResponse = new DeleteDocumentRequestBuilder(document).submit(client, siteId);
+
+      // then
+      assertNotNull(deleteResponse.exception());
+      assertEquals(HttpStatus.CONFLICT, deleteResponse.exception().getCode());
+      assertEquals(
+          "{\"message\":\"Document '" + document.documentId()
+              + "' cannot be deleted while artifacts exist\"}",
+          deleteResponse.exception().getResponseBody());
+
+      // given
+      setBearerToken(siteId + "_govern");
+
+      // when
+      var purgeResponse = new DeleteDocumentPurgeRequestBuilder(document).submit(client, siteId);
+
+      // then
+      assertNotNull(purgeResponse.exception());
+      assertEquals(HttpStatus.CONFLICT, purgeResponse.exception().getCode());
+      assertEquals(
+          "{\"message\":\"Document '" + document.documentId()
+              + "' cannot be deleted while artifacts exist\"}",
+          purgeResponse.exception().getResponseBody());
+
+      setBearerToken(siteId);
+      assertDocumentFound(client, siteId, document);
+      assertDocumentFound(client, siteId, documentArtifact);
+    }
   }
 
   @Test

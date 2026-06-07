@@ -23,6 +23,7 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.DeleteResponse;
@@ -34,28 +35,21 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class DeleteDocumentPurgeRequestBuilder implements HttpRequestBuilder<DeleteResponse> {
 
-  /** {@link String}. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public DeleteDocumentPurgeRequestBuilder(final String documentId) {
-    this.id = documentId;
-  }
-
-  public DeleteDocumentPurgeRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
+  public DeleteDocumentPurgeRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).purgeDocument(this.id, siteId, this.artifactId));
+    return executeApiCall(() -> new DocumentsApi(apiClient).purgeDocument(document.documentId(),
+        siteId, document.artifactId()));
   }
 }

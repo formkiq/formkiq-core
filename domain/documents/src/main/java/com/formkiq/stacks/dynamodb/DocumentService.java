@@ -621,4 +621,14 @@ public interface DocumentService {
    */
   void updateRetentionPolicyDispositionDateLastModified(String siteId, DocumentArtifact document,
       Date lastModifiedDate);
+
+  /**
+   * Validate Document can be deleted.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentArtifact}
+   * @throws ValidationException ValidationException
+   */
+  void validateCanDeleteDocument(String siteId, DocumentArtifact document)
+      throws ValidationException;
 }

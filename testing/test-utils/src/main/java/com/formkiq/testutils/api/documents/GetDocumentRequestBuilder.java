@@ -26,6 +26,7 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -90,6 +91,11 @@ public class GetDocumentRequestBuilder implements HttpRequestBuilder<GetDocument
    */
   public GetDocumentRequestBuilder(final String documentId) {
     this(DocumentArtifact.of(documentId, null));
+  }
+
+  public GetDocumentResponse getDocument(final ApiClient client, final String siteId)
+      throws ApiException {
+    return submit(client, siteId).throwIfError().response();
   }
 
   @Override
