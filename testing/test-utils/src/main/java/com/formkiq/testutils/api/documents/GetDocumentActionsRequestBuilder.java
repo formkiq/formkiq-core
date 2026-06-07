@@ -26,9 +26,15 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.GetDocumentActionsResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.List;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Builder for Get Document Actions Request.
@@ -59,6 +65,18 @@ public class GetDocumentActionsRequestBuilder
    */
   public GetDocumentActionsRequestBuilder(final String documentId) {
     this(DocumentArtifact.of(documentId, null));
+  }
+
+  /**
+   * Get Document Actions.
+   * 
+   * @param client {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link DocumentAction}
+   */
+  public List<DocumentAction> getActions(final ApiClient client, final String siteId)
+      throws ApiException {
+    return notNull(submit(client, siteId).throwIfError().response().getActions());
   }
 
   /**

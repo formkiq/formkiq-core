@@ -103,6 +103,19 @@ public class WaitForDocumentActionsRequestBuilder
     return this;
   }
 
+  /**
+   * Get {@link DocumentAction}.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link List} List of {@link DocumentAction}
+   * @throws ApiException ApiException
+   */
+  public List<DocumentAction> getActions(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return notNull(submit(apiClient, siteId).throwIfError().response().getActions());
+  }
+
   private boolean hasFailure(final List<DocumentAction> actions) {
     return actions.stream().anyMatch(a -> FAILURE_STATUSES.contains(a.getStatus()));
   }

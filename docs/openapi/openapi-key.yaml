@@ -15246,15 +15246,17 @@ components:
         Literal comparison value fields are not used with this source.
       properties:
         sourceType:
-          type: string
-          description: Identifies this source as an attribute-value comparison.
-          enum:
-          - DOCUMENT_ATTRIBUTE_VALUE_COMPARISON
+          $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparisonSourceType'
         valueAttributeKey:
           type: string
           description: Document attribute key containing the value to compare.
         comparison:
           $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparisonTarget'
+    WorkflowStepConditionAttributeValueComparisonSourceType:
+      type: string
+      description: Identifies this source as an attribute-value comparison.
+      enum:
+      - DOCUMENT_ATTRIBUTE_VALUE_COMPARISON
     WorkflowStepConditionAttributeValueComparisonTarget:
       description: |
         Defines the right-side comparison value for an attribute value comparison.
