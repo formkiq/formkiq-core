@@ -15130,6 +15130,8 @@ components:
         - `NOT_EXISTS` - Field does not exist
         - `IN` - Matches one of the provided values
         - `NOT_IN` - Does not match any of the provided values
+        - `IS_EMPTY` - Source value is empty
+        - `IS_NOT_EMPTY` - Source value is not empty
       enum:
       - EQ
       - NEQ
@@ -15145,6 +15147,8 @@ components:
       - NOT_EXISTS
       - IN
       - NOT_IN
+      - IS_EMPTY
+      - IS_NOT_EMPTY
     WorkflowStepConditionCriterion:
       type: object
       required:
@@ -15158,12 +15162,15 @@ components:
 
         Supported sources include:
         - document attributes
+        - document attribute value comparisons
         - document content type
         - document path
 
         Typical examples:
         - attribute `status` equals `approved`
         - attribute `amount` greater than `1000`
+        - attribute `invoiceTotal` equals attribute `approvedTotal`
+        - attribute `invoiceTotal` equals the sum of attribute `lineItemAmount`
         - content type equals `application/pdf`
         - path contains `/invoices/`
 
@@ -15172,6 +15179,9 @@ components:
         - `numberValue` for numeric comparisons
         - `booleanValue` for boolean comparisons
         - `stringValues` for multi-value comparisons such as `IN` and `NOT_IN`
+
+        Literal value fields should be omitted when `source` is an attribute value
+        comparison.
       properties:
         source:
           $ref: '#/components/schemas/WorkflowStepConditionSource'
@@ -15199,10 +15209,13 @@ components:
         The source identifies where the value comes from before applying the
         operator. Supported sources include:
         - a document attribute identified by `attributeKey`
+        - a comparison between a document attribute value and another attribute-derived
+          value
         - the document content type
         - the document path
       oneOf:
       - $ref: '#/components/schemas/WorkflowStepConditionDocumentAttribute'
+      - $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparison'
       - $ref: '#/components/schemas/WorkflowStepConditionDocumentStandardMetadata'
     WorkflowStepConditionDocumentAttribute:
       type: object
@@ -15217,6 +15230,83 @@ components:
         attributeKey:
           type: string
           description: Document attribute key
+    WorkflowStepConditionAttributeValueComparison:
+      type: object
+      required:
+      - sourceType
+      - valueAttributeKey
+      - comparison
+      description: |
+        Compares the value of one document attribute to another attribute-derived
+        value on the same document.
+
+        The criterion operator is evaluated as:
+        document.attribute[valueAttributeKey] OP comparison
+
+        Literal comparison value fields are not used with this source.
+      properties:
+        sourceType:
+          type: string
+          description: Identifies this source as an attribute-value comparison.
+          enum:
+          - DOCUMENT_ATTRIBUTE_VALUE_COMPARISON
+        valueAttributeKey:
+          type: string
+          description: Document attribute key containing the value to compare.
+        comparison:
+          $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparisonTarget'
+    WorkflowStepConditionAttributeValueComparisonTarget:
+      description: |
+        Defines the right-side comparison value for an attribute value comparison.
+      oneOf:
+      - $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparisonAttribute'
+      - $ref: '#/components/schemas/WorkflowStepConditionAttributeValueComparisonAggregate'
+    WorkflowStepConditionAttributeValueComparisonAttribute:
+      type: object
+      additionalProperties: false
+      required:
+      - attributeKey
+      description: |
+        Uses another document attribute value as the right-side comparison value.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key containing the comparison value.
+    WorkflowStepConditionAttributeValueComparisonAggregate:
+      type: object
+      additionalProperties: false
+      required:
+      - attributeKey
+      - aggregateType
+      description: |
+        Uses an aggregate over another document attribute's values as the right-side
+        comparison value.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key whose values are aggregated for comparison.
+        aggregateType:
+          $ref: '#/components/schemas/WorkflowStepConditionAttributeAggregateType'
+    WorkflowStepConditionAttributeAggregateType:
+      type: string
+      description: |
+        Aggregate operation applied to document attribute values.
+
+        Values:
+
+        - `FIRST` - First value for the attribute
+        - `LAST` - Last value for the attribute
+        - `SUM` - Sum of numeric values for the attribute
+        - `MIN` - Minimum numeric value for the attribute
+        - `MAX` - Maximum numeric value for the attribute
+        - `COUNT` - Count of values for the attribute
+      enum:
+      - FIRST
+      - LAST
+      - SUM
+      - MIN
+      - MAX
+      - COUNT
     WorkflowStepConditionDocumentStandardMetadata:
       type: string
       description: |
