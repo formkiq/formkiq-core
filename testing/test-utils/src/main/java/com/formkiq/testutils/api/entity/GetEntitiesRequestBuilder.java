@@ -23,10 +23,8 @@
  */
 package com.formkiq.testutils.api.entity;
 
-import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.client.api.EntityApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntitiesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -79,8 +77,9 @@ public class GetEntitiesRequestBuilder implements HttpRequestBuilder<GetEntities
   }
 
   @Override
-  public ApiHttpResponse<GetEntitiesResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new EntityApi(apiClient).getEntities(this.entityType, siteId, namespace, next, limit));
+  public ApiHttpResponse<GetEntitiesResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(() -> new EntityApi(apiClient).getEntities(this.entityType, siteId,
+        namespace, next, limit));
   }
 }

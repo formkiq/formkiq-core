@@ -36,17 +36,6 @@ import java.util.function.Predicate;
  */
 public interface HttpRequestBuilder<T> {
 
-  /**
-   * Run the API request and throw exception if Not 200.
-   *
-   * @param apiClient ApiClient
-   * @param siteId Site ID
-   * @return ApiHttpResponse
-   */
-  default ApiHttpResponse<T> submitOk(final ApiClient apiClient, final String siteId) throws ApiException {
-    return submit(apiClient, siteId).throwIfError();
-  }
-
   @FunctionalInterface
   interface ApiCallable<R> {
     R call() throws ApiException;
@@ -74,6 +63,18 @@ public interface HttpRequestBuilder<T> {
    * @return ApiHttpResponse
    */
   ApiHttpResponse<T> submit(ApiClient apiClient, String siteId);
+
+  /**
+   * Run the API request and throw exception if Not 200.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return ApiHttpResponse
+   */
+  default ApiHttpResponse<T> submitOk(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return submit(apiClient, siteId).throwIfError();
+  }
 
   /**
    * Polls {@link #submit(ApiClient, String)} until {@code isDone} is true, or attempts are

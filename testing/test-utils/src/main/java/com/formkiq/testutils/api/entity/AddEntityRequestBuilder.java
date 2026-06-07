@@ -94,6 +94,17 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     return addAttribute(attributeKey, new BigDecimal(numberValue));
   }
 
+  /**
+   * Get Entity Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String getEntityId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getEntityId();
+  }
+
   public AddEntityRequestBuilder name(final String entityName) {
     addEntity.name(entityName);
     return this;
@@ -103,15 +114,5 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
   public ApiHttpResponse<AddEntityResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(
         () -> new EntityApi(apiClient).addEntity(entityType, this.request, siteId, namespace));
-  }
-
-  /**
-   * Get Entity Id.
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @return {@link String}
-   */
-  public String getEntityId(final ApiClient apiClient, final String siteId) throws ApiException {
-    return submit(apiClient, siteId).throwIfError().response().getEntityId();
   }
 }

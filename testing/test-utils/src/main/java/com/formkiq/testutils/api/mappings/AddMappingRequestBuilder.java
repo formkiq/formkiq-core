@@ -118,6 +118,7 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
 
   /**
    * Get Mapping Id.
+   * 
    * @param apiClient {@link ApiClient}
    * @param siteId {@link String}
    * @return {@link String}

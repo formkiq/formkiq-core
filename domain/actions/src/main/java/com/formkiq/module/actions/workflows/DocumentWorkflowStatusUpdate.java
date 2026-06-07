@@ -23,12 +23,12 @@
  */
 package com.formkiq.module.actions.workflows;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.WriteRequestAppender;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
-import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.DocumentWorkflowRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -66,32 +66,30 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
  */
 public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
 
-  /** DynamoDB attribute name for current mapping status. */
-  private static final String ATTR_CURRENT_MAPPING_STATUS = "currentMappingStatus";
   /** Attributes to update. */
   private final Map<String, AttributeValue> attributes;
-  /** Dynamodb Table Name. */
-  private final String dynamodbTableName;
+  /** {@link DynamoDbService}. */
+  private final DynamoDbService db;
 
   /**
    * constructor.
-   * 
-   * @param tableName {@link String}
+   *
+   * @param dbService {@link DynamoDbService}
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
    * @param action {@link Action}
    * @param newStatus {@link ActionStatus}
    */
-  public DocumentWorkflowStatusUpdate(final String tableName, final String siteId,
+  public DocumentWorkflowStatusUpdate(final DynamoDbService dbService, final String siteId,
       final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
-    this.dynamodbTableName = tableName;
+    this.db = dbService;
     attributes = updateDocumentWorkflow(siteId, document, action, newStatus);
   }
 
   @Override
   public void appendTo(final WriteRequestBuilder wrb) {
     if (attributes != null) {
-      wrb.appendUpdate(dynamodbTableName, attributes);
+      wrb.appendUpdate(db.getTableName(), attributes);
     }
   }
 
@@ -109,29 +107,22 @@ public class DocumentWorkflowStatusUpdate implements WriteRequestAppender {
       final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
 
     String workflowId = action.workflowId();
-    String stepId = action.workflowStepId();
 
     DocumentWorkflowRecord r = DocumentWorkflowRecord.builder().documentId(document.documentId())
         .artifactId(document.artifactId()).workflowName("").workflowId(workflowId).build(siteId);
+    var key = r.key();
+    r = DocumentWorkflowRecord.fromAttributeMap(db.get(key));
 
-    DocumentWorkflowRecord.Builder dwr = DocumentWorkflowRecord.builder()
-        .documentId(document.documentId()).workflowId(workflowId).artifactId(document.artifactId())
-        .currentStepId(stepId).currentActionStatus(newStatus.name())
-        .currentMappingStatus(ActionType.IDP.equals(action.type()) ? newStatus.name() : null)
-        .actionPk(action.key().pk()).actionSk(action.key().sk());
-
+    DocumentWorkflowRecord.Builder dwr = DocumentWorkflowRecord.builder();
     dwr.status(newStatus.name());
+    dwr.completedActionCount(r != null ? r.completedActionCount() + 1 : 1);
+
     if (!ActionStatus.FAILED.equals(newStatus)) {
       ActionStatus status =
           !isEmpty(action.workflowLastStep()) ? ActionStatus.COMPLETE : ActionStatus.IN_PROGRESS;
       dwr.status(status.name());
     }
 
-    Map<String, AttributeValue> attributes = dwr.build(r.key()).getAttributes();
-    if (!ActionType.IDP.equals(action.type())) {
-      attributes.put(ATTR_CURRENT_MAPPING_STATUS, null);
-    }
-
-    return attributes;
+    return dwr.build(key).getAttributes();
   }
 }

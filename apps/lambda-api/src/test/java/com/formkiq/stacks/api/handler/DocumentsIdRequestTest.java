@@ -1453,9 +1453,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       var document = DocumentArtifact.of(documentId0, resp.getArtifactId());
       doc = getDocument(siteId, document).throwIfError().response();
       assertEquals("b2.txt", doc.getPath());
-      assertEquals("BB",
-          new GetDocumentContentRequestBuilder(document)
-              .submit(client, siteId).throwIfError().response().getContent());
+      assertEquals("BB", new GetDocumentContentRequestBuilder(document).submit(client, siteId)
+          .throwIfError().response().getContent());
 
       // when
       var resp0 = new GetDocumentUrlRequestBuilder(documentId0).submit(client, siteId)

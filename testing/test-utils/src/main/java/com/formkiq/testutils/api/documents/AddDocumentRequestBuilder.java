@@ -310,6 +310,19 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Get Document Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link DocumentArtifact}
+   */
+  public DocumentArtifact getDocument(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    var resp = submit(apiClient, siteId).throwIfError().response();
+    return DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
+  }
+
+  /**
    * Set Path.
    * 
    * @param path {@link String}
@@ -331,16 +344,5 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
       final String siteId) {
     return executeApiCall(
         () -> new DocumentsApi(apiClient).addDocument(this.request, siteId, null));
-  }
-
-  /**
-   * Get Document Id.
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @return {@link DocumentArtifact}
-   */
-  public DocumentArtifact getDocument(final ApiClient apiClient, final String siteId) throws ApiException {
-    var resp =  submit(apiClient, siteId).throwIfError().response();
-    return DocumentArtifact.of(resp.getDocumentId(), resp.getArtifactId());
   }
 }

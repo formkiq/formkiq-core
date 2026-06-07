@@ -51,6 +51,37 @@ public class AddEntityTypeRequestBuilder implements HttpRequestBuilder<AddEntity
   }
 
   /**
+   * Get Entity Type Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String} Site ID (siteId)
+   * @return {@link String}
+   */
+  public String getEntityTypeId(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+
+    var response = submit(apiClient, siteId);
+
+    if (response.isError()) {
+      Objects.requireNonNull(request.getEntityType());
+      return new GetEntityTypeRequestBuilder(request.getEntityType().getName(),
+          request.getEntityType().getNamespace()).getEntityTypeId(apiClient, siteId);
+    } else {
+      return response.response().getEntityTypeId();
+    }
+  }
+
+  /**
+   * Set Llm Prompt Entity Type.
+   * 
+   * @return {@link AddEntityTypeRequestBuilder}
+   */
+  public AddEntityTypeRequestBuilder presetLlmPrompt() {
+    setEntityType("LlmPrompt", EntityTypeNamespace.PRESET);
+    return this;
+  }
+
+  /**
    * Set Attribute Key.
    *
    * @param name {@link String}
@@ -67,34 +98,5 @@ public class AddEntityTypeRequestBuilder implements HttpRequestBuilder<AddEntity
   public ApiHttpResponse<AddEntityTypeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new EntityApi(apiClient).addEntityType(this.request, siteId));
-  }
-
-  /**
-   * Set Llm Prompt Entity Type.
-   * @return {@link AddEntityTypeRequestBuilder}
-   */
-  public AddEntityTypeRequestBuilder presetLlmPrompt() {
-    setEntityType("LlmPrompt", EntityTypeNamespace.PRESET);
-    return this;
-  }
-
-  /**
-   * Get Entity Type Id.
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String} Site ID (siteId)
-   * @return {@link String}
-   */
-  public String getEntityTypeId(final ApiClient apiClient,
-      final String siteId) throws ApiException {
-
-    var response = submit(apiClient, siteId);
-
-    if (response.isError()) {
-      Objects.requireNonNull(request.getEntityType());
-      return new GetEntityTypeRequestBuilder(request.getEntityType().getName(), request.getEntityType().getNamespace())
-          .getEntityTypeId(apiClient, siteId);
-    } else {
-      return response.response().getEntityTypeId();
-    }
   }
 }
