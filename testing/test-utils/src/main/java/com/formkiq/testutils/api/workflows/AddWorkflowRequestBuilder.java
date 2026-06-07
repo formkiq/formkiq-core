@@ -148,6 +148,32 @@ public class AddWorkflowRequestBuilder implements HttpRequestBuilder<AddWorkflow
   }
 
   /**
+   * Add All Decision.
+   *
+   * @param stepId {@link String}
+   * @param all {@link WorkflowStepConditionCriterion}
+   * @param transition {@link WorkflowStepTransition}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addDecisionConditionAll(final String stepId,
+      final WorkflowStepConditionCriterion all, final WorkflowStepTransition transition) {
+    return addDecisionCondition(stepId, List.of(all), null, transition, null);
+  }
+
+  /**
+   * Add All Decision.
+   *
+   * @param stepId {@link String}
+   * @param any {@link WorkflowStepConditionCriterion}
+   * @param transition {@link WorkflowStepTransition}
+   * @return {@link AddWorkflowRequestBuilder}
+   */
+  public AddWorkflowRequestBuilder addDecisionConditionAny(final String stepId,
+      final WorkflowStepConditionCriterion any, final WorkflowStepTransition transition) {
+    return addDecisionCondition(stepId, null, List.of(any), transition, null);
+  }
+
+  /**
    * Add Document Action.
    *
    * @param stepId {@link String}
