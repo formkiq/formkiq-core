@@ -92,6 +92,45 @@ paths:
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
 
+  #@overlay/match missing_ok=True
+  /system/inferenceModels/agreement:
+    post:
+      operationId: AddSystemInferenceModelAgreement
+      description: Agree to the Bedrock model usage agreement for a system inference model
+      summary: Agree to a system inference model
+      tags:
+        - System Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSystemInferenceModelAgreementRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+        '400':
+          description: 400 Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200"
+
 components:
   schemas:
     #@overlay/match missing_ok=True
@@ -119,6 +158,17 @@ components:
           $ref: "#/components/schemas/SystemConfigurationWebUi"
 
     #@overlay/match missing_ok=True
+    AddSystemInferenceModelAgreementRequest:
+      type: object
+      required:
+        - modelId
+      properties:
+        modelId:
+          type: string
+          description: Bedrock model identifier
+          example: "amazon.nova-2-lite-v1:0"
+
+    #@overlay/match missing_ok=True
     GetSystemInferenceModelsResponse:
       type: object
       properties:
@@ -138,6 +188,10 @@ components:
         defaultModelId:
           type: string
           example: "amazon.nova-2-lite-v1:0"
+        modelLifecycleStatus:
+          type: string
+          description: Bedrock foundation model lifecycle status. ACTIVE means the model version is available; LEGACY means the model version is deprecated.
+          nullable: true
         agreementAvailability:
           type: string
           example: "AVAILABLE"
