@@ -68,6 +68,8 @@ public class DocumentIdPurgeRequestHandler
 
     try {
 
+      service.validateCanDeleteDocument(siteId, document);
+
       boolean deleted = service.deleteDocument(siteId, document, false);
 
       S3Service s3Service = awsservice.getExtension(S3Service.class);
@@ -106,4 +108,5 @@ public class DocumentIdPurgeRequestHandler
     boolean access = authorization.isAdminOrGovern(siteId);
     return Optional.of(access);
   }
+
 }

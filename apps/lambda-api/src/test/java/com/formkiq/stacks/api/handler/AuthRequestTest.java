@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -88,8 +89,8 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
     return resp.response().getDocumentId();
   }
 
-  private void assertDocumentPurgeOk(final String siteId, final String documentId) {
-    var resp = new DeleteDocumentPurgeRequestBuilder(documentId).submit(client, siteId);
+  private void assertDocumentPurgeOk(final String siteId, final DocumentArtifact document) {
+    var resp = new DeleteDocumentPurgeRequestBuilder(document).submit(client, siteId);
     assertOk(resp);
   }
 
@@ -108,7 +109,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
       new SetBearers().apply(client, new String[] {"Admins"});
       assertDocumentSearchOk(siteId);
       String documentId = assertDocumentAddOk(siteId);
-      assertDocumentPurgeOk(siteId, documentId);
+      assertDocumentPurgeOk(siteId, DocumentArtifact.of(documentId, null));
     }
   }
 
@@ -236,7 +237,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
       new SetBearers().apply(client, new String[] {siteId + "_govern"});
       assertDocumentSearchOk(siteId);
       String documentId = assertDocumentAddOk(siteId);
-      assertDocumentPurgeOk(siteId, documentId);
+      assertDocumentPurgeOk(siteId, DocumentArtifact.of(documentId, null));
     }
   }
 

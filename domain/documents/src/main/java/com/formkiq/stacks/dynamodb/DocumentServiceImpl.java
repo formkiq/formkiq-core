@@ -109,6 +109,8 @@ import com.formkiq.validation.ValidationChecks;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
+import com.formkiq.validation.ResponseStatusValidationError;
+import com.formkiq.urls.HttpStatus;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
@@ -465,6 +467,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public boolean deleteDocument(final String siteId, final DocumentArtifact document,
       final boolean softDelete) {
 
+    validateCanDeleteDocument(siteId, document);
+
     var query =
         softDelete ? new SoftDeleteDocumentQuery(document) : new DeleteDocumentQuery(document);
 
@@ -492,6 +496,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     processDeleteDocumentAudit(siteId, document, softDelete, deleted);
 
     return deleted.deleted();
+  }
+
+  @Override
+  public void validateCanDeleteDocument(final String siteId, final DocumentArtifact document)
+      throws ValidationException {
+    if (document.artifactId() == null) {
+      DocumentRecord root = findDocument(siteId, document);
+      if (root != null && Boolean.TRUE.equals(root.hasArtifacts())) {
+        throw new ValidationException(List.of(new ResponseStatusValidationError(HttpStatus.CONFLICT,
+            "Document '" + document.documentId() + "' cannot be deleted while artifacts exist")));
+      }
+    }
   }
 
   private void processDeleteDocumentAudit(final String siteId, final DocumentArtifact document,

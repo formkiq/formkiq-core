@@ -120,6 +120,8 @@ public class DocumentIdRequestHandler
 
     try {
 
+      service.validateCanDeleteDocument(siteId, document);
+
       if (!softDelete) {
         S3Service s3Service = awsservice.getExtension(S3Service.class);
 
@@ -197,27 +199,6 @@ public class DocumentIdRequestHandler
     return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
   }
 
-  // /**
-  // * Get Document Attribute Records.
-  // *
-  // * @param request {@link AddDocumentRequest}
-  // * @param awsservice {@link AwsServiceCache}
-  // * @param siteId {@link String}
-  // * @param artifactId {@link String}
-  // * @return {@link List} {@link DocumentAttributeRecord}
-  // */
-  // private List<DocumentAttributeRecord> getDocumentAttributeRecords(
-  // final AddDocumentRequest request, final AwsServiceCache awsservice, final String siteId,
-  // final String artifactId) {
-  //
-  // AddDocumentAttributeToDocumentAttributeRecord tr =
-  // new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
-  // DocumentArtifact.of(request.getDocumentId(), artifactId));
-  //
-  // List<AddDocumentAttribute> attributes = notNull(request.getAttributes());
-  // return attributes.stream().flatMap(a -> tr.apply(a).stream()).toList();
-  // }
-
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}";
@@ -253,17 +234,12 @@ public class DocumentIdRequestHandler
     awsservice.getLogger()
         .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
 
-    // List<DocumentTag> tags = this.documentEntityValidator.validate(authorization, awsservice,
-    // config, siteId, request, true);
     this.documentEntityValidator.validate(awsservice, config, siteId, request);
 
     var documentRecordSet = new AddDocumentRequestToDocumentRecordSet(awsservice, existingItem,
         authorization.getUsername()).apply(siteId, request);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
-
-    // List<DocumentAttributeRecord> documentAttributes =
-    // getDocumentAttributeRecords(request, awsservice, siteId, artifactId);
 
     SaveDocumentOptions options = new SaveDocumentOptions()
         .validationAccess(getAttributeValidationAccess(authorization, siteId));
@@ -330,4 +306,5 @@ public class DocumentIdRequestHandler
 
     vb.check();
   }
+
 }
