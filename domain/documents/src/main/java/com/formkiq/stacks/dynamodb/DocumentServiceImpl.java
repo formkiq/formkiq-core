@@ -49,6 +49,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyVal
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
+import com.formkiq.aws.dynamodb.documents.DeleteSoftDeletedDocumentArtifactsQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentItemToDocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
@@ -479,8 +480,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     if (deleted.deleted() && document.artifactId() != null) {
-      updateDocumentHasArtifacts(siteId, document.documentId(),
-          hasArtifactDocuments(siteId, document));
+      updateDocumentHasArtifactsAfterArtifactDelete(siteId, document, softDelete);
     }
 
     // check if folder index exists
@@ -1645,10 +1645,36 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return builder;
   }
 
-  private boolean hasArtifactDocuments(final String siteId, final DocumentArtifact document) {
-    QueryResult response = new GetDocumentArtifactsQuery(document.documentId()).query(dbService,
+  private boolean hasArtifactDocuments(final String siteId, final String documentId) {
+    QueryResult response = new GetDocumentArtifactsQuery(documentId).query(dbService,
         dbService.getTableName(), siteId, null, 1);
     return !response.items().isEmpty();
+  }
+
+  private boolean hasSoftDeletedArtifactDocuments(final String siteId, final String documentId,
+      final String hardDeletedArtifactId) {
+
+    var softDeletedArtifacts =
+        new DeleteSoftDeletedDocumentArtifactsQuery(DocumentArtifact.of(documentId, null));
+
+    QueryResult response =
+        softDeletedArtifacts.query(dbService, dbService.getTableName(), siteId, null, 2);
+
+    return response.items().stream().map(i -> DynamoDbTypes.toString(i.get("artifactId")))
+        .anyMatch(artifactId -> !hardDeletedArtifactId.equals(artifactId));
+  }
+
+  private void updateDocumentHasArtifactsAfterArtifactDelete(final String siteId,
+      final DocumentArtifact document, final boolean softDelete) {
+
+    if (softDelete) {
+      updateDocumentHasArtifacts(siteId, document.documentId(), Boolean.TRUE);
+      return;
+    }
+
+    boolean hasArtifacts = hasArtifactDocuments(siteId, document.documentId())
+        || hasSoftDeletedArtifactDocuments(siteId, document.documentId(), document.artifactId());
+    updateDocumentHasArtifacts(siteId, document.documentId(), hasArtifacts);
   }
 
   /**

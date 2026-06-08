@@ -50,8 +50,8 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
-  /** {@link DeleteSoftDeletedDocumentQuery}. */
-  private final DeleteSoftDeletedDocumentQuery deleteSoft;
+  /** {@link DynamoDbDeleteQuery}. */
+  private final DynamoDbDeleteQuery deleteSoft;
 
   /**
    * constructor.
@@ -72,7 +72,7 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
       final boolean deleteSoftDeletedDocumentQuery) {
     this.document = documentArtifact;
     this.deleteSoft =
-        deleteSoftDeletedDocumentQuery ? new DeleteSoftDeletedDocumentQuery(document) : null;
+        deleteSoftDeletedDocumentQuery ? createSoftDeletedDocumentQuery(document) : null;
   }
 
   @Override
@@ -81,6 +81,11 @@ public class DeleteDocumentQuery implements DynamoDbDeleteQuery, DbKeys {
 
     var key = new DocumentRecordBuilder().document(document).buildKey(siteId);
     return DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit).build(tableName);
+  }
+
+  private DynamoDbDeleteQuery createSoftDeletedDocumentQuery(final DocumentArtifact doc) {
+    return doc.artifactId() != null ? new DeleteSoftDeletedDocumentArtifactsQuery(doc)
+        : new DeleteSoftDeletedDocumentQuery(doc);
   }
 
   @Override
