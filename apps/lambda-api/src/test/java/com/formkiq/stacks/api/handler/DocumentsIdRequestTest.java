@@ -25,6 +25,8 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
+import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentNotFound;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -551,6 +553,152 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       list = searchDocumentAttribute(siteId, "myattr", null);
       assertEquals(2, list.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} soft delete artifact, then remove soft deleted artifact.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete08() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content().getDocument(client, siteId);
+
+      // then
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE, getDocument(siteId, artifact).response().getHasArtifacts());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact).softDelete(true).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact);
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+      assertEquals(artifact.documentId(), softDeletedDocuments.getFirst().getDocumentId());
+      assertEquals(artifact.artifactId(), softDeletedDocuments.getFirst().getArtifactId());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact).softDelete(false).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact);
+      assertEquals(Boolean.FALSE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(0, getSoftDeletedDocuments(siteId).size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} soft delete one artifact, then remove it when multiple artifacts
+   * exist.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete09() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      var artifact0 = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content().getDocument(client, siteId);
+      var artifact1 = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content().getDocument(client, siteId);
+
+      // then
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE, getDocument(siteId, artifact0).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE, getDocument(siteId, artifact1).response().getHasArtifacts());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact0).softDelete(true).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact0);
+      assertDocumentFound(client, siteId, artifact1);
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(1, softDeletedDocuments.size());
+      assertEquals(artifact0.documentId(), softDeletedDocuments.getFirst().getDocumentId());
+      assertEquals(artifact0.artifactId(), softDeletedDocuments.getFirst().getArtifactId());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact0).softDelete(false).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact0);
+      assertDocumentFound(client, siteId, artifact1);
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(0, getSoftDeletedDocuments(siteId).size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId} multiple soft delete artifacts, then HARD delete 1 artifact.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testDocumentDelete10() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      var artifact0 = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content().getDocument(client, siteId);
+      var artifact1 = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content().getDocument(client, siteId);
+
+      // then
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE, getDocument(siteId, artifact0).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE, getDocument(siteId, artifact1).response().getHasArtifacts());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact0).softDelete(true).submit(client, siteId)
+          .throwIfError();
+      new DeleteDocumentRequestBuilder(artifact1).softDelete(true).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact0);
+      assertDocumentNotFound(client, siteId, artifact1);
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+
+      List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
+      assertEquals(2, softDeletedDocuments.size());
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact0).softDelete(false).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertDocumentNotFound(client, siteId, artifact0);
+      assertDocumentNotFound(client, siteId, artifact1);
+      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(1, getSoftDeletedDocuments(siteId).size());
     }
   }
 

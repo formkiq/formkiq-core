@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -169,6 +170,14 @@ public class DocumentServiceImplTest implements DbKeys {
   private static List<DocumentTag> getDocumentTags(final String siteId,
       final DocumentArtifact document, final int tagCount) {
     return service.findDocumentTags(siteId, document, null, tagCount).getResults();
+  }
+
+  private static boolean hasSoftDeletedArtifactDocuments(final String siteId,
+      final String documentId, final String hardDeletedArtifactId) throws Exception {
+    Method method = DocumentServiceImpl.class.getDeclaredMethod("hasSoftDeletedArtifactDocuments",
+        String.class, String.class, String.class);
+    method.setAccessible(true);
+    return (Boolean) method.invoke(service, siteId, documentId, hardDeletedArtifactId);
   }
 
   /** {@link SimpleDateFormat}. */
@@ -1665,6 +1674,41 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(this.df.format(now),
           this.df.format(formats.getResults().getFirst().getInsertedDate()));
       assertEquals(userId, formats.getResults().getFirst().getUserId());
+    }
+  }
+
+  /**
+   * Soft-deleted artifact check ignores the artifact being hard deleted.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testHasSoftDeletedArtifactDocuments01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      Date now = new Date();
+      String userId = "jsmith";
+      String documentId = ID.uuid();
+      String artifactId = ID.uuid();
+
+      DocumentItem documentItem = new DocumentItemDynamoDb(documentId, now, userId);
+      documentItem.setPath("a/test53.txt");
+      service.saveDocument(siteId, documentItem, List.of());
+
+      DocumentItem artifactItem = new DocumentItemDynamoDb(documentId, now, userId);
+      artifactItem.setArtifactId(artifactId);
+      artifactItem.setPath("a/test53-artifact.txt");
+      service.saveDocument(siteId, artifactItem, List.of());
+
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+      assertTrue(service.deleteDocument(siteId, artifact, true));
+
+      // when
+      boolean result = hasSoftDeletedArtifactDocuments(siteId, documentId, artifactId);
+
+      // then
+      assertFalse(result);
     }
   }
 
