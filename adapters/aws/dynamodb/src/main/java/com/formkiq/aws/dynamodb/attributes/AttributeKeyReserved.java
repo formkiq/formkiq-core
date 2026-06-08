@@ -35,6 +35,8 @@ public enum AttributeKeyReserved {
   PUBLICATION("Publication"),
   /** Classification. */
   CLASSIFICATION("Classification"),
+  /** Sensitivity. */
+  SENSITIVITY("Sensitivity", AttributeType.GOVERNANCE, AttributeDataType.STRING, null),
   /** Malware Scan Result. */
   MALWARE_SCAN_RESULT("MalwareScanResult"),
   /** Relationships. */

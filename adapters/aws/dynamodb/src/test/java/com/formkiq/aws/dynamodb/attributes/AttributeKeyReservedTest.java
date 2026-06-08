@@ -39,4 +39,12 @@ class AttributeKeyReservedTest {
     assertEquals(AttributeType.STANDARD, AttributeKeyReserved.ARTIFACT_STATUS.getType());
     assertEquals(AttributeDataType.STRING, AttributeKeyReserved.ARTIFACT_STATUS.getDataType());
   }
+
+  @Test
+  void testFindSensitivity() {
+    assertEquals(AttributeKeyReserved.SENSITIVITY, AttributeKeyReserved.find("sensitivity"));
+    assertEquals("Sensitivity", AttributeKeyReserved.SENSITIVITY.getKey());
+    assertEquals(AttributeType.GOVERNANCE, AttributeKeyReserved.SENSITIVITY.getType());
+    assertEquals(AttributeDataType.STRING, AttributeKeyReserved.SENSITIVITY.getDataType());
+  }
 }
