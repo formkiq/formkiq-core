@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import java.util.Map;
+import java.util.Optional;
+
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -32,23 +35,16 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.validation.ValidationErrorImpl;
-import com.formkiq.validation.ValidationException;
+import com.formkiq.validation.ValidationChecks;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.formkiq.strings.Strings.isEmpty;
-
-/** {@link ApiGatewayRequestHandler} for "/login". */
-public class UserLoginRequestHandler
+/** {@link ApiGatewayRequestHandler} for "/login/refresh". */
+public class UserLoginRefreshRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /** {@link UserLoginRequestHandler} URL. */
-  public static final String URL = "/login";
+  /** {@link UserLoginRefreshRequestHandler} URL. */
+  public static final String URL = "/login/refresh";
 
   @Override
   public String getRequestUrl() {
@@ -72,23 +68,16 @@ public class UserLoginRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     try {
-      AuthenticationResultType login =
-          service.login((String) map.get("username"), (String) map.get("password"));
+      AuthenticationResultType login = service.refreshToken((String) map.get("refreshToken"));
       Map<String, Object> data = new AuthenticationResultToMap().apply(login);
       return ApiRequestHandlerResponse.builder().ok().body(data).build();
 
     } catch (NotAuthorizedException e) {
-      throw new BadException("Incorrect username or password");
+      throw new BadException("Incorrect refresh token");
     }
   }
 
-  private void validate(final Map<String, Object> map) throws ValidationException {
-    String username = (String) map.get("username");
-    String password = (String) map.get("password");
-
-    if (isEmpty(username) || isEmpty(password)) {
-      throw new ValidationException(
-          List.of(new ValidationErrorImpl().error("'username' and 'password' are required")));
-    }
+  private void validate(final Map<String, Object> map) {
+    ValidationChecks.checkNotNull("refreshToken", (String) map.get("refreshToken"));
   }
 }

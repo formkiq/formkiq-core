@@ -1096,6 +1096,28 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * Test global "/login/refresh" url.
+   */
+  @Test
+  void testLoginRefresh() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/login/refresh");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
+  }
+
+  /**
    * Test global "/s/{slug}" url.
    */
   @Test

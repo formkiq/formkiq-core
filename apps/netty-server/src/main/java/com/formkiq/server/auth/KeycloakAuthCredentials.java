@@ -33,6 +33,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public final class KeycloakAuthCredentials implements IAuthCredentials {
+  private static String getString(final JsonObject responseJson, final String name) {
+    return responseJson.has(name) ? responseJson.get(name).getAsString() : "";
+  }
+
   private static JsonObject post(final String url, final String requestBody) {
     HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -72,9 +76,9 @@ public final class KeycloakAuthCredentials implements IAuthCredentials {
     JsonObject responseJson = post(tokenEndpoint, fullRequestBody);
 
     if (responseJson != null) {
-      String idToken = responseJson.get("id_token").getAsString();
-      String accessToken = responseJson.get("access_token").getAsString();
-      String refreshToken = responseJson.get("refresh_token").getAsString();
+      String idToken = getString(responseJson, "id_token");
+      String accessToken = getString(responseJson, "access_token");
+      String refreshToken = getString(responseJson, "refresh_token");
 
       return new Tokens(idToken, accessToken, refreshToken);
     }
@@ -90,5 +94,23 @@ public final class KeycloakAuthCredentials implements IAuthCredentials {
 
     return responseJson != null && responseJson.has("active")
         && responseJson.get("active").getAsBoolean();
+  }
+
+  @Override
+  public Tokens refreshTokens(final String refreshToken) {
+    String fullRequestBody =
+        this.requestBody + "&refresh_token=" + refreshToken + "&grant_type=refresh_token";
+
+    JsonObject responseJson = post(tokenEndpoint, fullRequestBody);
+
+    if (responseJson != null) {
+      String idToken = getString(responseJson, "id_token");
+      String accessToken = getString(responseJson, "access_token");
+      String newRefreshToken = getString(responseJson, "refresh_token");
+
+      return new Tokens(idToken, accessToken, newRefreshToken);
+    }
+
+    return null;
   }
 }

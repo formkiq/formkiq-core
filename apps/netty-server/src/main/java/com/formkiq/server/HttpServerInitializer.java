@@ -399,7 +399,6 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
       actionsAws.register(SsmService.class, new SsmServiceNoOpExtension());
 
       DocumentActionsProcessor actionsProcessor = new DocumentActionsProcessor(actionsAws);
-      OcrTesseractProcessor ocrProcessor = new OcrTesseractProcessor(aws);
       LocalActionsNotificationService actionsNotificationService =
           new LocalActionsNotificationService(actionsAws.getExtension(ActionsService.class),
               actionsProcessor, actionsAws.getLogger(), this.actionExecutorService);
@@ -412,6 +411,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
       String queueUrl = createOcrQueue(sqsService);
       aws.environment().put("OCR_SQS_QUEUE_URL", queueUrl);
 
+      OcrTesseractProcessor ocrProcessor = new OcrTesseractProcessor(aws);
       LocalOcrSqsPoller poller = new LocalOcrSqsPoller(aws, sqsService, ocrProcessor, queueUrl);
       this.executorService.scheduleWithFixedDelay(poller, INITIAL_TIME_DELAY_IN_SECONDS,
           OCR_QUEUE_POLL_DELAY_IN_SECONDS, TimeUnit.SECONDS);

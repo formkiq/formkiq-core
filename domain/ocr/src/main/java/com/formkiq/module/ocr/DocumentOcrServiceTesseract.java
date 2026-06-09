@@ -142,8 +142,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
       } else {
 
-        String documentS3toConvert = null;
-
         if (log.isLogged(LogLevel.TRACE)) {
           String msg = String.format("converting document %s in bucket %s by user %s", s3key,
               this.documentsBucket, userId);
@@ -160,8 +158,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
 
         save(siteId, ocr);
 
-        convertDocument(awsservice, request, siteId, document, s3key, documentS3toConvert,
-            contentType, jobId);
+        convertDocument(awsservice, request, siteId, document, contentType, jobId);
       }
     }
 
@@ -175,14 +172,12 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    * @param request {@link OcrRequest}
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
-   * @param s3key original s3 key
-   * @param documentS3toConvert Document S3 Key to convert.
    * @param contentType {@link String}
    * @param jobId {@link String}
    */
-  protected void convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
-      final String siteId, final DocumentArtifact document, final String s3key,
-      final String documentS3toConvert, final String contentType, final String jobId) {
+  private void convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
+      final String siteId, final DocumentArtifact document, final String contentType,
+      final String jobId) {
 
     OcrSqsMessage msg =
         new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(document.documentId())

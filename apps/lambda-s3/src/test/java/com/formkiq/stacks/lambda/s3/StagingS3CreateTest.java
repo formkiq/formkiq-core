@@ -57,7 +57,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -68,7 +67,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
@@ -227,6 +228,8 @@ public class StagingS3CreateTest implements DbKeys {
 
   /** {@link LoggerRecorder}. */
   private static LoggerRecorder logger;
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService db;
 
   /**
    * After Class.
@@ -270,6 +273,7 @@ public class StagingS3CreateTest implements DbKeys {
     sqsService = awsServices.getExtension(SqsService.class);
     actionsService = awsServices.getExtension(ActionsService.class);
     attributeService = awsServices.getExtension(AttributeService.class);
+    db = awsServices.getExtension(DynamoDbService.class);
 
     if (!sqsService.exists(SNS_SQS_CREATE_QUEUE)) {
       sqsDocumentEventUrl = sqsService.createQueue(SNS_SQS_CREATE_QUEUE).queueUrl();
@@ -477,7 +481,9 @@ public class StagingS3CreateTest implements DbKeys {
    * Create {@link DynamicDocumentItem}.
    *
    * @return {@link DynamicDocumentItem}
+   * @deprecated use createDocumentRecord
    */
+  @Deprecated
   private DynamicDocumentItem createDocumentItem() {
     String content = "This is a test";
 
@@ -491,6 +497,19 @@ public class StagingS3CreateTest implements DbKeys {
     item.setUserId("joe");
 
     return item;
+  }
+
+  /**
+   * Create {@link DocumentRecord}.
+   * 
+   * @param siteId {@link String}
+   *
+   * @return {@link DocumentRecord}
+   */
+  private DocumentRecord createDocumentRecord(final String siteId) {
+    String content = "This is a test";
+    return DocumentRecord.builder().documentId(ID.uuid()).path("test.txt").userId("joe")
+        .contentType("plain/text").contentLength((long) content.length()).build(siteId);
   }
 
   private Map<String, Object> createRequestMap(final String s3Key) {
@@ -1813,14 +1832,21 @@ public class StagingS3CreateTest implements DbKeys {
       String newValue = "111";
 
       List<String> documentIds = new ArrayList<>();
-      for (int i = 0; i < maxDocuments; i++) {
-        DynamicDocumentItem item = createDocumentItem();
-        documentIds.add(item.getDocumentId());
 
-        Collection<DocumentTag> tags =
-            List.of(new DocumentTag(item.getDocumentId(), key, value, new Date(), "joe"));
-        service.saveDocument(siteId, item, tags);
+      WriteRequestBuilder builder = new WriteRequestBuilder();
+      for (int i = 0; i < maxDocuments; i++) {
+        DocumentRecord item = createDocumentRecord(siteId);
+        builder.append(db.getTableName(), item.getAttributes());
+        documentIds.add(item.documentId());
+
+        DocumentArtifact document = DocumentArtifact.of(item.documentId(), item.artifactId());
+
+        List<DocumentTagRecord> tags = DocumentTagRecord.builder().document(document).tagKey(key)
+            .tagValue(value).userId("joe").build(siteId);
+        builder.appends(db.getTableName(),
+            tags.stream().map(DocumentTagRecord::getAttributes).toList());
       }
+      builder.batchWriteItem(db.getClient());
 
       List<AddDocumentTag> tags =
           Collections.singletonList(new AddDocumentTag().key(newKey).value(newValue));

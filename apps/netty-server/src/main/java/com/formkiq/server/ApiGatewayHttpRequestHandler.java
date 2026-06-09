@@ -61,6 +61,11 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
  */
 public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
 
+  /** Scheme separator. */
+  private static final String SCHEME_SEPARATOR = "://";
+  /** Scheme separator length. */
+  private static final int SCHEME_SEPARATOR_LENGTH = SCHEME_SEPARATOR.length();
+
   /** Auth Credentials. */
   private final IAuthCredentials authCredentials;
   /** {@link Gson}. */
@@ -149,8 +154,8 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   private String getHost(final String url) {
     String host = null;
 
-    if (url != null && url.contains("://")) {
-      String u = url.substring(url.indexOf("://") + 3);
+    if (url != null && url.contains(SCHEME_SEPARATOR)) {
+      String u = url.substring(url.indexOf(SCHEME_SEPARATOR) + SCHEME_SEPARATOR_LENGTH);
       int slash = u.indexOf("/");
       host = slash > -1 ? u.substring(0, slash) : u;
     }

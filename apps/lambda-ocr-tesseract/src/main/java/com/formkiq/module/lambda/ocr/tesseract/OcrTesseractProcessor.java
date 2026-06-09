@@ -126,8 +126,10 @@ public class OcrTesseractProcessor extends AbstractRestApiRequestHandler {
     awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
 
     awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
-    awsServiceCache.register(ActionsNotificationService.class,
-        new ActionsNotificationServiceExtension());
+    if (!awsServiceCache.containsExtension(ActionsNotificationService.class)) {
+      awsServiceCache.register(ActionsNotificationService.class,
+          new ActionsNotificationServiceExtension());
+    }
     awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
 
     serviceCache = awsServiceCache;

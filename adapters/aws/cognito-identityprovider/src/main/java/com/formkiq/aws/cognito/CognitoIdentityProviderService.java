@@ -502,6 +502,23 @@ public class CognitoIdentityProviderService {
   }
 
   /**
+   * Refresh Login Token.
+   *
+   * @param refreshToken {@link String}
+   * @return {@link AuthenticationResultType}
+   */
+  public AuthenticationResultType refreshToken(final String refreshToken) {
+    HashMap<String, String> authParams = new HashMap<>();
+    authParams.put("REFRESH_TOKEN", refreshToken);
+
+    AdminInitiateAuthRequest authRequest =
+        AdminInitiateAuthRequest.builder().authFlow(AuthFlowType.REFRESH_TOKEN_AUTH)
+            .userPoolId(this.userPoolId).clientId(this.clientId).authParameters(authParams).build();
+
+    return this.cognitoProvider.adminInitiateAuth(authRequest).authenticationResult();
+  }
+
+  /**
    * Remove Cognito User from Cognito Group.
    *
    * @param username {@link String}
