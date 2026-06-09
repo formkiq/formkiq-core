@@ -73,6 +73,17 @@ public final class HttpServer {
     s3presigner.setRequired(true);
     options.addOption(s3presigner);
 
+    Option s3ActionsPresigner =
+        new Option(null, "s3-actions-presigner-url", true, "s3 actions presigner url");
+    options.addOption(s3ActionsPresigner);
+
+    Option apiUrl = new Option(null, "api-url", true, "api url");
+    options.addOption(apiUrl);
+
+    Option sqs = new Option(null, "sqs-url", true, "SQS-compatible url");
+    sqs.setRequired(true);
+    options.addOption(sqs);
+
     Option minioAccessKey = new Option(null, "minio-access-key", true, "Minio Access Key");
     minioAccessKey.setRequired(true);
     options.addOption(minioAccessKey);

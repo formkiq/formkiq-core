@@ -28,35 +28,43 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
- * 
- * Singleton for Test Services.
- *
+ * Singleton for ElasticMQ test service.
  */
-public final class MinioTestServices {
+public final class ElasticMqTestServices {
 
-  /** Minio Image. */
-  private static final String MINIO_IMAGE = "minio/minio:RELEASE.2025-09-07T16-13-09Z";
-  /** Default Minio Port. */
-  private static final Integer DEFAULT_PORT = Integer.valueOf(9000);
-  /** Default Minio Console. */
-  private static final Integer DEFAULT_CONSOLE_PORT = Integer.valueOf(9090);
-  /** Minio Access Key. */
-  static final String ACCESS_KEY = "minioadmin";
-  /** Minio Secret Key. */
-  static final String SECRET_KEY = "minioadmin";
-  /** DynamoDB Local {@link GenericContainer}. */
-  private static GenericContainer<?> minioContainer;
+  /** ElasticMQ Image. */
+  private static final String ELASTICMQ_IMAGE = "softwaremill/elasticmq-native:1.7.1";
+  /** Default ElasticMQ Port. */
+  private static final Integer DEFAULT_PORT = Integer.valueOf(9324);
+  /** ElasticMQ {@link GenericContainer}. */
+  private static GenericContainer<?> elasticMqContainer;
+
+  /**
+   * Get Singleton Instance of {@link GenericContainer}.
+   *
+   * @return {@link GenericContainer}
+   */
+  @SuppressWarnings("resource")
+  public static GenericContainer<?> getElasticMqLocal() {
+    if (elasticMqContainer == null && isPortAvailable()) {
+      elasticMqContainer = new GenericContainer<>(ELASTICMQ_IMAGE).withExposedPorts(DEFAULT_PORT)
+          .waitingFor(Wait.forListeningPort());
+    }
+
+    return elasticMqContainer;
+  }
 
   /**
    * Get Endpoint.
-   * 
+   *
    * @return {@link URI}
    */
   @SuppressWarnings("resource")
   public static URI getEndpoint() {
-    GenericContainer<?> container = getMinioLocal(null);
+    GenericContainer<?> container = getElasticMqLocal();
     Integer port = container != null ? container.getFirstMappedPort() : DEFAULT_PORT;
     try {
       return new URI("http://127.0.0.1:" + port);
@@ -66,34 +74,8 @@ public final class MinioTestServices {
   }
 
   /**
-   * Get Singleton Instance of {@link GenericContainer}.
-   * 
-   * @param webhookEndpoint {@link String}
-   * @return {@link GenericContainer}
-   */
-  @SuppressWarnings("resource")
-  public static GenericContainer<?> getMinioLocal(final String webhookEndpoint) {
-    if (minioContainer == null && isPortAvailable()) {
-
-      minioContainer =
-          new GenericContainer<>(MINIO_IMAGE).withExposedPorts(DEFAULT_PORT, DEFAULT_CONSOLE_PORT)
-              .withEnv("MINIO_ROOT_USER", ACCESS_KEY).withEnv("MINIO_ROOT_PASSWORD", SECRET_KEY)
-              .withEnv("MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS", "on")
-              .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS",
-                  webhookEndpoint + "/minio/s3/documents")
-              .withEnv("MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS", "on")
-              .withExtraHost("host.docker.internal", "host-gateway")
-              .withEnv("MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS",
-                  webhookEndpoint + "/minio/s3/stagingdocuments")
-              .withCommand("server", "/data", "--console-address", ":9090");
-    }
-
-    return minioContainer;
-  }
-
-  /**
-   * Checks Whether LocalStack is currently running on the default port.
-   * 
+   * Checks whether ElasticMQ is already running on the default port.
+   *
    * @return boolean
    */
   private static boolean isPortAvailable() {
@@ -106,5 +88,5 @@ public final class MinioTestServices {
     return available;
   }
 
-  private MinioTestServices() {}
+  private ElasticMqTestServices() {}
 }

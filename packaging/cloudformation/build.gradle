@@ -94,20 +94,26 @@ ytt {
     }
 
     cloudFormationOpenApiJwtCf {
-      from(([layout.buildDirectory.file("gomplate/jwt/api/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/jwt/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("cloudformation/jwt/api/openapi.yaml")
     }
 
     cloudFormationOpenApiIamCf {
-      from(([layout.buildDirectory.file("gomplate/iam/api/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/iam/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("cloudformation/iam/api/openapi.yaml")
     }
 
     cloudFormationOpenApiKeyCf {
-      from(([layout.buildDirectory.file("gomplate/key/api/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/key/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("cloudformation/key/api/openapi.yaml")
     }
   }

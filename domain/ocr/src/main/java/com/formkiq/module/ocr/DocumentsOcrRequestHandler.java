@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.actions.AwsTextractQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -44,6 +45,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.validation.ValidationBuilder;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,6 +55,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
@@ -126,6 +132,7 @@ public class DocumentsOcrRequestHandler
     verifyDocument(awsservice, siteId, document);
 
     final boolean contentUrl = isContentUrl(event);
+    final boolean internalContentUrl = isInternalContentUrl(awsservice, event);
     final boolean textOnly = isTextOnly(event);
     final boolean keyValue = !textOnly && isKeyValue(event);
     final boolean tables = isTables(event);
@@ -151,7 +158,8 @@ public class DocumentsOcrRequestHandler
 
         if (contentUrl) {
 
-          List<String> contentUrls = getContentUrls(awsservice, ocrService, s3, s3Keys, textOnly);
+          List<String> contentUrls =
+              getContentUrls(awsservice, ocrService, s3, s3Keys, textOnly, internalContentUrl);
           map.put("contentUrls", contentUrls);
 
         } else {
@@ -180,7 +188,7 @@ public class DocumentsOcrRequestHandler
    */
   private List<String> getContentUrls(final AwsServiceCache awsservice,
       final DocumentOcrService ocrService, final S3Service s3, final List<String> s3Keys,
-      final boolean textOnly) {
+      final boolean textOnly, final boolean internalContentUrl) {
 
 
     String ocrBucket = awsservice.environment("OCR_S3_BUCKET");
@@ -202,12 +210,22 @@ public class DocumentsOcrRequestHandler
       newS3Keys.addAll(s3Keys);
     }
 
-    S3PresignerService s3Presigner = awsservice.getExtension(S3PresignerService.class);
+    S3PresignerService s3Presigner = getS3Presigner(awsservice, internalContentUrl);
     PresignGetUrlConfig config = new PresignGetUrlConfig();
     return newS3Keys
         .stream().map(s3key -> s3Presigner
             .presignGetUrl(ocrBucket, s3key, Duration.ofHours(1), null, config).toString())
         .collect(Collectors.toList());
+  }
+
+  private String getHeader(final ApiGatewayRequestEvent event, final String key) {
+    String value = event.getHeaderValue(key);
+
+    if (value == null) {
+      value = event.getHeaderValue(key.toLowerCase());
+    }
+
+    return value;
   }
 
   private String getOutputType(final ApiGatewayRequestEvent event) {
@@ -234,6 +252,31 @@ public class DocumentsOcrRequestHandler
     return s3Keys.stream().map(s3Key -> s3.getContentAsString(ocrBucket, s3Key, null)).toList();
   }
 
+  private S3PresignerService getS3Presigner(final AwsServiceCache awsservice,
+      final boolean internalContentUrl) {
+    String endpoint = awsservice.environment("S3_ACTIONS_PRESIGNER_URL");
+
+    if (!internalContentUrl || endpoint == null || endpoint.isBlank()) {
+      return awsservice.getExtension(S3PresignerService.class);
+    }
+
+    try {
+      AwsCredentials credentials = awsservice.getExtension(AwsCredentials.class);
+      S3PresignerConnectionBuilder builder =
+          new S3PresignerConnectionBuilder().setRegion(awsservice.region())
+              .setCredentials(StaticCredentialsProvider.create(credentials))
+              .setEndpointOverride(new URI(endpoint));
+
+      if ("true".equals(awsservice.environment("PATH_STYLE_ACCESS_ENABLED"))) {
+        builder = builder.pathStyleAccessEnabled(Boolean.TRUE);
+      }
+
+      return new S3PresignerService(builder);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private boolean isContentUrl(final ApiGatewayRequestEvent event) {
     boolean contentUrl = event.getQueryStringParameters() != null
         && event.getQueryStringParameters().containsKey("contentUrl");
@@ -244,6 +287,24 @@ public class DocumentsOcrRequestHandler
     }
 
     return contentUrl;
+  }
+
+  private boolean isInternalContentUrl(final AwsServiceCache awsservice,
+      final ApiGatewayRequestEvent event) {
+
+    String url = awsservice.environment("API_URL");
+    String host = getHeader(event, "Host");
+
+    if (url == null || url.isBlank() || host == null || host.isBlank()) {
+      return false;
+    }
+
+    try {
+      URI uri = new URI(url);
+      return host.equalsIgnoreCase(uri.getHost() + ":" + uri.getPort());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean isKeyValue(final ApiGatewayRequestEvent event) {

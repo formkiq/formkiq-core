@@ -67,6 +67,8 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   private final Gson gson = new GsonBuilder().create();
   /** {@link NettyRequestHandler}. */
   private final NettyRequestHandler handler;
+  /** Internal API Host. */
+  private final String internalApiHost;
   /** {@link NettyRequestHandler} Urls. */
   private final Collection<String> urls;
 
@@ -82,6 +84,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
       final IAuthCredentials authCreds, final Collection<String> handlerUrls) {
     this.authCredentials = authCreds;
     this.handler = reqestHandler;
+    this.internalApiHost = getHost(reqestHandler.getAwsServices().environment("API_URL"));
     this.urls = handlerUrls;
   }
 
@@ -103,6 +106,13 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return response;
+  }
+
+  private Map<String, String> createHeaders(final FullHttpRequest request) {
+
+    Map<String, String> map = new HashMap<>();
+    request.headers().forEach(e -> map.put(e.getKey(), e.getValue()));
+    return map;
   }
 
   private Map<String, String> createPathParameters(final String resource, final String uri) {
@@ -134,6 +144,18 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return map;
+  }
+
+  private String getHost(final String url) {
+    String host = null;
+
+    if (url != null && url.contains("://")) {
+      String u = url.substring(url.indexOf("://") + 3);
+      int slash = u.indexOf("/");
+      host = slash > -1 ? u.substring(0, slash) : u;
+    }
+
+    return host;
   }
 
   /**
@@ -173,6 +195,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     apiEvent.setHttpMethod(request.method().name());
     apiEvent.setPathParameters(pathParams);
     apiEvent.setQueryStringParameters(queryParameters);
+    apiEvent.setHeaders(createHeaders(request));
 
     ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
     requestContext.setAuthorizer(Map.of("claims",
@@ -207,7 +230,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     String authorization = req.headers().get("Authorization");
 
     if (authorization != null && authorization.startsWith("AWS4-HMAC-SHA256 ")
-        && isLoopbackRequest(ctx)) {
+        && (isLoopbackRequest(ctx) || isInternalApiRequest(req))) {
       return true;
     }
 
@@ -219,6 +242,11 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return true;
+  }
+
+  private boolean isInternalApiRequest(final FullHttpRequest req) {
+    String host = req.headers().get("Host");
+    return this.internalApiHost != null && this.internalApiHost.equalsIgnoreCase(host);
   }
 
   private boolean isLoopbackRequest(final ChannelHandlerContext ctx) {

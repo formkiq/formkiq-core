@@ -1,4 +1,4 @@
-FROM quay.io/keycloak/keycloak:26.0.6
+FROM quay.io/keycloak/keycloak:26.6.2
 
 # Set environment variables for Keycloak
 ENV KC_BOOTSTRAP_ADMIN_USERNAME=admin

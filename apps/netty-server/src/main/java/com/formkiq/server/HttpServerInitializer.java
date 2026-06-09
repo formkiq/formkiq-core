@@ -78,6 +78,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -113,8 +114,14 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
   private static final int MAX_CONTENT_LENGTH = 5242880;
   /** OCR S3 Bucket. */
   private static final String OCR_BUCKET = "ocr";
-  /** Local OCR Queue. */
-  private static final String OCR_QUEUE_URL = "local-ocr-queue";
+  /** Local OCR Queue Name. */
+  private static final String OCR_QUEUE_NAME = "local-ocr-queue";
+  /** OCR Queue poll delay. */
+  private static final int OCR_QUEUE_POLL_DELAY_IN_SECONDS = 1;
+  /** OCR Queue setup retry count. */
+  private static final int OCR_QUEUE_RETRY_COUNT = 30;
+  /** OCR Queue setup retry delay. */
+  private static final int OCR_QUEUE_RETRY_DELAY_MS = 1000;
   /** Scheduled Time Delay. */
   private static final int SCHEDULED_TIME_DELAY_IN_SECONDS = 5;
   /** Documents Stating S3 Bucket. */
@@ -190,6 +197,22 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     }
   }
 
+  private String createOcrQueue(final SqsService sqsService) {
+    RuntimeException lastException = null;
+
+    for (int i = 0; i < OCR_QUEUE_RETRY_COUNT; i++) {
+      try {
+        CreateQueueResponse response = sqsService.createQueue(OCR_QUEUE_NAME);
+        return response.queueUrl();
+      } catch (RuntimeException e) {
+        lastException = e;
+        sleepBeforeQueueRetry();
+      }
+    }
+
+    throw lastException;
+  }
+
   /**
    * Create Minio S3 Buckets.
    * 
@@ -224,15 +247,48 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     return new HttpServerHandler(this.handler, this.s3Create, this.s3Update);
   }
 
+  private Map<String, URI> getActionEndpoints(final CommandLine commandLine) {
+
+    Map<String, URI> endpoints = getEndpoints(commandLine);
+    String s3ActionsPresignerUrl = commandLine.getOptionValue("s3-actions-presigner-url",
+        commandLine.getOptionValue("s3-url"));
+
+    try {
+      endpoints.put("s3presigner", new URI(s3ActionsPresignerUrl));
+      return endpoints;
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Map<String, String> getActionEnvironment(final CommandLine commandLine) {
+
+    Map<String, String> env = getEnvironment(commandLine);
+    String apiUrl = env.get("API_URL");
+
+    if (!Strings.isEmpty(apiUrl)) {
+      env.put("DOCUMENTS_IAM_URL", apiUrl);
+    }
+
+    return env;
+  }
+
   private Map<String, URI> getEndpoints(final CommandLine commandLine) {
 
     String dynamoDbUrl = commandLine.getOptionValue("dynamodb-url");
     String s3Url = commandLine.getOptionValue("s3-url");
     String s3PresignerUrl = commandLine.getOptionValue("s3-presigner-url");
+    String sqsUrl = commandLine.getOptionValue("sqs-url");
 
     try {
-      return Map.of("dynamodb", new URI(dynamoDbUrl), "s3", new URI(s3Url), "s3presigner",
-          new URI(s3PresignerUrl));
+      Map<String, URI> endpoints = new HashMap<>();
+      endpoints.put("dynamodb", new URI(dynamoDbUrl));
+      endpoints.put("s3", new URI(s3Url));
+      endpoints.put("s3presigner", new URI(s3PresignerUrl));
+
+      endpoints.put("sqs", new URI(sqsUrl));
+
+      return endpoints;
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
@@ -247,7 +303,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("FORMKIQ_TYPE", "core");
     env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     env.put("OCR_S3_BUCKET", OCR_BUCKET);
-    env.put("OCR_SQS_QUEUE_URL", OCR_QUEUE_URL);
+    env.put("OCR_SQS_QUEUE_URL", OCR_QUEUE_NAME);
     env.put("CACHE_TABLE", CACHE_TABLE);
     env.put("DOCUMENTS_S3_BUCKET", DOCUMENTS_BUCKET);
     env.put("STAGE_DOCUMENTS_S3_BUCKET", STAGING_DOCUMENTS_BUCKET);
@@ -256,9 +312,13 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
     env.put("SNS_DOCUMENT_EVENT", "");
     env.put("LOG_LEVEL", "trace");
     env.put("DOCUMENTS_IAM_URL", "http://localhost:8080");
+    env.put("API_URL", commandLine.getOptionValue("api-url"));
     env.put("PATH_STYLE_ACCESS_ENABLED", "true");
+    env.put("S3_ACTIONS_PRESIGNER_URL", commandLine.getOptionValue("s3-actions-presigner-url",
+        commandLine.getOptionValue("s3-url")));
     env.put("OPERATIONAL_MODE", "ACTIVE");
 
+    env.put("MODULE_site_permissions", "automatic");
     env.put("MODULE_typesense", "true");
     env.put("TYPESENSE_HOST", commandLine.getOptionValue("typesense-host"));
     env.put("TYPESENSE_API_KEY", commandLine.getOptionValue("typesense-api-key"));
@@ -328,17 +388,33 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
 
       AwsServiceCache aws = this.handler.getAwsServices();
       aws.register(SsmService.class, new SsmServiceNoOpExtension());
-      aws.deregister(SqsService.class);
       aws.deregister(SnsService.class);
 
-      DocumentActionsProcessor actionsProcessor = new DocumentActionsProcessor(aws);
+      Map<String, String> actionEnv = getActionEnvironment(commandLine);
+      AwsServiceCache actionsAws = new AwsServiceCacheBuilder(actionEnv,
+          getActionEndpoints(commandLine), credentialsProvider)
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
+          .build();
+      actionsAws.register(SsmService.class, new SsmServiceNoOpExtension());
+
+      DocumentActionsProcessor actionsProcessor = new DocumentActionsProcessor(actionsAws);
       OcrTesseractProcessor ocrProcessor = new OcrTesseractProcessor(aws);
+      LocalActionsNotificationService actionsNotificationService =
+          new LocalActionsNotificationService(actionsAws.getExtension(ActionsService.class),
+              actionsProcessor, actionsAws.getLogger(), this.actionExecutorService);
+      actionsAws.register(ActionsNotificationService.class,
+          new ClassServiceExtension<>(actionsNotificationService));
       aws.register(ActionsNotificationService.class,
-          new ClassServiceExtension<>(
-              new LocalActionsNotificationService(aws.getExtension(ActionsService.class),
-                  actionsProcessor, aws.getLogger(), this.actionExecutorService)));
-      aws.register(SqsService.class, new ClassServiceExtension<>(
-          new LocalOcrSqsService(aws, ocrProcessor, this.actionExecutorService)));
+          new ClassServiceExtension<>(actionsNotificationService));
+
+      SqsService sqsService = aws.getExtension(SqsService.class);
+      String queueUrl = createOcrQueue(sqsService);
+      aws.environment().put("OCR_SQS_QUEUE_URL", queueUrl);
+
+      LocalOcrSqsPoller poller = new LocalOcrSqsPoller(aws, sqsService, ocrProcessor, queueUrl);
+      this.executorService.scheduleWithFixedDelay(poller, INITIAL_TIME_DELAY_IN_SECONDS,
+          OCR_QUEUE_POLL_DELAY_IN_SECONDS, TimeUnit.SECONDS);
 
       DynamoDbConnectionBuilder db = aws.getExtension(DynamoDbConnectionBuilder.class);
 
@@ -370,13 +446,21 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
   private void setupS3Lambda(final CommandLine command,
       final AwsCredentialsProvider credentialsProvider) {
 
-    Map<String, String> env = getEnvironment(command);
-    Map<String, URI> endpoints = getEndpoints(command);
+    Map<String, String> env = getActionEnvironment(command);
+    Map<String, URI> endpoints = getActionEndpoints(command);
 
     AwsServiceCache serviceCache = new AwsServiceCacheBuilder(env, endpoints, credentialsProvider)
         .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
             new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
         .build();
+
+    serviceCache.register(SsmService.class, new SsmServiceNoOpExtension());
+
+    DocumentActionsProcessor actionsProcessor = new DocumentActionsProcessor(serviceCache);
+    serviceCache.register(ActionsNotificationService.class,
+        new ClassServiceExtension<>(
+            new LocalActionsNotificationService(serviceCache.getExtension(ActionsService.class),
+                actionsProcessor, serviceCache.getLogger(), this.actionExecutorService)));
 
     this.s3Create = new StagingS3Create(serviceCache);
     this.s3Update = new DocumentsS3Update(serviceCache);
@@ -409,6 +493,7 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
    */
   public void shutdownGracefully() {
     this.actionExecutorService.shutdown();
+    this.executorService.shutdown();
 
     try {
       this.executorService.awaitTermination(1, TimeUnit.MINUTES);
@@ -423,6 +508,14 @@ public final class HttpServerInitializer extends ChannelInitializer<SocketChanne
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  private void sleepBeforeQueueRetry() {
+    try {
+      Thread.sleep(OCR_QUEUE_RETRY_DELAY_MS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 }

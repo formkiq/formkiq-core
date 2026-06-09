@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64, linux/arm64
-          context: ./netty-server/keycloak/
-          file: ./netty-server/keycloak/Dockerfile
+          context: ./apps/netty-server/keycloak/
+          file: ./apps/netty-server/keycloak/Dockerfile
           push: true
-          tags: "formkiq/keycloak:26.0.6"
+          tags: "formkiq/keycloak:26.6.2"
