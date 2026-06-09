@@ -11,26 +11,31 @@ def cloudFormationResources = rootProject.file("src/main/resources/cloudformatio
 def openApiTemplate = rootProject.file("src/main/resources/cloudformation/api/openapi.gotmpl")
 def openApiPartials = rootProject.file("src/main/resources/cloudformation/api/partials")
 def openApiPathPartials = rootProject.file("src/main/resources/cloudformation/api/partials/paths")
+def openApiPathPartialFiles = {
+  fileTree(openApiPathPartials) {
+    include "**/*.yaml"
+  }.files.sort { a, b -> a.name <=> b.name ?: a.path <=> b.path }.collect { it.absolutePath }
+}
 
 ytt {
   defaultDataValues.put("version", project.version.toString())
 
   specs {
     openJwtDocs {
-      from(layout.buildDirectory.file("gomplate/jwt/docs/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/jwt/docs/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-jwt.yaml")
     }
 
     openIamDocs {
-      from(layout.buildDirectory.file("gomplate/iam/docs/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/iam/docs/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-iam.yaml")
     }
 
     openKeyDocs {
-      from(layout.buildDirectory.file("gomplate/key/docs/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/key/docs/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-key.yaml")
     }
   }
