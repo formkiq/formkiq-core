@@ -22,20 +22,26 @@ ytt {
 
   specs {
     openJwtDocs {
-      from(([layout.buildDirectory.file("gomplate/jwt/docs/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/jwt/docs/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-jwt.yaml")
     }
 
     openIamDocs {
-      from(([layout.buildDirectory.file("gomplate/iam/docs/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/iam/docs/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-iam.yaml")
     }
 
     openKeyDocs {
-      from(([layout.buildDirectory.file("gomplate/key/docs/openapi.yaml").get().asFile.absolutePath]
-          + openApiPathPartialFiles()) as String[])
+      from(([
+        layout.buildDirectory.file("gomplate/key/docs/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
       into("docs/openapi/openapi-key.yaml")
     }
   }

@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.Delete;
@@ -736,8 +737,8 @@ public final class DynamoDbServiceImpl implements DynamoDbService {
       final Map<String, AttributeValue> updateValues) {
 
     Map<String, AttributeValueUpdate> values = new HashMap<>();
-    updateValues.forEach(
-        (key, value) -> values.put(key, AttributeValueUpdate.builder().value(value).build()));
+    updateValues.forEach((key, value) -> values.put(key,
+        AttributeValueUpdate.builder().value(value).action(AttributeAction.PUT).build()));
 
     return updateItem(pk, sk, values);
   }

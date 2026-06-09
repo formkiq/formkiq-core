@@ -63,6 +63,12 @@ Requirements:
 - Java 25
 - Gradle wrapper from this repository
 
+The local stack uses separate S3 endpoints for browser-facing presigned URLs and
+container-side document actions. API responses use `S3_PRESIGNER_URL=http://localhost:9000`,
+while local action processing uses `API_URL=http://api:8080` and
+`S3_ACTIONS_PRESIGNER_URL=http://minio:9000` so containers can reach the API and MinIO
+through Docker DNS.
+
 Build the local Docker package:
 
 ```bash

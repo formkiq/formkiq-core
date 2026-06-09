@@ -150,8 +150,7 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
           log.trace(msg);
         }
 
-        String jobId = convertDocument(awsservice, request, siteId, document, s3key,
-            documentS3toConvert, contentType);
+        String jobId = ID.uuid();
 
         Ocr ocr = new Ocr().documentId(document.documentId()).artifactId(document.artifactId())
             .jobId(jobId).engine(getOcrEngine(request)).status(OcrScanStatus.REQUESTED)
@@ -160,6 +159,9 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
             .ocrOutputType(request.getOcrOutputType());
 
         save(siteId, ocr);
+
+        convertDocument(awsservice, request, siteId, document, s3key, documentS3toConvert,
+            contentType, jobId);
       }
     }
 
@@ -176,13 +178,11 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
    * @param s3key original s3 key
    * @param documentS3toConvert Document S3 Key to convert.
    * @param contentType {@link String}
-   * @return {@link String}
+   * @param jobId {@link String}
    */
-  protected String convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
+  protected void convertDocument(final AwsServiceCache awsservice, final OcrRequest request,
       final String siteId, final DocumentArtifact document, final String s3key,
-      final String documentS3toConvert, final String contentType) {
-
-    String jobId = ID.uuid();
+      final String documentS3toConvert, final String contentType, final String jobId) {
 
     OcrSqsMessage msg =
         new OcrSqsMessage().jobId(jobId).siteId(siteId).documentId(document.documentId())
@@ -193,8 +193,6 @@ public class DocumentOcrServiceTesseract implements DocumentOcrService, DbKeys {
     String sqsQueueUrl = awsservice.environment("OCR_SQS_QUEUE_URL");
     SqsService sqsService = awsservice.getExtension(SqsService.class);
     sqsService.sendMessage(sqsQueueUrl, json);
-
-    return jobId;
   }
 
   @Override

@@ -33,6 +33,7 @@ import org.apache.commons.cli.ParseException;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.testcontainers.containers.GenericContainer;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
 
@@ -55,6 +56,8 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
   private Thread serverThread;
   /** {@link TypesenseExtension}. */
   private final TypesenseExtension typesense;
+  /** ElasticMQ. */
+  private GenericContainer<?> elasticMqLocal;
 
   /**
    * constructor.
@@ -68,6 +71,10 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
   @Override
   public void afterAll(final ExtensionContext context) {
     this.serverThread.interrupt();
+
+    if (this.elasticMqLocal != null) {
+      this.elasticMqLocal.stop();
+    }
   }
 
   @Override
@@ -78,6 +85,13 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     params.add("--dynamodb-url=" + DynamoDbTestServices.getEndpoint());
     params.add("--s3-url=" + MinioTestServices.getEndpoint());
     params.add("--s3-presigner-url=" + MinioTestServices.getEndpoint());
+    this.elasticMqLocal = ElasticMqTestServices.getElasticMqLocal();
+
+    if (this.elasticMqLocal != null) {
+      this.elasticMqLocal.start();
+    }
+
+    params.add("--sqs-url=" + ElasticMqTestServices.getEndpoint());
     params.add("--minio-access-key=" + MinioTestServices.ACCESS_KEY);
     params.add("--minio-secret-key=" + MinioTestServices.SECRET_KEY);
     params.add("--admin-username=" + ADMIN_USERNAME);
@@ -118,4 +132,3 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
     }
   }
 }
-
