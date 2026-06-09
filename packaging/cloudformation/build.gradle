@@ -8,6 +8,11 @@ def cloudFormationResources = rootProject.file("src/main/resources/cloudformatio
 def openApiTemplate = rootProject.file("src/main/resources/cloudformation/api/openapi.gotmpl")
 def openApiPartials = rootProject.file("src/main/resources/cloudformation/api/partials")
 def openApiPathPartials = rootProject.file("src/main/resources/cloudformation/api/partials/paths")
+def openApiPathPartialFiles = {
+  fileTree(openApiPathPartials) {
+    include "**/*.yaml"
+  }.files.sort { a, b -> a.name <=> b.name ?: a.path <=> b.path }.collect { it.absolutePath }
+}
 def detectedLambdaArchitecture = ["aarch64", "arm64"].contains(System.getProperty("os.arch")) ? "arm64" : "x86_64"
 def lambdaArchitecture = providers.gradleProperty("lambdaArchitecture").orElse(detectedLambdaArchitecture)
 
@@ -89,20 +94,20 @@ ytt {
     }
 
     cloudFormationOpenApiJwtCf {
-      from(layout.buildDirectory.file("gomplate/jwt/api/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/jwt/api/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("cloudformation/jwt/api/openapi.yaml")
     }
 
     cloudFormationOpenApiIamCf {
-      from(layout.buildDirectory.file("gomplate/iam/api/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/iam/api/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("cloudformation/iam/api/openapi.yaml")
     }
 
     cloudFormationOpenApiKeyCf {
-      from(layout.buildDirectory.file("gomplate/key/api/openapi.yaml").get().asFile.absolutePath,
-          openApiPathPartials.absolutePath)
+      from(([layout.buildDirectory.file("gomplate/key/api/openapi.yaml").get().asFile.absolutePath]
+          + openApiPathPartialFiles()) as String[])
       into("cloudformation/key/api/openapi.yaml")
     }
   }
