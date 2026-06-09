@@ -286,6 +286,54 @@ public class HttpServerTest {
   }
 
   /**
+   * Test /login/refresh failed.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIME)
+  void testLoginRefreshFailed() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    Map<String, Object> body = Map.of("refreshToken", "invalid");
+    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+    HttpRequest request = HttpRequest.newBuilder().POST(BodyPublishers.ofByteArray(content))
+        .uri(new URI(BASE_URL + "/login/refresh")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+    assertEquals("{\"code\":\"NotAuthorizedException\",\"message\":\"Incorrect refresh token.\"}",
+        response.body());
+  }
+
+  /**
+   * Test /login/refresh ok.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIME)
+  void testLoginRefreshOk() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    Map<String, Object> body = Map.of("refreshToken", NettyExtension.API_KEY);
+    byte[] content = this.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+    HttpRequest request = HttpRequest.newBuilder().POST(BodyPublishers.ofByteArray(content))
+        .uri(new URI(BASE_URL + "/login/refresh")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+    Map<String, Object> results = this.gson.fromJson(response.body(), Map.class);
+
+    results = (Map<String, Object>) results.get("AuthenticationResult");
+
+    assertEquals(NettyExtension.API_KEY, results.get("AccessToken"));
+    assertEquals(NettyExtension.API_KEY, results.get("IdToken"));
+    assertEquals("", results.get("RefreshToken"));
+    assertLoginCorsHeaders(response);
+  }
+
+  /**
    * Test Options.
    * 
    * @throws Exception Exception

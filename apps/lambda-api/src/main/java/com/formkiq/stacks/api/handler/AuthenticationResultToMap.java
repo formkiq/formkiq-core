@@ -21,26 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.server.auth;
+package com.formkiq.stacks.api.handler;
 
-public record SimpleAuthCredentials(String adminUser, String adminPassword,
-    String apiKey) implements IAuthCredentials {
-  @Override
-  public Tokens getTokens(final String username, final String password) {
-    return (this.adminUser.equals(username) && this.adminPassword.equals(password))
-        ? new Tokens(this.apiKey, this.apiKey, "")
-        : null;
-  }
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
-  @Override
-  public Tokens refreshTokens(final String refreshToken) {
-    return ("".equals(refreshToken) || this.apiKey.equals(refreshToken))
-        ? new Tokens(this.apiKey, this.apiKey, "")
-        : null;
-  }
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
+
+/** {@link Function} for converting {@link AuthenticationResultType} to a response body. */
+public class AuthenticationResultToMap
+    implements Function<AuthenticationResultType, Map<String, Object>> {
 
   @Override
-  public boolean isApiKeyValid(final String constantApiKey) {
-    return this.apiKey.equals(constantApiKey);
+  public Map<String, Object> apply(final AuthenticationResultType login) {
+    Map<String, Object> authenticationResult = new HashMap<>();
+    authenticationResult.put("AccessToken", login.accessToken());
+    authenticationResult.put("IdToken", login.idToken());
+    authenticationResult.put("RefreshToken", login.refreshToken());
+    authenticationResult.put("TokenType", login.tokenType());
+    authenticationResult.put("ExpiresIn", login.expiresIn());
+    return Map.of("AuthenticationResult", authenticationResult);
   }
 }

@@ -200,6 +200,32 @@ public class CognitoAuthRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /login/refresh missing parameters.
+   *
+   */
+  @Test
+  public void testLoginRefresh01() throws IOException {
+    // given
+    String url = server.getBasePath() + "/login/refresh";
+
+    // when
+    HttpResponse<String> post = http.post(url, Optional.empty(), Optional.empty(), "");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals("{\"message\":\"request body is required\"}", post.body());
+
+    // when
+    post = http.post(url, Optional.empty(), Optional.empty(), "{}");
+
+    // then
+    assertEquals("400", String.valueOf(post.statusCode()));
+    assertEquals(
+        "{\"errors\":[{\"key\":\"refreshToken\",\"error\":\"'refreshToken' is required\"}]}",
+        post.body());
+  }
+
+  /**
    * POST /respondToAuthChallenge missing parameters.
    *
    */

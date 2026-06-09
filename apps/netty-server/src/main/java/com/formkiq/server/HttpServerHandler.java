@@ -76,6 +76,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     this.handlers = Arrays.asList(new OptionsHttpRequestHandler(),
         new MinioS3HttpRequestHandler(stagingS3Create, documentS3Update),
         new AuthenticationLoginHttpRequestHandler(authCredentials),
+        new AuthenticationLoginRefreshHttpRequestHandler(authCredentials),
         new ApiGatewayHttpRequestHandler(requestHandler, authCredentials, urls));
   }
 

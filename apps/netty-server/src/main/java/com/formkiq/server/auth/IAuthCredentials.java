@@ -27,4 +27,6 @@ public interface IAuthCredentials {
   Tokens getTokens(String username, String password);
 
   boolean isApiKeyValid(String apiKey);
+
+  Tokens refreshTokens(String refreshToken);
 }

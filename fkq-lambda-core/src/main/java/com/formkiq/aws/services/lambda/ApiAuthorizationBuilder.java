@@ -70,7 +70,7 @@ public class ApiAuthorizationBuilder {
   /** Global Site Urls. */
   private static final Collection<String> GLOBAL_SITE_URLS =
       Set.of("/changePassword", "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm",
-          "/login", "/respondToAuthChallenge", "/s/{slug}");
+          "/login", "/login/refresh", "/respondToAuthChallenge", "/s/{slug}");
 
   private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();

@@ -71,4 +71,21 @@ public class SimpleAuthCredentialsTest {
   public void testIsApiKeyValid() {
     assertTrue(SIMPLE_AUTH_CREDENTIALS.isApiKeyValid(API_KEY));
   }
+
+  @Test
+  public void testRefreshTokens() {
+    Tokens tokens = SIMPLE_AUTH_CREDENTIALS.refreshTokens(API_KEY);
+
+    assertNotNull(tokens);
+    assertEquals(API_KEY, tokens.idToken());
+    assertEquals(API_KEY, tokens.accessToken());
+    assertEquals("", tokens.refreshToken());
+  }
+
+  @Test
+  public void testRefreshTokensInvalid() {
+    Tokens tokens = SIMPLE_AUTH_CREDENTIALS.refreshTokens("invalidRefreshToken");
+
+    assertNull(tokens);
+  }
 }
