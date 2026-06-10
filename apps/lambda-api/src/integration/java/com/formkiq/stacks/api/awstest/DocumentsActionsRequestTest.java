@@ -118,7 +118,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     } while (receiveMessages.isEmpty());
 
     Gson gson = new GsonBuilder().create();
-    String body = receiveMessages.iterator().next().body();
+    String body = receiveMessages.getFirst().body();
     Map<String, Object> map = gson.fromJson(body, Map.class);
     assertTrue(map.containsKey("detail"));
     Map<String, Object> detail = (Map<String, Object>) map.get("detail");
@@ -150,7 +150,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   public void testAddDocumentActions01() throws Exception {
     // given
     List<ApiClient> clients = getApiClients(null);
-    ApiClient client = clients.get(0);
+    ApiClient client = clients.getFirst();
     byte[] data = "somedata".getBytes(StandardCharset.UTF_8);
 
     List<AddAction> actions =
@@ -179,7 +179,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(siteId);
-    ApiClient client = clients.get(0);
+    ApiClient client = clients.getFirst();
 
     String content = "this is a test";
     AddAction addAction = new AddAction().type(DocumentActionType.EVENTBRIDGE)
@@ -193,8 +193,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     List<DocumentAction> docActions = notNull(response.getActions());
     assertEquals(2, docActions.size());
-    assertEquals(DocumentActionStatus.COMPLETE, docActions.get(0).getStatus());
-    assertNotNull(docActions.get(0).getStartDate());
+    assertEquals(DocumentActionStatus.COMPLETE, docActions.getFirst().getStatus());
+    assertNotNull(docActions.getFirst().getStartDate());
     assertNotNull(docActions.get(0).getInsertedDate());
     assertNotNull(docActions.get(0).getCompletedDate());
     assertEquals(DocumentActionStatus.COMPLETE, docActions.get(1).getStatus());
@@ -212,7 +212,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   public void testAddDocumentActions03() throws Exception {
     // given
     List<ApiClient> clients = getApiClients(null);
-    ApiClient client = clients.get(0);
+    ApiClient client = clients.getFirst();
 
     try (InputStream is = LambdaContextRecorder.class.getResourceAsStream("/input.gif")) {
       assertNotNull(is);
@@ -233,7 +233,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
       List<DocumentAttribute> documentAttributes = notNull(documentAttributesApi
           .getDocumentAttributes(documentId, null, null, null, null).getAttributes());
       assertEquals(1, documentAttributes.size());
-      DocumentAttribute documentAttribute = documentAttributes.get(0);
+      DocumentAttribute documentAttribute = documentAttributes.getFirst();
       assertEquals("Relationships", documentAttribute.getKey());
       assertEquals(AttributeValueType.STRING, documentAttribute.getValueType());
       assertNotNull(documentAttribute.getStringValue());
@@ -257,7 +257,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
   public void testAddDocumentActionsRetry01() throws Exception {
     // given
     List<ApiClient> clients = getApiClients(null);
-    ApiClient client = clients.get(0);
+    ApiClient client = clients.getFirst();
     final long targetSize = 1024;
     File file = this.fileGenerator.generateZipFile(targetSize);
     byte[] data = Files.readAllBytes(file.toPath());
@@ -273,7 +273,8 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     GetDocumentActionsResponse response =
         waitForActions(client, null, documentId, List.of(DocumentActionStatus.FAILED));
     assertEquals(1, notNull(response.getActions()).size());
-    assertEquals("FAILED", Objects.requireNonNull(response.getActions().get(0).getStatus()).name());
+    assertEquals("FAILED",
+        Objects.requireNonNull(response.getActions().getFirst().getStatus()).name());
 
     // given
     DocumentActionsApi actionsApi = new DocumentActionsApi(client);
@@ -290,17 +291,14 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
         Objects.requireNonNull(response.getActions().get(0).getStatus()).name());
     assertEquals("FAILED", Objects.requireNonNull(response.getActions().get(1).getStatus()).name());
 
-    // DocumentsApi docApi = new DocumentsApi(client);
-
     GetDocumentsResponse documents = new GetDocumentsRequestBuilder().actionStatus("FAILED")
-        .submit(client, null).throwIfError().response();
+        .limit(1000).submit(client, null).throwIfError().response();
     Optional<Document> o = notNull(documents.getDocuments()).stream()
         .filter(d -> documentId.equals(d.getDocumentId())).findAny();
     assertFalse(o.isEmpty());
 
     documents = new GetDocumentsRequestBuilder().actionStatus("FAILED_RETRY").submit(client, null)
         .throwIfError().response();
-    // docApi.getDocuments(null, "FAILED_RETRY", null, null, null, null, null, null, null, "100");
     o = notNull(documents.getDocuments()).stream().filter(d -> documentId.equals(d.getDocumentId()))
         .findAny();
     assertFalse(o.isEmpty());
@@ -317,7 +315,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // given
     String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
     List<ApiClient> clients = getApiClients(siteId);
-    ApiClient client = clients.get(0);
+    ApiClient client = clients.getFirst();
 
     String adminEmail =
         getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
@@ -341,10 +339,10 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     GetDocumentActionsResponse response = waitForActionsComplete(client, siteId, documentId);
     List<DocumentAction> docActions = notNull(response.getActions());
     assertEquals(1, docActions.size());
-    assertEquals("COMPLETE", Objects.requireNonNull(docActions.get(0).getStatus()).name());
-    assertNotNull(docActions.get(0).getStartDate());
-    assertNotNull(docActions.get(0).getInsertedDate());
-    assertNotNull(docActions.get(0).getCompletedDate());
+    assertEquals("COMPLETE", Objects.requireNonNull(docActions.getFirst().getStatus()).name());
+    assertNotNull(docActions.getFirst().getStartDate());
+    assertNotNull(docActions.getFirst().getInsertedDate());
+    assertNotNull(docActions.getFirst().getCompletedDate());
   }
 
   /**
@@ -358,7 +356,7 @@ public class DocumentsActionsRequestTest extends AbstractAwsIntegrationTest {
     // given
     for (var siteId : Arrays.asList(null, ID.uuid())) {
       var apiClients = getApiClients(siteId);
-      var apiClient = apiClients.get(0);
+      var apiClient = apiClients.getFirst();
       var content = "this is some content!!!";
 
       // when
