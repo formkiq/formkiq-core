@@ -23,9 +23,12 @@
  */
 package com.formkiq.aws.dynamodb.documents;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Represents a document artifact with document and artifact identifiers.
  */
+@Reflectable
 public record DocumentArtifact(String documentId, String artifactId) {
 
   /**

@@ -85,18 +85,6 @@ tasks.register('composeBuildNettyServer') {
   dependsOn ':apps:netty-server:composeBuild'
 }
 
-tasks.register('integrationtests') {
-  group = 'verification'
-  description = 'Runs the Netty server integration tests.'
-  dependsOn ':apps:netty-server:integrationTest'
-}
-
-tasks.register('integrationTests') {
-  group = 'verification'
-  description = 'Runs the Netty server integration tests.'
-  dependsOn tasks.named('integrationtests')
-}
-
 tasks.register('copyDocsOpenApi') {
   group = 'build'
   description = 'Copy OpenAPI specs into docs folder.'

@@ -107,19 +107,20 @@ public class AwsResourceTest {
   @Test
   public void testConsoleAvailable() throws IOException, InterruptedException, URISyntaxException {
     // given
-    HttpClient service = HttpClient.newHttpClient();
-    String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
+    try (HttpClient service = HttpClient.newHttpClient()) {
+      String url = ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
 
-    // when
-    HttpResponse<String> response =
-        service.send(HttpRequest.newBuilder(new URI(url)).build(), BodyHandlers.ofString());
+      // when
+      HttpResponse<String> response =
+          service.send(HttpRequest.newBuilder(new URI(url)).build(), BodyHandlers.ofString());
 
-    // then
-    final int statusCode = 200;
-    assertEquals(statusCode, response.statusCode());
+      // then
+      final int statusCode = 200;
+      assertEquals(statusCode, response.statusCode());
 
-    String text = response.body();
-    assertTrue(text.contains("<title>" + PAGE_TITLE + "</title>"));
+      String text = response.body();
+      assertTrue(text.contains("<title>" + PAGE_TITLE + "</title>"));
+    }
   }
 
   /**
@@ -135,40 +136,41 @@ public class AwsResourceTest {
     String configUrl = url + "/assets/config.json";
 
     HttpRequest request = HttpRequest.newBuilder().uri(new URI(configUrl)).GET().build();
-    HttpClient client = HttpClient.newHttpClient();
-    HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-    Map<String, Object> map = new GsonBuilder().create().fromJson(response.body(), Map.class);
-    String userAuthentication = map.get("userAuthentication").toString();
+    try (HttpClient client = HttpClient.newHttpClient()) {
+      HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+      Map<String, Object> map = new GsonBuilder().create().fromJson(response.body(), Map.class);
+      String userAuthentication = map.get("userAuthentication").toString();
 
-    LaunchOptions options = new LaunchOptions().setHeadless(true);
+      LaunchOptions options = new LaunchOptions().setHeadless(true);
 
-    try (Playwright playwright = Playwright.create()) {
-      try (Browser browser = playwright.chromium().launch(options)) {
+      try (Playwright playwright = Playwright.create()) {
+        try (Browser browser = playwright.chromium().launch(options)) {
 
-        try (Page page = browser.newPage()) {
-          page.navigate(url);
-
-          page.waitForSelector("text=Sign In");
-
-          assertEquals("Sign In", page.title());
-
-          if ("saml".equals(userAuthentication)) {
+          try (Page page = browser.newPage()) {
+            page.navigate(url);
 
             page.waitForSelector("text=Sign In");
-            Locator element = page.locator("text=Sign In");
-            assertEquals(1, element.count());
 
-          } else {
+            assertEquals("Sign In", page.title());
 
-            page.click("[placeholder=\"me@mycompany.com\"]");
-            page.fill("[placeholder=\"me@mycompany.com\"]", USER);
-            page.click("[placeholder=\"******\"]");
-            page.fill("[placeholder=\"******\"]", PASSWORD);
+            if ("saml".equals(userAuthentication)) {
 
-            page.locator("button:has-text(\"Sign In\")").click();
+              page.waitForSelector("text=Sign In");
+              Locator element = page.locator("text=Sign In");
+              assertEquals(1, element.count());
 
-            page.waitForSelector("button:has-text(\"New\")");
-            page.waitForSelector("text=Documents & Folders");
+            } else {
+
+              page.click("[placeholder=\"me@mycompany.com\"]");
+              page.fill("[placeholder=\"me@mycompany.com\"]", USER);
+              page.click("[placeholder=\"******\"]");
+              page.fill("[placeholder=\"******\"]", PASSWORD);
+
+              page.locator("button:has-text(\"Sign In\")").click();
+
+              page.waitForSelector("button:has-text(\"New\")");
+              page.waitForSelector("text=Documents & Folders");
+            }
           }
         }
       }
