@@ -77,14 +77,25 @@ Parameters:
     Default: ""
 
   AccessTokenValidity:
-    Description: The time limit, after which the access token is no longer valid and cannot be used.
+    Description: The time limit in minutes, after which the access token is no longer valid and cannot be used.
     Type: Number
-    Default: 24
+    MinValue: "5"
+    MaxValue: "1440"
+    Default: 1440
 
   IdTokenValidity:
-    Description: The time limit, after which the ID token is no longer valid and cannot be used.
+    Description: The time limit in minutes, after which the ID token is no longer valid and cannot be used.
     Type: Number
-    Default: 24
+    MinValue: "5"
+    MaxValue: "1440"
+    Default: 1440
+
+  RefreshTokenValidity:
+    Description: The time limit in minutes, after which the refresh token is no longer valid and cannot be used.
+    Type: Number
+    MinValue: "60"
+    MaxValue: "5256000"
+    Default: 43200
 
   LogRetentionInDays:
     Type: Number
@@ -272,9 +283,12 @@ Resources:
         Ref: AccessTokenValidity
       IdTokenValidity:
         Ref: IdTokenValidity
+      RefreshTokenValidity:
+        Ref: RefreshTokenValidity
       TokenValidityUnits:
-        AccessToken: hours
-        IdToken: hours
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: minutes
       ExplicitAuthFlows:
         - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
