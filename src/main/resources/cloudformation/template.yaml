@@ -61,6 +61,20 @@ Parameters:
     Type: String
     AllowedValues: ["true", "false"]
 
+  TokenValidityMinutes:
+    Description: The time limit in minutes, after which the access and ID tokens are no longer valid and cannot be used.
+    Type: Number
+    MinValue: "5"
+    MaxValue: "1440"
+    Default: "1440"
+
+  RefreshTokenValidityMinutes:
+    Description: The time limit in minutes, after which the refresh token is no longer valid and cannot be used.
+    Type: Number
+    MinValue: "60"
+    MaxValue: "5256000"
+    Default: "43200"
+
   VpcStackName:
     Type: String
     Description: >
@@ -369,6 +383,12 @@ Resources:
           Fn::Sub: "${PasswordRequireSymbols}"
         PasswordRequireUppercase: 
           Fn::Sub: "${PasswordRequireUppercase}"
+        AccessTokenValidity:
+          Ref: TokenValidityMinutes
+        IdTokenValidity:
+          Ref: TokenValidityMinutes
+        RefreshTokenValidity:
+          Ref: RefreshTokenValidityMinutes
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
         LogRetentionInDays:

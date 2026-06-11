@@ -47,6 +47,8 @@ public class FkqCognitoService {
   private final String rootKeyUrl;
   /** {@link CognitoIdentityProviderService}. */
   private final CognitoIdentityProviderService service;
+  /** User Auth Api Url. */
+  private final String userAuthUrl;
 
   /**
    * constructor.
@@ -66,6 +68,8 @@ public class FkqCognitoService {
     this.rootIamUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
 
     this.rootKeyUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsKeyUrl");
+
+    this.userAuthUrl = ssm.getParameterValue("/formkiq/" + appEnvironment + "/api/UserAuthApiUrl");
 
     String cognitoUserPoolId =
         ssm.getParameterValue("/formkiq/" + appEnvironment + "/cognito/UserPoolId");
@@ -166,6 +170,15 @@ public class FkqCognitoService {
    */
   public AdminGetUserResponse getUser(final String username) {
     return this.service.getUser(username);
+  }
+
+  /**
+   * Get User Auth Url.
+   *
+   * @return {@link String}
+   */
+  public String getUserAuthUrl() {
+    return this.userAuthUrl;
   }
 
   /**

@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.awstest;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.services.lambda.GsonUtil;
 import com.formkiq.client.api.UserManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -42,21 +43,29 @@ import com.formkiq.client.model.Group;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.User;
 import com.formkiq.client.model.UserAttributes;
+import com.formkiq.module.http.HttpHeaders;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
 
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -165,12 +174,12 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       // then
       List<User> usersInGroup = notNull(userApi.getUsersInGroup(groupName, null, null).getUsers());
       assertEquals(1, usersInGroup.size());
-      assertNotNull(usersInGroup.get(0).getUsername());
-      assertNotNull(usersInGroup.get(0).getEmail());
+      assertNotNull(usersInGroup.getFirst().getUsername());
+      assertNotNull(usersInGroup.getFirst().getEmail());
 
       List<Group> groups = notNull(userApi.getListOfUserGroups(email, null, null).getGroups());
       assertEquals(1, groups.size());
-      assertEquals(groupName, groups.get(0).getName());
+      assertEquals(groupName, groups.getFirst().getName());
 
       // when
       disableUser(userApi, email);
@@ -206,7 +215,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testAddUser01() throws Exception {
     // given
-    ApiClient client = getApiClients(null).get(0);
+    ApiClient client = getApiClients(null).getFirst();
 
     UserManagementApi userApi = new UserManagementApi(client);
     String email = "test_" + UUID.randomUUID();
@@ -231,7 +240,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     // given
     String address = "123 main";
     String birthDate = "2012-01-12";
-    ApiClient client = getApiClients(null).get(0);
+    ApiClient client = getApiClients(null).getFirst();
 
     UserManagementApi userApi = new UserManagementApi(client);
     String email = "test_" + UUID.randomUUID() + "@formkiq.com";
@@ -300,7 +309,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       List<User> users = notNull(response.getUsers());
       assertFalse(users.isEmpty());
 
-      User user = users.get(0);
+      User user = users.getFirst();
 
       assertNotNull(user.getUsername());
       assertNotNull(user.getEmail());
@@ -348,12 +357,14 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       Optional<Group> o =
           groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
       assertFalse(o.isEmpty());
+      Group ogroup = o.get();
+      assertNotNull(ogroup);
 
-      assertNotNull(o.get().getDescription());
-      assertNotNull(o.get().getInsertedDate());
-      assertNotNull(o.get().getLastModifiedDate());
+      assertNotNull(ogroup.getDescription());
+      assertNotNull(ogroup.getInsertedDate());
+      assertNotNull(ogroup.getLastModifiedDate());
 
-      Group group = userApi.getGroup(o.get().getName()).getGroup();
+      Group group = userApi.getGroup(requireNonNull(ogroup.getName())).getGroup();
       assertNotNull(group);
       assertNotNull(group.getDescription());
       assertNotNull(group.getInsertedDate());
@@ -413,7 +424,7 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       List<User> users = notNull(response.getUsers());
       assertFalse(users.isEmpty());
 
-      User user = users.get(0);
+      User user = users.getFirst();
       assertNotNull(user.getUsername());
       assertNotNull(user.getUserStatus());
       assertNotNull(user.getEmail());
@@ -436,5 +447,39 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
       // then
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
     }
+  }
+
+  /**
+   * Test POST /login/refresh.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testLoginRefresh01() throws Exception {
+    // given
+    AuthenticationResultType token = getAdminToken();
+    assertNotNull(token.refreshToken());
+
+    String url = getCognito().getUserAuthUrl() + "/login/refresh";
+    Optional<HttpHeaders> headers =
+        Optional.of(new HttpHeaders().add("Content-Type", "application/json"));
+    String content = GsonUtil.getInstance().toJson(Map.of("refreshToken", token.refreshToken()));
+
+    // when
+    HttpService hs = new HttpServiceJdk11();
+    HttpResponse<String> response = hs.post(url, headers, Optional.empty(), content);
+
+    // then
+    assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), response.statusCode());
+    Map<?, ?> map = GsonUtil.getInstance().fromJson(response.body(), Map.class);
+    Object result = map.get("AuthenticationResult");
+    assertInstanceOf(Map.class, result);
+
+    Map<?, ?> authenticationResult = (Map<?, ?>) result;
+    assertFalse(((String) authenticationResult.get("AccessToken")).isEmpty());
+    assertFalse(((String) authenticationResult.get("IdToken")).isEmpty());
+    assertNotNull(authenticationResult.get("ExpiresIn"));
+    assertEquals("Bearer", authenticationResult.get("TokenType"));
   }
 }

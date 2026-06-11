@@ -121,7 +121,7 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       List<ApiClient> clients = getApiClients(siteId);
-      DocumentsApi documentsApi = new DocumentsApi(clients.get(0));
+      DocumentsApi documentsApi = new DocumentsApi(clients.getFirst());
 
       Map<String, String> documentIds = new HashMap<>();
       for (int i = 0; i < fileCount; i++) {
@@ -133,7 +133,7 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
       }
 
       for (Map.Entry<String, String> e : documentIds.entrySet()) {
-        waitForDocumentContent(clients.get(0), siteId, e.getValue());
+        waitForDocumentContent(clients.getFirst(), siteId, e.getValue());
       }
 
       for (ApiClient apiClient : clients) {
@@ -177,7 +177,7 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     final int numberOfMb = 5;
     File file2 = this.fileGenerator.generateZipFile(numberOfMb * MB * MB);
 
-    ApiClient apiClient = getApiClients(null).get(0);
+    ApiClient apiClient = getApiClients(null).getFirst();
 
     DocumentsApi documentsApi = new DocumentsApi(apiClient);
     GetDocumentUrlResponse upload1 =
