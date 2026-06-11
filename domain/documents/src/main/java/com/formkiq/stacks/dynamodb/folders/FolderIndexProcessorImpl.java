@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +91,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private static final long LOCK_ACQUIRE_TIMEOUT_IN_MS = 10000;
   /** Lock Expiration in MS. */
   private static final long LOCK_EXPIRATION_IN_MS = 20000;
+  /** Parent folder timestamp update cache size. */
+  private static final int PARENT_LAST_MODIFIED_CACHE_SIZE = 10;
 
   /**
    * Is File Token.
@@ -119,18 +122,30 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private final String documentTableName;
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
+  /** Parent folder timestamp update cache in MS. */
+  private final long parentLastModifiedCacheInMs;
+  /** Parent Last Modified Date Cache. */
+  private final Map<String, Long> parentLastModifiedDateCache = Collections
+      .synchronizedMap(new LinkedHashMap<>(PARENT_LAST_MODIFIED_CACHE_SIZE, 0.75F, true) {
+        @Override
+        protected boolean removeEldestEntry(final Map.Entry<String, Long> eldest) {
+          return size() > PARENT_LAST_MODIFIED_CACHE_SIZE;
+        }
+      });
 
   /**
    * constructor.
    * 
    * @param connection {@link DynamoDbClient}
    * @param documentsTable {@link String}
+   * @param parentLastModifiedCacheMs long
    */
   public FolderIndexProcessorImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable) {
+      final String documentsTable, final long parentLastModifiedCacheMs) {
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
+    this.parentLastModifiedCacheInMs = parentLastModifiedCacheMs;
   }
 
   @Override
@@ -141,13 +156,17 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     String parentId = parent != null ? parent.documentId() : "";
 
-    // update last modified timestamp on folder.
-    if (parent != null) {
-      parent.lastModifiedDate(new Date());
-      Map<String, AttributeValue> attributes = parent.getAttributes(siteId);
-      Map<String, AttributeValueUpdate> values = Map.of("lastModifiedDate",
-          AttributeValueUpdate.builder().value(attributes.get("lastModifiedDate")).build());
-      this.db.updateItem(parent.fromS(parent.pk(siteId)), parent.fromS(parent.sk()), values);
+    if (parent != null && shouldUpdateParentLastModifiedDate(siteId, parent)) {
+      try {
+        parent.lastModifiedDate(new Date());
+        Map<String, AttributeValue> attributes = parent.getAttributes(siteId);
+        Map<String, AttributeValueUpdate> values = Map.of("lastModifiedDate",
+            AttributeValueUpdate.builder().value(attributes.get("lastModifiedDate")).build());
+        this.db.updateItem(parent.fromS(parent.pk(siteId)), parent.fromS(parent.sk()), values);
+      } catch (RuntimeException e) {
+        removeParentLastModifiedDateCache(siteId, parent);
+        throw e;
+      }
     }
 
     FolderIndexRecord r = new FolderIndexRecord().parentDocumentId(parentId).documentId(documentId)
@@ -792,6 +811,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
   }
 
+  private String parentLastModifiedDateCacheKey(final String siteId,
+      final FolderIndexRecord parent) {
+    return siteCacheKey(siteId) + "|" + parent.pk(siteId) + "|" + parent.sk();
+  }
+
   /**
    * Query GSI1 for Folder by DocumentId.
    * 
@@ -804,6 +828,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         new FolderIndexRecord().documentId(documentId).type(FolderType.FOLDER.getValue());
     String pk = record.pkGsi1(siteId);
     return this.db.queryIndex(GSI1, fromS(pk), null, 1);
+  }
+
+  private void removeParentLastModifiedDateCache(final String siteId,
+      final FolderIndexRecord parent) {
+    this.parentLastModifiedDateCache.remove(parentLastModifiedDateCacheKey(siteId, parent));
   }
 
   @Override
@@ -824,6 +853,26 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       DynamoDbKey key = builder.buildKey(siteId);
       this.db.deleteItem(key);
     }
+  }
+
+  private boolean shouldUpdateParentLastModifiedDate(final String siteId,
+      final FolderIndexRecord parent) {
+    String cacheKey = parentLastModifiedDateCacheKey(siteId, parent);
+    long now = System.currentTimeMillis();
+
+    synchronized (this.parentLastModifiedDateCache) {
+      Long lastUpdated = this.parentLastModifiedDateCache.get(cacheKey);
+      if (lastUpdated != null && now - lastUpdated < this.parentLastModifiedCacheInMs) {
+        return false;
+      }
+
+      this.parentLastModifiedDateCache.put(cacheKey, now);
+      return true;
+    }
+  }
+
+  private String siteCacheKey(final String siteId) {
+    return siteId != null ? siteId : "";
   }
 
   @Override

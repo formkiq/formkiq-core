@@ -99,6 +99,7 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
@@ -220,13 +221,29 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
+   * @param parentLastModifiedCacheMs long
+   */
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable, final DocumentVersionService documentVersionsService,
+      final long parentLastModifiedCacheMs) {
+    this(connection, documentsTable, Collections.emptyList(), documentVersionsService, null,
+        parentLastModifiedCacheMs);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
+   * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
     this(connection, documentsTable, Collections.emptyList(), documentVersionsService,
-        documentServiceInterceptor);
+        documentServiceInterceptor,
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
   }
 
   /**
@@ -242,6 +259,26 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final String documentsTable, final Collection<PresetEntity> presetsEntities,
       final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor) {
+    this(connection, documentsTable, presetsEntities, documentVersionsService,
+        documentServiceInterceptor,
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param connection {@link DynamoDbConnectionBuilder}
+   * @param documentsTable {@link String}
+   * @param presetsEntities {@link Collection} {@link PresetEntity}
+   * @param documentVersionsService {@link DocumentVersionService}
+   * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
+   * @param parentLastModifiedCacheMs long
+   */
+  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
+      final String documentsTable, final Collection<PresetEntity> presetsEntities,
+      final DocumentVersionService documentVersionsService,
+      final DocumentServiceInterceptor documentServiceInterceptor,
+      final long parentLastModifiedCacheMs) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
@@ -253,7 +290,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
-    this.folderIndexProcessor = new FolderIndexProcessorImpl(connection, documentsTable);
+    this.folderIndexProcessor =
+        new FolderIndexProcessorImpl(connection, documentsTable, parentLastModifiedCacheMs);
     this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
     this.attributeValidator = new AttributeValidatorImpl(this.dbService);
     this.attributeService = new AttributeServiceDynamodb(this.dbService);
