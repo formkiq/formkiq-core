@@ -54,6 +54,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
@@ -102,7 +103,8 @@ class FolderIndexProcessorTest implements DbKeys {
     sqsQueueUrl = createSqsSubscriptionToSnsTopic(snsTopicArn);
 
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
@@ -115,6 +117,52 @@ class FolderIndexProcessorTest implements DbKeys {
   @BeforeEach
   void before() throws URISyntaxException {
     clearSqsQueue(sqsQueueUrl);
+  }
+
+  @Test
+  void testAddFileToFolderCachesParentLastModifiedDate() throws Exception {
+    // given
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    FolderIndexProcessor processor =
+        new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE, 1000);
+    String siteId = ID.uuid();
+    String folder = "folder-" + ID.uuid();
+    List<FolderIndexRecord> indexes = processor.createFolders(siteId, folder + "/test0.txt");
+    FolderIndexRecord parent = last(indexes);
+
+    TimeUnit.MILLISECONDS.sleep(1100);
+
+    // when
+    FolderIndexRecord firstFile =
+        processor.addFileToFolder(siteId, ID.uuid(), parent, folder + "/test0.txt");
+    dbService.putItem(firstFile.getAttributes(siteId));
+
+    // then
+    FolderIndexRecord afterFirstUpdate = new FolderIndexRecord().getFromAttributes(siteId,
+        dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
+    assertNotEquals(parent.insertedDate(), afterFirstUpdate.lastModifiedDate());
+
+    // when
+    FolderIndexRecord secondFile =
+        processor.addFileToFolder(siteId, ID.uuid(), afterFirstUpdate, folder + "/test1.txt");
+    dbService.putItem(secondFile.getAttributes(siteId));
+
+    // then
+    FolderIndexRecord afterSecondUpdate = new FolderIndexRecord().getFromAttributes(siteId,
+        dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
+    assertEquals(afterFirstUpdate.lastModifiedDate(), afterSecondUpdate.lastModifiedDate());
+
+    TimeUnit.MILLISECONDS.sleep(2000);
+
+    // when
+    FolderIndexRecord thirdFile =
+        processor.addFileToFolder(siteId, ID.uuid(), afterSecondUpdate, folder + "/test2.txt");
+    dbService.putItem(thirdFile.getAttributes(siteId));
+
+    // then
+    FolderIndexRecord afterThirdUpdate = new FolderIndexRecord().getFromAttributes(siteId,
+        dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
+    assertNotEquals(afterSecondUpdate.lastModifiedDate(), afterThirdUpdate.lastModifiedDate());
   }
 
   @Test

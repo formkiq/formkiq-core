@@ -63,6 +63,7 @@ import com.formkiq.client.model.Watermark;
 import com.formkiq.module.lambda.typesense.TypesenseProcessor;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
@@ -111,7 +112,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
     db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
-    indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE);
+    indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE,
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
   }
 
   private void addAttribute(final String siteId) throws ApiException {

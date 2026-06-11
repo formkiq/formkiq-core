@@ -54,6 +54,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.folders.FolderPermissionAttributePredicate;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
@@ -140,7 +141,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
-    this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable);
+    this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable,
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
     this.schemaService = new SchemaServiceDynamodb(this.db);
   }
 
