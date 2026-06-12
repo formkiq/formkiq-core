@@ -51,7 +51,9 @@ public interface DynamoDbService {
    * @param aquireLockTimeoutInMs long
    * @param lockExpirationInMs long
    * @return boolean
+   * @deprecated to be removed
    */
+  @Deprecated
   boolean acquireLock(DynamoDbKey key, long aquireLockTimeoutInMs, long lockExpirationInMs);
 
   /**

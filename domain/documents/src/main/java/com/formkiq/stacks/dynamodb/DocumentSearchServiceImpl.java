@@ -142,7 +142,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     this.documentTableName = documentsTable;
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
     this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     this.schemaService = new SchemaServiceDynamodb(this.db);
   }
 

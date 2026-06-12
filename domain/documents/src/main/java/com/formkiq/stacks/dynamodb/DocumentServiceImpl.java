@@ -221,13 +221,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param documentVersionsService {@link DocumentVersionService}
-   * @param parentLastModifiedCacheMs long
+   * @param parentLastModifiedUpdateIntervalMs long
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final DocumentVersionService documentVersionsService,
-      final long parentLastModifiedCacheMs) {
+      final long parentLastModifiedUpdateIntervalMs) {
     this(connection, documentsTable, Collections.emptyList(), documentVersionsService, null,
-        parentLastModifiedCacheMs);
+        parentLastModifiedUpdateIntervalMs);
   }
 
   /**
@@ -243,7 +243,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final DocumentServiceInterceptor documentServiceInterceptor) {
     this(connection, documentsTable, Collections.emptyList(), documentVersionsService,
         documentServiceInterceptor,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
   }
 
   /**
@@ -261,7 +261,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final DocumentServiceInterceptor documentServiceInterceptor) {
     this(connection, documentsTable, presetsEntities, documentVersionsService,
         documentServiceInterceptor,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
   }
 
   /**
@@ -272,13 +272,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param presetsEntities {@link Collection} {@link PresetEntity}
    * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
-   * @param parentLastModifiedCacheMs long
+   * @param parentLastModifiedUpdateIntervalMs long
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final Collection<PresetEntity> presetsEntities,
       final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor,
-      final long parentLastModifiedCacheMs) {
+      final long parentLastModifiedUpdateIntervalMs) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
@@ -290,8 +290,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
-    this.folderIndexProcessor =
-        new FolderIndexProcessorImpl(connection, documentsTable, parentLastModifiedCacheMs);
+    this.folderIndexProcessor = new FolderIndexProcessorImpl(connection, documentsTable,
+        parentLastModifiedUpdateIntervalMs);
     this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
     this.attributeValidator = new AttributeValidatorImpl(this.dbService);
     this.attributeService = new AttributeServiceDynamodb(this.dbService);

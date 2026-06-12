@@ -31,7 +31,8 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.Put;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 
 import java.util.ArrayList;
@@ -50,11 +51,6 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
  */
 public class PathToFolderIndexRecords
     implements BiFunction<String, String, List<FolderIndexRecord>> {
-
-  /** Lock Timeout in MS. */
-  private static final long LOCK_ACQUIRE_TIMEOUT_IN_MS = 10000;
-  /** Lock Expiration in MS. */
-  private static final long LOCK_EXPIRATION_IN_MS = 20000;
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
@@ -164,41 +160,14 @@ public class PathToFolderIndexRecords
     AttributeValue sk = fromS(record.sk());
     DynamoDbKey key = new DynamoDbKey(pk.s(), sk.s(), null, null, null, null);
 
-    Map<String, AttributeValue> attrs = this.db.get(key);
-    if (!attrs.isEmpty()) {
+    FolderIndexRecord existingFolder = getFolder(siteId, key);
+    if (existingFolder != null) {
 
-      record = record.getFromAttributes(siteId, attrs);
+      record = existingFolder;
 
     } else {
 
-      boolean acquireLock = false;
-
-      try {
-        acquireLock = this.db.acquireLock(key, LOCK_ACQUIRE_TIMEOUT_IN_MS, LOCK_EXPIRATION_IN_MS);
-
-        attrs = this.db.get(key);
-
-        if (!attrs.isEmpty()) {
-
-          record = record.getFromAttributes(siteId, attrs);
-
-        } else {
-
-          String conditionExpression = "attribute_not_exists(" + DbKeys.PK + ")";
-          Put put = Put.builder().tableName(db.getTableName())
-              .conditionExpression(conditionExpression).item(record.getAttributes(siteId))
-              .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD)
-              .build();
-
-          db.putInTransaction(put);
-        }
-
-      } finally {
-
-        if (acquireLock) {
-          this.db.releaseLock(key);
-        }
-      }
+      record = getOrCreateFolder(siteId, key, record);
     }
 
     return record;
@@ -210,5 +179,34 @@ public class PathToFolderIndexRecords
     }
 
     return last(tokens);
+  }
+
+  private FolderIndexRecord getFolder(final String siteId, final DynamoDbKey key) {
+    Map<String, AttributeValue> attrs = this.db.get(key);
+    return !attrs.isEmpty() ? new FolderIndexRecord().getFromAttributes(siteId, attrs) : null;
+  }
+
+  private FolderIndexRecord getOrCreateFolder(final String siteId, final DynamoDbKey key,
+      final FolderIndexRecord record) {
+    try {
+      putFolder(siteId, record);
+      return record;
+    } catch (ConditionalCheckFailedException e) {
+      FolderIndexRecord folder = getFolder(siteId, key);
+      if (folder != null) {
+        return folder;
+      }
+      throw e;
+    }
+  }
+
+  private void putFolder(final String siteId, final FolderIndexRecord record) {
+    String conditionExpression =
+        "attribute_not_exists(" + DbKeys.PK + ") AND attribute_not_exists(" + DbKeys.SK + ")";
+    PutItemRequest put = PutItemRequest.builder().tableName(db.getTableName())
+        .conditionExpression(conditionExpression).item(record.getAttributes(siteId))
+        .returnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD).build();
+
+    db.getClient().putItem(put);
   }
 }

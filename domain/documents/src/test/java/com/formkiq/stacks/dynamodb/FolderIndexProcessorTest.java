@@ -104,7 +104,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
 
     service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
         new DocumentVersionServiceNoVersioning());
@@ -120,7 +120,29 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   @Test
-  void testAddFileToFolderCachesParentLastModifiedDate() throws Exception {
+  void testAddFileToFolderDuplicateFilenameWithRegexCharactersInExtension() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId0 = ID.uuid();
+      String documentId1 = ID.uuid();
+      String path = "/supplemental Letter (H.K.) Limited";
+
+      FolderIndexRecord first = index.addFileToFolder(siteId, documentId0, null, path);
+      dbService.putItem(first.getAttributes(siteId));
+
+      // when
+      FolderIndexRecord second = index.addFileToFolder(siteId, documentId1, null, path);
+
+      // then
+      String filename = "supplemental Letter (H.K.) Limited";
+      assertEquals(filename + " (" + documentId1 + ")", second.path());
+      assertEquals("fi#" + (filename + " (" + documentId1 + ")").toLowerCase(), second.sk());
+    }
+  }
+
+  @Test
+  void testAddFileToFolderUpdatesParentLastModifiedDateByAge() throws Exception {
     // given
     DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
     FolderIndexProcessor processor =
@@ -163,28 +185,6 @@ class FolderIndexProcessorTest implements DbKeys {
     FolderIndexRecord afterThirdUpdate = new FolderIndexRecord().getFromAttributes(siteId,
         dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
     assertNotEquals(afterSecondUpdate.lastModifiedDate(), afterThirdUpdate.lastModifiedDate());
-  }
-
-  @Test
-  void testAddFileToFolderDuplicateFilenameWithRegexCharactersInExtension() {
-    // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      String documentId0 = ID.uuid();
-      String documentId1 = ID.uuid();
-      String path = "/supplemental Letter (H.K.) Limited";
-
-      FolderIndexRecord first = index.addFileToFolder(siteId, documentId0, null, path);
-      dbService.putItem(first.getAttributes(siteId));
-
-      // when
-      FolderIndexRecord second = index.addFileToFolder(siteId, documentId1, null, path);
-
-      // then
-      String filename = "supplemental Letter (H.K.) Limited";
-      assertEquals(filename + " (" + documentId1 + ")", second.path());
-      assertEquals("fi#" + (filename + " (" + documentId1 + ")").toLowerCase(), second.sk());
-    }
   }
 
   /**

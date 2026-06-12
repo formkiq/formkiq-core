@@ -152,7 +152,7 @@ public class DocumentServiceImplTest implements DbKeys {
         new DocumentVersionServiceNoVersioning(), 1000);
     searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
     folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
     attributeService = new AttributeServiceDynamodb(db);
 
