@@ -113,7 +113,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
     db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
     indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
   }
 
   private void addAttribute(final String siteId) throws ApiException {

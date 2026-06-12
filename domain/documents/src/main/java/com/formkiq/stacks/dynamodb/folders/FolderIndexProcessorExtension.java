@@ -36,8 +36,9 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
  */
 public class FolderIndexProcessorExtension implements AwsServiceExtension<FolderIndexProcessor> {
 
-  /** Parent folder timestamp update cache in MS. */
-  public static final long DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS = TimeUnit.SECONDS.toMillis(60);
+  /** Parent folder last modified update interval in MS. */
+  public static final long DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS =
+      TimeUnit.SECONDS.toMillis(60);
   /** {@link FolderIndexProcessor}. */
   private FolderIndexProcessor service;
 
@@ -55,8 +56,9 @@ public class FolderIndexProcessorExtension implements AwsServiceExtension<Folder
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
 
-      this.service = new FolderIndexProcessorImpl(connection,
-          awsServiceCache.environment("DOCUMENTS_TABLE"), DEFAULT_PARENT_LAST_MODIFIED_CACHE_IN_MS);
+      this.service =
+          new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"),
+              DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     }
 
     return this.service;

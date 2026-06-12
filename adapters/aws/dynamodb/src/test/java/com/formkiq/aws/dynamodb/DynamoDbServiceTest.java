@@ -130,6 +130,29 @@ public class DynamoDbServiceTest {
   }
 
   /**
+   * Test acquire lock does not sleep past timeout.
+   */
+  @Test
+  @Timeout(TIMEOUT)
+  public void testAcquireLockDoesNotOversleepTimeout() {
+    // given
+    final long timeout = 250;
+    final long lockExpiry = 10000;
+    DynamoDbKey key = new DynamoDbKey("test", ID.uuid(), null, null, null, null);
+    assertTrue(this.service.acquireLock(key, 2000, lockExpiry));
+
+    // when
+    long startTime = System.currentTimeMillis();
+    boolean lock = this.service.acquireLock(key, timeout, lockExpiry);
+    long duration = System.currentTimeMillis() - startTime;
+
+    // then
+    assertFalse(lock);
+    assertTrue(duration < 1000, "Lock acquisition took " + duration + " ms");
+    assertTrue(this.service.releaseLock(key));
+  }
+
+  /**
    * Test release lock before acquire.
    */
   @Test
