@@ -61,14 +61,14 @@ Parameters:
     Type: String
     AllowedValues: ["true", "false"]
 
-  TokenValidityMinutes:
+  TokenAccessIdValidityMinutes:
     Description: The time limit in minutes, after which the access and ID tokens are no longer valid and cannot be used.
     Type: Number
     MinValue: "5"
     MaxValue: "1440"
     Default: "1440"
 
-  RefreshTokenValidityMinutes:
+  TokenRefreshValidityMinutes:
     Description: The time limit in minutes, after which the refresh token is no longer valid and cannot be used.
     Type: Number
     MinValue: "60"
@@ -384,11 +384,11 @@ Resources:
         PasswordRequireUppercase: 
           Fn::Sub: "${PasswordRequireUppercase}"
         AccessTokenValidity:
-          Ref: TokenValidityMinutes
+          Ref: TokenAccessIdValidityMinutes
         IdTokenValidity:
-          Ref: TokenValidityMinutes
+          Ref: TokenAccessIdValidityMinutes
         RefreshTokenValidity:
-          Ref: RefreshTokenValidityMinutes
+          Ref: TokenRefreshValidityMinutes
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
         LogRetentionInDays:
