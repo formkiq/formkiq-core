@@ -318,7 +318,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, CREDENTIALS);
 
-    configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE, 0);
 
     SnsService sns = new SnsServiceImpl(TestServices.getSnsConnection(null));
     snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();

@@ -49,6 +49,7 @@ import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
@@ -111,15 +112,16 @@ public class DocumentsUploadRequestHandler
    * @param siteId {@link String}
    * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    * @param documentRecordSet {@link List} {@link DocumentRecordSet}
+   * @param config {@link SiteConfiguration}
    * @return {@link ApiRequestHandlerResponse.Builder}
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
   private ApiRequestHandlerResponse.Builder buildPresignedResponse(
       final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsservice, final String siteId,
-      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request,
-      final DocumentRecordSet documentRecordSet) throws BadException, ValidationException {
+      final AwsServiceCache awsservice, final String siteId, final AddDocumentRequest request,
+      final DocumentRecordSet documentRecordSet, final SiteConfiguration config)
+      throws BadException, ValidationException {
 
     String documentId = documentRecordSet.documentRecord().documentId();
     String artifactId = documentRecordSet.documentRecord().artifactId();
@@ -132,7 +134,7 @@ public class DocumentsUploadRequestHandler
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
             caculateDuration(event.getQueryStringParameters()),
-            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId));
+            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config));
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
@@ -173,14 +175,13 @@ public class DocumentsUploadRequestHandler
    * @param awsservice {@link AwsServiceCache}
    * @param query {@link Map}
    * @param siteId {@link String}
+   * @param siteConfiguration {@link SiteConfiguration}
    * @return {@link Optional} {@link Long}
    * @throws BadException BadException
    */
   private Optional<Long> calculateContentLength(final AwsServiceCache awsservice,
-      final Map<String, String> query, final String siteId) throws BadException {
-
-    ConfigService configService = awsservice.getExtension(ConfigService.class);
-    SiteConfiguration siteConfiguration = configService.get(siteId);
+      final Map<String, String> query, final String siteId,
+      final SiteConfiguration siteConfiguration) throws BadException {
 
     Long contentLength = query != null && query.containsKey("contentLength")
         ? Long.valueOf(query.get("contentLength"))
@@ -237,9 +238,8 @@ public class DocumentsUploadRequestHandler
     vb.check();
 
     var documentRecordSet = getDocumentRecordSet(authorization, awsservice, item, siteId);
-    ApiRequestHandlerResponse response =
-        buildPresignedResponse(event, authorization, awsservice, siteId, item, documentRecordSet)
-            .ok().build();
+    ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
+        siteId, item, documentRecordSet, config).ok().build();
 
     if (!Strings.isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);
@@ -310,9 +310,8 @@ public class DocumentsUploadRequestHandler
 
     var documentRecordSet = getDocumentRecordSet(authorization, awsservice, request, siteId);
 
-    ApiRequestHandlerResponse response =
-        buildPresignedResponse(event, authorization, awsservice, siteId, request, documentRecordSet)
-            .build();
+    ApiRequestHandlerResponse response = buildPresignedResponse(event, authorization, awsservice,
+        siteId, request, documentRecordSet, config).build();
 
     if (!isEmpty(config.maxDocuments())) {
       configService.increment(siteId, ConfigService.DOCUMENT_COUNT);

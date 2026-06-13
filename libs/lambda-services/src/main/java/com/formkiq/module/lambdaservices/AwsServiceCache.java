@@ -131,6 +131,28 @@ public class AwsServiceCache {
   }
 
   /**
+   * Get Environment {@link Long} parameter.
+   *
+   * @param key {@link String}
+   * @param defaultValue {@link Long}
+   * @return {@link Long}
+   */
+  public Long environmentLong(final String key, final Long defaultValue) {
+    Long value = defaultValue;
+    String s = environment(key);
+
+    if (s != null) {
+      try {
+        value = Long.valueOf(s);
+      } catch (NumberFormatException e) {
+        value = defaultValue;
+      }
+    }
+
+    return value;
+  }
+
+  /**
    * Get FormKiQ Type.
    * 
    * @return {@link String}

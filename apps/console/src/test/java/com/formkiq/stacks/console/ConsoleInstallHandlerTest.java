@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -96,7 +96,7 @@ public class ConsoleInstallHandlerTest {
 
     s3.createBucket(CONSOLE_BUCKET);
 
-    connection = new HttpUrlConnectionRecorder(new URL("http://localhost"));
+    connection = new HttpUrlConnectionRecorder(URI.create("http://localhost").toURL());
 
   }
 

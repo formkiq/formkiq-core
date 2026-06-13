@@ -34,6 +34,11 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
  */
 public class ConfigServiceExtension implements AwsServiceExtension<ConfigService> {
 
+  /** Environment variable for config cache TTL. */
+  private static final String CACHE_TTL_MS = "CONFIG_SERVICE_CACHE_TTL_MS";
+  /** Default config cache TTL in milliseconds. */
+  private static final long DEFAULT_CACHE_TTL_MS = 60000L;
+
   /** {@link ConfigService}. */
   private ConfigService service;
 
@@ -47,8 +52,9 @@ public class ConfigServiceExtension implements AwsServiceExtension<ConfigService
     if (this.service == null) {
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
-      this.service =
-          new ConfigServiceDynamoDb(connection, awsServiceCache.environment("DOCUMENTS_TABLE"));
+      long cacheTtlMs = awsServiceCache.environmentLong(CACHE_TTL_MS, DEFAULT_CACHE_TTL_MS);
+      this.service = new ConfigServiceDynamoDb(connection,
+          awsServiceCache.environment("DOCUMENTS_TABLE"), cacheTtlMs);
     }
 
     return this.service;
