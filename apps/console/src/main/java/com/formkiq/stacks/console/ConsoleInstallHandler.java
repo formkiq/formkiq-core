@@ -29,6 +29,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.http.HttpResponse;
@@ -222,7 +223,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    * @throws IOException IOException
    */
   protected HttpURLConnection getConnection(final String responseUrl) throws IOException {
-    URL url = new URL(responseUrl);
+    URL url = URI.create(responseUrl).toURL();
     return (HttpURLConnection) url.openConnection();
   }
 

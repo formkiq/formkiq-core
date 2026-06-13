@@ -40,6 +40,8 @@ import java.util.Map;
  */
 public class FkqConfigService implements ConfigService {
 
+  /** Cache TTL. */
+  private static final long CACHE_TTL = 60000L;
   /** {@link ConfigService}. */
   private final ConfigService service;
 
@@ -59,7 +61,7 @@ public class FkqConfigService implements ConfigService {
 
     DynamoDbConnectionBuilder db =
         new DynamoDbConnectionBuilder(false).setCredentials(awsProfile).setRegion(awsRegion);
-    this.service = new ConfigServiceDynamoDb(db, documentsTable);
+    this.service = new ConfigServiceDynamoDb(db, documentsTable, CACHE_TTL);
   }
 
   @Override

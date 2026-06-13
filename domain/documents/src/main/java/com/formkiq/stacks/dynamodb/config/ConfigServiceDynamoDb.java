@@ -28,6 +28,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -43,20 +44,33 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
+  /** Config cache TTL in milliseconds. */
+  private final long cacheTtl;
+  /** Site configuration cache. */
+  private final Map<String, CachedSiteConfiguration> configCache = new ConcurrentHashMap<>();
 
   /**
    * constructor.
    *
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
+   * @param cacheTtlMs cache TTL in milliseconds
    */
   public ConfigServiceDynamoDb(final DynamoDbConnectionBuilder connection,
-      final String documentsTable) {
+      final String documentsTable, final long cacheTtlMs) {
     if (documentsTable == null) {
       throw new IllegalArgumentException("Table name is null");
     }
 
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
+    this.cacheTtl = cacheTtlMs;
+  }
+
+  private record CachedSiteConfiguration(SiteConfiguration config, long expiresAtMs) {
+  }
+
+  private String cacheKey(final String siteId) {
+    return siteId != null ? siteId : DEFAULT_SITE_ID;
   }
 
   @Override
@@ -64,15 +78,27 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     String s = siteId != null ? siteId : DEFAULT_SITE_ID;
     Map<String, AttributeValue> keys = keysGeneric(null, PREFIX_CONFIG, s);
     this.db.deleteItem(keys.get(PK), keys.get(SK));
+    this.configCache.remove(cacheKey(siteId));
   }
 
   @Override
   public SiteConfiguration get(final String siteId) {
-    DynamoDbKey key = SiteConfiguration.builder().buildKey(siteId);
-    Map<String, AttributeValue> attributes = this.db.get(key);
-    return !attributes.isEmpty() ? SiteConfiguration.fromAttributeMap(attributes)
-        : new SiteConfiguration(null, null, null, null, null, null, null, null, null, null, null,
-            null, null);
+    String cacheKey = cacheKey(siteId);
+    long now = System.currentTimeMillis();
+
+    if (this.cacheTtl > 0) {
+      CachedSiteConfiguration cached = this.configCache.get(cacheKey);
+      if (cached != null && cached.expiresAtMs() > now) {
+        return cached.config();
+      }
+    }
+
+    SiteConfiguration config = readConfiguration(siteId);
+    if (this.cacheTtl > 0) {
+      this.configCache.put(cacheKey, new CachedSiteConfiguration(config, now + this.cacheTtl));
+    }
+
+    return config;
   }
 
   @Override
@@ -112,6 +138,14 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
     return this.db.getNextNumber(keys);
   }
 
+  private SiteConfiguration readConfiguration(final String siteId) {
+    DynamoDbKey key = SiteConfiguration.builder().buildKey(siteId);
+    Map<String, AttributeValue> attributes = this.db.get(key);
+    return !attributes.isEmpty() ? SiteConfiguration.fromAttributeMap(attributes)
+        : new SiteConfiguration(null, null, null, null, null, null, null, null, null, null, null,
+            null, null);
+  }
+
   @Override
   public boolean save(final String siteId, final SiteConfiguration config) {
 
@@ -130,6 +164,8 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
         map.putAll(key.toMap());
         this.db.putItem(map);
       }
+
+      this.configCache.remove(cacheKey(siteId));
     }
 
     return !map.isEmpty();

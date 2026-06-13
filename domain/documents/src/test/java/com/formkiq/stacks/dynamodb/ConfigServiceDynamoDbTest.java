@@ -57,7 +57,7 @@ public class ConfigServiceDynamoDbTest {
   @BeforeEach
   public void before() throws Exception {
     this.service =
-        new ConfigServiceDynamoDb(DynamoDbTestServices.getDynamoDbConnection(), "Documents");
+        new ConfigServiceDynamoDb(DynamoDbTestServices.getDynamoDbConnection(), "Documents", 60000);
   }
 
   @Test

@@ -29,6 +29,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -218,7 +219,7 @@ public class DocumentIdUrlRequestHandler
     String deepLinkPath = item.getDeepLinkPath() != null ? item.getDeepLinkPath() : "";
 
     if (isDeepLink(deepLinkPath)) {
-      url = new URL(item.getDeepLinkPath());
+      url = URI.create(item.getDeepLinkPath()).toURL();
     } else {
 
       String filename = getFilename(item);
@@ -245,12 +246,12 @@ public class DocumentIdUrlRequestHandler
 
         String base64 = new StringToBase64Encoder().apply(url.toString());
         String watermarkUrl = awsservice.environment("WATERMARK_FUNCTION_URL");
-        url = new URL(watermarkUrl + "?url=" + base64);
+        url = URI.create(watermarkUrl + "?url=" + base64).toURL();
 
         AwsCredentials credentials = awsservice.getExtension(AwsCredentials.class);
         String signUrl =
             new SignUrl("lambda", awsservice.region(), credentials).apply(url.toString());
-        url = new URL(signUrl);
+        url = URI.create(signUrl).toURL();
       }
     }
 
