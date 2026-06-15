@@ -3192,6 +3192,39 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PATCH /attributes/{key} with blank validationRegex removes validationRegex.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateAttributesValidationRegexBlank() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, SITE_ID)) {
+      setBearerToken(siteId);
+      String key = "purchaseOrder_" + ID.uuid();
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).validationRegex("PO-\\d+"));
+      this.attributesApi.addAttribute(req, siteId);
+
+      setBearerToken(siteId + "_govern");
+      UpdateAttributeRequest updateReq = new UpdateAttributeRequest()
+          .attribute(new UpdateAttribute().type(AttributeType.STANDARD).validationRegex(""));
+
+      // when
+      this.attributesApi.updateAttribute(key, updateReq, siteId);
+
+      // then
+      var resp =
+          new GetAttributeRequestBuilder(key).submit(client, siteId).throwIfError().response();
+      var attribute = resp.getAttribute();
+      assertNotNull(attribute);
+      assertEquals(key, attribute.getKey());
+      assertEquals(AttributeType.STANDARD, attribute.getType());
+      assertNull(attribute.getValidationRegex());
+    }
+  }
+
+  /**
    * PATCH /documents/{documentId} with OPA.
    *
    * @throws ApiException ApiException

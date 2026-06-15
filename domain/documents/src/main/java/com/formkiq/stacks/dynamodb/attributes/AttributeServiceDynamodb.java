@@ -227,7 +227,7 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
     vb.isRequired(null, !oldAttributes.isEmpty(), "Attribute not found");
     vb.check();
 
-    vb.isRequired(null, !(type == null && watermark == null && isEmpty(validationRegex)),
+    vb.isRequired(null, !(type == null && watermark == null && validationRegex == null),
         "Attribute Type, Validation Regex or Watermark is required");
     vb.isRequired(null, !(type != null && !validationAccess.isAdminOrGovernRole()),
         "Access denied to attribute");
@@ -241,8 +241,8 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
       r.type(type);
     }
 
-    if (!isEmpty(validationRegex)) {
-      r.setValidationRegex(validationRegex);
+    if (validationRegex != null) {
+      r.setValidationRegex(isEmpty(validationRegex) ? null : validationRegex);
     }
 
     if (watermark != null) {
