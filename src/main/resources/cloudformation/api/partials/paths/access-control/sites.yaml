@@ -2158,6 +2158,8 @@ components:
     #@overlay/match missing_ok=True
     LocaleInfo:
       type: object
+      required:
+        - "locale"
       properties:
         locale:
           type: "string"
@@ -2190,6 +2192,8 @@ components:
     #@overlay/match missing_ok=True
     ClassificationSummary:
       type: "object"
+      required:
+        - "classificationId"
       properties:
         classificationId:
           type: "string"

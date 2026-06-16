@@ -550,6 +550,8 @@ components:
     #@overlay/match missing_ok=True
     Ruleset:
       type: "object"
+      required:
+        - "rulesetId"
       properties:
         rulesetId:
           type: "string"

@@ -8840,6 +8840,8 @@ components:
             $ref: '#/components/schemas/Attribute'
     Attribute:
       type: object
+      required:
+      - key
       properties:
         type:
           $ref: '#/components/schemas/AttributeType'
@@ -12384,6 +12386,8 @@ components:
           $ref: '#/components/schemas/Mapping'
     Mapping:
       type: object
+      required:
+      - mappingId
       properties:
         mappingId:
           type: string
@@ -12973,6 +12977,8 @@ components:
           $ref: '#/components/schemas/Ruleset'
     Ruleset:
       type: object
+      required:
+      - rulesetId
       properties:
         rulesetId:
           type: string
@@ -14137,6 +14143,8 @@ components:
             $ref: '#/components/schemas/SiteGroupPermissions'
     LocaleInfo:
       type: object
+      required:
+      - locale
       properties:
         locale:
           type: string
@@ -14165,6 +14173,8 @@ components:
             $ref: '#/components/schemas/OpenSearchAlias'
     ClassificationSummary:
       type: object
+      required:
+      - classificationId
       properties:
         classificationId:
           type: string
@@ -15030,6 +15040,8 @@ components:
             $ref: '#/components/schemas/WorkflowSummary'
     WorkflowSummary:
       type: object
+      required:
+      - workflowId
       properties:
         name:
           type: string

@@ -214,6 +214,8 @@ components:
     #@overlay/match missing_ok=True
     Attribute:
       type: "object"
+      required:
+        - "key"
       properties:
         type:
           $ref: "#/components/schemas/AttributeType"
@@ -383,4 +385,3 @@ components:
           type: "object"
           additionalProperties:
             type: string
-

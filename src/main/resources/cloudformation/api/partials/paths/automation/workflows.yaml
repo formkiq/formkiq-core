@@ -98,6 +98,8 @@ components:
     #@overlay/match missing_ok=True
     WorkflowSummary:
       type: "object"
+      required:
+        - "workflowId"
       properties:
         name:
           type: "string"

@@ -236,6 +236,8 @@ components:
     #@overlay/match missing_ok=True
     Mapping:
       type: "object"
+      required:
+        - "mappingId"
       properties:
         mappingId:
           type: "string"
