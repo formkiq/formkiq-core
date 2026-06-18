@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.api.transformers;
 
-import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.stacks.api.models.mappings.MappingAttributeResponse;
 import com.formkiq.stacks.dynamodb.mappings.MappingClassification;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
@@ -52,7 +52,8 @@ public class MappingRecordToMap implements Function<MappingRecord, Map<String, O
 
   @Override
   public Map<String, Object> apply(final MappingRecord a) {
-    List<MappingAttribute> attributes = this.service.getAttributes(a);
+    List<MappingAttributeResponse> attributes =
+        this.service.getAttributes(a).stream().map(MappingAttributeResponse::from).toList();
     List<MappingClassification> classifications = this.service.getClassifications(a);
     Map<String, Object> map = new HashMap<>();
     map.put("mappingId", a.getDocumentId());

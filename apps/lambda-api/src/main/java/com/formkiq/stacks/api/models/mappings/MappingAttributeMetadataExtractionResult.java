@@ -21,58 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api;
+package com.formkiq.stacks.api.models.mappings;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 
-/** API Document Version Object. */
+/**
+ * Mapping Attribute from document metadata extraction results.
+ *
+ * @param attributeKey Attribute Key
+ * @param sourceType Source Type
+ * @param llmPromptEntityName LLM prompt entity name
+ */
 @Reflectable
-public class ApiDocumentVersion {
-
-  /** Document VersionId. */
-  @Reflectable
-  private String versionId;
-  /** Last Modified Date. */
-  @Reflectable
-  private String lastModifiedDate;
-
-  /** constructor. */
-  public ApiDocumentVersion() {}
-
-  /**
-   * Get Last Modified Date.
-   * 
-   * @return {@link String}
-   */
-  public String getLastModifiedDate() {
-    return this.lastModifiedDate;
-  }
-
-  /**
-   * Get Version Id.
-   * 
-   * @return {@link String}
-   */
-  public String getVersionId() {
-    return this.versionId;
-  }
-
-  /**
-   * Set Last Modified Date.
-   * 
-   * @param date {@link String}
-   */
-  public void setLastModifiedDate(final String date) {
-    this.lastModifiedDate = date;
-  }
-
-  /**
-   * Set Version Id.
-   * 
-   * @param version {@link String}
-   */
-  public void setVersionId(final String version) {
-    this.versionId = version;
-  }
-
+public record MappingAttributeMetadataExtractionResult(String attributeKey,
+    MappingAttributeSourceType sourceType,
+    String llmPromptEntityName) implements MappingAttributeResponse {
 }

@@ -12709,6 +12709,7 @@ components:
       - MANUAL
       - DATA_CLASSIFICATION
       - METADATA_EXTRACTION_RESULT
+      - AI_PROMPT_RESULT
       - MALWARE_SCAN
     MappingClassificationConditionSourceType:
       type: string

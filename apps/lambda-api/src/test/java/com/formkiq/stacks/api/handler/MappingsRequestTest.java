@@ -38,6 +38,7 @@ import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.GetMappingsResponse;
 import com.formkiq.client.model.Mapping;
 import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeAiPromptResult;
 import com.formkiq.client.model.MappingAttributeContent;
 import com.formkiq.client.model.MappingAttributeDataClassification;
 import com.formkiq.client.model.MappingAttributeLabelMatchingType;
@@ -138,6 +139,11 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
         .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
   }
 
+  private MappingAttribute aiPromptResult() {
+    return new MappingAttribute(new MappingAttributeAiPromptResult().attributeKey("aiprompt")
+        .sourceType(MappingAttributeSourceType.AI_PROMPT_RESULT).llmPromptEntityName("myprompt"));
+  }
+
   private void assertAddMappingValidationError(final String siteId,
       final MappingAttribute mappingAttribute, final String expectedResponseBody) {
     AddMappingRequest req = new AddMappingRequest()
@@ -224,12 +230,11 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
             .llmPromptEntityName("invoice"));
   }
 
-  private MappingAttribute metadataMappingAttribute(final String attributeKey,
-      final List<String> labelTexts, final MappingAttributeMetadataField metadataField) {
-    return new MappingAttribute(new MappingAttributeMetadata().attributeKey(attributeKey)
+  private MappingAttribute metadataMappingAttribute(final List<String> labelTexts) {
+    return new MappingAttribute(new MappingAttributeMetadata().attributeKey("invoicemetadata")
         .sourceType(MappingAttributeSourceType.METADATA)
         .labelMatchingType(MappingAttributeLabelMatchingType.EXACT).labelTexts(labelTexts)
-        .metadataField(metadataField));
+        .metadataField(MappingAttributeMetadataField.CONTENT_TYPE));
   }
 
   /**
@@ -299,7 +304,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       List<String> attributeKeys = List.of("invoicecontent", "invoicekv", "invoicemetadata",
-          "invoicemanual", "invoicedata", "invoiceextraction", "invoicemalware");
+          "invoicemanual", "invoicedata", "invoiceextraction", "invoicemalware", "aiprompt");
       for (String attributeKey : attributeKeys) {
         addAttributeString(siteId, attributeKey);
       }
@@ -307,12 +312,11 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       AddMapping mapping = new AddMapping().name("source types")
           .addAttributesItem(contentMappingAttribute("invoicecontent", List.of("invoice")))
           .addAttributesItem(contentKeyValueMappingAttribute(List.of("invoice")))
-          .addAttributesItem(metadataMappingAttribute("invoicemetadata", List.of("application/pdf"),
-              MappingAttributeMetadataField.CONTENT_TYPE))
+          .addAttributesItem(metadataMappingAttribute(List.of("application/pdf")))
           .addAttributesItem(manualMappingAttribute("invoicemanual"))
           .addAttributesItem(dataClassificationMappingAttribute())
           .addAttributesItem(metadataExtractionMappingAttribute())
-          .addAttributesItem(malwareScanMappingAttribute());
+          .addAttributesItem(malwareScanMappingAttribute()).addAttributesItem(aiPromptResult());
 
       AddMappingRequest req = new AddMappingRequest().mapping(mapping);
 
@@ -329,7 +333,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       // then
       assertNotNull(responseMapping);
       List<MappingAttribute> attributes = notNull(responseMapping.getAttributes());
-      assertEquals(7, attributes.size());
+      assertEquals(MappingAttributeSourceType.values().length, attributes.size());
       assertEquals(MappingAttributeSourceType.CONTENT,
           attributes.get(0).getMappingAttributeContent().getSourceType());
       assertEquals(MappingAttributeSourceType.CONTENT_KEY_VALUE,
@@ -344,6 +348,8 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
           attributes.get(5).getMappingAttributeMetadataExtractionResult().getSourceType());
       assertEquals(MappingAttributeSourceType.MALWARE_SCAN,
           attributes.get(6).getMappingAttributeMalwareScan().getSourceType());
+      assertEquals(MappingAttributeSourceType.AI_PROMPT_RESULT,
+          attributes.get(7).getMappingAttributeAiPromptResult().getSourceType());
     }
   }
 
