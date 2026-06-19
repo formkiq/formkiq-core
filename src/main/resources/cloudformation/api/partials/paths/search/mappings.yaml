@@ -111,6 +111,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/mappingIdParam'
+        - $ref: '#/components/parameters/createIfMissingParam'
       requestBody:
         required: true
         content:
@@ -170,6 +171,16 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
 components:
+  parameters:
+    #@overlay/match missing_ok=True
+    createIfMissingParam:
+      name: createIfMissing
+      in: query
+      description: "When true, skip checking whether the resource exists before setting it"
+      required: false
+      schema:
+        type: "boolean"
+        default: false
   schemas:
     #@overlay/match missing_ok=True
     AddMappingResponse:

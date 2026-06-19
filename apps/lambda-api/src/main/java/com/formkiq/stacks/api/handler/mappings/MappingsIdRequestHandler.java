@@ -89,6 +89,12 @@ public class MappingsIdRequestHandler
 
     String siteId = authorizer.getSiteId();
     String mappingId = event.getPathParameter("mappingId");
+    boolean createIfMissing =
+        "true".equalsIgnoreCase(event.getQueryStringParameter("createIfMissing"));
+
+    if (!createIfMissing && service.getMapping(siteId, mappingId) == null) {
+      throw new NotFoundException("Mapping '" + mappingId + "' not found");
+    }
 
     AddMappingRequest req = JsonToObject.fromJson(awsServices, event, AddMappingRequest.class);
     service.saveMapping(siteId, mappingId, req.getMapping());

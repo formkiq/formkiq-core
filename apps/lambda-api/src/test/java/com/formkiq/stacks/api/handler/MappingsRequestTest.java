@@ -275,7 +275,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       SetResponse setResponse =
-          this.mappingsApi.setMapping(addResponse.getMappingId(), setReq, siteId);
+          this.mappingsApi.setMapping(addResponse.getMappingId(), setReq, siteId, false);
 
       // then
       assertEquals("Mapping set", setResponse.getMessage());
@@ -841,6 +841,50 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"Mapping '" + addResponse.getMappingId() + "' not found\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * PUT /mappings/{mappingId} createIfMissing.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetMappingCreateIfMissing() throws ApiException {
+    // given
+    final String key0 = "invoice";
+
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId);
+
+      String mappingId = ID.uuid();
+      AddMapping mapping = new AddMapping().name("test")
+          .addAttributesItem(contentMappingAttribute(key0, List.of("invoice")));
+      SetMappingRequest setReq = new SetMappingRequest().mapping(mapping);
+
+      // when
+      try {
+        this.mappingsApi.setMapping(mappingId, setReq, siteId, false);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Mapping '" + mappingId + "' not found\"}",
+            e.getResponseBody());
+      }
+
+      // when
+      SetResponse setResponse = this.mappingsApi.setMapping(mappingId, setReq, siteId, true);
+
+      // then
+      assertEquals("Mapping set", setResponse.getMessage());
+
+      Mapping m = this.mappingsApi.getMapping(mappingId, siteId).getMapping();
+      assertMapping(m, "test", "");
+      assertMappingAttributeContent(m);
     }
   }
 }

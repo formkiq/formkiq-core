@@ -45,7 +45,9 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
   /** {@link AddMapping}. */
   private final AddMapping addMapping = new AddMapping();
   /** {@link String}. */
-  private String id;
+  private final String id;
+  /** Create if missing. */
+  private boolean createIfMissing = false;
 
 
   /**
@@ -81,6 +83,17 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
     return this;
   }
 
+  /**
+   * Set create if missing.
+   *
+   * @param value boolean
+   * @return {@link SetMappingRequestBuilder}
+   */
+  public SetMappingRequestBuilder createIfMissing(final boolean value) {
+    this.createIfMissing = value;
+    return this;
+  }
+
   private MappingAttribute createMappingAttribute(final String attributeKey,
       final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
@@ -103,6 +116,7 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
    * @return SetResponse
    */
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> new MappingsApi(apiClient).setMapping(id, this.request, siteId));
+    return executeApiCall(() -> new MappingsApi(apiClient).setMapping(id, this.request, siteId,
+        this.createIfMissing));
   }
 }

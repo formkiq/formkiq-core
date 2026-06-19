@@ -3698,6 +3698,46 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    put:
+      operationId: SetEntityType
+      description: Sets a Entity Type
+      summary: Set EntityType
+      tags:
+      - Entity
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/entityTypeIdParam'
+      - $ref: '#/components/parameters/createIfMissingParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetEntityTypeRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
     delete:
       operationId: DeleteEntityType
       description: Deletes Entity Type
@@ -3811,6 +3851,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetEntityResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    put:
+      operationId: SetEntity
+      description: Sets a Entity
+      summary: Set Entity
+      tags:
+      - Entity
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/entityTypeIdParam'
+      - $ref: '#/components/parameters/entityIdParam'
+      - $ref: '#/components/parameters/namespaceParam'
+      - $ref: '#/components/parameters/createIfMissingParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetEntityRequest'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -4791,6 +4873,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/mappingIdParam'
+      - $ref: '#/components/parameters/createIfMissingParam'
       requestBody:
         required: true
         content:
@@ -7830,6 +7913,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/workflowIdParam'
+      - $ref: '#/components/parameters/createIfMissingParam'
       requestBody:
         required: true
         content:
@@ -8613,6 +8697,14 @@ components:
       required: true
       schema:
         type: string
+    createIfMissingParam:
+      name: createIfMissing
+      in: query
+      description: When true, skip checking whether the resource exists before setting it
+      required: false
+      schema:
+        type: boolean
+        default: false
   schemas:
     ValidationErrorsResponse:
       type: object
@@ -11696,6 +11788,11 @@ components:
       properties:
         entity:
           $ref: '#/components/schemas/AddEntity'
+    SetEntityRequest:
+      type: object
+      properties:
+        entity:
+          $ref: '#/components/schemas/AddEntity'
     UpdateEntityRequest:
       type: object
       properties:
@@ -11790,6 +11887,11 @@ components:
           type: string
           description: Inserted Timestamp
     AddEntityTypeRequest:
+      type: object
+      properties:
+        entityType:
+          $ref: '#/components/schemas/AddEntityType'
+    SetEntityTypeRequest:
       type: object
       properties:
         entityType:

@@ -51,6 +51,8 @@ public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetResponse
   private final Map<String, AddWorkflowStep> workflowSteps = new HashMap<>();
   /** Workflow. */
   private final String workflow;
+  /** Create if missing. */
+  private boolean createIfMissing = false;
 
   /**
    * constructor.
@@ -122,6 +124,17 @@ public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetResponse
     return this;
   }
 
+  /**
+   * Set create if missing.
+   *
+   * @param value boolean
+   * @return {@link SetWorkflowRequestBuilder}
+   */
+  public SetWorkflowRequestBuilder createIfMissing(final boolean value) {
+    this.createIfMissing = value;
+    return this;
+  }
+
   private AddWorkflowStep getWorkflowStep(final String stepId) {
     AddWorkflowStep step = workflowSteps.get(stepId);
     if (step == null) {
@@ -141,7 +154,7 @@ public class SetWorkflowRequestBuilder implements HttpRequestBuilder<SetResponse
    * @return SetWorkflowResponse
    */
   public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new DocumentWorkflowsApi(apiClient).setWorkflow(workflow, this.request, siteId));
+    return executeApiCall(() -> new DocumentWorkflowsApi(apiClient).setWorkflow(workflow,
+        this.request, siteId, this.createIfMissing));
   }
 }
