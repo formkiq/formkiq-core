@@ -74,6 +74,8 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
   private final AwsServiceCache awsServices;
   /** Is Update. */
   private final boolean update;
+  /** Create if missing. */
+  private final boolean createIfMissing;
 
   /**
    * constructor.
@@ -83,8 +85,21 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
    */
   public AddEntityRequestToEntityRecordTransformer(final AwsServiceCache awsservice,
       final boolean isUpdate) {
+    this(awsservice, isUpdate, false);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param isUpdate boolean
+   * @param isCreateIfMissing boolean
+   */
+  public AddEntityRequestToEntityRecordTransformer(final AwsServiceCache awsservice,
+      final boolean isUpdate, final boolean isCreateIfMissing) {
     this.awsServices = awsservice;
     this.update = isUpdate;
+    this.createIfMissing = isCreateIfMissing;
   }
 
   @Override
@@ -107,7 +122,7 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
 
     DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
 
-    if (!update) {
+    if (!update || oldAttributes == null) {
       UserActivityContext.setCreate(ActivityResourceType.ENTITY, attributes);
     } else {
 
@@ -130,6 +145,9 @@ public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequ
 
     Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
     if (attributes.isEmpty()) {
+      if (this.createIfMissing) {
+        return null;
+      }
       throw new NotFoundException("Entity '" + entityId + "' not found");
     }
 

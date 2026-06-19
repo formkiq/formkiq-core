@@ -30,38 +30,19 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
-import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
-import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
-import com.formkiq.aws.dynamodb.entity.PresetEntity;
-import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
-import com.formkiq.aws.services.lambda.JsonToObject;
-import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
-import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
-import com.formkiq.plugins.useractivity.UserActivityContext;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
-import com.formkiq.aws.dynamodb.attributes.AttributeType;
-import com.formkiq.validation.ValidationBuilder;
-import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_CREATED;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
@@ -76,28 +57,6 @@ public class EntityTypesRequestHandler
    */
   public EntityTypesRequestHandler() {}
 
-  private List<Map<String, AttributeValue>> addPresetAttributes(final AwsServiceCache awsservice,
-      final String siteId, final AddEntityType addEntityType) {
-    final List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
-
-    if (EntityTypeNamespace.PRESET.equals(addEntityType.namespace())) {
-
-      Optional<PresetEntity> presetEntity =
-          new GetPresetEntity(awsservice).apply(addEntityType.name());
-
-      presetEntity.ifPresent(presetEntityI -> presetEntityI.getAttributeKeys().forEach(k -> {
-
-        AttributeKeyReserved key = AttributeKeyReserved.find(k);
-        AttributeDataType dataType = key != null ? key.getDataType() : AttributeDataType.STRING;
-
-        AttributeRecord a = new AttributeRecord().type(AttributeType.STANDARD).dataType(dataType)
-            .key(k).documentId(k);
-        attributeList.add(a.getAttributes(siteId));
-      }));
-    }
-
-    return attributeList;
-  }
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -137,52 +96,10 @@ public class EntityTypesRequestHandler
 
     String siteId = authorization.getSiteId();
 
-    AddEntityTypeRequest request =
-        JsonToObject.fromJson(awsservice, event, AddEntityTypeRequest.class);
-    validate(request);
-
-    AddEntityType addEntityType = request.entityType();
-
-    Collection<PresetEntity> presetEntities = new GetPresetEntities(awsservice).apply(null);
     EntityTypeRecord entityType =
-        EntityTypeRecord.builderWithPresets(presetEntities).documentId(ID.uuid())
-            .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
-
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
-    validateExist(awsservice, db, siteId, addEntityType.name(), addEntityType.namespace());
-
-    List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
-
-    Map<String, AttributeValue> attributes = entityType.getAttributes();
-    attributeList.add(attributes);
-
-    attributeList.addAll(addPresetAttributes(awsservice, siteId, addEntityType));
-
-    UserActivityContext.setCreate(ActivityResourceType.ENTITY_TYPE, attributes);
-    db.putItems(attributeList);
+        new SetEntityTypeRecordFunction(awsservice, false).apply(siteId, event);
 
     return ApiRequestHandlerResponse.builder().status(SC_CREATED)
         .body("entityTypeId", entityType.documentId()).build();
-  }
-
-  private void validate(final AddEntityTypeRequest request)
-      throws BadException, ValidationException {
-
-    if (request == null || request.entityType() == null) {
-      throw new BadException("Missing required parameter 'entityType'");
-    }
-  }
-
-  private void validateExist(final AwsServiceCache awsservice, final DynamoDbService db,
-      final String siteId, final String name, final EntityTypeNamespace namespace) {
-    ValidationBuilder vb = new ValidationBuilder();
-
-    String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
-
-    QueryRequest req = new FindEntityTypeByName().build(documentsTable, siteId,
-        new FindEntityTypeByName.EntityTypeName(namespace, name));
-    vb.isRequired("name", !db.exists(req), "'name' already exists");
-
-    vb.check();
   }
 }

@@ -113,4 +113,17 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Entity updated").build();
   }
+
+  @Override
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    boolean createIfMissing =
+        "true".equalsIgnoreCase(event.getQueryStringParameter("createIfMissing"));
+
+    new AddEntityRequestToEntityRecordTransformer(awsservice, true, createIfMissing)
+        .apply(authorization, event);
+
+    return ApiRequestHandlerResponse.builder().ok().body("message", "Entity set").build();
+  }
 }

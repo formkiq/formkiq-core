@@ -35,6 +35,8 @@ import com.formkiq.client.model.EntityType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
+import com.formkiq.client.model.SetEntityTypeRequest;
+import com.formkiq.client.model.SetResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -379,6 +381,47 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertEquals("{\"errors\":[{\"key\":\"namespace\","
           + "\"error\":\"'namespace' unexpected value 'ADSAF' must be one of "
           + "PRESET, CUSTOM\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PUT /entityTypes/{entityTypeId} createIfMissing.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetEntityTypes01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      String entityTypeId = ID.uuid();
+      String name = "Putentity" + ID.uuid().replace("-", "").substring(0, 8);
+      SetEntityTypeRequest req = new SetEntityTypeRequest()
+          .entityType(new AddEntityType().name(name).namespace(EntityTypeNamespace.CUSTOM));
+
+      // when
+      try {
+        this.entityApi.setEntityType(entityTypeId, req, siteId, false);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Entity Type '" + entityTypeId + "' not found\"}",
+            e.getResponseBody());
+      }
+
+      // when
+      SetResponse response = this.entityApi.setEntityType(entityTypeId, req, siteId, true);
+
+      // then
+      assertEquals("EntityType set", response.getMessage());
+
+      GetEntityTypeResponse getResponse =
+          this.entityApi.getEntityType(entityTypeId, siteId, EntityTypeNamespace.CUSTOM.name());
+      assertNotNull(getResponse.getEntityType());
+      assertEntityTypeEquals(getResponse.getEntityType(), name);
+      assertEquals(entityTypeId, getResponse.getEntityType().getEntityTypeId());
     }
   }
 }

@@ -43,6 +43,8 @@ import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.client.model.GetEntitiesResponse;
 import com.formkiq.client.model.GetEntityResponse;
+import com.formkiq.client.model.SetEntityRequest;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.UpdateEntityRequest;
 import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
@@ -614,6 +616,45 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
       assertEntityAttributeString(attributes.get(i++), "s", "123");
       assertEntityAttributeStrings(attributes.get(i));
     }
+  }
+
+  /**
+   * PUT /entities/{entityTypeId}/{entityId} createIfMissing.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetEntity01() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+
+    setBearerToken(new String[] {siteId});
+
+    String entityTypeId = addEntityType(siteId);
+    String entityId = ID.uuid();
+    SetEntityRequest setReq = new SetEntityRequest().entity(new AddEntity().name("setentity"));
+
+    // when
+    try {
+      this.entityApi.setEntity(entityTypeId, entityId, setReq, siteId, null, false);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"Entity '" + entityId + "' not found\"}", e.getResponseBody());
+    }
+
+    // when
+    SetResponse setResponse =
+        this.entityApi.setEntity(entityTypeId, entityId, setReq, siteId, null, true);
+
+    // then
+    assertEquals("Entity set", setResponse.getMessage());
+
+    GetEntityResponse response = this.entityApi.getEntity(entityTypeId, entityId, siteId, null);
+    assertNotNull(response.getEntity());
+    assertEntityEquals(response.getEntity(), "setentity");
+    assertEquals(entityId, response.getEntity().getEntityId());
   }
 
   /**
