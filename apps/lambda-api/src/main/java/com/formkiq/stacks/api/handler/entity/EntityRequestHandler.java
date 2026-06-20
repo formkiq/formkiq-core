@@ -38,6 +38,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.stacks.dynamodb.schemas.SchemaService;
+import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
@@ -65,11 +67,21 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         .name("").build(siteId).key();
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    Map<String, AttributeValue> attributes = db.get(key);
+    if (attributes.isEmpty()) {
+      throw new NotFoundException("entity '" + entityId + "' not found");
+    }
+
+    SchemaService schemaService = awsservice.getExtension(SchemaService.class);
+    ValidationBuilder vb = schemaService.validateDeleteEntity(siteId, entityTypeId, entityId);
+    vb.check();
+
     DeleteResult deleteResult = db.deleteItem(key);
 
     if (!deleteResult.isDelete()) {
       throw new NotFoundException("entity '" + entityId + "' not found");
     }
+
     UserActivityContext.setDelete(ActivityResourceType.ENTITY, deleteResult.attributes());
 
     return ApiRequestHandlerResponse.builder().status(SC_OK).body("message", "Entity deleted")

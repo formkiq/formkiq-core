@@ -26,9 +26,15 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentAttributesApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.GetDocumentAttributesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.List;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /**
  * Builder for Get Document Attributes Request.
@@ -59,6 +65,11 @@ public class GetDocumentAttributesRequestBuilder
    */
   public GetDocumentAttributesRequestBuilder(final String documentId) {
     this(DocumentArtifact.of(documentId, null));
+  }
+
+  public List<DocumentAttribute> getAttributes(final ApiClient client, final String siteId)
+      throws ApiException {
+    return notNull(submitOk(client, siteId).throwIfError().response().getAttributes());
   }
 
   /**

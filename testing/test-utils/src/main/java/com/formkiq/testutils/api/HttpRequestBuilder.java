@@ -65,6 +65,22 @@ public interface HttpRequestBuilder<T> {
   ApiHttpResponse<T> submit(ApiClient apiClient, String siteId);
 
   /**
+   * Run the API request and throw exception if 200.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return ApiHttpResponse
+   */
+  default ApiHttpResponse<T> submitError(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    var resp = submit(apiClient, siteId);
+    if (!resp.isError()) {
+      throw new ApiException("Expected error response");
+    }
+    return resp;
+  }
+
+  /**
    * Run the API request and throw exception if Not 200.
    *
    * @param apiClient ApiClient

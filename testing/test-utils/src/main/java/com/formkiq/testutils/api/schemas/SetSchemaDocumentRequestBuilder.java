@@ -27,11 +27,14 @@ import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddAttributeSchemaRequired;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.List;
 
 /**
  * Builder for {@link SetSitesSchemaRequest}.
@@ -49,6 +52,12 @@ public class SetSchemaDocumentRequestBuilder implements HttpRequestBuilder<SetRe
    */
   public SetSchemaDocumentRequestBuilder(final String name) {
     this.request.name(name).attributes(attributes);
+  }
+
+  public SetSchemaDocumentRequestBuilder addCompositeKey(final String... attributeKeys) {
+    attributes.addCompositeKeysItem(
+        new AttributeSchemaCompositeKey().attributeKeys(List.of(attributeKeys)));
+    return this;
   }
 
   /**

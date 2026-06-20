@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.schemas;
 
 import com.formkiq.client.api.SchemasApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddAttributeSchemaRequired;
 import com.formkiq.client.model.AddClassification;
@@ -106,6 +107,11 @@ public class AddClassificationRequestBuilder
     schemaAttributes.addRequiredItem(new AddAttributeSchemaRequired().attributeKey(key)
         .defaultEntityTypeId(entityTypeId).defaultEntityId(entityId));
     return this;
+  }
+
+  public String getClassificationId(final ApiClient client, final String siteId)
+      throws ApiException {
+    return submitOk(client, siteId).response().getClassificationId();
   }
 
   /**

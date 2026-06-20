@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 
@@ -184,4 +185,14 @@ public interface SchemaService {
    */
   void updateLocalization(String siteId, String classificationId, SchemaAttributes schemaAttributes,
       String locale);
+
+  /**
+   * Validate Entity can be deleted.
+   *
+   * @param siteId {@link String}
+   * @param entityTypeId {@link String}
+   * @param entityId {@link String}
+   * @return {@link ValidationBuilder}
+   */
+  ValidationBuilder validateDeleteEntity(String siteId, String entityTypeId, String entityId);
 }

@@ -38,6 +38,7 @@ import com.formkiq.client.model.AddEntityTypeRequest;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.Entity;
 import com.formkiq.client.model.EntityAttribute;
 import com.formkiq.client.model.EntityTypeNamespace;
@@ -47,10 +48,14 @@ import com.formkiq.client.model.SetEntityRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.client.model.UpdateEntityRequest;
 import com.formkiq.client.model.UpdateResponse;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.DeleteEntityAttributeRequestBuilder;
+import com.formkiq.testutils.api.entity.DeleteEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.GetEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.UpdateEntityRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 
@@ -457,6 +462,52 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /entities/{entityTypeId}/{entityId} when used as a schema default entity.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteEntity03() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(new String[] {siteId});
+
+    addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+    var entityTypeId = addEntityType(siteId);
+    var entityId =
+        new AddEntityRequestBuilder(entityTypeId).name("myentity").getEntityId(client, siteId);
+
+    new SetSchemaDocumentRequestBuilder("joe")
+        .addRequiredEntityAttribute("company", entityTypeId, entityId).submitOk(client, siteId);
+
+    // when
+    var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+    // then
+    var documentAttributes =
+        new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+
+    assertEquals(1, documentAttributes.size());
+    DocumentAttribute attribute = documentAttributes.getFirst();
+    assertEquals("company", attribute.getKey());
+    assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+    assertEquals(entityTypeId + "#" + entityId, attribute.getStringValue());
+    assertNotNull(attribute.getEntity());
+    assertEquals("myentity", attribute.getEntity().getName());
+
+    // when
+    var resp = new DeleteEntityRequestBuilder(entityTypeId, entityId).submitError(client, siteId);
+
+    // then
+    assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+    assertEquals(
+        "{\"errors\":[{\"key\":\"entityId\",\"error\":\"entity '" + entityId
+            + "' is used in a Schema / Classification, cannot be deleted\"}]}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
    * Get /entities/{entityTypeId}.
    *
    * @throws Exception an error has occurred
@@ -601,7 +652,7 @@ public class EntityRequestTest extends AbstractApiClientRequestTest {
     List<Entity> entities =
         notNull(this.entityApi.getEntities(entityTypeId, siteId, null, null, null).getEntities());
     assertFalse(entities.isEmpty());
-    List<EntityAttribute> attributes1 = notNull(entities.get(0).getAttributes());
+    List<EntityAttribute> attributes1 = notNull(entities.getFirst().getAttributes());
 
     for (List<EntityAttribute> attributes : List.of(attributes0, attributes1)) {
 

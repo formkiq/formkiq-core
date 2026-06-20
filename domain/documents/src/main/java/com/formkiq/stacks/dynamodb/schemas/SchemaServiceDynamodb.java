@@ -47,6 +47,7 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.locale.LocaleTypeRecord;
 import com.formkiq.stacks.dynamodb.locale.LocaleResourceType;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -318,7 +319,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
-      Map<String, AttributeValue> attrs = items.get(0);
+      Map<String, AttributeValue> attrs = items.getFirst();
       attrs = this.db.get(attrs.get(PK), attrs.get(SK));
       r = r.getFromAttributes(siteId, attrs);
     } else {
@@ -573,6 +574,61 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
+  public ValidationBuilder validateDeleteEntity(final String siteId, final String entityTypeId,
+      final String entityId) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    validateDeleteEntity(getSitesSchema(siteId), entityTypeId, entityId, vb);
+    if (!vb.isEmpty()) {
+      return vb;
+    }
+
+    final int limit = 100;
+    final int loopCount = 10;
+    String nextToken = null;
+    for (int i = 0; i < loopCount; i++) {
+
+      Pagination<ClassificationRecord> classifications =
+          findAllClassifications(siteId, nextToken, limit);
+
+      for (ClassificationRecord classification : classifications.getResults()) {
+        validateDeleteEntity(getSchema(classification), entityTypeId, entityId, vb);
+        if (!vb.isEmpty()) {
+          break;
+        }
+      }
+
+      nextToken = classifications.getNextToken();
+      if (isEmpty(nextToken)) {
+        break;
+      }
+    }
+
+    return vb;
+  }
+
+  private void validateDeleteEntity(final Schema schema, final String entityTypeId,
+      final String entityId, final ValidationBuilder vb) {
+
+    if (schema != null && schema.getAttributes() != null) {
+
+      boolean isReferenced = notNull(schema.getAttributes().getRequired()).stream()
+          .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
+              entityTypeId, entityId))
+          || notNull(schema.getAttributes().getOptional()).stream()
+              .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
+                  entityTypeId, entityId));
+
+      if (isReferenced) {
+        vb.addError("entityId",
+            "entity '" + entityId + "' is used in a Schema / Classification, cannot be deleted");
+      }
+    }
+  }
+
+
+  @Override
   public void updateLocalization(final String siteId, final String classificationId,
       final SchemaAttributes schemaAttributes, final String locale) {
 
@@ -818,6 +874,11 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
 
       validateOptionalSchemaAttributes(siteId, schema, attributes, errors);
     }
+  }
+
+  private boolean isDefaultEntity(final String defaultEntityTypeId, final String defaultEntityId,
+      final String entityTypeId, final String entityId) {
+    return entityTypeId.equals(defaultEntityTypeId) && entityId.equals(defaultEntityId);
   }
 
   private void validateOptionalSchemaAttributes(final String siteId, final Schema schema,

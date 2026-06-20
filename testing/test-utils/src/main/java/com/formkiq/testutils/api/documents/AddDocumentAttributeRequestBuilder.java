@@ -78,13 +78,13 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
    * Add Document Attribute.
    *
    * @param key {@link String}
-   * @param entities {@link List} of {@link AddDocumentAttributeEntityValue}
+   * @param stringValues {@link List} {@link String}
    * @return AddDocumentAttributesRequestBuilder
    */
   public AddDocumentAttributeRequestBuilder addAttribute(final String key,
-      final List<AddDocumentAttributeEntityValue> entities) {
-    var addEntities = new AddDocumentAttributeEntities().key(key).entities(entities);
-    this.request.addAttributesItem(new AddDocumentAttribute(addEntities));
+      final List<String> stringValues) {
+    this.request.addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).stringValues(stringValues)));
     return this;
   }
 
@@ -115,6 +115,34 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
       final String entityTypeId, final String entityId, final EntityTypeNamespace namespace) {
     this.request.addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeEntity()
         .key(key).entityId(entityId).entityTypeId(entityTypeId).namespace(namespace)));
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param entities {@link List} of {@link AddDocumentAttributeEntityValue}
+   * @return AddDocumentAttributesRequestBuilder
+   */
+  public AddDocumentAttributeRequestBuilder addAttributeEntities(final String key,
+      final List<AddDocumentAttributeEntityValue> entities) {
+    var addEntities = new AddDocumentAttributeEntities().key(key).entities(entities);
+    this.request.addAttributesItem(new AddDocumentAttribute(addEntities));
+    return this;
+  }
+
+  /**
+   * Add Document Attribute.
+   *
+   * @param key {@link String}
+   * @param entity {@link AddDocumentAttributeEntityValue}
+   * @return AddDocumentAttributesRequestBuilder
+   */
+  public AddDocumentAttributeRequestBuilder addAttributeEntity(final String key,
+      final AddDocumentAttributeEntityValue entity) {
+    var addEntities = new AddDocumentAttributeEntities().key(key).addEntitiesItem(entity);
+    this.request.addAttributesItem(new AddDocumentAttribute(addEntities));
     return this;
   }
 

@@ -389,8 +389,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       SetSchemaAttributes attr1 = createSchemaAttributes(List.of("documentType"), null);
       List<AddAttributeSchemaRequired> required = notNull(attr1.getRequired());
-      required.get(0).setDefaultValue("123");
-      required.get(0).setAllowedValues(List.of("1", "2"));
+      required.getFirst().setDefaultValue("123");
+      required.getFirst().setAllowedValues(List.of("1", "2"));
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr1));
 
@@ -486,7 +486,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(2, documentAttributes.size());
 
-      assertEquals("Classification", documentAttributes.get(0).getKey());
+      assertEquals("Classification", documentAttributes.getFirst().getKey());
       assertEquals(classificationId, documentAttributes.get(0).getStringValue());
       assertEquals(AttributeValueType.CLASSIFICATION, documentAttributes.get(0).getValueType());
       assertEquals("invoiceNumber", documentAttributes.get(1).getKey());
@@ -497,7 +497,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           new DocumentSearchAttribute().key("Classification").eq(classificationId);
       List<SearchResultDocument> documents = search(siteId, item0);
       assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0).getDocumentId());
+      assertEquals(documentId, documents.getFirst().getDocumentId());
     }
   }
 
@@ -550,7 +550,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
       assertNotNull(attr0.getRequired());
-      attr0.getRequired().get(0).setDefaultValue("12345");
+      attr0.getRequired().getFirst().setDefaultValue("12345");
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
@@ -564,7 +564,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(2, documentAttributes.size());
 
-      assertEquals("Classification", documentAttributes.get(0).getKey());
+      assertEquals("Classification", documentAttributes.getFirst().getKey());
       assertEquals(classificationId, documentAttributes.get(0).getStringValue());
       assertEquals(AttributeValueType.CLASSIFICATION, documentAttributes.get(0).getValueType());
 
@@ -623,7 +623,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       final int expected = 3;
       assertEquals(expected, documentAttributes.size());
 
-      assertEquals("Classification", documentAttributes.get(0).getKey());
+      assertEquals("Classification", documentAttributes.getFirst().getKey());
       assertEquals(classificationId, documentAttributes.get(0).getStringValue());
       assertEquals(AttributeValueType.CLASSIFICATION, documentAttributes.get(0).getValueType());
 
@@ -793,12 +793,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, "invoiceNumber");
 
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      notNull(attr0.getRequired()).get(0).addAllowedValuesItem("123");
+      notNull(attr0.getRequired()).getFirst().addAllowedValuesItem("123");
 
       setSiteSchema(siteId, attr0);
 
       SetSchemaAttributes attr1 = createSchemaAttributes(List.of("invoiceNumber"), null);
-      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      notNull(attr1.getRequired()).getFirst().addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
       AddDocumentAttribute attribute = createStringAttribute("invoiceNumber", "INV-001");
@@ -845,7 +845,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       // then
       List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
       assertEquals(1, documentAttributes.size());
-      assertEquals("reviewByDate", documentAttributes.get(0).getKey());
+      assertEquals("reviewByDate", documentAttributes.getFirst().getKey());
 
       // given
       AddDocumentAttributeClassification classification =
@@ -971,6 +971,54 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   }
 
   /**
+   * DELETE /entities/{entityTypeId}/{entityId} after classification default entity is applied.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  void testAddDocumentWithClassificationDefaultEntityDeleteEntity() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    addAttribute(siteId, "company", AttributeDataType.ENTITY);
+    String entityTypeId = addEntityType(siteId, "Company");
+    String entityId =
+        new AddEntityRequestBuilder(entityTypeId).name("My Company").getEntityId(client, siteId);
+
+    String classificationId = new AddClassificationRequestBuilder("doc")
+        .addRequiredEntityAttribute("company", entityTypeId, entityId)
+        .getClassificationId(client, siteId);
+
+    // when - add document with classification and no explicit entity attribute
+    String documentId =
+        addDocument(siteId, List.of(createAttributeClassification(classificationId)));
+
+    // then - classification default entity is attached to the document
+    List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, documentId);
+    assertEquals(2, documentAttributes.size());
+
+    assertDocumentAttributes(documentAttributes.get(0), "Classification", classificationId);
+    assertEquals(AttributeValueType.CLASSIFICATION, documentAttributes.get(0).getValueType());
+
+    assertDocumentAttributes(documentAttributes.get(1), "company", entityTypeId + "#" + entityId);
+    assertEquals(AttributeValueType.ENTITY, documentAttributes.get(1).getValueType());
+
+    // when - delete the default entity
+    try {
+      this.entityApi.deleteEntity(entityTypeId, entityId, siteId);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityId\",\"error\":\"entity '" + entityId
+              + "' is used in a Schema / Classification, cannot be deleted\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
    * Add document with entity classification, entity type only.
    */
   @Test
@@ -1045,7 +1093,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, attributeKey);
 
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
-      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+      notNull(attr0.getRequired()).getFirst().setAllowedValues(List.of("123", "A", "B"));
 
       this.schemasApi.setSitesSchema(siteId,
           new SetSitesSchemaRequest().name("test").attributes(attr0));
@@ -1100,16 +1148,16 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addAttribute(siteId, attributeKey);
 
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
-      notNull(attr0.getRequired()).get(0).setAllowedValues(List.of("123", "A", "B"));
+      notNull(attr0.getRequired()).getFirst().setAllowedValues(List.of("123", "A", "B"));
       this.schemasApi.setSitesSchema(siteId,
           new SetSitesSchemaRequest().name("test").attributes(attr0));
 
       SetSchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
-      notNull(attr1.getRequired()).get(0).addAllowedValuesItem("INV-001");
+      notNull(attr1.getRequired()).getFirst().addAllowedValuesItem("INV-001");
       String classificationId = addClassification(siteId, attr1);
 
       SetSchemaAttributes attr2 = createSchemaAttributes(List.of(attributeKey), null);
-      notNull(attr2.getRequired()).get(0).addAllowedValuesItem("OTHER");
+      notNull(attr2.getRequired()).getFirst().addAllowedValuesItem("OTHER");
       addClassification(siteId, "doc2", attr2);
 
       // when
@@ -1261,7 +1309,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       documentAttributes = notNull(this.documentAttributesApi
           .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
       assertEquals(1, documentAttributes.size());
-      assertDocumentAttributes(documentAttributes.get(0), "test2", "333");
+      assertDocumentAttributes(documentAttributes.getFirst(), "test2", "333");
     }
   }
 
@@ -1312,7 +1360,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       attributes = notNull(this.schemasApi
           .getSitesClassifications(siteId, "" + limit, response.getNext()).getClassifications());
       assertEquals(1, attributes.size());
-      assertEquals("test_4", attributes.get(0).getName());
+      assertEquals("test_4", attributes.getFirst().getName());
     }
   }
 
