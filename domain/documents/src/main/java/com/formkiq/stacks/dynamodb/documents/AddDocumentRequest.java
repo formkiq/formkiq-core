@@ -41,6 +41,8 @@ public class AddDocumentRequest {
   private List<AddDocumentAttribute> attributes;
   /** Create artifacts. */
   private boolean artifacts;
+  /** Artifact Category. */
+  private String artifactCategory;
   /** Document content. */
   private String content;
   /** Content Type. */
@@ -102,6 +104,15 @@ public class AddDocumentRequest {
    */
   public String getAgent() {
     return agent;
+  }
+
+  /**
+   * Get Artifact Category.
+   *
+   * @return {@link String}
+   */
+  public String getArtifactCategory() {
+    return this.artifactCategory;
   }
 
   /**
@@ -282,6 +293,15 @@ public class AddDocumentRequest {
    */
   public void setAgent(final String userAgent) {
     this.agent = userAgent;
+  }
+
+  /**
+   * Set Artifact Category.
+   *
+   * @param category {@link String}
+   */
+  public void setArtifactCategory(final String category) {
+    this.artifactCategory = category;
   }
 
   /**

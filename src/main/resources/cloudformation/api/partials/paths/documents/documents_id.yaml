@@ -138,6 +138,9 @@ components:
         artifactId:
           type: "string"
           description: "Artifact Identifier"
+        artifactCategory:
+          type: "string"
+          description: "Artifact Category"
         hasArtifacts:
           type: "boolean"
           description: "Whether the document has artifact documents"
@@ -254,6 +257,9 @@ components:
     UpdateDocumentRequest:
       type: "object"
       properties:
+        artifactCategory:
+          type: "string"
+          description: "Artifact Category"
         path:
           type: "string"
           description: "Path or Name of document"

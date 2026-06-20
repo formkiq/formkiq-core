@@ -33,6 +33,13 @@ import java.util.List;
 public interface DocumentItem {
 
   /**
+   * Get Artifact Category.
+   *
+   * @return {@link String}
+   */
+  String getArtifactCategory();
+
+  /**
    * Get Artifact Id.
    *
    * @return {@link String}
@@ -171,6 +178,13 @@ public interface DocumentItem {
    * @return {@link String}
    */
   String getWidth();
+
+  /**
+   * Set Artifact Category.
+   *
+   * @param artifactCategory {@link String}
+   */
+  void setArtifactCategory(String artifactCategory);
 
   /**
    * Set Artifact Id.

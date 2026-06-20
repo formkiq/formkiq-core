@@ -57,6 +57,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private String belongsToDocumentId;
   /** Artifact Id. */
   private String artifactId;
+  /** Artifact Category. */
+  private String artifactCategory;
   /** Document Path. */
   private String path;
   /** Deep Link Path. */
@@ -116,6 +118,17 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   }
 
   /**
+   * Set Artifact Category.
+   *
+   * @param category {@link String}
+   * @return {@link DocumentRecordBuilder}
+   */
+  public DocumentRecordBuilder artifactCategory(final String category) {
+    this.artifactCategory = category;
+    return this;
+  }
+
+  /**
    * Set Artifact Id.
    *
    * @param id {@link String}
@@ -153,6 +166,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
       ha = DynamoDbTypes.toBoolean(prev.get("hasArtifacts"));
     }
     return new DocumentRecord(key, documentId, ps(artifactId, prev, "artifactId"),
+        ps(artifactCategory, prev, "artifactCategory"),
         ps(belongsToDocumentId, prev, "belongsToDocumentId"), ps(path, prev, "path"), deepLinkPath,
         ps(contentType, prev, "contentType"), ps(contentLength, prev, "contentLength"),
         cs != null ? removeQuotes(cs) : null, ps(checksumType, prev, "checksumType"),
@@ -468,6 +482,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private void validate() {
     ValidationBuilder vb = new ValidationBuilder();
 
+    validateArtifactCategory(vb);
     validateDeepLinkPath(vb);
     validateDocumentPath(vb);
 
@@ -475,6 +490,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     validateDimension(vb, "height", height);
 
     vb.check();
+  }
+
+  private void validateArtifactCategory(final ValidationBuilder vb) {
+    if (isEmpty(artifactId) && !isEmpty(artifactCategory)) {
+      vb.addError("artifactCategory", "'artifactCategory' can only be set when artifactId is set");
+    }
   }
 
   private void validateDeepLinkPath(final ValidationBuilder vb) {

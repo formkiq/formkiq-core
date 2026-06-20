@@ -53,6 +53,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getArtifactCategory() {
+    return getString("artifactCategory");
+  }
+
+  @Override
   public String getArtifactId() {
     return getString("artifactId");
   }
@@ -172,10 +177,21 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public void setArtifactCategory(final String artifactCategory) {
+    if (!com.formkiq.strings.Strings.isEmpty(artifactCategory)
+        && com.formkiq.strings.Strings.isEmpty(getArtifactId())) {
+      throw new IllegalArgumentException("artifactCategory requires artifactId");
+    }
+    put("artifactCategory", artifactCategory);
+  }
+
+  @Override
   public void setArtifactId(final String artifactId) {
     put("artifactId", artifactId);
-    if (artifactId != null) {
+    if (!com.formkiq.strings.Strings.isEmpty(artifactId)) {
       put("hasArtifacts", Boolean.FALSE);
+    } else {
+      remove("artifactCategory");
     }
   }
 

@@ -167,6 +167,47 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Add Artifact Category to artifact document.
+   */
+  @Test
+  void testAddArtifactCategory() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().artifacts(true).content()
+          .artifactCategory("123").getDocument(client, siteId);
+
+      // then
+      var doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId);
+      assertEquals("123", doc.response().getArtifactCategory());
+    }
+  }
+
+  /**
+   * Add Artifact Category to non artifact document.
+   */
+  @Test
+  void testAddArtifactCategoryToNonArtifactDocument() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().artifactCategory("123")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"artifactCategory\","
+              + "\"error\":\"'artifactCategory' can only be set when artifactId is set\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
    * DELETE root document with artifacts.
    */
   @Test
@@ -176,11 +217,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
 
-      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
-          .content("artifact").contentType("text/plain").artifacts(true).submit(client, siteId)
-          .throwIfError().response();
-      final DocumentArtifact documentArtifact =
-          DocumentArtifact.of(document.documentId(), artifact.getArtifactId());
+      final var documentArtifact =
+          new AddDocumentRequestBuilder().documentId(document.documentId()).content("artifact")
+              .contentType("text/plain").artifacts(true).getDocument(client, siteId);
 
       // when
       var deleteResponse = new DeleteDocumentRequestBuilder(document).submit(client, siteId);

@@ -25,13 +25,16 @@ package com.formkiq.aws.dynamodb.documents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Unit tests for {@link DocumentRecordBuilder}.
@@ -40,6 +43,23 @@ public class DocumentRecordBuilderTest {
 
   private void assertKeyEquals(final String siteId, final String expected, final String actual) {
     assertEquals(siteId != null ? siteId + "/" + expected : expected, actual);
+  }
+
+  @Test
+  void testBuildArtifactCategory01() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid()).artifactId(ID.ulid())
+        .artifactCategory("ocr").build((String) null);
+
+    assertEquals("ocr", record.artifactCategory());
+    assertEquals("ocr", record.getAttributes().get("artifactCategory").s());
+  }
+
+  @Test
+  void testBuildArtifactCategory02() {
+    DocumentRecordBuilder builder =
+        new DocumentRecordBuilder().documentId(ID.uuid()).artifactCategory("ocr");
+
+    assertThrows(IllegalArgumentException.class, () -> builder.build((String) null));
   }
 
   @Test
@@ -145,5 +165,19 @@ public class DocumentRecordBuilderTest {
       assertKeyEquals(siteId, "softdelete#docs#", key.gsi2Pk());
       assertTrue(key.gsi2Sk().startsWith("date#"));
     }
+  }
+
+  @Test
+  void testFromAttributeMapArtifactCategory01() {
+    String documentId = ID.uuid();
+    String artifactId = ID.ulid();
+
+    DocumentRecord record =
+        DocumentRecord.fromAttributeMap(Map.of("PK", AttributeValue.fromS("docs#" + documentId),
+            "SK", AttributeValue.fromS("document_art#" + artifactId), "documentId",
+            AttributeValue.fromS(documentId), "artifactId", AttributeValue.fromS(artifactId),
+            "artifactCategory", AttributeValue.fromS("ocr")));
+
+    assertEquals("ocr", record.artifactCategory());
   }
 }

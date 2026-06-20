@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb.documents;
 
+import static com.formkiq.strings.Strings.isEmpty;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +40,8 @@ public class Document implements DocumentItem {
 
   /** Artifact Id. */
   private String artifactId;
+  /** Artifact Category. */
+  private String artifactCategory;
   /** Belongs to document id. */
   private String belongsToDocumentId;
   /** Checksum. */
@@ -81,6 +85,11 @@ public class Document implements DocumentItem {
    * constructor.
    */
   public Document() {}
+
+  @Override
+  public String getArtifactCategory() {
+    return this.artifactCategory;
+  }
 
   @Override
   public String getArtifactId() {
@@ -183,10 +192,20 @@ public class Document implements DocumentItem {
   }
 
   @Override
+  public void setArtifactCategory(final String category) {
+    if (!isEmpty(category) && isEmpty(this.artifactId)) {
+      throw new IllegalArgumentException("artifactCategory requires artifactId");
+    }
+    this.artifactCategory = category;
+  }
+
+  @Override
   public void setArtifactId(final String id) {
     this.artifactId = id;
-    if (id != null) {
+    if (!isEmpty(id)) {
       this.hasArtifacts = Boolean.FALSE;
+    } else {
+      this.artifactCategory = null;
     }
   }
 

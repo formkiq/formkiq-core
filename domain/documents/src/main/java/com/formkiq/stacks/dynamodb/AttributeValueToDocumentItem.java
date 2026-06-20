@@ -108,6 +108,7 @@ public class AttributeValueToDocumentItem
 
     item.setChecksum((String) map.get("checksum"));
     item.setArtifactId((String) map.get("artifactId"));
+    item.setArtifactCategory((String) map.get("artifactCategory"));
     item.setBelongsToDocumentId((String) map.get("belongsToDocumentId"));
     item.setChecksumType((String) map.get("checksumType"));
     item.setHasArtifacts(

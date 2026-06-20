@@ -233,6 +233,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Set artifact category.
+   *
+   * @param artifactCategory {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder artifactCategory(final String artifactCategory) {
+    this.request.setArtifactCategory(artifactCategory);
+    return this;
+  }
+
+  /**
    * Set Artifacts.
    *
    * @param createArtifacts boolean

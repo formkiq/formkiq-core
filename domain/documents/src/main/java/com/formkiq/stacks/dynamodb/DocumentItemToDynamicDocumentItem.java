@@ -67,6 +67,7 @@ public class DocumentItemToDynamicDocumentItem
     map.put("contentLength", item.getContentLength());
     map.put("contentType", item.getContentType());
     map.put("artifactId", item.getArtifactId());
+    map.put("artifactCategory", item.getArtifactCategory());
     map.put("documentId", item.getDocumentId());
     map.put("hasArtifacts", item.getArtifactId() == null ? item.getHasArtifacts() : Boolean.FALSE);
     map.put("insertedDate", item.getInsertedDate());

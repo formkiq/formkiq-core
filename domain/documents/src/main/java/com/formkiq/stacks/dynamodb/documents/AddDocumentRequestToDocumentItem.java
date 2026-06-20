@@ -123,6 +123,8 @@ public class AddDocumentRequestToDocumentItem
       item.setArtifactId(ID.ulid());
     }
 
+    item.setArtifactCategory(r.getArtifactCategory());
+
     return item;
   }
 

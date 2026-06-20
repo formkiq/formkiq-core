@@ -95,4 +95,21 @@ public class AddDocumentRequestToDocumentRecordSetTest {
     assertFalse(transform.test(request));
     assertThrows(IllegalArgumentException.class, () -> transform.apply("siteId", request));
   }
+
+  @Test
+  void testApplyArtifactCategory01() {
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request =
+        new com.formkiq.stacks.dynamodb.documents.AddDocumentRequest();
+    request.setDocumentId("doc01");
+    request.setArtifacts(true);
+    request.setArtifactCategory("ocr");
+
+    AddDocumentRequestToDocumentRecordSet transform =
+        new AddDocumentRequestToDocumentRecordSet(new AwsServiceCache(), null, "joe");
+
+    DocumentRecordSet recordSet = transform.apply("siteId", request);
+
+    assertTrue(recordSet.documentRecord().artifactId() != null);
+    assertEquals("ocr", recordSet.documentRecord().artifactCategory());
+  }
 }

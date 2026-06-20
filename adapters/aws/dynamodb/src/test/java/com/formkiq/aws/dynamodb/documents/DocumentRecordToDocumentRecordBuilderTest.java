@@ -43,7 +43,7 @@ public class DocumentRecordToDocumentRecordBuilderTest {
     Date lastModifiedDate = new Date(insertedDate.getTime() + 1000);
     List<DocumentMetadata> metadata = List.of(new DocumentMetadata("key", "value", null));
     DocumentRecord record = DocumentRecord.builder().documentId("doc01").artifactId("artifact01")
-        .belongsToDocumentId("belongsTo01").path("test.txt")
+        .artifactCategory("ocr").belongsToDocumentId("belongsTo01").path("test.txt")
         .deepLinkPath("https://example.com/test.txt").contentType("text/plain")
         .contentLength(Long.valueOf(123)).checksum("checksum").checksumType("SHA256")
         .s3version("s3version").userId("joe").version("v1").width("100").height("200")
@@ -58,6 +58,7 @@ public class DocumentRecordToDocumentRecordBuilderTest {
     assertEquals("parent01", copy.key().pk().substring("docs#".length()));
     assertEquals("doc01", copy.documentId());
     assertEquals("artifact01", copy.artifactId());
+    assertEquals("ocr", copy.artifactCategory());
     assertEquals("belongsTo01", copy.belongsToDocumentId());
     assertEquals("test.txt", copy.path());
     assertEquals("https://example.com/test.txt", copy.deepLinkPath());

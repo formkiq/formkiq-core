@@ -48,6 +48,7 @@ public class DocumentRecordToDocumentRecordBuilder
 
     return DocumentRecord.builder().parentDocumentId(parentDocumentId)
         .documentId(record.documentId()).artifactId(record.artifactId())
+        .artifactCategory(record.artifactCategory())
         .belongsToDocumentId(record.belongsToDocumentId()).path(record.path())
         .deepLinkPath(record.deepLinkPath()).contentType(record.contentType())
         .contentLength(record.contentLength()).checksum(record.checksum())
