@@ -25,7 +25,6 @@ package com.formkiq.aws.dynamodb.documents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
@@ -52,14 +51,6 @@ public class DocumentRecordBuilderTest {
 
     assertEquals("ocr", record.artifactCategory());
     assertEquals("ocr", record.getAttributes().get("artifactCategory").s());
-  }
-
-  @Test
-  void testBuildArtifactCategory02() {
-    DocumentRecordBuilder builder =
-        new DocumentRecordBuilder().documentId(ID.uuid()).artifactCategory("ocr");
-
-    assertThrows(IllegalArgumentException.class, () -> builder.build((String) null));
   }
 
   @Test

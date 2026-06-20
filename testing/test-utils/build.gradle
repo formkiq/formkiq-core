@@ -10,6 +10,7 @@ dependencies {
   implementation project(':adapters:aws:ssm')
   implementation project(':adapters:aws:secrets-manager')
   implementation project(':adapters:aws:dynamodb')
+  implementation project(':libs:http')
   implementation project(':libs:lambda-services')
   implementation project(':libs:strings')
 

@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.documents;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 import java.net.URL;
 import java.time.Duration;
@@ -98,6 +99,13 @@ public class DocumentIdContentRequestHandler
 
     DocumentItem item =
         getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+
+    if (isPromotedArtifactRequest(document, item, versionKey)) {
+      document = new DocumentArtifact(documentId, item.getPromotedArtifactId());
+      versionAttributes = getVersionAttributes(awsservice, siteId, document, versionKey);
+      item = getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+    }
+
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     ApiRequestHandlerResponse.Builder response;
@@ -188,5 +196,11 @@ public class DocumentIdContentRequestHandler
     }
 
     return versionId;
+  }
+
+  private boolean isPromotedArtifactRequest(final DocumentArtifact document,
+      final DocumentItem item, final String versionKey) {
+    return versionKey == null && document.artifactId() == null
+        && !isEmpty(item.getPromotedArtifactId());
   }
 }

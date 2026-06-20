@@ -80,7 +80,9 @@ import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
+import com.formkiq.testutils.api.documents.PromoteDocumentArtifactRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
@@ -182,6 +184,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       var doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId);
       assertEquals("123", doc.response().getArtifactCategory());
+
+      // when
+      new UpdateDocumentRequestBuilder(document).artifactCategory("222").submitOk(client, siteId);
+
+      // then
+      doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId);
+      assertEquals("222", doc.response().getArtifactCategory());
     }
   }
 
@@ -1697,6 +1706,53 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Add Artifact Category to artifact document.
+   */
+  @Test
+  void testPromoteDocumentArtifact() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content("A").contentType("text/plain")
+          .getDocument(client, siteId);
+
+      // when
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content("B").contentType("text/plain").getDocument(client, siteId);
+
+      // then
+      assertEquals("A", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(artifact).getContent(client, siteId));
+
+      // when
+      var resp = new PromoteDocumentArtifactRequestBuilder(artifact).submitOk(client, siteId);
+
+      // then
+      assertEquals("Promoted artifact '" + artifact.artifactId() + "' on document '"
+          + artifact.documentId() + "'.", resp.response().getMessage());
+      var root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertEquals(artifact.artifactId(), root.promotedArtifactId());
+      assertEquals("B", new GetDocumentUrlRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentUrlRequestBuilder(artifact).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(artifact).getContent(client, siteId));
+
+      // when
+      resp = new PromoteDocumentArtifactRequestBuilder(document).submitOk(client, siteId);
+
+      // then
+      assertEquals("Promoted artifact 'null' on document '" + artifact.documentId() + "'.",
+          resp.response().getMessage());
+      root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertNull(root.promotedArtifactId());
+      assertEquals("A", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+    }
+  }
+
+  /**
    * Test Publish no published document.
    * 
    * @throws ApiException ApiException
@@ -1786,6 +1842,27 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/artifacts/promoteArtifact.
+   */
+  @Test
+  public void testPutPromoteArtifact() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .content("artifact content").contentType("text/plain").artifacts(true)
+          .getDocument(client, siteId);
+
+      new PromoteDocumentArtifactRequestBuilder(artifact).submitOk(client, siteId);
+
+      var root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertEquals(artifact.artifactId(), root.promotedArtifactId());
     }
   }
 

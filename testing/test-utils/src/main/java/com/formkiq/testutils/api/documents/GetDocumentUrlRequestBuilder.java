@@ -23,36 +23,44 @@
  */
 package com.formkiq.testutils.api.documents;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Builder for Get Document URL Request.
  */
 public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
-  /** {@link String}. */
-  private final String id;
-  /** Artifact Id. */
-  private String artifactId;
+  /** {@link DocumentArtifact}. */
+  private final DocumentArtifact document;
   /** Url Format. */
   private String urlFormat;
 
   /**
    * constructor.
    *
-   * @param documentId {@link String}
+   * @param documentArtifact {@link DocumentArtifact}
    */
-  public GetDocumentUrlRequestBuilder(final String documentId) {
-    this.id = documentId;
+  public GetDocumentUrlRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
   }
 
-  public GetDocumentUrlRequestBuilder setArtifactId(final String artifact) {
-    this.artifactId = artifact;
-    return this;
+  public String getContent(final ApiClient client, final String siteId) throws ApiException {
+    var resp = submitOk(client, siteId).response();
+    try {
+      return new HttpServiceJdk11().get(resp.getUrl(), Optional.empty(), Optional.empty()).body();
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
   }
 
   public GetDocumentUrlRequestBuilder setFormat(final String format) {
@@ -63,7 +71,8 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentUrl(this.id, siteId,
-        this.artifactId, null, null, null, null, null, urlFormat));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocumentUrl(this.document.documentId(), siteId,
+            this.document.artifactId(), null, null, null, null, null, urlFormat));
   }
 }

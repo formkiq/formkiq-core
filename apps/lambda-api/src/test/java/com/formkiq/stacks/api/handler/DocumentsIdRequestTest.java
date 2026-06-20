@@ -1580,6 +1580,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       var documentId0 =
           new AddDocumentRequestBuilder().content("A").path("a1.txt").contentType("text/plain")
               .submit(client, siteId).throwIfError().response().getDocumentId();
+      final var document0 = DocumentArtifact.of(documentId0, null);
 
       var resp = new AddDocumentRequestBuilder().documentId(documentId0).content("B")
           .contentType("text/plain").path("b1.txt").artifacts(true).submit(client, siteId)
@@ -1605,10 +1606,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .throwIfError().response().getContent());
 
       // when
-      var resp0 = new GetDocumentUrlRequestBuilder(documentId0).submit(client, siteId)
-          .throwIfError().response();
-      var resp1 = new GetDocumentUrlRequestBuilder(documentId0).setArtifactId(resp.getArtifactId())
-          .submit(client, siteId).throwIfError().response();
+      var resp0 = new GetDocumentUrlRequestBuilder(document0).submit(client, siteId).throwIfError()
+          .response();
+      var resp1 = new GetDocumentUrlRequestBuilder(artifact).submit(client, siteId).throwIfError()
+          .response();
 
       // then
       assertNotNull(resp0.getUrl());

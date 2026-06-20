@@ -64,6 +64,7 @@ public class DocumentItemToDocumentRecordBuilder
         .userId(item.getUserId()).version(item.getVersion()).width(item.getWidth())
         .height(item.getHeight()).timeToLive(item.getTimeToLive())
         .insertedDate(item.getInsertedDate()).lastModifiedDate(item.getLastModifiedDate())
-        .metadata(item.getMetadata()).hasArtifacts(item.getHasArtifacts());
+        .metadata(item.getMetadata()).hasArtifacts(item.getHasArtifacts())
+        .promotedArtifactId(item.getPromotedArtifactId());
   }
 }

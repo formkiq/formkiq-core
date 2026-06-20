@@ -846,21 +846,21 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     String content = "mycontent";
 
     // when - add doc
-    var documentId = addDocument(client, siteId,
-        new AddDocumentRequestBuilder().path(path + "/test.txt").content(content), content);
+    var document = new AddDocumentRequestBuilder().path(path + "/test.txt").content(content)
+        .getDocument(client, siteId);
 
     // given
     new SetBearers().apply(client, new String[] {"aRole", siteId});
 
     // when - get doc url / content
-    var url = new GetDocumentUrlRequestBuilder(documentId).submit(client, siteId);
+    var url = new GetDocumentUrlRequestBuilder(document).submit(client, siteId);
 
     // then
     assertTrue(url.isError());
     assertEquals(SC_UNAUTHORIZED.getStatusCode(), url.exception().getCode());
     assertEquals("{\"message\":\"fkq access denied\"}", url.exception().getResponseBody());
 
-    var docContent = new GetDocumentContentRequestBuilder(documentId).submit(client, siteId);
+    var docContent = new GetDocumentContentRequestBuilder(document).submit(client, siteId);
     assertTrue(docContent.isError());
     assertEquals(SC_UNAUTHORIZED.getStatusCode(), docContent.exception().getCode());
     assertEquals("{\"message\":\"fkq access denied\"}", docContent.exception().getResponseBody());
@@ -872,8 +872,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     new SetBearers().apply(client, new String[] {siteId});
 
     // when - get doc url / content
-    url = new GetDocumentUrlRequestBuilder(documentId).submit(client, siteId);
-    docContent = new GetDocumentContentRequestBuilder(documentId).submit(client, siteId);
+    url = new GetDocumentUrlRequestBuilder(document).submit(client, siteId);
+    docContent = new GetDocumentContentRequestBuilder(document).submit(client, siteId);
 
     // then
     assertFalse(url.isError());

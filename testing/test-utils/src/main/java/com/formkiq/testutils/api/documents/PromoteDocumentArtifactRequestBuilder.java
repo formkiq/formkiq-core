@@ -26,62 +26,33 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.client.model.PromoteDocumentArtifactRequest;
+import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
-import static com.formkiq.strings.Strings.isEmpty;
-
 /**
- * Builder for Get Document Content Request.
+ * Builder for PUT /documents/{documentId}/artifacts/promoteArtifact.
  */
-public class GetDocumentContentRequestBuilder
-    implements HttpRequestBuilder<GetDocumentContentResponse> {
+public class PromoteDocumentArtifactRequestBuilder implements HttpRequestBuilder<SetResponse> {
 
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
-  /** Version Key. */
-  private String versionKey;
 
   /**
    * constructor.
    *
    * @param documentArtifact {@link DocumentArtifact}
    */
-  public GetDocumentContentRequestBuilder(final DocumentArtifact documentArtifact) {
+  public PromoteDocumentArtifactRequestBuilder(final DocumentArtifact documentArtifact) {
     this.document = documentArtifact;
   }
 
-  /**
-   * constructor.
-   *
-   * @param documentId {@link String}
-   */
-  public GetDocumentContentRequestBuilder(final String documentId) {
-    this(DocumentArtifact.of(documentId, null));
-  }
-
-  public String getContent(final ApiClient client, final String siteId) throws ApiException {
-    var resp = submitOk(client, siteId).response();
-    return !isEmpty(resp.getContent()) ? resp.getContent() : resp.getContentUrl();
-  }
-
   @Override
-  public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
-      final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(
-        this.document.documentId(), siteId, this.document.artifactId(), this.versionKey, null));
-  }
-
-  /**
-   * Set Version Key.
-   * 
-   * @param documentVersionKey {@link String}
-   * @return GetDocumentContentRequestBuilder
-   */
-  public GetDocumentContentRequestBuilder versionKey(final String documentVersionKey) {
-    this.versionKey = documentVersionKey;
-    return this;
+  public ApiHttpResponse<SetResponse> submit(final ApiClient apiClient, final String siteId) {
+    PromoteDocumentArtifactRequest request =
+        new PromoteDocumentArtifactRequest().artifactId(this.document.artifactId());
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .promoteDocumentArtifact(this.document.documentId(), request, siteId));
   }
 }

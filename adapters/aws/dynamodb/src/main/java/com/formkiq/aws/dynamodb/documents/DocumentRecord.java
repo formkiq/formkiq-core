@@ -42,7 +42,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     String contentType, Long contentLength, String checksum, String checksumType, String s3version,
     String userId, String version, String width, String height, String timeToLive,
     Date insertedDate, Date lastModifiedDate, Collection<DocumentMetadata> metadata,
-    Boolean hasArtifacts, Date deletedDate) {
+    Boolean hasArtifacts, String promotedArtifactId, Date deletedDate) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
@@ -106,6 +106,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         attributes.containsKey("hasArtifacts")
             ? DynamoDbTypes.toBoolean(attributes.get("hasArtifacts"))
             : null,
+        DynamoDbTypes.toString(attributes.get("promotedArtifactId")),
         DynamoDbTypes.toDate(attributes.get("deletedDate")));
   }
 
@@ -133,7 +134,8 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
             .withString("height", height).withNumber("TimeToLive", timeToLive)
             .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate)
             .withDate("deletedDate", deletedDate).withMap(metadataAttrs)
-            .withBoolean("hasArtifacts", hasArtifacts);
+            .withBoolean("hasArtifacts", hasArtifacts)
+            .withString("promotedArtifactId", promotedArtifactId);
 
     return map.build();
   }

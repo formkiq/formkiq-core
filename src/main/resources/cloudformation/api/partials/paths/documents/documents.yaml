@@ -354,6 +354,9 @@ components:
         artifactId:
           type: "string"
           description: "Artifact Identifier"
+        promotedArtifactId:
+          type: "string"
+          description: "Promoted Artifact Identifier"
         artifactCategory:
           type: "string"
           description: "Artifact Category"

@@ -43,6 +43,7 @@ public class DynamicObjectToDocumentItem implements Function<DynamicObject, Docu
 
     item.setArtifactId(t.getString("artifactId"));
     item.setArtifactCategory(t.getString("artifactCategory"));
+    item.setPromotedArtifactId(t.getString("promotedArtifactId"));
     item.setBelongsToDocumentId(t.getString("belongsToDocumentId"));
     item.setChecksum(t.getString("checksum"));
     item.setContentLength(t.getLong("contentLength"));
@@ -57,6 +58,7 @@ public class DynamicObjectToDocumentItem implements Function<DynamicObject, Docu
       DocumentItem i = new DynamicDocumentItem(Collections.emptyMap());
       i.setArtifactId(l.getString("artifactId"));
       i.setArtifactCategory(l.getString("artifactCategory"));
+      i.setPromotedArtifactId(l.getString("promotedArtifactId"));
       i.setDocumentId(l.getString("documentId"));
       return i;
     }).collect(Collectors.toList());

@@ -112,7 +112,7 @@ public class FkqDocumentService {
     get.throwIfError();
 
     if (content.isEmpty()) {
-      var url = new GetDocumentUrlRequestBuilder(documentId).submit(apiClient, siteId);
+      var url = new GetDocumentUrlRequestBuilder(document).submit(apiClient, siteId);
       url.throwIfError();
 
       uploadDocumentContent(url.response().getUrl(), content.getBytes(StandardCharsets.UTF_8),

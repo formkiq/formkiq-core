@@ -91,6 +91,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private Collection<DocumentMetadata> metadata;
   /** Whether this non-artifact document has artifact documents. */
   private Boolean hasArtifacts;
+  /** Promoted Artifact Id. */
+  private String promotedArtifactId;
   /** Metadata Keys to Delete. */
   private Collection<String> metadataDeleteKeys = Collections.emptyList();
   /** Set GSI1. */
@@ -173,7 +175,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
         ps(s3version, prev, "s3version"), ps(userId, prev, "userId"), ps(version, prev, "version"),
         ps(width, prev, "width"), ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"),
         insertedDate, lastModifiedDate, documentMetadata,
-        !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha, null);
+        !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha,
+        ps(promotedArtifactId, prev, "promotedArtifactId"), null);
   }
 
   @Override
@@ -347,6 +350,11 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
   public DocumentRecordBuilder path(final String filepath) {
     this.path = filepath;
+    return this;
+  }
+
+  public DocumentRecordBuilder promotedArtifactId(final String id) {
+    this.promotedArtifactId = id;
     return this;
   }
 

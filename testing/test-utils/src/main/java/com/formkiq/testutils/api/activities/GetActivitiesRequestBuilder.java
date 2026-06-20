@@ -26,6 +26,8 @@ package com.formkiq.testutils.api.activities;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.UserActivitiesApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.Activity;
 import com.formkiq.client.model.GetActivitesResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -33,6 +35,7 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 /**
  * Builder for Get Document Request.
@@ -194,6 +197,11 @@ public class GetActivitiesRequestBuilder implements HttpRequestBuilder<GetActivi
   public GetActivitiesRequestBuilder entityTypeId(final String activitiesEntityTypeId) {
     this.entityTypeId = activitiesEntityTypeId;
     return this;
+  }
+
+  public List<Activity> getActivites(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return submitOk(apiClient, siteId).response().getActivities();
   }
 
   /**

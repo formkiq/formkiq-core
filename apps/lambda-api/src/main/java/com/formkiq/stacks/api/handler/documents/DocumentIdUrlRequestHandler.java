@@ -116,6 +116,11 @@ public class DocumentIdUrlRequestHandler
         getVersionAttributes(awsservice, siteId, document, versionKey);
     DocumentItem item =
         getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+    if (isPromotedArtifactRequest(document, item, versionKey)) {
+      document = new DocumentArtifact(documentId, item.getPromotedArtifactId());
+      versionAttributes = getVersionAttributes(awsservice, siteId, document, versionKey);
+      item = getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+    }
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     boolean inline = "true".equals(getParameter(event, "inline"));
@@ -335,6 +340,12 @@ public class DocumentIdUrlRequestHandler
 
   private boolean isDeepLink(final String deepLinkPath) {
     return !isEmpty(deepLinkPath) && !deepLinkPath.startsWith(S3_PREFIX);
+  }
+
+  private boolean isPromotedArtifactRequest(final DocumentArtifact document,
+      final DocumentItem item, final String versionKey) {
+    return versionKey == null && document.artifactId() == null
+        && !isEmpty(item.getPromotedArtifactId());
   }
 
   private boolean isShortFormat(final ApiGatewayRequestEvent event) {

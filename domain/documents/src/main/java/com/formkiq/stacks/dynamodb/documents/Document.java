@@ -66,6 +66,8 @@ public class Document implements DocumentItem {
   private Collection<DocumentMetadata> metadata;
   /** Path. */
   private String path;
+  /** Promoted Artifact Id. */
+  private String promotedArtifactId;
   /** S3 Version. */
   private String s3version;
   /** Time to Live. */
@@ -164,6 +166,11 @@ public class Document implements DocumentItem {
   @Override
   public String getPath() {
     return this.path;
+  }
+
+  @Override
+  public String getPromotedArtifactId() {
+    return this.promotedArtifactId;
   }
 
   @Override
@@ -277,6 +284,11 @@ public class Document implements DocumentItem {
   @Override
   public void setPath(final String documentPath) {
     this.path = documentPath;
+  }
+
+  @Override
+  public void setPromotedArtifactId(final String id) {
+    this.promotedArtifactId = id;
   }
 
   @Override

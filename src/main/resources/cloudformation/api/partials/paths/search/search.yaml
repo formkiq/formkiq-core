@@ -499,6 +499,9 @@ components:
         artifactId:
           type: "string"
           description: "Document Artifact Identifier"
+        promotedArtifactId:
+          type: "string"
+          description: "Promoted Artifact Identifier"
         artifactCategory:
           type: "string"
           description: "Document Artifact Category"

@@ -149,6 +149,18 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   }
 
   /**
+   * Set Artifact category.
+   *
+   * @param artifactCategory {@link String}
+   *
+   * @return UpdateDocumentRequestBuilder
+   */
+  public UpdateDocumentRequestBuilder artifactCategory(final String artifactCategory) {
+    this.request.artifactCategory(artifactCategory);
+    return this;
+  }
+
+  /**
    * Set Random Content.
    *
    * @return UpdateDocumentRequestBuilder

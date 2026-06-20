@@ -28,6 +28,7 @@
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="io.jsonwebtoken" />
 		<allow pkg="com.google.gson" />
+		<allow pkg="com.formkiq.strings" />
 
 		<subpackage name="attributes">
 			<allow pkg="com.formkiq.testutils.api" />
@@ -42,6 +43,7 @@
 		</subpackage>
 
 		<subpackage name="documents">
+			<allow pkg="com.formkiq.module.http" />
 			<allow pkg="java.math" />
 			<allow pkg="java.time" />
 			<allow pkg="com.formkiq.testutils.api" />

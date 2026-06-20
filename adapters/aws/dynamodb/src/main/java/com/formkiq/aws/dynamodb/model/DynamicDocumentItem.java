@@ -152,6 +152,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   }
 
   @Override
+  public String getPromotedArtifactId() {
+    return getString("promotedArtifactId");
+  }
+
+  @Override
   public String getS3version() {
     return getString("s3version");
   }
@@ -282,6 +287,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setPath(final String path) {
     put("path", path);
+  }
+
+  @Override
+  public void setPromotedArtifactId(final String artifactId) {
+    put("promotedArtifactId", artifactId);
   }
 
   @Override

@@ -1715,6 +1715,29 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/artifacts/promoteArtifact:
+    put:
+      operationId: PromoteDocumentArtifact
+      summary: Promote document artifact
+      description: Promotes a document artifact to the specified document
+      tags:
+      - Documents
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteDocumentArtifactRequest'
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsSetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/attributes:
     get:
       operationId: GetDocumentAttributes
@@ -9778,6 +9801,9 @@ components:
         artifactId:
           type: string
           description: Artifact Identifier
+        promotedArtifactId:
+          type: string
+          description: Promoted Artifact Identifier
         artifactCategory:
           type: string
           description: Artifact Category
@@ -9998,6 +10024,9 @@ components:
         artifactId:
           type: string
           description: Artifact Identifier
+        promotedArtifactId:
+          type: string
+          description: Promoted Artifact Identifier
         artifactCategory:
           type: string
           description: Artifact Category
@@ -10370,6 +10399,12 @@ components:
         outputType:
           type: string
           description: The output type of the image
+    PromoteDocumentArtifactRequest:
+      type: object
+      properties:
+        artifactId:
+          type: string
+          description: Artifact Document Identifier. Omit to clear the promoted artifact.
     AddDocumentAttributeValue:
       type: object
       description: Document Attribute Value
@@ -13461,6 +13496,9 @@ components:
         artifactId:
           type: string
           description: Document Artifact Identifier
+        promotedArtifactId:
+          type: string
+          description: Promoted Artifact Identifier
         artifactCategory:
           type: string
           description: Document Artifact Category

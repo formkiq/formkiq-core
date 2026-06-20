@@ -56,6 +56,6 @@ public class DocumentRecordToDocumentRecordBuilder
         .version(record.version()).width(record.width()).height(record.height())
         .timeToLive(record.timeToLive()).insertedDate(record.insertedDate())
         .lastModifiedDate(record.lastModifiedDate()).metadata(record.metadata())
-        .hasArtifacts(record.hasArtifacts());
+        .hasArtifacts(record.hasArtifacts()).promotedArtifactId(record.promotedArtifactId());
   }
 }

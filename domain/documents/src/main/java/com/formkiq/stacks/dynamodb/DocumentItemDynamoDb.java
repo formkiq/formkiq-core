@@ -78,6 +78,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Document Path. */
   @Reflectable
   private String path;
+  /** Promoted Artifact Id. */
+  @Reflectable
+  private String promotedArtifactId;
   /** S3 Version. */
   @Reflectable
   private String s3version;
@@ -198,6 +201,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public String getPromotedArtifactId() {
+    return this.promotedArtifactId;
+  }
+
+  @Override
   public String getS3version() {
     return this.s3version;
   }
@@ -308,6 +316,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setPath(final String filepath) {
     this.path = filepath;
+  }
+
+  @Override
+  public void setPromotedArtifactId(final String id) {
+    this.promotedArtifactId = id;
   }
 
   @Override

@@ -145,6 +145,13 @@ public interface DocumentItem {
   String getPath();
 
   /**
+   * Get Promoted Artifact Id.
+   *
+   * @return {@link String}
+   */
+  String getPromotedArtifactId();
+
+  /**
    * Get S3 Version.
    * 
    * @return {@link String}
@@ -290,6 +297,13 @@ public interface DocumentItem {
    * @param filepath {@link String}
    */
   void setPath(String filepath);
+
+  /**
+   * Set Promoted Artifact Id.
+   *
+   * @param artifactId {@link String}
+   */
+  void setPromotedArtifactId(String artifactId);
 
   /**
    * Set S3 Version.
