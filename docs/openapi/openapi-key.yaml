@@ -67,6 +67,9 @@ tags:
 - name: documentVersions
   description: Document Versions API
   x-displayName: Document Versions
+- name: documentReviews
+  description: Document Reviews API
+  x-displayName: Document Reviews
 - name: documentFolders
   description: Document Folders API
   x-displayName: Document Folders
@@ -2812,6 +2815,125 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetDocumentRestoreResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/reviews:
+    get:
+      operationId: GetDocumentReviews
+      summary: Get document reviews
+      description: Get a listing of reviews for a document
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentReviewsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentReview
+      summary: Add document review
+      description: Add a review to a document
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentReviewRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentReviewResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+  /documents/{documentId}/reviews/{reviewId}:
+    get:
+      operationId: GetDocumentReview
+      summary: Get document review
+      description: Get a document review by review id
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/reviewIdParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentReviewResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    patch:
+      operationId: UpdateDocumentReview
+      summary: Update document review
+      description: Update a document review by review id
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/reviewIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentReviewRequest'
+      responses:
+        "200":
+          $ref: '#/components/responses/200CorsUpdateResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -8720,6 +8842,13 @@ components:
       required: true
       schema:
         type: string
+    reviewIdParam:
+      name: reviewId
+      in: path
+      description: Review Identifier
+      required: true
+      schema:
+        type: string
     createIfMissingParam:
       name: createIfMissing
       in: query
@@ -11367,6 +11496,120 @@ components:
         message:
           type: string
           description: Document Document restore message
+    DocumentReviewStatus:
+      type: string
+      description: |-
+        Status of Document Review:
+        - PENDING: Review has been created and is waiting for one or more decisions.
+        - IN_PROGRESS: Review has been claimed or at least one decision has been submitted, but completion requirements are not yet satisfied.
+        - COMPLETED: Completion requirements are satisfied.
+        - CANCELLED: Review was cancelled before completion.
+        - SUPERSEDED: Review was replaced by another review, usually because the artifact/document changed.
+      enum:
+      - PENDING
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      - SUPERSEDED
+    AddDocumentReviewRequest:
+      type: object
+      properties:
+        review:
+          $ref: '#/components/schemas/AddDocumentReview'
+    AddDocumentReviewResponse:
+      type: object
+      required:
+      - reviewId
+      properties:
+        reviewId:
+          type: string
+          description: Review Identifier
+    AddDocumentReview:
+      type: object
+      required:
+      - reviewCategory
+      - requiredDecisions
+      properties:
+        reviewCategory:
+          type: string
+          description: Review category
+        reviewStatus:
+          $ref: '#/components/schemas/DocumentReviewStatus'
+        requiredDecisions:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Number of decisions required to complete the review
+        comments:
+          type: string
+          description: Review comments
+    UpdateDocumentReviewRequest:
+      type: object
+      properties:
+        review:
+          $ref: '#/components/schemas/UpdateDocumentReview'
+    UpdateDocumentReview:
+      type: object
+      properties:
+        reviewStatus:
+          $ref: '#/components/schemas/DocumentReviewStatus'
+        requiredDecisions:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Number of decisions required to complete the review
+        comments:
+          type: string
+          description: Review comments
+    GetDocumentReviewsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        reviews:
+          type: array
+          description: List of document reviews
+          items:
+            $ref: '#/components/schemas/DocumentReview'
+    GetDocumentReviewResponse:
+      type: object
+      properties:
+        review:
+          $ref: '#/components/schemas/DocumentReview'
+    DocumentReview:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
+        reviewId:
+          type: string
+          description: Review Identifier
+        reviewCategory:
+          type: string
+          description: Review category
+        reviewStatus:
+          $ref: '#/components/schemas/DocumentReviewStatus'
+        requiredDecisions:
+          type: integer
+          format: int64
+          description: Number of decisions required to complete the review
+        userId:
+          type: string
+          description: User who added review
+        comments:
+          type: string
+          description: Review comments
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
+        lastModifiedDate:
+          type: string
+          description: Last Modified Timestamp
     AddDocumentSyncService:
       type: string
       description: Add Document Sync Service
