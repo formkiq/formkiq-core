@@ -2938,6 +2938,73 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /documents/{documentId}/reviews/{reviewId}/decisions:
+    get:
+      operationId: GetDocumentReviewDecisions
+      summary: Get document review decisions
+      description: Get a listing of decisions for a document review
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/reviewIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentReviewDecisionsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentReviewDecision
+      summary: Add document review decision
+      description: Add a decision to a document review
+      tags:
+      - Document Reviews
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/reviewIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentReviewDecisionRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentReviewDecisionResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /documents/{documentId}/syncs:
     get:
       operationId: GetDocumentSyncs
@@ -11511,6 +11578,13 @@ components:
       - COMPLETED
       - CANCELLED
       - SUPERSEDED
+    ReviewDecisionType:
+      type: string
+      enum:
+      - APPROVAL
+      - RECOMMENDATION
+      - ACKNOWLEDGMENT
+      - COMMENT
     AddDocumentReviewRequest:
       type: object
       properties:
@@ -11610,6 +11684,74 @@ components:
         lastModifiedDate:
           type: string
           description: Last Modified Timestamp
+    AddDocumentReviewDecisionRequest:
+      type: object
+      required:
+      - decision
+      properties:
+        decision:
+          $ref: '#/components/schemas/AddDocumentReviewDecision'
+    AddDocumentReviewDecisionResponse:
+      type: object
+      required:
+      - decisionId
+      properties:
+        decisionId:
+          type: string
+          description: Decision Identifier
+    AddDocumentReviewDecision:
+      type: object
+      required:
+      - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ReviewDecisionType'
+        decision:
+          type: string
+          description: Review decision
+        comment:
+          type: string
+          description: Review decision comment
+    GetDocumentReviewDecisionsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        decisions:
+          type: array
+          description: List of document review decisions
+          items:
+            $ref: '#/components/schemas/DocumentReviewDecision'
+    DocumentReviewDecision:
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document Identifier
+        artifactId:
+          type: string
+          description: Artifact Identifier
+        reviewId:
+          type: string
+          description: Review Identifier
+        decisionId:
+          type: string
+          description: Decision Identifier
+        type:
+          $ref: '#/components/schemas/ReviewDecisionType'
+        decision:
+          type: string
+          description: Review decision
+        comment:
+          type: string
+          description: Review decision comment
+        userId:
+          type: string
+          description: User who added decision
+        insertedDate:
+          type: string
+          description: Inserted Timestamp
     AddDocumentSyncService:
       type: string
       description: Add Document Sync Service
