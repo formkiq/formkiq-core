@@ -90,9 +90,6 @@ tags:
   - name: e-signature
     description: E-Signature API
     x-displayName: E-Signature
-  - name: caseManagement
-    description: Case Management API
-    x-displayName: Case Management
   - name: documentGeneration
     description: Document Generation API
     x-displayName: Document Generation
@@ -464,27 +461,6 @@ components:
       name: id
       in: path
       description: Identifier
-      required: true
-      schema:
-        type: string
-    caseIdParam:
-      name: caseId
-      in: path
-      description: Case Identifier
-      required: true
-      schema:
-        type: string
-    taskIdParam:
-      name: taskId
-      in: path
-      description: Task Identifier
-      required: true
-      schema:
-        type: string
-    nigoIdParam:
-      name: nigoId
-      in: path
-      description: Nigo Identifier
       required: true
       schema:
         type: string
@@ -929,20 +905,6 @@ components:
       type: "aws_proxy"
       payloadFormatVersion: "1.0"
     esignatureLambdaApi200:
-      uri:
-        Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
-      responses:
-        default:
-          statusCode: "200"
-          responseParameters:
-            method.response.header.Access-Control-Allow-Methods: "'*'"
-            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token'"
-            method.response.header.Access-Control-Allow-Origin: "'*'"
-      passthroughBehavior: "when_no_templates"
-      httpMethod: "POST"
-      type: "aws_proxy"
-      payloadFormatVersion: "1.0"
-    caseManagementLambdaApi200:
       uri:
         Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DocumentsApiRequestsArn}/invocations"
       responses:
