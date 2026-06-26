@@ -426,7 +426,11 @@ public class IdpAction implements DocumentAction {
       AiPromptResult aiPromptResult = aiPromptResults.get(i);
       for (AiPromptValue value : notNull(aiPromptResult.values())) {
         for (AiPromptResultAttribute attribute : notNull(value.attributes())) {
-          attributeMap.put(attribute.key(), notNull(attribute.stringValues()));
+          List<String> stringValues =
+              notNull(attribute.stringValues()).stream().filter(s -> !isEmpty(s)).toList();
+          if (!stringValues.isEmpty()) {
+            attributeMap.put(attribute.key(), stringValues);
+          }
         }
       }
     }

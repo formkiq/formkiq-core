@@ -973,6 +973,54 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Idp with Mapping Action and SourceType AI_PROMPT_RESULT filtering empty string values.
+   *
+   */
+  @Test
+  public void testIdpAiPromptResultFiltersEmptyStringValue() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = addTextToBucket(siteId, "abc");
+      String documentId = document.documentId();
+
+      mockServer
+          .when(request().withMethod("GET")
+              .withPath("/documents/" + documentId + "/ai/prompts/Empty%20Prompt"))
+          .respond(org.mockserver.model.HttpResponse.response("""
+              {"aiPromptResults":[{"values":[{"resultType":"KEY_VALUE","attributes":[
+                  {"key":"emptyValue","stringValues":[""]},
+                  {"key":"validValue","stringValues":["Valid"]}
+              ]}]}]}
+              """));
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "emptyValue",
+          AttributeDataType.STRING, null);
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "validValue",
+          AttributeDataType.STRING, null);
+
+      MappingAttribute emptyAttribute = new MappingAttribute().setAttributeKey("emptyValue")
+          .setSourceType(MappingAttributeSourceType.AI_PROMPT_RESULT)
+          .setLlmPromptEntityName("Empty Prompt");
+      MappingAttribute validAttribute = new MappingAttribute().setAttributeKey("validValue")
+          .setSourceType(MappingAttributeSourceType.AI_PROMPT_RESULT)
+          .setLlmPromptEntityName("Empty Prompt");
+      Mapping mapping = new Mapping("test", null, List.of(emptyAttribute, validAttribute), null);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).get(0);
+      assertActionCompleted(action);
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.get(0), "validValue", "Valid", null);
+    }
+  }
+
+  /**
    * Handle Idp with Mapping Action and SourceType AI_PROMPT_RESULT classification.
    *
    * @throws ValidationException ValidationException
