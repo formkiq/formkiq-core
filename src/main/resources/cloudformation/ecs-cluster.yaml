@@ -48,6 +48,9 @@ Resources:
     Properties:
       ClusterName:
         Fn::Sub: "Formkiq-${AppEnvironment}"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
       CapacityProviders:
         - FARGATE
         - FARGATE_SPOT

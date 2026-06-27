@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
@@ -24,8 +25,16 @@ jobs:
       - name: Build Project
         uses: actions/setup-java@v5
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
+      - name: Write Gradle secrets
+        run: |
+          mkdir -p ~/.gradle
+          cat <<EOF >> ~/.gradle/gradle.properties
+          ossIndexUsername=${{ secrets.OSS_INDEX_USERNAME }}
+          ossIndexPassword=${{ secrets.OSS_INDEX_PASSWORD }}
+          nvdKey=${{ secrets.NVD_KEY }}
+          EOF
       - name: add binaries to path
         run: |
           mkdir -p "$HOME/.local/bin"
@@ -33,6 +42,13 @@ jobs:
           chmod +x "$HOME/.local/bin/ytt"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           ytt --version
+
+          GOMPLATE_VERSION="v4.3.3"
+          curl -L -o "$HOME/.local/bin/gomplate" \
+            https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64
+          chmod +x "$HOME/.local/bin/gomplate"
+          gomplate --version
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -49,7 +65,7 @@ jobs:
         env:
           PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
             && (github.ref_name == 'master' ||  github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-        run: ./gradlew build --scan --no-daemon --console=plain
+        run: ./gradlew assembleAwsCloud assembleNettyServer --scan --no-daemon --console=plain
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -60,9 +76,10 @@ jobs:
       - name: Set AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: formkiq-core-gradle
           aws-region: us-east-2
+          retry-max-attempts: 3
 
       # Runs a set of commands using the runners shell
       - name: Deploy to S3
@@ -70,4 +87,7 @@ jobs:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
         run: |
-          aws s3 cp ./build/distributions/formkiq-core-*.zip s3://${S3_BUCKET}/formkiq-core/
+          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-*.zip' ! -name 'formkiq-core-netty-server-*.zip' \
+            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core/ \;
+          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-netty-server-*.zip' \
+            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core-netty-server/ \;

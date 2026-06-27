@@ -1,0 +1,620 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /mappings:
+    get:
+      operationId: GetMappings
+      tags:
+        - Mappings
+      description: Returns a list of mappings; available as an Add-On Module
+      summary: Get Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetMappingsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddMapping
+      description: |-
+        Creates a new mapping; available as an Add-On Module
+      summary: Add New Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMappingRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddMappingResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+  #@overlay/match missing_ok=True
+  /mappings/{mappingId}:
+    get:
+      operationId: GetMapping
+      tags:
+        - Mappings
+      description: Get a mapping; available as an Add-On Module
+      summary: Get Mapping
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetMappingResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetMapping
+      description: |-
+        Sets an mapping; available as an Add-On Module
+      summary: Set Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+        - $ref: '#/components/parameters/createIfMissingParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMappingRequest'
+      responses:
+        '200':
+          description: 200 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    delete:
+      operationId: DeleteMapping
+      description: Delete Mapping; available as an Add-On Module
+      summary: Delete Mapping
+      tags:
+        - Mappings
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/mappingIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  parameters:
+    #@overlay/match missing_ok=True
+    createIfMissingParam:
+      name: createIfMissing
+      in: query
+      description: "When true, skip checking whether the resource exists before setting it"
+      required: false
+      schema:
+        type: "boolean"
+        default: false
+  schemas:
+    #@overlay/match missing_ok=True
+    AddMappingResponse:
+      type: "object"
+      properties:
+        mappingId:
+          type: "string"
+          description: "Mapping Identifier"
+
+    #@overlay/match missing_ok=True
+    SetMappingRequest:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/AddMapping"
+
+    #@overlay/match missing_ok=True
+    AddMappingRequest:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/AddMapping"
+
+    #@overlay/match missing_ok=True
+    AddMapping:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Mapping"
+        description:
+          type: "string"
+          description: "Description of Mapping"
+        attributes:
+          type: "array"
+          description: "List of attributes"
+          items:
+            $ref: "#/components/schemas/MappingAttribute"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/MappingClassification"
+
+    #@overlay/match missing_ok=True
+    GetMappingsResponse:
+      type: "object"
+      properties:
+        mappings:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Mapping"
+        next:
+          type: "string"
+          description: "Next page of results token"
+
+    #@overlay/match missing_ok=True
+    GetMappingResponse:
+      type: "object"
+      properties:
+        mapping:
+          $ref: "#/components/schemas/Mapping"
+
+    #@overlay/match missing_ok=True
+    Mapping:
+      type: "object"
+      required:
+        - "mappingId"
+      properties:
+        mappingId:
+          type: "string"
+          description: "Mapping Identifier"
+        name:
+          type: "string"
+          description: "Name of Mapping"
+        description:
+          type: "string"
+          description: "Description of Mapping"
+        attributes:
+          type: "array"
+          description: "List of attributes"
+          items:
+            $ref: "#/components/schemas/MappingAttribute"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/MappingClassification"
+
+    #@overlay/match missing_ok=True
+    MappingClassification:
+      required:
+        - "classificationId"
+      type: "object"
+      description: "Mapping Classification"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+        conditions:
+          type: "array"
+          description: "List of classification conditions"
+          items:
+            $ref: "#/components/schemas/MappingClassificationCondition"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationCondition:
+      oneOf:
+        - $ref: '#/components/schemas/MappingClassificationConditionContent'
+        - $ref: '#/components/schemas/MappingClassificationConditionDataClassification'
+        - $ref: '#/components/schemas/MappingClassificationConditionMetadataExtractionResult'
+        - $ref: '#/components/schemas/MappingClassificationConditionAiPromptResult'
+      discriminator:
+        propertyName: "sourceType"
+        mapping:
+          CONTENT: "#/components/schemas/MappingClassificationConditionContent"
+          DATA_CLASSIFICATION: "#/components/schemas/MappingClassificationConditionDataClassification"
+          METADATA_EXTRACTION_RESULT: "#/components/schemas/MappingClassificationConditionMetadataExtractionResult"
+          AI_PROMPT_RESULT: "#/components/schemas/MappingClassificationConditionAiPromptResult"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionContent:
+      required:
+        - "sourceType"
+        - "matchingType"
+        - "text"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingClassificationConditionSourceType"
+        matchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
+        text:
+          type: "string"
+          description: "Text to match against the document content"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionDataClassification:
+      required:
+        - "sourceType"
+        - "resultKey"
+        - "resultValue"
+        - "matchingType"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingClassificationConditionSourceType"
+        resultKey:
+          type: "string"
+          description: "Result key"
+        resultValue:
+          type: "string"
+          description: "Result value"
+        matchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionMetadataExtractionResult:
+      required:
+        - "sourceType"
+        - "resultKey"
+        - "resultValue"
+        - "matchingType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingClassificationConditionSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+        resultKey:
+          type: "string"
+          description: "Result key"
+        resultValue:
+          type: "string"
+          description: "Result value"
+        matchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionAiPromptResult:
+      required:
+        - "sourceType"
+        - "resultKey"
+        - "resultValue"
+        - "matchingType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Classification Condition"
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/MappingClassificationConditionSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+        resultKey:
+          type: "string"
+          description: "Result key"
+        resultValue:
+          type: "string"
+          description: "Result value"
+        matchingType:
+          $ref: "#/components/schemas/MappingClassificationConditionMatchingType"
+
+    #@overlay/match missing_ok=True
+    MappingAttribute:
+      oneOf:
+        - $ref: '#/components/schemas/MappingAttributeContent'
+        - $ref: '#/components/schemas/MappingAttributeMetadata'
+        - $ref: '#/components/schemas/MappingAttributeManual'
+        - $ref: '#/components/schemas/MappingAttributeDataClassification'
+        - $ref: '#/components/schemas/MappingAttributeMetadataExtractionResult'
+        - $ref: '#/components/schemas/MappingAttributeAiPromptResult'
+        - $ref: '#/components/schemas/MappingAttributeMalwareScan'
+      discriminator:
+        propertyName: "sourceType"
+        mapping:
+          CONTENT: "#/components/schemas/MappingAttributeContent"
+          CONTENT_KEY_VALUE: "#/components/schemas/MappingAttributeContent"
+          METADATA: "#/components/schemas/MappingAttributeMetadata"
+          MANUAL: "#/components/schemas/MappingAttributeManual"
+          DATA_CLASSIFICATION: "#/components/schemas/MappingAttributeDataClassification"
+          METADATA_EXTRACTION_RESULT: "#/components/schemas/MappingAttributeMetadataExtractionResult"
+          AI_PROMPT_RESULT: "#/components/schemas/MappingAttributeAiPromptResult"
+          MALWARE_SCAN: "#/components/schemas/MappingAttributeMalwareScan"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeContent:
+      required:
+        - "attributeKey"
+        - "sourceType"
+        - "labelTexts"
+        - "labelMatchingType"
+      type: "object"
+      description: "Mapping Attribute from document content or content key-value data"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        defaultValue:
+          type: "string"
+          description: "Default value used when no matching value is found"
+        defaultValues:
+          type: "array"
+          description: "Default values used when no matching value is found"
+          items:
+            type: "string"
+        labelTexts:
+          type: "array"
+          description: "Label Texts"
+          items:
+            type: "string"
+            description: "Label Text"
+        labelMatchingType:
+          $ref: "#/components/schemas/MappingAttributeLabelMatchingType"
+        validationRegex:
+          type: "string"
+          description: "Attribute Value Regex Validation"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeMetadata:
+      required:
+        - "attributeKey"
+        - "sourceType"
+        - "labelTexts"
+        - "labelMatchingType"
+        - "metadataField"
+      type: "object"
+      description: "Mapping Attribute from document metadata"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        defaultValue:
+          type: "string"
+          description: "Default value used when no matching value is found"
+        defaultValues:
+          type: "array"
+          description: "Default values used when no matching value is found"
+          items:
+            type: "string"
+        labelTexts:
+          type: "array"
+          description: "Label Texts"
+          items:
+            type: "string"
+            description: "Label Text"
+        labelMatchingType:
+          $ref: "#/components/schemas/MappingAttributeLabelMatchingType"
+        metadataField:
+          $ref: "#/components/schemas/MappingAttributeMetadataField"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeManual:
+      required:
+        - "attributeKey"
+        - "sourceType"
+      type: "object"
+      description: "Mapping Attribute with manually configured default values"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        defaultValue:
+          type: "string"
+          description: "Default value"
+        defaultValues:
+          type: "array"
+          description: "Default values"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeDataClassification:
+      required:
+        - "attributeKey"
+        - "sourceType"
+      type: "object"
+      description: "Mapping Attribute from document data classification results"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeMetadataExtractionResult:
+      required:
+        - "attributeKey"
+        - "sourceType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Attribute from document metadata extraction results"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeAiPromptResult:
+      required:
+        - "attributeKey"
+        - "sourceType"
+        - "llmPromptEntityName"
+      type: "object"
+      description: "Mapping Attribute from document AI Prompt result"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+        llmPromptEntityName:
+          type: "string"
+          description: "LLM prompt entity name"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeMalwareScan:
+      required:
+        - "attributeKey"
+        - "sourceType"
+      type: "object"
+      description: "Mapping Attribute from document malware scan results"
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        sourceType:
+          $ref: "#/components/schemas/MappingAttributeSourceType"
+
+    #@overlay/match missing_ok=True
+    MappingAttributeMetadataField:
+      type: string
+      description: Attribute Metadata Field
+      enum:
+        - USERNAME
+        - PATH
+        - CONTENT_TYPE
+
+    #@overlay/match missing_ok=True
+    MappingAttributeLabelMatchingType:
+      type: string
+      description: Attribute Label Matching Type
+      enum:
+        - FUZZY
+        - EXACT
+        - BEGINS_WITH
+        - CONTAINS
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionMatchingType:
+      type: string
+      description: Classification Condition Result Matching Type
+      enum:
+        - EXACT
+        - BEGINS_WITH
+        - CONTAINS
+
+    #@overlay/match missing_ok=True
+    MappingAttributeSourceType:
+      type: string
+      description: Attribute Source Type
+      enum:
+        - CONTENT
+        - CONTENT_KEY_VALUE
+        - METADATA
+        - MANUAL
+        - DATA_CLASSIFICATION
+        - METADATA_EXTRACTION_RESULT
+        - AI_PROMPT_RESULT
+        - MALWARE_SCAN
+
+    #@overlay/match missing_ok=True
+    MappingClassificationConditionSourceType:
+      type: string
+      description: Classification Condition Source Type
+      enum:
+        - CONTENT
+        - DATA_CLASSIFICATION
+        - METADATA_EXTRACTION_RESULT
+        - AI_PROMPT_RESULT

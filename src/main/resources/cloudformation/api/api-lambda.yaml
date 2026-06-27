@@ -34,6 +34,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   CognitoUserPool:
     Type: String
     Description: The Cognito User Pool Id
@@ -57,6 +64,30 @@ Parameters:
   TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
+
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  CacheTableName:
+    Type: String
+    Description: Cache DynamoDB Table Name
+
+  DocumentSyncsTableName:
+    Type: String
+    Description: Document Syncs DynamoDB Table Name
+
+  DocumentsS3Bucket:
+    Type: String
+    Description: Documents S3 Bucket Name
+
+  DocumentsStageS3Bucket:
+    Type: String
+    Description: Documents Stage S3 Bucket Name
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
     
   OcrBucket:
     Type: String
@@ -138,6 +169,39 @@ Conditions:
 
 Resources:        
 
+  DelegationTokenHmacKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description:
+        Fn::Sub: "FormKiQ ${AppEnvironment} delegation token HMAC key"
+      KeySpec: HMAC_256
+      KeyUsage: GENERATE_VERIFY_MAC
+      Origin: AWS_KMS
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+          Action: "kms:*"
+          Resource: "*"
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value:
+            Fn::Sub: "${AppEnvironment}"
+
+  DelegationTokenHmacKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName:
+        Fn::Sub: "alias/formkiq/${AppEnvironment}/delegation-token-hmac"
+      TargetKeyId:
+        Ref: DelegationTokenHmacKey
+
   DocumentsApiRequestsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -158,6 +222,8 @@ Resources:
       Handler: com.formkiq.stacks.api.CoreRequestHandler
       Description: Lambda function that processes API requests
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -177,15 +243,15 @@ Resources:
           COGNITO_USER_POOL_ID:
             Ref: CognitoUserPool
           DOCUMENTS_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            Ref: DocumentsTableName
           CACHE_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+            Ref: CacheTableName
           DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+            Ref: DocumentsS3Bucket
           STAGE_DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+            Ref: DocumentsStageS3Bucket
           SNS_DOCUMENT_EVENT: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            Ref: SnsDocumentEventArn
           ENABLE_PUBLIC_URLS: 
             Ref: EnablePublicUrls
           FORMKIQ_TYPE: 
@@ -196,9 +262,11 @@ Resources:
             Ref: UserAuthentication
           OPERATIONAL_MODE:
             Ref: OperationalMode
+          DELEGATION_TOKEN_KMS_KEY_ID:
+            Ref: DelegationTokenHmacKey
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            Ref: DocumentSyncsTableName
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
           TYPESENSE_API_KEY:
@@ -283,8 +351,23 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+              - s3:GetObject
+              - s3:PutObject
+              Resource:
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::formkiq-${AppEnvironment}-web-ui-${AWS::AccountId}/*/assets/config.json"
+            - Effect: Allow
+              Action:
                 - kms:Decrypt
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - kms:GenerateMac
+                - kms:VerifyMac
+                - kms:DescribeKey
+              Resource:
+                - Fn::GetAtt:
+                  - DelegationTokenHmacKey
+                  - Arn
             - Effect: Allow
               Action:
               - s3:GetObject
@@ -300,20 +383,20 @@ Resources:
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - Ref: DocumentsS3Bucket
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                  - Ref: DocumentsS3Bucket
                   - '/*'
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - Ref: DocumentsStageS3Bucket
               - Fn::Join:
                 - ''
                 - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                  - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                  - Ref: DocumentsStageS3Bucket
                   - '/*'
             - Effect: Allow
               Action:
@@ -326,19 +409,19 @@ Resources:
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Resource: 
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
             - Effect: Allow
               Action:
               - dynamodb:Query
               - dynamodb:Scan
               Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}/index/*"
             - Effect: Allow
               Action:
               - dynamodb:Get*
               - dynamodb:Put*
               Resource: 
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/CacheTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CacheTableName}"
             - Effect: Allow
               Action:
               - ssm:GetParameter
@@ -359,17 +442,17 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:Query
               Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}"
             - Effect: Allow
               Action:
                 - dynamodb:Query
               Resource:
-                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
+                - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}/index/*"
             - Effect: Allow
               Action:
               - sns:Publish
               Resource:
-              - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+              - Ref: SnsDocumentEventArn
             - Effect: Allow
               Action:
               - cognito-idp:ListGroups
@@ -381,6 +464,7 @@ Resources:
               - cognito-idp:AdminCreateUser
               - cognito-idp:AdminDeleteUser
               - cognito-idp:AdminAddUserToGroup
+              - cognito-idp:AdminSetUserPassword
               - cognito-idp:AdminDisableUser
               - cognito-idp:AdminEnableUser
               - cognito-idp:AdminRemoveUserFromGroup
@@ -388,6 +472,7 @@ Resources:
               - cognito-idp:AdminGetUser
               - cognito-idp:AdminListGroupsForUser
               - cognito-idp:AdminInitiateAuth
+              - cognito-idp:AdminRespondToAuthChallenge
               Resource:
               - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
             - Effect: Allow

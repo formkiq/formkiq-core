@@ -1,0 +1,126 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.documents;
+
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/upload". */
+public class DocumentsIdUploadRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /**
+   * constructor.
+   *
+   */
+  public DocumentsIdUploadRequestHandler() {}
+
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    final String documentId = event.getPathParameter("documentId");
+    final String artifactId = event.getQueryStringParameter("artifactId");
+    final DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest o =
+        new com.formkiq.stacks.dynamodb.documents.AddDocumentRequest();
+    o.setDocumentId(documentId);
+    o.setChecksum(event.getQueryStringParameter("checksum"));
+    o.setChecksumType(event.getQueryStringParameter("checksumType"));
+
+    String siteId = authorization.getSiteId();
+
+    validate(o);
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    DocumentRecord ditem = service.findDocument(siteId, document);
+    throwIfNull(ditem, new DocumentNotFoundException(documentId));
+
+    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
+            Optional.empty());
+
+    DynamicDocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(ditem);
+    final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, artifactId);
+
+    item.setChecksum(o.getChecksum());
+    item.setChecksumType(o.getChecksumType());
+    service.saveDocument(siteId, item, null);
+
+    return ApiRequestHandlerResponse.builder().ok().body(uploadUrls).build();
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/upload";
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.WRITE);
+    return Optional.of(access);
+  }
+
+  private void validate(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
+      throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    if (!isEmpty(request.getChecksumType())) {
+
+      if (isEmpty(request.getChecksum())) {
+        errors.add(new ValidationErrorImpl().key("checksum").error("'checksum' is required"));
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+}

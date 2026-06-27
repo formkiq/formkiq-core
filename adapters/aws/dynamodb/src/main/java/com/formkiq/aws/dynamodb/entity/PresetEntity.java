@@ -1,0 +1,137 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.aws.dynamodb.entity;
+
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
+import com.formkiq.validation.ValidationBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
+/**
+ * Preset Entity Interface.
+ */
+public interface PresetEntity {
+
+  /**
+   * Find PresetEntity Attribute.
+   * 
+   * @param attributes {@link List} {@link EntityAttribute}
+   * @param attributeKey {@link String}
+   * @return {@link EntityAttribute}
+   */
+  default Optional<EntityAttribute> findAttribute(List<EntityAttribute> attributes,
+      String attributeKey) {
+    return notNull(attributes).stream().filter(new EntityAttributeKeyPredicate(attributeKey))
+        .findFirst();
+  }
+
+  /**
+   * Find Derived Attribute.
+   *
+   * @param derivedAttributeKey {@link String}
+   * @return {@link Optional} {@link DerivedDocumentAttribute}
+   */
+  default Optional<DerivedDocumentAttribute> findDerivedAttribute(String derivedAttributeKey) {
+    return getDerivedAttributes().stream()
+        .filter(a -> a.getAttributeKey().equals(derivedAttributeKey)).findAny();
+  }
+
+  /**
+   * Get Attribute Keys.
+   *
+   * @return {@link List} {@link String}
+   */
+  List<String> getAttributeKeys();
+
+  /**
+   * Get {@link List} {@link DerivedDocumentAttribute}.
+   *
+   * @return {@link List} {@link DerivedDocumentAttribute}
+   */
+  default List<DerivedDocumentAttribute> getDerivedAttributes() {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Get Entity Name.
+   * 
+   * @return {@link String}
+   */
+  String getName();
+
+  /**
+   * Get Required Attribute Keys.
+   *
+   * @return {@link List} {@link String}
+   */
+  default List<String> getRequiredAttributeKeys() {
+    return getAttributeKeys();
+  }
+
+  /**
+   * Find whether attribute exist in attributes or existing attributes.
+   * 
+   * @param attributes @link List} {@link EntityAttribute}
+   * @param existing {@link Map}
+   * @param attributeKey {@link String}
+   * @return boolean
+   */
+  default boolean hasAttribute(final List<EntityAttribute> attributes,
+      final Map<String, AttributeValue> existing, final String attributeKey) {
+    boolean hasAttribute = existing != null && existing.containsKey(attributeKey);
+    Optional<EntityAttribute> o = findAttribute(attributes, attributeKey);
+
+    if (o.isPresent()) {
+      hasAttribute = true;
+    }
+
+    return hasAttribute;
+  }
+
+  /**
+   * Validate Attributes.
+   *
+   * @param db {@link DynamoDbService}
+   * @param siteId {@link String}
+   * @param attributes {@link List} {@link EntityAttribute}
+   * @param existing Existing attributes
+   */
+  default void validateAttributes(DynamoDbService db, String siteId,
+      List<EntityAttribute> attributes, Map<String, AttributeValue> existing) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    for (String attributeKey : getRequiredAttributeKeys()) {
+      Optional<EntityAttribute> attribute = findAttribute(attributes, attributeKey);
+      vb.isRequired(attributeKey, attribute);
+    }
+    vb.check();
+  }
+}

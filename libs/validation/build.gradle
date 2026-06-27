@@ -1,0 +1,7 @@
+
+description = "FKQ Validation Library"
+
+dependencies {
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+  implementation libs.formkiq.graalvm.annotations
+}

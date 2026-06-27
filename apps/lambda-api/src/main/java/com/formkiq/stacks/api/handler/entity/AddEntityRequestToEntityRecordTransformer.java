@@ -1,0 +1,267 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.entity;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.entity.CheckoutPresetEntity;
+import com.formkiq.aws.dynamodb.entity.EntityAttribute;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
+import com.formkiq.aws.dynamodb.entity.PresetEntityBuilder;
+import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.plugins.useractivity.UserActivityContext;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidator;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.validation.ValidationBuilder;
+import com.formkiq.validation.ValidationError;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.strings.Strings.isEmpty;
+
+/**
+ * {@link Function} to transform {@link ApiGatewayRequestEvent} to {@link EntityRecord}.
+ */
+public class AddEntityRequestToEntityRecordTransformer implements ApiGatewayRequestEventUtil,
+    BiFunction<ApiAuthorization, ApiGatewayRequestEvent, EntityRecord> {
+
+  /** {@link AwsServiceCache}. */
+  private final AwsServiceCache awsServices;
+  /** Is Update. */
+  private final boolean update;
+  /** Create if missing. */
+  private final boolean createIfMissing;
+
+  /**
+   * constructor.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param isUpdate boolean
+   */
+  public AddEntityRequestToEntityRecordTransformer(final AwsServiceCache awsservice,
+      final boolean isUpdate) {
+    this(awsservice, isUpdate, false);
+  }
+
+  /**
+   * constructor.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param isUpdate boolean
+   * @param isCreateIfMissing boolean
+   */
+  public AddEntityRequestToEntityRecordTransformer(final AwsServiceCache awsservice,
+      final boolean isUpdate, final boolean isCreateIfMissing) {
+    this.awsServices = awsservice;
+    this.update = isUpdate;
+    this.createIfMissing = isCreateIfMissing;
+  }
+
+  @Override
+  public EntityRecord apply(final ApiAuthorization authorization,
+      final ApiGatewayRequestEvent event) {
+
+    String siteId = authorization.getSiteId();
+    String entityId = update ? event.getPathParameter("entityId") : ID.uuid();
+    String entityTypeId = event.getPathParameter("entityTypeId");
+
+    AddEntityRequest request =
+        JsonToObject.fromJson(this.awsServices, event, AddEntityRequest.class);
+    var oldAttributes = update ? getEntity(siteId, entityTypeId, entityId) : null;
+
+    EntityTypeRecord entityType = validate(siteId, entityTypeId, request);
+
+    EntityRecord entity = getEntityRecord(siteId, request, entityType, entityId, oldAttributes);
+
+    Map<String, AttributeValue> attributes = entity.getAttributes();
+
+    DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+
+    if (!update || oldAttributes == null) {
+      UserActivityContext.setCreate(ActivityResourceType.ENTITY, attributes);
+    } else {
+
+      attributes = Objects.merge(attributes, oldAttributes);
+      attributes.put("inserteddate", oldAttributes.get("inserteddate"));
+      UserActivityContext.setUpdate(ActivityResourceType.ENTITY, oldAttributes, attributes);
+    }
+
+    db.putItem(attributes);
+
+    return entity;
+  }
+
+  private Map<String, AttributeValue> getEntity(final String siteId, final String entityTypeId,
+      final String entityId) {
+
+    DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+    EntityRecord.Builder builder =
+        EntityRecord.builder().documentId(entityId).entityTypeId(entityTypeId).name("");
+
+    Map<String, AttributeValue> attributes = db.get(builder.buildKey(siteId));
+    if (attributes.isEmpty()) {
+      if (this.createIfMissing) {
+        return null;
+      }
+      throw new NotFoundException("Entity '" + entityId + "' not found");
+    }
+
+    return attributes;
+  }
+
+  private EntityRecord getEntityRecord(final String siteId, final AddEntityRequest request,
+      final EntityTypeRecord entityType, final String entityId,
+      final Map<String, AttributeValue> existingAttributes) {
+
+    EntityRecord entity;
+    AddEntity addEntity = request.entity();
+    List<EntityAttribute> entityAttributes =
+        notNull(addEntity.attributes()).stream().map(new AddEntityAttributeMapper()).toList();
+
+    var existing =
+        existingAttributes != null ? EntityRecord.fromAttributeMap(existingAttributes) : null;
+    var entityName =
+        isEmpty(addEntity.name()) && existing != null ? existing.name() : addEntity.name();
+
+    if (EntityTypeNamespace.PRESET.equals(entityType.namespace())) {
+
+      Optional<PresetEntity> presetEntity =
+          new GetPresetEntity(this.awsServices).apply(entityType.name());
+
+      if (presetEntity.isPresent()) {
+
+        if (presetEntity.get() instanceof CheckoutPresetEntity) {
+
+          if (!notNull(entityAttributes).isEmpty()) {
+            throw new BadException("'Checkout' entity type does not support attributes in request");
+          }
+
+          entityAttributes = List.of(
+              EntityAttribute.builder().key("LockedBy")
+                  .addStringValue(ApiAuthorization.getAuthorization().getUsername()).build(),
+              EntityAttribute.builder().key("LockedDate")
+                  .addStringValue(DateUtil.getIsoDateFormatter().format(new Date())).build());
+        }
+
+        // check attributes exist
+        DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+        entity =
+            new PresetEntityBuilder(db).existing(existing != null ? existing.getAttributes() : null)
+                .documentId(entityId).presetEntity(presetEntity.get()).name(entityName)
+                .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
+
+      } else {
+        throw new NotFoundException("Entity Type '" + entityType.name() + "' not found");
+      }
+
+    } else {
+
+      entity = EntityRecord.builder().documentId(entityId).name(entityName)
+          .entityTypeId(entityType.documentId()).attributes(entityAttributes).build(siteId);
+    }
+
+    return entity;
+  }
+
+  private EntityTypeRecord validate(final String siteId, final String entityTypeId,
+      final AddEntityRequest request) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+    vb.isRequired(null, request, "Missing 'entity'");
+    vb.check();
+
+    vb.isRequired(null, request.entity(), "Missing 'entity'");
+    vb.check();
+
+    DynamoDbService db = this.awsServices.getExtension(DynamoDbService.class);
+    EntityTypeRecord entityType = validateRequired(db, siteId, entityTypeId, request, vb);
+    validateAttributes(siteId, notNull(request.entity().attributes()), vb);
+
+    return entityType;
+  }
+
+  private void validateAttributes(final String siteId, final List<AddEntityAttribute> attributes,
+      final ValidationBuilder vb) {
+
+    AddEntityAttributeToRecordTransformer transformer = new AddEntityAttributeToRecordTransformer();
+    List<DocumentAttributeRecord> list =
+        attributes.stream().flatMap(a -> transformer.apply(a).stream()).toList();
+
+    AttributeValidator attributeValidator = this.awsServices.getExtension(AttributeValidator.class);
+    Map<String, AttributeRecord> attributeRecordMap =
+        attributeValidator.getAttributeRecordMap(siteId, list);
+
+    Collection<ValidationError> errors =
+        attributeValidator.validateFullAttribute(Collections.emptyList(), siteId, list,
+            attributeRecordMap, AttributeValidationAccess.ADMIN_CREATE);
+
+    vb.addErrors(errors);
+    vb.check();
+  }
+
+  private EntityTypeRecord validateRequired(final DynamoDbService db, final String siteId,
+      final String entityTypeId, final AddEntityRequest request, final ValidationBuilder vb) {
+    vb.isRequired("entityTypeId", entityTypeId);
+
+    if (!update) {
+      vb.isRequired("name", request.entity().name());
+    }
+    vb.check();
+
+    EntityTypeRecord entityTypeRecord = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(EntityTypeNamespace.CUSTOM).nameEmpty().build(siteId);
+
+    Map<String, AttributeValue> entityRecord = db.get(entityTypeRecord.key());
+    vb.isRequired("entityTypeId", !entityRecord.isEmpty());
+    vb.check();
+
+    notNull(request.entity().attributes()).forEach(a -> vb.isRequired("key", a.key()));
+
+    return EntityTypeRecord.fromAttributeMap(entityRecord);
+  }
+}

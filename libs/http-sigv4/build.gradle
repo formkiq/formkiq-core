@@ -1,0 +1,12 @@
+
+description = "Http Sigv4"
+
+dependencies {
+  api project(':libs:http')
+  implementation libs.aws.sdk.http.client.spi
+  api libs.aws.sdk.auth
+
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
+}

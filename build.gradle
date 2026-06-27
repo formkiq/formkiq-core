@@ -1,23 +1,27 @@
 import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.InventoryHtmlReportRenderer
 import com.github.jk1.license.render.JsonReportRenderer
-import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
 plugins {
-  id 'com.formkiq.gradle.java-base' version '1.0.6'
-  id 'com.formkiq.gradle.ytt' version '1.0.1'
-  id 'de.undercouch.download' version '5.6.0'
-  id 'org.openapi.generator' version '7.13.0'
-  id 'com.github.jk1.dependency-license-report' version '2.9'
+  alias(libs.plugins.formkiq.java.base)
+  alias(libs.plugins.undercouch.download)
+  alias(libs.plugins.license.report)
 }
 
 repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.18.2'
+  version = '1.19.0'
 
-  ext.awsCognitoVersion = '1.6.5'
+  plugins.withType(JavaPlugin).configureEach {
+    java {
+      toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+      }
+    }
+  }
+
   group = 'com.formkiq.stacks'
 
   configurations.all {
@@ -52,223 +56,47 @@ subprojects {
 
 description = "FormKiQ Core"
 
-apply plugin: 'distribution'
-
-tasks.register("downloadAwsCognito", Download) {
-  src "https://github.com/formkiq/aws-cognito/releases/download/v${awsCognitoVersion}/aws-cognito-v${awsCognitoVersion}.zip"
-  dest(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile)
-  overwrite false
-}
-
-/*
- task downloadAwsCognito(type: Copy) {
- dependsOn jar
- from file("$buildDir/../../../github/aws-cognito/build/aws-cognito-v${awsCognitoVersion}.zip")
- into file("${buildDir}")
- }*/
-
-tasks.register("unzipAwsCognito", Copy) {
-  dependsOn downloadAwsCognito
-  from({ zipTree(layout.buildDirectory.file("aws-cognito-v${awsCognitoVersion}.zip").get().asFile) })
-  into(layout.buildDirectory.dir("modules/cognito"))
-}
-
-ytt {
-  defaultDataValues.put("version", project.version.toString())
-
-  specs {
-    apiLambda {
-      from("src/main/resources/cloudformation/api/api-lambda.yaml")
-      into("api/api-lambda.yaml")
-      hash "sha256"
-    }
-
-    api {
-      from("src/main/resources/cloudformation/api/api.yaml",
-          "src/main/resources/cloudformation/api/openapi-jwt.yaml")
-      into("api/api.yaml")
-      hash "sha256"
-    }
-
-    apiIam {
-      from("src/main/resources/cloudformation/api/api-iam.yaml",
-          "src/main/resources/cloudformation/api/openapi-iam.yaml")
-      into("api/api-iam.yaml")
-      hash "sha256"
-    }
-
-    apiApikey {
-      from("src/main/resources/cloudformation/api/api-apikey.yaml",
-          "src/main/resources/cloudformation/api/openapi-key.yaml")
-      into("api/api-apikey.yaml")
-      hash "sha256"
-    }
-
-    apiAuth {
-      from("src/main/resources/cloudformation/api/api-auth.yaml",
-          "src/main/resources/cloudformation/api/openapi-auth.yaml")
-      into("api/api-auth.yaml")
-      hash "sha256"
-    }
-
-    apiTemplate {
-      from("src/main/resources/cloudformation/api/template.yaml",
-          "src/main/resources/cloudformation/api/module-extra-core-ocr.yaml")
-      into("api/template.yaml")
-      hash "sha256"
-    }
-
-    ocr {
-      from("src/main/resources/cloudformation/api/template-ocr.yaml")
-      into("api/template-ocr.yaml")
-      hash "sha256"
-    }
-
-    typesense {
-      from("src/main/resources/cloudformation/typesense/template.yaml")
-      into("typesense/template.yaml")
-      hash "sha256"
-    }
-
-    storage {
-      from("src/main/resources/cloudformation/storage/template.yaml")
-      into("storage/template.yaml")
-      hash "sha256"
-    }
-
-    console {
-      from("src/main/resources/cloudformation/console/template-install.yaml")
-      into("console/template-install.yaml")
-      hash "sha256"
-    }
-
-    template {
-      from("src/main/resources/cloudformation/template.yaml")
-      into("template.yaml")
-      hash "sha256"
-    }
-  }
-}
-
 tasks.named('distZip') {
-  dependsOn subprojects.collect { it.tasks.named('build') }, unzipAwsCognito, yttRenderAll
+  group = 'distribution'
+  description = 'Builds the AWS Cloud distribution package.'
+  dependsOn ':packaging:aws-cloud:distZip'
+  enabled = false
 }
 
-tasks.distTar.enabled = false
-
-distributions {
-  main {
-    contents {
-      duplicatesStrategy = DuplicatesStrategy.FAIL
-
-      from(".") {
-        include "INSTALL.md"
-        include "LICENSE"
-      }
-      from("src/main/resources/cloudformation") {
-        exclude "api/**"
-        exclude "typesense/**"
-        exclude "storage/**"
-        exclude "console/template-install.yaml"
-        exclude "template.yaml"
-      }
-      from 'build/ytt'
-      from 'console/build/distributions'
-      from 'build/modules'
-      from 'lambda-api-graalvm/build/distributions'
-      from 'lambda-s3-graalvm/build/distributions'
-      from 'lambda-typesense/build/distributions'
-      from 'lambda-ocr-tesseract/build/distributions'
-      from 'lambda-apikey-authorizer/build/distributions'
-      into '/'
-    }
-  }
+tasks.named('distTar') {
+  enabled = false
 }
 
-tasks.register("validateOpenApiJwtSpec", ValidateTask) {
-  inputSpec = "$rootDir/docs/openapi/openapi-jwt.yaml".toString()
-  recommend = true
+tasks.register('assembleAwsCloud') {
+  group = 'build'
+  description = 'Assembles the AWS Cloud distribution package.'
+  dependsOn ':packaging:aws-cloud:distZip'
 }
 
-tasks.register("validateOpenApiIamSpec", ValidateTask) {
-  inputSpec = "$rootDir/docs/openapi/openapi-iam.yaml".toString()
-  recommend = true
+tasks.register('assembleNettyServer') {
+  group = 'build'
+  description = 'Assembles the Netty server Docker distribution package.'
+  dependsOn ':apps:netty-server:distZip'
 }
 
-tasks.register("validateOpenApiKeySpec", ValidateTask) {
-  inputSpec = "$rootDir/docs/openapi/openapi-key.yaml".toString()
-  recommend = true
+tasks.register('composeBuildNettyServer') {
+  group = 'build'
+  description = 'Builds the Netty server Docker images.'
+  dependsOn ':apps:netty-server:composeBuild'
 }
 
-tasks.register("validateOpenApiSpecs") {
-  dependsOn(
-      "validateOpenApiJwtSpec",
-      "validateOpenApiIamSpec",
-      "validateOpenApiKeySpec"
-      )
+tasks.register('copyDocsOpenApi') {
+  group = 'build'
+  description = 'Copy OpenAPI specs into docs folder.'
+  dependsOn ':packaging:openapi:copyDocsOpenApi'
 }
 
-openApiGenerate {
-  generatorName.set("spring")
-  inputSpec.set(layout.projectDirectory
-      .file("docs/openapi/openapi-jwt.yaml")
-      .asFile
-      .absolutePath)
-
-  outputDir.set(layout.buildDirectory
-      .dir("generated")
-      .get()
-      .asFile
-      .absolutePath)
-
-  apiPackage.set("com.formkiq.springboot.api")
-  invokerPackage.set("com.formkiq.springboot.invoker")
-  modelPackage.set("com.formkiq.springboot.model")
+tasks.register('validateOpenApiSpecs') {
+  group = 'verification'
+  description = 'Validate generated OpenAPI specs.'
+  dependsOn ':packaging:openapi:validateOpenApiSpecs'
 }
 
-tasks.register("buildOpenApi") {
-  def fileMappings = [
-    (file("build/ytt/api/api.yaml"))        : "openapi-jwt.yaml",
-    (file("build/ytt/api/api-iam.yaml"))    : "openapi-iam.yaml",
-    (file("build/ytt/api/api-apikey.yaml")) : "openapi-key.yaml"
-  ]
-
-  def destDir = layout.buildDirectory.dir("../docs/openapi")
-
-  inputs.files(fileMappings.keySet())
-  outputs.dir(destDir)
-
-  doLast {
-    def outDir = destDir.get().asFile
-    outDir.mkdirs()
-
-    fileMappings.each { File src, String outName ->
-      if (!src.exists()) {
-        logger.warn("⚠️  Skipping missing file: ${src}")
-        return
-      }
-
-      def lines = src.readLines()
-      def startIdx = lines.findIndexOf { it.trim().startsWith("openapi:") }
-      def endIdx   = lines.findIndexOf { it.trim().startsWith("Outputs:") }
-
-      if (startIdx < 0) {
-        logger.warn("⚠️  No 'openapi:' found in ${src}; skipping.")
-        return
-      }
-      if (endIdx < 0 || endIdx <= startIdx) {
-        endIdx = lines.size() // take until EOF if no 'Outputs:'
-      }
-
-      def extracted = lines.subList(startIdx, endIdx)
-      def outFile = new File(outDir, outName)
-
-      outFile.parentFile.mkdirs()
-      outFile.text = extracted.join(System.lineSeparator()) + System.lineSeparator()
-
-      logger.lifecycle("✅ Extracted ${src.name} → ${outFile}")
-    }
-  }
+tasks.named('check') {
+  dependsOn tasks.named('validateOpenApiSpecs')
 }
-
-buildOpenApi.dependsOn 'yttRenderAll'

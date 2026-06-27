@@ -36,6 +36,26 @@ Parameters:
     Description: The Ocr Queue Arn
     Type: String
 
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  DocumentsS3Bucket:
+    Type: String
+    Description: Documents S3 Bucket Name
+
+  DocumentsStageS3Bucket:
+    Type: String
+    Description: Documents Stage S3 Bucket Name
+
+  OcrBucket:
+    Type: String
+    Description: OCR S3 Bucket Name
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
+
   LogRetentionInDays:
     Type: Number
     Description: The number of days to retain the log events
@@ -98,7 +118,9 @@ Resources:
     Properties:
       Handler: com.formkiq.module.lambda.ocr.tesseract.OcrTesseractProcessor
       Description: Lambda function to convert document to Tesseract
-      Runtime: java17
+      Runtime: java25
+      Architectures:
+        - x86_64
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -118,15 +140,15 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           DOCUMENTS_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            Ref: DocumentsTableName
           DOCUMENTS_S3_BUCKET: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+            Ref: DocumentsS3Bucket
           STAGE_DOCUMENTS_S3_BUCKET:
-            Fn::Sub: '{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}'
+            Ref: DocumentsStageS3Bucket
           OCR_S3_BUCKET:
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+            Ref: OcrBucket
           SNS_DOCUMENT_EVENT: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            Ref: SnsDocumentEventArn
       Role: 
         Fn::GetAtt:
         - OcrLambdaRole
@@ -196,7 +218,7 @@ Resources:
               Fn::Join:
               - ''
               - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsS3Bucket}}"
+                - Ref: DocumentsS3Bucket
                 - "/*"
           - Effect: Allow
             Action:
@@ -206,7 +228,7 @@ Resources:
               Fn::Join:
               - ''
               - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/DocumentsStageS3Bucket}}"
+                - Ref: DocumentsStageS3Bucket
                 - "/*"
           - Effect: Allow
             Action:
@@ -215,7 +237,7 @@ Resources:
               Fn::Join:
               - ''
               - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+                - Ref: OcrBucket
           - Effect: Allow
             Action:
             - s3:GetObject
@@ -224,7 +246,7 @@ Resources:
               Fn::Join:
               - ''
               - - Fn::Sub: "arn:${AWS::Partition}:s3:::"
-                - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/s3/OcrBucket}}"
+                - Ref: OcrBucket
                 - "/*"
           - Effect: Allow
             Action:
@@ -242,17 +264,17 @@ Resources:
             - dynamodb:BatchGetItem
             - dynamodb:BatchWriteItem
             Resource:
-            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
           - Effect: Allow
             Action:
               - dynamodb:Query
             Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}/index/*"
           - Effect: Allow
             Action:
             - sns:Publish
             Resource:
-            - Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/sns/DocumentEventArn}}"
+            - Ref: SnsDocumentEventArn
 
             
   OcrLambdaRole:

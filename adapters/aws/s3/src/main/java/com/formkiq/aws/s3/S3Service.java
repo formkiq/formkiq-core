@@ -1,0 +1,709 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.aws.s3;
+
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteMarkerEntry;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
+import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationRequest;
+import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest.Builder;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
+import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
+import software.amazon.awssdk.services.s3.model.ObjectVersion;
+import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectLegalHoldRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.S3Error;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.s3.model.Tagging;
+import software.amazon.awssdk.services.s3.model.VersioningConfiguration;
+import software.amazon.awssdk.utils.IoUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 
+ * S3 Services.
+ *
+ */
+public class S3Service {
+
+  /**
+   * URL Decode {@link String}.
+   *
+   * @param string {@link String}
+   * @return {@link String}
+   */
+  public static String decode(final String string) {
+    return URLDecoder.decode(string, StandardCharsets.UTF_8);
+  }
+
+  /**
+   * URL Encode {@link String}.
+   *
+   * @param string {@link String}
+   * @return {@link String}
+   */
+  public static String encode(final String string) {
+    return URLEncoder.encode(string, StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Convert {@link InputStream} to byte[].
+   * 
+   * @param is {@link InputStream}
+   * @return byte[]
+   * @throws IOException IOException
+   */
+  public static byte[] toByteArray(final InputStream is) throws IOException {
+    return IoUtils.toByteArray(is);
+  }
+
+  /** {@link S3ServiceInterceptor}. */
+  private final S3ServiceInterceptor interceptor;
+
+  /** {@link S3Client}. */
+  private final S3Client s3Client;
+
+  /**
+   * Constructor.
+   * 
+   * @param s3connectionBuilder {@link S3ConnectionBuilder}
+   */
+  public S3Service(final S3ConnectionBuilder s3connectionBuilder) {
+    this(s3connectionBuilder, null);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param s3connectionBuilder {@link S3ConnectionBuilder}
+   * @param s3Interceptor {@link S3ServiceInterceptor}
+   */
+  public S3Service(final S3ConnectionBuilder s3connectionBuilder,
+      final S3ServiceInterceptor s3Interceptor) {
+    this.s3Client = s3connectionBuilder.build();
+    this.interceptor = s3Interceptor;
+  }
+
+  /**
+   * Copy S3 Object.
+   * 
+   * @param sourcebucket {@link String}
+   * @param sourcekey {@link String}
+   * @param destinationBucket {@link String}
+   * @param destinationKey {@link String}
+   * @param contentType {@link String}
+   * @param metadata {@link Map}
+   * @return {@link CopyObjectResponse}
+   */
+  public CopyObjectResponse copyObject(final String sourcebucket, final String sourcekey,
+      final String destinationBucket, final String destinationKey, final String contentType,
+      final Map<String, String> metadata) {
+
+    CopyObjectRequest.Builder req = CopyObjectRequest.builder().sourceBucket(sourcebucket)
+        .sourceKey(sourcekey).destinationBucket(destinationBucket).destinationKey(destinationKey);
+
+    if (contentType != null) {
+      req = req.contentType(contentType);
+    }
+
+    if (metadata != null) {
+      req = req.metadata(metadata).metadataDirective(MetadataDirective.REPLACE);
+    }
+
+    return this.s3Client.copyObject(req.build());
+  }
+
+  /**
+   * Perform {@link CopyObjectRequest}.
+   * 
+   * @param req {@link CopyObjectRequest}
+   * @return {@link CopyObjectResponse}
+   */
+  public CopyObjectResponse copyRequest(final CopyObjectRequest req) {
+    return this.s3Client.copyObject(req);
+  }
+
+  /**
+   * Create S3 Bucket.
+   * 
+   * @param bucket {@link String}
+   */
+  public void createBucket(final String bucket) {
+    createBucket(bucket, false);
+  }
+
+  /**
+   * Create S3 Bucket.
+   *
+   * @param bucket {@link String}
+   * @param enableObjectLock boolean
+   */
+  public void createBucket(final String bucket, final boolean enableObjectLock) {
+    this.s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket)
+        .objectLockEnabledForBucket(enableObjectLock).build());
+    this.s3Client.putBucketVersioning(PutBucketVersioningRequest.builder().bucket(bucket)
+        .versioningConfiguration(
+            VersioningConfiguration.builder().status(BucketVersioningStatus.ENABLED).build())
+        .build());
+  }
+
+  /**
+   * Delete All Files in bucket.
+   *
+   * @param bucket {@link String}
+   */
+  public void deleteAllFiles(final String bucket) {
+    deleteCurrentObjectsOnly(bucket);
+  }
+
+  /**
+   * Delete All Files in bucket.
+   * 
+   * @param bucket {@link String}
+   * @param removeAllVersions boolean
+   */
+  public void deleteAllFiles(final String bucket, final boolean removeAllVersions) {
+    if (removeAllVersions) {
+      emptyVersionedBucket(bucket);
+    } else {
+      deleteCurrentObjectsOnly(bucket);
+    }
+  }
+
+  /**
+   * Delete All S3 Object Tags.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   */
+  public void deleteAllObjectTags(final String bucket, final String key) {
+    DeleteObjectTaggingRequest req =
+        DeleteObjectTaggingRequest.builder().bucket(bucket).key(key).build();
+    this.s3Client.deleteObjectTagging(req);
+  }
+
+  private int deleteAllVersionsAndMarkersOnce(final String bucket) {
+    int deletedCount = 0;
+    final int initialCapacity = 1000;
+
+    ListObjectVersionsRequest baseReq = ListObjectVersionsRequest.builder().bucket(bucket).build();
+
+    for (ListObjectVersionsResponse page : s3Client.listObjectVersionsPaginator(baseReq)) {
+      List<ObjectIdentifier> batch = new ArrayList<>(initialCapacity);
+
+      // Add object versions
+      for (ObjectVersion v : page.versions()) {
+        batch.add(ObjectIdentifier.builder().key(v.key()).versionId(v.versionId()).build());
+        if (batch.size() == initialCapacity) {
+          deleteBatch(bucket, batch);
+          deletedCount += batch.size();
+          batch.clear();
+        }
+      }
+
+      // Add delete markers
+      for (DeleteMarkerEntry m : page.deleteMarkers()) {
+        batch.add(ObjectIdentifier.builder().key(m.key()).versionId(m.versionId()).build());
+        if (batch.size() == initialCapacity) {
+          deleteBatch(bucket, batch);
+          deletedCount += batch.size();
+          batch.clear();
+        }
+      }
+
+      if (!batch.isEmpty()) {
+        deleteBatch(bucket, batch);
+        deletedCount += batch.size();
+      }
+    }
+
+    return deletedCount;
+  }
+
+  /**
+   * Deletes all versions (including delete markers) for the specified file in a versioned bucket.
+   *
+   * @param bucketName the name of the S3 bucket
+   * @param key the key (path/filename) of the file to delete
+   * @return int number of objects deleted
+   */
+  public int deleteAllVersionsOfFile(final String bucketName, final String key) {
+
+    int totalDeleted = 0;
+    final int maxKeys = 1000;
+    String keyMarker = null;
+    String versionIdMarker = null;
+    ListObjectVersionsResponse response;
+
+    ListObjectVersionsRequest.Builder requestBuilder =
+        ListObjectVersionsRequest.builder().bucket(bucketName).prefix(key).maxKeys(maxKeys);
+
+    do {
+
+      if (keyMarker != null && versionIdMarker != null) {
+        requestBuilder.keyMarker(keyMarker).versionIdMarker(versionIdMarker);
+      }
+
+      response = s3Client.listObjectVersions(requestBuilder.build());
+
+      for (ObjectVersion version : response.versions()) {
+        if (version.key().equals(key)) {
+          DeleteObjectRequest deleteVersionRequest = DeleteObjectRequest.builder()
+              .bucket(bucketName).key(key).versionId(version.versionId()).build();
+          totalDeleted++;
+          s3Client.deleteObject(deleteVersionRequest);
+        }
+      }
+
+      for (DeleteMarkerEntry deleteMarker : response.deleteMarkers()) {
+        if (deleteMarker.key().equals(key)) {
+          DeleteObjectRequest deleteMarkerRequest = DeleteObjectRequest.builder().bucket(bucketName)
+              .key(key).versionId(deleteMarker.versionId()).build();
+          totalDeleted++;
+          s3Client.deleteObject(deleteMarkerRequest);
+        }
+      }
+
+      // Prepare for next page of results, if any
+      keyMarker = response.nextKeyMarker();
+      versionIdMarker = response.nextVersionIdMarker();
+    } while (response.isTruncated());
+
+    return totalDeleted;
+  }
+
+  private void deleteBatch(final String bucket, final List<ObjectIdentifier> objects) {
+    DeleteObjectsResponse resp = s3Client.deleteObjects(DeleteObjectsRequest.builder()
+        .bucket(bucket).delete(Delete.builder().objects(objects).quiet(true).build()).build());
+
+    if (resp.hasErrors() && !resp.errors().isEmpty()) {
+      StringBuilder sb = new StringBuilder("DeleteObjects had errors:\n");
+      for (S3Error e : resp.errors()) {
+        sb.append("- key=").append(e.key()).append(" versionId=").append(e.versionId())
+            .append(" code=").append(e.code()).append(" msg=").append(e.message()).append("\n");
+      }
+      throw new RuntimeException(sb.toString());
+    }
+  }
+
+  private void deleteCurrentObjectsOnly(final String bucket) {
+    final int limit = 1000;
+    ListObjectsV2Request baseReq = ListObjectsV2Request.builder().bucket(bucket).build();
+
+    for (ListObjectsV2Response page : s3Client.listObjectsV2Paginator(baseReq)) {
+      if (!page.contents().isEmpty()) {
+
+        List<ObjectIdentifier> batch = new ArrayList<>(Math.min(limit, page.contents().size()));
+        for (S3Object obj : page.contents()) {
+          batch.add(ObjectIdentifier.builder().key(obj.key()).build());
+          if (batch.size() == limit) {
+            deleteBatch(bucket, batch);
+            batch.clear();
+          }
+        }
+        if (!batch.isEmpty()) {
+          deleteBatch(bucket, batch);
+        }
+      }
+    }
+  }
+
+  /**
+   * Delete Object.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   */
+  public void deleteObject(final String bucket, final String key, final String versionId) {
+    this.s3Client.deleteObject(
+        DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
+
+  }
+
+  private void emptyVersionedBucket(final String bucket) {
+    // Keep looping until S3 reports there are no versions or delete markers left.
+    // (This also makes the method resilient to pagination and large buckets.)
+    while (true) {
+      int deletedThisPass = deleteAllVersionsAndMarkersOnce(bucket);
+      if (deletedThisPass == 0) {
+        break;
+      }
+    }
+  }
+
+  /**
+   * Whether Bucket exists.
+   * 
+   * @param bucket {@link String}
+   * @return boolean
+   */
+  public boolean exists(final String bucket) {
+    try {
+      this.s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+      return true;
+    } catch (NoSuchBucketException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Whether S3Key exists.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return boolean
+   */
+  public boolean exists(final String bucket, final String key) {
+    try {
+      this.s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
+      return true;
+    } catch (NoSuchKeyException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Get File Content as byte[].
+   * 
+   * @param distributionBucket {@link String}
+   * @param key {@link String}
+   * @return byte[]
+   */
+  public byte[] getContentAsBytes(final String distributionBucket, final String key) {
+    GetObjectRequest get = GetObjectRequest.builder().bucket(distributionBucket).key(key).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asByteArray();
+  }
+
+  /**
+   * Get File Content as {@link InputStream}.
+   * 
+   * @param distributionBucket {@link String}
+   * @param key {@link String}
+   * @return {@link InputStream}
+   */
+  public InputStream getContentAsInputStream(final String distributionBucket, final String key) {
+    GetObjectRequest get = GetObjectRequest.builder().bucket(distributionBucket).key(key).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asInputStream();
+  }
+
+  /**
+   * Get File String Content.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @return {@link String}
+   */
+  public String getContentAsString(final String bucket, final String key, final String versionId) {
+
+    GetObjectRequest gr =
+        GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(gr);
+
+    return response.asUtf8String();
+  }
+
+  /**
+   * Get Content in Parts.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param range {@link String}
+   * @return {@link InputStream}
+   */
+  public InputStream getContentPartAsInputStream(final String bucket, final String key,
+      final String range) {
+    GetObjectRequest get = GetObjectRequest.builder().bucket(bucket).key(key).range(range).build();
+    ResponseBytes<GetObjectResponse> response = this.s3Client.getObjectAsBytes(get);
+    return response.asInputStream();
+  }
+
+  /**
+   * Get Bucket's Notifications.
+   * 
+   * @param bucket {@link String}
+   * @return {@link GetBucketNotificationConfigurationResponse}
+   */
+  public GetBucketNotificationConfigurationResponse getNotifications(final String bucket) {
+    GetBucketNotificationConfigurationRequest req =
+        GetBucketNotificationConfigurationRequest.builder().bucket(bucket).build();
+    return this.s3Client.getBucketNotificationConfiguration(req);
+  }
+
+  /**
+   * Get the S3 Object Meta Data.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * 
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata getObjectMetadata(final String bucket, final String key,
+      final String versionId) {
+
+    HeadObjectRequest hr = HeadObjectRequest.builder().bucket(bucket).key(key).versionId(versionId)
+        .checksumMode(ChecksumMode.ENABLED).build();
+    S3ObjectMetadata md = new S3ObjectMetadata();
+
+    try {
+      HeadObjectResponse resp = this.s3Client.headObject(hr);
+
+      Map<String, String> metadata = resp.metadata();
+      md.setObjectExists(true);
+      md.setContentType(resp.contentType());
+      md.setMetadata(metadata);
+      md.setEtag(resp.eTag());
+      md.setContentLength(resp.contentLength());
+      md.setVersionId(resp.versionId());
+      md.setChecksumSha1(resp.checksumSHA1());
+      md.setChecksumSha256(resp.checksumSHA256());
+      md.setChecksumSha512(resp.checksumSHA512());
+
+    } catch (NoSuchKeyException e) {
+      md.setObjectExists(false);
+    }
+
+    return md;
+  }
+
+  /**
+   * Get Object Tags.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @return {@link GetObjectTaggingResponse}
+   */
+  public GetObjectTaggingResponse getObjectTags(final String bucket, final String key) {
+    GetObjectTaggingRequest req = GetObjectTaggingRequest.builder().bucket(bucket).key(key).build();
+    return this.s3Client.getObjectTagging(req);
+  }
+
+  /**
+   * Get Object Versions.
+   * 
+   * @param bucket {@link String}
+   * @param prefix {@link String}
+   * @param keyMarker {@link String}
+   * @param maxKeys {@link Integer}
+   * @return {@link ListObjectVersionsResponse}
+   */
+  public ListObjectVersionsResponse getObjectVersions(final String bucket, final String prefix,
+      final String keyMarker, final Integer maxKeys) {
+    ListObjectVersionsRequest req = ListObjectVersionsRequest.builder().bucket(bucket)
+        .prefix(prefix).keyMarker(keyMarker).maxKeys(maxKeys).build();
+    return this.s3Client.listObjectVersions(req);
+  }
+
+  /**
+   * Check if a specific S3 object version has Object Lock (retention or legal hold).
+   *
+   * @param bucket Bucket name
+   * @param s3Key Object key
+   * @param versionId Object version ID (required)
+   * @return true if the object has a lock (retention or legal hold ON)
+   */
+  public boolean isObjectLock(final String bucket, final String s3Key, final String versionId) {
+    GetObjectLegalHoldRequest getHoldReq =
+        GetObjectLegalHoldRequest.builder().bucket(bucket).key(s3Key).versionId(versionId).build();
+
+    GetObjectLegalHoldResponse holdResp = this.s3Client.getObjectLegalHold(getHoldReq);
+    return holdResp.legalHold() != null
+        && holdResp.legalHold().status() == ObjectLockLegalHoldStatus.ON;
+  }
+
+  /**
+   * List S3 Objects.
+   * 
+   * @param bucket {@link String}
+   * @param prefix {@link String}
+   * @return {@link ListObjectsResponse}
+   */
+  public ListObjectsResponse listObjects(final String bucket, final String prefix) {
+    Builder listbuilder = ListObjectsRequest.builder().bucket(bucket);
+
+    if (prefix != null) {
+      listbuilder = listbuilder.prefix(prefix);
+    }
+
+    return this.s3Client.listObjects(listbuilder.build());
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param is {@link InputStream}
+   * @param contentType {@link String}
+   * @return {@link PutObjectResponse}
+   * @throws IOException IOException
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
+      final String contentType) throws IOException {
+    byte[] data = toByteArray(is);
+    return putObject(bucket, key, data, contentType);
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @return {@link PutObjectResponse}
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
+      final String contentType) {
+    return putObject(bucket, key, data, contentType, null);
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @param metadata {@link Map}
+   * @return {@link PutObjectResponse}
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
+      final String contentType, final Map<String, String> metadata) {
+    int contentLength = data.length;
+    PutObjectRequest.Builder build =
+        PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) contentLength);
+
+    if (contentType != null) {
+      build.contentType(contentType);
+    }
+
+    if (metadata != null) {
+      build.metadata(metadata);
+    }
+
+    PutObjectRequest request = build.build();
+
+    if (this.interceptor != null) {
+      this.interceptor.putObjectEvent(this, bucket, key, null, null);
+    }
+
+    return this.s3Client.putObject(request, RequestBody.fromBytes(data));
+  }
+
+  /**
+   * Set Object Lock.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @param lockOn boolean
+   */
+  public void setObjectLock(final String bucket, final String key, final String versionId,
+      final boolean lockOn) {
+    ObjectLockLegalHold hold = ObjectLockLegalHold.builder()
+        .status(lockOn ? ObjectLockLegalHoldStatus.ON : ObjectLockLegalHoldStatus.OFF).build();
+    PutObjectLegalHoldRequest req = PutObjectLegalHoldRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).legalHold(hold).build();
+
+    this.s3Client.putObjectLegalHold(req);
+  }
+
+  /**
+   * Set S3 Object Tag.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param tagKey {@link String}
+   * @param tagValue {@link String}
+   */
+  public void setObjectTag(final String bucket, final String key, final String tagKey,
+      final String tagValue) {
+    Collection<Tag> tagSet = List.of(Tag.builder().key(tagKey).value(tagValue).build());
+    setObjectTags(bucket, key, tagSet);
+  }
+
+  /**
+   * Set S3 Object Tag.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param tags {@link Collection} {@link Tag}
+   */
+  public void setObjectTags(final String bucket, final String key, final Collection<Tag> tags) {
+
+    Tagging tagging = Tagging.builder().tagSet(tags).build();
+    PutObjectTaggingRequest req =
+        PutObjectTaggingRequest.builder().bucket(bucket).key(key).tagging(tagging).build();
+    this.s3Client.putObjectTagging(req);
+  }
+}

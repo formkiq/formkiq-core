@@ -1,0 +1,755 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.lambda.s3;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
+import com.formkiq.aws.eventbridge.EventBridgeMessage;
+import com.formkiq.aws.eventbridge.EventBridgeService;
+import com.formkiq.aws.eventbridge.EventBridgeServiceExtension;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.ses.SesAwsServiceRegistry;
+import com.formkiq.aws.ses.SesService;
+import com.formkiq.aws.ses.SesServiceExtension;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceExtension;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.module.actions.services.ActionStatusPredicate;
+import com.formkiq.module.actions.services.ActionsNotificationService;
+import com.formkiq.module.actions.services.ActionsNotificationServiceExtension;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.actions.workflows.DocumentWorkflowStatusUpdate;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.EventServiceSnsExtension;
+import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.http.HttpResponseStatus;
+import com.formkiq.module.http.HttpService;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentSyncService;
+import com.formkiq.stacks.dynamodb.DocumentSyncServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
+import com.formkiq.stacks.lambda.s3.actions.AddMetadataExtractionAction;
+import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.DeleteAction;
+import com.formkiq.stacks.lambda.s3.actions.DocumentExternalSystemExport;
+import com.formkiq.stacks.lambda.s3.actions.DocumentTaggingAction;
+import com.formkiq.stacks.lambda.s3.actions.EventBridgeAction;
+import com.formkiq.stacks.lambda.s3.actions.EventBridgeMessageBuilder;
+import com.formkiq.stacks.lambda.s3.actions.FullTextAction;
+import com.formkiq.stacks.lambda.s3.actions.HttpRetryException;
+import com.formkiq.stacks.lambda.s3.actions.IdpAction;
+import com.formkiq.stacks.lambda.s3.actions.LlmPromptAction;
+import com.formkiq.stacks.lambda.s3.actions.MoveAction;
+import com.formkiq.stacks.lambda.s3.actions.NotificationAction;
+import com.formkiq.stacks.lambda.s3.actions.PdfExportAction;
+import com.formkiq.stacks.lambda.s3.actions.SetDataClassificationAction;
+import com.formkiq.stacks.lambda.s3.actions.resize.ResizeAction;
+import com.formkiq.stacks.lambda.s3.actions.SendHttpRequest;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbEntity;
+import com.formkiq.stacks.lambda.s3.event.AwsEventDynamodbNewImage;
+import com.formkiq.stacks.lambda.s3.event.AwsEventRecord;
+import com.formkiq.stacks.lambda.s3.event.AwsEventSnsNotification;
+import com.formkiq.stacks.lambda.s3.event.DynamodbAttributeValue;
+import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.ASYNC_COMPLETE;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.PENDING;
+import static com.formkiq.aws.dynamodb.actions.ActionStatus.WAITING_FOR_RETRY;
+import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
+import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
+
+/** {@link RequestHandler} for handling Document Actions. */
+@Reflectable
+public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>, DbKeys {
+
+  /** Max Retry Count. */
+  private static final int MAX_RETRY_COUNT = 5;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+
+  static {
+
+    if (System.getenv().containsKey("AWS_REGION")) {
+      serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
+          EnvironmentVariableCredentialsProvider.create())
+          .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+              new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(), new SesAwsServiceRegistry(),
+              new EventBridgeAwsServiceRegistry())
+          .build();
+
+      initialize(serviceCache);
+    }
+  }
+
+  /**
+   * Initialize.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   */
+  static void initialize(final AwsServiceCache awsServiceCache) {
+
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(MappingService.class, new MappingServiceExtension());
+    if (!awsServiceCache.containsExtension(SsmService.class)) {
+      awsServiceCache.register(SsmService.class, new SsmServiceExtension());
+    }
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(ConfigService.class, new ConfigServiceExtension());
+    awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    awsServiceCache.register(EventService.class, new EventServiceSnsExtension());
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(ActionsNotificationService.class,
+        new ActionsNotificationServiceExtension());
+    awsServiceCache.register(SesService.class, new SesServiceExtension());
+    awsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
+    awsServiceCache.register(EventBridgeService.class, new EventBridgeServiceExtension());
+
+    SsmService ssmService = awsServiceCache.getExtension(SsmService.class);
+
+    String appEnvironment = awsServiceCache.environment("APP_ENVIRONMENT");
+
+    String typeSenseHost =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/TypesenseEndpoint");
+    String typeSenseApiKey =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
+
+    if (isEmpty(typeSenseHost)) {
+      typeSenseHost = awsServiceCache.environment("TYPESENSE_HOST");
+    }
+
+    if (isEmpty(typeSenseApiKey)) {
+      typeSenseApiKey = awsServiceCache.environment("TYPESENSE_API_KEY");
+    }
+
+    if (!isEmpty(typeSenseHost) && !isEmpty(typeSenseApiKey)) {
+      awsServiceCache.environment().put("TYPESENSE_HOST", typeSenseHost);
+      awsServiceCache.environment().put("TYPESENSE_API_KEY", typeSenseApiKey);
+      awsServiceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
+    }
+
+    String documentsIamUrl =
+        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/DocumentsIamUrl");
+
+    if (isEmpty(documentsIamUrl)) {
+      documentsIamUrl = awsServiceCache.environment("DOCUMENTS_IAM_URL");
+    }
+
+    if (!isEmpty(documentsIamUrl)) {
+      awsServiceCache.environment().put("documentsIamUrl", documentsIamUrl);
+    }
+    AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
+    awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
+        new HttpServiceSigv4(awsServiceCache.region(), awsCredentials, "execute-api")));
+  }
+
+  /** {@link Gson}. */
+  private final Gson gson = new GsonBuilder().create();
+
+  /**
+   * constructor.
+   *
+   */
+  public DocumentActionsProcessor() {
+    // empty
+  }
+
+  /**
+   * constructor.
+   * 
+   * @param awsServiceCache {@link AwsServiceCache}
+   * 
+   */
+  public DocumentActionsProcessor(final AwsServiceCache awsServiceCache) {
+    this();
+    initialize(awsServiceCache);
+    serviceCache = awsServiceCache;
+  }
+
+  private ActionsService getActionsService() {
+    return serviceCache.getExtension(ActionsService.class);
+  }
+
+  private ActionsNotificationService getNotificationService() {
+    return serviceCache.getExtension(ActionsNotificationService.class);
+  }
+
+  @Override
+  public Void handleRequest(final AwsEvent event, final Context context) {
+
+    Logger logger = serviceCache.getLogger();
+
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String json = this.gson.toJson(event);
+      logger.debug(json);
+    }
+
+    List<AwsEventRecord> records = event.records();
+
+    try {
+      processRecords(logger, records);
+    } catch (IOException | InterruptedException e) {
+      logger.error(e);
+      throw new RuntimeException(e);
+    }
+
+    return null;
+  }
+
+  /**
+   * Log Start of {@link Action}.
+   * 
+   * @param logger {@link Logger}
+   * @param type {@link String}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param action {@link Action}
+   */
+  private void logAction(final Logger logger, final String type, final String siteId,
+      final DocumentArtifact document, final Action action) {
+
+    if (logger.isLogged(LogLevel.DEBUG)) {
+      String s = String.format(
+          "{\"type\",\"%s\",\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\","
+              + "\"actionType\":\"%s\",\"actionStatus\":\"%s\",\"userId\":\"%s\","
+              + "\"parameters\": \"%s\"}",
+          type, siteId, document.documentId(), document.artifactId(), action.type(),
+          action.status(), action.userId(), action.parameters());
+
+      logger.debug(s);
+    }
+  }
+
+  /**
+   * Process Action.
+   * 
+   * @param logger {@link Logger}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param actions {@link List} {@link Action}
+   * @param action {@link Action}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void processAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException, ValidationException {
+
+    logAction(logger, "action start", siteId, document, action);
+
+    ProcessActionStatus actionStatus = performAction(logger, siteId, document, actions, action);
+
+    logAction(logger, "action complete", siteId, document, action);
+
+    updateComplete(logger, siteId, document, action, actionStatus);
+  }
+
+  private ProcessActionStatus performAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException {
+    ProcessActionStatus actionStatus;
+    switch (action.type()) {
+      case QUEUE -> actionStatus = new ProcessActionStatus(ActionStatus.IN_QUEUE);
+
+      case DOCUMENTTAGGING -> {
+        DocumentTaggingAction dtAction = new DocumentTaggingAction(serviceCache);
+        actionStatus = dtAction.run(logger, siteId, document, actions, action);
+      }
+
+      case OCR -> actionStatus =
+          new AddOcrAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case FULLTEXT -> actionStatus =
+          new FullTextAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case MOVE ->
+        actionStatus = new MoveAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case DELETE -> actionStatus =
+          new DeleteAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case CHECKSUM -> actionStatus =
+          new ChecksumAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case ANTIVIRUS, MALWARE_SCAN -> {
+        new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
+            "/documents/" + document.documentId() + "/malwareScan", "");
+        actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
+      }
+
+      case WEBHOOK -> actionStatus = sendWebhook(siteId, document, action);
+
+      case NOTIFICATION -> {
+        DocumentAction da = new NotificationAction(siteId, serviceCache);
+        actionStatus = da.run(logger, siteId, document, actions, action);
+      }
+
+      case IDP -> {
+        DocumentAction da = new IdpAction(serviceCache);
+        actionStatus = da.run(logger, siteId, document, actions, action);
+      }
+
+      case PUBLISH -> {
+        DocumentAction da = new PublishAction(serviceCache);
+        actionStatus = da.run(logger, siteId, document, actions, action);
+      }
+
+      case PDFEXPORT -> {
+        DocumentAction da = new PdfExportAction(serviceCache);
+        actionStatus = da.run(logger, siteId, document, actions, action);
+      }
+
+      case EVENTBRIDGE -> {
+        DocumentAction da = new EventBridgeAction(serviceCache);
+        actionStatus = da.run(logger, siteId, document, actions, action);
+      }
+
+      case RESIZE -> actionStatus =
+          new ResizeAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      case DATA_CLASSIFICATION -> actionStatus = new SetDataClassificationAction(serviceCache)
+          .run(logger, siteId, document, actions, action);
+
+      case METADATA_EXTRACTION -> actionStatus = new AddMetadataExtractionAction(serviceCache)
+          .run(logger, siteId, document, actions, action);
+
+      case LLMPROMPT -> actionStatus =
+          new LlmPromptAction(serviceCache).run(logger, siteId, document, actions, action);
+
+      default -> throw new IOException("Unhandled Action Type: " + action.type());
+    }
+
+    return actionStatus;
+  }
+
+  /**
+   * Process {@link DocumentEvent}.
+   * 
+   * @param logger {@link Logger}
+   * @param event {@link DocumentEvent}
+   */
+  public void processEvent(final Logger logger, final DocumentEvent event) {
+
+    ActionsService actionsService = getActionsService();
+
+    if (ACTIONS.equals(event.type())) {
+
+      String siteId = event.siteId();
+      String documentId = event.documentId();
+      String artifactId = event.artifactId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
+
+      List<Action> actions = actionsService.getActions(siteId, document);
+
+      Optional<Action> running =
+          actions.stream().filter(new ActionStatusPredicate(ActionStatus.RUNNING)).findAny();
+      Optional<Action> asyncComplete =
+          actions.stream().filter(new ActionStatusPredicate(ASYNC_COMPLETE)).findFirst();
+      Optional<Action> o = actions.stream()
+          .filter(new ActionStatusPredicate(PENDING, WAITING_FOR_RETRY)).findFirst();
+
+      if (running.isPresent()) {
+
+        logger.debug(
+            String.format("ACTIONS already RUNNING for SiteId %s Document %s", siteId, documentId));
+
+      } else if (asyncComplete.isPresent()) {
+
+        Action action = asyncComplete.get();
+        ProcessActionStatus status = new ProcessActionStatus(ActionStatus.COMPLETE);
+
+        try {
+          updateComplete(logger, siteId, document, action, status);
+        } catch (Throwable e) {
+          handleException(logger, siteId, document, action, e);
+          return;
+        }
+
+        if (o.isPresent()) {
+          processPendingAction(logger, siteId, document, actions, o.get());
+        }
+
+      } else if (o.isPresent()) {
+
+        processPendingAction(logger, siteId, document, actions, o.get());
+
+      } else {
+        logger.trace(
+            String.format("NO ACTIONS found for  SiteId %s Document %s", siteId, documentId));
+      }
+    } else {
+      logger.trace(String.format("Skipping event %s", event.type()));
+    }
+  }
+
+  private void processPendingAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action) {
+
+    Action runningAction = new ActionBuilder().action(action).status(ActionStatus.RUNNING)
+        .startDate(new Date()).build(siteId);
+    getActionsService().updateAction(runningAction);
+
+    try {
+
+      processAction(logger, siteId, document, actions, action);
+
+    } catch (Throwable e) {
+
+      handleException(logger, siteId, document, action, e);
+    }
+  }
+
+  private void handleException(final Logger logger, final String siteId,
+      final DocumentArtifact document, final Action action, final Throwable e) {
+    ActionBuilder builder = new ActionBuilder().status(ActionStatus.FAILED).userId(action.userId())
+        .document(document).index(action.index()).type(action.type());
+
+    boolean isRetry = e instanceof HttpRetryException;
+    if (isRetry) {
+
+      Integer retryCount = action.retryCount();
+      builder.status(WAITING_FOR_RETRY);
+
+      if (retryCount == null || retryCount < 0) {
+        builder.retryCount(1);
+        builder.maxRetries(MAX_RETRY_COUNT);
+      } else if (retryCount < MAX_RETRY_COUNT) {
+        builder.retryCount(action.retryCount() + 1);
+      } else {
+        builder.status(ActionStatus.MAX_RETRIES_REACHED);
+        builder.completedDate(new Date());
+      }
+
+    } else {
+      logger.error(e);
+      builder.completedDate(new Date());
+    }
+
+    if (!isEmpty(e.getMessage())) {
+      builder.message(e.getMessage());
+    } else {
+      String stacktrace = Strings.toString(e);
+      builder.message(stacktrace);
+    }
+
+    WriteRequestBuilder wrb = new WriteRequestBuilder();
+    updateDocumentWorkflow(wrb, siteId, document, action, builder.status());
+
+    Action updateAction = builder.build(siteId);
+    logger.debug(String.format("Updating Action Status to %s", updateAction.status()));
+
+    wrb.appendUpdate(getDb().getTableName(), updateAction.getAttributes());
+    wrb.transactWriteItems(getDb().getClient());
+  }
+
+  /**
+   * Process Event Records.
+   * 
+   * @param logger {@link Logger}
+   * @param records {@link List} {@link Map}
+   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
+   */
+  private void processRecords(final Logger logger, final List<AwsEventRecord> records)
+      throws IOException, InterruptedException {
+
+    for (AwsEventRecord e : Objects.notNull(records)) {
+
+      if (e.body() != null) {
+
+        AwsEventSnsNotification map = this.gson.fromJson(e.body(), AwsEventSnsNotification.class);
+
+        if (map.message() != null) {
+          processDocumentEvent(logger, map);
+        }
+
+      } else if (e.dynamodb() != null) {
+        processDynamodbStream(logger, e);
+      }
+    }
+  }
+
+  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
+
+    String eventName = map.eventName();
+    AwsEventDynamodbEntity dynamodb = map.dynamodb();
+    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
+
+    if (newImage != null) {
+      String siteId = newImage.siteId().s();
+      String documentId = newImage.documentId().s();
+      String artifactId = newImage.artifactId() != null ? newImage.artifactId().s() : null;
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
+      Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
+
+      DetailTypeResolver resolver = new DetailTypeResolver();
+
+      for (List<Map<String, AttributeValue>> activity : activitiesByDoc) {
+
+        String detailType = resolver.apply(activity);
+        if (!detailType.equals(DEFAULT_DETAIL)) {
+
+          String pk = dynamodb.keys().pk().s();
+          String sk = dynamodb.keys().sk().s();
+          String s = String.format("{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\",\"type\":\"%s\"}",
+              eventName, pk, sk, siteId, documentId, artifactId, detailType);
+          logger.info(s);
+
+          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, document,
+              activity.stream().map(new AttributeValueToMap()).toList());
+
+          String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+          EventBridgeMessage msg =
+              new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+          EventBridgeService eventBridgeService =
+              serviceCache.getExtension(EventBridgeService.class);
+
+          String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+          eventBridgeService.putEvents(documentEventsBus, msg);
+        }
+      }
+    }
+  }
+
+  private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
+      final AwsEventDynamodbNewImage newImage) {
+
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
+
+    List<DynamoDbKey> keys = activityKeys.l().stream()
+        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+        .toList();
+
+    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+    Collection<Map<String, AttributeValue>> activities =
+        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+
+    Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
+        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("documentId"))));
+
+    return map.values();
+  }
+
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
+    DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
+
+    String s = String.format(
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
+            + "\"type\": \"%s\",\"userId\": %s,"
+            + "\"contentType\": \"%s\",\"path\":\"%s\",\"content\":%s}",
+        event.siteId(), event.documentId(), event.s3key(), event.s3bucket(), event.type(),
+        event.userId(), event.contentType(), event.path(), event.content());
+
+    logger.info(s);
+    processEvent(logger, event);
+  }
+
+  /**
+   * Sends Webhook.
+   *
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param action {@link Action}
+   * @return {@link ProcessActionStatus}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private ProcessActionStatus sendWebhook(final String siteId, final DocumentArtifact document,
+      final Action action) throws IOException, InterruptedException {
+
+    String url = (String) action.parameters().get("url");
+
+    String body = new DocumentExternalSystemExport(serviceCache).apply(siteId, document);
+
+    try {
+
+      HttpRequest request = HttpRequest.newBuilder().uri(new URI(url))
+          .timeout(Duration.ofMinutes(1)).POST(HttpRequest.BodyPublishers.ofString(body)).build();
+
+      HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS)
+          .connectTimeout(Duration.ofMinutes(1)).build();
+      HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+
+      int statusCode = response.statusCode();
+      final int statusOk = 200;
+      final int statusRedirect = 300;
+
+      if (statusCode >= statusOk && statusCode < statusRedirect) {
+
+        return new ProcessActionStatus(ActionStatus.COMPLETE);
+
+      } else {
+        throw new IOException(url + " response status code " + statusCode);
+      }
+
+    } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
+  }
+
+  /**
+   * Update Complete Action.
+   * 
+   * @param logger {@link Logger}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param action {@link Action}
+   * @param processStatus {@link ProcessActionStatus}
+   */
+  private void updateComplete(final Logger logger, final String siteId,
+      final DocumentArtifact document, final Action action, final ProcessActionStatus processStatus)
+      throws IOException {
+
+    WriteRequestBuilder wrb = new WriteRequestBuilder();
+
+    ActionBuilder builder = new ActionBuilder().type(action.type())
+        .status(processStatus.actionStatus()).queueId(action.queueId()).document(document)
+        .index(action.index()).userId(action.userId());
+
+    switch (processStatus.actionStatus()) {
+      case RUNNING -> {
+        // skip
+      }
+      case IN_QUEUE -> {
+        updateDocumentWorkflow(wrb, siteId, document, action, processStatus.actionStatus());
+
+        wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
+        wrb.transactWriteItems(getDb().getClient());
+      }
+      case PENDING -> {
+        getActionsService().updateAction(builder.build(siteId));
+        getNotificationService().publishNextActionEvent(siteId, document);
+      }
+
+      default -> {
+
+        logger.trace(String.format("updating status of %s to %s", document.documentId(),
+            processStatus.actionStatus()));
+
+        builder.completedDate(new Date());
+
+        updateDocumentWorkflow(wrb, siteId, document, action, processStatus.actionStatus());
+        wrb.appendUpdate(getDb().getTableName(), builder.build(siteId).getAttributes());
+
+        wrb.transactWriteItems(getDb().getClient());
+
+        sendWorkflowDecisionIfNeeded(siteId, document, action, processStatus);
+
+        getNotificationService().publishNextActionEvent(siteId, document);
+      }
+    }
+  }
+
+  private void sendWorkflowDecisionIfNeeded(final String siteId, final DocumentArtifact document,
+      final Action action, final ProcessActionStatus processStatus) throws IOException {
+
+    if (ActionStatus.COMPLETE.equals(processStatus.actionStatus())
+        && !isEmpty(action.workflowId())) {
+      HttpService http = serviceCache.getExtension(HttpService.class);
+      String url = serviceCache.environment("documentsIamUrl");
+      HttpResponse<String> response =
+          http.post(url + "/documents/" + document.documentId() + "/workflow/" + action.workflowId()
+              + "/decisions", Optional.empty(), Optional.of(Map.of("siteId", siteId)), "{}");
+      if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
+        throw new IOException(
+            "Error sending workflow decision: " + response.statusCode() + ":" + response.body());
+      }
+    }
+  }
+
+  private void updateDocumentWorkflow(final WriteRequestBuilder wrb, final String siteId,
+      final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
+    new DocumentWorkflowStatusUpdate(getDb(), siteId, document, action, newStatus).appendTo(wrb);
+  }
+
+  private DynamoDbService getDb() {
+    return serviceCache.getExtension(DynamoDbService.class);
+  }
+}

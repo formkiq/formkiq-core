@@ -1,0 +1,422 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ - Websocket API
+        
+Parameters:
+
+  AppEnvironment:
+    Type: String
+    Description: The Application Environment
+    AllowedPattern: ".+"
+
+  CognitoUserPoolId:
+    Type: String
+    Description: The Cognito User Pool Id
+    AllowedPattern: ".+"
+    
+  CognitoUserPoolClientId:
+    Type: String
+    Description: The Cognito User Pool Client Id
+    AllowedPattern: ".+"
+
+  DocumentsDeadLetterQueueArn:
+    Type: String
+    Description: Documents Dead Letter Queue Arn
+  
+  StageName:
+    Type: String
+    Description: The Stage Name
+    Default: prod
+
+  FormKiQType:
+    Description: The type of FormKiQ installation
+    Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Description: The number of days to retain the log events
+
+  LogFormat:
+    Description: >
+      The format in which the application and system logs are stored.
+    Type: String
+
+  LogLevelApplication:
+    Type: String
+    Description: >
+      The level of logging for the FormKiQ Application logs.
+
+  LogLevelSystem:
+    Type: String
+    Description: >
+      The level of logging for the AWS Platform System logs.
+
+  EnableDeletionProtection:
+    Description: "Enable deletion protection on AWS Services that support the feature"
+    Type: String
+
+Conditions:
+  IsLogFormatJSON: 
+    Fn::Equals:
+      - Ref: LogFormat
+      - JSON
+      
+Resources:
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: 
+        Fn::Sub: "${AWS::StackName} - ${AppEnvironment}"
+      Description: 
+        Fn::Sub: "FormKiQ WebSocket API - ${AppEnvironment}"
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: 
+        Ref: WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      OperationName: ConnectRoute
+      Target:
+        Fn::Join:
+        - '/'
+        - - 'integrations'
+          - Ref: ConnectInteg
+          
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: 
+        Ref: WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      OperationName: DisconnectRoute
+      Target:
+        Fn::Join:
+        - '/'
+        - - 'integrations'
+          - Ref: ConnectInteg
+          
+  ConnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: 
+        Ref: WebSocketApi
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: 
+        Fn::Sub:
+            arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations
+
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - ConnectRoute
+    - DisconnectRoute
+    Properties:
+      ApiId: 
+        Ref: WebSocketApi
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - WebSocketApi
+    Properties:
+      StageName: 
+        Ref: StageName
+      Description: Prod Stage
+      DeploymentId: 
+        Ref: Deployment
+      ApiId: 
+        Ref: WebSocketApi
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+        
+  OnConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Ref: ApiFunction
+      Principal: apigateway.amazonaws.com
+      
+  SqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        maxReceiveCount: 3
+        deadLetterTargetArn:
+          Ref: DocumentsDeadLetterQueueArn
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+
+  SqsQueueUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS URL for processing Websocket Messages"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/WebsocketUrl"
+      Type: String
+      Value: 
+        Ref: SqsQueue
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+
+  SqsQueueArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "SQS Arn for processing Websocket Messages"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/sqs/WebsocketArn"
+      Type: String
+      Value: 
+        Fn::GetAtt: 
+        - SqsQueue
+        - Arn
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+                
+  WebsocketApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The URL for the Websocket API endpoint"
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/WebsocketUrl"
+      Type: String
+      Value: 
+        Fn::Sub: "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
+      
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - ApiFunctionRole
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Description: Lambda function that processes Web-socket requests
+      CodeUri: ./websocket-api.zip
+      AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+      Environment:
+        Variables:
+          API_URL: 
+            Fn::Sub: "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          REGION: 
+            Ref: AWS::Region
+          COGNITO_USER_POOL_ID: 
+            Ref: CognitoUserPoolId
+          COGNITO_USER_POOL_CLIENT_ID: 
+            Ref: CognitoUserPoolClientId
+          WEB_CONNECTIONS_TABLE: 
+            Ref: WebConnections
+          LOG_LEVEL:
+            Ref: LogLevelApplication
+      Role: 
+        Fn::GetAtt: 
+        - ApiFunctionRole
+        - Arn
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiFunctionLogGroup
+        LogFormat:
+          Ref: LogFormat
+        ApplicationLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelApplication
+          - Ref: AWS::NoValue
+        SystemLogLevel:
+          Fn::If:
+          - IsLogFormatJSON
+          - Ref: LogLevelSystem
+          - Ref: AWS::NoValue
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+      Events:
+        CreateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: 
+              Fn::GetAtt: 
+              - SqsQueue
+              - Arn
+            BatchSize: 10
+      
+  ApiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /service-role/
+      Policies:
+        -
+          PolicyName: ApiFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              Resource:
+              - Fn::GetAtt: 
+                - SqsQueue
+                - Arn
+            - Effect: Allow
+              Action:
+              - execute-api:ManageConnections
+              Resource:
+              - Fn::Sub: "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/${StageName}/POST/@connections/{connectionId}"
+            - Effect: Allow
+              Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              Resource: 
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WebConnections}/index/*"
+
+  WebConnectionsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: DynamoDB Documents table name
+      Name: 
+        Fn::Sub: "/formkiq/${AppEnvironment}/dynamodb/WebConnectionsTableName"
+      Type: String
+      Value: 
+        Ref: WebConnections
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment: 
+          Fn::Sub: "${AppEnvironment}"
+
+  WebConnections:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      DeletionProtectionEnabled:
+        Ref: EnableDeletionProtection
+      TableName: 
+        Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-webconnections"
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: TRUE            
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      Tags:
+        - Key: "Application"
+          Value: "FormKiQ"
+        - Key: "AppEnvironment"
+          Value: 
+            Fn::Sub: "${AppEnvironment}"
+      KeySchema: 
+        - 
+          AttributeName: "PK"
+          KeyType: "HASH"
+        - 
+          AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions: 
+        - 
+          AttributeName: "PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "SK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1PK"
+          AttributeType: "S"
+        - 
+          AttributeName: "GSI1SK"
+          AttributeType: "S"
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "GSI1"
+          KeySchema: 
+            - 
+              AttributeName: "GSI1PK"
+              KeyType: "HASH"
+            - 
+              AttributeName: "GSI1SK"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "KEYS_ONLY"
+
+Outputs:
+  WebsocketApiUrl:
+    Description: "The URL for the Websocket API endpoint"
+    Value: 
+      Fn::GetAtt: 
+      - WebsocketApiUrlParameter
+      - Value
+  SqsQueueUrl:
+    Description: "SQS URL for processing Websocket Messages"
+    Value: 
+      Ref: SqsQueue

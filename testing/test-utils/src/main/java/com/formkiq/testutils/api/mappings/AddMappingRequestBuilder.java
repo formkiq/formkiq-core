@@ -1,0 +1,129 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.testutils.api.mappings;
+
+import com.formkiq.client.api.MappingsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentWorkflowRequest;
+import com.formkiq.client.model.AddMapping;
+import com.formkiq.client.model.AddMappingRequest;
+import com.formkiq.client.model.AddMappingResponse;
+import com.formkiq.client.model.MappingAttribute;
+import com.formkiq.client.model.MappingAttributeContent;
+import com.formkiq.client.model.MappingAttributeLabelMatchingType;
+import com.formkiq.client.model.MappingAttributeManual;
+import com.formkiq.client.model.MappingAttributeSourceType;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
+
+/**
+ * Builder for {@link AddDocumentWorkflowRequest}.
+ */
+public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingResponse> {
+
+  /** {@link AddMappingRequest}. */
+  private final AddMappingRequest req;
+
+  /**
+   * constructor.
+   */
+  public AddMappingRequestBuilder() {
+    this.req = new AddMappingRequest();
+  }
+
+  /**
+   * Add Mapping.
+   *
+   * @param name {@link String}
+   * @param attributeKey {@link String}
+   * @param defaultValue {@link String}
+   * @return {@link AddMappingRequestBuilder}
+   */
+  public AddMappingRequestBuilder addManualMapping(final String name, final String attributeKey,
+      final String defaultValue) {
+    MappingAttribute ma =
+        new MappingAttribute(new MappingAttributeManual().attributeKey(attributeKey)
+            .sourceType(MappingAttributeSourceType.MANUAL).defaultValue(defaultValue));
+    AddMapping mapping = new AddMapping().name(name).addAttributesItem(ma);
+    this.req.setMapping(mapping);
+    return this;
+  }
+
+  /**
+   * Add Mapping.
+   *
+   * @param mapping {@link AddMapping}
+   * @return {@link AddMappingRequestBuilder}
+   */
+  public AddMappingRequestBuilder addMapping(final AddMapping mapping) {
+    this.req.setMapping(mapping);
+    return this;
+  }
+
+  public AddMappingRequestBuilder addMapping(final String name, final String description,
+      final String attributeKey, final MappingAttributeSourceType sourceType,
+      final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
+    addMapping(new AddMapping().name(name).description(description).addAttributesItem(
+        createMappingAttribute(attributeKey, sourceType, labelMatchingType, labelText)));
+    return this;
+  }
+
+  private MappingAttribute createMappingAttribute(final String attributeKey,
+      final MappingAttributeSourceType sourceType,
+      final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
+    return switch (sourceType) {
+      case CONTENT -> new MappingAttribute(new MappingAttributeContent().attributeKey(attributeKey)
+          .sourceType(MappingAttributeSourceType.CONTENT).labelMatchingType(labelMatchingType)
+          .addLabelTextsItem(labelText));
+      case CONTENT_KEY_VALUE -> new MappingAttribute(new MappingAttributeContent()
+          .attributeKey(attributeKey).sourceType(MappingAttributeSourceType.CONTENT_KEY_VALUE)
+          .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText));
+      default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
+    };
+  }
+
+  /**
+   * Optionally run the request using the FormKiQ API.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return AddMappingResponse
+   */
+  public ApiHttpResponse<AddMappingResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(() -> new MappingsApi(apiClient).addMapping(req, siteId));
+  }
+
+  /**
+   * Get Mapping Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String getMappingId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getMappingId();
+  }
+}

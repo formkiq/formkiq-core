@@ -1,0 +1,13 @@
+
+description = "AWS Cognito Identity Provider"
+
+dependencies {
+  api libs.aws.sdk.cognitoidentityprovider
+  implementation libs.aws.sdk.url.connection.client
+  implementation project(':libs:lambda-services')
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+}

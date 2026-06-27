@@ -1,0 +1,158 @@
+description = "FormKiQ Core - Lambda S3 to Dynamodb"
+
+apply plugin: 'distribution'
+
+sourceSets {
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+
+    compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    runtimeClasspath += output + compileClasspath
+  }
+}
+
+configurations {
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation project(':adapters:aws:s3')
+  implementation project(':adapters:aws:sns')
+  implementation project(':adapters:aws:ssm')
+  implementation project(':adapters:aws:ses')
+  implementation project(':adapters:aws:eventbridge')
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':domain:plugins')
+  implementation project(':domain:documents')
+  implementation project(':domain:document-events')
+  implementation project(':domain:actions')
+  implementation project(':libs:lambda-services')
+  implementation project(':libs:validation')
+  implementation project(':adapters:typesense')
+  implementation project(':libs:http')
+  implementation project(':libs:http-sigv4')
+  implementation project(':libs:strings')
+
+  // remove at some point and replace with custom light-weight records
+  implementation libs.aws.lambda.core
+  implementation libs.gson
+  implementation libs.thumbnailator
+
+  implementation libs.formkiq.lambda.runtime.graalvm
+  implementation libs.formkiq.graalvm.annotations
+
+  implementation libs.slf4j.simple
+
+  testImplementation project(':adapters:aws:sqs')
+  testImplementation project(':testing:test-utils')
+  testImplementation project(':libs:validation')
+  testImplementation libs.commons.lang3
+
+  testImplementation libs.aws.sdk.dynamodb
+  testImplementation libs.aws.sdk.s3
+  testImplementation libs.aws.sdk.iam
+
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
+
+  testImplementation platform(libs.testcontainers.bom)
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack.bom
+
+  testImplementation libs.mockserver.netty
+}
+
+compileJava {
+  options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage {
+  dockerFile = "${project.projectDir}/Dockerfile"
+}
+
+tasks.register("integrationTest", Test) {
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+}
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "storage/lambda-s3-graalvm.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm") {
+        include 'server'
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm") {
+        include 'lib*.so*'
+      }
+      into '/'
+    }
+  }
+}
+
+tasks.register('buildZip', Zip) {
+  archiveFileName = "lambda-s3-graalvm.zip"
+  destinationDirectory = layout.buildDirectory.dir('dist')
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+  from("${project.projectDir}/lib") {
+    include '**/**'
+  }
+  from("${project.projectDir}/runtime") {
+    include 'bootstrap'
+    filePermissions {
+      unix('0755')
+    }
+  }
+  from("build/graalvm") {
+    include 'server'
+    filePermissions {
+      unix('0755')
+    }
+  }
+  from("build/graalvm") {
+    include 'lib*.so*'
+  }
+}
+
+tasks.register('copyRuntimeClasspath', Copy) {
+  description = 'Copies all runtime classpath dependencies to build/libs'
+  from({ configurations.runtimeClasspath })
+  into(layout.buildDirectory.dir('libs'))
+}
+
+jar.dependsOn(copyRuntimeClasspath)
+
+tasks.register('unzipFile', Copy) {
+  from({
+    zipTree(layout.buildDirectory.file("graalvm/output/graalvm.zip").get().asFile)
+  })
+  into(layout.buildDirectory.dir("graalvm"))
+}
+
+graalvmNativeImage.dependsOn("jar")
+
+unzipFile.dependsOn graalvmNativeImage
+buildZip.dependsOn unzipFile
+distZip.dependsOn buildZip

@@ -95,6 +95,73 @@
                             example: Invalid username or password.
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /login/refresh:
+            post:
+              summary: Refresh User Login
+              description: Refresh authentication tokens with a refresh token.
+              requestBody:
+                description: Refresh token for obtaining a new access token.
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - refreshToken
+                      properties:
+                        refreshToken:
+                          type: string
+                          example: eyJjdHkiO...
+              responses:
+                "200":
+                  description: Refresh successful. Returns authentication details similar to AWS Cognito.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          AuthenticationResult:
+                            type: object
+                            properties:
+                              AccessToken:
+                                type: string
+                                description: JWT access token.
+                                example: eyJraWQiOiJ0W...
+                              ExpiresIn:
+                                type: integer
+                                description: Time in seconds until the token expires.
+                                example: 86400
+                              TokenType:
+                                type: string
+                                description: Type of token.
+                                example: Bearer
+                              RefreshToken:
+                                type: string
+                                description: Refresh token returned by the identity provider, when available.
+                                example: eyJjdHkiO...
+                              IdToken:
+                                type: string
+                                description: JWT id token.
+                                example: eyJraWQiOiI5YUpvb...
+                        example:
+                          AuthenticationResult:
+                            AccessToken: eyJraWQiOiJ0W...
+                            ExpiresIn: 86400
+                            TokenType: Bearer
+                            RefreshToken: eyJjdHkiO...
+                            IdToken: eyJraWQiOiI5YUpvb...
+                "401":
+                  description: Invalid refresh token provided.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          error:
+                            type: string
+                            example: Invalid refresh token.
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /changePassword:
             post:
               summary: Change Password
@@ -209,25 +276,26 @@
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
           /confirmRegistration:
-            post:
+            get:
               summary: Confirm Registration
               description: |
-                Confirm a new user's registration using a confirmation code.  The request body must contain the user's username and the confirmation code.
-              requestBody:
-                description: Username and confirmation code for registration confirmation.
+                Confirm a new user's registration using a confirmation code. The request must include the user's username and confirmation code as query string parameters.
+              parameters:
+              - in: query
+                name: username
                 required: true
-                content:
-                  application/json:
-                    schema:
-                      type: object
-                      required:
-                      - username
-                      - code
-                      properties:
-                        username:
-                          type: string
-                        code:
-                          type: string
+                schema:
+                  type: string
+              - in: query
+                name: code
+                required: true
+                schema:
+                  type: string
+              - in: query
+                name: userStatus
+                required: false
+                schema:
+                  type: string
               responses:
                 "200":
                   description: Registration confirmed successfully.
@@ -238,9 +306,56 @@
                         properties:
                           message:
                             type: string
-                            example: User registration confirmed successfully
+                            example: User registration confirmed
+                          success:
+                            type: boolean
+                            example: true
+                          username:
+                            type: string
+                          userStatus:
+                            type: string
                           challengeName:
                             type: string
+                          session:
+                            type: string
+              x-amazon-apigateway-integration:
+                $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+          /respondToAuthChallenge:
+            post:
+              summary: Respond To Auth Challenge
+              description: |
+                Respond to a Cognito authentication challenge such as NEW_PASSWORD_REQUIRED.
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - userStatus
+                      - session
+                      - password
+                      - username
+                      properties:
+                        userStatus:
+                          type: string
+                        session:
+                          type: string
+                        password:
+                          type: string
+                        username:
+                          type: string
+              responses:
+                "200":
+                  description: Challenge completed successfully.
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: Change Password
               x-amazon-apigateway-integration:
                 $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
         components:

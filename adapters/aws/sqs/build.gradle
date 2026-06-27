@@ -1,0 +1,23 @@
+
+description = "AWS SQS"
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  implementation libs.formkiq.graalvm.annotations
+  implementation libs.gson
+
+  api libs.aws.sdk.sqs
+  implementation libs.aws.sdk.url.connection.client
+  //implementation project(':adapters:aws:xray')
+  implementation project(':libs:lambda-services')
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+}

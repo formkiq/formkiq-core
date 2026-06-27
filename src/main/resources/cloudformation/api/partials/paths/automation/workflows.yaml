@@ -1,0 +1,535 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /workflows:
+    get:
+      operationId: GetWorkflows
+      summary: Get workflows
+      description: Get a listing of workflows; available as an Add-On Module
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/statusParam'
+      tags:
+        - Document Workflows
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetWorkflowsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddWorkflow
+      summary: Add workflow
+      description: Creates a new Workflow; available as an Add-On Module
+      tags:
+        - Document Workflows
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWorkflowRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddWorkflowResponse'
+        '400':
+          description: 400 BAD REQUEST
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+
+components:
+  schemas:
+
+    #@overlay/match missing_ok=True
+    GetWorkflowsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        workflows:
+          type: "array"
+          description: "List of workflows"
+          items:
+            $ref: "#/components/schemas/WorkflowSummary"
+
+    #@overlay/match missing_ok=True
+    WorkflowSummary:
+      type: "object"
+      required:
+        - "workflowId"
+      properties:
+        name:
+          type: "string"
+          description: "Name of Workflow"
+        workflowId:
+          type: "string"
+          description: "Workflow identifier"
+        description:
+          type: "string"
+          description: "Description of Workflow"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        userId:
+          type: "string"
+          description: "User who created workflow"
+        inUse:
+          type: "boolean"
+          description: "Whether the Workflow is in use"
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+
+    #@overlay/match missing_ok=True
+    WorkflowStatus:
+      type: string
+      description: Status of the Workflow
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    #@overlay/match missing_ok=True
+    AddWorkflowRequest:
+      type: "object"
+      required:
+        - name
+        - status
+        - steps
+      properties:
+        name:
+          description: "Workflow name"
+          type: "string"
+        description:
+          description: "Workflow description"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+        steps:
+          type: "array"
+          description: "Workflow Steps"
+          items:
+            $ref: "#/components/schemas/AddWorkflowStep"
+
+    #@overlay/match missing_ok=True
+    AddWorkflowStep:
+      type: "object"
+      properties:
+        stepId:
+          description: "Workflow Step Identifier"
+          type: "string"
+        description:
+          description: "Workflow Step description"
+          type: "string"
+        action:
+          $ref: "#/components/schemas/AddAction"
+        queue:
+          $ref: "#/components/schemas/AddWorkflowStepQueue"
+        mappings:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/WorkflowStepMapping"
+        decision:
+          $ref: "#/components/schemas/WorkflowStepDecision"
+        decisions:
+          type: "array"
+          deprecated: true
+          description: "Deprecated; use 'decision' instead"
+          items:
+            $ref: "#/components/schemas/AddWorkflowStepDecision"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepMapping:
+      type: "object"
+      required:
+        - mappingId
+      properties:
+        mappingId:
+          type: "string"
+          description: "Mapping Identifier"
+
+    #@overlay/match missing_ok=True
+    AddWorkflowStepQueue:
+      type: object
+      required:
+        - queueId
+      properties:
+        queueId:
+          type: "string"
+          description: "Queue Identifier"
+        approvalGroups:
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepDecision:
+      type: object
+      properties:
+        conditions:
+          type: "array"
+          description: "Workflow Step Conditions"
+          items:
+            $ref: "#/components/schemas/WorkflowStepCondition"
+        defaultTransition:
+          $ref: '#/components/schemas/WorkflowStepTransition'
+
+    #@overlay/match missing_ok=True
+    WorkflowStepCondition:
+      required:
+        - transition
+      type: object
+      properties:
+        all:
+          type: "array"
+          description: "Workflow Step Condition Criteria"
+          items:
+            $ref: "#/components/schemas/WorkflowStepConditionCriterion"
+        any:
+          type: "array"
+          description: "Workflow Step Condition Criteria"
+          items:
+            $ref: "#/components/schemas/WorkflowStepConditionCriterion"
+        transition:
+          $ref: '#/components/schemas/WorkflowStepTransition'
+
+    #@overlay/match missing_ok=True
+    AddWorkflowStepDecision:
+      required:
+        - type
+        - nextStepId
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/WorkflowStepDecisionType"
+        nextStepId:
+          type: "string"
+          description: "Workflow Step to move to"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionOperator:
+      type: string
+      description: |
+        Comparison operator used to evaluate a workflow condition criterion.
+
+        Values:
+
+        - `EQ` - Equals
+        - `NEQ` - Not equals
+        - `CONTAINS` - Contains substring or matching value
+        - `NOT_CONTAINS` - Does not contain substring or matching value
+        - `STARTS_WITH` - Starts with value
+        - `ENDS_WITH` - Ends with value
+        - `GT` - Greater than
+        - `GTE` - Greater than or equal
+        - `LT` - Less than
+        - `LTE` - Less than or equal
+        - `EXISTS` - Field exists
+        - `NOT_EXISTS` - Field does not exist
+        - `IN` - Matches one of the provided values
+        - `NOT_IN` - Does not match any of the provided values
+        - `IS_EMPTY` - Source value is empty
+        - `IS_NOT_EMPTY` - Source value is not empty
+      enum:
+        - EQ
+        - NEQ
+        - CONTAINS
+        - NOT_CONTAINS
+        - STARTS_WITH
+        - ENDS_WITH
+        - GT
+        - GTE
+        - LT
+        - LTE
+        - EXISTS
+        - NOT_EXISTS
+        - IN
+        - NOT_IN
+        - IS_EMPTY
+        - IS_NOT_EMPTY
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionCriterion:
+      type: object
+      required:
+        - source
+        - operator
+      description: |
+        A single criterion used to evaluate whether a workflow condition matches.
+
+        A criterion compares a document-derived source value against one or more
+        provided values using the specified operator.
+
+        Supported sources include:
+        - document attributes
+        - document attribute value comparisons
+        - document content type
+        - document path
+
+        Typical examples:
+        - attribute `status` equals `approved`
+        - attribute `amount` greater than `1000`
+        - attribute `invoiceTotal` equals attribute `approvedTotal`
+        - attribute `invoiceTotal` equals the sum of attribute `lineItemAmount`
+        - content type equals `application/pdf`
+        - path contains `/invoices/`
+
+        Use the appropriate typed value field for the comparison:
+        - `stringValue` for string comparisons
+        - `numberValue` for numeric comparisons
+        - `booleanValue` for boolean comparisons
+        - `stringValues` for multi-value comparisons such as `IN` and `NOT_IN`
+
+        Literal value fields should be omitted when `source` is an attribute value
+        comparison.
+      properties:
+        source:
+          $ref: "#/components/schemas/WorkflowStepConditionSource"
+        operator:
+          $ref: "#/components/schemas/WorkflowStepConditionOperator"
+        stringValue:
+          type: string
+          description: String comparison value
+        numberValue:
+          type: number
+          description: Numeric comparison value
+        booleanValue:
+          type: boolean
+          description: Boolean comparison value
+        stringValues:
+          type: array
+          description: String values used for IN or NOT_IN comparisons
+          items:
+            type: string
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionSource:
+      description: |
+        Defines the document-derived source value to evaluate for a workflow
+        condition criterion.
+
+        The source identifies where the value comes from before applying the
+        operator. Supported sources include:
+        - a document attribute identified by `attributeKey`
+        - a comparison between a document attribute value and another attribute-derived
+          value
+        - the document content type
+        - the document path
+      oneOf:
+        - $ref: "#/components/schemas/WorkflowStepConditionDocumentAttribute"
+        - $ref: "#/components/schemas/WorkflowStepConditionAttributeValueComparison"
+        - $ref: "#/components/schemas/WorkflowStepConditionDocumentStandardMetadata"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionDocumentAttribute:
+      type: object
+      required:
+        - attributeKey
+      description: |
+        Uses a document attribute as the source value for a workflow condition
+        criterion.
+
+        The attribute is selected using `attributeKey`.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeValueComparison:
+      type: object
+      required:
+        - sourceType
+        - valueAttributeKey
+        - comparison
+      description: |
+        Compares the value of one document attribute to another attribute-derived
+        value on the same document.
+
+        The criterion operator is evaluated as:
+        document.attribute[valueAttributeKey] OP comparison
+
+        Literal comparison value fields are not used with this source.
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/WorkflowStepConditionAttributeValueComparisonSourceType"
+        valueAttributeKey:
+          type: string
+          description: Document attribute key containing the value to compare.
+        comparison:
+          $ref: "#/components/schemas/WorkflowStepConditionAttributeValueComparisonTarget"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeValueComparisonSourceType:
+      type: string
+      description: Identifies this source as an attribute-value comparison.
+      enum:
+        - DOCUMENT_ATTRIBUTE_VALUE_COMPARISON
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeValueComparisonTarget:
+      description: |
+        Defines the right-side comparison value for an attribute value comparison.
+      oneOf:
+        - $ref: "#/components/schemas/WorkflowStepConditionAttributeValueComparisonAttribute"
+        - $ref: "#/components/schemas/WorkflowStepConditionAttributeValueComparisonAggregate"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeValueComparisonAttribute:
+      type: object
+      additionalProperties: false
+      required:
+        - attributeKey
+      description: |
+        Uses another document attribute value as the right-side comparison value.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key containing the comparison value.
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeValueComparisonAggregate:
+      type: object
+      additionalProperties: false
+      required:
+        - attributeKey
+        - aggregateType
+      description: |
+        Uses an aggregate over another document attribute's values as the right-side
+        comparison value.
+      properties:
+        attributeKey:
+          type: string
+          description: Document attribute key whose values are aggregated for comparison.
+        aggregateType:
+          $ref: "#/components/schemas/WorkflowStepConditionAttributeAggregateType"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionAttributeAggregateType:
+      type: string
+      description: |
+        Aggregate operation applied to document attribute values.
+
+        Values:
+
+        - `FIRST` - First value for the attribute
+        - `LAST` - Last value for the attribute
+        - `SUM` - Sum of numeric values for the attribute
+        - `MIN` - Minimum numeric value for the attribute
+        - `MAX` - Maximum numeric value for the attribute
+        - `COUNT` - Count of values for the attribute
+      enum:
+        - FIRST
+        - LAST
+        - SUM
+        - MIN
+        - MAX
+        - COUNT
+
+    #@overlay/match missing_ok=True
+    WorkflowStepConditionDocumentStandardMetadata:
+      type: string
+      description: |
+        Identifies the built-in document metadata field to evaluate for a workflow
+        condition criterion.
+
+        Values:
+
+        - `PATH` - Evaluate the document path
+        - `CONTENT_TYPE` - Evaluate the document content type
+      enum:
+        - PATH
+        - CONTENT_TYPE
+
+    #@overlay/match missing_ok=True
+    WorkflowStepTransition:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/WorkflowStepTransitionType'
+        stepId:
+          type: string
+          description: "Target workflow step"
+
+    #@overlay/match missing_ok=True
+    WorkflowStepTransitionType:
+      type: string
+      description: |
+        Defines the outcome of a workflow step transition.
+
+        A transition determines what happens after a workflow step finishes
+        evaluating its conditions, decisions, or actions.
+
+        Depending on the transition type, the workflow may:
+
+        - Move to another workflow step
+        - Complete successfully
+        - Be rejected
+        - Be cancelled
+        - Remain on the current step
+
+        Some transition types require additional properties. For example,
+        when the type is `STEP`, a target step identifier must be provided
+        in the transition object.
+      enum:
+        - STEP
+        - RETRY
+        - COMPLETE
+
+    #@overlay/match missing_ok=True
+    WorkflowStepDecisionType:
+      type: string
+      description: Type of Workflow Step Decision
+      enum:
+        - APPROVE
+        - REJECT
+
+    #@overlay/match missing_ok=True
+    AddWorkflowResponse:
+      type: "object"
+      properties:
+        workflowId:
+          type: "string"
+          description: "Workflow Identifier"

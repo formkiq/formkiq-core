@@ -1,0 +1,3614 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.client.model.AddAttributeSchemaRequired;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeEntity;
+import com.formkiq.client.model.AddDocumentAttributeEntityValue;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentAttributeValue;
+import com.formkiq.client.model.AddDocumentAttributesRequest;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentUploadRequest;
+import com.formkiq.client.model.AttributeDataType;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeSchemaRequired;
+import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.AttributeValueType;
+import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchAttribute;
+import com.formkiq.client.model.DocumentSearchRange;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.EntityAttribute;
+import com.formkiq.client.model.EntityTypeNamespace;
+import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.client.model.GetSitesSchemaResponse;
+import com.formkiq.client.model.SearchRangeDataType;
+import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetDocumentAttributeRequest;
+import com.formkiq.client.model.SetDocumentAttributesRequest;
+import com.formkiq.client.model.SetResponse;
+import com.formkiq.client.model.SetSchemaAttributes;
+import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.client.model.UpdateDocumentRequest;
+import com.formkiq.testutils.api.ApiHttpClient;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentAttributeValueRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.entity.DeleteEntityRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.urls.HttpStatus;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.FkqAttributeService.createNumberAttribute;
+import static com.formkiq.testutils.aws.FkqAttributeService.createStringAttribute;
+import static com.formkiq.testutils.aws.FkqAttributeService.createStringsAttribute;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/** Unit Tests for request /sites/{siteId}/schema/document. */
+@ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
+public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
+
+  private static void assertEntity(final DocumentAttribute da, final String entityTypeId,
+      final String entityId) {
+    assertNotNull(da.getEntity());
+    assertEquals("My Company", da.getEntity().getName());
+    assertEquals(entityTypeId, da.getEntity().getEntityTypeId());
+    assertEquals(entityId, da.getEntity().getEntityId());
+  }
+
+  private void addAttribute(final String siteId, final String key,
+      final AttributeDataType dataType) {
+    addAttribute(siteId, key, dataType, null);
+  }
+
+  private void addAttribute(final String siteId, final String key, final AttributeDataType dataType,
+      final AttributeType type) {
+    try {
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).dataType(dataType).type(type));
+      this.attributesApi.addAttribute(req, siteId);
+    } catch (ApiException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private ApiException addDocumentAttributesWithError(final String siteId, final String documentId,
+      final AddDocumentAttributesRequest req) {
+    ApiException error = null;
+    try {
+      this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+      fail();
+    } catch (ApiException e) {
+      error = e;
+    }
+    return error;
+  }
+
+  private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest request)
+      throws ApiException {
+    String documentId =
+        this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
+    assertNotNull(documentId);
+    return documentId;
+  }
+
+  private String addEntityTypeCustom(final String siteId, final String entityTypeName)
+      throws ApiException {
+    String entityTypeId1 =
+        new AddEntityTypeRequestBuilder().setEntityType(entityTypeName, EntityTypeNamespace.CUSTOM)
+            .submit(client, siteId).throwIfError().response().getEntityTypeId();
+    assertNotNull(entityTypeId1);
+    return entityTypeId1;
+  }
+
+  private String addEntityTypeCustomCompany(final String siteId) throws ApiException {
+    return addEntityTypeCustom(siteId, "Company");
+  }
+
+  private void assertAttributeSchemaRequired(final AttributeSchemaRequired r,
+      final String attributeKey, final String allowedValues, final int minNumberOfValues,
+      final int maxNumberOfValues) {
+    assertEquals(attributeKey, r.getAttributeKey());
+    if (allowedValues != null) {
+      assertEquals(allowedValues, String.join(",", notNull(r.getAllowedValues())));
+    } else {
+      assertTrue(notNull(r.getAllowedValues()).isEmpty());
+    }
+    if (r.getMinNumberOfValues() != null) {
+      assertEquals(minNumberOfValues, requireNonNull(r.getMinNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMinNumberOfValues());
+    }
+
+    if (r.getMaxNumberOfValues() != null) {
+      assertEquals(maxNumberOfValues, requireNonNull(r.getMaxNumberOfValues()).intValue());
+    } else {
+      assertNull(r.getMaxNumberOfValues());
+    }
+  }
+
+  private void assertDocumentAttributeEquals(final DocumentAttribute da, final String attributeKey,
+      final String stringValue, final String stringValues) {
+    assertEquals(attributeKey, da.getKey());
+
+    if (stringValue != null) {
+      assertEquals(stringValue, da.getStringValue());
+    }
+
+    if (stringValues != null) {
+      assertEquals(stringValues, String.join(",", notNull(da.getStringValues())));
+    }
+  }
+
+  /**
+   * Create Composite Key from {@link String}.
+   *
+   * @param attributeKeys {@link String}
+   * @return AttributeSchemaCompositeKey
+   */
+  private AttributeSchemaCompositeKey createCompositeKey(final String... attributeKeys) {
+    return new AttributeSchemaCompositeKey().attributeKeys(List.of(attributeKeys));
+  }
+
+  private AddAttributeSchemaOptional createOptional(final String attributeKey) {
+    return new AddAttributeSchemaOptional().attributeKey(attributeKey);
+  }
+
+  private void createRangeAttributeNumber(final String siteId, final String value)
+      throws ApiException {
+    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("category").stringValue("person")))
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("date").numberValue(new BigDecimal(value))));
+
+    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+  }
+
+  private void createRangeAttributeString(final String siteId, final String value)
+      throws ApiException {
+    AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("category").stringValue("person")))
+        .addAttributesItem(new AddDocumentAttribute(
+            new AddDocumentAttributeStandard().key("date").stringValue(value)));
+
+    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+  }
+
+  private AddAttributeSchemaRequired createRequired(final String attributeKey) {
+    return new AddAttributeSchemaRequired().attributeKey(attributeKey);
+  }
+
+  private DocumentAttribute getDocumentAttribute(final String siteId, final String documentId)
+      throws ApiException {
+    return new GetDocumentAttributeRequestBuilder(documentId, "strings").submit(client, siteId)
+        .throwIfError().response().getAttribute();
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final DocumentArtifact document) throws ApiException {
+    return new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+  }
+
+  private List<DocumentAttribute> getDocumentAttributes(final String siteId,
+      final String documentId) throws ApiException {
+    return notNull(this.documentAttributesApi
+        .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+  }
+
+  /**
+   * POST /documents Add attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocument01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("strings").submitOk(client,
+          siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().addAttribute("strings", "category")
+          .getDocument(client, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "strings", "category", null);
+    }
+  }
+
+  /**
+   * POST /documents Add attributes. Missing attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocument02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("strings").submitOk(client,
+          siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().submitError(client, siteId);
+
+      // then
+      assertEquals(
+          "{\"errors\":[{\"key\":\"strings\","
+              + "\"error\":\"missing required attribute 'strings'\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents Add attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocument03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      new SetSchemaDocumentRequestBuilder("joe").addOptionalAttribute("strings").submitOk(client,
+          siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("strings").submitOk(client,
+          siteId);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("strings", "category").submitOk(client, siteId);
+
+      // then
+      assertEquals("added attributes to documentId '" + document.documentId() + "'",
+          resp.response().getMessage());
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "strings", "category", null);
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes missing required.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "other", null);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("strings").submitOk(client,
+          siteId);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document).addAttribute("other", "category")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(
+          "{\"errors\":[{\"key\":\"strings\","
+              + "\"error\":\"missing required attribute 'strings'\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes Add attributes - test composite keys generated.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("strings", "category", "documentType", "other")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      new SetSchemaDocumentRequestBuilder("joe").addCompositeKey("strings", "category")
+          .addCompositeKey("strings", "documentType").submitOk(client, siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // when
+      new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("strings", List.of("category", "1234"))
+          .addAttribute("documentType", "invoice").addAttribute("category", "doc")
+          .submitOk(client, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+
+      final int expected = 5;
+      int i = 0;
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "category", "doc", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
+      assertDocumentAttributeEquals(attributes.get(i++), "strings::category", null,
+          "1234::doc,category::doc");
+      assertDocumentAttributeEquals(attributes.get(i), "strings::documentType", null,
+          "1234::invoice,category::invoice");
+
+      // given
+      // when
+      var addResp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("other", List.of("thing123")).submitOk(client, siteId);
+
+      // then
+      assertEquals("added attributes to documentId '" + document.documentId() + "'",
+          addResp.response().getMessage());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes Add attributes - existing attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("strings")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      var document = new AddDocumentRequestBuilder().content().addAttribute("strings", "category")
+          .getDocument(client, siteId);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document).addAttribute("strings", "1234")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"strings\","
+              + "\"error\":\"document attribute 'strings' already exists\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes with NULL required attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", null);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().required(null));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("strings", "category").submitOk(client, siteId);
+
+      // then
+      assertEquals("added attributes to documentId '" + document.documentId() + "'",
+          resp.response().getMessage());
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "strings", "category", null);
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes with min/max number of values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      AddAttributeSchemaRequired strings = createRequired("strings")
+          .minNumberOfValues(new BigDecimal("2")).maxNumberOfValues(new BigDecimal("3"));
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(strings));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttribute("strings", List.of("1", "2", "3", "4")).submitError(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"maxNumberOfValues\","
+              + "\"error\":\"number of attributes 4 is more than maximum of 3\"}]}",
+          resp.exception().getResponseBody());
+
+      // when
+      resp = new AddDocumentAttributeRequestBuilder(document).addAttribute("strings", List.of("1"))
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"minNumberOfValues\","
+              + "\"error\":\"number of attributes 1 is less than minimum of 2\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add attributes with min/max number of values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", null);
+
+      for (int max : List.of(2, -1)) {
+
+        var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+        AddAttributeSchemaRequired strings = createRequired("strings")
+            .minNumberOfValues(new BigDecimal("1")).maxNumberOfValues(new BigDecimal(max));
+
+        SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+            .attributes(new SetSchemaAttributes().addRequiredItem(strings));
+        this.schemasApi.setSitesSchema(siteId, req);
+
+        // when
+        var resp = new AddDocumentAttributeRequestBuilder(document)
+            .addAttribute("strings", List.of("1", "2")).submitOk(client, siteId);
+
+        // then
+        assertEquals("added attributes to documentId '" + document.documentId() + "'",
+            resp.response().getMessage());
+
+        assertNotNull(req.getAttributes());
+        notNull(req.getAttributes().getRequired()).clear();
+        this.schemasApi.setSitesSchema(siteId, req);
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add Entity attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+
+      for (String entityTypeId : List.of(entityTypeId0, "Company")) {
+
+        var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+        var entityId = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+            .addAttribute("address", "123").getEntityId(client, siteId);
+
+        // when
+        var addResponse = new AddDocumentAttributeRequestBuilder(document)
+            .addAttribute("strings", entityTypeId, entityId, EntityTypeNamespace.CUSTOM)
+            .submitOk(client, siteId);
+
+        // then
+        assertEquals("added attributes to documentId '" + document.documentId() + "'",
+            addResponse.response().getMessage());
+
+        List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, document);
+        assertEquals(1, documentAttributes.size());
+
+        DocumentAttribute da0 = documentAttributes.getFirst();
+        DocumentAttribute da1 = getDocumentAttribute(siteId, document.documentId());
+
+        List.of(da0, da1).forEach(da -> {
+          assertEquals(AttributeValueType.ENTITY, da.getValueType());
+          String stringValue = entityTypeId0 + "#" + entityId;
+          assertDocumentAttributeEquals(da, "strings", stringValue, null);
+          assertEntity(da, entityTypeId0, entityId);
+
+          assertNotNull(da.getEntity());
+          List<EntityAttribute> attributes = notNull(da.getEntity().getAttributes());
+          assertEquals(1, attributes.size());
+          assertEquals("address", attributes.getFirst().getKey());
+          assertEquals("123", attributes.getFirst().getStringValue());
+        });
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Add multiple Entity attributes in one request.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute08MultipleEntities() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId = addEntityTypeCustomCompany(siteId);
+
+      final DocumentArtifact document =
+          new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // when
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId).name("My Company")
+          .addAttribute("address", "123").getEntityId(client, siteId);
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId).name("My Company")
+          .addAttribute("address", "456").getEntityId(client, siteId);
+
+      // then
+      assertNotNull(entityId0);
+      assertNotNull(entityId1);
+
+      // given
+      var entityValue0 = new AddDocumentAttributeEntityValue().entityTypeId(entityTypeId)
+          .entityId(entityId0).namespace(EntityTypeNamespace.CUSTOM);
+      var entityValue1 = new AddDocumentAttributeEntityValue().entityTypeId(entityTypeId)
+          .entityId(entityId1).namespace(EntityTypeNamespace.CUSTOM);
+
+      // when
+      new AddDocumentAttributeRequestBuilder(document)
+          .addAttributeEntities("strings", List.of(entityValue0, entityValue1))
+          .submitOk(client, siteId);
+
+      // then
+      List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, documentAttributes.size());
+
+      DocumentAttribute da = documentAttributes.getFirst();
+      assertEquals(AttributeValueType.ENTITY, da.getValueType());
+      assertEquals("strings", da.getKey());
+      assertEquals(Set.of(entityTypeId + "#" + entityId0, entityTypeId + "#" + entityId1),
+          Set.copyOf(notNull(da.getStringValues())));
+
+      assertNull(da.getEntity());
+      var entities = notNull(da.getEntities());
+      assertEquals(2, entities.size());
+      assertEquals("My Company", entities.get(0).getName());
+      assertEquals("My Company", entities.get(1).getName());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. entityTypeId=name and missing namespace.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+
+      String entityTypeId = "Company";
+      String entityId = ID.uuid();
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document)
+          .addAttributeEntity("strings",
+              new AddDocumentAttributeEntityValue().entityId(entityId).entityTypeId(entityTypeId))
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"namespace\",\"error\":\"'namespace' is required\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Invalid Entity Id / EntityType Id.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "strings", AttributeDataType.ENTITY);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      String entityTypeId = ID.uuid();
+      String entityId = ID.uuid();
+
+      AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings");
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when - entityTypeId / enityId missing
+      ApiException e = addDocumentAttributesWithError(siteId, document.documentId(), attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"},"
+              + "{\"key\":\"entityId\",\"error\":\"'entityId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId("").entityTypeId(entityTypeId);
+
+      // when
+      e = addDocumentAttributesWithError(siteId, document.documentId(), attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"entityId\",\"error\":\"'entityId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId(entityId).entityTypeId("");
+
+      // when
+      e = addDocumentAttributesWithError(siteId, document.documentId(), attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"}]}",
+          e.getResponseBody());
+
+      // given
+      a.entityId(entityId).entityTypeId(entityTypeId);
+
+      // when
+      e = addDocumentAttributesWithError(siteId, document.documentId(), attrReq);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Attribute GOVERNANCE.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute11() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+      addAttribute(siteId, "strings", AttributeDataType.STRING, AttributeType.GOVERNANCE);
+
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // when
+      var resp = new AddDocumentAttributeRequestBuilder(document).addAttribute("strings", "123123")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"strings\","
+              + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+          resp.exception().getResponseBody());
+
+      // given
+      setBearerToken(siteId + "_govern");
+
+      // when
+      resp = new AddDocumentAttributeRequestBuilder(document).addAttribute("strings", "123123")
+          .submitOk(client, siteId);
+
+      // then
+      assertEquals("added attributes to documentId '" + document.documentId() + "'",
+          resp.response().getMessage());
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. PRESET namespace.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttribute12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      addAttribute(siteId, "LlmPrompt", AttributeDataType.ENTITY);
+
+      String entityTypeId = "LlmPrompt";
+      String entityId = ID.uuid();
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      AddDocumentAttributeEntity a = new AddDocumentAttributeEntity().key("strings")
+          .entityId(entityId).entityTypeId(entityTypeId).namespace(EntityTypeNamespace.PRESET);
+      AddDocumentAttributesRequest attrReq =
+          new AddDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(a));
+
+      // when
+      try {
+        this.documentAttributesApi.addDocumentAttributes(document.documentId(), attrReq, siteId,
+            null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"entityTypeId\","
+            + "\"error\":\"EntityType 'LlmPrompt' is not found\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/{documentId}/attributes. Invalid request.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentAttributeInvalidRequest()
+      throws ApiException, IOException, InterruptedException {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+    var document = new AddDocumentRequestBuilder().content().getDocument(client, DEFAULT_SITE_ID);
+
+    // when
+    var resp = ApiHttpClient.send(DEFAULT_SITE_ID,
+        server.getBasePath() + "/documents/" + document.documentId() + "/attributes", "POST",
+        "{\"attributes\":[[true]]}");
+
+    // then
+    assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
+    assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
+
+  }
+
+  /**
+   * DELETE /entities/{entityTypeId}/{entityId} after site schema default entity is applied.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentDefaultEntityDeleteEntity() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    addAttribute(siteId, "company", AttributeDataType.ENTITY);
+    String entityTypeId = addEntityTypeCustomCompany(siteId);
+    String entityId =
+        new AddEntityRequestBuilder(entityTypeId).name("My Company").getEntityId(client, siteId);
+    assertNotNull(entityId);
+
+    new SetSchemaDocumentRequestBuilder("joe")
+        .addRequiredEntityAttribute("company", entityTypeId, entityId).submitOk(client, siteId);
+
+    DocumentArtifact document =
+        new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+    // then - schema default entity is attached to documents
+    List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+    assertEquals(1, attributes.size());
+
+    DocumentAttribute attribute = attributes.getFirst();
+    assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+    assertDocumentAttributeEquals(attribute, "company", entityTypeId + "#" + entityId, null);
+    assertEntity(attribute, entityTypeId, entityId);
+
+    // when - delete the default entity
+    var resp = new DeleteEntityRequestBuilder(entityTypeId, entityId).submitError(client, siteId);
+
+    // then
+    assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+    assertEquals(
+        "{\"errors\":[{\"key\":\"entityId\",\"error\":\"entity '" + entityId
+            + "' is used in a Schema / Classification, cannot be deleted\"}]}",
+        resp.exception().getResponseBody());
+  }
+
+  /**
+   * POST /documents with site schema required entity type constraint.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentMissingRequiredEntity() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityTypeAttribute("company", entityTypeId0).submit(client, siteId)
+          .throwIfError();
+
+      // when - missing required entity attribute
+      var resp = new AddDocumentRequestBuilder().content().submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      ApiException e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"company\",\"error\":\"missing required attribute 'company'\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with site schema optional entity type constraint.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentOptionalEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+      String entityTypeId1 = addEntityTypeCustom(siteId, "Vendor");
+
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+          .addAttribute("address", "123").getEntityId(client, siteId);
+      assertNotNull(entityId0);
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId1).name("My Vendor")
+          .addAttribute("address", "abc").getEntityId(client, siteId);
+      assertNotNull(entityId1);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addOptionalEntityTypeAttribute("company", entityTypeId0).submitOk(client, siteId);
+
+      // when - optional entity attribute is omitted
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(0, attributes.size());
+
+      // when - wrong entity type
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId1, entityId1, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"company\","
+          + "\"error\":\"attribute 'company' must use entityTypeId '" + entityTypeId0 + "'\"}]}",
+          e.getResponseBody());
+
+      // when - matching entity type
+      document = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId0, entityId0, EntityTypeNamespace.CUSTOM)
+          .getDocument(client, siteId);
+
+      // then
+      attributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.getFirst();
+      assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+      assertDocumentAttributeEquals(attribute, "company", entityTypeId0 + "#" + entityId0, null);
+      assertEntity(attribute, entityTypeId0, entityId0);
+
+      assertNotNull(attribute.getEntity());
+      List<EntityAttribute> entityAttributes = notNull(attribute.getEntity().getAttributes());
+      assertEquals(1, entityAttributes.size());
+      assertEquals("address", entityAttributes.getFirst().getKey());
+      assertEquals("123", entityAttributes.getFirst().getStringValue());
+    }
+  }
+
+  /**
+   * POST /documents with site schema required entity type constraint. Test valid / invalid
+   * entityTypeId
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentValidInvalidEntityType() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+      addAttribute(siteId, "address", AttributeDataType.STRING);
+
+      String entityTypeId0 = addEntityTypeCustomCompany(siteId);
+
+      String entityTypeId1 = addEntityTypeCustom(siteId, "Vendor");
+
+      String entityId0 = new AddEntityRequestBuilder(entityTypeId0).name("My Company")
+          .addAttribute("address", "123").getEntityId(client, siteId);
+      assertNotNull(entityId0);
+
+      String entityId1 = new AddEntityRequestBuilder(entityTypeId1).name("My Vendor")
+          .addAttribute("address", "abc").getEntityId(client, siteId);
+      assertNotNull(entityId1);
+
+      new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityTypeAttribute("company", entityTypeId0).submitOk(client, siteId);
+
+      // when - wrong entity type
+      var resp = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId1, entityId1, EntityTypeNamespace.CUSTOM)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"company\","
+          + "\"error\":\"attribute 'company' must use entityTypeId '" + entityTypeId0 + "'\"}]}",
+          e.getResponseBody());
+
+      // when - matching entity type
+      var document = new AddDocumentRequestBuilder().content()
+          .addAttribute("company", entityTypeId0, entityId0, EntityTypeNamespace.CUSTOM)
+          .getDocument(client, siteId);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, document);
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.getFirst();
+      assertEquals(AttributeValueType.ENTITY, attribute.getValueType());
+      assertDocumentAttributeEquals(attribute, "company", entityTypeId0 + "#" + entityId0, null);
+      assertEntity(attribute, entityTypeId0, entityId0);
+
+      assertNotNull(attribute.getEntity());
+      List<EntityAttribute> entityAttributes = notNull(attribute.getEntity().getAttributes());
+      assertEquals(1, entityAttributes.size());
+      assertEquals("address", entityAttributes.getFirst().getKey());
+      assertEquals("123", entityAttributes.getFirst().getStringValue());
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema required attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+      addAttribute(siteId, key, null);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute(key).submitOk(client, siteId);
+
+      AddDocumentUploadRequest ureq =
+          new AddDocumentUploadRequest().path("a/b/sample.txt").contentType("text/plain");
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"category\","
+            + "\"error\":\"missing required attribute 'category'\"}]}", e.getResponseBody());
+
+        List<SearchResultDocument> docs = notNull(
+            foldersApi.getFolderDocuments(siteId, null, null, null, null, null).getDocuments());
+        assertEquals(0, docs.size());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema required attribute and default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "flag", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "keyonly", AttributeDataType.KEY_ONLY);
+      addAttribute(siteId, "num", AttributeDataType.NUMBER);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes()
+              .addRequiredItem(createRequired("category").defaultValue("person"))
+              .addRequiredItem(createRequired("flag").defaultValue("true"))
+              .addRequiredItem(createRequired("keyonly"))
+              .addRequiredItem(createRequired("num").defaultValues(Arrays.asList("123", "233")))
+              .addRequiredItem(
+                  createRequired("strings").defaultValues(Arrays.asList("abc", "qwe"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq =
+          new AddDocumentUploadRequest().path("sample.txt").contentType("text/plain");
+
+      // when
+      GetDocumentUrlResponse response0 =
+          this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+
+      AddDocumentRequest areq = new AddDocumentRequest().path("sample.txt").content("test sample")
+          .contentType("text/plain");
+
+      AddDocumentResponse response1 = this.documentsApi.addDocument(areq, siteId, null);
+
+      // then
+      for (String documentId : Arrays.asList(response0.getDocumentId(),
+          response1.getDocumentId())) {
+
+        List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+
+        int i = 0;
+        final int expected = 5;
+        assertEquals(expected, attributes.size());
+        assertDocumentAttributeEquals(attributes.get(i), "category", "person", null);
+        assertEquals(AttributeValueType.STRING, attributes.get(i++).getValueType());
+
+        assertEquals("flag", attributes.get(i).getKey());
+        assertEquals(AttributeValueType.BOOLEAN, attributes.get(i).getValueType());
+        assertEquals(Boolean.TRUE, attributes.get(i++).getBooleanValue());
+
+        assertEquals("keyonly", attributes.get(i).getKey());
+        assertEquals(AttributeValueType.KEY_ONLY, attributes.get(i).getValueType());
+        assertNull(attributes.get(i++).getStringValue());
+
+        assertEquals("num", attributes.get(i).getKey());
+        assertEquals(AttributeValueType.NUMBER, attributes.get(i).getValueType());
+        assertEquals("123,233", String.join(",", notNull(attributes.get(i++).getNumberValues())
+            .stream().map(n -> formatDouble(n.doubleValue())).toList()));
+
+        assertDocumentAttributeEquals(attributes.get(i), "strings", null, "abc,qwe");
+        assertEquals(AttributeValueType.STRING, attributes.get(i).getValueType());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema required attribute and no default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "flag", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "keyonly", AttributeDataType.KEY_ONLY);
+      addAttribute(siteId, "num", AttributeDataType.NUMBER);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings"))
+              .addRequiredItem(createRequired("flag")).addRequiredItem(createRequired("keyonly"))
+              .addRequiredItem(createRequired("num")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq = new AddDocumentUploadRequest().path("sample.txt")
+          .contentType("text/plain")
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222"))))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("flag").booleanValue(Boolean.TRUE)))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("num")
+              .numberValues(Arrays.asList(new BigDecimal("111.11"), new BigDecimal("222.22")))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+
+      int i = 0;
+      final int expected = 4;
+      assertEquals(expected, attributes.size());
+
+      assertEquals("flag", attributes.get(i).getKey());
+      assertEquals(Boolean.TRUE, attributes.get(i++).getBooleanValue());
+
+      assertEquals("keyonly", attributes.get(i).getKey());
+      assertNull(attributes.get(i++).getStringValue());
+
+      assertEquals("num", attributes.get(i).getKey());
+      assertEquals("111.11,222.22", String.join(",", notNull(attributes.get(i++).getNumberValues())
+          .stream().map(n -> formatDouble(n.doubleValue())).toList()));
+
+      assertDocumentAttributeEquals(attributes.get(i), "strings", null, "111,222");
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema required attribute and no default value and allowed
+   * values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "flag", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "keyonly", AttributeDataType.KEY_ONLY);
+      addAttribute(siteId, "num", AttributeDataType.NUMBER);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes()
+              .addRequiredItem(
+                  createRequired("strings").addAllowedValuesItem("111").addAllowedValuesItem("222"))
+              .addRequiredItem(createRequired("flag").addAllowedValuesItem("true"))
+              .addRequiredItem(createRequired("keyonly")).addRequiredItem(createRequired("num")
+                  .addAllowedValuesItem("111.11").addAllowedValuesItem("222.22")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222"))))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("flag").booleanValue(Boolean.TRUE)))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("num")
+              .numberValues(Arrays.asList(new BigDecimal("111.11"), new BigDecimal("222.22")))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      final int expected = 4;
+      assertEquals(expected, attributes.size());
+
+      // given
+      AddDocumentUploadRequest ureq1 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(createStringsAttribute("strings", List.of("333")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("flag").booleanValue(Boolean.FALSE)))
+          .addAttributesItem(createNumberAttribute("num", new BigDecimal("111.12")));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq1, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', only"
+                + " allowed values are 111,222\"},{\"key\":\"flag\",\"error\":\"invalid attribute "
+                + "value 'flag', only allowed values are true\"},{\"key\":\"num\",\"error\":"
+                + "\"invalid attribute value 'num', only allowed values are 111.11,222.22\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema optional attributes with valid/invalid attributes
+   * values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes()
+              .addOptionalItem(createOptional("strings").allowedValues(List.of("123")))
+              .addOptionalItem(createOptional("category").allowedValues(List.of("person"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValues(List.of("123"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // given
+      AddDocumentUploadRequest ureq1 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValues(List.of("333"))));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq1, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\","
+                + "\"error\":\"invalid attribute value 'strings', only allowed values are 123\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema. Add attributes not in required / optional /
+   * allowAdditionalAttributes = true values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
+              .addOptionalItem(createOptional("strings")).allowAdditionalAttributes(Boolean.TRUE));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("123"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema. Add attributes missing key.
+   *
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema07() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired())
+              .addOptionalItem(new AddAttributeSchemaOptional())
+              .allowAdditionalAttributes(Boolean.FALSE));
+
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(
+            "{\"errors\":[{\"error\":\"required attribute missing attributeKey'\"},"
+                + "{\"error\":\"optional attribute missing attributeKey'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents/upload with site schema. Add attributes not in required / optional /
+   * allowAdditionalAttributes = false values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
+              .addOptionalItem(createOptional("strings")).allowAdditionalAttributes(Boolean.FALSE));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("123"))));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"category\",\"error\":\"attribute 'category' "
+            + "is not listed as a required or optional attribute\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PATCH /documents/{documentId}, with invalid allowed value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "req", null);
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addRequiredItem(createRequired("req")).addOptionalItem(createOptional("strings")
+                  .addAllowedValuesItem("111").addAllowedValuesItem("222")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 =
+          new AddDocumentUploadRequest().addAttributesItem(createStringAttribute("req", "someval"))
+              .addAttributesItem(createStringAttribute("strings", "111"));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(2, attributes.size());
+
+      // given
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().addAttributesItem(createStringAttribute("strings", "333"));
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"invalid attribute value 'strings', only allowed values are 111,222\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * POST /documents, with GOVERANCE attribute with default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddUploadDocumentWithSetSitesSchema10() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+
+      addAttribute(siteId, "strings", AttributeDataType.STRING, AttributeType.GOVERNANCE);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addRequiredItem(createRequired("strings").defaultValue("123")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest();
+
+      // given
+      setBearerToken(siteId);
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertEquals("123", attributes.getFirst().getStringValue());
+
+      // given - try to override OPA attribute value in schema
+      ureq0 = new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
+
+      // when
+      try {
+        this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\","
+                + "\"error\":\"attribute can only be changed by GOVERN or ADMIN role\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. schema required
+   * attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributeAndValue03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("strings").submitOk(client,
+          siteId);
+      var document = new AddDocumentRequestBuilder().content().addAttribute("strings", "1")
+          .getDocument(client, siteId);
+
+      // when
+      var resp = new DeleteDocumentAttributeValueRequestBuilder(document, "strings", "1")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. invalid
+   * attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributeValue01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        this.documentAttributesApi.deleteDocumentAttributeAndValue(documentId, "category", "value",
+            siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"message\":\"attribute 'category' not found on document ' " + documentId + "'\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. valid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributeValue02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      DeleteResponse response = this.documentAttributesApi
+          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId, null);
+
+      // then
+      assertEquals(
+          "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. schema optional
+   * attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributeValue04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addOptionalItem(createOptional("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      DeleteResponse response = this.documentAttributesApi
+          .deleteDocumentAttributeAndValue(documentId, "strings", "111", siteId, null);
+
+      // then
+      assertEquals(
+          "attribute value '111' removed from attribute 'strings', document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. invalid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. valid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      DeleteResponse response =
+          this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
+
+      // then
+      assertEquals("attribute 'strings' removed from document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. schema required attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        this.documentAttributesApi.deleteDocumentAttribute(documentId, "strings", siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * GET /sites/{siteId}/schema/document, not set.
+   *
+   */
+  @Test
+  public void testGetSitesSchema01() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      try {
+        this.schemasApi.getSitesSchema(siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"message\":\"Sites Schema not found\"}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} without schema, no attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutDocumentAttributesKey01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "strings";
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributeValue(documentId, attributeKey, setReq,
+            siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"attribute 'strings' not found\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} without schema.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutDocumentAttributesKey02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "strings";
+      addAttribute(siteId, attributeKey, null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
+
+      // when
+      this.documentAttributesApi.setDocumentAttributeValue(documentId, attributeKey, setReq, siteId,
+          null);
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), attributeKey, "123", null);
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with: - Site Schema - Required attribute
+   * - add different attribute.
+   *
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutDocumentAttributesKey03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValue("person")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
+
+      // when
+      SetResponse response = this.documentAttributesApi.setDocumentAttributeValue(documentId,
+          "category", setReq, siteId, null);
+
+      // then
+      assertEquals("Updated attribute 'category' on document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "category", "123", null);
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with: - Site Schema - Required attribute
+   * - invalid value.
+   *
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutDocumentAttributesKey04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValue("person")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
+              .attributeKey("strings").addAllowedValuesItem("1234").addAllowedValuesItem("4444")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("123"));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributeValue(documentId, "strings", setReq, siteId,
+            null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"invalid attribute value 'strings', "
+                + "only allowed values are 1234,4444\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with: - Site Schema - Required attribute
+   * - allowed value.
+   *
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testPutDocumentAttributesKey05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValue("person")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
+              .attributeKey("strings").addAllowedValuesItem("1234").addAllowedValuesItem("4444")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      SetDocumentAttributeRequest setReq = new SetDocumentAttributeRequest()
+          .attribute(new AddDocumentAttributeValue().addStringValuesItem("4444"));
+
+      // when
+      SetResponse response = this.documentAttributesApi.setDocumentAttributeValue(documentId,
+          "strings", setReq, siteId, null);
+
+      // then
+      assertEquals("Updated attribute 'strings' on document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "strings", "4444", null);
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload EQ.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+
+      // invalid search
+      DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("333"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response1 =
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+      assertEquals(0, notNull(response1.getDocuments()).size());
+
+      // wrong attribute order
+      DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person"))
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222")));
+
+      DocumentSearchResponse response2 =
+          this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+      assertEquals(1, notNull(response2.getDocuments()).size());
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload BEGINS WITH.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").beginsWith("p")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+
+      // invalid search
+      DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").beginsWith("a")));
+
+      DocumentSearchResponse response1 =
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+      assertEquals(0, notNull(response1.getDocuments()).size());
+
+      // begingsWith as first element
+      DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").beginsWith("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("p")));
+
+      try {
+        this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"beginsWith\""
+                + ",\"error\":\"'beginsWith' can only be used on last attribute in list\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload String RANGE.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "date", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category")).addRequiredItem(createRequired("date"))
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      for (String value : Arrays.asList("2024-01-03", "2024-01-04", "2024-01-05", "2024-01-10",
+          "2024-02-03")) {
+        createRangeAttributeString(siteId, value);
+      }
+
+      // when - valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person"))
+          .addAttributesItem(new DocumentSearchAttribute().key("date")
+              .range(new DocumentSearchRange().start("2024-01-04").end("2024-01-10"))));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+
+      // then
+      final int expected = 3;
+      int i = 0;
+      List<SearchResultDocument> documents = notNull(response0.getDocuments());
+      assertEquals(expected, documents.size());
+
+      assertEquals("category::date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::2024-01-04",
+          requireNonNull(documents.get(i++).getMatchedAttribute()).getStringValue());
+
+      assertEquals("category::date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::2024-01-05",
+          requireNonNull(documents.get(i++).getMatchedAttribute()).getStringValue());
+
+      assertEquals("category::date",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::2024-01-10",
+          requireNonNull(documents.get(i).getMatchedAttribute()).getStringValue());
+
+      // when - invalid search
+      DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category")
+              .range(new DocumentSearchRange().start("2024-02-04").end("2024-03-05"))));
+
+      try {
+        this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"no composite key"
+            + " found for attributes 'strings,category'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload String wrong order RANGE.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "date", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category")).addRequiredItem(createRequired("date"))
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      for (String value : Arrays.asList("2024-01-03", "2024-01-04", "2024-01-05", "2024-01-10",
+          "2024-02-03")) {
+        createRangeAttributeString(siteId, value);
+      }
+
+      // range as first element
+      DocumentSearchRequest sreq2 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("date")
+              .range(new DocumentSearchRange().start("2024-01-0").end("2024-01-0")))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("p")));
+
+      // when
+      try {
+        this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"range\""
+                + ",\"error\":\"'range' can only be used on last attribute in list\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload number RANGE.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "date", AttributeDataType.NUMBER);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category")).addRequiredItem(createRequired("date"))
+              .addCompositeKeysItem(createCompositeKey("category", "date")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      for (String value : Arrays.asList("100.12", "150.14", "200", "300", "1000")) {
+        createRangeAttributeNumber(siteId, value);
+      }
+
+      // when - valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person"))
+          .addAttributesItem(new DocumentSearchAttribute().key("date").range(
+              new DocumentSearchRange().start("1").end("275").type(SearchRangeDataType.NUMBER))));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+
+      // then
+      final int expected = 3;
+      int i = 0;
+      assertEquals(expected, notNull(response0.getDocuments()).size());
+
+      assertEquals("category::date",
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::000000000000100.1200",
+          requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute()).getStringValue());
+
+      assertEquals("category::date",
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::000000000000150.1400",
+          requireNonNull(response0.getDocuments().get(i++).getMatchedAttribute()).getStringValue());
+
+      assertEquals("category::date",
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getKey());
+      assertEquals("person::000000000000200.0000",
+          requireNonNull(response0.getDocuments().get(i).getMatchedAttribute()).getStringValue());
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload number EQOR.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222", "333"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(
+              new DocumentSearchAttribute().key("strings").eqOr(Arrays.asList("111", "222")))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      try {
+        this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"range\",\"error\":\"'eqOr' "
+            + "is not supported with composite keys\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Search document by strict composite key using POST /documents/upload EQ with optional tag.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey07() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addOptionalItem(createOptional("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("strings").stringValues(Arrays.asList("111", "222"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+    }
+  }
+
+  /**
+   * Search document by old composite key.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey08() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "other", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category")).addRequiredItem(createRequired("other"))
+              .addCompositeKeysItem(createCompositeKey("other", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("other").stringValues(Arrays.asList("111", "222"))));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // old composite key search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      try {
+        this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"no composite key found "
+            + "for attributes 'strings,category'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Search document by composite key not defined in optional/required attributes.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key0 = "strings_" + siteId;
+      String key1 = "category_" + siteId;
+      addAttribute(siteId, key0, null);
+      addAttribute(siteId, key1, null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SetSchemaAttributes().addCompositeKeysItem(createCompositeKey(key0, key1)));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(key1).stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key0)
+              .stringValues(Arrays.asList("111", "222"))));
+
+      // when
+      String documentId0 = addDocumentUpload(siteId, ureq0);
+
+      // then
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(
+          new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(key0).eq("222"))
+              .addAttributesItem(new DocumentSearchAttribute().key(key1).eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+      assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
+    }
+  }
+
+  /**
+   * Search document by composite key by defined in optional/required attributes.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey10() throws ApiException {
+    // given
+    List<String> attributeKeys =
+        Arrays.asList("key1", "key2", "customerId", "customerUUID", "transactionId");
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      attributeKeys.forEach(a -> addAttribute(siteId, a, null));
+
+      SetSchemaAttributes schemaAttributes = new SetSchemaAttributes()
+          .addCompositeKeysItem(createCompositeKey("key1", "key2"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "transactionId"))
+          .addCompositeKeysItem(createCompositeKey("customerUUID", "transactionId"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID", "transactionId"))
+          .addOptionalItem(createOptional("key1")).addOptionalItem(createOptional("key2"))
+          .addOptionalItem(createOptional("customerId"))
+          .addOptionalItem(createOptional("customerUUID"))
+          .addOptionalItem(createOptional("transactionId")).allowAdditionalAttributes(false);
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(schemaAttributes);
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerId").stringValue("3697c70f9cfe44c9a56185ce224e35b6")))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerUUID").stringValue("403cd39862564e36b490738c3c312b38")));
+
+      // when
+      String documentId0 = addDocumentUpload(siteId, ureq0);
+
+      // then
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("customerId")
+              .eq("3697c70f9cfe44c9a56185ce224e35b6"))
+          .addAttributesItem(new DocumentSearchAttribute().key("customerUUID")
+              .eq("403cd39862564e36b490738c3c312b38")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+      assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
+    }
+  }
+
+  /**
+   * Search document by attribute with partial matching composite key.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey11() throws ApiException {
+    // given
+    List<String> attributeKeys =
+        Arrays.asList("key1", "key2", "customerId", "customerUUID", "transactionId");
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      attributeKeys.forEach(a -> addAttribute(siteId, a, null));
+
+      SetSchemaAttributes schemaAttributes = new SetSchemaAttributes()
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID"))
+          .addCompositeKeysItem(createCompositeKey("customerId", "customerUUID", "transactionId"));
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(schemaAttributes);
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerId").stringValue("3697c70f9cfe44c9a56185ce224e35b6")))
+          .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard()
+              .key("customerUUID").stringValue("403cd39862564e36b490738c3c312b38")));
+
+      // when
+      String documentId0 = addDocumentUpload(siteId, ureq0);
+
+      // then
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("customerId")
+              .eq("3697c70f9cfe44c9a56185ce224e35b6"))
+          .addAttributesItem(new DocumentSearchAttribute().key("customerUUID")
+              .eq("403cd39862564e36b490738c3c312b38")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+      assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
+    }
+  }
+
+  /**
+   * Search document by with boolean composite key.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testSearchCompositeKey12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", AttributeDataType.BOOLEAN);
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.FALSE)
+              .addRequiredItem(createRequired("category"))
+              .addRequiredItem(createRequired("strings"))
+              .addCompositeKeysItem(createCompositeKey("strings", "category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValues(List.of("person"))))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").booleanValue(true)));
+
+      // when
+      GetDocumentUrlResponse response =
+          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+
+      // valid search
+      DocumentSearchRequest sreq0 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("true"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response0 =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+      assertEquals(1, notNull(response0.getDocuments()).size());
+
+      // invalid search
+      DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
+          .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("false"))
+          .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
+
+      DocumentSearchResponse response1 =
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+      assertEquals(0, notNull(response1.getDocuments()).size());
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes. Add attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      SetDocumentAttributesRequest attrReq =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValue("category")));
+
+      // when
+      SetResponse response =
+          this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
+
+      // then
+      assertEquals("set attributes on documentId '" + documentId + "'", response.getMessage());
+
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertDocumentAttributeEquals(attributes.getFirst(), "strings", "category", null);
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes. Add attributes missing required.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+      addAttribute(siteId, "other", null);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      SetDocumentAttributesRequest attrReq =
+          new SetDocumentAttributesRequest().addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("other").stringValue("category")));
+
+      // when
+      try {
+        this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes Add attributes - test composite keys generated.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("strings", "category", "documentType")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes()
+              .addCompositeKeysItem(createCompositeKey("strings", "category"))
+              .addCompositeKeysItem(createCompositeKey("strings", "documentType")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
+          .addAttributesItem(createStringAttribute("documentType", "invoice"));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      int i = 0;
+      final int expected3 = 3;
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(expected3, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
+      assertDocumentAttributeEquals(attributes.get(i), "strings::documentType", null,
+          "1234::invoice,category::invoice");
+
+      // when
+      SetDocumentAttributesRequest attrReq = new SetDocumentAttributesRequest()
+          .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
+          .addAttributesItem(createStringAttribute("documentType", "invoice"))
+          .addAttributesItem(createStringAttribute("category", "doc"));
+      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
+
+      // then
+      attributes = getDocumentAttributes(siteId, documentId);
+
+      final int expected = 5;
+      i = 0;
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "category", "doc", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
+      assertDocumentAttributeEquals(attributes.get(i++), "strings::category", null,
+          "1234::doc,category::doc");
+      assertDocumentAttributeEquals(attributes.get(i), "strings::documentType", null,
+          "1234::invoice,category::invoice");
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes Add attributes - test composite keys generated /
+   * deleted.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("strings", "category", "documentType")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes()
+              .addCompositeKeysItem(createCompositeKey("strings", "category"))
+              .addCompositeKeysItem(createCompositeKey("strings", "documentType"))
+              .addCompositeKeysItem(createCompositeKey("category", "documentType")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
+          .addAttributesItem(createStringAttribute("documentType", "invoice"));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      int i = 0;
+      final int expected3 = 3;
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(expected3, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "invoice", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "strings", null, "1234,category");
+      assertDocumentAttributeEquals(attributes.get(i), "strings::documentType", null,
+          "1234::invoice,category::invoice");
+
+      // when
+      SetDocumentAttributesRequest attrReq = new SetDocumentAttributesRequest()
+          .addAttributesItem(createStringAttribute("documentType", "invoice"))
+          .addAttributesItem(createStringAttribute("category", "doc"));
+      this.documentAttributesApi.setDocumentAttributes(documentId, attrReq, siteId, null);
+
+      // then
+      attributes = getDocumentAttributes(siteId, documentId);
+
+      final int expected = 3;
+      i = 0;
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "category", "doc", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "category::documentType", "doc::invoice",
+          null);
+      assertDocumentAttributeEquals(attributes.get(i), "documentType", "invoice", null);
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes Add attributes - test composite keys generated with
+   * required atrtibutes with default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("category", "documentType")) {
+        addAttribute(siteId, attribute, null);
+      }
+
+      AddAttributeSchemaRequired r0 = new AddAttributeSchemaRequired().attributeKey("documentType")
+          .defaultValues(List.of("invoice", "doc"));
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(r0)
+              .addCompositeKeysItem(createCompositeKey("category", "documentType")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(createStringsAttribute("category", List.of("other")));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      int i = 0;
+      final int expected = 3;
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "category", "other", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "category::documentType", null,
+          "other::doc,other::invoice");
+      assertDocumentAttributeEquals(attributes.get(i), "documentType", null, "doc,invoice");
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes, with site schema optional / required.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetDocumentAttribute06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String attribute : List.of("code", "documentType", "official")) {
+        AttributeDataType dataType =
+            "official".equals(attribute) ? AttributeDataType.BOOLEAN : AttributeDataType.STRING;
+        addAttribute(siteId, attribute, dataType);
+      }
+
+      AddAttributeSchemaRequired r0 = createRequired("code");
+      AddAttributeSchemaOptional o0 = createOptional("documentType");
+      AddAttributeSchemaOptional o1 = createOptional("official");
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(r0).addOptionalItem(o0)
+              .addOptionalItem(o1).allowAdditionalAttributes(Boolean.TRUE));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
+          .addAttributesItem(createStringAttribute("code", "1"));
+      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      SetDocumentAttributesRequest setAttr =
+          new SetDocumentAttributesRequest().addAttributesItem(createStringAttribute("code", "1"))
+              .addAttributesItem(createStringAttribute("documentType", "2"))
+              .addAttributesItem(new AddDocumentAttribute(
+                  new AddDocumentAttributeStandard().key("official").booleanValue(Boolean.TRUE)));
+
+      // when
+      SetResponse setResponse =
+          this.documentAttributesApi.setDocumentAttributes(documentId, setAttr, siteId, null);
+
+      // then
+      assertEquals("set attributes on documentId '" + documentId + "'", setResponse.getMessage());
+      int i = 0;
+      final int expected = 3;
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(expected, attributes.size());
+      assertDocumentAttributeEquals(attributes.get(i++), "code", "1", null);
+      assertDocumentAttributeEquals(attributes.get(i++), "documentType", "2", null);
+      assertEquals("official", attributes.get(i).getKey());
+      assertEquals(Boolean.TRUE, attributes.get(i).getBooleanValue());
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with required attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+      addAttribute(siteId, key, null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired(key)));
+
+      // when
+      SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
+
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
+      assertEquals("joe", schema.getName());
+      assertNotNull(schema.getAttributes());
+      List<AttributeSchemaRequired> required = notNull(schema.getAttributes().getRequired());
+      assertAttributeSchemaRequired(required.getFirst(), key, null, 0, 0);
+
+      req = new SetSitesSchemaRequest().name("joe").attributes(
+          new SetSchemaAttributes().addRequiredItem(createRequired(key).addAllowedValuesItem("123")
+              .minNumberOfValues(new BigDecimal(1)).maxNumberOfValues(new BigDecimal(2))));
+
+      // when
+      response = this.schemasApi.setSitesSchema(siteId, req);
+
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+
+      schema = this.schemasApi.getSitesSchema(siteId, null);
+      assertEquals("joe", schema.getName());
+      assertNotNull(schema.getAttributes());
+      required = notNull(schema.getAttributes().getRequired());
+      assertAttributeSchemaRequired(required.getFirst(), key, "123", 1, 2);
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document. Empty.
+   *
+   */
+  @Test
+  public void testSetSitesSchema02() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest();
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"},"
+            + "{\"key\":\"schema\",\"error\":\"'schema' is required\"}]}", e.getResponseBody());
+      }
+
+      // given
+      req.attributes(new SetSchemaAttributes());
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"name\",\"error\":\"'name' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document invalid attribute.
+   *
+   */
+  @Test
+  public void testSetSitesSchema03() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "category";
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired(key)));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"category\",\"error\":\"attribute 'category' not found\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with overlapping required/optional attribute.
+   *
+   */
+  @Test
+  public void testSetSitesSchema04() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String key : Arrays.asList("category", "test")) {
+        addAttribute(siteId, key, null);
+      }
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("category"))
+              .addOptionalItem(createOptional("category")).addOptionalItem(createOptional("test")));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"category\","
+                + "\"error\":\"attribute 'category' is in both required & optional lists\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with required/optional attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String key : Arrays.asList("category", "test")) {
+        addAttribute(siteId, key, null);
+      }
+
+      SetSitesSchemaRequest req =
+          new SetSitesSchemaRequest().name("joe").attributes(new SetSchemaAttributes()
+              .addRequiredItem(createRequired("category")).addOptionalItem(createOptional("test")));
+
+      // when
+      SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
+
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+
+      GetSitesSchemaResponse schema = this.schemasApi.getSitesSchema(siteId, null);
+      assertEquals("joe", schema.getName());
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with missing composite attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSetSitesSchema06() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String key : Arrays.asList("category", "test")) {
+        addAttribute(siteId, key, null);
+      }
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addCompositeKeysItem(createCompositeKey("category", "test", "other"))
+              .addRequiredItem(createRequired("category")).addOptionalItem(createOptional("test")));
+
+      // when
+      SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+
+      // given
+      assertNotNull(req.getAttributes());
+      req.getAttributes().setAllowAdditionalAttributes(Boolean.FALSE);
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"other\","
+                + "\"error\":\"attribute 'other' not listed in required/optional attributes\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document key only shouldn't allow allowed value or default values.
+   *
+   */
+  @Test
+  public void testSetSitesSchema07() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "keyonly", AttributeDataType.KEY_ONLY);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
+              .attributeKey("keyonly").addAllowedValuesItem("123").addDefaultValuesItem("222")));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"keyonly\","
+                + "\"error\":\"attribute 'keyonly' does not allow allowed values\"},"
+                + "{\"key\":\"keyonly\","
+                + "\"error\":\"attribute 'keyonly' does not allow default values\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with single composite attribute.
+   *
+   */
+  @Test
+  public void testSetSitesSchema08() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addCompositeKeysItem(createCompositeKey("category")));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"compositeKeys\","
+                + "\"error\":\"compositeKeys must have more than 1 value\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document with default value not in allowed values.
+   *
+   */
+  @Test
+  public void testSetSitesSchema09() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(new AddAttributeSchemaRequired()
+              .attributeKey("category").defaultValue("1").allowedValues(List.of("222"))));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"defaultValue\","
+                + "\"error\":\"defaultValue must be part of allowed values\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document duplicate composite keys.
+   *
+   */
+  @Test
+  public void testSetSitesSchema10() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "id", null);
+
+      AttributeSchemaCompositeKey k0 = createCompositeKey("category", "id");
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addCompositeKeysItem(k0).addCompositeKeysItem(k0));
+
+      // when
+      try {
+        this.schemasApi.setSitesSchema(siteId, req);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"compositeKeys\",\"error\":\"duplicate compositeKey\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /sites/{siteId}/schema/document entity attributes require only defaultEntityTypeId.
+   *
+   */
+  @Test
+  public void testSetSitesSchema11() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "company", AttributeDataType.ENTITY);
+
+      // when - only defaultEntityTypeId is set
+      var resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", ID.uuid(), null).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      var e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"}]}",
+          e.getResponseBody());
+
+      // when - defaultEntityId is set without defaultEntityTypeId
+      resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", null, ID.uuid()).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"'entityTypeId' is required\"}]}",
+          e.getResponseBody());
+
+      // when - entityTypeId and entityId are invalid
+      resp = new SetSchemaDocumentRequestBuilder("joe")
+          .addRequiredEntityAttribute("company", ID.uuid(), ID.uuid()).submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      e = resp.exception();
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"entityTypeId\",\"error\":\"EntityTypeId does not exist\"},"
+              + "{\"key\":\"entityId\",\"error\":\"EntityId does not exist\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH /documents after site schema is applied and without attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("asd.txt");
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PATCH /documents after site schema is applied and with invalid attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("category").stringValue("test")));
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PATCH /documents after site schema is applied and with valid attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").stringValue("test")));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+
+      // then
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertEquals("asd.txt", document.getPath());
+    }
+  }
+
+  /**
+   * PATCH /documents/:documentId with all attributes that where used at creation except the
+   * required one.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument04() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "category", null);
+      addAttribute(siteId, "user", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("category")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      AddDocumentAttribute categoryAttribute = new AddDocumentAttribute(
+          new AddDocumentAttributeStandard().key("category").stringValue("test"));
+      AddDocumentUploadRequest ureq0 =
+          new AddDocumentUploadRequest().path("sample.txt").addAttributesItem(categoryAttribute);
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      UpdateDocumentRequest updateReq =
+          new UpdateDocumentRequest().path("asd.txt").addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("user").stringValue("1234")));
+
+      // when
+      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+
+      // then
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertEquals("asd.txt", document.getPath());
+    }
+  }
+
+  /**
+   * PATCH /documents after site schema is applied and with invalid attributes.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testUpdateDocument05() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      UpdateDocumentRequest updateReq = new UpdateDocumentRequest().path("asd.txt");
+
+      // when
+      try {
+        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"strings\","
+            + "\"error\":\"missing required attribute 'strings'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+}

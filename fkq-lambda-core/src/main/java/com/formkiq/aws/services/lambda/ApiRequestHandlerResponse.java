@@ -40,6 +40,7 @@ import java.time.DateTimeException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
@@ -48,6 +49,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_ERROR;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TEMPORARY_REDIRECT;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_TOO_MANY_REQUESTS;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.urls.HttpStatus.BAD_GATEWAY;
@@ -88,6 +90,11 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
   }
 
   public static final class Builder {
+    /** DynamoDB retryable error codes. */
+    private static final Set<String> DYNAMODB_RETRYABLE_ERROR_CODES = Set.of(
+        "ProvisionedThroughputExceededException", "RequestLimitExceeded",
+        "RequestLimitExceededException", "ThrottlingException", "TransactionInProgressException",
+        "TransactionConflictException", "LimitExceededException");
     /** Status Code. */
     private int statusCode = -1;
     /** Http Headers. */
@@ -245,6 +252,8 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
 
       } else if (exception instanceof SocketTimeoutException) {
         this.statusCode = GATEWAY_TIMEOUT;
+      } else if (isRetryableDynamoDbException(exception)) {
+        this.statusCode = SC_TOO_MANY_REQUESTS.getStatusCode();
       } else if (exception instanceof AwsServiceException e) {
         this.statusCode = e.statusCode();
       } else if (exception instanceof SdkException) {
@@ -326,10 +335,21 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
           || exception instanceof DateTimeException;
     }
 
+    private static boolean isRetryableDynamoDbException(final Exception exception) {
+      if (exception instanceof AwsServiceException e && exception.getClass().getName()
+          .startsWith("software.amazon.awssdk.services.dynamodb.")) {
+        String errorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
+        return DYNAMODB_RETRYABLE_ERROR_CODES.contains(errorCode);
+      }
+
+      return false;
+    }
+
     private Map<String, String> createJsonHeaders() {
       return Map.of("Access-Control-Allow-Headers",
-          "Content-Type,X-Amz-Date,Authorization,X-Api-Key", "Access-Control-Allow-Methods", "*",
-          "Access-Control-Allow-Origin", "*", "Content-Type", "application/json");
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
+          "Access-Control-Allow-Methods", "*", "Access-Control-Allow-Origin", "*", "Content-Type",
+          "application/json");
     }
 
     /**

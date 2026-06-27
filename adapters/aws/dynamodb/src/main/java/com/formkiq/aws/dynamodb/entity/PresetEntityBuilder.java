@@ -1,0 +1,138 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.aws.dynamodb.entity;
+
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Record representing an Preset LlmPrompt Entity, with its DynamoDB key structure and metadata.
+ */
+public class PresetEntityBuilder implements DynamoDbEntityBuilder<EntityRecord> {
+
+  /** {@link EntityRecord.Builder}. */
+  private EntityRecord.Builder builder = EntityRecord.builder();
+  /** Entity Attributes. */
+  private List<EntityAttribute> attributes;
+  /** {@link PresetEntity}. */
+  private PresetEntity entityType;
+  /** {@link DynamoDbService}. */
+  private DynamoDbService db;
+  /** Existing Attributes. */
+  private Map<String, AttributeValue> existing;
+
+  /**
+   * constructor.
+   * 
+   * @param dbService {@link DynamoDbService}
+   */
+  public PresetEntityBuilder(final DynamoDbService dbService) {
+    this.db = dbService;
+  }
+
+  /**
+   * Sets the Preset Entity Attributes.
+   *
+   * @param entityAttributes the entity attributes
+   * @return this Builder
+   */
+  public PresetEntityBuilder attributes(final List<EntityAttribute> entityAttributes) {
+    this.attributes = entityAttributes;
+    return this;
+  }
+
+  @Override
+  public EntityRecord build(final DynamoDbKey key) {
+    return builder.attributes(attributes).build(key);
+  }
+
+  @Override
+  public EntityRecord build(final String siteId) {
+    validate(siteId);
+    return builder.attributes(attributes).build(siteId);
+  }
+
+  @Override
+  public DynamoDbKey buildKey(final String siteId) {
+    return builder.buildKey(siteId);
+  }
+
+  /**
+   * Sets the document identifier.
+   *
+   * @param entityDocumentId the document ID
+   * @return this Builder
+   */
+  public PresetEntityBuilder documentId(final String entityDocumentId) {
+    builder = builder.documentId(entityDocumentId);
+    return this;
+  }
+
+  /**
+   * Sets the entity type identifier.
+   *
+   * @param entityTypeId the entity type ID
+   * @return this Builder
+   */
+  public PresetEntityBuilder entityTypeId(final String entityTypeId) {
+    builder = builder.entityTypeId(entityTypeId);
+    return this;
+  }
+
+  public PresetEntityBuilder existing(final Map<String, AttributeValue> existingAttributes) {
+    this.existing = existingAttributes;
+    return this;
+  }
+
+  /**
+   * Sets the document identifier.
+   *
+   * @param entityName the entity name
+   * @return this Builder
+   */
+  public PresetEntityBuilder name(final String entityName) {
+    builder = builder.name(entityName);
+    return this;
+  }
+
+  /**
+   * Sets the document identifier.
+   *
+   * @param presetEntity {@link PresetEntity}
+   * @return this Builder
+   */
+  public PresetEntityBuilder presetEntity(final PresetEntity presetEntity) {
+    this.entityType = presetEntity;
+    return this;
+  }
+
+  private void validate(final String siteId) {
+    this.entityType.validateAttributes(db, siteId, attributes, existing);
+  }
+}

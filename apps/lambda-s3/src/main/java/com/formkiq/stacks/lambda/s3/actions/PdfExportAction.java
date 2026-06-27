@@ -1,0 +1,112 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.lambda.s3.actions;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
+import com.formkiq.stacks.lambda.s3.DocumentAction;
+import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
+import com.formkiq.validation.ValidationException;
+
+import java.io.IOException;
+import java.util.List;
+
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
+/**
+ * PdfExport implementation of {@link DocumentAction}.
+ */
+public class PdfExportAction implements DocumentAction {
+
+  /** Google Docs Prefix. */
+  private static final String GOOGLE_DOCS_PREFIX = "https://docs.google.com/document/d/";
+
+  /** {@link DocumentService}. */
+  private final DocumentService documentService;
+  /** {@link ConfigService}. */
+  private final ConfigService configService;
+  /** {@link SendHttpRequest}. */
+  private final SendHttpRequest sendHttpRequest;
+
+  /**
+   * constructor.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   */
+  public PdfExportAction(final AwsServiceCache serviceCache) {
+    this.configService = serviceCache.getExtension(ConfigService.class);
+    this.documentService = serviceCache.getExtension(DocumentService.class);
+    this.sendHttpRequest = new SendHttpRequest(serviceCache);
+  }
+
+  private boolean isValid(final String siteId, final String deepLink) {
+    boolean valid = !Strings.isEmpty(deepLink) && deepLink.startsWith(GOOGLE_DOCS_PREFIX);
+
+    SiteConfiguration obj = configService.get(siteId);
+    SiteConfigurationGoogle google = obj.google();
+
+    String googleWorkloadIdentityAudience = null;
+    String googleWorkloadIdentityServiceAccount = null;
+
+    if (google != null) {
+      googleWorkloadIdentityAudience = google.workloadIdentityAudience();
+      googleWorkloadIdentityServiceAccount = google.workloadIdentityServiceAccount();
+    }
+
+    if (isEmpty(googleWorkloadIdentityAudience) || isEmpty(googleWorkloadIdentityServiceAccount)) {
+      throw new IllegalArgumentException("Google Workload Identity is not configured");
+    }
+
+    return valid;
+  }
+
+  @Override
+  public ProcessActionStatus run(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, ValidationException {
+
+    DocumentRecord item = this.documentService.findDocument(siteId, document);
+    String deepLink = item.deepLinkPath();
+
+    if (isValid(siteId, deepLink)) {
+
+      String documentId = document.documentId();
+      String url = String.format("/integrations/google/drive/documents/%s/export", documentId);
+      this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}");
+    } else {
+      throw new IllegalArgumentException("PdfExport only supports Google DeepLink");
+    }
+
+    return new ProcessActionStatus(ActionStatus.COMPLETE);
+  }
+}

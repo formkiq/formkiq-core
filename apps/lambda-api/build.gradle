@@ -1,0 +1,136 @@
+description = "Lambda API"
+
+apply plugin: 'distribution'
+
+sourceSets {
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+
+    compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    runtimeClasspath += output + compileClasspath
+  }
+}
+
+configurations {
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.processIntegrationResources {
+  duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+dependencies {
+
+  annotationProcessor libs.formkiq.graalvm.annotations.processor
+
+  api project(':libs:strings')
+  api project(':domain:document-events')
+  api project(':libs:lambda-services')
+  api project(':fkq-lambda-core')
+  api project(':libs:validation')
+  api project(':domain:plugins')
+  api project(':adapters:aws:s3')
+  api project(':adapters:aws:cognito-identityprovider')
+  api project(':adapters:aws:sqs')
+  api project(':adapters:aws:ssm')
+  api project(':adapters:aws:sns')
+  api project(':adapters:aws:ses')
+  api project(':adapters:aws:dynamodb')
+  api project(':domain:documents')
+  api project(':domain:actions')
+  api project(':adapters:typesense')
+  api project(':domain:ocr')
+  api project(':libs:http-sigv4')
+
+  api libs.aws.lambda.core
+  api libs.gson
+
+  api libs.formkiq.lambda.runtime.graalvm
+  api libs.formkiq.graalvm.annotations
+
+  api libs.slf4j.simple
+
+  testImplementation project(':adapters:aws:cognito-identity')
+  testImplementation project(':adapters:aws:cognito-identityprovider')
+  testImplementation project(':adapters:aws:iam')
+  testImplementation project(':adapters:aws:sts')
+  testImplementation project(':apps:lambda-s3')
+  testImplementation project(':testing:test-utils')
+  testImplementation project(':apps:lambda-typesense')
+
+  testImplementation libs.aws.sdk.apigateway
+  testImplementation libs.aws.sdk.sts
+
+  testImplementation libs.commons.codec
+
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
+
+  testImplementation platform(libs.testcontainers.bom)
+  testImplementation libs.testcontainers
+  testImplementation libs.testcontainers.testcontainers.junit.jupiter
+  testImplementation libs.testcontainers.localstack.bom
+
+  testImplementation libs.mockserver.netty
+}
+
+compileJava {
+  options.annotationProcessorPath += configurations.runtimeClasspath
+}
+
+nativeImage {
+  outputFileName = "server"
+  mainClassName = "com.formkiq.lambda.runtime.graalvm.LambdaRuntime"
+  dockerImage = "ghcr.io/graalvm/native-image-community:25"
+  enableHttp = true
+  enableHttps = true
+  buildOptions = "-Os -H:-ReduceImplicitExceptionStackTraceInformation"
+  systemProperty = [
+    "java.net.preferIPv4Stack=true"
+  ]
+}
+
+tasks.register("integrationTest", Test) {
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+  maxHeapSize = '2G'
+}
+
+task buildJava11Zip(type: Zip) {
+  from compileJava
+  into('lib') {
+    from configurations.default
+  }
+}
+
+buildJava11Zip.dependsOn jar
+
+tasks.distTar.enabled = false
+
+distZip {
+  dependsOn graalvmNativeImage
+  archiveFileName = "api/lambda-api-graalvm.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from("runtime/") {
+        include "bootstrap"
+        filePermissions {
+          unix('0755')
+        }
+      }
+      from("${buildDir}/graalvm/output") {
+        include("server")
+        filePermissions {
+          unix('0755')
+        }
+      }
+      into '/'
+    }
+  }
+}

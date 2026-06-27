@@ -25,26 +25,26 @@ jobs:
       - name: Build Project
         uses: actions/setup-java@v5
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
 
-      - name: Run OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: '${{ github.repository }}'
-          path: '.'
-          format: 'HTML,JSON,XML'
-          out: 'reports'
-          args: >
-            --failOnCVSS 7
-            --scan ./pom.xml
-            --scan ./build.gradle
-            --scan ./build.gradle.kts
-            --enableRetired
+      - name: Write Gradle secrets
+        run: |
+          mkdir -p ~/.gradle
+          cat <<EOF > ~/.gradle/gradle.properties
+          ossIndexUsername=${{ secrets.OSS_INDEX_USERNAME }}
+          ossIndexPassword=${{ secrets.OSS_INDEX_PASSWORD }}
+          nvdKey=${{ secrets.NVD_KEY }}
+          EOF
 
-      - name: Upload reports
+      - name: Run OWASP Dependency-Check
+        timeout-minutes: 10
+        run: ./gradlew --no-parallel --no-configuration-cache dependencyCheckAggregate --no-daemon --console=plain --info -PdependencyCheckSkipProjects=:fkq-test-utils
+
+      - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dependency-check-report
-          path: reports
+          name: test-reports
+          path: "**/build/reports/*"
+          retention-days: 5

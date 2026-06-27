@@ -1,0 +1,355 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.aws.dynamodb.folders;
+
+import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toDate;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
+
+import java.util.Date;
+import java.util.Map;
+
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbShardKey;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.DynamodbRecord;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.graalvm.annotations.Reflectable;
+import com.formkiq.validation.ValidationChecks;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+/**
+ * 
+ * {@link DynamodbRecord} for Global Metadata Folder.
+ *
+ */
+@Reflectable
+public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbKeys {
+
+  /** Number of Shards - total of 4 shards, 0,1,2,3. */
+  public static final int SHARD_COUNT = 7;
+  /** Index File SK. */
+  public static final String INDEX_FILE_SK = "fi" + DbKeys.TAG_DELIMINATOR;
+  /** Index Folder SK. */
+  public static final String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
+
+  /** Document Id. */
+  private String documentId;
+  /** Record inserted date. */
+  private Date insertedDate;
+  /** Record modified date. */
+  private Date lastModifiedDate;
+  /** Parent Id. */
+  private String parentDocumentId;
+  /** Path. */
+  private String path;
+  /** Folder Type. */
+  private String type;
+  /** Creator of record. */
+  private String userId;
+
+  /**
+   * Build {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link DynamoDbKey}
+   */
+  public DynamoDbShardKey buildKey(final String siteId) {
+    DynamoDbKey key = buildNonShardKey(siteId);
+    return DynamoDbShardKey.builder().key(key).pkGsi2Shard(SHARD_COUNT).build();
+  }
+
+  /**
+   * Build Non Shard {@link DynamoDbKey}.
+   * 
+   * @param siteId {@link String}
+   * @return {@link DynamoDbKey}
+   */
+  public DynamoDbKey buildNonShardKey(final String siteId) {
+    DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
+
+    key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
+
+    key = key.gsi2Pk(siteId, pkGsi2(null)).gsi2Sk(skGsi2());
+    return key.build();
+  }
+
+  private void checkParentId() {
+    if (this.parentDocumentId == null) {
+      throw new IllegalArgumentException("'parentDocumentId' is required");
+    }
+  }
+
+  /**
+   * Create Index Key.
+   * 
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String createIndexKey(final String siteId) {
+    String pk = pk(siteId);
+    String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
+    return parent + TAG_DELIMINATOR + this.path;
+  }
+
+  /**
+   * Get DocumentId.
+   * 
+   * @return {@link String}
+   */
+  public String documentId() {
+    return this.documentId;
+  }
+
+  /**
+   * Set DocumentId.
+   * 
+   * @param id {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord documentId(final String id) {
+    this.documentId = id;
+    return this;
+  }
+
+  @Override
+  public Map<String, AttributeValue> getAttributes(final String siteId) {
+    return buildKey(siteId).getAttributesBuilder().withString("documentId", this.documentId)
+        .withString("path", this.path).withString("type", this.type)
+        .withString("userId", this.userId).withString("parentDocumentId", this.parentDocumentId)
+        .withDate("inserteddate", this.insertedDate)
+        .withDate("lastModifiedDate", this.lastModifiedDate).build();
+  }
+
+  @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+    return null;
+  }
+
+  @Override
+  public FolderIndexRecord getFromAttributes(final String siteId,
+      final Map<String, AttributeValue> attrs) {
+
+    FolderIndexRecord record =
+        new FolderIndexRecord().documentId(DynamoDbTypes.toString(attrs.get("documentId")))
+            .path(DynamoDbTypes.toString(attrs.get("path")))
+            .type(DynamoDbTypes.toString(attrs.get("type")))
+            .userId(DynamoDbTypes.toString(attrs.get("userId")))
+            .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
+            .insertedDate(toDate(attrs.get("inserteddate")))
+            .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
+
+    if (this.parentDocumentId == null) {
+      String pk = DynamoDbTypes.toString(attrs.get(PK));
+      String s = SiteIdKeyGenerator.resetDatabaseKey(siteId, pk);
+
+      int pos = s.lastIndexOf(TAG_DELIMINATOR);
+      if (pos > -1) {
+        record.parentDocumentId = s.substring(pos + 1);
+      } else {
+        record.parentDocumentId = "";
+      }
+    }
+
+    return record;
+  }
+
+  /**
+   * Get Inserted Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date insertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Set Inserted Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord insertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Get Last Modified Date.
+   * 
+   * @return {@link Date}
+   */
+  public Date lastModifiedDate() {
+    return this.lastModifiedDate;
+  }
+
+  /**
+   * Set Last Modified Date.
+   * 
+   * @param date {@link Date}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord lastModifiedDate(final Date date) {
+    this.lastModifiedDate = date;
+    return this;
+  }
+
+  /**
+   * Get Parent Id.
+   * 
+   * @return {@link String}
+   */
+  public String parentDocumentId() {
+    return this.parentDocumentId;
+  }
+
+  /**
+   * Set Parent Id.
+   * 
+   * @param documentParentId {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord parentDocumentId(final String documentParentId) {
+    this.parentDocumentId = documentParentId;
+    return this;
+  }
+
+  /**
+   * Get Document Path.
+   * 
+   * @return {@link String}
+   */
+  public String path() {
+    return this.path;
+  }
+
+  /**
+   * Set Document Path.
+   * 
+   * @param documentPath {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord path(final String documentPath) {
+    this.path = documentPath;
+    return this;
+  }
+
+  @Override
+  public String pk(final String siteId) {
+    checkParentId();
+    return createDatabaseKey(siteId,
+        GLOBAL_FOLDER_METADATA + TAG_DELIMINATOR + this.parentDocumentId);
+  }
+
+  @Override
+  public String pkGsi1(final String siteId) {
+
+    ValidationChecks.checkNotNull("documentId", this.documentId);
+    ValidationChecks.checkNotNull("type", this.type);
+
+    return switch (this.type) {
+      case "folder" -> createDatabaseKey(siteId, "folder#" + this.documentId);
+      case "file" -> createDatabaseKey(siteId, "file#" + this.documentId);
+      default -> throw new IllegalStateException("Unexpected value: " + this.type);
+    };
+  }
+
+  @Override
+  public String pkGsi2(final String siteId) {
+    // TODO handle single filename
+    // String shardId = "s00";
+    String filename = Strings.getFilename(this.path).toLowerCase();
+    String bucket = com.formkiq.strings.Strings.leftPad(filename, 2, '_').substring(0, 2);
+    return "global#filename#" + bucket;
+  }
+
+  @Override
+  public String sk() {
+    ValidationChecks.checkNotNull("path", this.path);
+    ValidationChecks.checkNotNull("type", this.type);
+
+    String folder = this.path.toLowerCase();
+    return FolderType.isFile(this.type) ? INDEX_FILE_SK + folder : INDEX_FOLDER_SK + folder;
+  }
+
+  @Override
+  public String skGsi1() {
+    ValidationChecks.checkNotNull("type", this.type);
+
+    return switch (this.type) {
+      case "folder" -> FolderType.FOLDER.getValue();
+      case "file" -> FolderType.FILE.getValue();
+      default -> throw new IllegalStateException("Unexpected value: " + this.type);
+    };
+  }
+
+  @Override
+  public String skGsi2() {
+    // TODO folder...
+    String filename = Strings.getFilename(this.path).toLowerCase();
+    return FolderType.isFolder(this.type) ? INDEX_FOLDER_SK + filename : INDEX_FILE_SK + filename;
+  }
+
+  /**
+   * Get Document Type.
+   * 
+   * @return {@link String}
+   */
+  public String type() {
+    return this.type;
+  }
+
+  /**
+   * Set Document Type.
+   * 
+   * @param documentType {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord type(final String documentType) {
+    this.type = documentType;
+    return this;
+  }
+
+  /**
+   * Get Created by user.
+   * 
+   * @return {@link String}
+   */
+  public String userId() {
+    return this.userId;
+  }
+
+  /**
+   * Set Create by User.
+   * 
+   * @param createdBy {@link String}
+   * @return {@link FolderIndexRecord}
+   */
+  public FolderIndexRecord userId(final String createdBy) {
+    this.userId = createdBy;
+    return this;
+  }
+
+}

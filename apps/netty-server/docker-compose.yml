@@ -1,0 +1,119 @@
+services:
+  console:
+    image: formkiq/document-console:4.1.0
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    environment:
+      HTTP_API_URL: http://localhost:8080
+      COGNITO_API_URL: http://localhost:8080
+      COGNITO_USER_POOL_ID: us-east-2_3123
+      COGNITO_CLIENT_ID: abcd
+      USE_AUTH_API_FOR_SIGNIN: true
+      CONSOLE_VERSION: 4.1.0
+  
+  typesense:
+    image: typesense/typesense:30.0
+    ports:
+      - "8108:8108"
+    volumes:
+      - ~/.formkiq/typesense-data:/data
+    command: ["--data-dir", "/data", "--api-key", "xyz", "--enable-cors"]
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.7.1
+    ports:
+      - "9324:9324"
+      - "9325:9325"
+    command:
+      - -Dnode-address.host=${ELASTICMQ_NODE_HOST:-elasticmq}
+      - -Dnode-address.port=${ELASTICMQ_NODE_PORT:-9324}
+      - -Daws.region=${ELASTICMQ_AWS_REGION:-us-east-2}
+      - -Daws.accountId=${ELASTICMQ_ACCOUNT_ID:-000000000000}
+    
+  api:
+    image: docker.io/formkiq/api-server:1.19.0
+    depends_on:
+      - minio
+      - dynamodb
+      - keycloak
+      - typesense
+      - elasticmq
+    ports:
+      - "8080:8080"
+      # - "8100:8100" #uncomment this line and "ENV JAVA_TOOL_OPTIONS" in Dockerfile to enable debugging
+    environment:
+      PORT: 8080
+      DYNAMODB_URL: http://dynamodb:8000
+      SQS_URL: http://elasticmq:9324
+      S3_URL: http://minio:9000
+      S3_PRESIGNER_URL: http://localhost:9000
+      S3_ACTIONS_PRESIGNER_URL: http://minio:9000
+      API_URL: http://api:8080
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      API_KEY: changeme
+      MODULE_site_permissions: automatic
+      MODULE_typesense: true
+      TYPESENSE_HOST: http://typesense:8108
+      TYPESENSE_API_KEY: xyz
+      # comment line below to disable keycloak and use API_KEY for authentication
+      KEYCLOAK_TOKEN_ENDPOINT: http://keycloak:8081/realms/formkiq/protocol/openid-connect/token
+      KEYCLOAK_CLIENT_ID: formkiq-jwt
+      KEYCLOAK_CLIENT_SECRET: dC0dK4DoQK1f8lrsoxDC3svoD3JuHa5x
+      # uncomment lines below when KEYCLOAK_TOKEN_ENDPOINT is disabled
+      # ADMIN_USERNAME: admin@me.com
+      # ADMIN_PASSWORD: password
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    environment:
+      MINIO_DOMAIN: minio
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:9000 
+      MINIO_NOTIFY_WEBHOOK_ENABLE_DOCUMENTS: on
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_DOCUMENTS: http://api:8080/minio/s3/documents
+      MINIO_NOTIFY_WEBHOOK_ENABLE_STAGINGDOCUMENTS: on
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_STAGINGDOCUMENTS: http://api:8080/minio/s3/stagingdocuments
+    networks:
+      default:
+        aliases:
+          - documents.minio
+          - ocr.minio
+          - stagingdocuments.minio
+    volumes:
+      - ~/.formkiq/minio-data:/data
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9090"]
+
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.0
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.formkiq/dynamodb-data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+
+  keycloak:
+    image: docker.io/formkiq/keycloak:26.6.2
+    command: "start-dev --db=dev-file --http-port=8081"
+    #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
+    environment:
+       KC_BOOTSTRAP_ADMIN_USERNAME: admin
+       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+       JAVA_OPTS_APPEND: >
+         -Dkeycloak.migration.action=import
+         -Dkeycloak.migration.provider=singleFile
+         -Dkeycloak.migration.file=/tmp/formkiq-realm.json
+         -Dkeycloak.migration.strategy=IGNORE_EXISTING
+         -Dkeycloak.migration.replace-placeholders=true
+         -Dkeycloak.profile.feature.upload_scripts=enabled
+    ports:
+      - 8081:8081
+    volumes:
+      - ~/.formkiq/keycloak-data-26.6.2:/opt/keycloak/data

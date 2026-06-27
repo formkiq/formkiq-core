@@ -1,0 +1,277 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.QueryRequest;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchResponseFields;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.api.QueryRequestValidator;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.regions.Region;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static software.amazon.awssdk.utils.StringUtils.isEmpty;
+
+/** {@link ApiGatewayRequestHandler} for "/search". */
+public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /** Maximum number of Document Ids that can be sent. */
+  private static final int MAX_DOCUMENT_IDS = 100;
+
+  /**
+   * constructor.
+   *
+   */
+  public SearchRequestHandler() {}
+
+  @Override
+  public String getRequestUrl() {
+    return "/search";
+  }
+
+  /**
+   * Get Response Tags.
+   * 
+   * @param documentService {@link DocumentService}
+   * @param siteId {@link String}
+   * @param responseFields {@link SearchResponseFields}
+   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @return {@link Map}
+   */
+  private Map<String, Collection<DocumentTag>> getResponseTags(
+      final DocumentService documentService, final String siteId,
+      final SearchResponseFields responseFields, final List<DynamicDocumentItem> documents) {
+
+    Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
+
+    if (responseFields != null && !notNull(responseFields.tags()).isEmpty()) {
+
+      Set<String> documentIds =
+          documents.stream().map(DynamicDocumentItem::getDocumentId).collect(Collectors.toSet());
+
+      map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
+    }
+
+    return map;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
+      throws UnauthorizedException {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
+    return Optional.of(access);
+  }
+
+  /**
+   * Merge Response Tags into Response.
+   * 
+   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @param responseTags {@link Map} {@link DocumentTag}
+   */
+  private void mergeResponseTags(final List<DynamicDocumentItem> documents,
+      final Map<String, Collection<DocumentTag>> responseTags) {
+
+    if (!responseTags.isEmpty()) {
+
+      documents.forEach(doc -> {
+
+        Collection<DocumentTag> tags = notNull(responseTags.get(doc.getDocumentId()));
+
+        Map<String, Object> map = new HashMap<>();
+
+        tags.forEach(tag -> {
+          if (tag.getValues() != null) {
+            map.put(tag.getKey(), tag.getValues());
+          } else {
+            map.put(tag.getKey(), tag.getValue());
+          }
+        });
+
+        doc.put("tags", map);
+      });
+    }
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    QueryRequest q = JsonToObject.fromJson(awsservice, event, QueryRequest.class);
+    q = validatePost(q);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+    ApiPagination pagination = getPagination(cacheService, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
+
+    Collection<String> documentIds = q.query().documentIds();
+
+    if (!Objects.isEmpty(documentIds)) {
+      if (documentIds.size() > MAX_DOCUMENT_IDS) {
+        throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
+      }
+
+      if (!getQueryParameterMap(event).containsKey("limit")) {
+        limit = documentIds.size();
+      }
+    }
+
+    String siteId = authorization.getSiteId();
+    DocumentSearchService documentSearchService =
+        awsservice.getExtension(DocumentSearchService.class);
+
+    Pagination<DynamicDocumentItem> results =
+        query(awsservice, documentSearchService, siteId, q, nextToken, limit);
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
+
+    List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+
+    Map<String, Collection<DocumentTag>> responseTags =
+        getResponseTags(documentService, siteId, q.responseFields(), documents);
+    mergeResponseTags(documents, responseTags);
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("documents", documents);
+    map.put("previous", current.getPrevious());
+    map.put("next", current.hasNext() ? current.getNext() : null);
+
+    return ApiRequestHandlerResponse.builder().ok().body(map).build();
+  }
+
+  /**
+   * Query Typesense or DynamoDb.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   * @param documentSearchService {@link DocumentSearchService}
+   * @param siteId {@link String}
+   * @param q {@link QueryRequest}
+   * @param nextToken {@link String}
+   * @param limit int
+   * @return {@link Pagination} {@link DynamicDocumentItem}
+   * @throws IOException IOException
+   * @throws BadException BadException
+   * @throws ValidationException ValidationException
+   */
+  private Pagination<DynamicDocumentItem> query(final AwsServiceCache awsservice,
+      final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
+      final String nextToken, final int limit)
+      throws IOException, BadException, ValidationException {
+
+    String text = q.query().text();
+    Pagination<DynamicDocumentItem> results;
+
+    if (!isEmpty(text)) {
+
+      if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
+          || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
+        throw new BadException("Typesense Fulltext search is not Enabled");
+      }
+
+      Region region = Region.of(awsservice.environment("AWS_REGION"));
+
+      AwsCredentials awsCredentials = awsservice.getExtension(AwsCredentials.class);
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
+      TypeSenseService ts = new TypeSenseServiceImpl(awsservice.environment("TYPESENSE_HOST"),
+          awsservice.environment("TYPESENSE_API_KEY"), region, awsCredentials);
+
+      List<String> documentIds = ts.searchFulltext(siteId, text, limit);
+      List<DocumentArtifact> documents =
+          documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
+
+      List<DocumentItem> list = docService.findDocuments(siteId, documents);
+
+      List<DynamicDocumentItem> docs =
+          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
+              .collect(Collectors.toList()) : Collections.emptyList();
+
+      results = new Pagination<>(docs);
+
+    } else {
+
+      results =
+          documentSearchService.search(siteId, q.query(), q.responseFields(), nextToken, limit);
+    }
+
+    return results;
+  }
+
+  private QueryRequest validatePost(final QueryRequest q) throws ValidationException {
+    QueryRequestValidator validator = new QueryRequestValidator();
+    Collection<ValidationError> errors = validator.validation(q);
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+
+    if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
+      SearchTagCriteria tag = q.query().tags().get(0);
+      return new QueryRequest()
+          .query(new SearchQuery(null, null, null, null, tag, null, null, null, null));
+    }
+
+    return q;
+  }
+}

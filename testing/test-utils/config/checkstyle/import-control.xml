@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.testutils">
+
+	<allow pkg="java.io" />
+	<allow pkg="java.nio" />
+	<allow pkg="java.util" />
+
+	<subpackage name="dbloader">
+		<allow pkg="org.apache.commons.csv" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+	</subpackage>
+
+	<subpackage name="api">
+
+		<allow pkg="java.net" />
+		<allow pkg="java.net.http" />
+		<allow pkg="org.junit.jupiter.api" />
+
+        <allow pkg="software.amazon.awssdk.regions" />
+        <allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.model" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="io.jsonwebtoken" />
+		<allow pkg="com.google.gson" />
+		<allow pkg="com.formkiq.strings" />
+
+		<subpackage name="attributes">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+        <subpackage name="mappings">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
+		<subpackage name="schemas">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="documents">
+			<allow pkg="com.formkiq.module.http" />
+			<allow pkg="java.math" />
+			<allow pkg="java.time" />
+			<allow pkg="com.formkiq.testutils.api" />
+			<allow pkg="com.formkiq.urls" />
+		</subpackage>
+
+        <subpackage name="mappings">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
+		<subpackage name="folders">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="entity">
+            <allow pkg="java.math" />
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="accesscontrol">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="activities">
+			<allow pkg="com.formkiq.testutils.api" />
+			<allow pkg="org.junit.jupiter.api" />
+            <allow pkg="java.time" />
+		</subpackage>
+
+		<subpackage name="rulesets">
+            <allow pkg="java.math" />
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="opensearch">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="users">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+        <subpackage name="workflows">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
+        <subpackage name="systemmanagement">
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
+	</subpackage>
+
+	<subpackage name="aws">
+
+        <allow pkg="org.junit.jupiter.api" />
+		<allow pkg="com.amazonaws.services.lambda.runtime" />
+		<allow pkg="com.formkiq.aws.cognito" />
+		<allow pkg="com.formkiq.aws.dynamodb" />
+		<allow pkg="com.formkiq.aws.s3" />
+		<allow pkg="com.formkiq.aws.sns" />
+		<allow pkg="com.formkiq.aws.sqs" />
+		<allow pkg="com.formkiq.aws.ssm" />
+		<allow pkg="com.formkiq.stacks.dynamodb" />
+		<allow pkg="com.formkiq.testutils.aws" />
+		<allow pkg="java.io" />
+		<allow pkg="java.net" />
+		<allow pkg="java.nio.charset" />
+		<allow pkg="java.time" />
+		<allow pkg="java.util" />
+		<allow pkg="java.math" />
+		<allow pkg="com.formkiq.testutils.api" />
+		<allow pkg="com.google.gson" />
+
+		<allow pkg="com.formkiq.client.api" />
+		<allow pkg="com.formkiq.client.invoker" />
+		<allow pkg="com.formkiq.client.model" />
+
+		<allow pkg="com.formkiq.module.lambdaservices" />
+        <allow pkg="org.mockserver.configuration" />
+		<allow pkg="org.mockserver.mock.action" />
+		<allow pkg="org.mockserver.model" />
+		<allow pkg="org.mockserver.integration" />
+
+		<allow pkg="org.junit.jupiter.api.extension" />
+		<allow pkg="org.testcontainers.containers" />
+		<allow pkg="org.testcontainers.utility" />
+		<allow pkg="software.amazon.awssdk.auth.credentials" />
+		<allow pkg="software.amazon.awssdk.regions" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb" />
+		<allow pkg="software.amazon.awssdk.services.dynamodb.model" />
+		<allow
+			pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
+		<allow pkg="software.amazon.awssdk.services.s3" />
+		<allow pkg="software.amazon.awssdk.services.ssm" />
+        <allow pkg="com.formkiq.aws.secretsmanager" />
+		<allow pkg="software.amazon.awssdk.utils" />
+		<allow pkg="software.amazon.awssdk.services.sqs.model" />
+
+		<subpackage name="s3">
+			<allow pkg="java.lang.reflect" />
+		</subpackage>
+
+	</subpackage>
+
+</import-control>

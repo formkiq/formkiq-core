@@ -25,9 +25,12 @@ package com.formkiq.aws.services.lambda;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -845,10 +848,10 @@ class ApiAuthorizationBuilderTest {
 
     // then
     assertEquals("global", api0.getSiteId());
-    assertEquals("", String.join(",", api0.getSiteIds()));
-    assertEquals("",
-        api0.getAllPermissions().stream().map(Enum::name).collect(Collectors.joining(",")));
-    assertEquals("no groups", api0.getAccessSummary());
+    assertEquals("global", String.join(",", api0.getSiteIds()));
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE", api0.getAllPermissions().stream().map(Enum::name)
+        .sorted().collect(Collectors.joining(",")));
+    assertEquals("groups: global (ADMIN,DELETE,GOVERN,READ,WRITE)", api0.getAccessSummary());
     assertEquals("Admins", String.join(",", api0.getRoles()));
   }
 
@@ -957,6 +960,26 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * JWT custom claims are added to authorization.
+   */
+  @Test
+  void testApiAuthorizerJwtClaims() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getJwtEvent("[default]");
+    event.addHeader("Authorization",
+        toJwt(Map.of("sub", "1234", "tenant", "acme", "profile", Map.of("department", "sales"))));
+
+    // when
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertNotNull(authorization.getUserClaims());
+    assertEquals("acme", authorization.getUserClaims().get("tenant"));
+    assertEquals(Map.of("department", "sales"), authorization.getUserClaims().get("profile"));
+    assertNull(authorization.getUserClaims().get("sub"));
+  }
+
+  /**
    * trying to access random site id.
    */
   @Test
@@ -1005,6 +1028,28 @@ class ApiAuthorizationBuilderTest {
     }
   }
 
+  /**
+   * Test global "/forgotPassword" url.
+   */
+  @Test
+  void testForgotPassword() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/forgotPassword");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
+  }
+
   @Test
   void testJwtToken() throws Exception {
     // given
@@ -1048,5 +1093,57 @@ class ApiAuthorizationBuilderTest {
         .stream().map(Enum::name).sorted().collect(Collectors.joining(","))));
     assertEquals("DELETE,READ,WRITE", String.join(",", api.getPermissions("default").stream()
         .map(Enum::name).sorted().collect(Collectors.joining(","))));
+  }
+
+  /**
+   * Test global "/login/refresh" url.
+   */
+  @Test
+  void testLoginRefresh() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setPath("/login/refresh");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
+  }
+
+  /**
+   * Test global "/s/{slug}" url.
+   */
+  @Test
+  void testShortlinks() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.setResource("/s/{slug}");
+
+    // when
+    final ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals("global", api.getSiteId());
+    assertEquals("", String.join(",", api.getSiteIds()));
+    assertEquals("",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+    assertEquals("no groups", api.getAccessSummary());
+    assertNull(api.getRoles());
+    assertEquals("System", api.getUsername());
+  }
+
+  private String toJwt(final Map<String, Object> claims) {
+    String header = Base64.getUrlEncoder().withoutPadding()
+        .encodeToString("{\"alg\":\"none\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
+    String payload = Base64.getUrlEncoder().withoutPadding()
+        .encodeToString(this.gson.toJson(claims).getBytes(StandardCharsets.UTF_8));
+    return header + "." + payload + ".";
   }
 }

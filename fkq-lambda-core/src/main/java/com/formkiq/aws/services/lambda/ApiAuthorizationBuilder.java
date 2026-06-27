@@ -25,22 +25,30 @@ package com.formkiq.aws.services.lambda;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.strings.Strings.isEmpty;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * 
@@ -49,12 +57,20 @@ import com.google.gson.GsonBuilder;
  */
 public class ApiAuthorizationBuilder {
 
+  /** Standard and Cognito-managed claims to exclude. */
+  private static final Set<String> EXCLUDED_CLAIMS =
+      Set.of("sub", "cognito:groups", "iss", "client_id", "origin_jti", "event_id", "token_use",
+          "scope", "auth_time", "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
   /** Cognito Admin Group Name. */
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_READ_SUFFIX = "_read";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_GOVERN_SUFFIX = "_govern";
+  /** Global Site Urls. */
+  private static final Collection<String> GLOBAL_SITE_URLS =
+      Set.of("/changePassword", "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm",
+          "/login", "/login/refresh", "/respondToAuthChallenge", "/s/{slug}");
 
   private static Map<String, Object> getAuthorizerClaims(final Map<String, Object> authorizer) {
     Map<String, Object> claims = Collections.emptyMap();
@@ -157,36 +173,57 @@ public class ApiAuthorizationBuilder {
    */
   public ApiAuthorization build(final ApiGatewayRequestEvent event) throws Exception {
 
+    if (GLOBAL_SITE_URLS.contains(getPath(event))
+        || GLOBAL_SITE_URLS.contains(getResource(event))) {
+      return new ApiAuthorization().siteId(ReservedSiteId.GLOBAL.getSiteId());
+    }
+
     Collection<String> groups = getGroups(event);
     boolean admin = isAdmin(groups);
 
-    String defaultSiteId = getDefaultSiteId(event, groups);
+    String defaultSiteId = getDefaultSiteId(event, groups, admin);
 
     Collection<String> roles = getRoles(event);
 
     Collection<String> samlGroups = getSamlGroups(event);
+    Map<String, String> roleSiteMap = getRoleSiteMap(event);
+    Map<String, Object> userClaims = getUserCustomClaims(event);
 
-    ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
-        .username(getUsername(event)).samlGroups(samlGroups).roles(roles);
+    ApiAuthorization authorization =
+        new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event))
+            .samlGroups(samlGroups).roles(roles).roleSiteMap(roleSiteMap).userClaims(userClaims);
 
     addPermissions(event, authorization, groups, admin);
 
     if (this.interceptors != null) {
       for (ApiAuthorizationInterceptor i : this.interceptors) {
-        i.update(event, authorization);
+        i.afterBuildAuthorization(event, authorization);
       }
     }
 
     defaultSiteId = authorization.getSiteId();
 
-    if (defaultSiteId != null && !isReservedSite(admin, defaultSiteId)
-        && notNull(authorization.getPermissions(defaultSiteId)).isEmpty()
-        && !event.getPath().startsWith("/public/")) {
-      String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
-      throw new ForbiddenException(s);
-    }
+    validate(event, defaultSiteId, authorization);
 
     return authorization;
+  }
+
+  private String findDefaultSiteIdFromEventAndGroups(final ApiGatewayRequestEvent event,
+      final Collection<String> groups) {
+
+    Map<String, List<String>> permissionsMap = getPermissionsMap(event);
+
+    if (permissionsMap != null) {
+      return permissionsMap.size() == 1 ? permissionsMap.keySet().iterator().next() : null;
+    }
+
+    Collection<String> filteredGroups =
+        groups.stream().filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
+            .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
+            .map(g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
+            .collect(Collectors.toSet());
+
+    return filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
   }
 
   /**
@@ -268,24 +305,21 @@ public class ApiAuthorizationBuilder {
   }
 
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
-      final Collection<String> groups) {
+      final Collection<String> groups, final boolean isAdmin) throws UnauthorizedException {
 
     String siteId = getSiteIdRequestParameter(event);
 
     if (siteId == null) {
+      siteId = findDefaultSiteIdFromEventAndGroups(event, groups);
+    }
 
-      Map<String, List<String>> permissionsMap = getPermissionsMap(event);
-      if (permissionsMap != null) {
-        siteId = permissionsMap.size() == 1 ? permissionsMap.keySet().iterator().next() : null;
-      } else {
-        Collection<String> filteredGroups = groups.stream()
-            .filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
-            .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
-            .map(g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
-            .collect(Collectors.toSet());
+    Optional<ReservedSiteId> reserved = ReservedSiteId.fromString(siteId);
+    if (reserved.isPresent() && (!isAdmin || !ReservedSiteId.GLOBAL.equals(reserved.get()))) {
+      throw new UnauthorizedException("'" + siteId + "' siteId is reserved");
+    }
 
-        siteId = filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
-      }
+    if (isAdmin && reserved.isPresent()) {
+      groups.add(siteId);
     }
 
     return siteId;
@@ -301,12 +335,31 @@ public class ApiAuthorizationBuilder {
     return loadJwtGroups(event);
   }
 
+  private String getPath(final ApiGatewayRequestEvent event) {
+    return event != null && !isEmpty(event.getPath()) ? event.getPath() : "";
+  }
+
   private Map<String, List<String>> getPermissionsMap(final ApiGatewayRequestEvent event) {
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
     Map<String, List<String>> map = null;
     if (claims.containsKey("permissionsMap")) {
       map = (Map<String, List<String>>) claims.get("permissionsMap");
+    }
+
+    return map;
+  }
+
+  private String getResource(final ApiGatewayRequestEvent event) {
+    return event != null && !isEmpty(event.getResource()) ? event.getResource() : "";
+  }
+
+  private Map<String, String> getRoleSiteMap(final ApiGatewayRequestEvent event) {
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+
+    Map<String, String> map = null;
+    if (claims.containsKey("roleSiteMap")) {
+      map = (Map<String, String>) claims.get("roleSiteMap");
     }
 
     return map;
@@ -347,6 +400,46 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
+  }
+
+  /**
+   * Return custom claims from a JWT as a map.
+   *
+   * @param event JWT token
+   * @return Map of custom claims, or empty map if JWT is invalid
+   */
+  private Map<String, Object> getUserCustomClaims(final ApiGatewayRequestEvent event) {
+
+    String jwt = event != null ? event.getHeaderValue("authorization") : null;
+    if (jwt == null) {
+      jwt = event != null ? event.getHeaderValue("Authorization") : null;
+    }
+    Map<String, Object> customClaims = Collections.emptyMap();
+
+    try {
+      String[] parts = jwt != null ? jwt.split("\\.") : new String[0];
+      if (parts.length >= 2) {
+        String payload =
+            new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+        Map<String, Object> claims =
+            gson.fromJson(payload, new TypeToken<Map<String, Object>>() {}.getType());
+
+        if (claims != null) {
+          Map<String, Object> result = new LinkedHashMap<>();
+          for (Map.Entry<String, Object> entry : claims.entrySet()) {
+            if (!EXCLUDED_CLAIMS.contains(entry.getKey())) {
+              result.put(entry.getKey(), entry.getValue());
+            }
+          }
+          customClaims = result;
+        }
+      }
+    } catch (IllegalArgumentException | JsonSyntaxException e) {
+      // ignore
+    }
+
+    return customClaims;
   }
 
   /**
@@ -449,11 +542,6 @@ public class ApiAuthorizationBuilder {
     return roleArn != null && (roleArn.contains(":assumed-role/") || roleArn.contains(":user/"));
   }
 
-  private boolean isReservedSite(final boolean admin, final String siteId) {
-    Optional<ReservedSiteId> o = ReservedSiteId.fromString(siteId);
-    return o.isPresent() && (!ReservedSiteId.GLOBAL.equals(o.get()) || admin);
-  }
-
   private Collection<String> loadJwtGroups(final ApiGatewayRequestEvent event) {
 
     Collection<String> groups = getRoles(event);
@@ -472,10 +560,23 @@ public class ApiAuthorizationBuilder {
       }
     }
 
-    groups.remove("API_KEY");
-    groups.remove("global");
+    groups.removeIf(g -> ReservedSiteId.fromString(g).isPresent());
     groups.remove("authentication_only");
 
     return groups;
+  }
+
+  private void throwForbiddenException(final String defaultSiteId) throws ForbiddenException {
+    String s = String.format("fkq access denied to siteId (%s)", defaultSiteId);
+    throw new ForbiddenException(s);
+  }
+
+  private void validate(final ApiGatewayRequestEvent event, final String defaultSiteId,
+      final ApiAuthorization authorization) throws ForbiddenException {
+
+    if (defaultSiteId != null && notNull(authorization.getPermissions(defaultSiteId)).isEmpty()
+        && !event.getPath().startsWith("/public/")) {
+      throwForbiddenException(defaultSiteId);
+    }
   }
 }

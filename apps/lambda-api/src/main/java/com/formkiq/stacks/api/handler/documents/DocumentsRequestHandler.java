@@ -1,0 +1,400 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.documents;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.QueryResult;
+import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
+import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
+import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
+import com.formkiq.validation.ValidationBuilder;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+
+/** {@link ApiGatewayRequestHandler} for "/documents". */
+public class DocumentsRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /**
+   * constructor.
+   *
+   */
+  public DocumentsRequestHandler() {}
+
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    ApiRequestHandlerResponse response = null;
+    ActionStatus actionStatus = getActionStatus(event);
+
+    String siteId = authorization.getSiteId();
+
+    ApiPagination current = null;
+    Map<String, Object> map = new HashMap<>();
+
+    if (isSoftDelete(event)) {
+
+      current = getSoftDeletedDocument(event, awsservice, siteId, map);
+
+    } else if (actionStatus != null) {
+
+      current = getActionStatus(event, awsservice, siteId, actionStatus, map);
+
+    } else if (isSyncStatus(event)) {
+
+      map = getSyncStatus(event, awsservice, siteId);
+
+    } else {
+
+      response = getDocuments(event, awsservice, siteId);
+    }
+
+    if (current != null) {
+      map.put("next", current.hasNext() ? current.getNext() : null);
+    }
+
+    return response != null ? response : ApiRequestHandlerResponse.builder().ok().body(map).build();
+  }
+
+  private ActionStatus getActionStatus(final ApiGatewayRequestEvent event) throws BadException {
+
+    ActionStatus status = null;
+    String actionStatus = getParameter(event, "actionStatus");
+
+    if (!Strings.isEmpty(actionStatus)) {
+      try {
+        status = ActionStatus.valueOf(actionStatus.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new BadException("invalid actionStatus '" + actionStatus + "'");
+      }
+    }
+
+    if (ActionStatus.COMPLETE.equals(status)) {
+      throw new BadException("invalid actionStatus '" + actionStatus + "'");
+    }
+
+    return status;
+  }
+
+  private ApiPagination getActionStatus(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId, final ActionStatus actionStatus,
+      final Map<String, Object> map) {
+
+    Logger logger = awsservice.getLogger();
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
+
+    ActionsService actions = awsservice.getExtension(ActionsService.class);
+
+    Pagination<DocumentArtifact> results =
+        actions.findDocumentsWithStatus(siteId, actionStatus, nextToken, limit);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    List<DocumentItem> documents = documentService.findDocuments(siteId, results.getResults());
+
+    List<DynamicDocumentItem> docs =
+        documents.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList();
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
+
+    map.put("documents", docs);
+    return current;
+  }
+
+  private ApiRequestHandlerResponse getDocuments(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws BadException {
+
+    Logger logger = awsservice.getLogger();
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
+    int limit = getLimit(logger, event);
+
+    Date date = getQueryDate(event);
+
+    boolean documentIdProjection =
+        "DOCUMENT_ID_ONLY".equalsIgnoreCase(event.getQueryStringParameter("projection"));
+
+    String nextToken = event.getQueryStringParameter("next");
+    QueryResult result = new GetAllDocumentsQuery(date, !documentIdProjection).query(db,
+        documentsTable, siteId, nextToken, limit);
+
+    AttributeValueToDocumentItem toDocument = new AttributeValueToDocumentItem();
+    List<DocumentItem> docs = result.items().stream().map(toDocument::apply).toList();
+
+
+    return ApiRequestHandlerResponse.builder().ok().body("documents", docs)
+        .next(result.toNextToken()).build();
+  }
+
+  private Date getQueryDate(final ApiGatewayRequestEvent event) {
+
+    Date date = null;
+    String dateString = event.getQueryStringParameter("date");
+    if (!isEmpty(dateString)) {
+      String tz = event.getQueryStringParameter("tz", "UTC");
+      ZoneId zoneId = DateUtil.toZoneId(tz);
+      date = DateUtil.toDateFromString(dateString, zoneId);
+    }
+
+    return date;
+  }
+
+  private Date getQueryDateTime(final ApiGatewayRequestEvent event, final String name) {
+
+    Date date = null;
+    String dateString = event.getQueryStringParameter(name);
+    if (!isEmpty(dateString)) {
+      date = DateUtil.toDateFromString(dateString, ZoneId.of("UTC"));
+    }
+
+    return date;
+  }
+
+  private String getQuerySort(final ApiGatewayRequestEvent event) throws BadException {
+    String sort = event.getQueryStringParameter("sort");
+    if (isEmpty(sort)) {
+      return "DESC";
+    }
+
+    if (!"ASC".equalsIgnoreCase(sort) && !"DESC".equalsIgnoreCase(sort)) {
+      throw new BadException("invalid sort '" + sort + "'");
+    }
+
+    return sort.toUpperCase();
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents";
+  }
+
+  private ApiPagination getSoftDeletedDocument(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId, final Map<String, Object> map)
+      throws BadException {
+
+    Logger logger = awsservice.getLogger();
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+
+    int limit = pagination != null ? pagination.getLimit() : getLimit(logger, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
+
+    DocumentService service = awsservice.getExtension(DocumentService.class);
+    Date start = getQueryDateTime(event, "start");
+    Date end = getQueryDateTime(event, "end");
+    String sort = getQuerySort(event);
+    Pagination<DocumentRecord> results =
+        service.findSoftDeletedDocuments(siteId, start, end, sort, nextToken, limit);
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
+
+    List<DynamicDocumentItem> docs = results.getResults().stream()
+        .map(l -> new DocumentRecordToDynamicDocumentItem().apply(l)).toList();
+    map.put("documents", docs);
+    return current;
+  }
+
+  private Map<String, Object> getSyncStatus(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final String siteId) throws BadException {
+
+    DocumentSyncType syncType;
+    String syncStatus = event.getQueryStringParameter("syncStatus").toUpperCase();
+    DocumentSyncServiceType service =
+        awsservice.hasModule("opensearch") ? DocumentSyncServiceType.OPENSEARCH
+            : DocumentSyncServiceType.TYPESENSE;
+
+    if ("FULLTEXT_METADATA_FAILED".equalsIgnoreCase(syncStatus)) {
+      syncType = DocumentSyncType.METADATA;
+    } else if ("FULLTEXT_CONTENT_FAILED".equalsIgnoreCase(syncStatus)) {
+      syncType = DocumentSyncType.CONTENT;
+    } else {
+      throw new BadException("Unknown 'syncStatus'");
+    }
+
+    int limit = getLimit(awsservice.getLogger(), event);
+    DocumentSyncStatus status = DocumentSyncStatus.FAILED;
+    String documentSyncTable = awsservice.environment("DOCUMENT_SYNC_TABLE");
+
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String nextToken = event.getQueryStringParameter("next");
+    QueryResult result = new DocumentSyncStatusQuery(service, status, syncType).query(db,
+        documentSyncTable, siteId, nextToken, limit);
+
+    nextToken = new MapAttributeValueToString().apply(result.lastEvaluatedKey());
+    List<Map<String, String>> documents =
+        result.items().stream().map(rr -> Map.of("documentId", rr.get("documentId").s())).toList();
+
+    return Map.of("next", nextToken, "documents", documents);
+  }
+
+  private boolean isFolder(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item) {
+    return !isEmpty(item.getPath()) && item.getPath().endsWith("/");
+  }
+
+  private boolean isSoftDelete(final ApiGatewayRequestEvent event) {
+    return "true".equalsIgnoreCase(event.getQueryStringParameter("softDeleted"))
+        || "true".equalsIgnoreCase(event.getQueryStringParameter("deleted"));
+  }
+
+  private boolean isSyncStatus(final ApiGatewayRequestEvent event) {
+    return !Strings.isEmpty(event.getQueryStringParameter("syncStatus"));
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    ApiRequestHandlerResponse.Builder builder = ApiRequestHandlerResponse.builder().created();
+    DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
+
+    String siteId = authorization.getSiteId();
+    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request = JsonToObject.fromJson(
+        awsservice, event, com.formkiq.stacks.dynamodb.documents.AddDocumentRequest.class);
+
+    validatePost(request);
+
+    if (isFolder(request)) {
+
+      DocumentService docService = awsservice.getExtension(DocumentService.class);
+
+      if (!docService.isFolderExists(siteId, request.getPath())) {
+        docService.addFolderIndex(siteId, request.getPath(), authorization.getUsername());
+        builder.body("message", "folder created");
+
+      } else {
+        throw new ValidationException(Collections
+            .singletonList(new ValidationErrorImpl().key("folder").error("already exists")));
+      }
+
+    } else {
+
+      updatePost(awsservice, request);
+
+      ApiRequestHandlerResponse response = handler.post(event, authorization, awsservice, request);
+
+      Map<String, Object> mapResponse = new HashMap<>((Map<String, Object>) response.body());
+      mapResponse.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
+
+      new PresignedUrlsToS3Bucket(request).apply(mapResponse);
+
+      builder.body(mapResponse);
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Update {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest} request object.
+   *
+   * @param awsservice {@link AwsServiceCache}
+   * @param o {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
+   */
+  private void updatePost(final AwsServiceCache awsservice,
+      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest o) {
+
+    if (!isEmpty(o.getContent()) && isEmpty(o.getChecksum()) && !isEmpty(o.getChecksumType())) {
+      S3PresignerService s3PresignerService = awsservice.getExtension(S3PresignerService.class);
+      ChecksumAlgorithm checksumAlgorithm =
+          s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
+
+      byte[] bytes =
+          o.isBase64() ? Base64.getDecoder().decode(o.getContent().getBytes(StandardCharsets.UTF_8))
+              : o.getContent().getBytes(StandardCharsets.UTF_8);
+      String checksum = s3PresignerService.calculateChecksumAsHex(checksumAlgorithm, bytes);
+      o.setChecksum(checksum);
+    }
+  }
+
+  private void validatePost(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item)
+      throws ValidationException {
+
+    boolean isFolder = isFolder(item);
+
+    boolean emptyContent = isEmpty(item.getContent());
+    boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
+    ValidationBuilder vb = new ValidationBuilder();
+
+    if (!isFolder && emptyContent && notNull(item.getDocuments()).isEmpty() && emptyDeepLink) {
+      vb.addError(null, "either 'content', 'documents', or 'deepLinkPath' are required");
+    } else if (!emptyDeepLink && !emptyContent) {
+      vb.addError(null, "both 'content', and 'deepLinkPath' cannot be set");
+    }
+
+    if (!isEmpty(item.getChecksum()) && item.getChecksumType() == null) {
+      vb.addError("checksumType", "'checksumType' required when 'checksum' is set");
+    }
+
+    vb.check();
+  }
+}

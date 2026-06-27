@@ -1,0 +1,2603 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.lambda.s3;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.MappingRecord;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
+import com.formkiq.aws.eventbridge.EventBridgeService;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.ses.SesAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsAwsServiceRegistry;
+import com.formkiq.aws.sns.SnsService;
+import com.formkiq.aws.sns.SnsServiceImpl;
+import com.formkiq.aws.sqs.SqsConnectionBuilder;
+import com.formkiq.aws.sqs.SqsService;
+import com.formkiq.aws.sqs.SqsServiceImpl;
+import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
+import com.formkiq.aws.ssm.SsmConnectionBuilder;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.aws.ssm.SsmServiceCache;
+import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.aws.dynamodb.actions.ActionStatus;
+import com.formkiq.aws.dynamodb.actions.ActionType;
+import com.formkiq.module.actions.services.ActionsService;
+import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.module.typesense.TypeSenseService;
+import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.GsonUtil;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.aws.dynamodb.attributes.AttributeType;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
+import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
+import com.formkiq.stacks.dynamodb.mappings.Mapping;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
+import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
+import com.formkiq.stacks.dynamodb.mappings.MappingService;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
+import com.formkiq.stacks.lambda.s3.actions.AddOcrAction;
+import com.formkiq.stacks.lambda.s3.actions.MalwareScanResponse;
+import com.formkiq.stacks.lambda.s3.actions.MalwareScanResult;
+import com.formkiq.stacks.lambda.s3.event.AwsEvent;
+import com.formkiq.stacks.lambda.s3.util.FileUtils;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.aws.TypesenseExtension;
+import com.formkiq.validation.ValidationException;
+import com.google.gson.Gson;
+import joptsimple.internal.Strings;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpStatusCode;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+import software.amazon.awssdk.utils.IoUtils;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
+import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
+
+/** Unit Tests for {@link DocumentActionsProcessor}. */
+@ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
+public class DocumentActionsProcessorTest implements DbKeys {
+
+  /** App Environment. */
+  private static final String APP_ENVIRONMENT = "test";
+  /** {@link RequestRecordExpectationResponseCallback}. */
+  private static final RequestRecordExpectationResponseCallback CALLBACK =
+      new RequestRecordExpectationResponseCallback(200, "{\"contentUrls\":[]}");
+  /** {@link RequestRecordExpectationResponseCallback} 429. */
+  private static final RequestRecordExpectationResponseCallback CALLBACK429 =
+      new RequestRecordExpectationResponseCallback(429, "");
+  /** {@link AwsBasicCredentials}. */
+  private static final AwsBasicCredentials CREDENTIALS = AwsBasicCredentials.create("asd", "asd");
+  /** Full text 404 document. */
+  private static final String DOCUMENT_ID_404 = ID.uuid();
+  /** Full text 429 document. */
+  private static final String DOCUMENT_ID_429 = ID.uuid();
+  /** Document Id with OCR. */
+  private static final String DOCUMENT_ID_OCR = ID.uuid();
+  /** Document Id for Data Classification. */
+  private static final String DOCUMENT_ID_DATACLASSIFICATION = ID.uuid();
+  /** Document Id with OCR Key/Value. */
+  private static final String DOCUMENT_ID_OCR_KEY_VALUE = ID.uuid();
+  /** {@link Gson}. */
+  private static final Gson GSON = GsonUtil.getInstance();
+  /** Port to run Test server. */
+  private static final int PORT = 8888;
+  /** Sns Document Event. */
+  private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
+  /** Test server URL. */
+  private static final String URL = "http://localhost:" + PORT;
+  /** Search Limit. */
+  private static final int LIMIT = 100;
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+  /** {@link TypesenseExtension}. */
+  @RegisterExtension
+  static TypesenseExtension typesenseExtension = new TypesenseExtension();
+  /** {@link ActionsService}. */
+  private static ActionsService actionsService;
+  /** {@link AttributeService}. */
+  private static AttributeService attributeService;
+  /** {@link MappingService}. */
+  private static MappingService mappingService;
+  /** {@link ConfigService}. */
+  private static ConfigService configService;
+  /** {@link DocumentService}. */
+  private static DocumentService documentService;
+  /** {@link DocumentSearchService}. */
+  private static DocumentSearchService documentSearchService;
+  /** {@link ClientAndServer}. */
+  private static ClientAndServer mockServer;
+  /** {@link DocumentActionsProcessor}. */
+  private static DocumentActionsProcessor processor;
+  /** {@link S3Service}. */
+  private static S3Service s3Service;
+  /** Sns Document Event Topic Arn. */
+  private static String snsDocumentEventTopicArn;
+  /** {@link TypeSenseService}. */
+  private static TypeSenseService typesense;
+  /** {@link AwsServiceCache}. */
+  private static AwsServiceCache serviceCache;
+  /** {@link EventBridgeService}. */
+  private static EventBridgeService eventBridgeService;
+  /** {@link SqsService}. */
+  private static SqsService sqsService;
+  /** Valid image formats. */
+  private static final List<String> VALID_IMAGE_FORMATS =
+      List.of("bmp", "gif", "jpeg", "png", "tif");
+
+  private static void addKeyValueOcrMock() {
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_OCR_KEY_VALUE + "/ocr*"))
+        .respond(org.mockserver.model.HttpResponse.response("""
+            {"ocrEngine": "TEXTRACT","ocrStatus": "SUCCESSFUL","keyValues":
+                [
+                    {
+                        "key": "Date",
+                        "values": ["07/21/2024"]
+                    },
+                    {
+                        "key": "Customer first name",
+                        "values": ["John"]
+                    },
+                    {
+                        "key": "City",
+                        "values": ["Los Angeles", "New York"]
+                    },
+                    {
+                        "key": "Anthem plan code (numbers found on ID card)",
+                        "values": ["987654321"]
+                    },
+                    {
+                        "key": "4. Customer certificate or ID no.",
+                        "values": ["28937423"]
+                    },
+                    {
+                        "key": "25. Total charges",
+                        "values": ["$150"]
+                    },
+                    {
+                        "key": "Age",
+                        "values": ["54"]
+                    }
+                ],
+                "contentType": "text/plain","userId": "joe"}"""));
+  }
+
+  /**
+   * After Class.
+   *
+   */
+  @AfterAll
+  public static void afterClass() {
+    mockServer.stop();
+  }
+
+  /**
+   * Before Class.
+   *
+   * @throws Exception Exception
+   */
+  @BeforeAll
+  public static void beforeClass() throws Exception {
+
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
+
+    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
+    DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
+
+    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
+    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    mappingService = new MappingServiceDynamodb(db);
+    attributeService = new AttributeServiceDynamodb(db);
+    documentSearchService =
+        new DocumentSearchServiceImpl(dbBuilder, documentService, DOCUMENTS_TABLE);
+    createMockServer();
+
+    s3Service = new S3Service(TestServices.getS3Connection(null));
+    SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
+
+    SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+
+    String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
+        typeSenseHost);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
+
+    typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, CREDENTIALS);
+
+    configService = new ConfigServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE, 0);
+
+    SnsService sns = new SnsServiceImpl(TestServices.getSnsConnection(null));
+    snsDocumentEventTopicArn = sns.createTopic(SNS_DOCUMENT_EVENT_TOPIC).topicArn();
+
+    SqsConnectionBuilder sqsBuilder = TestServices.getSqsConnection(null);
+    sqsService = new SqsServiceImpl(sqsBuilder);
+  }
+
+  private static AwsEvent buildAwsEvent(final String siteId, final DocumentArtifact document) {
+    return SqsEventBuilder.builder().siteId(siteId).documentId(document.documentId())
+        .artifactId(document.artifactId()).build();
+  }
+
+  private static Map<String, String> buildEnvironment(final String module,
+      final String chatgptUrl) {
+    Map<String, String> env = new HashMap<>();
+    env.put("AWS_REGION", AWS_REGION.toString());
+    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
+    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
+    env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
+    env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
+    env.put("MODULE_" + module, "true");
+    env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
+    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
+    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    env.put("OPERATIONAL_MODE", "ACTIVE");
+    return env;
+  }
+
+  /**
+   * Create Mock Server.
+   *
+   * @throws IOException IOException
+   */
+  private static void createMockServer() throws IOException {
+
+    mockServer = startClientAndServer(PORT);
+
+    final int status = 200;
+
+    for (String item : Arrays.asList("1", "2", "3", "4", "5", "6")) {
+      String text = FileUtils.loadFile(mockServer, "/chatgpt/response" + item + ".json");
+      mockServer.when(request().withMethod("POST").withPath("/chatgpt" + item))
+          .respond(org.mockserver.model.HttpResponse.response(text).withStatusCode(status));
+    }
+
+    mockServer
+        .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_429 + "/fulltext"))
+        .respond(CALLBACK429);
+
+    mockServer
+        .when(request().withMethod("PATCH").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
+        .respond(org.mockserver.model.HttpResponse.response("")
+            .withStatusCode(HttpStatusCode.NOT_FOUND_404.code()));
+
+    mockServer
+        .when(request().withMethod("POST").withPath("/documents/" + DOCUMENT_ID_404 + "/fulltext"))
+        .respond(CALLBACK);
+
+    mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
+        .respond(org.mockserver.model.HttpResponse
+            .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
+
+    Map<String, Object> dataClassification = Map.of("dataClassifications",
+        List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),
+            Map.of("key", "certificate_number", "value", "12")))));
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/dataClassification*"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(dataClassification)));
+
+    Map<String, Object> metadataExtractions = Map.of("metadataExtractions",
+        List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),
+            Map.of("key", "certificate_number", "value", "12")))));
+
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION
+                + "/metadataExtractionResults/Another%20Prompt"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(metadataExtractions)));
+
+    Map<String, Object> aiPromptResults =
+        Map.of("aiPromptResults", List.of(Map.of("values", List.of(Map.of("attributes",
+            List.of(Map.of("key", "certificate_number", "stringValues", List.of("12"))))))));
+
+    mockServer
+        .when(request().withMethod("GET").withPath(
+            "/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/ai/prompts/Another%20Prompt"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(aiPromptResults)));
+
+    MalwareScanResponse malwareScanResponse =
+        new MalwareScanResponse(List.of(new MalwareScanResult("CLEAN", "", "", "")));
+    mockServer
+        .when(request().withMethod("GET")
+            .withPath("/documents/" + DOCUMENT_ID_DATACLASSIFICATION + "/malwareScan*"))
+        .respond(org.mockserver.model.HttpResponse.response(GSON.toJson(malwareScanResponse)));
+
+    addKeyValueOcrMock();
+
+    mockServer.when(request().withMethod("PATCH")).respond(CALLBACK);
+    mockServer.when(request().withMethod("POST")).respond(CALLBACK);
+    mockServer.when(request().withMethod("PUT")).respond(CALLBACK);
+    mockServer.when(request().withMethod("DELETE")).respond(CALLBACK);
+    mockServer.when(request().withMethod("GET")).respond(CALLBACK);
+  }
+
+  private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,
+      final DocumentArtifact document) {
+    return notNull(
+        documentService.findDocumentAttributes(siteId, document, null, LIMIT).getResults());
+  }
+
+  private static String getResizedImageKey(final String s3Key) {
+    // S3 bucket should contain 2 objects: original and resized
+    List<S3Object> s3Objects = s3Service.listObjects(BUCKET_NAME, null).contents();
+    assertEquals(2, s3Objects.size());
+
+    // find original image key, and make it the first element in the list
+    if (s3Objects.get(1).key().equals(s3Key)) {
+      s3Objects = List.of(s3Objects.get(1), s3Objects.get(0));
+    }
+
+    // verify original image key
+    assertEquals(s3Key, s3Objects.get(0).key());
+
+    return s3Objects.get(1).key();
+  }
+
+  private static String imageFormatToMimeType(final String format) {
+    return "image/" + ("tif".equals(format) ? "tiff" : format);
+  }
+
+  private static void initProcessor(final String module, final String chatgptUrl) {
+    Map<String, String> env = buildEnvironment(module, chatgptUrl);
+
+    AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
+    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
+
+    serviceCache =
+        new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
+            .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
+                new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
+                new SesAwsServiceRegistry(), new EventBridgeAwsServiceRegistry())
+            .build();
+
+    processor = new DocumentActionsProcessor(serviceCache);
+    eventBridgeService = serviceCache.getExtension(EventBridgeService.class);
+  }
+
+  private static void verifyAction(final String siteId, final DocumentArtifact document) {
+    Action action = actionsService.getActions(siteId, document).getFirst();
+
+    assertEquals(ActionType.RESIZE, action.type());
+    assertEquals(ActionStatus.COMPLETE, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertNotNull(action.completedDate());
+  }
+
+  private static void verifyData(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String imageFormat) throws IOException {
+    assertEquals(imageFormatToMimeType(imageFormat),
+        s3Service.getObjectMetadata(BUCKET_NAME, imageKey, null).getContentType());
+
+    byte[] resizedImage = s3Service.getContentAsBytes(BUCKET_NAME, imageKey);
+    ByteArrayInputStream bais = new ByteArrayInputStream(resizedImage);
+    BufferedImage bufferedImage = ImageIO.read(bais);
+
+    assertEquals(expectedWidth, bufferedImage.getWidth());
+    assertEquals(expectedHeight, bufferedImage.getHeight());
+  }
+
+  private static void verifyMetadata(final int expectedWidth, final int expectedHeight,
+      final String imageKey, final String path) {
+    String[] splitted = imageKey.split("/");
+    DocumentArtifact document = new DocumentArtifact(splitted[1], null);
+    DocumentRecord item = documentService.findDocument(splitted[0], document);
+
+    assertEquals(path, item.path());
+    assertEquals(Integer.toString(expectedWidth), item.width());
+    assertEquals(Integer.toString(expectedHeight), item.height());
+  }
+
+  private void assertDocumentAttributeEquals(final DocumentAttributeRecord record, final String key,
+      final String stringValue) {
+    assertEquals(key, record.getKey());
+    assertEquals(stringValue, record.getStringValue());
+    assertNull(record.getNumberValue() != null ? record.getNumberValue().toString() : null);
+  }
+
+  private Map<String, Object> assertEventBridgeMessage(final Message message) {
+    Map<String, Object> data = GSON.fromJson(message.body(), Map.class);
+    assertEquals("formkiq.test", data.get("source"));
+    assertEquals("Document Action Event", data.get("detail-type"));
+    assertTrue(data.get("time").toString().endsWith("Z"));
+
+    data = (Map<String, Object>) data.get("detail");
+    Map<String, Object> document = (Map<String, Object>) data.get("document");
+    assertNotNull(document.get("documentId"));
+    assertNotNull(document.get("url"));
+    assertNotNull(document.get("path"));
+
+    return document;
+  }
+
+  private void assertRetryAction(final Action action, final int retryCount) {
+    assertEquals(retryCount, action.retryCount());
+    assertEquals(5, action.maxRetries());
+    assertEquals(ActionStatus.WAITING_FOR_RETRY, action.status());
+    assertNotNull(action.startDate());
+    assertNotNull(action.insertedDate());
+    assertEquals("http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+        action.message());
+    assertNull(action.completedDate());
+  }
+
+  /**
+   * BeforeEach.
+   *
+   */
+  @BeforeEach
+  public void beforeEach() {
+    // null = new LambdaContextRecorder();
+    CALLBACK.reset();
+
+    initProcessor("opensearch", "chatgpt1");
+    s3Service.deleteAllFiles(BUCKET_NAME);
+  }
+
+  private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
+    return new ActionBuilder().type(actionType).document(document).indexUlid().userId("joe");
+  }
+
+  private DocumentArtifact createDocument2(final String siteId, final DocumentArtifact document,
+      final String contentType) {
+    DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+    item.setContentType(contentType);
+    documentService.saveDocument(siteId, item, null);
+    return document;
+  }
+
+  private DocumentArtifact createDocument2(final String siteId, final String contentType) {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    return createDocument2(siteId, document, contentType);
+  }
+
+  private String createEventBus(final String sqsQueueArn) {
+
+    String eventBusName = "test_" + UUID.randomUUID();
+    eventBridgeService.createEventBridge(eventBusName);
+
+    String eventPattern = "{\"source\":[\"formkiq.test\"]}";
+    eventBridgeService.createRule(eventBusName, "sqs", null, eventPattern, "test", sqsQueueArn);
+    return eventBusName;
+  }
+
+  private Mapping createMapping(final String attributeKey,
+      final MappingAttributeSourceType sourceType) {
+    MappingAttribute a0 = new MappingAttribute().setAttributeKey(attributeKey)
+        .setSourceType(sourceType).setLabelMatchingType(null).setLabelTexts(null)
+        .setDefaultValue(null).setDefaultValues(null).setMetadataField(null);
+
+    return new Mapping("test", null, List.of(a0), null);
+  }
+
+  private Message getMessage(final String sqsDocumentQueueUrl) throws InterruptedException {
+    ReceiveMessageResponse response = getReceiveMessageResponse(sqsDocumentQueueUrl);
+
+    assertEquals(1, response.messages().size());
+    return response.messages().getFirst();
+  }
+
+  private ReceiveMessageResponse getReceiveMessageResponse(final String sqsQueueUrl)
+      throws InterruptedException {
+    ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
+    while (response.messages().isEmpty()) {
+      TimeUnit.SECONDS.sleep(1);
+      response = sqsService.receiveMessages(sqsQueueUrl);
+    }
+
+    response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
+    return response;
+  }
+
+  private void processIdpRequest(final String siteId, final DocumentArtifact document,
+      final MappingRecord mappingRecord) throws ValidationException {
+    createDocument2(siteId, document, "application/pdf");
+
+    List<Action> actions = List.of(createAction(document, ActionType.IDP)
+        .parameters(Map.of("mappingId", mappingRecord.getDocumentId())).build(siteId));
+    actionsService.saveNewActions(actions);
+
+    AwsEvent map = buildAwsEvent(siteId, document);
+
+    // when
+    processor.handleRequest(map, null);
+  }
+
+  // Helper method to create and process a resize action.
+  private void processResizeAction(final String siteId, final DocumentArtifact document,
+      final Map<String, Object> parameters) {
+    List<Action> actions =
+        List.of(createAction(document, ActionType.RESIZE).parameters(parameters).build(siteId));
+    actionsService.saveNewActions(actions);
+
+    AwsEvent map = buildAwsEvent(siteId, document);
+
+    processor.handleRequest(map, null);
+  }
+
+
+  private void removeAllS3Objects() {
+    s3Service.deleteAllFiles(BUCKET_NAME);
+  }
+
+  // Helper method to set up an image document for testing.
+  private String setupImageDocument(final String siteId, final String imageFormat)
+      throws IOException, ValidationException {
+    String contentType = imageFormatToMimeType(imageFormat);
+    String documentId = ID.uuid();
+
+    // Save test image to S3 bucket
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+    try (InputStream is = new FileInputStream("src/test/resources/resize/input." + imageFormat)) {
+      byte[] imageBytes = IoUtils.toByteArray(is);
+      s3Service.putObject(BUCKET_NAME, s3Key, imageBytes, contentType);
+    }
+
+    // Save document metadata to DynamoDB
+    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setContentType(contentType);
+    item.setPath("test." + imageFormat);
+    documentService.saveDocument(siteId, item, null);
+
+    return documentId;
+  }
+
+  /**
+   * Handle Checksum Action.
+   *
+   */
+  @Test
+  public void testChecksumAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String content = "this is some data";
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions =
+          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document)
+              .indexUlid().parameters(Map.of("checksumType", "SHA256")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.CHECKSUM, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentRecord item = documentService.findDocument(siteId, document);
+      assertEquals("SHA256", item.checksumType());
+      assertEquals("dff90087e2a95f1c093cf40e7be6ef4e998e21b4ea38d0b494ea2fdb2576fcfe",
+          item.checksum());
+    }
+  }
+
+  /**
+   * Handle Checksum SHA512 Action.
+   */
+  @Test
+  public void testChecksumAction02Sha512() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String content = "this is some data";
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions =
+          List.of(new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document)
+              .indexUlid().parameters(Map.of("checksumType", "SHA512")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.CHECKSUM, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentRecord item = documentService.findDocument(siteId, document);
+      assertEquals("SHA512", item.checksumType());
+      assertEquals(
+          "76cef72e24a58b90331bc9a31e9400c0356d2101b6e3051fe61f1ec4c582d6d7"
+              + "c7f695289d8f4a41288c4af8a2d01d6777bbabd51906508e5132cdf4dbabd567",
+          item.checksum());
+    }
+  }
+
+  /**
+   * Handle Delete Action.
+   *
+   */
+  @Test
+  public void testDeleteAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      for (String deleteType : Arrays.asList("SOFT_DELETE", "HARD_DELETE", "PURGE")) {
+        // given
+        DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+        String s3Key =
+            SiteIdKeyGenerator.createS3Key(siteId, document.documentId(), document.artifactId());
+        s3Service.putObject(BUCKET_NAME, s3Key, "content".getBytes(StandardCharsets.UTF_8),
+            "text/plain");
+
+        DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+        item.setPath("incoming/" + document.documentId() + ".txt");
+        documentService.saveDocument(siteId, item, null);
+
+        List<Action> actions = List.of(createAction(document, ActionType.DELETE)
+            .parameters(Map.of("deleteType", deleteType)).build(siteId));
+        actionsService.saveNewActions(actions);
+
+        AwsEvent map = buildAwsEvent(siteId, document);
+        CALLBACK.reset();
+
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        Action action = actionsService.getActions(siteId, document).getFirst();
+        assertEquals(ActionType.DELETE, action.type());
+        assertEquals(ActionStatus.COMPLETE, action.status());
+
+        HttpRequest lastRequest = CALLBACK.getLastRequest();
+        if ("PURGE".equals(deleteType)) {
+          assertEquals("/documents/" + document.documentId() + "/purge",
+              lastRequest.getPath().getValue());
+        } else {
+          assertEquals("/documents/" + document.documentId(), lastRequest.getPath().getValue());
+          assertEquals(Boolean.toString("SOFT_DELETE".equals(deleteType)),
+              lastRequest.getFirstQueryStringParameter("softDelete"));
+        }
+
+        if (siteId != null) {
+          assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action missing GptKey.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, document);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.getFirst().status());
+      assertEquals("missing config 'ChatGptApiKey'", list.getFirst().message());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction02() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      final DocumentArtifact document = new DocumentArtifact(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var saveTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, saveTags, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 6;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Memorandum", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
+
+      assertEquals("organization", tags.getResults().get(i).getKey());
+      assertEquals("Great Auk Enterprises", tags.getResults().get(i++).getValue());
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat,Aaron Thomas",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging invalid engine.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction03() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "unknown", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, document);
+      assertEquals(1, list.size());
+      assertEquals(ActionStatus.FAILED, list.getFirst().status());
+      assertEquals("Unknown engine: unknown", list.getFirst().message());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a non JSON repsonse from ChatGPT.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction04() {
+
+    initProcessor("opensearch", "chatgpt2");
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 7;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
+
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY 12240; Cambutdigo, MA 12210",
+          tags.getResults().get(i++).getValue());
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("sentiment", tags.getResults().get(i).getKey());
+      assertEquals("None", tags.getResults().get(i++).getValue());
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a non JSON repsonse from ChatGPT.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction05() {
+
+    initProcessor("opensearch", "chatgpt3");
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 6;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
+
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Receipt", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY 12240,Cambutdigo, MA 12210",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("Frontend eaar brake cabies,New set of podal arms,Labor shrs 500",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action extra quotes.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction06() {
+
+    initProcessor("opensearch", "chatgpt4");
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 5;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("YellowBelly Brewery Pub, St. Johns, NL", tags.getResults().get(i++).getValue());
+
+      assertEquals("organization", tags.getResults().get(i).getKey());
+      assertEquals("Great Auk Enterprises", tags.getResults().get(i++).getValue());
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat,Aaron Thomas",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("MINUTES OF A MEETING OF DIRECTORS", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action extra quotes.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction07() {
+
+    initProcessor("opensearch", "chatgpt5");
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.DOCUMENTTAGGING)
+          .parameters(Map.of("engine", "chatgpt", "tags",
+              "document type,meeting date,chairperson,secretary,board members,resolutions"))
+          .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 7;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("board members", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick,Ketill Ketilsson,Farley Mowat",
+          Strings.join(tags.getResults().get(i++).getValues(), ","));
+
+      assertEquals("chairperson", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
+
+      assertEquals("document type", tags.getResults().get(i).getKey());
+      assertEquals("Minutes of the Director's Meeting", tags.getResults().get(i++).getValue());
+
+      assertEquals("meeting date", tags.getResults().get(i).getKey());
+      assertEquals("21st day of April, 2023", tags.getResults().get(i++).getValue());
+
+      assertEquals("resolutions", tags.getResults().get(i).getKey());
+      assertEquals("Thomas Bewick", tags.getResults().get(i++).getValue());
+
+      assertEquals("secretary", tags.getResults().get(i).getKey());
+      assertEquals("Aaron Thomas", tags.getResults().get(i++).getValue());
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle documentTagging ChatApt Action with a gpt-3.5-turbo-instruct model response.
+   *
+   */
+  @Test
+  public void testDocumentTaggingAction08() {
+
+    initProcessor("opensearch", "chatgpt6");
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfiguration siteConfig = SiteConfiguration.builder().chatGptApiKey("asd").build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      var addTags = DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("")
+          .userId("joe").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+      documentService.addTags(siteId, document, addTags, null);
+
+      List<Action> actions =
+          List.of(
+              createAction(document, ActionType.DOCUMENTTAGGING)
+                  .parameters(Map.of("engine", "chatgpt", "tags",
+                      "Organization,location,person,subject,sentiment,document type"))
+                  .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      final int expectedSize = 5;
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      Pagination<DocumentTag> tags =
+          documentService.findDocumentTags(siteId, document, null, MAX_RESULTS);
+      assertEquals(expectedSize, tags.getResults().size());
+
+      int i = 0;
+      assertEquals("Organization", tags.getResults().get(i).getKey());
+      assertEquals("East Repair Inc", tags.getResults().get(i++).getValue());
+
+      assertEquals("location", tags.getResults().get(i).getKey());
+      assertEquals("New York, NY,Cambutdigo, MA",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("person", tags.getResults().get(i).getKey());
+      assertEquals("Job Smith", tags.getResults().get(i++).getValue());
+
+      assertEquals("subject", tags.getResults().get(i).getKey());
+      assertEquals("Receipt,Frontend eaar brake cabies,New set of podal arms,Labor shrs",
+          String.join(",", tags.getResults().get(i++).getValues()));
+
+      assertEquals("untagged", tags.getResults().get(i).getKey());
+      assertEquals("", tags.getResults().get(i).getValue());
+    }
+  }
+
+  /**
+   * Handle Export Bridge Action.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testEventBridge01() throws Exception {
+    // given
+    String sqsDocumentQueueUrl = sqsService.createQueue("sqssnsCreate1" + ID.uuid()).queueUrl();
+    String sqsQueueArn = sqsService.getQueueArn(sqsDocumentQueueUrl);
+    String eventBusName = createEventBus(sqsQueueArn);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "category",
+          AttributeDataType.STRING, AttributeType.STANDARD);
+
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+
+      DocumentAttributeRecord attr0 = new DocumentAttributeRecord().setDocument(document)
+          .setUserId("joe").setKey("category").setStringValue("person").updateValueType();
+
+      DocumentAttributeRecord attr1 = new DocumentAttributeRecord().setDocument(document)
+          .setUserId("joe").setKey("category").setStringValue("other").updateValueType();
+
+      List<DocumentAttributeRecord> attributes = List.of(attr0, attr1);
+      documentService.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+
+      List<Action> actions = List.of(createAction(document, ActionType.EVENTBRIDGE)
+          .parameters(Map.of("eventBusName", eventBusName)).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.EVENTBRIDGE, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      Message message = getMessage(sqsDocumentQueueUrl);
+
+      Map<String, Object> documentMessage = assertEventBridgeMessage(message);
+
+      validateAttributes(documentMessage);
+    }
+  }
+
+  /**
+   * Test converting Ocr Parse Types.
+   */
+  @Test
+  public void testGetOcrParseTypes01() {
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    AddOcrAction ocrAction = new AddOcrAction(serviceCache);
+    ActionBuilder action =
+        new ActionBuilder().document(document).userId("joe").indexUlid().type(ActionType.OCR);
+    assertEquals("[TEXT]", ocrAction.getOcrParseTypes(action.build((String) null)).toString());
+
+    // invalid
+    Map<String, Object> parameters = Map.of("ocrParseTypes", "ADAD,IUJK");
+    action.parameters(parameters);
+    assertEquals("[ADAD, IUJK]",
+        ocrAction.getOcrParseTypes(action.build((String) null)).toString());
+
+    parameters = Map.of("ocrParseTypes", "tEXT, forms, TABLES");
+    action.parameters(parameters);
+    assertEquals("[TEXT, FORMS, TABLES]",
+        ocrAction.getOcrParseTypes(action.build((String) null)).toString());
+  }
+
+  /**
+   * Handle OCR Action.
+   *
+   */
+  @Test
+  public void testHandle01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      List<Action> actions = List.of(createAction(document, ActionType.OCR)
+          .parameters(Map.of("addPdfDetectedCharactersAsText", "true", "ocrNumberOfPages", "2",
+              "ocrOutputType", "CSV"))
+          .document(document).indexUlid().build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+      assertEquals("POST", lastRequest.getMethod().getValue());
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("[TEXT]", resultmap.get("parseTypes").toString());
+      assertEquals("true", resultmap.get("addPdfDetectedCharactersAsText").toString());
+      assertEquals("2", resultmap.get("ocrNumberOfPages").toString());
+      assertEquals("CSV", resultmap.get("ocrOutputType").toString());
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
+
+      List<Action> runningActions =
+          actionsService.getAction(siteId, document, ActionStatus.RUNNING);
+      assertEquals(1, runningActions.size());
+      assertEquals(ActionType.OCR, runningActions.getFirst().type());
+    }
+  }
+
+  /**
+   * Handle Fulltext(Opensearch) plain/text document.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle02() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertNotNull(resultmap.get("contentUrls").toString());
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Fulltext application/pdf document.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle03() throws ValidationException {
+
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_OCR, null), "application/pdf");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertNotNull(resultmap.get("contentUrls").toString());
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Fulltext missing document failed Actionstatus.
+   *
+   */
+  @Test
+  public void testHandle04() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+      assertEquals(1, actions.size());
+      Action action = actions.getFirst();
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Cannot invoke \"com.formkiq.aws.dynamodb.documents."
+          + "DocumentRecord.documentId()\" because \"item\" is null", action.message());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle WEBHOOK Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle05() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = List.of(createAction(document, ActionType.WEBHOOK)
+          .parameters(Map.of("url", URL + "/callback")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+      assertEquals(1, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.getFirst().status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, String> documentMap = (Map<String, String>) resultmap.get("document");
+
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), documentMap.get("siteId"));
+
+      assertEquals(document.documentId(), documentMap.get("documentId"));
+      assertEquals("application/pdf", documentMap.get("contentType"));
+      assertEquals("joe", documentMap.get("userId"));
+      assertNotNull(documentMap.get("insertedDate"));
+      assertNotNull(documentMap.get("lastModifiedDate"));
+      assertNotNull(documentMap.get("url"));
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle WEBHOOK + ANTIVIRUS Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle06() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      Collection<DocumentTag> tags = Arrays.asList(
+          new DocumentTag(documentId, "CLAMAV_SCAN_STATUS", "CLEAN", new Date(), "joe",
+              DocumentTagType.SYSTEMDEFINED),
+          new DocumentTag(documentId, "CLAMAV_SCAN_TIMESTAMP", "2022-01-01", new Date(), "joe",
+              DocumentTagType.SYSTEMDEFINED));
+      documentService.saveDocument(siteId, item, tags);
+
+      List<Action> actions = Arrays.asList(
+          createAction(documentArtifact, ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE)
+              .build(siteId),
+          createAction(documentArtifact, ActionType.WEBHOOK)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, documentArtifact);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/callback"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      Map<String, String> document = (Map<String, String>) resultmap.get("document");
+
+      assertEquals(Objects.requireNonNullElse(siteId, DEFAULT_SITE_ID), document.get("siteId"));
+
+      assertEquals(documentId, document.get("documentId"));
+      assertEquals("CLEAN", document.get("status"));
+      assertEquals("2022-01-01", document.get("timestamp"));
+
+      Action action = actionsService.getActions(siteId, documentArtifact).get(1);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Fulltext(Typesense) plain/text document.
+   *
+   * @throws IOException IOException
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle07() throws IOException, ValidationException {
+    initProcessor("typesense", "chatgpt1");
+
+    String content = "this is some data";
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setContentType("text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      documentService.saveDocument(siteId, item, null);
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNull(lastRequest);
+
+      assertEquals(ActionStatus.COMPLETE,
+          actionsService.getActions(siteId, document).getFirst().status());
+
+      HttpResponse<String> response = typesense.getDocument(siteId, documentId);
+      assertEquals("200", String.valueOf(response.statusCode()));
+
+      Map<String, String> body = GSON.fromJson(response.body(), Map.class);
+      assertEquals(documentId, body.get("id"));
+      assertEquals(content, body.get("content"));
+    }
+  }
+
+  /**
+   * Handle RUNNING action in progress.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle08() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = Arrays.asList(
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.RUNNING)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.RUNNING, actions.get(0).status());
+      assertEquals(ActionStatus.PENDING, actions.get(1).status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNull(lastRequest);
+    }
+  }
+
+  /**
+   * Handle FAILED and PENDING action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandle09() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = Arrays.asList(
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.FAILED)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+
+      assertEquals(2, actions.size());
+      Action action = actions.getFirst();
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertNull(action.startDate());
+      assertNotNull(action.insertedDate());
+
+      action = actions.get(1);
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNotNull(lastRequest);
+    }
+  }
+
+  /**
+   * Handle Antivirus Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleAntiVirus() throws ValidationException {
+    for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        // given
+        DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+        List<Action> actions = List.of(createAction(document, type).build(siteId));
+        actionsService.saveNewActions(actions);
+
+        AwsEvent map = buildAwsEvent(siteId, document);
+
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        List<Action> list = actionsService.getActions(siteId, document);
+        assertEquals(1, list.size());
+        assertEquals(type, list.getFirst().type());
+        assertEquals(ActionStatus.RUNNING, list.getFirst().status());
+      }
+    }
+  }
+
+  /**
+   * Handle ASYNC_COMPLETE and PENDING actions.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleAsyncCompletePendingAction() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      CALLBACK.reset();
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = Arrays.asList(
+          createAction(document, ActionType.WEBHOOK).status(ActionStatus.ASYNC_COMPLETE)
+              .parameters(Map.of("url", URL + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      actions = actionsService.getActions(siteId, document);
+      assertEquals(2, actions.size());
+      assertEquals(ActionStatus.COMPLETE, actions.get(0).status());
+      assertEquals(ActionStatus.COMPLETE, actions.get(1).status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertNotNull(lastRequest);
+      assertEquals("/callback2", lastRequest.getPath().getValue());
+    }
+  }
+
+  /**
+   * Handle Fulltext that needs OCR Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleFulltext01() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, document);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.getFirst().type());
+      assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
+      assertEquals(ActionStatus.PENDING, list.get(0).status());
+      assertEquals(ActionType.FULLTEXT, list.get(1).type());
+      assertEquals(ActionStatus.PENDING, list.get(1).status());
+    }
+  }
+
+  /**
+   * Handle Fulltext that needs OCR Action.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleFulltext02() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "application/pdf");
+
+      List<Action> actions = Arrays.asList(
+          createAction(document, ActionType.OCR).status(ActionStatus.COMPLETE).build(siteId),
+          createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      List<Action> list = actionsService.getActions(siteId, document);
+      assertEquals(2, list.size());
+      assertEquals(ActionType.OCR, list.getFirst().type());
+      assertNull(list.getFirst().parameters());
+      assertEquals(ActionStatus.COMPLETE, list.get(0).status());
+      assertNull(list.get(0).message());
+      assertEquals(ActionType.FULLTEXT, list.get(1).type());
+      assertEquals(ActionStatus.FAILED, list.get(1).status());
+      assertEquals("no OCR document found", list.get(1).message());
+    }
+  }
+
+  /**
+   * Handle Fulltext(Opensearch) plain/text PATCH document not found 404, POST works.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleFulltext03() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_404, null), "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/fulltext"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertNotNull(resultmap.get("contentUrls").toString());
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Fulltext(Opensearch) 429 retry, 429, 502, 503, and 509.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testHandleFulltext04() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(DOCUMENT_ID_429, null), "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      for (int i = 1; i <= 5; i++) {
+        // when
+        processor.handleRequest(map, null);
+
+        // then
+        Action action = actionsService.getActions(siteId, document).getFirst();
+        assertRetryAction(action, i);
+      }
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(5, action.retryCount());
+      assertEquals(5, action.maxRetries());
+      assertEquals(ActionStatus.MAX_RETRIES_REACHED, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertEquals(
+          "http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+          action.message());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
+   *
+   */
+  @Test
+  public void testHandleOcr01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      List<Map<String, Object>> queries =
+          List.of(Map.of("text", "abc", "alias", "xyz", "pages", List.of("2", "4")));
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.OCR)
+          .parameters(
+              Map.of("ocrParseTypes", "FORMS, TABLES, QUERIES", "ocrTextractQueries", queries))
+          .build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertTrue(lastRequest.getPath().toString().endsWith("/ocr"));
+      Map<String, Object> resultmap = GSON.fromJson(lastRequest.getBodyAsString(), Map.class);
+      assertEquals("FORMS, TABLES, QUERIES",
+          String.join(", ", ((List<String>) resultmap.get("parseTypes"))));
+      assertEquals("[{pages=[2, 4], alias=xyz, text=abc}]",
+          resultmap.get("textractQueries").toString());
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.RUNNING, action.status());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNull(action.completedDate());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action application/pdf and SourceType MALWARE_SCAN.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpMalwareScan() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "malwareStatus",
+          AttributeDataType.STRING, null);
+
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.getFirst(), "malwareStatus", "CLEAN");
+    }
+  }
+
+  /**
+   * Handle Idp SourceType MALWARE_SCAN and missing scan results.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpMalwareScanMissingResponse() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "malwareStatus",
+          AttributeDataType.STRING, null);
+
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals("No Malware Scans found", action.message());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+
+      assertEquals(0, results.size());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action AI Prompt Result.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceAiPromptResult() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping =
+          createMapping("certificate_number", MappingAttributeSourceType.AI_PROMPT_RESULT);
+      mapping.attributes().forEach(a -> a.setLlmPromptEntityName("Another Prompt"));
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      // when
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassification() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping =
+          createMapping("certificate_number", MappingAttributeSourceType.DATA_CLASSIFICATION);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION / METADATA_EXTRACTION_RESULT, missing.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassificationMissing() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      for (MappingAttributeSourceType sourceType : List.of(
+          MappingAttributeSourceType.DATA_CLASSIFICATION,
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT,
+          MappingAttributeSourceType.AI_PROMPT_RESULT)) {
+
+        String documentId = ID.uuid();
+        DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+        Mapping mapping = createMapping("certificate_number", sourceType);
+
+        boolean hasLlmPromptEntityName =
+            MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType)
+                || MappingAttributeSourceType.AI_PROMPT_RESULT.equals(sourceType);
+        if (hasLlmPromptEntityName) {
+          mapping.attributes().forEach(a -> a.setLlmPromptEntityName("MyPrompt"));
+        }
+
+        MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+        processIdpRequest(siteId, document, mappingRecord);
+
+        // then
+        Action action = actionsService.getActions(siteId, document).getFirst();
+
+        if (MappingAttributeSourceType.METADATA_EXTRACTION_RESULT.equals(sourceType)) {
+          assertEquals("No Metadata Extraction Result found", action.message());
+        } else if (MappingAttributeSourceType.AI_PROMPT_RESULT.equals(sourceType)) {
+          assertEquals("No AI Prompt Result found", action.message());
+        } else {
+          assertEquals("No Data Classifications found", action.message());
+        }
+        assertEquals(ActionStatus.FAILED, action.status());
+        assertEquals(ActionType.IDP, action.type());
+        assertNotNull(action.startDate());
+        assertNotNull(action.insertedDate());
+        assertNotNull(action.completedDate());
+
+        List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+        assertEquals(0, results.size());
+      }
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action DATA_CLASSIFICATION with missing attribute value.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceDataClassificationMissingAttributeValue() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "someattr",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("someattr", MappingAttributeSourceType.DATA_CLASSIFICATION);
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(0, results.size());
+    }
+  }
+
+  /**
+   * Handle Idp with Mapping Action META_DATA Extraction.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testIdpSourceMetaDataExtraction() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = DOCUMENT_ID_DATACLASSIFICATION;
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
+          AttributeDataType.STRING, null);
+
+      Mapping mapping = createMapping("certificate_number",
+          MappingAttributeSourceType.METADATA_EXTRACTION_RESULT);
+      mapping.attributes().forEach(a -> a.setLlmPromptEntityName("Another Prompt"));
+
+      MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+      processIdpRequest(siteId, document, mappingRecord);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertNull(action.message());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      assertEquals(ActionType.IDP, action.type());
+      assertNotNull(action.startDate());
+      assertNotNull(action.insertedDate());
+      assertNotNull(action.completedDate());
+
+      List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+      assertEquals(1, results.size());
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "12");
+    }
+  }
+
+  /**
+   * Handle Invalid Request.
+   *
+   */
+  @Test
+  public void testInvalidRequest() {
+    // given
+    AwsEvent map = new AwsEvent(null);
+
+    // when
+    processor.handleRequest(map, null);
+
+    // then
+  }
+
+  /**
+   * Handle Move Action.
+   *
+   */
+  @Test
+  public void testMoveAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+      DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+      item.setPath("incoming/test.txt");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.MOVE)
+          .parameters(Map.of("path", "/approved/")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.MOVE, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+      DocumentRecord updated = documentService.findDocument(siteId, document);
+      assertEquals("approved/test.txt", updated.path());
+    }
+  }
+
+  @Test
+  public void testPath() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200", "path", "resized.png");
+    testResizeTemplate(parameters, 300, 200, "png");
+  }
+
+  /**
+   * Handle Pdf Export Action Google not configured.
+   *
+   */
+  @Test
+  public void testPdfExportAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Google Workload Identity is not configured", action.message());
+    }
+  }
+
+  /**
+   * Handle Pdf Export on non Google Deeplink Action.
+   *
+   */
+  @Test
+  public void testPdfExportAction02() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfigurationGoogle google = new SiteConfigurationGoogle("abc", "123");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().google(google).build(siteId);
+      configService.save(siteId, siteConfig);
+
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("PdfExport only supports Google DeepLink", action.message());
+    }
+  }
+
+  /**
+   * Handle Pdf Export Action.
+   *
+   */
+  @Test
+  public void testPdfExportAction03() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SiteConfigurationGoogle google = new SiteConfigurationGoogle("abc", "123");
+      SiteConfiguration siteConfig = SiteConfiguration.builder().google(google).build(siteId);
+      configService.save(siteId, siteConfig);
+
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setDeepLinkPath(
+          "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
+      documentService.saveDocument(siteId, item, null);
+
+      List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.PDFEXPORT, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertEquals("/integrations/google/drive/documents/" + documentId + "/export",
+          lastRequest.getPath().getValue());
+      assertEquals("{\"outputType\": \"PDF\"}", lastRequest.getBodyAsString());
+
+      if (siteId != null) {
+        assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+      }
+    }
+  }
+
+  /**
+   * Handle Publish Action.
+   *
+   */
+  @Test
+  public void testPublishAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = createDocument2(siteId, "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      String content = "this is some data";
+      s3Service.putObject(BUCKET_NAME, s3Key, content.getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions = List.of(createAction(document, ActionType.PUBLISH).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionType.PUBLISH, action.type());
+      assertEquals(ActionStatus.COMPLETE, action.status());
+
+      DocumentPublicationRecord pv =
+          documentService.findPublishDocument(siteId, document.documentId());
+      assertEquals(document.documentId(), pv.getDocumentId());
+      assertEquals("text/plain", pv.getContentType());
+      assertEquals(document.documentId(), pv.getPath());
+      assertEquals("joe", pv.getUserId());
+      assertNotNull(pv.getS3version());
+
+      AttributeRecord attribute =
+          attributeService.getAttribute(siteId, AttributeKeyReserved.PUBLICATION.getKey());
+      assertNotNull(attribute);
+
+      SearchAttributeCriteria attr = new SearchAttributeCriteria(
+          AttributeKeyReserved.PUBLICATION.getKey(), null, null, null, null);
+      SearchQuery req = new SearchQueryBuilder().attribute(attr).build();
+      List<DynamicDocumentItem> docs =
+          notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
+      assertEquals(1, docs.size());
+    }
+  }
+
+  /**
+   * Handle Queue Action.
+   *
+   */
+  @Test
+  public void testQueueAction01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = ID.uuid();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      String name = "testqueue#" + documentId;
+
+      Action action = createAction(document, ActionType.QUEUE).queueId(name).build(siteId);
+      List<Action> actions = List.of(action);
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      var raction = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.IN_QUEUE, raction.status());
+      assertEquals(SiteIdKeyGenerator.createDatabaseKey(siteId, "actions#IN_QUEUE#"),
+          raction.key().gsi2Pk());
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      assertEquals(df.format(action.insertedDate()), df.format(raction.insertedDate()));
+    }
+  }
+
+  @Test
+  public void testResizeBmpToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("bmp", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizeGifToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("gif", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizeJpgToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("jpg", VALID_IMAGE_FORMATS);
+  }
+
+  @Test
+  public void testResizePngToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("png", VALID_IMAGE_FORMATS);
+  }
+
+  public void testResizeTemplate(final Map<String, Object> parameters, final int expectedWidth,
+      final int expectedHeight, final String srcImageFormat)
+      throws IOException, ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String documentId = setupImageDocument(siteId, srcImageFormat);
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
+
+    // when
+    processResizeAction(siteId, document, parameters);
+
+    // then
+    verifySuccessfulResize(siteId, document, s3Key, expectedWidth, expectedHeight, srcImageFormat,
+        parameters);
+    removeAllS3Objects();
+  }
+
+  @Test
+  public void testResizeTifToAllFormats() throws IOException, ValidationException {
+    testResizeToAllFormatsTemplate("tif", List.of("gif", "png", "tif"));
+  }
+
+  private void testResizeToAllFormatsTemplate(final String srcImageFormat,
+      final List<String> resImageFormats) throws IOException, ValidationException {
+    for (String resImageFormat : resImageFormats) {
+      Map<String, Object> parameters =
+          Map.of("width", "300", "height", "200", "outputType", resImageFormat);
+      testResizeTemplate(parameters, 300, 200, srcImageFormat);
+    }
+  }
+
+  @Test
+  public void testResizeWithAutoWidthAndFixedHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "auto", "height", "100");
+    testResizeTemplate(parameters, 133, 100, "png");
+  }
+
+  @Test
+  public void testResizeWithFixedWidthAndAutoHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "100", "height", "auto");
+    testResizeTemplate(parameters, 100, 75, "png");
+  }
+
+  @Test
+  public void testResizeWithFixedWidthAndHeight() throws IOException, ValidationException {
+    Map<String, Object> parameters = Map.of("width", "300", "height", "200");
+    testResizeTemplate(parameters, 300, 200, "png");
+  }
+
+  private void validateAttributes(final Map<String, Object> document) {
+    Map<String, Map<String, Object>> attrList =
+        (Map<String, Map<String, Object>>) document.get("attributes");
+    assertEquals(1, attrList.size());
+
+    assertTrue(attrList.containsKey("category"));
+    Map<String, Object> attrMap = attrList.get("category");
+    assertEquals(2, attrMap.size());
+    assertEquals("STRING", attrMap.get("valueType"));
+    assertEquals("[other, person]", attrMap.get("stringValues").toString());
+  }
+
+  private void verifyDocumentAttributes(final String siteId, final DocumentArtifact document) {
+    List<DocumentAttributeRecord> attributes =
+        documentService.findDocumentAttributes(siteId, document, null, 2).getResults();
+    assertEquals(1, attributes.size());
+    DocumentAttributeRecord attribute = attributes.getFirst();
+    assertEquals("Relationships", attribute.getKey());
+    assertTrue(attribute.getStringValue().startsWith("RENDITION#"));
+  }
+
+  // Helper method to verify successful resize operation.
+  private void verifySuccessfulResize(final String siteId, final DocumentArtifact document,
+      final String s3Key, final int expectedWidth, final int expectedHeight,
+      final String srcImageFormat, final Map<String, Object> parameters) throws IOException {
+    String imageKey = getResizedImageKey(s3Key);
+    String resImageFormat = (String) parameters.getOrDefault("outputType", srcImageFormat);
+
+    verifyAction(siteId, document);
+    verifyDocumentAttributes(siteId, document);
+    verifyData(expectedWidth, expectedHeight, imageKey, resImageFormat);
+
+    String path = (String) parameters.getOrDefault("path",
+        "test-" + expectedWidth + "x" + expectedHeight + "." + resImageFormat);
+    verifyMetadata(expectedWidth, expectedHeight, imageKey, path);
+  }
+}

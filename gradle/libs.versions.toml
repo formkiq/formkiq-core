@@ -1,0 +1,117 @@
+[versions]
+aws-lambda-core = "1.4.0"
+aws-lambda-events = "3.16.1"
+aws-sdk = "2.42.8"
+aws-sdk-s3 = "2.43.1"
+aws-sdk-secrets-manager = "2.31.59"
+aws-xray = "2.20.0"
+commons-cli = "1.11.0"
+commons-codec = "1.20.0"
+commons-csv = "1.14.1"
+commons-lang3 = "3.20.0"
+formkiq-client = "1.19.0"
+formkiq-graalvm-annotations = "1.2.0"
+formkiq-graalvm-annotations-processor = "1.5.2"
+formkiq-graalvm-annotations-processor-secrets-manager = "1.5.1"
+formkiq-java-base-plugin = "1.0.11"
+formkiq-lambda-runtime-graalvm = "2.6.0"
+formkiq-ytt-plugin = "1.0.1"
+gson = "2.13.2"
+gson-secrets-manager = "2.13.1"
+guava = "33.5.0-jre"
+java-websocket = "1.6.0"
+jjwt = "0.13.0"
+jna = "5.18.1"
+junit = "6.0.3"
+json = "20250517"
+license-report-plugin = "3.1.1"
+minio = "8.6.0"
+mockserver = "5.15.0"
+netty = "4.2.10.Final"
+openapi-generator-plugin = "7.20.0"
+pdfbox = "3.0.6"
+playwright = "1.57.0"
+poi = "5.5.1"
+slf4j = "2.0.17"
+tess4j = "5.13.0"
+testcontainers = "2.0.3"
+testcontainers-localstack = "1.21.4"
+thumbnailator = "0.4.21"
+ulid = "5.2.4"
+undercouch-download-plugin = "5.7.0"
+
+[libraries]
+aws-lambda-core = { module = "com.amazonaws:aws-lambda-java-core", version.ref = "aws-lambda-core" }
+aws-lambda-events = { module = "com.amazonaws:aws-lambda-java-events", version.ref = "aws-lambda-events" }
+aws-sdk-apigateway = { module = "software.amazon.awssdk:apigateway", version.ref = "aws-sdk" }
+aws-sdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws-sdk" }
+aws-sdk-cognitoidentity = { module = "software.amazon.awssdk:cognitoidentity", version.ref = "aws-sdk" }
+aws-sdk-cognitoidentityprovider = { module = "software.amazon.awssdk:cognitoidentityprovider", version.ref = "aws-sdk" }
+aws-sdk-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "aws-sdk" }
+aws-sdk-eventbridge = { module = "software.amazon.awssdk:eventbridge", version.ref = "aws-sdk" }
+aws-sdk-http-client-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "aws-sdk" }
+aws-sdk-iam = { module = "software.amazon.awssdk:iam", version.ref = "aws-sdk" }
+aws-sdk-lambda = { module = "software.amazon.awssdk:lambda", version.ref = "aws-sdk" }
+aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+aws-sdk-s3-adapter = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk-s3" }
+aws-sdk-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "aws-sdk-secrets-manager" }
+aws-sdk-ses = { module = "software.amazon.awssdk:ses", version.ref = "aws-sdk" }
+aws-sdk-sns = { module = "software.amazon.awssdk:sns", version.ref = "aws-sdk" }
+aws-sdk-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws-sdk" }
+aws-sdk-ssm = { module = "software.amazon.awssdk:ssm", version.ref = "aws-sdk" }
+aws-sdk-sso = { module = "software.amazon.awssdk:sso", version.ref = "aws-sdk" }
+aws-sdk-ssooidc = { module = "software.amazon.awssdk:ssooidc", version.ref = "aws-sdk" }
+aws-sdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws-sdk" }
+aws-sdk-url-connection-client = { module = "software.amazon.awssdk:url-connection-client", version.ref = "aws-sdk" }
+aws-sdk-url-connection-client-s3 = { module = "software.amazon.awssdk:url-connection-client", version.ref = "aws-sdk-s3" }
+aws-sdk-url-connection-client-secrets-manager = { module = "software.amazon.awssdk:url-connection-client", version.ref = "aws-sdk-secrets-manager" }
+aws-sdk-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws-sdk" }
+aws-xray-recorder-sdk-aws-sdk-v2 = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2", version.ref = "aws-xray" }
+commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commons-csv" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+formkiq-client = { module = "com.formkiq:client", version.ref = "formkiq-client" }
+formkiq-graalvm-annotations = { module = "com.formkiq:graalvm-annotations", version.ref = "formkiq-graalvm-annotations" }
+formkiq-graalvm-annotations-processor = { module = "com.formkiq:graalvm-annotations-processor", version.ref = "formkiq-graalvm-annotations-processor" }
+formkiq-graalvm-annotations-processor-secrets-manager = { module = "com.formkiq:graalvm-annotations-processor", version.ref = "formkiq-graalvm-annotations-processor-secrets-manager" }
+formkiq-lambda-runtime-graalvm = { module = "com.formkiq:lambda-runtime-graalvm", version.ref = "formkiq-lambda-runtime-graalvm" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+gson-secrets-manager = { module = "com.google.code.gson:gson", version.ref = "gson-secrets-manager" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "java-websocket" }
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-gson = { module = "io.jsonwebtoken:jjwt-gson", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+json = { module = "org.json:json", version.ref = "json" }
+minio = { module = "io.minio:minio", version.ref = "minio" }
+mockserver-netty = { module = "org.mock-server:mockserver-netty", version.ref = "mockserver" }
+netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+poi-scratchpad = { module = "org.apache.poi:poi-scratchpad", version.ref = "poi" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+tess4j = { module = "net.sourceforge.tess4j:tess4j", version.ref = "tess4j" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers-localstack" }
+testcontainers-localstack = { module = "org.testcontainers:localstack", version.ref = "testcontainers-localstack" }
+testcontainers-localstack-bom = { module = "org.testcontainers:testcontainers-localstack" }
+testcontainers-testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+thumbnailator = { module = "net.coobird:thumbnailator", version.ref = "thumbnailator" }
+ulid-creator = { module = "com.github.f4b6a3:ulid-creator", version.ref = "ulid" }
+
+[plugins]
+docker-compose = { id = "com.avast.gradle.docker-compose", version = "0.17.21" }
+formkiq-java-base = { id = "com.formkiq.gradle.java-base", version.ref = "formkiq-java-base-plugin" }
+formkiq-ytt = { id = "com.formkiq.gradle.ytt", version.ref = "formkiq-ytt-plugin" }
+license-report = { id = "com.github.jk1.dependency-license-report", version.ref = "license-report-plugin" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator-plugin" }
+undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download-plugin" }

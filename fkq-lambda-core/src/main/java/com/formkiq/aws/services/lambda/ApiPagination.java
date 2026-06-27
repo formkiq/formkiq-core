@@ -24,7 +24,6 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.PaginationMapToken;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
@@ -35,20 +34,18 @@ import com.formkiq.graalvm.annotations.Reflectable;
 public class ApiPagination {
 
   /** String Next Token. */
-  @Reflectable
-  private String next;
+  private final String next;
   /** Has Next Token. */
-  @Reflectable
   private boolean hasNext;
+
   /** Previous Token. */
-  @Reflectable
   private String previous;
+
   /** Query Limit. */
-  @Reflectable
   private int limit;
-  /** {@link PaginationMapToken}. */
-  @Reflectable
-  private PaginationMapToken startkey;
+
+  /** Next token string. */
+  private String nextToken;
 
   /**
    * constructor.
@@ -66,6 +63,7 @@ public class ApiPagination {
     return this.limit;
   }
 
+
   /**
    * Get Next Token.
    * 
@@ -76,21 +74,21 @@ public class ApiPagination {
   }
 
   /**
+   * Get Next Token.
+   * 
+   * @return {@link String}
+   */
+  public String getNextToken() {
+    return nextToken;
+  }
+
+  /**
    * Get Previous Token.
    * 
    * @return {@link String}
    */
   public String getPrevious() {
     return this.previous;
-  }
-
-  /**
-   * Get {@link PaginationMapToken}.
-   * 
-   * @return {@link PaginationMapToken}
-   */
-  public PaginationMapToken getStartkey() {
-    return this.startkey;
   }
 
   /**
@@ -130,20 +128,20 @@ public class ApiPagination {
   }
 
   /**
+   * Set Next Token.
+   * 
+   * @param token {@link String}
+   */
+  public void setNextToken(final String token) {
+    this.nextToken = token;
+  }
+
+  /**
    * Set Previous Token.
    * 
    * @param token {@link String}
    */
   public void setPrevious(final String token) {
     this.previous = token;
-  }
-
-  /**
-   * Set {@link PaginationMapToken}.
-   * 
-   * @param token {@link PaginationMapToken}
-   */
-  public void setStartkey(final PaginationMapToken token) {
-    this.startkey = token;
   }
 }

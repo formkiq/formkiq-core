@@ -13,6 +13,13 @@ Parameters:
     Description: The formkiq version
     AllowedPattern: ".+"
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture for this build artifact
+    AllowedValues:
+      - x86_64
+      - arm64
+
   VpcStackName:
     Type: String
     Description: >
@@ -41,3 +48,8 @@ Outputs:
     Description: The FormKiQ version
     Value:
       Ref: FormKiQVersion
+
+  LambdaArchitecture:
+    Description: Lambda instruction set architecture for this build artifact
+    Value:
+      Ref: LambdaArchitecture

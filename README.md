@@ -5,7 +5,7 @@
 [Get Started](https://formkiq.com) · [Documentation](https://docs.formkiq.com/) · [API Reference](https://docs.formkiq.com/docs/category/api-reference) · [Contact Us](mailto:info@formkiq.com)
 
 [![GitHub Stars](https://img.shields.io/github/stars/formkiq/formkiq-core?color=FFD700&label=Stars&logo=Github)](https://github.com/formkiq/formkiq-core)
-<a href="https://github.com/formkiq/formkiq-core/tree/main/LICENSE.txt" target="_blank">
+<a href="https://github.com/formkiq/formkiq-core/tree/main/LICENSE" target="_blank">
 <img src="https://img.shields.io/static/v1?label=license&message=MIT&color=white" alt="License">
 </a>
 
@@ -13,7 +13,7 @@
 
 # FormKiQ Core
 
-FormKiQ is a production-ready document management platform built on AWS serverless infrastructure that deployed in **your** AWS account. Deploy a complete API-first document layer alongside your application's data tier—handling storage, metadata, search, and access control without the complexity of building it yourself.
+FormKiQ Core is the open-source backend for FormKiQ: an API-first document management platform that runs in your AWS account or locally with Docker. It provides document storage, metadata, tagging, search, versioning, events, and access control using AWS-native services.
 
 ## Who it’s for
 - Teams building secure file workflows that must remain in their AWS accounts.
@@ -44,15 +44,63 @@ FormKiQ is a production-ready document management platform built on AWS serverle
 - Searchable knowledge stores over PDFs/images for support and operations teams.
 
 ## Deployment options
-- Deploy to your AWS account via CloudFormation (Quickstart below).
+- Deploy to your AWS account with the [AWS SAM CLI](https://docs.formkiq.com/docs/getting-started/quick-start#install-with-sam-cli) or CloudFormation links from the Quickstart Guide.
+- Run locally with Docker using the Netty server package.
 - Evaluate in the hosted demo environment (read-only).
 - Inquire about managed workspaces if you prefer a turnkey setup.
 
 ## Quick Start
-1. **AWS deploy**: [Quickstart Guide](https://docs.formkiq.com/docs/getting-started/quick-start) (CloudFormation).
-2. **Hosted demo**: [Explore](https://explore.tryformkiq.com/) — Email: `demo@formkiq.com`, Password: `tryformkiq`.
-3. **API walkthrough**: [Step-by-step](https://docs.formkiq.com/docs/getting-started/api-walkthrough) to integrate quickly.
-   - Requirements: AWS account, CLI/CloudFormation access, Java/Gradle for local builds.
+1. **Run locally with Docker**: build and run the local FormKiQ stack on your machine.
+2. **AWS deploy**: use the [AWS SAM CLI](https://docs.formkiq.com/docs/getting-started/quick-start#install-with-sam-cli) or CloudFormation launch links from the [Quickstart Guide](https://docs.formkiq.com/docs/getting-started/quick-start).
+3. **Hosted demo**: [Explore](https://explore.tryformkiq.com/) — Email: `demo@formkiq.com`, Password: `tryformkiq`.
+4. **API walkthrough**: [Step-by-step](https://docs.formkiq.com/docs/getting-started/api-walkthrough) to integrate quickly.
+
+### Run locally with Docker
+The `apps/netty-server` module mimics the AWS API Gateway + Lambda runtime so FormKiQ Core can run as a Docker Compose stack.
+
+Requirements:
+- Docker
+- Java 25
+- Gradle wrapper from this repository
+
+The local stack uses separate S3 endpoints for browser-facing presigned URLs and
+container-side document actions. API responses use `S3_PRESIGNER_URL=http://localhost:9000`,
+while local action processing uses `API_URL=http://api:8080` and
+`S3_ACTIONS_PRESIGNER_URL=http://minio:9000` so containers can reach the API and MinIO
+through Docker DNS.
+
+Build the local Docker package:
+
+```bash
+./gradlew assembleNettyServer
+```
+
+Unpack and start FormKiQ:
+
+```bash
+cd build/distributions
+unzip formkiq-core-netty-server-*.zip
+cd formkiq-core-netty-server-*
+docker compose up --build
+```
+
+Open:
+- Console: <http://localhost>
+- API: <http://localhost:8080>
+- Keycloak: <http://localhost:8081>
+- MinIO: <http://localhost:9000>
+- DynamoDB Local: <http://localhost:8000>
+- Typesense: <http://localhost:8108>
+
+Default local login:
+- Username: `admin@me.com`
+- Password: `password`
+
+### Common API flow
+1. Log in with `POST /login`.
+2. Upload or create a document with `POST /documents`.
+3. Read document content or metadata with `GET /documents/{documentId}`.
+4. Search, tag, update, or route documents through events as needed.
 
 ## Architecture
 Serverless on AWS: Lambda + API Gateway + S3 + DynamoDB + OpenSearch, with optional modules for OCR, Typesense, and event handling.
@@ -62,9 +110,23 @@ Serverless on AWS: Lambda + API Gateway + S3 + DynamoDB + OpenSearch, with optio
 </div>
 
 ## Project structure & commands
-- Modules: `lambda-*` and `lambda-*-graalvm` functions, AWS adapters (`aws-*`), shared libs (`fkq-*`, `http*`, `strings`), console UI (`console`).
+- `apps/`: Lambda apps, console, and the local Netty server.
+- `domain/`: document, event, action, OCR, and plugin domain modules.
+- `adapters/aws/`: AWS service adapters.
+- `libs/`: shared libraries.
+- `packaging/`: AWS Cloud, CloudFormation, and OpenAPI packaging.
 - Templates/assets: `src/main/resources/cloudformation`, `docs/`, `images/`, `docker/`.
-- Build/test: `./gradlew clean build` (full build + tests), `./gradlew test` (tests only), `./gradlew spotlessCheck` (format), `./gradlew licenseReport` (license inventory).
+
+Common commands:
+
+```bash
+./gradlew assembleAwsCloud       # Build the AWS distribution ZIP
+./gradlew assembleNettyServer    # Build the local Docker distribution ZIP
+./gradlew integrationtests       # Run Docker-based Netty integration tests
+./gradlew test                   # Run unit tests
+./gradlew spotlessCheck          # Verify formatting
+./gradlew licenseReport          # Regenerate license inventory
+```
 
 ## Security, compliance, and scale
 - Data, encryption keys, and access policies remain in your AWS account; IAM secures every interaction.
@@ -89,4 +151,4 @@ Serverless on AWS: Lambda + API Gateway + S3 + DynamoDB + OpenSearch, with optio
 
 ## License
 
-MIT License - © 2020-2025 FormKiQ, Inc. See [LICENSE](LICENSE.txt) for full details.
+MIT License - © 2020-2025 FormKiQ, Inc. See [LICENSE](LICENSE) for full details.

@@ -27,17 +27,30 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 
 /**
  * 
- * Interceptor to allow injecting extra actions into the {@link ApiAuthorization}.
+ * Interceptor to allow injecting extra actions before and after {@link ApiAuthorization} is built.
  *
  */
 public interface ApiAuthorizationInterceptor {
 
   /**
-   * Update {@link ApiAuthorization} object.
+   * Hook invoked after {@link ApiAuthorization} is built and before it is validated.
    * 
    * @param event {@link ApiGatewayRequestEvent}
    * @param authorization {@link ApiAuthorization}
    * @throws Exception Exception
    */
-  void update(ApiGatewayRequestEvent event, ApiAuthorization authorization) throws Exception;
+  default void afterBuildAuthorization(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) throws Exception {
+    // default empty implementation
+  }
+
+  /**
+   * Hook invoked before {@link ApiAuthorization} is built.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @throws Exception Exception
+   */
+  default void beforeBuildAuthorization(final ApiGatewayRequestEvent event) throws Exception {
+    // default empty implementation
+  }
 }

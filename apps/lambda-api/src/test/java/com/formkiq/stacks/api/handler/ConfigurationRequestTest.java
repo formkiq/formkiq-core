@@ -1,0 +1,875 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.aws.ssm.SsmService;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentConfig;
+import com.formkiq.client.model.DocumentConfigContentTypes;
+import com.formkiq.client.model.DocumentConfigDispositionAction;
+import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
+import com.formkiq.client.model.DocusignConfig;
+import com.formkiq.client.model.GetConfigurationResponse;
+import com.formkiq.client.model.GetSystemConfigurationResponse;
+import com.formkiq.client.model.GoogleConfig;
+import com.formkiq.client.model.OcrConfig;
+import com.formkiq.client.model.UpdateConfigurationRequest;
+import com.formkiq.client.model.UpdateConfigurationResponse;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.GsonUtil;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.SetBearers;
+import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateSystemConfigurationRequestBuilder;
+import com.formkiq.urls.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/** Unit Tests for request /sites/{siteId}/configuration. */
+public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
+
+  /** Test RSA Private Key. */
+  private static final String RSA_PRIVATE_KEY = """
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDil6aKnJO2L7ih
+      B0VP8D2mDnYaX/RmAe66nNQDX/fvnVD+sYk0Rf2uBXlpKmcJ/ZPFdXG7vNOgx7de
+      V6tNVxbq7kmC7+KEuBMnUQW5dvUm3yFRaWrfmerSUJWcBGzXZhoH8WSsJ1P86vh4
+      kkOXLa8zggGA3GKBjQvXjXwJKEZOSlGi/MUOUofLPU74TCeSg3LCpUC4+WZ0IY0T
+      w3mnX83PkZFykSFVsxFsR2IRE6CLVHrQNExRrjoBcfXHesfn6bJs82/UUkDjXhIK
+      I2ChgE9WUVDQTtv5YqOUAxNpk2iQu/+eMQIl0orJGQXkvQPsGC4wgyLpaIHJiwkK
+      yYdCKNtTAgMBAAECggEAFbi479+7r0La3aDvTY73sfP/8V5SdPbpdj0ze9FW2MMJ
+      cSj+wKKXA3gl3+V/NC95W3v7N6aN2QNcOjCITOU03reSF3m8isGEoIe9Vz6mmJ/a
+      N042PxIntxqfhPHNp0Zz52AGKRSqEfxKbnCDBzqLaZIkZ8B4tveY84RuKAiS2M1L
+      4AA+Pyd7JejyK1SuczigQEUcVoakLECxfO9hVd3CIuCWTCiqQRrukhSW0jqTrTna
+      fgNOOEn1exkpTDlwjdQkCUMqgJ9F2HsyMXQ4eX6u6+GXr16HsGzA61ZVG31dZf9I
+      xWZk9fUXSe1Pzw02p3jWbZ5P2CpofXJ0YMrHhS+S1QKBgQD1JfgnzlQIPWMuM2il
+      jml6TzPI2AaJ8owTpRBSWMhqj7CRJgQrxVk78H5aQ/NDU6wGt9g60vSvxNgr6Ff5
+      dWYwhrP24VMx0gHaWdjOP3nNnj4jxeXw0/QJeb/qOY0PXgFHgfecTvQIUmfNeJPS
+      G0fBh0h6HcEkX1eSBqFNx5rGHQKBgQDsn2eU0b2n28I0pJTfecycgdAFFfFDmmzh
+      IZGq/q4032YOl3J5+/WGePJfmboR4dddtaKdPJ/BfSPTt4ocpwJ76dNWKLDs+L8l
+      lyICjb3gaj7VuBHL9JPPs/lt79kAFnFXXeIPVk6JWW5X2Ej9d5i0moeX4s8MFmeh
+      LjPoEL+sLwKBgBshcZ5OKmSjDpftXpZ79VZw74U5yzd3HWOLMAw9ASkx79OQhoOl
+      mqOUkRdCT+jSmMZBkG+qKyRMv7PUSfA0uvOB5Obctw1bdZMJwIHK6psD+VKSM0l8
+      25Q04jV02xSpTbDxREsLPdyx6gUGZC2rkTxs0WuaYWa6GoHxs+ZcwddNAoGBANju
+      TzUlkN16YLKIjJ/Q92AotsBi3Hyg7976OqTstmNsyBDqkZ35+5+b9IDm26qXRS35
+      XqsOsFvgUV9BblJUXrehqAneZk3qwrtAsoJq1kAOx6qCBXbZtEWAd1VtxaEJ8kEp
+      ph1vf7L2FW5dsJUH9yzkWxlJa45mX/1p8VZ5PHArAoGAZxeL5r6SX0Rv/hLkE1Cs
+      v7od0OhmDPCMGm8djdpVMEFkhr0636c/r61IbycWI/c3k6njd4hhMSWfHmwDvO/a
+      9i7pWanM1abM4es/tdATp56uTWntoa2ZQTHieFtSkYlufDbgLaCIb4HCStimbzye
+      xm4Xo6+jDbifGOqFT4Ofeyc=
+      -----END RSA PRIVATE KEY-----
+           \s""";
+
+  private static void assertRententionAndDisposition(final GetConfigurationResponse config,
+      final DocumentConfigDispositionAction action) {
+    assertNotNull(config);
+    assertNotNull(config.getDocument());
+    assertNotNull(config.getDocument().getRetentionAndDisposition());
+
+    var retentionAndDisposition = config.getDocument().getRetentionAndDisposition();
+    assertEquals(action, retentionAndDisposition.getDispositionAction());
+    assertEquals(-1, retentionAndDisposition.getSoftDeleteRetentionInDays());
+  }
+
+  private static boolean getSsoAutomaticSignIn(
+      final ApiHttpResponse<GetSystemConfigurationResponse> resp) {
+    Boolean ssoAutomaticSignIn = requireNonNull(resp.response().getWebui()).getSsoAutomaticSignIn();
+    return ssoAutomaticSignIn != null ? ssoAutomaticSignIn : false;
+  }
+
+  /** {@link ConfigService}. */
+  private ConfigService config;
+
+  private GetConfigurationResponse assertContentTypeAllowed(
+      final UpdateConfigurationResponse response, final String contentType, final String expected)
+      throws ApiException {
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocumentConfig doc = configuration.getDocument();
+    assertNotNull(doc);
+    DocumentConfigContentTypes contentTypes = doc.getContentTypes();
+    assertNotNull(contentTypes);
+    assertEquals(contentType, String.join(",", notNull(contentTypes.getAllowlist())));
+    assertEquals(expected, String.join(",", notNull(contentTypes.getDenylist())));
+
+    return configuration;
+  }
+
+  /**
+   * Before Each.
+   */
+  @BeforeEach
+  public void beforeEach() {
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(ConfigService.class, new ConfigServiceExtension());
+    this.config = awsServices.getExtension(ConfigService.class);
+  }
+
+  private boolean getSsoLoginRedirectEnabled(final S3Service s3) {
+    Map<String, Object> consoleConfig = GsonUtil.getInstance()
+        .fromJson(s3.getContentAsString(BUCKET_NAME, "1.0/assets/config.json", null), Map.class);
+    return (Boolean) consoleConfig.get("ssoAutomaticSignIn");
+  }
+
+  /**
+   * Get /config default as Admin.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetConfiguration01() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    String group = "Admins";
+
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(siteId);
+    this.config.save(siteId, siteConfig);
+
+    setBearerToken(group);
+
+    // when
+    UpdateConfigurationResponse updateConfig = this.systemApi.updateConfiguration(siteId,
+        new UpdateConfigurationRequest().chatGptApiKey("anothervalue"));
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", updateConfig.getMessage());
+    assertEquals("anot*******alue", response.getChatGptApiKey());
+    assertEquals("", response.getMaxContentLengthBytes());
+    assertEquals("", response.getMaxDocuments());
+    assertEquals("", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+  }
+
+  /**
+   * Get /config default as User.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetConfiguration02() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(siteId);
+    this.config.save(siteId, siteConfig);
+
+    String group = "Admins";
+    setBearerToken(group);
+
+    // when
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("some*******alue", response.getChatGptApiKey());
+    assertEquals("", response.getMaxContentLengthBytes());
+    assertEquals("", response.getMaxDocuments());
+    assertEquals("", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+  }
+
+  /**
+   * Get /config for siteId, Config in default.
+   *
+   * @throws Exception an error has occurred
+   */
+
+  @Test
+  public void testHandleGetConfiguration03() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    String group = "Admins";
+    setBearerToken(group);
+
+    SiteConfiguration siteConfig =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build((String) null);
+    this.config.save(null, siteConfig);
+
+    // when
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("", response.getChatGptApiKey());
+    assertEquals("", response.getMaxContentLengthBytes());
+    assertEquals("", response.getMaxDocuments());
+    assertEquals("", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+  }
+
+  /**
+   * Get /config for siteId, Config in siteId.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetConfiguration04() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    String group = "Admins";
+    setBearerToken(group);
+
+    SiteConfiguration siteConfig0 =
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build((String) null);
+    this.config.save(null, siteConfig0);
+
+    SiteConfiguration siteConfig1 =
+        SiteConfiguration.builder().chatGptApiKey("anothervalue").build(siteId);
+    this.config.save(siteId, siteConfig1);
+
+    // when
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("anot*******alue", response.getChatGptApiKey());
+    assertEquals("", response.getMaxContentLengthBytes());
+    assertEquals("", response.getMaxDocuments());
+    assertEquals("", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+  }
+
+  /**
+   * Get /config for API_KEY SiteId.
+   *
+   */
+  @Test
+  public void testHandleGetConfigurationApiKey() {
+    // given
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
+
+    // when
+    try {
+      this.systemApi.getConfiguration("API_KEY");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"'API_KEY' siteId is reserved\"}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * Get /config for Global SiteId.
+   *
+   */
+  @Test
+  public void testHandleGetConfigurationGlobal() {
+    // given
+    new SetBearers().apply(this.client, new String[] {"Admins", "other"});
+
+    // when
+    try {
+      this.systemApi.getConfiguration("global");
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"'global' siteId is reserved\"}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH /config default as user.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration02() {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
+        .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      final int code = 401;
+      assertEquals(code, e.getCode());
+    }
+  }
+
+  /**
+   * PATCH google configuration /config default as Admin.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePatchConfiguration03() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().google(
+        new GoogleConfig().workloadIdentityAudience("123").workloadIdentityServiceAccount("444"));
+
+    // when
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", configResponse.getMessage());
+    GoogleConfig google = response.getGoogle();
+
+    assertNotNull(google);
+
+    assertEquals("123", google.getWorkloadIdentityAudience());
+    assertEquals("444", google.getWorkloadIdentityServiceAccount());
+  }
+
+  /**
+   * PATCH google invalid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration04() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().google(new GoogleConfig().workloadIdentityAudience("123"));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"google\"," + "\"error\":\"all 'googleWorkloadIdentityAudience', "
+              + "'googleWorkloadIdentityServiceAccount' " + "are required for google setup\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH google invalid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration05() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().integrationKey("111").rsaPrivateKey("222"));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"docusign\","
+          + "\"error\":\"all 'docusignUserId', 'docusignIntegrationKey', 'docusignRsaPrivateKey' "
+          + "are required for docusign setup\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH docusign valid configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration06() throws ApiException {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().userId("123").integrationKey("111")
+            .rsaPrivateKey(RSA_PRIVATE_KEY).hmacSignature("222ljasdlksjakldjsadlsa"));
+
+    this.systemApi.updateConfiguration(siteId, req);
+
+    // when
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertNotNull(configuration.getDocusign());
+    assertEquals("111", configuration.getDocusign().getIntegrationKey());
+    assertEquals("123", configuration.getDocusign().getUserId());
+    assertEquals("222l*******dlsa", configuration.getDocusign().getHmacSignature());
+    assertEquals("""
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEvQIB*******qFT4Ofeyc=
+        -----END RSA PRIVATE KEY-----""", configuration.getDocusign().getRsaPrivateKey());
+  }
+
+  /**
+   * PATCH docusign invalid RSA key configuration /config default as Admin.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration07() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().docusign(
+        new DocusignConfig().userId("123").integrationKey("111").rsaPrivateKey("3423432432432423"));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"docusignRsaPrivateKey\","
+          + "\"error\":\"invalid RSA Private Key\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH OCR.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration08() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().ocr(new OcrConfig()
+        .maxPagesPerTransaction(new BigDecimal(2)).maxTransactions(new BigDecimal(1)));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    assertNotNull(c.getOcr());
+    assertEquals("2",
+        Objects.formatDouble(requireNonNull(c.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("1",
+        Objects.formatDouble(requireNonNull(c.getOcr().getMaxTransactions()).doubleValue()));
+  }
+
+  /**
+   * PATCH empty request.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration09() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest();
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"error\":\"missing required body parameters\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH partial docusign request.
+   *
+   */
+  @Test
+  public void testHandlePatchConfiguration10() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().maxDocuments("100000")
+        .docusign(new DocusignConfig().userId("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e")
+            .integrationKey("{integrationKey}").hmacSignature(null)
+            .rsaPrivateKey("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEowIB*******vWOAMrFWnb\\n"
+                + "-----END RSA PRIVATE KEY-----\""));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+
+    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    DocusignConfig docusign = c.getDocusign();
+    assertNotNull(docusign);
+    assertEquals("{integrationKey}", docusign.getIntegrationKey());
+    assertNull(docusign.getHmacSignature());
+    assertEquals("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e", docusign.getUserId());
+    assertEquals("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEow*******OAMrFWnb"
+        + "\\n-----END RSA PRIVATE KEY-----\"", docusign.getRsaPrivateKey());
+  }
+
+  /**
+   * PUT /config default as Admin.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePutConfiguration01() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey("anotherkey")
+        .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
+
+    // when
+    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
+    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", configResponse.getMessage());
+
+    assertEquals("anot*******rkey", response.getChatGptApiKey());
+    assertEquals("1000000", response.getMaxContentLengthBytes());
+    assertEquals("1000", response.getMaxDocuments());
+    assertEquals("5", response.getMaxWebhooks());
+    assertEquals("", response.getNotificationEmail());
+    assertNotNull(response.getOcr());
+    assertEquals("-1", Objects
+        .formatDouble(requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
+    assertEquals("-1",
+        Objects.formatDouble(requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
+  }
+
+  /**
+   * PATCH remove contenttype only allow or deny.
+   *
+   */
+  @Test
+  public void testPatchContentType() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+
+    // given
+    req = new UpdateConfigurationRequest()
+        .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()));
+
+    // when
+    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "", "");
+  }
+
+  /**
+   * PATCH content type allow and deny.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowAndDeny() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest()
+        .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()
+            .addAllowlistItem("text/plain").addDenylistItem("text/plain")));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"document.contentTypes\","
+          + "\"error\":\"Only set either 'allowlist' or 'denylist'\"}]}", e.getResponseBody());
+    }
+  }
+
+  /**
+   * PATCH content type allowed.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowed() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+  }
+
+  /**
+   * PATCH content type allowed with empty deny list.
+   *
+   */
+  @Test
+  public void testPatchContentTypeAllowedAndEmptyDeny() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().document(new DocumentConfig().contentTypes(
+            new DocumentConfigContentTypes().denylist(List.of()).addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+  }
+
+  /**
+   * PATCH content type deny.
+   *
+   */
+  @Test
+  public void testPatchContentTypeDeny() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addDenylistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "", "text/plain");
+  }
+
+  /**
+   * PATCH update other config and ensure contenttype only allow is still there.
+   *
+   */
+  @Test
+  public void testPatchContentTypeWithOtherConfig() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(new DocumentConfig()
+        .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    assertContentTypeAllowed(response, "text/plain", "");
+
+    // given
+    req = new UpdateConfigurationRequest().maxDocuments("1");
+
+    // when
+    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+
+    // then
+    GetConfigurationResponse configResponse = assertContentTypeAllowed(response, "text/plain", "");
+    assertEquals("1", configResponse.getMaxDocuments());
+  }
+
+  /**
+   * PATCH Document Config Retention And Disposition update.
+   *
+   */
+  @Test
+  public void testPatchDocumentConfigDispositionAction() throws ApiException {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    // when
+    GetConfigurationResponse resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+
+    // then
+    assertRententionAndDisposition(resp, DocumentConfigDispositionAction.SOFT_DELETE);
+
+    // when
+    UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(
+        new DocumentConfig().retentionAndDisposition(new DocumentConfigRetentionAndDisposition()
+            .dispositionAction(DocumentConfigDispositionAction.DELETE)
+            .softDeleteRetentionInDays(30)));
+
+    // when
+    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+    assertNotNull(resp);
+    assertNotNull(resp.getDocument());
+    var retentionAndDisposition = resp.getDocument().getRetentionAndDisposition();
+    assertNotNull(retentionAndDisposition);
+    assertEquals(DocumentConfigDispositionAction.DELETE,
+        retentionAndDisposition.getDispositionAction());
+    assertEquals(30, retentionAndDisposition.getSoftDeleteRetentionInDays());
+  }
+
+  /**
+   * PATCH Document Config Retention And Disposition invalid soft delete retention.
+   *
+   */
+  @Test
+  public void testPatchDocumentConfigInvalidSoftDeleteRetentionInDays() {
+    // given
+    String group = "Admins";
+    setBearerToken(group);
+
+    UpdateConfigurationRequest req =
+        new UpdateConfigurationRequest().document(new DocumentConfig().retentionAndDisposition(
+            new DocumentConfigRetentionAndDisposition().softDeleteRetentionInDays(-2)));
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"document.retentionAndDisposition."
+              + "softDeleteRetentionInDays\","
+              + "\"error\":\"'softDeleteRetentionInDays' must be -1 or greater\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * Patch System Configuration empty as Admin.
+   */
+  @Test
+  public void testUpdateSystemConfigurationAsAdmin() {
+    // given
+    var ssm = getAwsServices().getExtension(SsmService.class);
+    ssm.putParameter("/formkiq/test/s3/Console", BUCKET_NAME);
+    ssm.putParameter("/formkiq/test/console/version", "1.0");
+
+    var s3 = getAwsServices().getExtension(S3Service.class);
+    s3.putObject(BUCKET_NAME, "1.0/assets/config.json", "{}".getBytes(StandardCharsets.UTF_8),
+        "application/json");
+
+    setBearerToken("Admins");
+
+    // when
+    var update = new UpdateSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+
+    // when
+    var resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertFalse(getSsoAutomaticSignIn(resp));
+    assertFalse(getSsoLoginRedirectEnabled(s3));
+
+    // when
+    update =
+        new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(true).submit(client, null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+    resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+    assertTrue(getSsoAutomaticSignIn(resp));
+    assertTrue(getSsoLoginRedirectEnabled(s3));
+
+    // when
+    update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(false).submit(client,
+        null);
+
+    // then
+    assertEquals("Config saved", update.response().getMessage());
+    resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+    assertFalse(getSsoAutomaticSignIn(resp));
+    assertFalse(getSsoLoginRedirectEnabled(s3));
+  }
+
+  /**
+   * Patch System Configuration empty as Admin.
+   */
+  @Test
+  public void testUpdateSystemConfigurationAsUser() {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+
+    // when
+    var update = new UpdateSystemConfigurationRequestBuilder().submit(client, null);
+
+    // then
+    assertNull(update.response());
+    assertNotNull(update.exception());
+
+    assertEquals(HttpStatus.UNAUTHORIZED, update.exception().getCode());
+    assertEquals("{\"message\":\"user is unauthorized\"}", update.exception().getResponseBody());
+  }
+}

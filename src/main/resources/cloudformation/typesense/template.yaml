@@ -29,6 +29,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   FormKiQType:
     Description: The type of FormKiQ installation
     Type: String
@@ -50,6 +57,18 @@ Parameters:
   ECSCluster:
     Type: String
     Description: Reference to the ECSCluster
+
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  DocumentSyncsTableName:
+    Type: String
+    Description: Document Syncs DynamoDB Table Name
+
+  DocumentsStreamArn:
+    Type: String
+    Description: Documents DynamoDB Stream Arn
 
   LogRetentionInDays:
     Type: Number
@@ -144,6 +163,8 @@ Resources:
       Handler: com.formkiq.module.lambda.typesense.TypesenseProcessor
       Description: Lambda function to add DynamoDB records to Typesense
       Runtime: provided.al2023
+      Architectures:
+        - Ref: LambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 
@@ -161,9 +182,9 @@ Resources:
           FormKiQType:
             Ref: FormKiQType
           DOCUMENTS_TABLE:
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}"
+            Ref: DocumentsTableName
           DOCUMENT_SYNC_TABLE: 
-            Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}"
+            Ref: DocumentSyncsTableName
           TYPESENSE_HOST:
             Fn::If:
             - CreateResources
@@ -298,7 +319,7 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             Resource: 
-            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsTableName}}/stream/*"
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}/stream/*"
           - Effect: Allow
             Action:
             - dynamodb:PutItem
@@ -307,12 +328,12 @@ Resources:
             - dynamodb:UpdateItem
             - dynamodb:BatchWriteItem
             Resource:
-            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}" 
+            - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}"
           - Effect: Allow
             Action:
               - dynamodb:Query
             Resource:
-              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentSyncsTableName}}/index/*"
+              - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentSyncsTableName}/index/*"
 
   TypesenseTableStream:
     Type: AWS::Lambda::EventSourceMapping
@@ -324,7 +345,7 @@ Resources:
         Filters:
           - Pattern: '{"dynamodb": {"Keys": {"SK": { "S": ["document"] }}}}'      
       EventSourceArn:
-        Fn::Sub: "{{resolve:ssm:/formkiq/${AppEnvironment}/dynamodb/DocumentsStreamArn}}"
+        Ref: DocumentsStreamArn
       FunctionName:
         Fn::GetAtt:
         - TypesenseProcessor

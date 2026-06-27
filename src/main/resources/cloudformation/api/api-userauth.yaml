@@ -1,0 +1,64 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FormKiQ User Auth API
+    
+Parameters:
+              
+  AppEnvironment:
+    Type: String
+    AllowedPattern: ".+"
+    Description: The FormKiQ Environment
+
+  DocumentsApiRequestsArn:
+    Description: Lambda to invoke
+    Type: String
+
+  CognitoUserPool:
+    Type: String
+    Description: The Cognito User Pool Id
+
+  CognitoUserPoolClient:
+    Type: String
+    Description: The Cognito User Pool Client Id
+
+  CertificateStackNameUserAuthApiDomain:
+    Type: String
+    Description: Certificate User Auth Api Domain
+
+Conditions:
+
+  HasCertificateStackNameUserAuthApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - "_"
+
+Resources:
+
+  AuthApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      FailOnWarnings: "true"
+
+Outputs:
+  UserAuthApi:
+    Description: User Auth API
+    Value:
+      Ref: AuthApi
+  UserAuthApiUrl:
+    Description: "The endpoint url for the User Auth API"
+    Value:
+      Fn::If:
+        - HasCertificateStackNameUserAuthApiDomain
+        - Fn::Join:
+            - ''
+            - - 'https://'
+              - Ref: CertificateStackNameUserAuthApiDomain
+        - Fn::Sub: "https://${AuthApi}.execute-api.${AWS::Region}.amazonaws.com"

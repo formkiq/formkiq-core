@@ -1,0 +1,169 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.documents;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.validation.ValidationError;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
+
+/** {@link ApiGatewayRequestHandler} for "/documents/compress". */
+public class DocumentsCompressRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  private String getArchiveDownloadUrl(final S3PresignerService s3, final String stagingBucket,
+      final String objectPath) {
+    final String zipContentType = "application/zip";
+    Duration duration = Duration.ofHours(1);
+    PresignGetUrlConfig config = new PresignGetUrlConfig()
+        .contentDispositionByPath(objectPath, false).contentType(zipContentType);
+    URL url = s3.presignGetUrl(stagingBucket, objectPath, duration, null, config);
+    return url.toString();
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents/compress";
+  }
+
+  private String getS3Key(final String siteId, final String compressionId, final boolean isZip) {
+    final String key = String.format("tempfiles/%s", createS3Key(siteId, compressionId, null));
+    final String fileType = isZip ? ".zip" : ".json";
+    return key + fileType;
+  }
+
+  @Override
+  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
+      final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
+      throws UnauthorizedException {
+    String siteId = authorization.getSiteId();
+    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
+    return Optional.of(access);
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsServices) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String documentId = ID.uuid();
+    String compressionTaskS3Key = getS3Key(siteId, documentId, false);
+
+    S3Service s3 = awsServices.getExtension(S3Service.class);
+    S3PresignerService s3Presigner = awsServices.getExtension(S3PresignerService.class);
+    DocumentsCompressRequest requestBody =
+        JsonToObject.fromJson(awsServices, event, DocumentsCompressRequest.class);
+
+    DocumentService documentService = awsServices.getExtension(DocumentService.class);
+    validateRequestBody(documentService, requestBody, siteId);
+
+    String stagingBucket = awsServices.environment("STAGE_DOCUMENTS_S3_BUCKET");
+    String downloadUrl =
+        getArchiveDownloadUrl(s3Presigner, stagingBucket, getS3Key(siteId, documentId, true));
+
+    DocumentsCompressRequest taskObject = requestBody.withTaskDetails(documentId, downloadUrl,
+        siteId == null ? DEFAULT_SITE_ID : siteId);
+
+    putObjectToStaging(s3, stagingBucket, compressionTaskS3Key, GSON.toJson(taskObject));
+
+    return ApiRequestHandlerResponse.builder().created().body("downloadUrl", downloadUrl).build();
+  }
+
+  /**
+   * Write document compression request to S3 Staging bucket.
+   * 
+   * @param s3 {@link S3Service}
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param content {@link String}
+   */
+  private void putObjectToStaging(final S3Service s3, final String bucket, final String key,
+      final String content) {
+    final String jsonContentType = "application/json";
+    final byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+    s3.putObject(bucket, key, bytes, jsonContentType);
+  }
+
+  /**
+   * Validate Request body.
+   * 
+   * @param documentService {@link DocumentService}
+   * @param req {@link DocumentsCompressRequest}
+   * @param siteId {@link String}
+   * @throws ValidationException ValidationException
+   */
+  private void validateRequestBody(final DocumentService documentService,
+      final DocumentsCompressRequest req, final String siteId) throws ValidationException {
+
+    Collection<ValidationError> errors = new ArrayList<>();
+
+    try {
+
+      List<DocumentArtifact> documents = req.documentArtifacts();
+
+      if (documents.isEmpty()) {
+        errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
+      } else {
+        for (DocumentArtifact document : documents) {
+          if (!documentService.exists(siteId, document)) {
+            errors.add(new ValidationErrorImpl().key("documentId")
+                .error(String.format("Document '%s' does not exist", document.documentId())));
+          }
+        }
+      }
+
+    } catch (Exception e) {
+      errors.add(new ValidationErrorImpl().key("documentIds").error("is required"));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
+    }
+  }
+}

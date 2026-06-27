@@ -1,0 +1,11 @@
+
+description = "FKQ Plugins"
+
+dependencies {
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':libs:lambda-services')
+  implementation project(':libs:validation')
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
+}

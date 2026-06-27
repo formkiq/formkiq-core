@@ -1,0 +1,118 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.plugins.useractivity;
+
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
+
+import java.util.Collection;
+import java.util.Map;
+
+/**
+ * User Activity.
+ */
+public interface UserActivityPlugin {
+
+  /**
+   * Add Document Activity.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param record {@link Map}
+   */
+  void addDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
+
+  /**
+   * Add User Activity View.
+   * 
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param versionKey {@link String}
+   * @param inline Is new inline
+   */
+  void addDocumentViewActivity(String siteId, DocumentArtifact document, String versionKey,
+      boolean inline);
+
+  /**
+   * Add User Activity.
+   *
+   * @param userActivity {@link Collection} {@link UserActivity}
+   */
+  void addUserActivity(Collection<UserActivity> userActivity);
+
+  /**
+   * Add User Activity.
+   *
+   * @param userActivity {@link UserActivity}
+   */
+  void addUserActivity(UserActivity userActivity);
+
+
+  /**
+   * Add delete Document Activity.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param record {@link Map}
+   */
+  void deleteDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
+
+  /**
+   * Add soft delete Document Activity.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param record {@link Map}
+   */
+  void deleteSoftDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
+
+  /**
+   * Restore Soft Delete Document Activity.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param record {@link Map}
+   */
+  void restoreSoftDeletedDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> record);
+
+  /**
+   * Add update Document Activity.
+   *
+   * @param resourceType {@link ActivityResourceType}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param current {@link Map}
+   * @param previous {@link Map}
+   */
+  void updateDocumentActivity(ActivityResourceType resourceType, String siteId,
+      DocumentArtifact document, Map<String, Object> current, Map<String, Object> previous);
+}

@@ -1,0 +1,203 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler.documents;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.FindDocumentById;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.services.lambda.ApiPagination;
+import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
+import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeToDocumentAttributeRecord;
+import com.formkiq.validation.ValidationErrorImpl;
+import com.formkiq.validation.ValidationException;
+
+/** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/attributes". */
+public class DocumentAttributesRequestHandler
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+
+  /**
+   * constructor.
+   *
+   */
+  public DocumentAttributesRequestHandler() {}
+
+  @Override
+  public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+
+    ApiPagination pagination = getPagination(cacheService, event);
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
+
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
+
+    String siteId = authorization.getSiteId();
+    String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact documentArtifact = new DocumentArtifact(documentId, artifactId);
+    DocumentRecord document = verifyDocument(awsservice, siteId, documentArtifact);
+
+    Pagination<DocumentAttributeRecord> results =
+        documentService.findDocumentAttributes(siteId, documentArtifact, nextToken, limit);
+
+    Collection<Map<String, Object>> list =
+        new DocumentAttributeRecordToMap(true, true, awsservice, document).apply(siteId,
+            results.getResults());
+
+    ApiPagination current =
+        createPagination(cacheService, event, pagination, results.getNextToken(), limit);
+
+    Map<String, Object> m = new HashMap<>();
+    m.put("attributes", list);
+
+    if (current.hasNext()) {
+      m.put("next", current.getNext());
+    }
+
+    return ApiRequestHandlerResponse.builder().ok().body(m).build();
+  }
+
+  private AttributeValidationAccess getAttributeValidationAccess(
+      final ApiAuthorization authorization, final String siteId,
+      final AttributeValidationAccess admin, final AttributeValidationAccess regular) {
+    return authorization.isAdminOrGovern(siteId) ? admin : regular;
+  }
+
+  private List<DocumentAttributeRecord> getDocumentAttributesFromRequest(
+      final ApiGatewayRequestEvent event, final AwsServiceCache awsservice, final String siteId,
+      final String documentId, final String artifactId) throws BadException, ValidationException {
+
+    AddDocumentAttributesRequest request =
+        JsonToObject.fromJson(awsservice, event, AddDocumentAttributesRequest.class);
+    request.validate();
+
+    List<DocumentAttributeRecord> records = request.attributes().stream()
+        .flatMap(a -> new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
+            DocumentArtifact.of(documentId, artifactId)).apply(a).stream())
+        .toList();
+
+    if (notNull(records).isEmpty()) {
+      throw new ValidationException(
+          Collections.singletonList(new ValidationErrorImpl().error("no attributes found")));
+    }
+
+    return records;
+  }
+
+  @Override
+  public String getRequestUrl() {
+    return "/documents/{documentId}/attributes";
+  }
+
+  @Override
+  public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    verifyDocument(awsservice, siteId, document);
+
+    List<DocumentAttributeRecord> attributes =
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, artifactId);
+
+    AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
+        AttributeValidationAccess.ADMIN_CREATE, AttributeValidationAccess.CREATE);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    documentService.saveDocumentAttributes(siteId, document, attributes,
+        AttributeValidationType.FULL, validationAccess);
+
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "added attributes to documentId '" + documentId + "'").build();
+  }
+
+  @Override
+  public ApiRequestHandlerResponse put(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
+
+    String siteId = authorization.getSiteId();
+    String documentId = event.getPathParameter("documentId");
+    String artifactId = event.getQueryStringParameter("artifactId");
+    DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
+
+    verifyDocument(awsservice, siteId, document);
+
+    List<DocumentAttributeRecord> attributes =
+        getDocumentAttributesFromRequest(event, awsservice, siteId, documentId, artifactId);
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+
+    AttributeValidationAccess validationAccess = getAttributeValidationAccess(authorization, siteId,
+        AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
+
+    documentService.saveDocumentAttributes(siteId, document, attributes,
+        AttributeValidationType.FULL, validationAccess);
+
+    return ApiRequestHandlerResponse.builder().created()
+        .body("message", "set attributes on documentId '" + documentId + "'").build();
+  }
+
+  private DocumentRecord verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final DocumentArtifact documentArtifact) {
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    String tableName = awsservice.environment("DOCUMENTS_TABLE");
+
+    DocumentRecord document = new FindDocumentById().find(db, tableName, siteId, documentArtifact);
+    if (document == null) {
+      throw new DocumentNotFoundException(documentArtifact.documentId());
+    }
+
+    return document;
+  }
+}

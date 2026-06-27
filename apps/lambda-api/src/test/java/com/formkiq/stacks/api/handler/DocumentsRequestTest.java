@@ -1,0 +1,1882 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.api.handler;
+
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.S3ObjectMetadata;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.aws.services.lambda.ApiResponseStatus;
+import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.invoker.ApiResponse;
+import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddAttribute;
+import com.formkiq.client.model.AddAttributeRequest;
+import com.formkiq.client.model.AddChildDocument;
+import com.formkiq.client.model.AddChildDocumentResponse;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
+import com.formkiq.client.model.AddDocumentMetadata;
+import com.formkiq.client.model.AddDocumentRequest;
+import com.formkiq.client.model.AddDocumentResponse;
+import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.ChildDocument;
+import com.formkiq.client.model.Document;
+import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentActionStatus;
+import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentTag;
+import com.formkiq.client.model.GetDocumentResponse;
+import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SetSchemaAttributes;
+import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentPurgeRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentArtifactsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
+import com.formkiq.testutils.api.documents.PromoteDocumentArtifactRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
+import com.formkiq.urls.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.strings.Strings.isEmpty;
+import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/** Unit Tests for request POST /documents. */
+public class DocumentsRequestTest extends AbstractApiClientRequestTest {
+
+  /** Test Timeout. */
+  private static final int TEST_TIMEOUT = 10;
+
+  @BeforeEach
+  void beforeEach() {
+    clearSqsMessages();
+  }
+
+  /**
+   * Create MAX_RESULTS + 2 Documents test data.
+   *
+   * @param prefix {@link String}
+   * @param testdatacount int
+   */
+  private void createTestData(final String prefix, final int testdatacount) {
+    String userId = "jsmith";
+    final int min10 = 10;
+    LocalDateTime nowLocalDate = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(min10);
+
+    for (int i = 0; i < testdatacount; i++) {
+
+      nowLocalDate = nowLocalDate.plusMinutes(1);
+      Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
+      getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
+          new ArrayList<>());
+    }
+  }
+
+  private DocumentService getDocumentService() {
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DocumentService.class, new DocumentServiceExtension());
+    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    return awsServices.getExtension(DocumentService.class);
+  }
+
+  private List<SearchResultDocument> getFilesInFolder(final String siteId, final String folder) {
+    return notNull(new GetFoldersRequestBuilder().path(folder).submit(client, siteId).response()
+        .getDocuments());
+  }
+
+  private OffsetDateTime getSoftDeletedDateTime(final String siteId, final String documentId) {
+    AwsServiceCache awsServices =
+        getAwsServices().register(DynamoDbService.class, new DynamoDbServiceExtension());
+    DynamoDbService db = awsServices.getExtension(DynamoDbService.class);
+    var key = new DocumentRecordBuilder().documentId(documentId).buildSoftDeleteKey(siteId);
+    String deletedDate = db.get(key).get(DbKeys.GSI2_SK).s().substring("date#".length());
+    return toOffsetDateTime(deletedDate);
+  }
+
+  /**
+   * Add Artifact Category to artifact document.
+   */
+  @Test
+  void testAddArtifactCategory() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().artifacts(true).content()
+          .artifactCategory("123").getDocument(client, siteId);
+
+      // then
+      var doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId);
+      assertEquals("123", doc.response().getArtifactCategory());
+
+      // when
+      new UpdateDocumentRequestBuilder(document).artifactCategory("222").submitOk(client, siteId);
+
+      // then
+      doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId);
+      assertEquals("222", doc.response().getArtifactCategory());
+    }
+  }
+
+  /**
+   * Add Artifact Category to non artifact document.
+   */
+  @Test
+  void testAddArtifactCategoryToNonArtifactDocument() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().artifactCategory("123")
+          .submitError(client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"artifactCategory\","
+              + "\"error\":\"'artifactCategory' can only be set when artifactId is set\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * DELETE root document with artifacts.
+   */
+  @Test
+  public void testDeleteRootDocumentWithArtifacts() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+
+      final var documentArtifact =
+          new AddDocumentRequestBuilder().documentId(document.documentId()).content("artifact")
+              .contentType("text/plain").artifacts(true).getDocument(client, siteId);
+
+      // when
+      var deleteResponse = new DeleteDocumentRequestBuilder(document).submit(client, siteId);
+
+      // then
+      assertNotNull(deleteResponse.exception());
+      assertEquals(HttpStatus.CONFLICT, deleteResponse.exception().getCode());
+      assertEquals(
+          "{\"message\":\"Document '" + document.documentId()
+              + "' cannot be deleted while artifacts exist\"}",
+          deleteResponse.exception().getResponseBody());
+
+      // given
+      setBearerToken(siteId + "_govern");
+
+      // when
+      var purgeResponse = new DeleteDocumentPurgeRequestBuilder(document).submit(client, siteId);
+
+      // then
+      assertNotNull(purgeResponse.exception());
+      assertEquals(HttpStatus.CONFLICT, purgeResponse.exception().getCode());
+      assertEquals(
+          "{\"message\":\"Document '" + document.documentId()
+              + "' cannot be deleted while artifacts exist\"}",
+          purgeResponse.exception().getResponseBody());
+
+      setBearerToken(siteId);
+      assertDocumentFound(client, siteId, document);
+      assertDocumentFound(client, siteId, documentArtifact);
+    }
+  }
+
+  @Test
+  public void testHandleGetDocumentActionsArtifact01() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String documentId =
+          new AddDocumentRequestBuilder().content().addAction(DocumentActionType.FULLTEXT)
+              .submit(client, siteId).throwIfError().response().getDocumentId();
+
+      String artifactId = new AddDocumentRequestBuilder().content()
+          .addAction(DocumentActionType.OCR).documentId(documentId).artifacts(true)
+          .submit(client, siteId).throwIfError().response().getArtifactId();
+
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+
+      // when
+      final List<DocumentAction> actions0 = notNull(new GetDocumentActionsRequestBuilder(documentId)
+          .submit(client, siteId).throwIfError().response().getActions());
+      final List<DocumentAction> actions1 = notNull(new GetDocumentActionsRequestBuilder(artifact)
+          .submit(client, siteId).throwIfError().response().getActions());
+
+      // then
+      assertEquals(1, actions0.size());
+      assertEquals(DocumentActionType.FULLTEXT, actions0.getFirst().getType());
+      assertEquals(DocumentActionStatus.PENDING, actions0.getFirst().getStatus());
+
+      assertEquals(1, actions1.size());
+      assertEquals(DocumentActionType.OCR, actions1.getFirst().getType());
+      assertEquals(DocumentActionStatus.PENDING, actions1.getFirst().getStatus());
+    }
+  }
+
+  /**
+   * Get /documents request.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNotNull(documents.getFirst().getInsertedDate());
+      assertNotNull(documents.getFirst().getLastModifiedDate());
+      assertEquals(documents.getFirst().getInsertedDate(),
+          documents.getFirst().getLastModifiedDate());
+      assertNotNull(documents.getFirst().getUserId());
+      assertEquals("1000", String.valueOf(documents.getFirst().getContentLength()));
+    }
+  }
+
+  /**
+   * Get /documents request with next parameter.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      createTestData(siteId, DocumentService.MAX_RESULTS + 2);
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertNull(resp.getPrevious());
+      assertFalse(isEmpty(resp.getNext()));
+
+      // when
+      resp = new GetDocumentsRequestBuilder().next(resp.getNext()).submit(client, siteId)
+          .throwIfError().response();
+
+      // then
+      assertTrue(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+
+      documents = notNull(resp.getDocuments());
+      assertEquals(2, documents.size());
+
+      assertEquals("doc_1", documents.get(0).getDocumentId());
+      assertNull(documents.get(0).getSiteId());
+
+      assertEquals("doc_0", documents.get(1).getDocumentId());
+      assertNull(documents.get(1).getSiteId());
+    }
+  }
+
+  /**
+   * Get /documents request with Limit=MAX_RESULTS.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments03() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      createTestData(siteId, DocumentService.MAX_RESULTS);
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(DocumentService.MAX_RESULTS, documents.size());
+      assertFalse(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getPrevious()));
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz. Date after
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments04() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(0, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request with date / tz.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments05() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = DateUtil.toDateFromString("2019-08-15", "0500");
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+    }
+  }
+
+  /**
+   * Get /documents request when document has metadata / streamTriggeredDate.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocuments06() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DynamicDocumentItem item =
+          new DynamicDocumentItem(Map.of("documentId", documentId, "userId", username));
+      var metadata = new com.formkiq.aws.dynamodb.documents.DocumentMetadata("asd", "123", null);
+      item.setMetadata(List.of(metadata));
+      item.setContentLength(contentLength);
+      item.put("streamTriggeredDate", "123");
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNotNull(documents.getFirst().getInsertedDate());
+      assertNotNull(documents.getFirst().getLastModifiedDate());
+      assertEquals(documents.getFirst().getInsertedDate(),
+          documents.getFirst().getLastModifiedDate());
+      assertNotNull(documents.getFirst().getUserId());
+      assertEquals("1000", String.valueOf(documents.getFirst().getContentLength()));
+    }
+  }
+
+  /**
+   * Get /documents request with ID only.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsIdOnly() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      Date date = new Date();
+      final long contentLength = 1000L;
+      String username = UUID.randomUUID() + "@formkiq.com";
+      String documentId = ID.uuid();
+      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      item.setContentLength(contentLength);
+
+      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+
+      // when
+      var resp = new GetDocumentsRequestBuilder().projection("DOCUMENT_ID_ONLY")
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> documents = notNull(resp.getDocuments());
+      assertEquals(1, documents.size());
+      assertNotNull(documents.getFirst().getDocumentId());
+      assertNull(documents.getFirst().getInsertedDate());
+      assertNull(documents.getFirst().getLastModifiedDate());
+      assertNull(documents.getFirst().getUserId());
+      assertNull(documents.getFirst().getContentLength());
+    }
+  }
+
+  /**
+   * Get /documents soft deleted with start / end and sort.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsSoftDeleted01() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      String doc0 = new AddDocumentRequestBuilder().content("doc0").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      String doc1 = new AddDocumentRequestBuilder().content("doc1").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      String doc2 = new AddDocumentRequestBuilder().content("doc2").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      // then
+      assertNotNull(doc0);
+      assertNotNull(doc1);
+      assertNotNull(doc2);
+
+      // when
+      new DeleteDocumentRequestBuilder(doc0).softDelete(true).submit(client, siteId).throwIfError();
+      Thread.sleep(1000);
+      new DeleteDocumentRequestBuilder(doc1).softDelete(true).submit(client, siteId).throwIfError();
+      Thread.sleep(1000);
+      new DeleteDocumentRequestBuilder(doc2).softDelete(true).submit(client, siteId).throwIfError();
+
+      // then
+      final OffsetDateTime deleted1 =
+          getSoftDeletedDateTime(siteId, doc1).truncatedTo(ChronoUnit.SECONDS);
+      final OffsetDateTime deleted2 =
+          getSoftDeletedDateTime(siteId, doc2).truncatedTo(ChronoUnit.SECONDS);
+
+      // when
+      var desc = new GetDocumentsRequestBuilder().softDeleted(true).sort("DESC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      List<Document> descDocuments = notNull(desc.getDocuments());
+      assertEquals(List.of(doc2, doc1, doc0),
+          descDocuments.stream().map(Document::getDocumentId).toList());
+      assertEquals(deleted2,
+          toOffsetDateTime(descDocuments.get(0).getDeletedDate()).truncatedTo(ChronoUnit.SECONDS));
+      assertEquals(deleted1,
+          toOffsetDateTime(descDocuments.get(1).getDeletedDate()).truncatedTo(ChronoUnit.SECONDS));
+
+      // when
+      var asc = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc0, doc1, doc2),
+          notNull(asc.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var startOnly = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").start(deleted1)
+          .limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc1, doc2),
+          notNull(startOnly.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var endOnly = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").end(deleted1)
+          .limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc0, doc1),
+          notNull(endOnly.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var range = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").start(deleted1)
+          .end(deleted2).limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertEquals(List.of(doc1, doc2),
+          notNull(range.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      var missingDeleteFlag = new GetDocumentsRequestBuilder().sort("ASC").start(deleted1)
+          .end(deleted2).limit(10).submit(client, siteId).throwIfError().response();
+
+      // then
+      assertTrue(notNull(missingDeleteFlag.getDocuments()).isEmpty());
+    }
+  }
+
+  /**
+   * Save new File.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content("dummy data").contentType("application/pdf");
+
+      // when
+      AddDocumentResponse responseNoSiteId = this.documentsApi.addDocument(req, null, null);
+      AddDocumentResponse responseSiteId = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertNotNull(responseNoSiteId.getDocumentId());
+      assertNotNull(responseSiteId.getDocumentId());
+      assertEquals(siteId, responseSiteId.getSiteId());
+
+      GetDocumentResponse noSite =
+          this.documentsApi.getDocument(responseNoSiteId.getDocumentId(), siteId, null, null);
+      assertEquals("application/pdf", noSite.getContentType());
+      assertNotNull(noSite.getPath());
+      assertNotNull(noSite.getDocumentId());
+
+      GetDocumentResponse site =
+          this.documentsApi.getDocument(responseSiteId.getDocumentId(), siteId, null, null);
+      assertEquals("application/pdf", site.getContentType());
+      assertNotNull(site.getPath());
+      assertNotNull(site.getDocumentId());
+    }
+  }
+
+  /**
+   * Save new File missing content.
+   *
+   */
+  @Test
+  public void testPost02() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest();
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals("{\"errors\":[{\"error\":\"either 'content', 'documents',"
+            + " or 'deepLinkPath' are required\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new deep link.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://google.com");
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+      assertNull(response.getUploadUrl());
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertEquals("https://google.com", document.getDeepLinkPath());
+      assertNull(document.getLastModifiedDate());
+      assertNull(document.getContentLength());
+    }
+  }
+
+  /**
+   * Save document with subdocuments.
+   * 
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost04() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String content = "{\"firstName\": \"Jan\",\"lastName\": \"Doe\"}";
+      String attributeKey = "formType";
+      String attributeValue = "application";
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest()
+          .addTagsItem(new AddDocumentTag().key("formName").value("Job Application Form"))
+          .addDocumentsItem(new AddChildDocument().content(content).contentType("application/json")
+              .addAttributesItem(new AddDocumentAttribute(
+                  new AddDocumentAttributeStandard().key(attributeKey).stringValue(attributeValue)))
+              .addTagsItem(new AddDocumentTag().key("formData").value("myvalue")));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertNotNull(response.getUploadUrl());
+      assertNotNull(response.getDocumentId());
+
+      List<AddChildDocumentResponse> documents = notNull(response.getDocuments());
+      assertEquals(1, documents.size());
+      assertNull(documents.getFirst().getUploadUrl());
+
+      String documentId = response.getDocumentId();
+      String childDocumentId = documents.getFirst().getDocumentId();
+      assertNotNull(childDocumentId);
+
+      List<ChildDocument> documents1 =
+          notNull(this.documentsApi.getDocument(documentId, siteId, null, null).getDocuments());
+      assertEquals(1, documents1.size());
+      assertEquals(childDocumentId, documents1.getFirst().getDocumentId());
+      assertEquals("application/json", documents1.getFirst().getContentType());
+      assertEquals(documentId, documents1.getFirst().getBelongsToDocumentId());
+
+      List<DocumentTag> tags = notNull(
+          this.tagsApi.getDocumentTags(documentId, siteId, null, null, null, null, null).getTags());
+
+      assertEquals(1, tags.size());
+      assertEquals("formName", tags.getFirst().getKey());
+      assertEquals("Job Application Form", tags.getFirst().getValue());
+
+      tags = notNull(this.tagsApi
+          .getDocumentTags(childDocumentId, siteId, null, null, null, null, null).getTags());
+      assertEquals(1, tags.size());
+      assertEquals("formData", tags.getFirst().getKey());
+      assertEquals("myvalue", tags.getFirst().getValue());
+
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(childDocumentId, siteId, null, null, null).getAttributes());
+      assertEquals(1, attributes.size());
+      assertEquals(attributeKey, attributes.getFirst().getKey());
+      assertEquals(attributeValue, attributes.getFirst().getStringValue());
+
+      GetDocumentResponse childDocument =
+          this.documentsApi.getDocument(childDocumentId, null, null, null);
+      assertTrue(Objects.notNull(childDocument.getDocuments()).isEmpty());
+      assertEquals(documentId, childDocument.getBelongsToDocumentId());
+    }
+  }
+
+  /**
+   * Save Document with Content / Metadata.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost05() throws Exception {
+    // given
+    String content = "test data";
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content)
+          .addMetadataItem(new AddDocumentMetadata().key("person").value("category"))
+          .addMetadataItem(
+              new AddDocumentMetadata().key("playerId").values(Arrays.asList("11", "22")));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertNotNull(document);
+      List<DocumentMetadata> metadata = notNull(document.getMetadata());
+      assertEquals(2, metadata.size());
+      assertEquals("playerId", metadata.get(0).getKey());
+      assertEquals("11,22", String.join(",", notNull(metadata.get(0).getValues())));
+      assertEquals("person", metadata.get(1).getKey());
+      assertEquals("category", metadata.get(1).getValue());
+
+      assertEquals(content,
+          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
+    }
+  }
+
+  /**
+   * Add Document with attributes, check composite keys.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost06() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String attributeKey0 = "category";
+      String attributeKey1 = "documentType";
+
+      for (String attributeKey : Arrays.asList(attributeKey0, attributeKey1)) {
+        this.attributesApi.addAttribute(
+            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      }
+
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test").attributes(
+          new SetSchemaAttributes().addCompositeKeysItem(new AttributeSchemaCompositeKey()
+              .attributeKeys(Arrays.asList(attributeKey0, attributeKey1))));
+      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content0)
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")))
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")));
+
+      // when
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+
+      final int expected = 3;
+      assertEquals(expected, attributes.size());
+      assertEquals(attributeKey0, attributes.get(0).getKey());
+      assertEquals("person", attributes.get(0).getStringValue());
+      assertEquals(attributeKey0 + DbKeys.COMPOSITE_KEY_DELIM + attributeKey1,
+          attributes.get(1).getKey());
+      assertEquals("person" + DbKeys.COMPOSITE_KEY_DELIM + "privacy",
+          attributes.get(1).getStringValue());
+      assertEquals(attributeKey1, attributes.get(2).getKey());
+      assertEquals("privacy", attributes.get(2).getStringValue());
+    }
+  }
+
+  /**
+   * Add Document with invalid schema allowed value.
+   */
+  @Test
+  public void testPost07() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "test";
+
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+      SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
+          .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
+              .attributeKey(attributeKey).addAllowedValuesItem("abc")));
+      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue("123")));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"test\","
+                + "\"error\":\"invalid attribute value 'test', only allowed values are abc\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save invalid deep link.
+   *
+   */
+  @Test
+  public void testPost08() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (String deepLinkPath : Arrays.asList("askdjaskd", "s3:/ajksdjasdsjasad", "s3/asd")) {
+
+        AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLinkPath);
+
+        // when
+        try {
+          this.documentsApi.addDocument(req, null, null);
+          fail();
+        } catch (ApiException e) {
+          // then
+          assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+          assertEquals("{\"errors\":[{\"key\":\"deepLinkPath\"," + "\"error\":\"DeepLinkPath '"
+              + deepLinkPath + "' is not a valid URL\"}]}", e.getResponseBody());
+        }
+      }
+    }
+  }
+
+  /**
+   * Save new File with documentId.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost09() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = ID.uuid();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+      // then
+      assertEquals(documentId, response.getDocumentId());
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertEquals("application/pdf", document.getContentType());
+
+      // when - duplicate send
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_METHOD_CONFLICT.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"documentId '" + documentId + "' already exists\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with invaliddocumentId.
+   *
+   */
+  @Test
+  public void testPost10() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String documentId = "casaljdalsdjat" + UUID.randomUUID();
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().documentId(documentId).content("dummy data")
+          .contentType("application/pdf");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"invalid documentId '"
+            + documentId + "'\"}]}", e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save google drive deep link application/vnd.google-apps.document.
+   *
+   */
+  @Test
+  public void testPost11() throws ApiException {
+    // given
+    Map<String, String> data =
+        Map.of("document", "application/vnd.google-apps.document", "spreadsheets",
+            "application/vnd.google-apps.spreadsheet", "forms", "application/vnd.google-apps.form",
+            "presentation", "application/vnd.google-apps.presentation");
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      for (Map.Entry<String, String> e : data.entrySet()) {
+        String deepLink =
+            "https://docs.google.com/" + e.getKey() + "/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+
+        AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+        // then
+        assertNull(response.getUploadUrl());
+        String documentId = response.getDocumentId();
+        assertNotNull(documentId);
+
+        GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+        assertEquals(e.getValue(), doc.getContentType());
+
+        // given
+        req.setContentType("application/pdf");
+
+        // when
+        documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+
+        // then
+        assertNotNull(documentId);
+        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+        assertEquals("application/pdf", doc.getContentType());
+      }
+    }
+  }
+
+  /**
+   * Save google drive deep link with actions.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost12() throws ApiException, InterruptedException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink = "https://docs.google.com/document/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink)
+          .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+      // then
+      assertNull(response.getUploadUrl());
+      String documentId = response.getDocumentId();
+
+      Map<String, Object> message = getSqsMessages("actions", documentId);
+      assertEquals("actions", message.get("type"));
+      assertEquals(documentId, message.get("documentId"));
+    }
+  }
+
+  /**
+   * Save micosoft drive deep link.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost13() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink =
+          "https://1drv.ms/w/c/73bd1abf56df7172/Ef0NPjbUj7BHlPuH_5dpE8EBdEX4FHcdLxbaTvvWQF161A?e=jkK12r";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+
+      // then
+      assertNull(response.getUploadUrl());
+      String documentId = response.getDocumentId();
+      assertNotNull(documentId);
+
+      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      assertEquals(deepLink, document.getDeepLinkPath());
+    }
+  }
+
+  /**
+   * document with content and deep link.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost14() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      clearSqsMessages();
+      setBearerToken(siteId);
+
+      String deepLink =
+          "https://1drv.ms/w/c/73bd1abf56df7172/Ef0NPjbUj7BHlPuH_5dpE8EBdEX4FHcdLxbaTvvWQF161A?e=jkK12r";
+
+      AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink).content("some data");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"error\":\"both 'content', and 'deepLinkPath' cannot be set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-1.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost16() throws ApiException {
+    // given
+    final String reqChecksum = "611ff54ef4d8389cf982da9516804906d99389b6";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA1);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertNull(response.getUploadUrl());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA1, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with invalid checksum.
+   *
+   */
+  @Test
+  public void testPost17() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String content = "dummy data";
+      String checksum = "12387198371293721893";
+
+      AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+          .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertTrue(e.getResponseBody()
+            .startsWith("{\"message\":\"<?xml version='1.0' encoding='utf-8'?>\\n"
+                + "<Error><Code>InvalidRequest</Code>"));
+      }
+    }
+  }
+
+  /**
+   * Add Document with very large attributes.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testPost18() throws Exception {
+    // given
+    String content0 = "test data";
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String attributeKey = "category";
+
+      this.attributesApi.addAttribute(
+          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+      final int len = 3000;
+      String value = Strings.generateRandomString(len);
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key(attributeKey).stringValue(value)));
+
+      // when
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+
+      final int expected = 1;
+      assertEquals(expected, attributes.size());
+      assertEquals(attributeKey, attributes.getFirst().getKey());
+      assertEquals(value, attributes.getFirst().getStringValue());
+    }
+  }
+
+  /**
+   * Save document with double "//" in the path.
+   *
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  public void testPost19() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path("myfile//test-file.txt").content("test");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"path\","
+                + "\"error\":\"invalid Path contains multiple '//' characters\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save document with action error.
+   *
+   */
+  @Test
+  public void testPost20() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content("test").actions(List.of(new AddAction()));
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"type\",\"error\":\"'type' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save document with invalid width / auto height.
+   *
+   */
+  @Test
+  public void testPost21() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentRequest req = new AddDocumentRequest().content("test").width("asd").height("auto");
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, null, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"width\","
+                + "\"error\":\"invalid 'width' must be numeric or 'auto'\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with and without allow type.
+   *
+   */
+  @Test
+  public void testPostAllowlist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addAllowContentType("application/json")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      DocumentArtifact document = DocumentArtifact.of(response.response().getDocumentId(),
+          response.response().getArtifactId());
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(document).contentType("text/plain").submit(client,
+          siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      var addResponse =
+          new AddDocumentUploadRequestBuilder().contentType("text/plain").submit(client, siteId);
+
+      // then
+      assertNotNull(addResponse.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, addResponse.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          addResponse.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true.
+   */
+  @Test
+  public void testPostArtifactsWithDocumentId() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+      var folder0 = ID.ulid();
+      var folder1 = ID.ulid();
+      var path0 = folder0 + "/" + ID.ulid() + ".txt";
+      var path1 = folder1 + "/" + ID.ulid() + ".txt";
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().path(path0).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      assertNotNull(resp.response());
+      String documentId = resp.response().getDocumentId();
+      assertEquals(Boolean.FALSE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
+
+      // when
+      resp =
+          new AddDocumentRequestBuilder().content("mycontent").path(path1).contentType("text/plain")
+              .artifacts(true).documentId(documentId).submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals(documentId, resp.response().getDocumentId());
+      String artifactId = resp.response().getArtifactId();
+      assertNotNull(artifactId);
+
+      assertEquals(Boolean.TRUE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
+
+      DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+      var doc = new GetDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
+      assertEquals(path1, doc.response().getPath());
+      assertEquals(artifactId, doc.response().getArtifactId());
+      assertEquals(Boolean.FALSE, doc.response().getHasArtifacts());
+      assertEquals(Boolean.TRUE, new GetDocumentRequestBuilder(documentId).submit(client, siteId)
+          .throwIfError().response().getHasArtifacts());
+
+      // when
+      var content =
+          new GetDocumentContentRequestBuilder(artifact).submit(client, siteId).throwIfError();
+
+      // then
+      assertEquals("mycontent", content.response().getContent());
+
+      // when
+      var artifacts =
+          new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId).throwIfError();
+
+      // then
+      assertNotNull(artifacts.response());
+      List<Document> documents = notNull(artifacts.response().getDocuments());
+      assertEquals(1, documents.size());
+      assertEquals(path1, documents.getFirst().getPath());
+      assertEquals(Boolean.FALSE, documents.getFirst().getHasArtifacts());
+
+      var baseFolderDocuments = getFilesInFolder(siteId, folder0);
+      assertEquals(1, baseFolderDocuments.size());
+      assertEquals(path0, baseFolderDocuments.getFirst().getPath());
+
+      var artifactFolderDocuments = getFilesInFolder(siteId, folder1);
+      assertTrue(artifactFolderDocuments.isEmpty());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true does not allow child documents.
+   */
+  @Test
+  public void testPostArtifactsWithDocumentIdAndChildDocuments() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var createResponse =
+          new AddDocumentRequestBuilder().content().submit(client, siteId).throwIfError();
+      var documentId = createResponse.response().getDocumentId();
+
+      var req = new AddDocumentRequest().documentId(documentId).artifacts(true)
+          .content("artifact content").addDocumentsItem(
+              new AddChildDocument().content("{\"child\":true}").contentType("application/json"));
+
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"documents\","
+                + "\"error\":\"'documents' are not allowed when 'artifacts' is true\"}]}",
+            e.getResponseBody());
+      }
+
+      var artifacts =
+          new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId).throwIfError();
+      assertTrue(notNull(artifacts.response().getDocuments()).isEmpty());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true with invalid documentId.
+   */
+  @Test
+  public void testPostArtifactsWithInvalidDocumentId() {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var documentId = ID.uuid();
+
+      // when
+      var resp = new AddDocumentRequestBuilder().content().artifacts(true).documentId(documentId)
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(resp.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, resp.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"documentId\",\"error\":\"Document '" + documentId
+          + "' does not exist\"}]}", resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with artifacts=true without documentId.
+   */
+  @Test
+  public void testPostArtifactsWithoutDocumentId() throws ApiException {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+      var filename = ID.ulid() + ".txt";
+      // var path = folder + "/" + filename;
+
+      for (String path : Arrays.asList(filename, null)) {
+        // when
+        var resp =
+            new AddDocumentRequestBuilder().content("artifact content").contentType("text/plain")
+                .path(path).artifacts(true).submit(client, siteId).throwIfError();
+
+        // then
+        String documentId = resp.response().getDocumentId();
+        String artifactId = resp.response().getArtifactId();
+        assertNotNull(documentId);
+        assertNotNull(artifactId);
+
+        final var expectedFilename = path != null ? path : documentId;
+
+        var document =
+            new GetDocumentRequestBuilder(documentId).submit(client, siteId).throwIfError();
+        assertEquals(documentId, document.response().getDocumentId());
+        assertNull(document.response().getArtifactId());
+        assertEquals(Boolean.TRUE, document.response().getHasArtifacts());
+
+        DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
+        var artifactDocument =
+            new GetDocumentRequestBuilder(artifact).submit(client, siteId).throwIfError();
+        assertEquals(documentId, artifactDocument.response().getDocumentId());
+        assertEquals(artifactId, artifactDocument.response().getArtifactId());
+        assertEquals(expectedFilename, artifactDocument.response().getPath());
+        assertEquals(Boolean.FALSE, artifactDocument.response().getHasArtifacts());
+
+        var artifacts = new GetDocumentArtifactsRequestBuilder(documentId).submit(client, siteId)
+            .throwIfError();
+        List<Document> documents = notNull(artifacts.response().getDocuments());
+        assertEquals(1, documents.size());
+        assertEquals(artifactId, documents.getFirst().getArtifactId());
+        assertEquals(Boolean.FALSE, documents.getFirst().getHasArtifacts());
+
+        var folders = new GetFoldersRequestBuilder().submit(client, siteId).response();
+        var filenames = notNull(folders.getDocuments()).stream().map(SearchResultDocument::getPath)
+            .collect(Collectors.joining(","));
+        assertTrue(filenames.contains(expectedFilename));
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostChecksum() throws ApiException {
+    // given
+    final String reqChecksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      for (String checksum : Arrays.asList(null, reqChecksum)) {
+        setBearerToken(siteId);
+
+        String content = "dummy data";
+
+        AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain")
+            .checksum(checksum).checksumType(ChecksumType.SHA256);
+
+        // when
+        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+
+        // then
+        assertNotNull(response.getDocumentId());
+        assertEquals(siteId, response.getSiteId());
+
+        GetDocumentResponse site =
+            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
+        assertEquals("text/plain", site.getContentType());
+        assertEquals(ChecksumType.SHA256, site.getChecksumType());
+        assertEquals(reqChecksum, site.getChecksum());
+        assertNotNull(site.getPath());
+        assertNotNull(site.getDocumentId());
+        assertEquals(content, this.documentsApi
+            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
+      }
+    }
+  }
+
+  /**
+   * Save new File with valid SHA-256 but missing checksum type.
+   *
+   */
+  @Test
+  public void testPostChecksumMissingType() {
+    // given
+    final String checksum = "797bb0abff798d7200af7685dca7901edffc52bf26500d5bd97282658ee24152";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String content = "dummy data";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().content(content).contentType("text/plain").checksum(checksum);
+
+      // when
+      try {
+        this.documentsApi.addDocument(req, siteId, null);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals(
+            "{\"errors\":[{\"key\":\"checksumType\","
+                + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Save new File with and without deny type.
+   *
+   */
+  @Test
+  public void testPostDenylist() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      new UpdateSitesConfigurationRequestBuilder().addDenyContentType("text/plain")
+          .submit(client, siteId).throwIfError();
+
+      setBearerToken(siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().contentType("text/plain")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+
+      // when
+      response = new AddDocumentRequestBuilder().content().contentType("application/json")
+          .submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      DocumentArtifact document = DocumentArtifact.of(response.response().getDocumentId(),
+          response.response().getArtifactId());
+
+      // when - update content-type
+      response = new UpdateDocumentRequestBuilder(document).contentType("text/plain").submit(client,
+          siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(HttpStatus.BAD_REQUEST, response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"contentType\","
+              + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
+          response.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Add Artifact Category to artifact document.
+   */
+  @Test
+  void testPromoteDocumentArtifact() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content("A").contentType("text/plain")
+          .getDocument(client, siteId);
+
+      // when
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .artifacts(true).content("B").contentType("text/plain").getDocument(client, siteId);
+
+      // then
+      assertEquals("A", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(artifact).getContent(client, siteId));
+
+      // when
+      var resp = new PromoteDocumentArtifactRequestBuilder(artifact).submitOk(client, siteId);
+
+      // then
+      assertEquals("Promoted artifact '" + artifact.artifactId() + "' on document '"
+          + artifact.documentId() + "'.", resp.response().getMessage());
+      var root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertEquals(artifact.artifactId(), root.promotedArtifactId());
+      assertEquals("B", new GetDocumentUrlRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentUrlRequestBuilder(artifact).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+      assertEquals("B", new GetDocumentContentRequestBuilder(artifact).getContent(client, siteId));
+
+      // when
+      resp = new PromoteDocumentArtifactRequestBuilder(document).submitOk(client, siteId);
+
+      // then
+      assertEquals("Promoted artifact 'null' on document '" + artifact.documentId() + "'.",
+          resp.response().getMessage());
+      root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertNull(root.promotedArtifactId());
+      assertEquals("A", new GetDocumentContentRequestBuilder(document).getContent(client, siteId));
+    }
+  }
+
+  /**
+   * Test Publish no published document.
+   * 
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPublish01() throws ApiException {
+    // given
+    String content0 = "test data 1";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String path = UUID.randomUUID() + ".txt";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      // when
+      try {
+        documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * Test Publish document.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testPublish02() throws ApiException {
+    // given
+    String content0 = "test data 1";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+      String path = UUID.randomUUID() + ".txt";
+
+      AddDocumentRequest req =
+          new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
+      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      assertNotNull(documentId);
+
+      AwsServiceCache awsServices = getAwsServices();
+      awsServices.register(S3Service.class, new S3ServiceExtension());
+      awsServices.register(DocumentService.class, new DocumentServiceExtension());
+      awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+      S3Service s3 = awsServices.getExtension(S3Service.class);
+      S3ObjectMetadata objectMetadata = s3.getObjectMetadata(BUCKET_NAME,
+          SiteIdKeyGenerator.createS3Key(siteId, documentId, null), null);
+      String s3version = objectMetadata.getVersionId();
+
+      DocumentService service = awsServices.getExtension(DocumentService.class);
+      service.publishDocument(siteId, documentId, s3version, path, "text/plain", "joe");
+
+      // when
+      ApiResponse<Void> response =
+          documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), response.getStatusCode());
+
+      assertEquals("attachment; filename*=UTF-8''" + path,
+          String.join(",", response.getHeaders().get("content-disposition")));
+      assertEquals("text/plain", String.join(",", response.getHeaders().get("content-type")));
+
+      // when
+      documentsApi.deletePublishedDocumentContent(documentId, siteId);
+
+      // then
+      try {
+        documentsApi.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
+        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * PUT /documents/{documentId}/artifacts/promoteArtifact.
+   */
+  @Test
+  public void testPutPromoteArtifact() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      var artifact = new AddDocumentRequestBuilder().documentId(document.documentId())
+          .content("artifact content").contentType("text/plain").artifacts(true)
+          .getDocument(client, siteId);
+
+      new PromoteDocumentArtifactRequestBuilder(artifact).submitOk(client, siteId);
+
+      var root = getDocumentService().findDocument(siteId,
+          DocumentArtifact.of(document.documentId(), null));
+      assertEquals(artifact.artifactId(), root.promotedArtifactId());
+    }
+  }
+
+  private OffsetDateTime toOffsetDateTime(final String date) {
+    try {
+      return OffsetDateTime.ofInstant(DateUtil.toDateFromString(date, ZoneOffset.UTC).toInstant(),
+          ZoneOffset.UTC);
+    } catch (java.time.DateTimeException e) {
+      try {
+        return OffsetDateTime.ofInstant(DateUtil.getIsoDateFormatter().parse(date).toInstant(),
+            ZoneOffset.UTC);
+      } catch (java.text.ParseException pe) {
+        throw new IllegalArgumentException(pe);
+      }
+    }
+  }
+}

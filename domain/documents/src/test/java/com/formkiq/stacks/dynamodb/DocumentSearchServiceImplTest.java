@@ -1,0 +1,1140 @@
+/**
+ * MIT License
+ * 
+ * Copyright (c) 2018 - 2020 FormKiQ
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.formkiq.stacks.dynamodb;
+
+import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
+import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
+import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
+import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
+import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.testutils.aws.DynamoDbExtension;
+import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.validation.ValidationException;
+
+/** Unit Tests for {@link DocumentSearchServiceImpl}. */
+@ExtendWith(DynamoDbExtension.class)
+public class DocumentSearchServiceImplTest implements DbKeys {
+
+  /**
+   * Before All.
+   */
+  @BeforeAll
+  public static void beforeAll() {
+    ApiAuthorization.login(new ApiAuthorization().username("System"));
+  }
+
+  /** {@link SimpleDateFormat}. */
+  private final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+  /** {@link DocumentService}. */
+  private DocumentSearchService searchService;
+
+  /** {@link DocumentService}. */
+  private DocumentService service;
+
+  /**
+   * Before Test.
+   *
+   * @throws Exception Exception
+   */
+  @BeforeEach
+  public void before() throws Exception {
+
+    this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
+    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
+    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
+        new DocumentVersionServiceNoVersioning());
+    this.searchService =
+        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE);
+  }
+
+  /**
+   * Create Document with Tag.
+   * 
+   * @param siteId {@link String}
+   * @param tagKey {@link String}
+   * @param tagValue {@link String}
+   * @return {@link String}
+   * @throws ValidationException ValidationException
+   */
+  private String createDocument(final String siteId, final String tagKey, final String tagValue)
+      throws ValidationException {
+    ZonedDateTime now = ZonedDateTime.now();
+    DocumentItem doc = createDocument(ID.uuid(), now);
+    Collection<DocumentTag> tags =
+        List.of(new DocumentTag(doc.getDocumentId(), tagKey, tagValue, new Date(), "testuser"));
+    this.service.saveDocument(siteId, doc, tags);
+
+    return doc.getDocumentId();
+  }
+
+  /**
+   * Create Document.
+   *
+   * @param uuid {@link String}
+   * @param date {@link ZonedDateTime}
+   * @return {@link DocumentItem}
+   */
+  private DocumentItem createDocument(final String uuid, final ZonedDateTime date) {
+
+    String userId = "jsmith";
+
+    DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
+    item.setContentType("text/plain");
+    item.setPath("test.txt");
+    item.setUserId(ID.uuid());
+    item.setChecksum(ID.uuid());
+    item.setContentLength(2L);
+    return item;
+  }
+
+  /**
+   * Create Test {@link DocumentItem}.
+   *
+   * @param prefix DynamoDB PK Prefix
+   * @return {@link List} {@link DocumentItem}
+   */
+  private List<DocumentItem> createTestData(final String prefix) {
+
+    List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
+        "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
+        "2020-01-30T17:02:00", "2020-01-30T19:10:00", "2020-01-30T20:54:00", "2020-01-30T23:59:59",
+        "2020-01-31T00:00:00", "2020-01-31T03:00:00", "2020-01-31T05:00:00", "2020-01-31T07:00:00",
+        "2020-01-31T08:00:00", "2020-01-31T09:00:00", "2020-01-31T10:00:00", "2020-01-31T11:00:00",
+        "2020-01-31T23:00:00");
+
+    List<DocumentItem> items = new ArrayList<>();
+
+    dates.forEach(date -> {
+      ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
+      String id = ID.uuid();
+      items.add(createDocument(id, zdate));
+    });
+
+    items.forEach(item -> {
+      Collection<DocumentTag> tags = List
+          .of(new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
+      try {
+        this.service.saveDocument(prefix, item, tags);
+      } catch (ValidationException e) {
+        throw new RuntimeException(e);
+      }
+    });
+
+    return items;
+  }
+
+  private DocumentRecordSet createTestDocumentWithTags(final Map<String, Object> tags,
+      final boolean value) {
+    return createTestDocumentWithTags(ID.uuid(), tags, value);
+  }
+
+  /**
+   * Create a Test Document with 2 tags.
+   *
+   * @param documentId {@link String}
+   * @param tags {@link Map}
+   * @param value whether to set value or values
+   * @return {@link DocumentRecordSet}
+   */
+  private DocumentRecordSet createTestDocumentWithTags(final String documentId,
+      final Map<String, Object> tags, final boolean value) {
+    String username = "testuser";
+
+    DocumentRecord documentRecord =
+        new DocumentRecordBuilder().documentId(documentId).userId(username).build((String) null);
+
+    List<DocumentTagRecord> addTags = new ArrayList<>();
+
+    for (Map.Entry<String, Object> e : tags.entrySet()) {
+      if (value) {
+        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
+            .tagValue(e.getValue().toString()).type(DocumentTagType.USERDEFINED).userId(username)
+            .build((String) null));
+      } else {
+
+        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
+            .tagValues((List<String>) e.getValue()).type(DocumentTagType.USERDEFINED)
+            .userId(username).build((String) null));
+      }
+    }
+
+    return new DocumentRecordSet(documentRecord, null, addTags, null);
+  }
+
+  private void saveDocument(final String siteId, final DocumentRecordSet doc) {
+    this.service.saveDocument(siteId, doc, new SaveDocumentOptions().saveDocumentDate(true));
+  }
+
+  /**
+   * Search by 'eq' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch01() throws ValidationException {
+    for (String prefix : Arrays.asList(null, ID.uuid())) {
+      // given
+      createTestData("finance");
+      createTestData(prefix);
+      String tagKey = "status";
+      String tagValue = "active";
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(prefix, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(MAX_RESULTS, results.getResults().size());
+      assertNotNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("status", s.getMap("matchedTag").get("key"));
+        assertEquals("active", s.getMap("matchedTag").get("value"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search by Tag Key & Invalid Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch02() throws ValidationException {
+    for (String prefix : Arrays.asList(null, ID.uuid())) {
+      // given
+      createTestData(prefix);
+      String tagKey = "day";
+      String tagValue = "today2";
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(prefix, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(0, results.getResults().size());
+      assertNull(results.getNextToken());
+    }
+  }
+
+  /**
+   * Search by 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch03() throws ValidationException {
+    for (String prefix : Arrays.asList(null, ID.uuid())) {
+      // given
+      createTestData(prefix);
+      createTestData("finance");
+      String tagKey = "status";
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, "a", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(prefix, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(MAX_RESULTS, results.getResults().size());
+      assertNotNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("status", s.getMap("matchedTag").get("key"));
+        assertEquals("active", s.getMap("matchedTag").get("value"));
+        DocumentRecord i =
+            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search by 'eq' Tag Key & Value & paginating.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch04() throws ValidationException {
+    for (String prefix : Arrays.asList(null, ID.uuid())) {
+      // given
+      createTestData("finance");
+      createTestData(prefix);
+
+      int limit = 1;
+      String tagKey = "status";
+      String tagValue = "active";
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(prefix, q, null, null, limit);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNotNull(results.getNextToken());
+
+      // given
+      String startkey = results.getNextToken();
+
+      // when
+      Pagination<DynamicDocumentItem> results2 =
+          this.searchService.search(prefix, q, null, startkey, limit);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNotEquals(results.getResults().getFirst().getDocumentId(),
+          results2.getResults().getFirst().getDocumentId());
+      assertEquals("status", results.getResults().getFirst().getMap("matchedTag").get("key"));
+      assertEquals("active", results.getResults().getFirst().getMap("matchedTag").get("value"));
+    }
+  }
+
+  /**
+   * Search multi-value tag 'eq' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch05() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      createTestData("finance");
+      List<DocumentItem> items = createTestData(siteId);
+      DocumentItem item = items.getFirst();
+      DocumentTag tag =
+          new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")
+              .setValues(List.of("active", "notactive"));
+      this.service.saveDocument(siteId, item, List.of(tag));
+
+      String tagKey = "status";
+      String tagValue = "notactive";
+      SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("status", s.getMap("matchedTag").get("key"));
+        assertEquals("notactive", s.getMap("matchedTag").get("value"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search for tag 'eq' with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch06() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
+      saveDocument(siteId, doc0);
+
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      String documentId1 = doc1.documentRecord().documentId();
+      saveDocument(siteId, doc1);
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      String documentId2 = doc2.documentRecord().documentId();
+      saveDocument(siteId, doc2);
+
+      SearchTagCriteria c0 = new SearchTagCriteria("category", null, "thing", null, null);
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c0)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
+
+      // when - wrong document id
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertEquals("thing", s.getMap("matchedTag").get("value"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+
+      // given
+      q = new SearchQueryBuilder().tag(new SearchTagCriteria("nocategory", null, null, null, null));
+
+      // when
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertEquals(documentId2, results.getResults().getFirst().getDocumentId());
+
+      // given
+      q.documentIds(List.of("123"));
+      // when
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+      // then
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /**
+   * Search for tag with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch07() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given - tag only
+      SearchTagCriteria c = new SearchTagCriteria("category", null, null, null, null);
+      final SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      // then
+      assertEquals(2, results.getResults().size());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertNotNull(s.getMap("matchedTag").get("value"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search for wrong eq with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch08() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given - wrong value
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "thing123", null, null);
+      final SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      // then
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /**
+   * Search for tag 'beginsWith' with DocumentId.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch09() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
+      saveDocument(siteId, doc0);
+
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      String documentId1 = doc1.documentRecord().documentId();
+      saveDocument(siteId, doc1);
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc2);
+
+      SearchTagCriteria c = new SearchTagCriteria("category", "th", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(documentId0, documentId1)).build();
+
+      // when - wrong document id
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertEquals("thing", s.getMap("matchedTag").get("value"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search for 100 DocumentIds.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch10() throws ValidationException {
+    // given
+    final int count = 100;
+    SearchTagCriteria c = new SearchTagCriteria("category", null, null, null, null);
+
+    Collection<String> docNumbers = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      DocumentRecordSet doc = createTestDocumentWithTags(Map.of("category", "person_" + i), true);
+      docNumbers.add(doc.documentRecord().documentId());
+      saveDocument(null, doc);
+    }
+
+    SearchQuery q = new SearchQueryBuilder().tag(c).documentIds(docNumbers).build();
+
+    // when - wrong document id
+    Pagination<DynamicDocumentItem> results =
+        this.searchService.search(null, q, null, null, MAX_RESULTS);
+
+    // then
+    assertEquals(count, results.getResults().size());
+  }
+
+  /**
+   * Search for tag 'eq' with DocumentId & values.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch11() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      saveDocument(siteId, doc0);
+      String documentId0 = doc0.documentRecord().documentId();
+
+      DocumentRecordSet doc1 =
+          createTestDocumentWithTags(Map.of("category", Arrays.asList("thing", "thing1")), false);
+      saveDocument(siteId, doc1);
+      String documentId1 = doc1.documentRecord().documentId();
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("nocategory", ""), true);
+      saveDocument(siteId, doc2);
+      String documentId2 = doc2.documentRecord().documentId();
+
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "thing", null, null);
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
+
+      // when - wrong document id
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getNextToken());
+
+      results.getResults().forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertEquals("thing", s.getMap("matchedTag").get("value"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+
+      // given
+      q.documentIds(List.of("123"));
+
+      // when
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+      // then
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /**
+   * Search for tag 'eqOr' with DocumentId & values.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch12() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentRecordSet doc0 = createTestDocumentWithTags("1", Map.of("category", "person"), true);
+      final String documentId0 = doc0.documentRecord().documentId();
+
+      DocumentRecordSet doc1 = createTestDocumentWithTags("2",
+          Map.of("category", Arrays.asList("thing", "thing1")), false);
+      final String documentId1 = doc1.documentRecord().documentId();
+
+      DocumentRecordSet doc2 = createTestDocumentWithTags("3", Map.of("category", "person3"), true);
+      final String documentId2 = doc2.documentRecord().documentId();
+
+      DocumentRecordSet doc3 = createTestDocumentWithTags("4", Map.of("category", "person2"), true);
+      final String documentId3 = doc3.documentRecord().documentId();
+
+      final DocumentRecordSet doc4 =
+          createTestDocumentWithTags("5", Map.of("category", "person5"), true);
+
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+      saveDocument(siteId, doc3);
+      saveDocument(siteId, doc4);
+
+      SearchTagCriteria c =
+          new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person2"), null);
+      SearchQueryBuilder q = new SearchQueryBuilder().tag(c)
+          .documentIds(Arrays.asList(documentId0, documentId1, documentId2, documentId3));
+
+      // when - wrong document id
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertNull(results.getNextToken());
+
+      assertEquals("category", list.getFirst().getMap("matchedTag").get("key"));
+      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
+      assertEquals("USERDEFINED", list.get(0).getMap("matchedTag").get("type"));
+
+      assertEquals("category", list.get(1).getMap("matchedTag").get("key"));
+      assertEquals("person2", list.get(1).getMap("matchedTag").get("value"));
+      assertEquals("USERDEFINED", list.get(1).getMap("matchedTag").get("type"));
+
+      list.forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+
+      // given
+      q.documentIds(List.of("123"));
+
+      // when
+      results = this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
+      // then
+      list = results.getResults();
+      assertEquals(0, list.size());
+    }
+  }
+
+  /**
+   * Search for tag 'eqOr'.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch13() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentRecordSet doc0 = createTestDocumentWithTags(Map.of("category", "person"), true);
+      DocumentRecordSet doc1 = createTestDocumentWithTags(Map.of("category", "thing"), true);
+      DocumentRecordSet doc2 = createTestDocumentWithTags(Map.of("category", "person1"), true);
+      final DocumentRecordSet doc3 =
+          createTestDocumentWithTags(Map.of("nocategory", "person"), true);
+      saveDocument(siteId, doc0);
+      saveDocument(siteId, doc1);
+      saveDocument(siteId, doc2);
+      saveDocument(siteId, doc3);
+
+      SearchTagCriteria c =
+          new SearchTagCriteria("category", null, null, Arrays.asList("thing", "person1"), null);
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when - wrong document id
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertNull(results.getNextToken());
+
+      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
+      assertEquals("person1", list.get(1).getMap("matchedTag").get("value"));
+
+      list.forEach(s -> {
+        assertNotNull(s.getInsertedDate());
+        assertNotNull(s.getPath());
+        assertEquals("category", s.getMap("matchedTag").get("key"));
+        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
+        assertNull(s.getMap("matchedTag").get("documentId"));
+        DocumentRecord i =
+            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(i);
+      });
+    }
+  }
+
+  /**
+   * Search for meta "folder" data.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch14() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc0.setPath("test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      DocumentItem doc1 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc1.setPath("test1.pdf");
+      this.service.saveDocument(siteId, doc1, null);
+
+      DocumentItem doc2 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc2.setPath("sample/test3.pdf");
+      this.service.saveDocument(siteId, doc2, null);
+
+      DocumentItem doc3 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc3.setPath("sample/anotherone/test4.pdf");
+      this.service.saveDocument(siteId, doc3, null);
+
+      String folder = "";
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      final int expected = 3;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(expected, list.size());
+      assertNull(results.getNextToken());
+
+      int i = 0;
+      assertNotNull(list.get(i).getDocumentId());
+      assertEquals("sample", list.get(i++).getPath());
+      assertEquals(doc1.getDocumentId(), results.getResults().get(i).getDocumentId());
+      assertEquals("test1.pdf", list.get(i++).getPath());
+      assertEquals(doc0.getDocumentId(), results.getResults().get(i).getDocumentId());
+      assertEquals("test2.pdf", list.get(i).getPath());
+
+      // given
+      folder = "sample";
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, folder, null, null, null))
+          .build();
+
+      // when
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      list = results.getResults();
+      assertEquals(2, list.size());
+      assertEquals("anotherone", list.get(0).getPath());
+      assertNotNull(list.get(0).getDocumentId());
+      assertEquals("sample/test3.pdf", list.get(1).getPath());
+      assertEquals(doc2.getDocumentId(), list.get(1).getDocumentId());
+
+      // given
+      folder = "sample/anotherone";
+      q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, folder, null, null, null))
+          .build();
+
+      // when
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals("sample/anotherone/test4.pdf", list.getFirst().getPath());
+      assertEquals(doc3.getDocumentId(), list.getFirst().getDocumentId());
+    }
+  }
+
+  /**
+   * Add and Delete Document.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch15() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc0.setPath("sample/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      SearchQuery q0 =
+          new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
+      SearchQuery q1 = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, "sample", null, null, null)).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results0 =
+          this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
+
+      Pagination<DynamicDocumentItem> results1 =
+          this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.getFirst().getPath());
+
+      List<DynamicDocumentItem> list1 = results1.getResults();
+      assertEquals(1, list1.size());
+      assertEquals("sample/test2.pdf", list1.getFirst().getPath());
+
+      // given
+      q0 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null))
+          .build();
+      q1 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "sample", null, null, null))
+          .build();
+
+      // when
+      this.service.deleteDocument(siteId, DocumentArtifact.of(doc0.getDocumentId(), null), false);
+
+      // then
+      results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
+      list0 = results0.getResults();
+      assertEquals(1, list0.size());
+      assertEquals("sample", list0.getFirst().getPath());
+
+      results1 = this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
+      assertEquals(0, results1.getResults().size());
+    }
+  }
+
+  /**
+   * Search for meta "folder" different cases data.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch16() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc0.setPath("Chicago/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      DocumentItem doc1 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc1.setPath("abc.pdf");
+      this.service.saveDocument(siteId, doc1, null);
+
+      DocumentItem doc2 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc2.setPath("aaaa/test3.pdf");
+      this.service.saveDocument(siteId, doc2, null);
+
+      String folder = "";
+      SearchQuery q = new SearchQueryBuilder()
+          .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      final int expected = 3;
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(expected, list.size());
+      assertNull(results.getNextToken());
+
+      int i = 0;
+      assertNotNull(list.get(i).getDocumentId());
+      assertEquals("aaaa", list.get(i++).getPath());
+      assertEquals("Chicago", list.get(i++).getPath());
+      assertEquals("abc.pdf", list.get(i).getPath());
+    }
+  }
+
+  /**
+   * Save document twice and change path make sure only 1 result.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch17() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc0.setPath("/a/b/test2.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      doc0.setPath("/c/b/test3.pdf");
+      this.service.saveDocument(siteId, doc0, null);
+
+      String folder = "";
+      SearchMetaCriteria meta = new SearchMetaCriteria(null, folder, null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(meta).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(2, list.size());
+      assertEquals("a", list.get(0).getPath());
+      assertEquals("c", list.get(1).getPath());
+
+      meta = new SearchMetaCriteria(null, "a/b", null, null, null);
+      q = new SearchQueryBuilder().meta(meta).build();
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      list = results.getResults();
+      assertEquals(0, list.size());
+
+      meta = new SearchMetaCriteria(null, "c/b", null, null, null);
+      q = new SearchQueryBuilder().meta(meta).build();
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+      list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals("/c/b/test3.pdf", list.getFirst().getPath());
+    }
+  }
+
+  /**
+   * Save document and search by path.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch18() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String path = "/a/b/test2.pdf";
+      DocumentItem doc = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      doc.setPath(path);
+      this.service.saveDocument(siteId, doc, null);
+
+      SearchMetaCriteria meta = new SearchMetaCriteria(null, null, null, null, path);
+      SearchQuery q = new SearchQueryBuilder().meta(meta).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      List<DynamicDocumentItem> list = results.getResults();
+      assertEquals(1, list.size());
+      assertEquals(doc.getDocumentId(), list.getFirst().getDocumentId());
+      assertEquals("/a/b/test2.pdf", list.getFirst().getPath());
+
+      // given - invalid path
+      path = ID.uuid();
+      meta = new SearchMetaCriteria(null, null, null, null, path);
+      q = new SearchQueryBuilder().meta(meta).build();
+
+      // when
+      results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /**
+   * Search by 'between' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearch19() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      final String documentId0 = createDocument(siteId, "date", "2024-03-19T02:45:04+0000");
+      final String documentId1 = createDocument(siteId, "date", "2024-03-20T02:45:04+0000");
+      createDocument(siteId, "date", "2024-03-21T02:45:04+0000");
+
+      SearchTagCriteria c = new SearchTagCriteria("date", null, null, null,
+          new SearchTagCriteriaRange("2024-03-10", "2024-03-21", null));
+      SearchQuery q = new SearchQueryBuilder().tag(c).build();
+
+      // when
+      Pagination<DynamicDocumentItem> results =
+          this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
+      assertEquals(2, results.getResults().size());
+      assertEquals(documentId0, results.getResults().get(0).getDocumentId());
+      assertEquals(documentId1, results.getResults().get(1).getDocumentId());
+    }
+  }
+
+  /**
+   * Search by duplicate attributes.
+   *
+   */
+  @Test
+  public void testSearch20() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      SearchAttributeCriteria a0 =
+          new SearchAttributeCriteria("category", null, "person", null, null);
+      SearchQuery q = new SearchQueryBuilder().attributes(Arrays.asList(a0, a0)).build();
+
+      // when
+      try {
+        this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+        fail();
+      } catch (ValidationException e) {
+        // then
+        assertEquals("duplicate attributes in query", e.errors().iterator().next().error());
+      }
+    }
+  }
+
+  /**
+   * Search by 'eq' / 'beginsWith' Tag Key & Value.
+   * 
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearchForDocumentIds01() throws ValidationException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      final String documentId0 = createDocument(siteId, "category", "person0");
+      final String documentId1 = createDocument(siteId, "category", "person1");
+      createDocument(siteId, "category", "other");
+
+      SearchTagCriteria c = new SearchTagCriteria("category", null, "person0", null, null);
+
+      // when
+      Pagination<String> results =
+          this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
+
+      // then
+      assertEquals(1, results.getResults().size());
+      assertNull(results.getNextToken());
+      assertEquals(documentId0, results.getResults().getFirst());
+
+      // given
+      c = new SearchTagCriteria("category", "per", null, null, null);
+
+      // when
+      results = this.searchService.searchForDocumentIds(siteId, c, null, MAX_RESULTS);
+
+      // then
+      assertNull(results.getNextToken());
+      assertEquals(2, results.getResults().size());
+      assertTrue(results.getResults().contains(documentId0));
+      assertTrue(results.getResults().contains(documentId1));
+    }
+  }
+}

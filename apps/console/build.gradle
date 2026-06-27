@@ -1,0 +1,69 @@
+description = "FormKiQ Core - Console"
+
+apply plugin: 'distribution'
+
+sourceSets {
+  integration {
+    java.srcDir "$projectDir/src/integration/java"
+    resources.srcDir "$projectDir/src/integration/resources"
+
+    compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    runtimeClasspath += output + compileClasspath
+  }
+}
+
+configurations {
+  integrationImplementation.extendsFrom testImplementation
+  integrationRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+
+  implementation project(':adapters:aws:s3')
+  implementation project(':adapters:aws:ssm')
+  implementation project(':adapters:aws:dynamodb')
+  implementation project(':domain:documents')
+  implementation project(':libs:http')
+  implementation project(':libs:strings')
+  implementation project(':libs:lambda-services')
+
+  implementation libs.slf4j.simple
+  implementation libs.aws.lambda.core
+  implementation libs.json
+
+  testImplementation project(':adapters:aws:cognito-identity')
+  testImplementation project(':adapters:aws:cognito-identityprovider')
+  testImplementation project(':testing:test-utils')
+  testImplementation libs.gson
+  testImplementation libs.slf4j.simple
+
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly  libs.junit.platform.launcher
+
+  testImplementation libs.playwright
+}
+
+tasks.register("integrationTest", Test) {
+  testClassesDirs = sourceSets.integration.output.classesDirs
+  classpath = sourceSets.integration.runtimeClasspath
+}
+
+tasks.distTar.enabled = false
+
+distZip {
+  archiveFileName = "console/console-installer.zip"
+}
+
+distributions {
+  main {
+    contents {
+      from compileJava
+      from processResources
+      into('lib') {
+        from configurations.runtimeClasspath
+      }
+      into '/'
+    }
+  }
+}

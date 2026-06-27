@@ -1,0 +1,231 @@
+plugins {
+  alias(libs.plugins.formkiq.ytt)
+}
+
+description = "FormKiQ CloudFormation Packaging"
+
+def cloudFormationResources = rootProject.file("src/main/resources/cloudformation")
+def openApiTemplate = rootProject.file("src/main/resources/cloudformation/api/openapi.gotmpl")
+def openApiPartials = rootProject.file("src/main/resources/cloudformation/api/partials")
+def openApiPathPartials = rootProject.file("src/main/resources/cloudformation/api/partials/paths")
+def openApiPathPartialFiles = {
+  fileTree(openApiPathPartials) {
+    include "**/*.yaml"
+  }.files.sort { a, b -> a.name <=> b.name ?: a.path <=> b.path }.collect { it.absolutePath }
+}
+def detectedLambdaArchitecture = ["aarch64", "arm64"].contains(System.getProperty("os.arch")) ? "arm64" : "x86_64"
+def lambdaArchitecture = providers.gradleProperty("lambdaArchitecture").orElse(detectedLambdaArchitecture)
+
+if (!["x86_64", "arm64"].contains(lambdaArchitecture.get())) {
+  throw new GradleException("Invalid lambdaArchitecture '${lambdaArchitecture.get()}'. Expected one of: x86_64, arm64")
+}
+
+ytt {
+  defaultDataValues.put("version", project.version.toString())
+  defaultDataValues.put("lambdaArchitecture", lambdaArchitecture.get())
+
+  specs {
+    apiLambda {
+      from("${cloudFormationResources}/api/api-lambda.yaml")
+      into("api/api-lambda.yaml")
+      hash "sha256"
+    }
+
+    api {
+      from(layout.buildDirectory.file("cloudformation/api/api.yaml").get().asFile.absolutePath)
+      into("api/api.yaml")
+      hash "sha256"
+    }
+
+    apiIam {
+      from(layout.buildDirectory.file("cloudformation/api/api-iam.yaml").get().asFile.absolutePath)
+      into("api/api-iam.yaml")
+      hash "sha256"
+    }
+
+    apiApikey {
+      from(layout.buildDirectory.file("cloudformation/api/api-apikey.yaml").get().asFile.absolutePath)
+      into("api/api-apikey.yaml")
+      hash "sha256"
+    }
+
+    apiUserAuth {
+      from("${cloudFormationResources}/api/api-userauth.yaml",
+          "${cloudFormationResources}/api/openapi-userauth.yaml")
+      into("api/api-userauth.yaml")
+      hash "sha256"
+    }
+
+    apiTemplate {
+      from("${cloudFormationResources}/api/template.yaml",
+          "${cloudFormationResources}/api/module-extra-core-ocr.yaml")
+      into("api/template.yaml")
+      hash "sha256"
+    }
+
+    ocr {
+      from("${cloudFormationResources}/api/template-ocr.yaml")
+      into("api/template-ocr.yaml")
+      hash "sha256"
+    }
+
+    typesense {
+      from("${cloudFormationResources}/typesense/template.yaml")
+      into("typesense/template.yaml")
+      hash "sha256"
+    }
+
+    storage {
+      from("${cloudFormationResources}/storage/template.yaml")
+      into("storage/template.yaml")
+      hash "sha256"
+    }
+
+    console {
+      from("${cloudFormationResources}/console/template.yaml")
+      into("console/template.yaml")
+      hash "sha256"
+    }
+
+    template {
+      from("${cloudFormationResources}/template.yaml")
+      into("template.yaml")
+      hash "sha256"
+    }
+
+    cloudFormationOpenApiJwtCf {
+      from(([
+        layout.buildDirectory.file("gomplate/jwt/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
+      into("cloudformation/jwt/api/openapi.yaml")
+    }
+
+    cloudFormationOpenApiIamCf {
+      from(([
+        layout.buildDirectory.file("gomplate/iam/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
+      into("cloudformation/iam/api/openapi.yaml")
+    }
+
+    cloudFormationOpenApiKeyCf {
+      from(([
+        layout.buildDirectory.file("gomplate/key/api/openapi.yaml").get().asFile.absolutePath
+      ]
+      + openApiPathPartialFiles()) as String[])
+      into("cloudformation/key/api/openapi.yaml")
+    }
+  }
+}
+
+def gomplateOpenApiVariants = [
+  JwtCf: [ dirName: "jwt/api"],
+  IamCf: [ dirName: "iam/api"],
+  KeyCf: [ dirName: "key/api"]
+]
+
+gomplateOpenApiVariants.each { suffix, cfg ->
+  tasks.register("gomplateOpenApi${suffix}", Exec) {
+    dependsOn tasks.named('gomplateRenderOpenApiPartials')
+
+    def openApiSpecDatasourceDir = layout.buildDirectory.dir("gomplate/${cfg.dirName}")
+    def openApiSpecOutputFile = layout.buildDirectory.file("gomplate/${cfg.dirName}/openapi.yaml")
+
+    group = 'cloudformation'
+    description = "Generate ${suffix} OpenAPI spec using gomplate."
+
+    inputs.file openApiTemplate
+    outputs.file openApiSpecOutputFile
+
+    commandLine "gomplate",
+        "-f", openApiTemplate.absolutePath,
+        "-d", "path=${openApiSpecDatasourceDir.get().asFile}${File.separator}",
+        "-o", openApiSpecOutputFile.get().asFile.absolutePath,
+        "-t", "${openApiPartials.absolutePath}${File.separator}"
+  }
+}
+
+tasks.register("gomplateOpenApi") {
+  group = "cloudformation"
+  description = "Generate CloudFormation OpenAPI specs using gomplate."
+  dependsOn gomplateOpenApiVariants.keySet().collect { "gomplateOpenApi${it}" }
+}
+
+def cloudFormationApiTemplateVariants = [
+  JwtCf: [dirName: "jwt/api", template: "api.gotmpl", outputFile: "api.yaml"],
+  IamCf: [dirName: "iam/api", template: "api-iam.gotmpl", outputFile: "api-iam.yaml"],
+  KeyCf: [dirName: "key/api", template: "api-apikey.gotmpl", outputFile: "api-apikey.yaml"]
+]
+
+cloudFormationApiTemplateVariants.each { suffix, cfg ->
+  def cloudFormationTemplateFile = rootProject.file("src/main/resources/cloudformation/api/${cfg.template}")
+  def openApiSpecFile = layout.buildDirectory.file("ytt/cloudformation/${cfg.dirName}/openapi.yaml")
+  def openApiSpecOutputFile = layout.buildDirectory.file("cloudformation/api/${cfg.outputFile}")
+
+  tasks.register("cloudFormationApiTemplate${suffix}", Exec) {
+    dependsOn tasks.named("yttRender_cloudFormationOpenApi${suffix}")
+    group = "cloudformation"
+    description = "Generate CloudFormation API templates using gomplate (${cfg.template})."
+    commandLine "gomplate",
+        "-f", cloudFormationTemplateFile.absolutePath,
+        "-o", openApiSpecOutputFile.get().asFile.absolutePath,
+        "-t", "openapi=${openApiSpecFile.get().asFile.absolutePath}"
+  }
+}
+
+tasks.register("cloudFormationApiTemplate") {
+  group = "cloudformation"
+  description = "Generate CloudFormation API templates using gomplate."
+  dependsOn cloudFormationApiTemplateVariants.keySet().collect { "cloudFormationApiTemplate${it}" }
+}
+
+def yttDeps = [
+  "yttRender_cloudFormationOpenApiIamCf" : "gomplateOpenApiIamCf",
+  "yttRender_cloudFormationOpenApiKeyCf" : "gomplateOpenApiKeyCf",
+  "yttRender_cloudFormationOpenApiJwtCf" : "gomplateOpenApiJwtCf",
+  "yttRender_api" : "cloudFormationApiTemplateJwtCf",
+  "yttRender_apiIam" : "cloudFormationApiTemplateIamCf",
+  "yttRender_apiApikey" : "cloudFormationApiTemplateKeyCf"
+]
+
+tasks.withType(com.formkiq.gradle.AbstractYttRenderTask).configureEach { t ->
+  def genTaskName = yttDeps[t.name]
+  if (genTaskName != null) {
+    t.dependsOn(tasks.named(genTaskName))
+  }
+}
+
+tasks.register("renderCloudFormation") {
+  group = "cloudformation"
+  description = "Render all CloudFormation templates."
+  dependsOn tasks.named("yttRenderAll")
+}
+
+tasks.register('gomplateRenderOpenApiPartials', Copy) {
+  description = 'Generate gomplate resources for CloudFormation OpenAPI specs.'
+  group = 'cloudformation'
+
+  into(layout.buildDirectory.dir("gomplate"))
+
+  from("${cloudFormationResources}/api/jwt") {
+    into('jwt/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
+  }
+
+  from("${cloudFormationResources}/api/iam") {
+    into('iam/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
+  }
+
+  from("${cloudFormationResources}/api/key") {
+    into('key/api')
+    exclude '**-docs.yaml'
+    rename('title-api.yaml', 'title.yaml')
+    rename('desc-api.yaml', 'desc.yaml')
+  }
+}

@@ -1,0 +1,2894 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /sites:
+    get:
+      operationId: GetSites
+      description: Returns the list of sites that the user has access to
+      summary: Get site(s) access
+      tags:
+        - System Management
+      parameters:
+        - name: "status"
+          in: "query"
+          description: "Fetch sites with status (only valid when using SitePermissions 'defined'"
+          schema:
+            "$ref": "#/components/schemas/SiteStatus"
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetSitesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddSite
+      description: Add Site
+      summary: Add Site
+      tags:
+        - System Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSiteRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+  #@overlay/match missing_ok=True
+  /sites/{siteId}:
+    patch:
+      operationId: UpdateSite
+      description: Update Site
+      summary: Update Site
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSiteRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpdateResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+  
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/groups:
+    get:
+      operationId: GetSiteGroups
+      description: Returns list of groups and permissions belonging to site
+      summary: Get group(s) and permissions belonging to site
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetSiteGroupsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/groups/{groupName}:
+    get:
+      operationId: GetSiteGroup
+      description: Returns details of a group and permissions belonging to site
+      summary: Get group and permissions belonging to site
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/groupNamePath'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetSiteGroupResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteSiteGroup
+      description: Deletes Site Group and permissions
+      summary: Deletes Site Group and permissions
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/groupNamePath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/groups/{groupName}/permissions:
+    put:
+      operationId: SetSiteGroupPermissions
+      description: Set Site's Group Permissions
+      summary: Set Site's Group Permissions
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/groupNamePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetGroupPermissionsRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SetResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/index:
+    get:
+      operationId: GetOpenSearchIndex
+      description: |-
+        Returns the OpenSearch index settings 
+
+        (Deprecated use /sites/{siteId}/opensearch/indices)
+      summary: Get site(s) OpenSearch index settings
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchIndexResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    put:
+      operationId: SetOpenSearchIndex
+      description: Sets the OpenSearch index settings
+      summary: Set site(s) OpenSearch index settings
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetOpenSearchIndexRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SetOpenSearchIndexResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    delete:
+      operationId: DeleteOpenSearchIndex
+      description: Deletes the OpenSearch index
+      summary: Deletes site(s) OpenSearch index
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/global/opensearch/indices:
+    get:
+      operationId: GetAllOpenSearchIndices
+      description: Returns all OpenSearch indices
+      summary: Get all OpenSearch indices
+      tags:
+        - System Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/global/opensearch/indices/{indexName}:
+    delete:
+      operationId: DeleteOpenSearchIndexByName
+      description: Deletes the OpenSearch index by name
+      summary: Deletes OpenSearch index by name
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/indexNamePath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/indices:
+    get:
+      operationId: GetOpenSearchIndices
+      description: Returns the OpenSearch indices
+      summary: Get site(s) OpenSearch indices
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchIndiceResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    put:
+      operationId: SetOpenSearchIndices
+      description: Sets the OpenSearch index to use for a SiteId
+      summary: Set site(s) OpenSearch index to use for a SiteId
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetOpenSearchIndiceRequest'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SetResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/global/opensearch/snapshotRepositories:
+    get:
+      operationId: GetOpenSearchSnapshotRepositories
+      description: |-
+        Returns all configured OpenSearch S3 snapshot repositories for the deployment.
+
+        This endpoint is available to administrators when the fulltext OpenSearch module is installed and snapshot support is enabled. Snapshot repositories are not supported for OpenSearch Serverless.
+      summary: List OpenSearch snapshot repositories
+      tags:
+        - System Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/global/opensearch/snapshotRepositories/{repositoryName}/cleanup:
+    post:
+      operationId: CleanupOpenSearchSnapshotRepository
+      description: |-
+        Cleans up stale data in the specified OpenSearch snapshot repository.
+
+        This endpoint clears data no longer referenced by any existing snapshot. This operation is not supported for OpenSearch Serverless.
+      summary: Cleanup OpenSearch snapshot repository
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/snapshotRepositoryNamePath'
+        - name: cluster_manager_timeout
+          in: query
+          description: "The amount of time to wait for a response from the cluster manager node."
+          required: false
+          schema:
+            type: "string"
+        - name: timeout
+          in: query
+          description: "The amount of time to wait for the operation to complete."
+          required: false
+          schema:
+            type: "string"
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CleanupOpenSearchSnapshotRepositoryResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/snapshotRepository:
+    get:
+      operationId: GetOpenSearchSnapshotRepository
+      description: |-
+        Returns the S3 snapshot repository configured for the specified site.
+
+        The repository stores manual snapshots for the site's OpenSearch index. It is named from the site and application environment and is created automatically when a snapshot is requested. Snapshot repositories are not supported for OpenSearch Serverless.
+      summary: Get site OpenSearch snapshot repository
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchSnapshotRepositoryResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    delete:
+      operationId: DeleteOpenSearchSnapshotRepository
+      description: |-
+        Deletes the S3 snapshot repository configured for the specified site's OpenSearch index.
+
+        This removes the OpenSearch repository registration, not the site's index. This operation is not supported for OpenSearch Serverless.
+      summary: Delete site OpenSearch snapshot repository
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/snapshots:
+    get:
+      operationId: GetOpenSearchSnapshots
+      description: |-
+        Returns snapshots for the specified site's OpenSearch index.
+
+        For provisioned OpenSearch domains, the response is read from the site's S3 snapshot repository. For OpenSearch Serverless, the response is read from the automated snapshot repository.
+      summary: List site OpenSearch snapshots
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchSnapshotResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/snapshots/{snapshotName}:
+    get:
+      operationId: GetOpenSearchSnapshot
+      description: |-
+        Returns details for a snapshot of the specified site's OpenSearch index.
+
+        For provisioned OpenSearch domains, the supplied snapshot name is resolved to the site's stored snapshot name before lookup. For OpenSearch Serverless, the response is read from the automated snapshot repository.
+      summary: Get site OpenSearch snapshot
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/snapshotNamePath'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpenSearchSnapshotResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    post:
+      operationId: AddOpenSearchSnapshot
+      description: |-
+        Creates a manual snapshot of the specified site's OpenSearch index.
+
+        If the site's S3 snapshot repository does not already exist, it is registered before the snapshot is created. The supplied snapshot name is stored with the site prefix. This operation is not supported for OpenSearch Serverless.
+      summary: Create site OpenSearch snapshot
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/snapshotNamePath'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AddResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    delete:
+      operationId: DeleteOpenSearchSnapshot
+      description: |-
+        Deletes a manual snapshot from the specified site's S3 snapshot repository.
+
+        The supplied snapshot name is resolved to the site's stored snapshot name before deletion. This operation is not supported for OpenSearch Serverless.
+      summary: Delete site OpenSearch snapshot
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/snapshotNamePath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opensearch/snapshots/{snapshotName}/restore:
+    post:
+      operationId: AddOpenSearchRestoreSnapshot
+      description: |-
+        Restores the specified snapshot into a separate OpenSearch index for the site.
+
+        The restored index is created from the site's current index name with the snapshot name and "_restored" suffix. For provisioned OpenSearch domains, the snapshot is read from the site's S3 snapshot repository. For OpenSearch Serverless, the snapshot is read from the automated snapshot repository.
+      summary: Restore site OpenSearch snapshot
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/snapshotNamePath'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AddResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+    delete:
+      operationId: DeleteOpenSearchRestoreSnapshot
+      description: |-
+        Deletes the restored OpenSearch index created from the specified snapshot.
+
+        This deletes only the restored index named with the snapshot name and "_restored" suffix. It does not delete the original site index or the snapshot. This operation is not supported for OpenSearch Serverless.
+      summary: Delete restored OpenSearch snapshot index
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/snapshotNamePath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200CorsDeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/fulltextLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/schema/document:
+    get:
+      operationId: GetSitesSchema
+      description: Gets Sites schema
+      summary: Get Sites Schema
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeQueryParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetSitesSchemaResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetSitesSchema
+      description: Sets Sites schema
+      summary: Set Sites Schema
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSitesSchemaRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/schema/document/attributes/{key}/allowedValues:
+    get:
+      operationId: GetSitesSchemaAttributeAllowedValues
+      tags:
+        - Schemas
+      description: |-
+        Returns an attribute's allowed values from the site schema
+      summary: Get Attribute Allowed Values
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/keyParam'
+        - $ref: '#/components/parameters/localeQueryParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetAttributeAllowedValuesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/classifications:
+    get:
+      operationId: GetSitesClassifications
+      description: Gets Sites Classifications
+      summary: Get Sites Classifications
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetClassificationsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddClassification
+      description: Add Classification
+      summary: Add Classification
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddClassificationRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddClassificationResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/classifications/{classificationId}:
+    get:
+      operationId: GetClassification
+      description: Get Classification
+      summary: Get Classification
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/classificationIdParam'
+        - $ref: '#/components/parameters/localeQueryParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetClassificationResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteClassification
+      description: Delete Classification
+      summary: Delete Classification
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/classificationIdParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetClassification
+      description: Sets Classification
+      summary: Set Classification
+      tags:
+        - Schemas
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/classificationIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetClassificationRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/classifications/{classificationId}/attributes/{key}/allowedValues:
+    get:
+      operationId: GetClassificationAttributeAllowedValues
+      tags:
+        - Schemas
+      description: |-
+        Returns an attribute's allowed values that spans for a specific classifications and site schema
+      summary: Get Classification's Attribute Allowed Values
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/classificationIdParam'
+        - $ref: '#/components/parameters/keyParam'
+        - $ref: '#/components/parameters/localeQueryParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetAttributeAllowedValuesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/configuration:
+    get:
+      operationId: GetConfiguration
+      description: Returns the list of sites that the user has access to
+      summary: Get site configuration
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetConfigurationResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    patch:
+      operationId: UpdateConfiguration
+      description: Update the System Management configuration
+      summary: Update site configuration
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigurationRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfigurationResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/apiKeys:
+    get:
+      operationId: GetApiKeys
+      description: Returns the list of ApiKeys
+      summary: Get API Keys
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetApiKeysResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddApiKey
+      description: Adds a new API Key
+      summary: Add API Key
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddApiKeyRequest'
+            examples:
+              AddApiKey:
+                value:
+                  name: My API Key
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddApiKeyResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/apiKeys/{apiKey}:
+    delete:
+      operationId: DeleteApiKey
+      description: Adds a new API Key
+      summary: Delete API Key
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/apiKeyParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteApiKeyResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/opa/accessPolicies:
+    get:
+      operationId: GetOpaAccessPolicies
+      description: Returns a list of OPA Access Policies, can only be requested with ADMIN privileges
+      summary: Get OPAs Access Policies
+      tags:
+        - Access Control
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpaAccessPoliciesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opa/accessPolicy:
+    get:
+      operationId: GetOpaAccessPolicy
+      description: Returns OPA Access Policy, can only be requested with ADMIN privileges
+      summary: Get OPA Access Policy
+      tags:
+        - Access Control
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpaAccessPolicyResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/opa/accessPolicy/policyItems:
+    get:
+      operationId: GetOpaAccessPolicyItems
+      description: Returns OPA Access Policy Items, can only be requested with ADMIN privileges
+      summary: Get OPA Access Policy Items
+      tags:
+        - Access Control
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetOpaAccessPolicyItemsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetOpaAccessPolicyItems
+      description: |-
+        Sets opa access policy items
+      summary: Set opa access policy items, can only be requested with ADMIN privileges
+      tags:
+        - Access Control
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetOpaAccessPolicyItemsRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+        '400':
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi201"
+    delete:
+      operationId: DeleteOpaAccessPolicyItems
+      summary: Delete OPA Access Policy Items
+      description: Delete OPA Access Policy Items
+      tags:
+        - Access Control
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/locales:
+    get:
+      operationId: GetLocales
+      description: Returns a list of locale(s) in a specified site
+      summary: Get Locales
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetLocalesResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddLocale
+      description: Adds a new locale to the specified site
+      summary: Add Locale
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddLocaleRequest'
+      responses:
+        '201':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/locales/{locale}:
+    delete:
+      operationId: DeleteLocale
+      summary: Delete Locale
+      description: Delete Locale
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/locales/{locale}/resourceItems:
+    get:
+      operationId: GetLocaleResourceItems
+      description: Returns the list resource items
+      summary: Get Resource Items by Locale
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+        - $ref: '#/components/parameters/nextParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetLocaleResourceItemsResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    post:
+      operationId: AddLocaleResourceItem
+      description: Adds a new localized resource item for a given locale
+      summary: Add Locale Resource Item
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddLocaleResourceItemRequest'
+            examples:
+              interfaceResourceItem:
+                summary: Interface Resource Item Example
+                value:
+                  resourceItem:
+                    itemType: "INTERFACE"
+                    interfaceKey: "mainMenuTitle"
+                    localizedValue: "Main Menu"
+              schemaResourceItem:
+                summary: Schema Resource Item Example
+                value:
+                  resourceItem:
+                    itemType: "SCHEMA"
+                    attributeKey: "documentCategory"
+                    allowedValue: "invoice"
+                    localizedValue: "Facture"
+              classificationResourceItem:
+                summary: Classification Resource Item Example
+                value:
+                  resourceItem:
+                    itemType: "CLASSIFICATION"
+                    attributeKey: "usageRegistrariat"
+                    allowedValue: "ID"
+                    localizedValue: "Gestion identitaire"
+                    classificationId: "219a7dd6-5fb2-4556-ad71-0ab4312fe577"
+      responses:
+        '200':
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddLocaleResourceItemResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/locales/{locale}/resourceItems/{itemKey}:
+    get:
+      operationId: GetLocaleResourceItem
+      description: Returns the resource item
+      summary: Get Resource Item by Locale
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+        - $ref: '#/components/parameters/itemKeyParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetLocaleResourceItemResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetLocaleResourceItem
+      description: Set a new Locale Resource Item
+      summary: Set Locale Resource Item
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+        - $ref: '#/components/parameters/itemKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLocaleResourceItemRequest'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    delete:
+      operationId: DeleteLocaleResourceItem
+      summary: Delete Local Resource Item
+      description: Delete Local Resource Item
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/localeParam'
+        - $ref: '#/components/parameters/itemKeyParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeEq:
+      type: "object"
+      description: "Attribute EQ criteria"
+      properties:
+        stringValue:
+          type: "string"
+          description: "The value to compare the Attribute Key value to"
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+        booleanValue:
+          type: "boolean"
+          description: "The value to compare the Attribute Key value to"
+        input:
+          $ref: "#/components/schemas/OpaPolicyAttributeInput"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeGt:
+      type: "object"
+      description: "Attribute greater than criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeGte:
+      type: "object"
+      description: "Attribute greater than and equals to criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeLt:
+      type: "object"
+      description: "Attribute less than criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeLte:
+      type: "object"
+      description: "Attribute less than and equals to criteria"
+      properties:
+        numberValue:
+          type: "number"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeNeq:
+      type: "object"
+      description: "Attribute not equal to criteria"
+      properties:
+        stringValue:
+          type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeIn:
+      type: "object"
+      description: "Attribute In to criteria"
+      properties:
+        stringValues:
+          type: "array"
+          items:
+            type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeNotIn:
+      type: "object"
+      description: "Attribute Not In to criteria"
+      properties:
+        stringValues:
+          type: "array"
+          items:
+            type: "string"
+          description: "The value to compare the Attribute Key value to"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttributeInput:
+      type: "object"
+      properties:
+        matchUsername:
+          type: "boolean"
+          description: "Match Input Username"
+        matchUserClaim:
+          type: "string"
+          description: "Matches user claim name to match against the Attribute Key value"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInputMethod:
+      type: "object"
+      properties:
+        in:
+          type: "array"
+          description: "List of HTTP Methods"
+          items:
+            type: "string"
+        notIn:
+          type: "array"
+          description: "List of HTTP Methods"
+          items:
+            type: "string"
+
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInputResource:
+      type: "object"
+      properties:
+        in:
+          type: "array"
+          description: "List of Resources"
+          items:
+            type: "string"
+        notIn:
+          type: "array"
+          description: "List of Resources"
+          items:
+            type: "string"
+
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaCompositeKey:
+      type: "object"
+      properties:
+        attributeKeys:
+          type: "array"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    AddAttributeSchemaRequired:
+      type: object
+      properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
+        minNumberOfValues:
+          type: number
+          description: The minimum number of attribute values
+        maxNumberOfValues:
+          type: number
+          description: The maximum number of attribute values
+        attributeKey:
+          type: string
+        defaultValue:
+          type: string
+          description: Default value
+        defaultValues:
+          type: array
+          description: Default values
+          items:
+            type: string
+        allowedValues:
+          type: array
+          description: Only valid string values
+          items:
+            type: string
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaRequired:
+      type: "object"
+      properties:
+        attributeKey:
+          type: "string"
+        defaultEntityTypeId:
+          type: "string"
+        defaultEntityId:
+          type: "string"
+        minNumberOfValues:
+          type: "number"
+          description: "The minimum number of attribute values"
+        maxNumberOfValues:
+          type: "number"
+          description: "The maximum number of attribute values"
+        defaultValue:
+          type: "string"
+          description: "Default value"
+        defaultValues:
+          type: "array"
+          description: "Default values"
+          items:
+            type: "string"
+        allowedValues:
+          type: "array"
+          description: "Only valid string values"
+          items:
+            type: "string"
+        localizedAllowedValues:
+          type: "object"
+          additionalProperties:
+            type: string
+
+
+    #@overlay/match missing_ok=True
+    AddAttributeSchemaOptional:
+      type: object
+      properties:
+        defaultEntityTypeId:
+          type: string
+        defaultEntityId:
+          type: string
+        minNumberOfValues:
+          type: number
+          description: The minimum number of attribute values
+        maxNumberOfValues:
+          type: number
+          description: The maximum number of attribute values
+        attributeKey:
+          type: string
+        allowedValues:
+          type: array
+          description: Only valid string values
+          items:
+            type: string
+
+    #@overlay/match missing_ok=True
+    AttributeSchemaOptional:
+      type: "object"
+      properties:
+        defaultEntityTypeId:
+          type: "string"
+        defaultEntityId:
+          type: "string"
+        minNumberOfValues:
+          type: "number"
+          description: "The minimum number of attribute values"
+        maxNumberOfValues:
+          type: "number"
+          description: "The maximum number of attribute values"
+        attributeKey:
+          type: "string"
+        allowedValues:
+          type: "array"
+          description: "Only valid string values"
+          items:
+            type: "string"
+        localizedAllowedValues:
+          type: "object"
+          additionalProperties:
+            type: string
+
+    #@overlay/match missing_ok=True
+    LocaleResourceType:
+      type: string
+      description: Type of Locale Resource
+      enum:
+        - INTERFACE
+        - SCHEMA
+        - CLASSIFICATION
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceInterfaceItem:
+      type: object
+      required:
+        - itemType
+        - interfaceKey
+        - localizedValue
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+        interfaceKey:
+          type: "string"
+          description: "Interface Key"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceSchemaItem:
+      type: object
+      required:
+        - itemType
+        - attributeKey
+        - allowedValue
+        - localizedValue
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceClassificationItem:
+      type: object
+      required:
+        - itemType
+        - attributeKey
+        - allowedValue
+        - localizedValue
+        - classificationId
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        classificationId:
+          type: "string"
+          description: "Classification Id"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyAttribute:
+      type: "object"
+      properties:
+        key:
+          type: "string"
+          description: "Attribute Key"
+        eq:
+          $ref: "#/components/schemas/OpaPolicyAttributeEq"
+        gt:
+          $ref: "#/components/schemas/OpaPolicyAttributeGt"
+        gte:
+          $ref: "#/components/schemas/OpaPolicyAttributeGte"
+        lt:
+          $ref: "#/components/schemas/OpaPolicyAttributeLt"
+        lte:
+          $ref: "#/components/schemas/OpaPolicyAttributeLte"
+        neq:
+          $ref: "#/components/schemas/OpaPolicyAttributeNeq"
+        in:
+          $ref: "#/components/schemas/OpaPolicyAttributeIn"
+        notIn:
+          $ref: "#/components/schemas/OpaPolicyAttributeNotIn"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyInput:
+      type: "object"
+      properties:
+        httpMethod:
+          $ref: "#/components/schemas/OpaPolicyInputMethod"
+        resource:
+          $ref: "#/components/schemas/OpaPolicyInputResource"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshotFailure:
+      type: object
+      description: Details about a failure for a specific shard in a snapshot.
+      properties:
+        index:
+          type: string
+          description: The index name.
+        index_uuid:
+          type: string
+          description: UUID of the index.
+        shard_id:
+          type: integer
+          format: int32
+          description: Shard identifier.
+        reason:
+          type: string
+          description: Full exception/message explaining why the failure occurred.
+        node_id:
+          type: string
+          description: ID of the node handling that shard.
+        status:
+          type: string
+          description: Status of the failure (e.g., INTERNAL_SERVER_ERROR).
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshotShard:
+      type: object
+      properties:
+        total:
+          type: "number"
+          description: "Total number of shards"
+        failed:
+          type: "number"
+          description: "Failed number of shards"
+        successful:
+          type: "number"
+          description: "Successful number of shards"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchAlias:
+      type: object
+      properties:
+        name:
+          type: "string"
+          description: "Name of Alias"
+
+    #@overlay/match missing_ok=True
+    AddResourceItem:
+      oneOf:
+        - $ref: '#/components/schemas/AddLocaleResourceInterfaceItem'
+        - $ref: '#/components/schemas/AddLocaleResourceSchemaItem'
+        - $ref: '#/components/schemas/AddLocaleResourceClassificationItem'
+
+    #@overlay/match missing_ok=True
+    ResourceItem:
+      properties:
+        itemType:
+          $ref: "#/components/schemas/LocaleResourceType"
+        localizedValue:
+          type: "string"
+          description: "Localized Value"
+        interfaceKey:
+          type: "string"
+          description: "Interface Key"
+        itemKey:
+          type: "string"
+          description: "Item Key"
+        attributeKey:
+          type: "string"
+          description: "Attribute Key"
+        allowedValue:
+          type: "string"
+          description: "Resource value"
+        classificationId:
+          type: "string"
+          description: "Classification Id"
+
+    #@overlay/match missing_ok=True
+    ApiKeyPermission:
+      type: string
+      description: List of API permissions (defaults to READ / WRITE / DELETE)
+      enum:
+        - READ
+        - WRITE
+        - DELETE
+        - GOVERN
+
+    #@overlay/match missing_ok=True
+    OpaPolicy:
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+          description: "SiteId to apply OPA Policy to"
+        policy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+
+    #@overlay/match missing_ok=True
+    OpaPolicyItem:
+      type: "object"
+      properties:
+        policy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+        allRoles:
+          items:
+            type: "string"
+          description: "User must match all roles"
+        anyRoles:
+          items:
+            type: "string"
+          description: "User must match any role"
+        excludedRoles:
+          items:
+            type: "string"
+          description: "User must NOT have these roles"
+        attributes:
+          items:
+            $ref: "#/components/schemas/OpaPolicyAttribute"
+        input:
+          $ref: "#/components/schemas/OpaPolicyInput"
+
+
+    #@overlay/match missing_ok=True
+    ApiKey:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of API Key"
+        apiKey:
+          type: "string"
+          description: "API Key value"
+        userId:
+          type: "string"
+        siteId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        permissions:
+          type: "array"
+          description: "List of permissions"
+          items:
+            type: "string"
+            enum:
+              - READ
+              - WRITE
+              - DELETE
+              - GOVERN
+        groups:
+          type: "array"
+          description: "List of groups to add as custom claims to API Key"
+          items:
+            type: "string"
+
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchSnapshot:
+      type: object
+      properties:
+        snapshot:
+          type: "string"
+          description: "Snapshot name"
+        uuid:
+          type: "string"
+          description: "Snapshot’s universally unique identifier (UUID)"
+        version:
+          type: "string"
+          description: "Open Search version that created the snapshot"
+        indices:
+          type: "array"
+          description: "Indices in the snapshot"
+          items:
+            type: "string"
+        shards:
+          $ref: "#/components/schemas/OpenSearchSnapshotShard"
+        failures:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchSnapshotFailure"
+        state:
+          type: "string"
+          description: "Snapshot status. Possible values: IN_PROGRESS, SUCCESS, FAILED, PARTIAL"
+        start_time:
+          type: "string"
+          description: "Date/time when the snapshot creation process began"
+        start_time_in_millis:
+          type: "number"
+          description: "Time (in milliseconds) when the snapshot creation process began"
+        end_time:
+          type: "string"
+          description: "Date/time when the snapshot creation process ended"
+        end_time_in_millis:
+          type: "number"
+          description: "Time (in milliseconds) when the snapshot creation process ended"
+        duration_in_millis:
+          type: "number"
+          description: "Total time (in milliseconds) that the snapshot creation process lasted"
+
+
+    #@overlay/match missing_ok=True
+    OpenSearchS3Repository:
+      type: object
+      properties:
+        repository:
+          type: "string"
+          description: "Name of the Repository"
+        bucket:
+          type: "string"
+          description: "Name of the S3 bucket"
+
+    #@overlay/match missing_ok=True
+    SiteGroup:
+      type: object
+      properties:
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SiteGroupPermissions"
+
+    #@overlay/match missing_ok=True
+    LocaleInfo:
+      type: object
+      required:
+        - "locale"
+      properties:
+        locale:
+          type: "string"
+          description: "Name of Locale"
+
+    #@overlay/match missing_ok=True
+    OpenSearchIndex:
+      type: object
+      properties:
+        numberOfReplicas:
+          type: "string"
+          description: "The number of replicas per shard"
+        numberOfShards:
+          type: "string"
+          description: "The number of shards in index"
+        documentCount:
+          type: "string"
+          description: "The number of documents in index"
+        storeSize:
+          type: "string"
+          description: "The store size of the index"
+        name:
+          type: "string"
+          description: "Name of Index"
+        aliases:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchAlias"
+
+    #@overlay/match missing_ok=True
+    ClassificationSummary:
+      type: "object"
+      required:
+        - "classificationId"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+        name:
+          description: "Name of Classification"
+          type: "string"
+        userId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+
+    #@overlay/match missing_ok=True
+    Classification:
+      type: "object"
+      properties:
+        name:
+          description: "Name of Classification"
+          type: "string"
+        userId:
+          type: "string"
+        insertedDate:
+          type: "string"
+          description: "Inserted Timestamp"
+        attributes:
+          $ref: "#/components/schemas/SchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    AddClassification:
+      type: "object"
+      properties:
+        name:
+          description: "Name of Classification"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SetSchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    OpenSearchIndexSetting:
+      type: object
+      properties:
+        numberOfReplicas:
+          type: "string"
+          description: "The number of replicas per shard"
+        numberOfShards:
+          type: "string"
+          description: "The number of shards in index"
+
+    #@overlay/match missing_ok=True
+    UpdateSite:
+      type: "object"
+      properties:
+        title:
+          description: "Title of Site"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/SiteStatus"
+
+    #@overlay/match missing_ok=True
+    SetSchemaAttributes:
+      type: "object"
+      properties:
+        compositeKeys:
+          type: "array"
+          description: "List of Composite Keys"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaCompositeKey"
+        required:
+          type: "array"
+          description: "List of Required Attributes"
+          items:
+            $ref: "#/components/schemas/AddAttributeSchemaRequired"
+        optional:
+          type: "array"
+          description: "List of Optional Attribute"
+          items:
+            $ref: "#/components/schemas/AddAttributeSchemaOptional"
+        allowAdditionalAttributes:
+          type: "boolean"
+          default: true
+
+    #@overlay/match missing_ok=True
+    SchemaAttributes:
+      type: "object"
+      properties:
+        compositeKeys:
+          type: "array"
+          description: "List of Composite Keys"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaCompositeKey"
+        required:
+          type: "array"
+          description: "List of Required Attributes"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaRequired"
+        optional:
+          type: "array"
+          description: "List of Optional Attribute"
+          items:
+            $ref: "#/components/schemas/AttributeSchemaOptional"
+        allowAdditionalAttributes:
+          type: "boolean"
+          default: true
+
+    #@overlay/match missing_ok=True
+    SetLocaleResourceItemRequest:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/AddResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceItemRequest:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/AddResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddLocaleResourceItemResponse:
+      type: object
+      properties:
+        itemKey:
+          type: "string"
+          description: "Item Key of resource"
+
+    #@overlay/match missing_ok=True
+    AddLocaleRequest:
+      type: object
+      properties:
+        locale:
+          type: "string"
+          description: "Name of Locale"
+
+    #@overlay/match missing_ok=True
+    GetLocalesResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        locales:
+          type: "array"
+          description: "List of Locale"
+          items:
+            $ref: "#/components/schemas/LocaleInfo"
+
+    #@overlay/match missing_ok=True
+    GetLocaleResourceItemsResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        resourceItems:
+          type: "array"
+          description: "List of permissions"
+          items:
+            $ref: "#/components/schemas/ResourceItem"
+
+    #@overlay/match missing_ok=True
+    GetLocaleResourceItemResponse:
+      type: object
+      properties:
+        resourceItem:
+          $ref: "#/components/schemas/ResourceItem"
+
+    #@overlay/match missing_ok=True
+    AddApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: "string"
+          description: "Name of API Key"
+        groups:
+          type: "array"
+          description: "Optional list of groups to add as custom claims to API Key"
+          items:
+            type: "string"
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ApiKeyPermission"
+
+    #@overlay/match missing_ok=True
+    AddApiKeyResponse:
+      type: object
+      properties:
+        apiKey:
+          type: "string"
+          description: "API Key Identifier"
+
+    #@overlay/match missing_ok=True
+    DeleteApiKeyResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPoliciesResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        opaPolicies:
+          type: "array"
+          description: "List of OPA policies"
+          items:
+            $ref: "#/components/schemas/OpaPolicy"
+
+    #@overlay/match missing_ok=True
+    SetOpaAccessPolicyItemsRequest:
+      type: object
+      required:
+        - policyItems
+      properties:
+        policyItems:
+          type: "array"
+          description: "List of OPA policy items"
+          items:
+            $ref: "#/components/schemas/OpaPolicyItem"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPolicyResponse:
+      type: object
+      properties:
+        opaPolicy:
+          type: "string"
+          description: "OPA Policy in REGO format"
+
+    #@overlay/match missing_ok=True
+    GetOpaAccessPolicyItemsResponse:
+      type: object
+      properties:
+        policyItems:
+          items:
+            $ref: "#/components/schemas/OpaPolicyItem"
+
+    #@overlay/match missing_ok=True
+    GetApiKeysResponse:
+      type: object
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        apiKeys:
+          type: "array"
+          description: "List of ApiKeys"
+          items:
+            $ref: "#/components/schemas/ApiKey"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchSnapshotResponse:
+      type: object
+      properties:
+        snapshots:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchSnapshot"
+
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchSnapshotRepositoryResponse:
+      type: object
+      properties:
+        s3Repositories:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OpenSearchS3Repository"
+
+
+    #@overlay/match missing_ok=True
+    CleanupOpenSearchSnapshotRepositoryResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "The OpenSearch cleanup snapshot repository response."
+
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndiceRequest:
+      type: object
+      properties:
+        indexName:
+          type: "string"
+          description: "The name of the index to set for SiteId"
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndexRequest:
+      type: object
+      properties:
+        indexSettings:
+          $ref: "#/components/schemas/OpenSearchIndexSetting"
+
+    #@overlay/match missing_ok=True
+    SetOpenSearchIndexResponse:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    GetSiteGroupsResponse:
+      type: object
+      properties:
+        groupNames:
+          type: "array"
+          items:
+            type: "string"
+
+    #@overlay/match missing_ok=True
+    GetSiteGroupResponse:
+      type: object
+      properties:
+        group:
+          $ref: "#/components/schemas/SiteGroup"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchIndiceResponse:
+      type: object
+      properties:
+        indices:
+          type: "array"
+          description: "OpenSearch Indices"
+          items:
+            $ref: "#/components/schemas/OpenSearchIndex"
+
+    #@overlay/match missing_ok=True
+    GetOpenSearchIndexResponse:
+      type: object
+      properties:
+        indexSettings:
+          $ref: "#/components/schemas/OpenSearchIndexSetting"
+
+    #@overlay/match missing_ok=True
+    AddClassificationResponse:
+      type: "object"
+      properties:
+        classificationId:
+          type: "string"
+          description: "Classification Identifier"
+
+    #@overlay/match missing_ok=True
+    GetSitesSchemaResponse:
+      type: "object"
+      properties:
+        name:
+          description: "Name of schema"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    GetClassificationResponse:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/Classification"
+
+    #@overlay/match missing_ok=True
+    GetClassificationsResponse:
+      type: "object"
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        classifications:
+          type: "array"
+          description: "List of classifications"
+          items:
+            $ref: "#/components/schemas/ClassificationSummary"
+
+    #@overlay/match missing_ok=True
+    SetClassificationRequest:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/AddClassification"
+
+    #@overlay/match missing_ok=True
+    UpdateSiteRequest:
+      type: "object"
+      properties:
+        site:
+          $ref: "#/components/schemas/UpdateSite"
+
+    #@overlay/match missing_ok=True
+    AddClassificationRequest:
+      type: "object"
+      properties:
+        classification:
+          $ref: "#/components/schemas/AddClassification"
+
+    #@overlay/match missing_ok=True
+    SetSitesSchemaRequest:
+      type: "object"
+      properties:
+        name:
+          description: "Name of schema"
+          type: "string"
+        attributes:
+          $ref: "#/components/schemas/SetSchemaAttributes"
+
+    #@overlay/match missing_ok=True
+    AddSiteRequest:
+      type: "object"
+      properties:
+        site:
+          $ref: "#/components/schemas/AddSite"
+    #@overlay/match missing_ok=True
+    AddSite:
+      type: "object"
+      properties:
+        id:
+          description: "Site Id"
+          type: "string"
+        title:
+          description: "Title of Site"
+          type: "string"
+        status:
+          $ref: "#/components/schemas/SiteStatus"
+    #@overlay/match missing_ok=True
+    GetSitesResponse:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username of request caller
+        roles:
+          type: array
+          items:
+            type: string
+        samlGroups:
+          type: array
+          description: List of User Saml Groups
+          items:
+            type: string
+        userClaims:
+          type: object
+          description: Map of custom JWT claims
+          additionalProperties:
+            type: object
+        sites:
+          type: array
+          description: List of sites
+          items:
+            $ref: '#/components/schemas/Site'
+    #@overlay/match missing_ok=True
+    Site:
+      type: "object"
+      properties:
+        siteId:
+          type: "string"
+          description: "Site Identifier"
+        title:
+          type: "string"
+          description: "Site Title"
+        status:
+          $ref: "#/components/schemas/SiteStatus"
+        permission:
+          deprecated: true
+          description: "Deprecated: use permissions"
+          $ref: "#/components/schemas/SitePermission"
+        roles:
+          type: "array"
+          description: List of roles used to get permissions
+          items:
+            type: "string"
+        permissions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SiteGroupPermissions"
+        uploadEmail:
+          type: "string"
+          description: "SiteId document upload email address"
+        config:
+          $ref: "#/components/schemas/SiteConfig"
+        usage:
+          $ref: "#/components/schemas/SiteUsage"
+    #@overlay/match missing_ok=True
+    SiteStatus:
+      type: string
+      description: "Site status"
+      enum:
+        - ACTIVE
+        - INACTIVE
+    #@overlay/match missing_ok=True
+    SitePermission:
+      type: string
+      deprecated: true
+      description: "Deprecated: use permissions"
+      enum:
+        - READ_WRITE
+        - READ_ONLY
+    #@overlay/match missing_ok=True
+    SiteGroupPermissions:
+      type: string
+      description: "Site Group Permissions"
+      enum:
+        - ADMIN
+        - DELETE
+        - READ
+        - WRITE
+        - GOVERN
+    #@overlay/match missing_ok=True
+    SiteConfig:
+      type: "object"
+      properties:
+        maxContentLengthBytes:
+          type: "string"
+          description: "Set Maximum Document Content Length in Bytes"
+        maxDocuments:
+          type: "string"
+          description: "Set Maximum number of Documents allowed"
+        maxWebhooks:
+          type: "string"
+          description: "Set Maximum number of Webhooks allowed"
+        ocr:
+          $ref: "#/components/schemas/OcrConfig"
+    #@overlay/match missing_ok=True
+    SiteUsage:
+      type: "object"
+      properties:
+        documentCount:
+          type: "number"
+          description: "The number of documents in the site (only tracked when using MaxDocuments)"
+        ocrTransactionCount:
+          type: "number"
+          description: "The number of ocr tx requests in the site (only tracked when using OCR MaxTransactions)"
+    #@overlay/match missing_ok=True
+    OcrConfig:
+      type: "object"
+      properties:
+        maxPagesPerTransaction:
+          type: "number"
+          description: "Max number of OCR pages (-1 for unlimited)"
+        maxTransactions:
+          type: "number"
+          description: "Max number of OCR actions that can be created (-1 for unlimited)"
+
+    #@overlay/match missing_ok=True
+    UpdateConfigurationRequest:
+      type: "object"
+      properties:
+        chatGptApiKey:
+          type: "string"
+          description: "ChatGPT Api Key"
+        maxContentLengthBytes:
+          type: "string"
+          description: "Set Maximum Document Content Length in Bytes"
+        maxDocuments:
+          type: "string"
+          description: "Set Maximum number of Documents allowed"
+        maxWebhooks:
+          type: "string"
+          description: "Set Maximum number of Webhooks allowed"
+        notificationEmail:
+          type: "string"
+          description: "Email address to use for notifications"
+        document:
+          $ref: "#/components/schemas/DocumentConfig"
+        ocr:
+          $ref: "#/components/schemas/OcrConfig"
+        google:
+          $ref: "#/components/schemas/GoogleConfig"
+        docusign:
+          $ref: "#/components/schemas/DocusignConfig"
+    
+    #@overlay/match missing_ok=True
+    UpdateConfigurationResponse:
+      type: object
+      properties:
+        message:
+          type: "string"
+          description: "Result message"
+
+    #@overlay/match missing_ok=True
+    DocumentConfig:
+      type: "object"
+      properties:
+        contentTypes:
+          $ref: "#/components/schemas/DocumentConfigContentTypes"
+        retentionAndDisposition:
+          $ref: "#/components/schemas/DocumentConfigRetentionAndDisposition"
+
+    #@overlay/match missing_ok=True
+    DocumentConfigContentTypes:
+      type: object
+      properties:
+        allowlist:
+          type: array
+          items:
+            type: string
+            description: Allowed MIME types
+          example:
+            - application/pdf
+            - image/png
+            - image/jpeg
+        denylist:
+          type: array
+          items:
+            type: string
+            description: Disallowed MIME types
+          example:
+            - application/x-msdownload
+            - application/x-sh
+
+    #@overlay/match missing_ok=True
+    DocumentConfigRetentionAndDisposition:
+      type: object
+      properties:
+        dispositionAction:
+          $ref: "#/components/schemas/DocumentConfigDispositionAction"
+        softDeleteRetentionInDays:
+          type: "integer"
+          format: "int32"
+          default: -1
+          minimum: -1
+          description: "Number of days to retain soft deleted documents before permanent deletion. Use -1 to retain soft deleted documents until trash is cleared manually."
+
+    #@overlay/match missing_ok=True
+    DocumentConfigDispositionAction:
+      type: string
+      default: SOFT_DELETE
+      enum:
+        - SOFT_DELETE
+        - DELETE
+
+    #@overlay/match missing_ok=True
+    GetConfigurationResponse:
+      type: object
+      properties:
+        chatGptApiKey:
+          type: "string"
+          description: "ChatGPT API Key"
+        maxContentLengthBytes:
+          type: "string"
+          description: "Set Maximum Document Content Length in Bytes"
+        maxDocuments:
+          type: "string"
+          description: "Set Maximum number of Documents allowed"
+        maxWebhooks:
+          type: "string"
+          description: "Set Maximum number of Webhooks allowed"
+        notificationEmail:
+          type: "string"
+          description: "Email address to use for notifications (Must be verified identity created in AWS SES)"
+        document:
+          $ref: "#/components/schemas/DocumentConfig"
+        ocr:
+          $ref: "#/components/schemas/OcrConfig"
+        google:
+          $ref: "#/components/schemas/GoogleConfig"
+        docusign:
+          $ref: "#/components/schemas/DocusignConfig"
+
+    #@overlay/match missing_ok=True
+    GoogleConfig:
+      type: "object"
+      properties:
+        workloadIdentityAudience:
+          type: "string"
+          description: "Workload Identity Audience"
+        workloadIdentityServiceAccount:
+          type: "string"
+          description: "Workload Service Account"
+
+    #@overlay/match missing_ok=True
+    DocusignConfig:
+      type: "object"
+      properties:
+        userId:
+          type: "string"
+          description: "Docusign UserId"
+        integrationKey:
+          type: "string"
+          description: "Docusign Integration Key or ClientId"
+        rsaPrivateKey:
+          type: "string"
+          description: "Docusign Rsa Private Key"
+        hmacSignature:
+          type: "string"
+          description: |-
+            Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.

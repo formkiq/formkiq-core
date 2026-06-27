@@ -28,7 +28,7 @@
 	<Match>
 		<Bug pattern="EI_EXPOSE_REP" />
 		<OR>
-			<Class name="com.formkiq.module.actions.Action" />
+			<Class name="com.formkiq.aws.dynamodb.actions.Action" />
 			<Class
 				name="com.formkiq.module.actions.services.ActionsServiceExtension" />
 		</OR>
@@ -37,7 +37,7 @@
 	<Match>
 		<Bug pattern="EI_EXPOSE_REP2" />
 		<OR>
-			<Class name="com.formkiq.module.actions.Action" />
+			<Class name="com.formkiq.aws.dynamodb.actions.Action" />
 		</OR>
 	</Match>
 

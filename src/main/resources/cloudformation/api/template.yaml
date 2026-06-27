@@ -34,6 +34,13 @@ Parameters:
     Description: The maximum amount of seconds lambda function will run for (seconds)
     Default: 60
 
+  LambdaArchitecture:
+    Type: String
+    Description: Lambda instruction set architecture
+    AllowedValues:
+      - x86_64
+      - arm64
+
   EnablePublicUrls:
     Description: Whether to enable public urls
     Default: "false"
@@ -100,6 +107,34 @@ Parameters:
     Type: String
     Description: TypeSense API Endpoint
 
+  DocumentsTableName:
+    Type: String
+    Description: Documents DynamoDB Table Name
+
+  CacheTableName:
+    Type: String
+    Description: Cache DynamoDB Table Name
+
+  DocumentSyncsTableName:
+    Type: String
+    Description: Document Syncs DynamoDB Table Name
+
+  DocumentsS3Bucket:
+    Type: String
+    Description: Documents S3 Bucket Name
+
+  DocumentsStageS3Bucket:
+    Type: String
+    Description: Documents Stage S3 Bucket Name
+
+  SnsDocumentEventArn:
+    Type: String
+    Description: SNS Topic for Document Events
+
+  DocumentsDeadLetterQueueArn:
+    Type: String
+    Description: Documents Dead Letter Queue Arn
+
   VpcStackName:
     Type: String
     Description: FormKiQ VPC Stack Name 
@@ -133,6 +168,11 @@ Parameters:
     Description: >
       The level of logging for the AWS Platform System logs.
 
+  CertificateStackNameShortlinksApiDomain:
+    Type: String
+    Description: Certificate Shortlinks Api Domain
+    Default: ""
+
   CertificateStackNameHttpApiDomain:
     Type: String
     Description: Certificate Http Api Domain
@@ -154,7 +194,22 @@ Parameters:
     Description: >
       Controls the runtime operational behavior of the FormKiQ environment.
 
+  CertificateStackNameUserAuthApiDomain:
+    Type: String
+    Description: Certificate Auth Api Domain
+    Default: ""
+
 Conditions:
+
+  HasCertificateStackNameUserAuthApiDomain:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthApiDomain
+              - "_"
 
   HasCertificateStackNameHttpApiDomain:
     Fn::Not:
@@ -232,6 +287,18 @@ Resources:
           Ref: TypesenseApiKey
         TypesenseApiEndpoint:
           Ref: TypesenseApiEndpoint
+        DocumentsTableName:
+          Ref: DocumentsTableName
+        CacheTableName:
+          Ref: CacheTableName
+        DocumentSyncsTableName:
+          Ref: DocumentSyncsTableName
+        DocumentsS3Bucket:
+          Ref: DocumentsS3Bucket
+        DocumentsStageS3Bucket:
+          Ref: DocumentsStageS3Bucket
+        SnsDocumentEventArn:
+          Ref: SnsDocumentEventArn
         OcrBucket:
           Ref: OcrBucket
         OcrQueueUrl:
@@ -246,6 +313,8 @@ Resources:
           Ref: VpcStackName
         EnablePublicUrls:
           Ref: EnablePublicUrls
+        LambdaArchitecture:
+          Ref: LambdaArchitecture
 
   HttpApi:
     Type: AWS::Serverless::Application
@@ -306,6 +375,8 @@ Resources:
           Ref: LogLevelSystem
         FormKiQType:
           Ref: FormKiQType
+        DocumentsTableName:
+          Ref: DocumentsTableName
         DocumentsApiRequestsArn:
           Fn::GetAtt: 
           - ApiLambda
@@ -316,22 +387,26 @@ Resources:
           - Outputs.OcrProcessorArn
         VpcStackName:
           Ref: VpcStackName
+        LambdaArchitecture:
+          Ref: LambdaArchitecture
 
-          #!  AuthApi:
-#!    Type: AWS::Serverless::Application
-#!    Properties:
-#!      Location: ./api-auth.yaml
-#!      Parameters:
-#!        AppEnvironment:
-#!          Ref: AppEnvironment
-#!        CognitoUserPool:
-#!          Ref: CognitoUserPool
-#!        CognitoUserPoolClient:
-#!          Ref: CognitoUserPoolClient
-#!        DocumentsApiRequestsArn:
-#!          Fn::GetAtt:
-#!            - ApiLambda
-#!            - Outputs.DocumentsApiRequestsArn
+  UserAuthApi:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./api-userauth.yaml
+      Parameters:
+        AppEnvironment:
+          Ref: AppEnvironment
+        CognitoUserPool:
+          Ref: CognitoUserPool
+        CognitoUserPoolClient:
+          Ref: CognitoUserPoolClient
+        CertificateStackNameUserAuthApiDomain:
+          Ref: CertificateStackNameUserAuthApiDomain
+        DocumentsApiRequestsArn:
+          Fn::GetAtt:
+            - ApiLambda
+            - Outputs.DocumentsApiRequestsArn
           
   DocumentsApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -486,53 +561,52 @@ Resources:
       Stage: 
         Ref: KeyDocumentsStage
 
-#!  AuthStage:
-#!    Type: AWS::ApiGatewayV2::Stage
-#!    DependsOn:
-#!      - AuthApi
-#!    Properties:
-#!      ApiId:
-#!        Fn::GetAtt:
-#!          - AuthApi
-#!          - Outputs.AuthApi
-#!      AutoDeploy: true
-#!      Description:
-#!        Fn::Sub: "Auth API ${AppEnvironment}"
-#!      StageName: "$default"
-#!      AccessLogSettings:
-#!        DestinationArn:
-#!          Fn::GetAtt:
-#!            - AuthStageAccessLogs
-#!            - Arn
-#!        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
+  UserAuthStage:
+    Type: AWS::ApiGatewayV2::Stage
+    DependsOn:
+      - UserAuthApi
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+          - UserAuthApi
+          - Outputs.UserAuthApi
+      AutoDeploy: true
+      Description:
+        Fn::Sub: "Auth API ${AppEnvironment}"
+      StageName: "$default"
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+            - AuthStageAccessLogs
+            - Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "integrationStatus": $context.integrationStatus, "integrationLatency": $context.integrationLatency, "responseLength":"$context.responseLength" }'
 
-#!  AuthStageMapping:
-#!    Condition: HasCertificateStackName
-#!    Type: 'AWS::ApiGatewayV2::ApiMapping'
-#!    Properties:
-#!      DomainName:
-#!        Fn::ImportValue:
-#!          Fn::Sub: '${CertificateStackName}-AuthApiDomain'
-#!      ApiId:
-#!        Fn::GetAtt:
-#!          - AuthApi
-#!          - Outputs.AuthApi
-#!      Stage:
-#!        Ref: AuthStage
+  AuthStageMapping:
+    Condition: HasCertificateStackNameUserAuthApiDomain
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    Properties:
+      DomainName:
+        Ref: CertificateStackNameUserAuthApiDomain
+      ApiId:
+        Fn::GetAtt:
+          - UserAuthApi
+          - Outputs.UserAuthApi
+      Stage:
+        Ref: UserAuthStage
 
-#!  AuthStageAccessLogs:
-#!    Type: AWS::Logs::LogGroup
-#!    Properties:
-#!      RetentionInDays:
-#!        Ref: LogRetentionInDays
-#!      LogGroupName:
-#!        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
-#!      Tags:
-#!        - Key: AppEnvironment
-#!          Value:
-#!            Ref: AppEnvironment
-#!        - Key: Application
-#!          Value: "FormKiQ"
+  AuthStageAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays:
+        Ref: LogRetentionInDays
+      LogGroupName:
+        Fn::Sub: "/aws/vendedlogs/${AWS::StackName}/APIAuthAccessLogs"
+      Tags:
+        - Key: AppEnvironment
+          Value:
+            Ref: AppEnvironment
+        - Key: Application
+          Value: "FormKiQ"
 
   DocumentsHttpApiIdParameter:
     Type: AWS::SSM::Parameter
@@ -549,7 +623,23 @@ Resources:
         Application: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
+
+  UserAuthApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The URL for the User Authentication endpoint"
+      Name:
+        Fn::Sub: "/formkiq/${AppEnvironment}/api/UserAuthApiUrl"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - UserAuthApi
+          - Outputs.UserAuthApiUrl
+      Tags:
+        Application: "FormKiQ"
+        AppEnvironment:
+          Fn::Sub: "${AppEnvironment}"
+
   DocumentsHttpApiUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -769,6 +859,16 @@ Resources:
           Fn::GetAtt:
             - OcrQueue
             - Arn
+        DocumentsTableName:
+          Ref: DocumentsTableName
+        DocumentsS3Bucket:
+          Ref: DocumentsS3Bucket
+        DocumentsStageS3Bucket:
+          Ref: DocumentsStageS3Bucket
+        OcrBucket:
+          Ref: OcrBucket
+        SnsDocumentEventArn:
+          Ref: SnsDocumentEventArn
           
 Outputs:
   ApiGatewayInvokeRole:
@@ -787,6 +887,18 @@ Outputs:
       Fn::GetAtt: 
       - ApiLambda
       - Outputs.DocumentsApiRequests
+  DocumentsHttpApi:
+    Description: HTTP API
+    Value:
+      Fn::GetAtt:
+        - HttpApi
+        - Outputs.DocumentsHttpApi
+  DocumentsIamApi:
+    Description: IAM API
+    Value:
+      Fn::GetAtt:
+        - IamApi
+        - Outputs.DocumentsIamApi
   DocumentsIamApiUrl:
     Description: "The endpoint url for the IAM API"
     Value: 
@@ -805,16 +917,9 @@ Outputs:
       Fn::GetAtt:
         - HttpApi
         - Outputs.DocumentsHttpApiUrl
-#!  AuthApiUrl:
-#!    Description: "The endpoint url for the Auth API"
-#!    Value:
-#!      Fn::If:
-#!        - HasCertificateStackName
-#!        - Fn::Join:
-#!            - ''
-#!            - - 'https://'
-#!              - Fn::ImportValue:
-#!                  Fn::Sub: '${CertificateStackName}-AuthApiDomain'
-#!        - Fn::GetAtt:
-#!            - AuthApi
-#!            - Outputs.AuthApiUrl
+  UserAuthApiUrl:
+    Description: "The endpoint url for the Auth API"
+    Value:
+      Fn::GetAtt:
+        - UserAuthApi
+        - Outputs.UserAuthApiUrl

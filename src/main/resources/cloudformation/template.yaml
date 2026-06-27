@@ -61,6 +61,20 @@ Parameters:
     Type: String
     AllowedValues: ["true", "false"]
 
+  TokenAccessIdValidityMinutes:
+    Description: The time limit in minutes, after which the access and ID tokens are no longer valid and cannot be used.
+    Type: Number
+    MinValue: "5"
+    MaxValue: "1440"
+    Default: "1440"
+
+  TokenRefreshValidityMinutes:
+    Description: The time limit in minutes, after which the refresh token is no longer valid and cannot be used.
+    Type: Number
+    MinValue: "60"
+    MaxValue: "5256000"
+    Default: "43200"
+
   VpcStackName:
     Type: String
     Description: >
@@ -216,6 +230,7 @@ Resources:
           Ref: VpcStackName
         FormKiQType: "core"
         FormKiQVersion: #@ data.values.version or assert.fail("missing version")
+        LambdaArchitecture: #@ data.values.lambdaArchitecture or assert.fail("missing lambdaArchitecture")
 
   CoreStorage:
     Type: AWS::Serverless::Application
@@ -242,6 +257,10 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
+        LambdaArchitecture:
+          Fn::GetAtt:
+            - Config
+            - Outputs.LambdaArchitecture
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -249,6 +268,9 @@ Resources:
 
   CoreConsole:
     Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreApi
+      - Cognito
     Properties:
       Location: console/template.yaml
       Parameters:
@@ -258,6 +280,26 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
+        Domain:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.Domain
+        CognitoConfigBucket:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoConfigBucket
+        CognitoHostedUi:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoHostedUi
+        CognitoUserPoolId:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId:
+          Fn::GetAtt:
+            - Cognito
+            - Outputs.CognitoUserPoolClientId
         AdminEmail: 
           Ref: AdminEmail
         WAFWebACLId:
@@ -267,42 +309,10 @@ Resources:
           - IsGovCloud
           - "true"
           - "false"
-
-  CoreConsoleInstall:
-    Type: AWS::Serverless::Application
-    DependsOn:
-      - CoreApi
-      - Cognito
-    Properties:
-      Location: console/template-install.yaml
-      Parameters:
-        LogRetentionInDays:
-          Ref: LogRetentionInDays
-        LogFormat:
-          Ref: LogFormat
-        LogLevelApplication:
-          Ref: LogLevelApplication
-        LogLevelSystem:
-          Ref: LogLevelSystem
-        IsGovCloud:
-          Fn::If:
-          - IsGovCloud
-          - "true"
-          - "false"
-        AppEnvironment: 
-          Ref: AppEnvironment
-        ConsoleVersion: 
-          Fn::GetAtt: 
-          - CoreConsole
-          - Outputs.ConsoleVersion
-        ConsoleBucket: 
-          Fn::GetAtt: 
-          - CoreConsole
-          - Outputs.ConsoleBucket
-        ApiUrl: 
-          Fn::GetAtt: 
-          - CoreApi
-          - Outputs.DocumentsHttpApiUrl
+        ApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.DocumentsHttpApiUrl
         IamApiUrl:
           Fn::GetAtt:
             - CoreApi
@@ -311,31 +321,35 @@ Resources:
           Fn::GetAtt:
             - CoreApi
             - Outputs.DocumentsKeyApiUrl
-        AuthApiUrl: 
-          Fn::GetAtt: 
-          - Cognito
-          - Outputs.ApiEndpoint
+        AuthApiUrl:
+          Fn::GetAtt:
+            - CoreApi
+            - Outputs.UserAuthApiUrl
+        DocumentsTableName:
+          Fn::GetAtt:
+            - CoreStorage
+            - Outputs.DocumentsTableName
         AllowAdminCreateUserOnly: "true"
-        CognitoHostedUi:
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+        LogFormat:
+          Ref: LogFormat
+        LogLevelApplication:
+          Ref: LogLevelApplication
+        LogLevelSystem:
+          Ref: LogLevelSystem
+        LambdaArchitecture:
           Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoHostedUi
-        CognitoUserPoolId:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoUserPoolClientId
-        CognitoConfigBucket:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.CognitoConfigBucket
-        Domain:
-          Fn::GetAtt:
-          - Cognito
-          - Outputs.Domain
+            - Config
+            - Outputs.LambdaArchitecture
+
+  CoreConsoleInstall:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - CoreConsole
+    Properties:
+      Location: console/template-install.yaml
+      Parameters:
         HostedZoneId:
           Fn::GetAtt:
           - CoreConsole
@@ -348,14 +362,12 @@ Resources:
   Cognito:
     Type: AWS::Serverless::Application
     DependsOn:
-      - CoreConsole
+      - CoreStorage
     Properties:
       Location: cognito/template.yaml
       Parameters:
         AppEnvironment:
           Ref: AppEnvironment
-        VpcStackName:
-          Ref: VpcStackName
         EnableDeletionProtection:
           Ref: EnableDeletionProtection
         UserPoolName: 
@@ -371,6 +383,12 @@ Resources:
           Fn::Sub: "${PasswordRequireSymbols}"
         PasswordRequireUppercase: 
           Fn::Sub: "${PasswordRequireUppercase}"
+        AccessTokenValidity:
+          Ref: TokenAccessIdValidityMinutes
+        IdTokenValidity:
+          Ref: TokenAccessIdValidityMinutes
+        RefreshTokenValidity:
+          Ref: TokenRefreshValidityMinutes
         Domain: 
           Fn::Sub: "${AppEnvironment}${AWS::AccountId}"
         LogRetentionInDays:
@@ -383,10 +401,10 @@ Resources:
           Ref: LogLevelSystem
         UserPoolTier:
           Ref: UserPoolTier
-        RedirectUrl:
+        LambdaArchitecture:
           Fn::GetAtt:
-          - CoreConsole
-          - Outputs.ConsoleUrl
+            - Config
+            - Outputs.LambdaArchitecture
         
   SsmProperties:
     Type: AWS::Serverless::Application
@@ -462,6 +480,34 @@ Resources:
           Fn::GetAtt:
           - TypeSenseService
           - Outputs.TypesenseApiEndpoint
+        DocumentsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsTableName
+        CacheTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.CacheTableName
+        DocumentSyncsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentSyncsTableName
+        DocumentsS3Bucket:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsS3Buckets
+        DocumentsStageS3Bucket:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsStageS3Bucket
+        SnsDocumentEventArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.SnsDocumentEventArn
+        DocumentsDeadLetterQueueArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsDeadLetterQueueArn
         VpcStackName:
           Ref: VpcStackName
         FormKiQType:
@@ -472,6 +518,10 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQVersion
+        LambdaArchitecture:
+          Fn::GetAtt:
+            - Config
+            - Outputs.LambdaArchitecture
       Tags:
         Application: "FormKiQ"
         AppEnvironment: 
@@ -548,6 +598,18 @@ Resources:
           Fn::GetAtt: 
           - EcsCluster
           - Outputs.ECSCluster
+        DocumentsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsTableName
+        DocumentSyncsTableName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentSyncsTableName
+        DocumentsStreamArn:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsStreamArn
         TypesenseMemory:
           Ref: TypesenseMemory
         LogRetentionInDays:
@@ -558,6 +620,10 @@ Resources:
           Ref: LogLevelApplication
         LogLevelSystem:
           Ref: LogLevelSystem
+        LambdaArchitecture:
+          Fn::GetAtt:
+            - Config
+            - Outputs.LambdaArchitecture
 
   TypesenseApiKeyParameter:
     Type: AWS::SSM::Parameter
@@ -574,22 +640,7 @@ Resources:
           Fn::Sub: "FormKiQ"
         AppEnvironment: 
           Fn::Sub: "${AppEnvironment}"
-          
-  CognitoApiIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "Cognito API ID"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/api/CognitoApiId"
-      Type: String
-      Value:
-        Fn::GetAtt: 
-        - Cognito
-        - Outputs.HttpApi
-      Tags:
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
-          
+
   Monitoring:
     Type: AWS::Serverless::Application
     DependsOn:
@@ -602,6 +653,38 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
+        DocumentsApiRequests:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsApiRequests
+        DocumentsUpdateObject:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsUpdateObject
+        StagingCreateObject:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.StagingCreateObject
+        DocumentActionsProcessor:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentActionsProcessor
+        DocumentsHttpApi:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsHttpApi
+        DocumentsIamApi:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.DocumentsIamApi
+        UserAuthApiUrl:
+          Fn::GetAtt:
+          - CoreApi
+          - Outputs.UserAuthApiUrl
+        DocumentsDeadLetterQueueName:
+          Fn::GetAtt:
+          - CoreStorage
+          - Outputs.DocumentsDeadLetterQueueName
                     
 Outputs:
   AppEnvironment:
@@ -626,12 +709,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsHttpApiUrl
-#!  AuthApiUrl:
-#!    Description: "The endpoint url for the Auth API"
-#!    Value:
-#!      Fn::GetAtt:
-#!        - CoreApi
-#!        - Outputs.AuthApiUrl
+  UserAuthApiUrl:
+    Description: "The endpoint url for the User Auth API"
+    Value:
+      Fn::GetAtt:
+        - CoreApi
+        - Outputs.UserAuthApiUrl
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
     Value: 
@@ -683,12 +766,6 @@ Outputs:
       Fn::GetAtt:
         - CoreStorage
         - Outputs.DocumentsTableArn
-  CognitoApiEndpoint:
-    Description: The Cognito Login API endpoint
-    Value: 
-      Fn::GetAtt: 
-      - Cognito
-      - Outputs.ApiEndpoint
   DocumentsS3Buckets:
     Description: Documents Bucket.
     Value: 

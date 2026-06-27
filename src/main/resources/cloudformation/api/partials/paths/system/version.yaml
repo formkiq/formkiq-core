@@ -1,0 +1,51 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /version:
+    get:
+      operationId: GetVersion
+      summary: Get FormKiQ version
+      description: Return the version of FormKiQ
+      tags:
+        - System Management
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetVersionResponse"
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetVersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          description: "FormKiQ version"
+        type:
+          type: string
+          description: "FormKiQ type"
+        appEnvironment:
+          type: string
+          description: "FormKiQ App Environment"
+        modules:
+          type: array
+          description: "List of installed modules"
+          items:
+            type: "string"

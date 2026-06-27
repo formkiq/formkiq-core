@@ -26,7 +26,7 @@ package com.formkiq.aws.services.lambda;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonParseException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -41,6 +41,18 @@ import java.util.function.BiFunction;
  * @param <T> Type of result
  */
 public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class<T>, T> {
+
+  /**
+   * Static helper for one-off calls.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param type Type of Class.
+   * @param <T> Type of result
+   * @return Result
+   */
+  public static <T> T fromJson(final ApiGatewayRequestEvent event, final Class<T> type) {
+    return new JsonToObject<T>(GsonUtil.getInstance()).apply(event, type);
+  }
 
   /**
    * Static helper for one-off calls.
@@ -59,17 +71,34 @@ public class JsonToObject<T> implements BiFunction<ApiGatewayRequestEvent, Class
   /** {@link Gson}. */
   private final Gson gson;
 
+  /**
+   * constructor.
+   * 
+   * @param awsservice {@link AwsServiceCache}
+   */
   public JsonToObject(final AwsServiceCache awsservice) {
     this.gson = awsservice.getExtension(Gson.class);
   }
 
+  /**
+   * constructor.
+   * 
+   * @param gsonInstance {@link Gson}
+   */
+  public JsonToObject(final Gson gsonInstance) {
+    this.gson = gsonInstance;
+  }
 
   @Override
   public T apply(final ApiGatewayRequestEvent event, final Class<T> classOfT) {
     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(event.getBodyAsBytes()),
         StandardCharsets.UTF_8)) {
-      return gson.fromJson(reader, classOfT);
-    } catch (JsonSyntaxException | IOException e) {
+      var result = gson.fromJson(reader, classOfT);
+      if (result == null) {
+        throw new BadException("invalid JSON body");
+      }
+      return result;
+    } catch (JsonParseException | IOException e) {
       throw new BadException("invalid JSON body");
     }
   }
