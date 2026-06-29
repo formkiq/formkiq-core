@@ -12,7 +12,7 @@ repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.19.0'
+  version = '1.19.1'
 
   plugins.withType(JavaPlugin).configureEach {
     java {
