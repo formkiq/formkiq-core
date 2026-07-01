@@ -89,7 +89,7 @@ public class S3ConnectionBuilder {
   /**
    * Init S3 Client.
    */
-  public void initS3Client() {
+  public synchronized void initS3Client() {
     if (this.s3Client == null) {
       this.s3Client = this.builder.build();
     }
