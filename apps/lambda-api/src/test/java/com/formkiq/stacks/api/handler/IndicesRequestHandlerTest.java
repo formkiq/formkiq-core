@@ -26,19 +26,22 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import java.net.URISyntaxException;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.DocumentSearch;
@@ -47,11 +50,17 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.IndexSearchRequest;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
@@ -61,12 +70,8 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DeleteIndicesResponse;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
-import com.formkiq.stacks.dynamodb.DocumentSearchServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
 /** Unit Tests for request /indices/{type}/{indexKey}. */
@@ -81,15 +86,24 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /**
    * BeforeAll.
-   * 
-   * @throws URISyntaxException URISyntaxException
+   *
    */
   @BeforeAll
-  public static void beforeAll() throws URISyntaxException {
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    documentService =
-        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
-    dss = new DocumentSearchServiceImpl(db, documentService, DOCUMENTS_TABLE);
+  public static void beforeAll() {
+
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry()).build();
+
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
+    documentService = awsServiceCache.getExtension(DocumentService.class);
+    dss = awsServiceCache.getExtension(DocumentSearchService.class);
   }
 
   /**

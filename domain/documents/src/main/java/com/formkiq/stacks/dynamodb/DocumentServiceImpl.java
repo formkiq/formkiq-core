@@ -46,6 +46,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeDerivedType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeHasRetentionMode;
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
@@ -67,6 +68,7 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.entity.RetentionDispositionCompositeAttribute;
+import com.formkiq.aws.dynamodb.entity.RetentionMode;
 import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
@@ -99,7 +101,6 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 import com.formkiq.aws.dynamodb.folders.FindFolderParentByPath;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
@@ -200,90 +201,34 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private final DocumentServiceInterceptor interceptor;
   /** {@link Collection} {@link PresetEntity}. */
   private final Collection<PresetEntity> presets;
+  /** Document Storage Service. */
+  private final DocumentStorageService documentStorage;
   /** Last Short Date. */
   private String lastShortDate = null;
 
   /**
    * constructor.
-   *
-   * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
-   * @param documentVersionsService {@link DocumentVersionService}
-   */
-  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService) {
-    this(connection, documentsTable, documentVersionsService, null);
-  }
-
-  /**
-   * constructor.
-   *
-   * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
-   * @param documentVersionsService {@link DocumentVersionService}
-   * @param parentLastModifiedUpdateIntervalMs long
-   */
-  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService,
-      final long parentLastModifiedUpdateIntervalMs) {
-    this(connection, documentsTable, Collections.emptyList(), documentVersionsService, null,
-        parentLastModifiedUpdateIntervalMs);
-  }
-
-  /**
-   * constructor.
-   *
-   * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
-   * @param documentVersionsService {@link DocumentVersionService}
-   * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
-   */
-  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final DocumentVersionService documentVersionsService,
-      final DocumentServiceInterceptor documentServiceInterceptor) {
-    this(connection, documentsTable, Collections.emptyList(), documentVersionsService,
-        documentServiceInterceptor,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
-  }
-
-  /**
-   * constructor.
    * 
    * @param connection {@link DynamoDbConnectionBuilder}
    * @param documentsTable {@link String}
    * @param presetsEntities {@link Collection} {@link PresetEntity}
    * @param documentVersionsService {@link DocumentVersionService}
    * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
-   */
-  public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final Collection<PresetEntity> presetsEntities,
-      final DocumentVersionService documentVersionsService,
-      final DocumentServiceInterceptor documentServiceInterceptor) {
-    this(connection, documentsTable, presetsEntities, documentVersionsService,
-        documentServiceInterceptor,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
-  }
-
-  /**
-   * constructor.
-   * 
-   * @param connection {@link DynamoDbConnectionBuilder}
-   * @param documentsTable {@link String}
-   * @param presetsEntities {@link Collection} {@link PresetEntity}
-   * @param documentVersionsService {@link DocumentVersionService}
-   * @param documentServiceInterceptor {@link DocumentServiceInterceptor}
+   * @param documentStorageService {@link DocumentStorageService}
    * @param parentLastModifiedUpdateIntervalMs long
    */
   public DocumentServiceImpl(final DynamoDbConnectionBuilder connection,
       final String documentsTable, final Collection<PresetEntity> presetsEntities,
       final DocumentVersionService documentVersionsService,
       final DocumentServiceInterceptor documentServiceInterceptor,
+      final DocumentStorageService documentStorageService,
       final long parentLastModifiedUpdateIntervalMs) {
 
     if (documentsTable == null) {
       throw new IllegalArgumentException("'documentsTable' is null");
     }
 
+    this.documentStorage = documentStorageService;
     this.presets = presetsEntities;
     this.interceptor = documentServiceInterceptor;
     this.indexWriter = new GlobalIndexService(connection, documentsTable);
@@ -603,6 +548,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           return match;
         }).toList();
 
+    deleteStorageObjectLock(siteId, document, documentAttributes);
+
     WriteRequestBuilder batchWriter = new WriteRequestBuilder();
     deleteDocumentAttributes(batchWriter, siteId, documentAttributes);
 
@@ -611,6 +558,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }
 
     return documentAttributes;
+  }
+
+  private void deleteStorageObjectLock(final String siteId, final DocumentArtifact documentArtifact,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
+
+    var hasRetentionMode = new DocumentAttributeHasRetentionMode(dbService);
+    documentAttributes.forEach(a -> {
+      var retentionMode = hasRetentionMode.apply(siteId, a);
+      if (RetentionMode.GOVERNANCE.equals(retentionMode)) {
+        documentStorage.deleteObjectLock(siteId, documentArtifact);
+      }
+    });
   }
 
   private void deleteDocumentAttributes(final WriteRequestBuilder batchWriter, final String siteId,
@@ -1974,14 +1933,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       WriteRequestBuilder builder = new WriteRequestBuilder();
       builder.appends(this.documentTableName, list);
 
+      Collection<DocumentAttributeRecord> attributesToDelete =
+          (Collection<DocumentAttributeRecord>) tx.deletes();
+
+      // delete any Object Locks
+      deleteStorageObjectLock(siteId, document, attributesToDelete);
+
       // delete old composite keys
-      deleteDocumentAttributes(builder, siteId, (Collection<DocumentAttributeRecord>) tx.deletes());
+      deleteDocumentAttributes(builder, siteId, attributesToDelete);
 
       if (builder.batchWriteItem(this.dbClient)) {
         saveDocumentInterceptor(siteId, document, Collections.emptyMap(), Collections.emptyMap(),
             tx);
-        deleteDocumentAttributesInterceptor(siteId, document,
-            (Collection<DocumentAttributeRecord>) tx.deletes());
+        deleteDocumentAttributesInterceptor(siteId, document, attributesToDelete);
       }
     }
   }
@@ -2002,11 +1966,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     var previousAttributes =
         previousAllAttributes.stream().filter(Predicate.not(PREDICIATE_COMPOSITE_KEY)).toList();
 
-    var previousCompositeKeys = previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY)
-        .filter(a -> !a.getKey().startsWith(RETENTION_POLICY.getKey())).toList();
-
     var attributesToBeDeleted =
         getAttributesToBeDeleted(validationAccess, newAttributes, previousAttributes);
+
+    var previousCompositeKeys =
+        previousAllAttributes.stream().filter(PREDICIATE_COMPOSITE_KEY).toList();
+
+    if (attributesToBeDeleted.stream()
+        .noneMatch(a -> RETENTION_POLICY.getKey().equals(a.getKey()))) {
+      previousCompositeKeys = previousCompositeKeys.stream()
+          .filter(a -> !a.getKey().startsWith(RETENTION_POLICY.getKey())).toList();
+    }
 
     listBuilder.setNewAttributes(newAttributes);
     listBuilder.setPreviousAttributes(previousAttributes);

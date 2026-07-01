@@ -18,6 +18,7 @@ dependencies {
   testImplementation project(':domain:documents')
   testImplementation project(':testing:test-utils')
   testImplementation project(':domain:plugins')
+  testImplementation project(':adapters:aws:s3')
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
   testImplementation libs.testcontainers

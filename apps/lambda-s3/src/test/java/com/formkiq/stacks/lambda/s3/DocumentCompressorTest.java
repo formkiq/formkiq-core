@@ -27,7 +27,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.stacks.lambda.s3.util.FileUtils.loadFileAsByteArray;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,26 +43,24 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.testutils.aws.TestEnvironment;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilderExtension;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
-import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -94,26 +91,20 @@ public class DocumentCompressorTest {
   @BeforeAll
   public static void beforeClass() throws Exception {
 
-    Map<String, String> env = new HashMap<>();
-    env.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
-    env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
-    env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-
-    S3ConnectionBuilder s3Builder = TestServices.getS3Connection(null);
-    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    serviceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry()).build();
 
     dbHelper = DynamoDbTestServices.getDynamoDbHelper();
-    s3 = new S3Service(s3Builder);
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
 
-    serviceCache = new AwsServiceCache().environment(env);
-    serviceCache.register(S3ConnectionBuilder.class, new ClassServiceExtension<>(s3Builder));
-    serviceCache.register(DynamoDbConnectionBuilder.class,
-        new DynamoDbConnectionBuilderExtension(dbBuilder));
     serviceCache.register(DocumentService.class, new DocumentServiceExtension());
     serviceCache.register(S3Service.class, new S3ServiceExtension());
     serviceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+
+    s3 = serviceCache.getExtension(S3Service.class);
+    documentService = serviceCache.getExtension(DocumentService.class);
   }
 
   /**
