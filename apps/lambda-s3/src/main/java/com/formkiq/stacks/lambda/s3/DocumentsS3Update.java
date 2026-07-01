@@ -36,7 +36,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.net.http.HttpResponse;
+import java.text.ParseException;
 import java.time.Duration;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
@@ -100,6 +103,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
 import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link RequestHandler} for writing MetaData for Documents to DynamoDB. */
@@ -108,6 +112,10 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
   /** Bad Request. */
   static final int BAD_REQUEST = 400;
+  /** Object Lock retention mode cache key. */
+  static final String OBJECT_LOCK_RETENTION_MODE = "objectLockRetentionMode";
+  /** Object Lock retain until date cache key. */
+  static final String OBJECT_LOCK_RETAIN_UNTIL_DATE = "objectLockRetainUntilDate";
 
   /** {@link ActionsNotificationService}. */
   private static ActionsNotificationService notificationService;
@@ -675,6 +683,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       if (s3VersionId == null || s3VersionId.equals(resp.getVersionId())) {
 
         service.updateDocument(siteId, document, attributes);
+        setObjectLockRetention(s3bucket, key, s3PresignedUrlAttributes);
 
         List<DocumentTagRecord> tags = getObjectTags(s3bucket, siteId, document, key);
         service.addTags(siteId, document, tags, null);
@@ -749,5 +758,24 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
     EventService documentEventService = serviceCache.getExtension(EventService.class);
     documentEventService.publish(serviceCache.getLogger(), event);
+  }
+
+  private void setObjectLockRetention(final String bucket, final String key,
+      final Map<String, Object> s3PresignedUrlAttributes) {
+
+    String retentionMode = (String) s3PresignedUrlAttributes.get(OBJECT_LOCK_RETENTION_MODE);
+    String retainUntilDate = (String) s3PresignedUrlAttributes.get(OBJECT_LOCK_RETAIN_UNTIL_DATE);
+
+    if (ObjectLockRetentionMode.GOVERNANCE.toString().equals(retentionMode)
+        && !isEmpty(retainUntilDate)) {
+      try {
+        Date retainUntil = DateUtil.getIsoDateFormatter().parse(retainUntilDate);
+        s3service.setObjectRetention(bucket, key, null, ObjectLockRetentionMode.GOVERNANCE,
+            retainUntil.toInstant());
+      } catch (ParseException e) {
+        throw new IllegalArgumentException(
+            "Invalid Object Lock retain-until date: " + retainUntilDate, e);
+      }
+    }
   }
 }

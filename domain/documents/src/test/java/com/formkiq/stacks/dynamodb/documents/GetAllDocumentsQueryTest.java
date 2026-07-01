@@ -23,9 +23,9 @@
  */
 package com.formkiq.stacks.dynamodb.documents;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
@@ -34,12 +34,18 @@ import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.GetDocumentDatesQuery;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.validation.ValidationException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
@@ -97,10 +103,20 @@ public class GetAllDocumentsQueryTest {
    */
   @BeforeAll
   public static void beforeAll() throws Exception {
-    DynamoDbConnectionBuilder dbc = DynamoDbTestServices.getDynamoDbConnection();
-    db = new DynamoDbServiceImpl(dbc, DOCUMENTS_TABLE);
-    service =
-        new DocumentServiceImpl(dbc, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry()).build();
+
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
+    db = awsServiceCache.getExtension(DynamoDbService.class);
+    service = awsServiceCache.getExtension(DocumentService.class);
   }
 
   private @NotNull List<String> addDocuments(final String siteId,

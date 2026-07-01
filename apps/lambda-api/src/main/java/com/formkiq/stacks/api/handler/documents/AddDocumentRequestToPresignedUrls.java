@@ -24,15 +24,25 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.base64.MapToBase64;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.cache.CacheService;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.entity.EntityRecord;
+import com.formkiq.aws.dynamodb.entity.FindEntityById;
+import com.formkiq.aws.dynamodb.entity.RetentionEffectiveEndDateAttribute;
+import com.formkiq.aws.dynamodb.entity.RetentionMode;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityContextData;
+import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
@@ -46,6 +56,8 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_MODE;
+import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.RETENTION_POLICY;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -55,6 +67,10 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class AddDocumentRequestToPresignedUrls
     implements BiFunction<AddDocumentRequest, String, Map<String, Object>> {
 
+  /** Object Lock retention mode cache key. */
+  static final String OBJECT_LOCK_RETENTION_MODE = "objectLockRetentionMode";
+  /** Object Lock retain until date cache key. */
+  static final String OBJECT_LOCK_RETAIN_UNTIL_DATE = "objectLockRetainUntilDate";
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3PresignerService;
   /** S3 Bucket. */
@@ -67,12 +83,16 @@ public class AddDocumentRequestToPresignedUrls
   private final String siteId;
   /** {@link CacheService}. */
   private final CacheService cacheService;
+  /** {@link DocumentService}. */
+  private final DocumentService documentService;
+  /** {@link DynamoDbService}. */
+  private final DynamoDbService dynamoDbService;
   /** Username. */
   private final String username;
 
   /**
    * constructor.
-   * 
+   *
    * @param awsservice {@link AwsServiceCache}
    * @param authorization {@link ApiAuthorization}
    * @param documentSiteId {@link String}
@@ -85,6 +105,8 @@ public class AddDocumentRequestToPresignedUrls
     this.siteId = documentSiteId;
     this.s3PresignerService = awsservice.getExtension(S3PresignerService.class);
     this.cacheService = awsservice.getExtension(CacheService.class);
+    this.documentService = awsservice.getExtension(DocumentService.class);
+    this.dynamoDbService = awsservice.getExtension(DynamoDbService.class);
     this.s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     this.duration = urlDuration != null ? urlDuration : Duration.ofHours(1);
     this.contentLength = documentContentLength;
@@ -113,6 +135,34 @@ public class AddDocumentRequestToPresignedUrls
 
     if (!headers.isEmpty()) {
       map.put("headers", headers);
+    }
+  }
+
+  private void addObjectLockRetention(final Map<String, String> map,
+      final DocumentArtifact document) {
+
+    DocumentRecord documentRecord = this.documentService.findDocument(this.siteId, document);
+    if (documentRecord != null) {
+
+      List<DocumentAttributeRecord> documentAttributes = this.documentService
+          .findDocumentAttribute(this.siteId, document, RETENTION_POLICY.getKey());
+
+      if (!documentAttributes.isEmpty()) {
+        EntityRecord entity = new FindEntityById().find(this.dynamoDbService,
+            this.dynamoDbService.getTableName(), this.siteId, DocumentAttributeEntityKeyValue
+                .fromString(documentAttributes.getFirst().getStringValue()));
+
+        if (entity != null) {
+          String retentionMode =
+              DynamoDbTypes.toString(entity.attributes().get(RETENTION_MODE.getKey()));
+
+          if (RetentionMode.GOVERNANCE.name().equals(retentionMode)) {
+            map.put(OBJECT_LOCK_RETENTION_MODE, RetentionMode.GOVERNANCE.name());
+            map.put(OBJECT_LOCK_RETAIN_UNTIL_DATE,
+                new RetentionEffectiveEndDateAttribute().calculate(entity, documentRecord));
+          }
+        }
+      }
     }
   }
 
@@ -159,16 +209,15 @@ public class AddDocumentRequestToPresignedUrls
 
   private String generatePresignedUrl(final AddDocumentRequest o, final DocumentArtifact document) {
 
-    // String documentId = o.getDocumentId();
     String key = createS3Key(siteId, document);
-    // String key = !isDefaultSiteId(this.siteId) ? this.siteId + "/" + documentId : documentId;
 
-    String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
+    final String cacheKey = "s3PresignedUrl#" + this.s3Bucket + "#" + key;
     final int cacheInDays = 7;
 
     Map<String, String> map = new HashMap<>();
     map.put("username", this.username);
     map.put("path", getOldPath());
+    addObjectLockRetention(map, document);
 
     String s = new MapToBase64().apply(map);
     this.cacheService.write(cacheKey, s, cacheInDays);

@@ -26,9 +26,8 @@ package com.formkiq.stacks.lambda.s3;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
@@ -43,6 +42,7 @@ import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeService;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
@@ -56,16 +56,17 @@ import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
@@ -76,15 +77,15 @@ import com.formkiq.stacks.dynamodb.mappings.MappingClassificationCondition;
 import com.formkiq.stacks.dynamodb.mappings.MappingClassificationConditionMatchingType;
 import com.formkiq.stacks.dynamodb.mappings.MappingClassificationConditionSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
-import com.formkiq.stacks.dynamodb.mappings.MappingServiceDynamodb;
+import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
-import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
@@ -233,15 +234,27 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
     ApiAuthorization.login(new ApiAuthorization().username("System"));
 
-    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
-    DynamoDbService db = new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
-    DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).build();
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
-    mappingService = new MappingServiceDynamodb(db);
-    schemaService = new SchemaServiceDynamodb(db);
-    attributeService = new AttributeServiceDynamodb(db);
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(MappingService.class, new MappingServiceExtension());
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+    awsServiceCache.register(SchemaService.class, new SchemaServiceExtension());
+
+    documentService = awsServiceCache.getExtension(DocumentService.class);
+    actionsService = awsServiceCache.getExtension(ActionsService.class);
+    mappingService = awsServiceCache.getExtension(MappingService.class);
+    attributeService = awsServiceCache.getExtension(AttributeService.class);
+    schemaService = awsServiceCache.getExtension(SchemaService.class);
+
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
@@ -458,12 +471,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
+        assertDocumentAttributeEquals(results.getFirst(), "invoice", "6200041751", null);
       }
     }
   }
@@ -493,12 +506,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "invoice", null, "6.200041751E9");
+        assertDocumentAttributeEquals(results.getFirst(), "invoice", null, "6.200041751E9");
       }
     }
   }
@@ -528,7 +541,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -563,12 +576,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "invoice", "somevalue", null);
+        assertDocumentAttributeEquals(results.getFirst(), "invoice", "somevalue", null);
       }
     }
   }
@@ -599,7 +612,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -635,12 +648,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "invoice", "6200041751", null);
+        assertDocumentAttributeEquals(results.getFirst(), "invoice", "6200041751", null);
       }
     }
   }
@@ -670,12 +683,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "path", "joe", null);
+        assertDocumentAttributeEquals(results.getFirst(), "path", "joe", null);
       }
     }
   }
@@ -706,18 +719,18 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         Mapping mapping =
             createMapping("invoice", "invoice", MappingAttributeLabelMatchingType.FUZZY,
                 MappingAttributeSourceType.CONTENT, null, null, null);
-        mapping.attributes().get(0).setValidationRegex(validationRegex);
+        mapping.attributes().getFirst().setValidationRegex(validationRegex);
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        DocumentAttributeRecord record = results.get(0);
+        DocumentAttributeRecord record = results.getFirst();
         assertEquals("invoice", record.getKey());
 
         if (validationRegex != null) {
@@ -749,19 +762,19 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         Mapping mapping = createMapping("certificate_number", "Customer certificate",
             MappingAttributeLabelMatchingType.FUZZY, MappingAttributeSourceType.CONTENT, null, null,
             null);
-        mapping.attributes().get(0).setValidationRegex("\\d+");
+        mapping.attributes().getFirst().setValidationRegex("\\d+");
 
         MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "certificate_number", "100232", null);
+        assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "100232", null);
       }
     }
   }
@@ -792,12 +805,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
-        assertDocumentAttributeEquals(results.get(0), "certificate_number", "28937423", null);
+        assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "28937423", null);
       }
     }
   }
@@ -826,12 +839,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "certificate_number", "54", null);
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", "54", null);
     }
   }
 
@@ -859,7 +872,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -890,7 +903,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -928,13 +941,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
 
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "certificate_number", null, null);
+      assertDocumentAttributeEquals(results.getFirst(), "certificate_number", null, null);
     }
   }
 
@@ -962,7 +975,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "application/pdf", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -1011,12 +1024,12 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
-      assertDocumentAttributeEquals(results.get(0), "validValue", "Valid", null);
+      assertDocumentAttributeEquals(results.getFirst(), "validValue", "Valid", null);
     }
   }
 
@@ -1042,13 +1055,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
 
-      DocumentAttributeRecord record = results.get(0);
+      DocumentAttributeRecord record = results.getFirst();
       assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
       assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
       assertEquals(classificationId, record.getStringValue());
@@ -1077,7 +1090,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
@@ -1110,13 +1123,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
         processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
         // then
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertActionCompleted(action);
 
         List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
         assertEquals(1, results.size());
 
-        DocumentAttributeRecord record = results.get(0);
+        DocumentAttributeRecord record = results.getFirst();
         assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
         assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
         assertEquals(classificationId, record.getStringValue());
@@ -1146,13 +1159,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
 
-      DocumentAttributeRecord record = results.get(0);
+      DocumentAttributeRecord record = results.getFirst();
       assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
       assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
       assertEquals(classificationId, record.getStringValue());
@@ -1181,13 +1194,13 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
       assertEquals(1, results.size());
 
-      DocumentAttributeRecord record = results.get(0);
+      DocumentAttributeRecord record = results.getFirst();
       assertEquals(AttributeKeyReserved.CLASSIFICATION.getKey(), record.getKey());
       assertEquals(DocumentAttributeValueType.CLASSIFICATION, record.getValueType());
       assertEquals(classificationId, record.getStringValue());
@@ -1218,7 +1231,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       processIdpRequest(siteId, document, "text/plain", mappingRecord);
 
       // then
-      Action action = actionsService.getActions(siteId, document).get(0);
+      Action action = actionsService.getActions(siteId, document).getFirst();
       assertActionCompleted(action);
 
       List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);

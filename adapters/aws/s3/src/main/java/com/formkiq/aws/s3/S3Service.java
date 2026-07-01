@@ -41,6 +41,8 @@ import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurati
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectLegalHoldResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRetentionRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRetentionResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
@@ -61,11 +63,13 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
+import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectLegalHoldRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRetentionRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.S3Error;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -76,6 +80,7 @@ import software.amazon.awssdk.utils.IoUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -536,6 +541,21 @@ public class S3Service {
   }
 
   /**
+   * Get S3 Object Retention.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @return {@link GetObjectRetentionResponse}
+   */
+  public GetObjectRetentionResponse getObjectRetention(final String bucket, final String key,
+      final String versionId) {
+    GetObjectRetentionRequest req =
+        GetObjectRetentionRequest.builder().bucket(bucket).key(key).versionId(versionId).build();
+    return this.s3Client.getObjectRetention(req);
+  }
+
+  /**
    * Get Object Tags.
    * 
    * @param bucket {@link String}
@@ -661,6 +681,21 @@ public class S3Service {
   }
 
   /**
+   * Remove S3 Object Governance Retention.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   */
+  public void removeObjectRetention(final String bucket, final String key, final String versionId) {
+    PutObjectRetentionRequest req = PutObjectRetentionRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).retention(r -> {
+        }).bypassGovernanceRetention(true).build();
+
+    this.s3Client.putObjectRetention(req);
+  }
+
+  /**
    * Set Object Lock.
    * 
    * @param bucket {@link String}
@@ -676,6 +711,24 @@ public class S3Service {
         .versionId(versionId).legalHold(hold).build();
 
     this.s3Client.putObjectLegalHold(req);
+  }
+
+  /**
+   * Set S3 Object Retention.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param versionId {@link String}
+   * @param mode {@link ObjectLockRetentionMode}
+   * @param retainUntilDate {@link Instant}
+   */
+  public void setObjectRetention(final String bucket, final String key, final String versionId,
+      final ObjectLockRetentionMode mode, final Instant retainUntilDate) {
+    PutObjectRetentionRequest req = PutObjectRetentionRequest.builder().bucket(bucket).key(key)
+        .versionId(versionId).retention(r -> r.mode(mode).retainUntilDate(retainUntilDate))
+        .bypassGovernanceRetention(ObjectLockRetentionMode.GOVERNANCE.equals(mode)).build();
+
+    this.s3Client.putObjectRetention(req);
   }
 
   /**
