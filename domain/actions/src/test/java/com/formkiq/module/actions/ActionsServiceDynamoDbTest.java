@@ -23,7 +23,6 @@
  */
 package com.formkiq.module.actions;
 
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionBuilder;
@@ -43,19 +43,24 @@ import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -72,17 +77,26 @@ public class ActionsServiceDynamoDbTest {
 
   /**
    * BeforeAll.
-   * 
-   * @throws Exception Exception
+   *
    */
   @BeforeAll
-  public static void beforeAll() throws Exception {
+  public static void beforeAll() {
+
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).build();
+
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
 
     ApiAuthorization.login(new ApiAuthorization().username("System"));
-    DynamoDbConnectionBuilder db = DynamoDbTestServices.getDynamoDbConnection();
-    service = new ActionsServiceDynamoDb(db, DOCUMENTS_TABLE);
-    documentService =
-        new DocumentServiceImpl(db, DOCUMENTS_TABLE, new DocumentVersionServiceNoVersioning());
+
+    service = awsServiceCache.getExtension(ActionsService.class);
+    documentService = awsServiceCache.getExtension(DocumentService.class);
   }
 
   private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
@@ -230,27 +244,27 @@ public class ActionsServiceDynamoDbTest {
       // then
       assertEquals(1, list.size());
       if (siteId != null) {
-        assertEquals(siteId + "/docs#" + documentId0.documentId(), list.get(0).get("PK").s());
+        assertEquals(siteId + "/docs#" + documentId0.documentId(), list.getFirst().get("PK").s());
       } else {
-        assertEquals("docs#" + documentId0.documentId(), list.get(0).get("PK").s());
+        assertEquals("docs#" + documentId0.documentId(), list.getFirst().get("PK").s());
       }
-      String sk = list.get(0).get("SK").s();
+      String sk = list.getFirst().get("SK").s();
       assertTrue(sk.startsWith("action#"));
       assertTrue(sk.endsWith("#OCR"));
 
       List<Action> results = service.getActions(siteId, documentId0);
       assertEquals(1, results.size());
-      assertEquals(ActionStatus.PENDING, results.get(0).status());
-      assertEquals(ActionType.OCR, results.get(0).type());
-      assertEquals(userId0, results.get(0).userId());
-      assertEquals("{test=1234}", results.get(0).parameters().toString());
+      assertEquals(ActionStatus.PENDING, results.getFirst().status());
+      assertEquals(ActionType.OCR, results.getFirst().type());
+      assertEquals(userId0, results.getFirst().userId());
+      assertEquals("{test=1234}", results.getFirst().parameters().toString());
 
       results = service.getActions(siteId, documentId1);
       assertEquals(1, results.size());
-      assertEquals(ActionStatus.COMPLETE, results.get(0).status());
-      assertEquals(ActionType.OCR, results.get(0).type());
-      assertEquals(userId1, results.get(0).userId());
-      assertNull(results.get(0).parameters());
+      assertEquals(ActionStatus.COMPLETE, results.getFirst().status());
+      assertEquals(ActionType.OCR, results.getFirst().type());
+      assertEquals(userId1, results.getFirst().userId());
+      assertNull(results.getFirst().parameters());
 
       // given
       Action action = new ActionBuilder().action(action0).status(ActionStatus.FAILED).build(siteId);
@@ -260,7 +274,7 @@ public class ActionsServiceDynamoDbTest {
 
       // then
       results = service.getActions(siteId, documentId0);
-      assertEquals(ActionStatus.FAILED, results.get(0).status());
+      assertEquals(ActionStatus.FAILED, results.getFirst().status());
     }
   }
 
@@ -315,10 +329,10 @@ public class ActionsServiceDynamoDbTest {
       // then
       List<Action> results = service.getActions(siteId, document);
       assertEquals(1, results.size());
-      assertEquals(ActionStatus.PENDING, results.get(0).status());
-      assertEquals(ActionType.QUEUE, results.get(0).type());
-      assertEquals(userId0, results.get(0).userId());
-      assertEquals("test94832", results.get(0).queueId());
+      assertEquals(ActionStatus.PENDING, results.getFirst().status());
+      assertEquals(ActionType.QUEUE, results.getFirst().type());
+      assertEquals(userId0, results.getFirst().userId());
+      assertEquals("test94832", results.getFirst().queueId());
 
       assertEquals(0, service.findDocumentsInQueue(siteId, name, null, 2).getResults().size());
       assertNull(service.findActionInQueue(siteId, document, name));
@@ -340,7 +354,7 @@ public class ActionsServiceDynamoDbTest {
       // then
       List<Action> actions = service.getActions(siteId, document);
       assertEquals(1, actions.size());
-      assertEquals("0", actions.get(0).index());
+      assertEquals("0", actions.getFirst().index());
 
       // given - Ulid index
       Action ulid0 = new ActionBuilder().document(document).indexUlid().type(ActionType.OCR)
@@ -379,7 +393,7 @@ public class ActionsServiceDynamoDbTest {
       Action action0 =
           createAction(document, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
       service.saveNewActions(List.of(action0));
-      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).getFirst().status());
 
       Action action =
           new ActionBuilder().action(action0).status(ActionStatus.COMPLETE).build(siteId);
@@ -389,7 +403,7 @@ public class ActionsServiceDynamoDbTest {
       service.updateAction(action);
 
       // then
-      assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, document).getFirst().status());
       Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(0, results.getResults().size());
@@ -408,7 +422,7 @@ public class ActionsServiceDynamoDbTest {
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
       Action action0 = createAction(document, ActionType.QUEUE).queueId(queueId).build(siteId);
       service.saveNewActions(List.of(action0));
-      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).getFirst().status());
 
       Action action =
           new ActionBuilder().action(action0).status(ActionStatus.IN_QUEUE).build(siteId);
@@ -419,16 +433,16 @@ public class ActionsServiceDynamoDbTest {
       service.updateAction(action);
 
       // then
-      assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.IN_QUEUE, service.getActions(siteId, document).getFirst().status());
       Pagination<Action> docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
       assertEquals(1, docs.getResults().size());
-      assertEquals(queueId, docs.getResults().get(0).queueId());
+      assertEquals(queueId, docs.getResults().getFirst().queueId());
       assertNotNull(service.findActionInQueue(siteId, document, queueId));
 
       Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.IN_QUEUE, null, LIMIT);
       assertEquals(1, results.getResults().size());
-      assertEquals(documentId, results.getResults().get(0).documentId());
+      assertEquals(documentId, results.getResults().getFirst().documentId());
 
       // given
       Action a = new ActionBuilder().action(action0).status(ActionStatus.COMPLETE).build(siteId);
@@ -438,7 +452,7 @@ public class ActionsServiceDynamoDbTest {
       service.updateAction(a);
 
       // then
-      assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.COMPLETE, service.getActions(siteId, document).getFirst().status());
       docs = service.findDocumentsInQueue(siteId, queueId, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, document, queueId));
@@ -461,7 +475,7 @@ public class ActionsServiceDynamoDbTest {
 
       Action action0 = createAction(document, ActionType.QUEUE).queueId(name).build(siteId);
       service.saveNewActions(List.of(action0));
-      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.PENDING, service.getActions(siteId, document).getFirst().status());
 
       Action action = new ActionBuilder().action(action0).status(ActionStatus.FAILED).build(siteId);
       // action0.status(ActionStatus.FAILED);
@@ -470,7 +484,7 @@ public class ActionsServiceDynamoDbTest {
       service.updateAction(action);
 
       // then
-      assertEquals(ActionStatus.FAILED, service.getActions(siteId, document).get(0).status());
+      assertEquals(ActionStatus.FAILED, service.getActions(siteId, document).getFirst().status());
       Pagination<Action> docs = service.findDocumentsInQueue(siteId, name, null, LIMIT);
       assertEquals(0, docs.getResults().size());
       assertNull(service.findActionInQueue(siteId, document, name));
@@ -478,7 +492,7 @@ public class ActionsServiceDynamoDbTest {
       Pagination<DocumentArtifact> results =
           service.findDocumentsWithStatus(siteId, ActionStatus.FAILED, null, LIMIT);
       assertEquals(1, results.getResults().size());
-      assertEquals(documentId, results.getResults().get(0).documentId());
+      assertEquals(documentId, results.getResults().getFirst().documentId());
 
       results = service.findDocumentsWithStatus(siteId, ActionStatus.PENDING, null, LIMIT);
       assertEquals(0, results.getResults().size());

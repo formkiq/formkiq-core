@@ -130,14 +130,16 @@ public class DocumentsUploadRequestHandler
     SaveDocumentOptions options =
         new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
 
-    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId,
-            caculateDuration(event.getQueryStringParameters()),
-            calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config));
-    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
+    Optional<Long> documentContentLength =
+        calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
     service.saveDocument(siteId, documentRecordSet, options);
+
+    Duration urlDuration = caculateDuration(event.getQueryStringParameters());
+    AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, urlDuration, documentContentLength);
+    final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);
     List<Action> actions = createActions(siteId, request, documentId, artifactId);

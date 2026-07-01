@@ -49,15 +49,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +74,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
@@ -102,14 +109,23 @@ class FolderIndexProcessorTest implements DbKeys {
     String snsTopicArn = createSnsTopic();
     sqsQueueUrl = createSqsSubscriptionToSnsTopic(snsTopicArn);
 
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    index = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider)
+        .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry()).build();
 
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
-    dbService = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
+    awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
+    index = awsServiceCache.getExtension(FolderIndexProcessor.class);
+    service = awsServiceCache.getExtension(DocumentService.class);
+    searchService = awsServiceCache.getExtension(DocumentSearchService.class);
+    dbService = awsServiceCache.getExtension(DynamoDbService.class);
 
     ApiAuthorization.login(new ApiAuthorization().username("joe"));
   }
@@ -454,7 +470,8 @@ class FolderIndexProcessorTest implements DbKeys {
           index.addFileToFolder(siteId, documentId, last(indexes), item.getPath());
 
       // when
-      FolderIndexRecord folder = index.getFolderByDocumentId(siteId, indexes.get(0).documentId());
+      FolderIndexRecord folder =
+          index.getFolderByDocumentId(siteId, indexes.getFirst().documentId());
       FolderIndexRecord file = index.getFolderByDocumentId(siteId, map.documentId());
 
       // then
@@ -572,7 +589,7 @@ class FolderIndexProcessorTest implements DbKeys {
           MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("b", list.get(0).get("path"));
+      assertEquals("b", list.getFirst().get("path"));
       // final String bDocumentId = list.get(0).get("documentId").toString();
 
       smc = new SearchMetaCriteria(null, "a/b", null, null, null);
@@ -584,7 +601,7 @@ class FolderIndexProcessorTest implements DbKeys {
       // this is probably wrong as the folder structure doesn't equal the document path
       // path is stored on the document also in the folder index. They are stored separately
       // it's possible to update all the documents in the same folder but TBD at a later date.
-      assertEquals("/something/else/test.txt", list.get(0).get("path"));
+      assertEquals("/something/else/test.txt", list.getFirst().get("path"));
 
       smc = new SearchMetaCriteria(null, "something", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -638,7 +655,7 @@ class FolderIndexProcessorTest implements DbKeys {
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem doc2 = results.getResults().get(0);
+      DynamicDocumentItem doc2 = results.getResults().getFirst();
       assertEquals("directory2/test.pdf", doc2.get("path"));
       assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
 
@@ -696,7 +713,7 @@ class FolderIndexProcessorTest implements DbKeys {
             null, MAX_RESULTS);
 
         assertEquals(1, results.getResults().size());
-        doc = results.getResults().get(0);
+        doc = results.getResults().getFirst();
         assertEquals("directory1/test2.pdf", doc.get("path"));
 
         service.deleteDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null), false);
@@ -756,7 +773,7 @@ class FolderIndexProcessorTest implements DbKeys {
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       assertEquals(2, results.getResults().size());
-      DynamicDocumentItem doc1 = results.getResults().get(0);
+      DynamicDocumentItem doc1 = results.getResults().getFirst();
       assertEquals("d2/test1.pdf", doc1.get("path"));
       assertEquals(doc1.get("insertedDate"), doc1.get("lastModifiedDate"));
 

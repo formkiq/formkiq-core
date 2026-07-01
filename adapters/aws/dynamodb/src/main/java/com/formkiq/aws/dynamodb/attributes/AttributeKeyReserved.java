@@ -358,6 +358,8 @@ public enum AttributeKeyReserved {
   /** Retention Period In Days. */
   RETENTION_PERIOD_IN_DAYS("RetentionPeriodInDays", AttributeType.STANDARD,
       AttributeDataType.NUMBER, null),
+  /** Retention Mode. */
+  RETENTION_MODE("RetentionMode"),
   /** Retention Disposition Date. */
   DISPOSITION_DATE("DispositionDate", AttributeType.STANDARD, AttributeDataType.STRING,
       AttributeDerivedType.STORED_DERIVED),
