@@ -26,14 +26,13 @@ package com.formkiq.stacks.lambda.s3;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsService;
@@ -47,13 +46,14 @@ import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.module.actions.services.ActionsServiceDynamoDb;
+import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.lambda.s3.actions.MalwareScanResponse;
@@ -61,8 +61,8 @@ import com.formkiq.stacks.lambda.s3.actions.MalwareScanResult;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
@@ -208,12 +208,19 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
 
     ApiAuthorization.login(new ApiAuthorization().username("System"));
 
-    DynamoDbConnectionBuilder dbBuilder = DynamoDbTestServices.getDynamoDbConnection();
-    new DynamoDbServiceImpl(dbBuilder, DOCUMENTS_TABLE);
-    DocumentVersionService versionService = new DocumentVersionServiceNoVersioning();
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).build();
 
-    documentService = new DocumentServiceImpl(dbBuilder, DOCUMENTS_TABLE, versionService);
-    actionsService = new ActionsServiceDynamoDb(dbBuilder, DOCUMENTS_TABLE);
+    awsServiceCache.register(ActionsService.class, new ActionsServiceExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
+    documentService = awsServiceCache.getExtension(DocumentService.class);
+    actionsService = awsServiceCache.getExtension(ActionsService.class);
     createMockServer();
 
     s3Service = new S3Service(TestServices.getS3Connection(null));
@@ -411,7 +418,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
           assertEquals("us.amazon.nova-2-lite-v1:0", resultmap.get("modelId").toString());
         }
 
-        Action action = actionsService.getActions(siteId, document).get(0);
+        Action action = actionsService.getActions(siteId, document).getFirst();
         assertEquals(ActionStatus.COMPLETE, action.status());
         assertNotNull(action.startDate());
         assertNotNull(action.insertedDate());
@@ -448,7 +455,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
         // then
         List<Action> list = actionsService.getActions(siteId, document);
         assertEquals(2, list.size());
-        assertEquals(ActionType.OCR, list.get(0).type());
+        assertEquals(ActionType.OCR, list.getFirst().type());
         assertEquals("{ocrEngine=tesseract}", list.get(0).parameters().toString());
         assertEquals(ActionStatus.PENDING, list.get(0).status());
         assertEquals(type, list.get(1).type());

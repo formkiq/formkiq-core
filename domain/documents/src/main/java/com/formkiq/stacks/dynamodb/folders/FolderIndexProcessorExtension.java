@@ -56,9 +56,12 @@ public class FolderIndexProcessorExtension implements AwsServiceExtension<Folder
       DynamoDbConnectionBuilder connection =
           awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
 
+      String lastModifiedInterval =
+          awsServiceCache.environment("PARENT_LAST_MODIFIED_UPDATE_INTERVAL");
       this.service =
           new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
+              lastModifiedInterval != null ? Long.parseLong(lastModifiedInterval)
+                  : DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     }
 
     return this.service;

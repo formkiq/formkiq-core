@@ -55,6 +55,8 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
+import java.util.Collections;
+
 /**
  * Test AWS Tests.
  */
@@ -146,8 +148,9 @@ public abstract class AbstractAwsTest {
 
     dbConnection =
         new DynamoDbConnectionBuilder(false).setCredentials(awsprofile).setRegion(awsregion);
-    documentService = new DocumentServiceImpl(dbConnection, documentsTable,
-        new DocumentVersionServiceNoVersioning());
+
+    documentService = new DocumentServiceImpl(dbConnection, documentsTable, Collections.emptyList(),
+        new DocumentVersionServiceNoVersioning(), null, null, 0);
     searchService = new DocumentSearchServiceImpl(dbConnection, documentService, documentsTable);
 
     EventBridgeConnectionBuilder eventBridgeConnectionBuilder =

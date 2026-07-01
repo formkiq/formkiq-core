@@ -24,7 +24,6 @@
 package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,6 +43,7 @@ import java.util.TimeZone;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
@@ -52,11 +52,16 @@ import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
@@ -68,7 +73,6 @@ import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.validation.ValidationException;
 
 /** Unit Tests for {@link DocumentSearchServiceImpl}. */
@@ -99,12 +103,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   @BeforeEach
   public void before() throws Exception {
 
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder().build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).build();
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    this.service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning());
-    this.searchService =
-        new DocumentSearchServiceImpl(dynamoDbConnection, this.service, DOCUMENTS_TABLE);
+    this.service = awsServiceCache.getExtension(DocumentService.class);
+    this.searchService = awsServiceCache.getExtension(DocumentSearchService.class);
   }
 
   /**

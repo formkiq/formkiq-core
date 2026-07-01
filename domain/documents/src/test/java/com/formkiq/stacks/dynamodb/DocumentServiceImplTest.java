@@ -65,9 +65,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
@@ -83,28 +84,32 @@ import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
+import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.s3.S3ServiceExtension;
+import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
-import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.attributes.Watermark;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
+import com.formkiq.testutils.aws.TestEnvironment;
+import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
@@ -147,14 +152,26 @@ public class DocumentServiceImplTest implements DbKeys {
   @BeforeAll
   public static void beforeAll() throws Exception {
 
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    service = new DocumentServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        new DocumentVersionServiceNoVersioning(), 1000);
-    searchService = new DocumentSearchServiceImpl(dynamoDbConnection, service, DOCUMENTS_TABLE);
-    folderIndexProcessor = new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE,
-        FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
-    db = new DynamoDbServiceImpl(dynamoDbConnection, DOCUMENTS_TABLE);
-    attributeService = new AttributeServiceDynamodb(db);
+    var awsCredentialsProvider = TestEnvironment.createCredentials();
+    var environment = TestEnvironment.builder()
+        .environment("PARENT_LAST_MODIFIED_UPDATE_INTERVAL", "1000").build();
+    var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
+        awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
+        .addService(new S3AwsServiceRegistry()).build();
+
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
+    awsServiceCache.register(FolderIndexProcessor.class, new FolderIndexProcessorExtension());
+    awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
+    awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
+    awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
+    awsServiceCache.register(S3Service.class, new S3ServiceExtension());
+
+    service = awsServiceCache.getExtension(DocumentService.class);
+    searchService = awsServiceCache.getExtension(DocumentSearchService.class);
+    folderIndexProcessor = awsServiceCache.getExtension(FolderIndexProcessor.class);
+    db = awsServiceCache.getExtension(DynamoDbService.class);
+    attributeService = awsServiceCache.getExtension(AttributeService.class);
 
     ApiAuthorization.login(new ApiAuthorization().username("joe"));
   }
