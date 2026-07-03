@@ -745,6 +745,12 @@ Outputs:
       Fn::GetAtt: 
       - Cognito
       - Outputs.CognitoUserPoolClientId
+  CognitoDomain:
+    Description: "The Cognito Domain Url"
+    Value:
+      Fn::GetAtt:
+      - Cognito
+      - Outputs.CognitoDomain
   FormKiQVersion:
     Description: "The FormKiQ Version"
     Value: #@ data.values.version or assert.fail("missing version")
