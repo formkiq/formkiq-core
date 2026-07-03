@@ -23,9 +23,9 @@
  */
 package com.formkiq.aws.dynamodb;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -36,6 +36,15 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  *
  */
 public interface DynamodbRecord<T> {
+
+  /** DynamoDB maximum sort key size in bytes. */
+  int MAX_SORT_KEY_BYTES = 1024;
+
+  /** UTF-8 continuation byte mask. */
+  int UTF8_CONTINUATION_BYTE_MASK = 0xC0;
+
+  /** UTF-8 continuation byte masked value. */
+  int UTF8_CONTINUATION_BYTE_VALUE = 0x80;
 
   /**
    * Convert {@link Map} {@link AttributeValue}.
@@ -82,6 +91,16 @@ public interface DynamodbRecord<T> {
    * @return {@link Object}
    */
   T getFromAttributes(String siteId, Map<String, AttributeValue> attrs);
+
+  /**
+   * Tests whether a byte is a UTF-8 continuation byte, which has the bit pattern 10xxxxxx.
+   *
+   * @param b byte to test
+   * @return {@code true} when the byte is a UTF-8 continuation byte
+   */
+  private boolean isUtf8ContinuationByte(final byte b) {
+    return (b & UTF8_CONTINUATION_BYTE_MASK) == UTF8_CONTINUATION_BYTE_VALUE;
+  }
 
   /**
    * Convert {@link Map} {@link AttributeValue}.
@@ -166,7 +185,23 @@ public interface DynamodbRecord<T> {
   }
 
   default String truncateSk(final String sk) {
-    final int len = 800;
-    return Strings.truncate(sk, len);
+    if (sk == null) {
+      throw new IllegalArgumentException("Input cannot be null.");
+    }
+
+    byte[] bytes = sk.getBytes(StandardCharsets.UTF_8);
+    if (bytes.length <= MAX_SORT_KEY_BYTES) {
+      return sk;
+    }
+
+    int end = MAX_SORT_KEY_BYTES;
+
+    // Avoid cutting through a multi-byte UTF-8 character.
+    while (end > 0 && isUtf8ContinuationByte(bytes[end])) {
+      end--;
+    }
+
+    return new String(bytes, 0, end, StandardCharsets.UTF_8);
   }
+
 }

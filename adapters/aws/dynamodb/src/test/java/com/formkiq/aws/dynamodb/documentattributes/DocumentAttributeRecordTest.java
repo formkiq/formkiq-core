@@ -23,11 +23,14 @@
  */
 package com.formkiq.aws.dynamodb.documentattributes;
 
+import static com.formkiq.aws.dynamodb.DynamodbRecord.MAX_SORT_KEY_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +43,9 @@ public class DocumentAttributeRecordTest {
     assertEquals(siteId != null ? siteId + "/" + expected : expected, actual);
   }
 
+  /**
+   * Verify key construction for a standard document attribute without an artifact id.
+   */
   @Test
   void testBuildKey01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -63,6 +69,9 @@ public class DocumentAttributeRecordTest {
     }
   }
 
+  /**
+   * Verify key construction for a document attribute associated with a document artifact.
+   */
   @Test
   void testBuildKey02() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -85,5 +94,47 @@ public class DocumentAttributeRecordTest {
       assertKeyEquals(siteId, "docs#attr#" + attributeKey, key.gsi1Pk());
       assertEquals(value, key.gsi1Sk());
     }
+  }
+
+  /**
+   * Verify multi-byte string attribute values are truncated to valid DynamoDB key byte limits.
+   */
+  @Test
+  void testBuildKey03() {
+    String documentId = ID.uuid();
+    String attributeKey = "ocrOutputs";
+    String value = "中".repeat(337);
+
+    DocumentAttributeRecord record =
+        new DocumentAttributeRecord().setDocument(DocumentArtifact.of(documentId, null))
+            .setKey(attributeKey).setStringValue(value).updateValueType();
+
+    int skBytes = record.sk().getBytes(StandardCharsets.UTF_8).length;
+    int gsi1SkBytes = record.skGsi1().getBytes(StandardCharsets.UTF_8).length;
+    assertTrue(skBytes <= MAX_SORT_KEY_BYTES,
+        "DynamoDB sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + skBytes);
+    assertTrue(gsi1SkBytes <= MAX_SORT_KEY_BYTES,
+        "DynamoDB GSI1 sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + gsi1SkBytes);
+  }
+
+  /**
+   * Verify very long ASCII string attribute values are truncated to DynamoDB key byte limits.
+   */
+  @Test
+  void testBuildKey04() {
+    String documentId = ID.uuid();
+    String attributeKey = "ocrOutputs";
+    String value = "a".repeat(50000);
+
+    DocumentAttributeRecord record =
+        new DocumentAttributeRecord().setDocument(DocumentArtifact.of(documentId, null))
+            .setKey(attributeKey).setStringValue(value).updateValueType();
+
+    int skBytes = record.sk().getBytes(StandardCharsets.UTF_8).length;
+    int gsi1SkBytes = record.skGsi1().getBytes(StandardCharsets.UTF_8).length;
+    assertTrue(skBytes <= MAX_SORT_KEY_BYTES,
+        "DynamoDB sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + skBytes);
+    assertTrue(gsi1SkBytes <= MAX_SORT_KEY_BYTES,
+        "DynamoDB GSI1 sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + gsi1SkBytes);
   }
 }

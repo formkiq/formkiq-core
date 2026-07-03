@@ -7,6 +7,7 @@
 
 	<subpackage name="dynamodb">
 
+		<allow pkg="java.nio.charset" />
         <allow pkg="com.formkiq.strings" />
 
         <allow pkg="com.github.f4b6a3.ulid" />
