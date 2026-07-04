@@ -138,7 +138,8 @@ public class DocumentsUploadRequestHandler
 
     Duration urlDuration = caculateDuration(event.getQueryStringParameters());
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
-        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, urlDuration, documentContentLength);
+        new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, urlDuration,
+            documentContentLength);
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);

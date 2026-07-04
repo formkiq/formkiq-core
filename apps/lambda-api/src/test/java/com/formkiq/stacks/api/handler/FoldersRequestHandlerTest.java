@@ -31,6 +31,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.client.model.FolderPermissionType.DELETE;
 import static com.formkiq.client.model.FolderPermissionType.WRITE;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,6 +45,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.model.AddDocumentResponse;
@@ -60,6 +63,7 @@ import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.FolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
 import com.formkiq.testutils.api.ApiHttpClient;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -75,6 +79,7 @@ import com.formkiq.testutils.api.folders.AddFolderRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
+import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
@@ -90,6 +95,17 @@ import com.formkiq.client.model.SearchResultDocument;
  *
  */
 public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
+
+  private static Map<String, Object> createS3Map(final String siteId,
+      final DocumentArtifact document) {
+    String s3Key =
+        SiteIdKeyGenerator.createS3Key(siteId, document.documentId(), document.artifactId());
+
+    return new S3EventJsonBuilder()
+        .addRecord(new S3EventJsonBuilder.RecordBuilder().withEventName("ObjectCreated:Put")
+            .withS3(new S3EventJsonBuilder.S3Builder().withBucket(BUCKET_NAME).withObject(s3Key)))
+        .build();
+  }
 
   private AddFolderResponse addFolder(final String siteId, final String path) throws ApiException {
     return this.foldersApi.addFolder(new AddFolderRequest().path(path), siteId, null);
@@ -145,6 +161,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     List<SearchResultDocument> docs = notNull(files.response().getDocuments());
     return docs.stream().filter(d -> d.getIndexKey() != null && filename.equals(d.getPath()))
         .map(SearchResultDocument::getIndexKey).findFirst().orElse(null);
+  }
+
+  private DocumentsS3Update getDocumentsS3Update() {
+    return new DocumentsS3Update(getAwsServices());
   }
 
   private List<FolderPermission> getFolderPermissions(final String indexKey) {
@@ -564,8 +584,10 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       for (String path : Arrays.asList("Chicago/sample1.txt", "Chicago/sample2.txt",
           "NewYork/sample1.txt")) {
-        addDocument(this.client, siteId, path, content.getBytes(StandardCharsets.UTF_8),
-            "text/plain", null);
+
+        var document = new AddDocumentRequestBuilder().path(path).contentType("text/plain")
+            .content(content).getDocument(client, siteId);
+        getDocumentsS3Update().handleRequest(createS3Map(siteId, document), null);
       }
 
       // when
@@ -595,11 +617,14 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals(2, documents.size());
       assertEquals("Chicago/sample1.txt", documents.get(0).getPath());
       assertEquals("Chicago/sample2.txt", documents.get(1).getPath());
+      assertEquals(content.length(), documents.get(0).getContentLength());
+      assertEquals(content.length(), documents.get(1).getContentLength());
 
       documents = response1.getDocuments();
       assertNotNull(documents);
       assertEquals(1, documents.size());
       assertEquals("NewYork/sample1.txt", documents.getFirst().getPath());
+      assertEquals(content.length(), documents.getFirst().getContentLength());
     }
   }
 
@@ -829,8 +854,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  void testGetUrlContentUrlsWithPermissions()
-      throws ApiException, IOException, URISyntaxException, InterruptedException {
+  void testGetUrlContentUrlsWithPermissions() throws ApiException {
     // given
     String siteId = DEFAULT_SITE_ID;
     new SetBearers().apply(client, new String[] {"Admins", siteId});
