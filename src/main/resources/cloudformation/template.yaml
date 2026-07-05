@@ -754,20 +754,7 @@ Outputs:
   DriveCognitoAuthorizeUrl:
     Description: "The FormKiQ Drive Cognito authorize URL"
     Value:
-      Fn::Sub:
-        - "${CognitoDomain}/oauth2/authorize?client_id=${CognitoUserPoolClientId}&redirect_url=${ConsoleUrl}/formkiq-drive-login-success.html"
-        - CognitoDomain:
-            Fn::GetAtt:
-              - Cognito
-              - Outputs.CognitoDomain
-          CognitoUserPoolClientId:
-            Fn::GetAtt:
-              - Cognito
-              - Outputs.CognitoUserPoolClientId
-          ConsoleUrl:
-            Fn::GetAtt:
-              - CoreConsole
-              - Outputs.ConsoleUrl
+      Fn::Sub: "${Cognito.Outputs.CognitoDomain}/oauth2/authorize?client_id=${Cognito.Outputs.CognitoUserPoolClientId}&redirect_url=${CoreConsole.Outputs.ConsoleUrl}/formkiq-drive-login-success.html"
   FormKiQVersion:
     Description: "The FormKiQ Version"
     Value: #@ data.values.version or assert.fail("missing version")
