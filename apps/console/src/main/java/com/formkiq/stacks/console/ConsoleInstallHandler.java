@@ -62,6 +62,9 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 /** {@link RequestHandler} for installing the console. */
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
+  /** FormKiQ Drive login success page. */
+  private static final String DRIVE_LOGIN_SUCCESS_PAGE = "formkiq-drive-login-success.html";
+
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
 
@@ -284,6 +287,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       if (unzip) {
 
         unzipConsole(s3, input, context, logger);
+        installDriveLoginSuccessPage(logger, s3);
         createCognitoConfig(logger, s3);
         createCognitoEmail(logger, s3);
         sendResponse(input, logger, context, "SUCCESS",
@@ -312,6 +316,21 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
 
     return null;
+  }
+
+  private void installDriveLoginSuccessPage(final LambdaLogger logger, final S3Service s3)
+      throws IOException {
+    String consoleversion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    String key = consoleversion + "/" + DRIVE_LOGIN_SUCCESS_PAGE;
+
+    logger.log("writing FormKiQ Drive login success page: " + key);
+    try (InputStream is = getClass().getResourceAsStream("/" + DRIVE_LOGIN_SUCCESS_PAGE)) {
+      if (is == null) {
+        throw new IOException("missing resource " + DRIVE_LOGIN_SUCCESS_PAGE);
+      }
+      s3.putObject(destinationBucket, key, is, "text/html");
+    }
   }
 
   private boolean isSsoLoginRedirectEnabled() {

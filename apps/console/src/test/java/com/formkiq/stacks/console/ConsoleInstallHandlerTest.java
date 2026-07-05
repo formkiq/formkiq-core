@@ -281,6 +281,7 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginSuccessPage();
 
     // given
     input = createInput("Delete");
@@ -348,6 +349,7 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginSuccessPage();
 
     // given
     input = createInput("Delete");
@@ -416,6 +418,7 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginSuccessPage();
   }
 
   /**
@@ -505,6 +508,13 @@ public class ConsoleInstallHandlerTest {
     assertEquals(ssoLoginRedirectEnabled, Boolean.valueOf(o.get("ssoAutomaticSignIn").toString()));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
+  }
+
+  private void verifyDriveLoginSuccessPage() {
+    String key = "0.1/formkiq-drive-login-success.html";
+    assertEquals("text/html", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    assertTrue(s3.getContentAsString(CONSOLE_BUCKET, key, null)
+        .contains("com.formkiq.drive://oauth2/callback"));
   }
 
   /**
