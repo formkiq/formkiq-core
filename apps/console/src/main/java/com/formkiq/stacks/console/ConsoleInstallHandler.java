@@ -35,6 +35,7 @@ import java.net.URLConnection;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
@@ -58,9 +59,26 @@ import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationWebUi;
 import com.formkiq.urls.HttpStatus;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.DescribeUserPoolClientRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.OAuthFlowType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UpdateUserPoolClientRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserPoolClientType;
 
 /** {@link RequestHandler} for installing the console. */
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
+
+  /** FormKiQ Drive login success page. */
+  private static final String DRIVE_LOGIN_SUCCESS_PAGE = "drive-login-success.html";
+  /** FormKiQ Drive login page. */
+  private static final String DRIVE_LOGIN_PAGE = "drive-login.html";
+  /** FormKiQ Drive Cognito authorize URL environment variable. */
+  private static final String DRIVE_COGNITO_AUTHORIZE_URL = "DRIVE_COGNITO_AUTHORIZE_URL";
+  /** FormKiQ Drive Cognito User Pool client id environment variable. */
+  private static final String DRIVE_COGNITO_USER_POOL_CLIENT_ID =
+      "DRIVE_COGNITO_USER_POOL_CLIENT_ID";
+  /** Console URL environment variable. */
+  private static final String CONSOLE_URL = "CONSOLE_URL";
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
@@ -103,6 +121,17 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   ConsoleInstallHandler(final AwsServiceCache cache) {
     initialize(cache);
+  }
+
+  private String buildDriveLoginPage(final String authorizeUrl) {
+    String htmlAuthorizeUrl = escapeHtml(authorizeUrl);
+    return "<!doctype html>\n" + "<html lang=\"en\">\n" + "<head>\n"
+        + "  <meta charset=\"utf-8\">\n" + "  <title>FormKiQ Drive Login</title>\n"
+        + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+        + "  <meta http-equiv=\"refresh\" content=\"0; url=" + htmlAuthorizeUrl + "\">\n"
+        + "</head>\n" + "<body>\n" + "  <script>\n" + "    window.location.replace("
+        + JSONObject.quote(authorizeUrl) + ");\n" + "  </script>\n" + "  <a href=\""
+        + htmlAuthorizeUrl + "\">Continue to FormKiQ Drive login</a>\n" + "</body>\n" + "</html>\n";
   }
 
   /**
@@ -215,6 +244,17 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     s3.deleteAllFiles(cognitoConfigBucket, true);
   }
 
+  private String escapeHtml(final String value) {
+    return value.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&#39;")
+        .replace("<", "&lt;").replace(">", "&gt;");
+  }
+
+  private CognitoIdentityProviderClient getCognitoIdentityProviderClient() {
+    return CognitoIdentityProviderClient.builder()
+        .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+        .region(serviceCache.region()).build();
+  }
+
   /**
    * Get {@link HttpURLConnection}.
    *
@@ -260,6 +300,29 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     return serviceCache.environment("CONSOLE_ZIP_URL");
   }
 
+  private String getDriveCognitoAuthorizeUrl() {
+    String authorizeUrl = serviceCache.environment(DRIVE_COGNITO_AUTHORIZE_URL);
+    if (authorizeUrl == null || authorizeUrl.isBlank() || authorizeUrl.contains("redirect_uri=")) {
+      return authorizeUrl;
+    }
+
+    String callbackUrl = getDriveLoginSuccessUrl();
+    if (callbackUrl == null) {
+      return authorizeUrl;
+    }
+
+    return authorizeUrl + (authorizeUrl.contains("?") ? "&" : "?") + "redirect_uri=" + callbackUrl;
+  }
+
+  private String getDriveLoginSuccessUrl() {
+    String consoleUrl = serviceCache.environment(CONSOLE_URL);
+    if (consoleUrl == null || consoleUrl.isBlank()) {
+      return null;
+    }
+
+    return trimTrailingSlash(consoleUrl) + "/" + DRIVE_LOGIN_SUCCESS_PAGE;
+  }
+
   /**
    * Handle Console Installation.
    *
@@ -284,6 +347,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       if (unzip) {
 
         unzipConsole(s3, input, context, logger);
+        installDriveLoginPage(logger, s3);
+        installDriveLoginSuccessPage(logger, s3);
+        updateDriveCognitoUserPoolClient(logger);
         createCognitoConfig(logger, s3);
         createCognitoEmail(logger, s3);
         sendResponse(input, logger, context, "SUCCESS",
@@ -312,6 +378,42 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
 
     return null;
+  }
+
+  private void installDriveLoginPage(final LambdaLogger logger, final S3Service s3) {
+    String authorizeUrl = getDriveCognitoAuthorizeUrl();
+    if (authorizeUrl == null || authorizeUrl.isBlank()) {
+      logger.log("skipping FormKiQ Drive login page, " + DRIVE_COGNITO_AUTHORIZE_URL
+          + " is not configured");
+      return;
+    }
+
+    String consoleversion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    String key = consoleversion + "/" + DRIVE_LOGIN_PAGE;
+    String html = buildDriveLoginPage(authorizeUrl);
+
+    logger.log("writing FormKiQ Drive login page: " + key);
+    s3.putObject(destinationBucket, key, html.getBytes(StandardCharsets.UTF_8), "text/html", null);
+  }
+
+  private void installDriveLoginSuccessPage(final LambdaLogger logger, final S3Service s3)
+      throws IOException {
+    String consoleversion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    String key = consoleversion + "/" + DRIVE_LOGIN_SUCCESS_PAGE;
+
+    logger.log("writing FormKiQ Drive login success page: " + key);
+    try (InputStream is = getClass().getResourceAsStream("/" + DRIVE_LOGIN_SUCCESS_PAGE)) {
+      if (is == null) {
+        throw new IOException("missing resource " + DRIVE_LOGIN_SUCCESS_PAGE);
+      }
+      s3.putObject(destinationBucket, key, is, "text/html");
+    }
+  }
+
+  private boolean isBlank(final String value) {
+    return value == null || value.isBlank();
   }
 
   private boolean isSsoLoginRedirectEnabled() {
@@ -387,6 +489,10 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
   }
 
+  private String trimTrailingSlash(final String value) {
+    return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+  }
+
   /**
    * Unzip Console file.
    *
@@ -409,6 +515,41 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
       logStacktrace(context, e);
       sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
+    }
+  }
+
+  private void updateDriveCognitoUserPoolClient(final LambdaLogger logger) {
+    String userPoolId = serviceCache.environment("COGNITO_USER_POOL_ID");
+    String clientId = serviceCache.environment(DRIVE_COGNITO_USER_POOL_CLIENT_ID);
+    String callbackUrl = getDriveLoginSuccessUrl();
+    if (isBlank(userPoolId) || isBlank(clientId) || isBlank(callbackUrl)) {
+      logger.log("skipping FormKiQ Drive Cognito app client update");
+      return;
+    }
+
+    logger.log("updating FormKiQ Drive Cognito callback URL: " + callbackUrl);
+    try (CognitoIdentityProviderClient cognito = getCognitoIdentityProviderClient()) {
+      UserPoolClientType userPoolClient = cognito.describeUserPoolClient(
+          DescribeUserPoolClientRequest.builder().userPoolId(userPoolId).clientId(clientId).build())
+          .userPoolClient();
+
+      UpdateUserPoolClientRequest.Builder request = UpdateUserPoolClientRequest.builder()
+          .userPoolId(userPoolId).clientId(clientId).clientName(userPoolClient.clientName())
+          .accessTokenValidity(userPoolClient.accessTokenValidity())
+          .idTokenValidity(userPoolClient.idTokenValidity())
+          .refreshTokenValidity(userPoolClient.refreshTokenValidity())
+          .tokenValidityUnits(userPoolClient.tokenValidityUnits())
+          .readAttributes(userPoolClient.readAttributes())
+          .writeAttributes(userPoolClient.writeAttributes())
+          .explicitAuthFlows(userPoolClient.explicitAuthFlows())
+          .preventUserExistenceErrors(userPoolClient.preventUserExistenceErrors())
+          .enableTokenRevocation(userPoolClient.enableTokenRevocation())
+          .authSessionValidity(userPoolClient.authSessionValidity()).callbackURLs(callbackUrl)
+          .defaultRedirectURI(callbackUrl).logoutURLs(List.of())
+          .allowedOAuthFlowsUserPoolClient(true).allowedOAuthFlows(OAuthFlowType.CODE)
+          .allowedOAuthScopes("email", "openid", "profile").supportedIdentityProviders("COGNITO");
+
+      cognito.updateUserPoolClient(request.build());
     }
   }
 

@@ -21,6 +21,7 @@ dependencies {
 
   implementation project(':adapters:aws:s3')
   implementation project(':adapters:aws:ssm')
+  implementation project(':adapters:aws:cognito-identityprovider')
   implementation project(':adapters:aws:dynamodb')
   implementation project(':domain:documents')
   implementation project(':libs:http')
