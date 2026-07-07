@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FormkiqDrive Login Success</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1f2328;
+      background: #f6f8fa;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    main {
+      box-sizing: border-box;
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 24px;
+    }
+
+    section {
+      width: min(520px, 100%);
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+      padding: 28px;
+    }
+
+    strong {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: #137333;
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    p {
+      margin: 0 0 16px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    a {
+      color: #0969da;
+      font-weight: 600;
+    }
+
+    small {
+      color: #57606a;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <strong>Login Complete</strong>
+      <h1>Return to FormkiqDrive</h1>
+      <p id="status">Opening FormkiqDrive...</p>
+      <p><a id="open-app" href="com.formkiq.drive://oauth2/callback">Open FormkiqDrive</a></p>
+      <small>You can close this browser tab after FormkiqDrive opens.</small>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const appCallbackBase = "com.formkiq.drive://oauth2/callback";
+      const appCallbackUrl = appCallbackBase + window.location.search + window.location.hash;
+      const openAppLink = document.getElementById("open-app");
+      const status = document.getElementById("status");
+
+      openAppLink.href = appCallbackUrl;
+      window.location.replace(appCallbackUrl);
+
+      window.setTimeout(function () {
+        status.textContent = "If FormkiqDrive did not open, use the link below.";
+      }, 1000);
+    }());
+  </script>
+</body>
+</html>

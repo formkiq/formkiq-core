@@ -89,6 +89,16 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
 
+  DriveAuthorizeUrl:
+    Description: The Cognito OAuth2 authorization URL for the Drive app client
+    Type: String
+    Default: ""
+
+  DriveCognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id for the Drive app client
+    Type: String
+    Default: ""
+
   CognitoUserPoolId:
     Description: The Cognito User Pool Id
     AllowedPattern: ".+"
@@ -449,6 +459,21 @@ Resources:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET:
             Fn::Sub: "${WebUiConsole}"
+          CONSOLE_URL:
+            Fn::If:
+              - HasCertificateStackNameDomainName
+              - Fn::Join:
+                  - ""
+                  -
+                    - 'https://'
+                    - Ref: CertificateStackNameDomainName
+              - Fn::Join:
+                  - ""
+                  -
+                    - 'https://'
+                    - Fn::GetAtt:
+                        - CloudFrontDistribution
+                        - DomainName
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           CONSOLE_ZIP_URL:
@@ -467,6 +492,10 @@ Resources:
             Fn::Sub: "${AllowAdminCreateUserOnly}"
           COGNITO_HOSTED_UI:
             Ref: CognitoHostedUi
+          DRIVE_COGNITO_AUTHORIZE_URL:
+            Ref: DriveAuthorizeUrl
+          DRIVE_COGNITO_USER_POOL_CLIENT_ID:
+            Ref: DriveCognitoUserPoolClientId
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOMAIN:
@@ -550,6 +579,12 @@ Resources:
                   - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
               - Effect: Allow
                 Action:
+                  - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:UpdateUserPoolClient
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}"
+              - Effect: Allow
+                Action:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
@@ -606,6 +641,25 @@ Resources:
         Ref: KeyApiUrl
       API_AUTH_URL:
         Ref: AuthApiUrl
+      ConsoleUrl:
+        Fn::If:
+          - HasCertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Ref: CertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Fn::GetAtt:
+                    - CloudFrontDistribution
+                    - DomainName
+      DriveAuthorizeUrl:
+        Ref: DriveAuthorizeUrl
+      DriveCognitoUserPoolClientId:
+        Ref: DriveCognitoUserPoolClientId
       HttpApiUrl:
         Fn::If:
           - HasCertificateStackName
