@@ -89,7 +89,7 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
 
-  DriveCognitoAuthorizeUrl:
+  DriveAuthorizeUrl:
     Description: The Cognito OAuth2 authorization URL for the Drive app client
     Type: String
     Default: ""
@@ -493,7 +493,7 @@ Resources:
           COGNITO_HOSTED_UI:
             Ref: CognitoHostedUi
           DRIVE_COGNITO_AUTHORIZE_URL:
-            Ref: DriveCognitoAuthorizeUrl
+            Ref: DriveAuthorizeUrl
           DRIVE_COGNITO_USER_POOL_CLIENT_ID:
             Ref: DriveCognitoUserPoolClientId
           USER_AUTHENTICATION:
@@ -656,8 +656,8 @@ Resources:
                 - Fn::GetAtt:
                     - CloudFrontDistribution
                     - DomainName
-      DriveCognitoAuthorizeUrl:
-        Ref: DriveCognitoAuthorizeUrl
+      DriveAuthorizeUrl:
+        Ref: DriveAuthorizeUrl
       DriveCognitoUserPoolClientId:
         Ref: DriveCognitoUserPoolClientId
       HttpApiUrl:
