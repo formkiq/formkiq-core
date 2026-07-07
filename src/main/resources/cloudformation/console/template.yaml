@@ -641,6 +641,25 @@ Resources:
         Ref: KeyApiUrl
       API_AUTH_URL:
         Ref: AuthApiUrl
+      ConsoleUrl:
+        Fn::If:
+          - HasCertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Ref: CertificateStackNameDomainName
+          - Fn::Join:
+              - ""
+              -
+                - 'https://'
+                - Fn::GetAtt:
+                    - CloudFrontDistribution
+                    - DomainName
+      DriveCognitoAuthorizeUrl:
+        Ref: DriveCognitoAuthorizeUrl
+      DriveCognitoUserPoolClientId:
+        Ref: DriveCognitoUserPoolClientId
       HttpApiUrl:
         Fn::If:
           - HasCertificateStackName
