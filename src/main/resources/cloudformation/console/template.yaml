@@ -94,6 +94,11 @@ Parameters:
     Type: String
     Default: ""
 
+  DriveCognitoUserPoolClientId:
+    Description: The Cognito User Pool Client Id for the Drive app client
+    Type: String
+    Default: ""
+
   CognitoUserPoolId:
     Description: The Cognito User Pool Id
     AllowedPattern: ".+"
@@ -489,6 +494,8 @@ Resources:
             Ref: CognitoHostedUi
           DRIVE_COGNITO_AUTHORIZE_URL:
             Ref: DriveCognitoAuthorizeUrl
+          DRIVE_COGNITO_USER_POOL_CLIENT_ID:
+            Ref: DriveCognitoUserPoolClientId
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOMAIN:
@@ -570,6 +577,12 @@ Resources:
                   - dynamodb:GetItem
                 Resource:
                   - Fn::Sub: "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentsTableName}"
+              - Effect: Allow
+                Action:
+                  - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:UpdateUserPoolClient
+                Resource:
+                  - Fn::Sub: "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}"
               - Effect: Allow
                 Action:
                   - s3:GetObject
