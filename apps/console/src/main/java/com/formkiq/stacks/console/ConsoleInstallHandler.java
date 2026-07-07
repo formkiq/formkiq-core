@@ -63,7 +63,13 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>, Object> {
 
   /** FormKiQ Drive login success page. */
-  private static final String DRIVE_LOGIN_SUCCESS_PAGE = "formkiq-drive-login-success.html";
+  private static final String DRIVE_LOGIN_SUCCESS_PAGE = "drive-login-success.html";
+  /** FormKiQ Drive login page. */
+  private static final String DRIVE_LOGIN_PAGE = "drive-login.html";
+  /** FormKiQ Drive Cognito authorize URL environment variable. */
+  private static final String DRIVE_COGNITO_AUTHORIZE_URL = "DRIVE_COGNITO_AUTHORIZE_URL";
+  /** Console URL environment variable. */
+  private static final String CONSOLE_URL = "CONSOLE_URL";
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
@@ -106,6 +112,17 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   ConsoleInstallHandler(final AwsServiceCache cache) {
     initialize(cache);
+  }
+
+  private String buildDriveLoginPage(final String authorizeUrl) {
+    String htmlAuthorizeUrl = escapeHtml(authorizeUrl);
+    return "<!doctype html>\n" + "<html lang=\"en\">\n" + "<head>\n"
+        + "  <meta charset=\"utf-8\">\n" + "  <title>FormKiQ Drive Login</title>\n"
+        + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+        + "  <meta http-equiv=\"refresh\" content=\"0; url=" + htmlAuthorizeUrl + "\">\n"
+        + "</head>\n" + "<body>\n" + "  <script>\n" + "    window.location.replace("
+        + JSONObject.quote(authorizeUrl) + ");\n" + "  </script>\n" + "  <a href=\""
+        + htmlAuthorizeUrl + "\">Continue to FormKiQ Drive login</a>\n" + "</body>\n" + "</html>\n";
   }
 
   /**
@@ -218,6 +235,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     s3.deleteAllFiles(cognitoConfigBucket, true);
   }
 
+  private String escapeHtml(final String value) {
+    return value.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&#39;")
+        .replace("<", "&lt;").replace(">", "&gt;");
+  }
+
   /**
    * Get {@link HttpURLConnection}.
    *
@@ -263,6 +285,21 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     return serviceCache.environment("CONSOLE_ZIP_URL");
   }
 
+  private String getDriveCognitoAuthorizeUrl() {
+    String authorizeUrl = serviceCache.environment(DRIVE_COGNITO_AUTHORIZE_URL);
+    if (authorizeUrl == null || authorizeUrl.isBlank() || authorizeUrl.contains("redirect_uri=")) {
+      return authorizeUrl;
+    }
+
+    String consoleUrl = serviceCache.environment(CONSOLE_URL);
+    if (consoleUrl == null || consoleUrl.isBlank()) {
+      return authorizeUrl;
+    }
+
+    return authorizeUrl + (authorizeUrl.contains("?") ? "&" : "?") + "redirect_uri="
+        + trimTrailingSlash(consoleUrl) + "/" + DRIVE_LOGIN_SUCCESS_PAGE;
+  }
+
   /**
    * Handle Console Installation.
    *
@@ -287,6 +324,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       if (unzip) {
 
         unzipConsole(s3, input, context, logger);
+        installDriveLoginPage(logger, s3);
         installDriveLoginSuccessPage(logger, s3);
         createCognitoConfig(logger, s3);
         createCognitoEmail(logger, s3);
@@ -316,6 +354,23 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
 
     return null;
+  }
+
+  private void installDriveLoginPage(final LambdaLogger logger, final S3Service s3) {
+    String authorizeUrl = getDriveCognitoAuthorizeUrl();
+    if (authorizeUrl == null || authorizeUrl.isBlank()) {
+      logger.log("skipping FormKiQ Drive login page, " + DRIVE_COGNITO_AUTHORIZE_URL
+          + " is not configured");
+      return;
+    }
+
+    String consoleversion = serviceCache.environment("CONSOLE_VERSION");
+    String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
+    String key = consoleversion + "/" + DRIVE_LOGIN_PAGE;
+    String html = buildDriveLoginPage(authorizeUrl);
+
+    logger.log("writing FormKiQ Drive login page: " + key);
+    s3.putObject(destinationBucket, key, html.getBytes(StandardCharsets.UTF_8), "text/html", null);
   }
 
   private void installDriveLoginSuccessPage(final LambdaLogger logger, final S3Service s3)
@@ -404,6 +459,10 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       logger.log("Unable to send response.");
       logStacktrace(context, e);
     }
+  }
+
+  private String trimTrailingSlash(final String value) {
+    return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
   }
 
   /**

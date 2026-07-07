@@ -89,6 +89,11 @@ Parameters:
     AllowedPattern: ".+"
     Type: String
 
+  DriveCognitoAuthorizeUrl:
+    Description: The Cognito OAuth2 authorization URL for the Drive app client
+    Type: String
+    Default: ""
+
   CognitoUserPoolId:
     Description: The Cognito User Pool Id
     AllowedPattern: ".+"
@@ -449,6 +454,21 @@ Resources:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET:
             Fn::Sub: "${WebUiConsole}"
+          CONSOLE_URL:
+            Fn::If:
+              - HasCertificateStackNameDomainName
+              - Fn::Join:
+                  - ""
+                  -
+                    - 'https://'
+                    - Ref: CertificateStackNameDomainName
+              - Fn::Join:
+                  - ""
+                  -
+                    - 'https://'
+                    - Fn::GetAtt:
+                        - CloudFrontDistribution
+                        - DomainName
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           CONSOLE_ZIP_URL:
@@ -467,6 +487,8 @@ Resources:
             Fn::Sub: "${AllowAdminCreateUserOnly}"
           COGNITO_HOSTED_UI:
             Ref: CognitoHostedUi
+          DRIVE_COGNITO_AUTHORIZE_URL:
+            Ref: DriveCognitoAuthorizeUrl
           USER_AUTHENTICATION:
             Ref: UserAuthentication
           DOMAIN:
