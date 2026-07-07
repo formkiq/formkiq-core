@@ -108,6 +108,7 @@ public class ConsoleInstallHandlerTest {
         "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip");
     map.put("REGION", "us-east-1");
     map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+    map.put("CONSOLE_URL", "https://console.formkiq.example.com");
     map.put("DOCUMENTS_TABLE", DOCUMENTS_TABLE);
     map.put("API_URL",
         "https://chartapi.24hourcharts.com.execute-api.us-east-1.amazonaws.com/prod/");
@@ -120,6 +121,9 @@ public class ConsoleInstallHandlerTest {
     map.put("USER_AUTHENTICATION", "cognito");
     map.put("COGNITO_CONFIG_BUCKET", CONSOLE_BUCKET);
     map.put("DOMAIN", "dev");
+    map.put("DRIVE_COGNITO_AUTHORIZE_URL",
+        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize?client_id=drive"
+            + "&response_type=code&scope=openid+email+profile");
     map.put("COGNITO_USER_POOL_ID", "us-east-2_blGeBpyLg");
     map.put("COGNITO_USER_POOL_CLIENT_ID", "7223423m2pfgf34qnfokb2po2l");
     return map;
@@ -281,6 +285,8 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginPage();
+    verifyDriveLoginSuccessPage();
 
     // given
     input = createInput("Delete");
@@ -348,6 +354,8 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginPage();
+    verifyDriveLoginSuccessPage();
 
     // given
     input = createInput("Delete");
@@ -416,6 +424,8 @@ public class ConsoleInstallHandlerTest {
 
     assertEquals("font/woff",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.woff", null).getContentType());
+    verifyDriveLoginPage();
+    verifyDriveLoginSuccessPage();
   }
 
   /**
@@ -505,6 +515,23 @@ public class ConsoleInstallHandlerTest {
     assertEquals(ssoLoginRedirectEnabled, Boolean.valueOf(o.get("ssoAutomaticSignIn").toString()));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
+  }
+
+  private void verifyDriveLoginPage() {
+    String key = "0.1/drive-login.html";
+    assertEquals("text/html", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    String content = s3.getContentAsString(CONSOLE_BUCKET, key, null);
+    assertTrue(content.contains("window.location.replace"));
+    assertTrue(content.contains("client_id=drive"));
+    assertTrue(content
+        .contains("redirect_uri=https://console.formkiq.example.com/drive-login-success.html"));
+  }
+
+  private void verifyDriveLoginSuccessPage() {
+    String key = "0.1/drive-login-success.html";
+    assertEquals("text/html", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    assertTrue(s3.getContentAsString(CONSOLE_BUCKET, key, null)
+        .contains("com.formkiq.drive://oauth2/callback"));
   }
 
   /**
