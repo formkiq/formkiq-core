@@ -25,13 +25,15 @@ package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordToDocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.lambda.s3.DocumentAction;
 import com.formkiq.stacks.lambda.s3.ProcessActionStatus;
 import com.formkiq.validation.ValidationException;
@@ -48,8 +50,6 @@ public class MoveAction implements DocumentAction {
 
   /** {@link DocumentService}. */
   private final DocumentService documentService;
-  /** {@link FolderIndexProcessor}. */
-  private final FolderIndexProcessor folderIndexProcessor;
 
   /**
    * constructor.
@@ -58,7 +58,6 @@ public class MoveAction implements DocumentAction {
    */
   public MoveAction(final AwsServiceCache awsServiceCache) {
     this.documentService = awsServiceCache.getExtension(DocumentService.class);
-    this.folderIndexProcessor = awsServiceCache.getExtension(FolderIndexProcessor.class);
   }
 
   private String normalizeTargetPath(final Action action) {
@@ -78,12 +77,13 @@ public class MoveAction implements DocumentAction {
     }
 
     String sourcePath = item.path();
-    if (isEmpty(sourcePath)) {
-      throw new IOException("document '" + document.documentId() + "' does not have a path");
-    }
+    String targetPath = normalizeTargetPath(action) + Strings.getFilename(sourcePath);
+    DocumentRecord moved = new DocumentRecordToDocumentRecordBuilder().apply(null, item)
+        .path(targetPath).build(siteId);
 
-    this.folderIndexProcessor.moveIndex(siteId, sourcePath, normalizeTargetPath(action),
-        action.userId());
+    DocumentRecordSet recordSet = new DocumentRecordSet(moved, null, null, null);
+    SaveDocumentOptions options = new SaveDocumentOptions().setSkipDocumentEventBridge(true);
+    this.documentService.saveDocument(siteId, recordSet, options);
 
     return new ProcessActionStatus(ActionStatus.COMPLETE);
   }

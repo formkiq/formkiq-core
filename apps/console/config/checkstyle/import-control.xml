@@ -20,4 +20,6 @@
   <allow pkg="com.formkiq.module.lambdaservices" />
   <allow pkg="com.formkiq.stacks.dynamodb.config" />
   <allow pkg="software.amazon.awssdk.auth.credentials" />
+  <allow pkg="software.amazon.awssdk.services.cognitoidentityprovider" />
+  <allow pkg="software.amazon.awssdk.services.cognitoidentityprovider.model" />
 </import-control>
