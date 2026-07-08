@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -78,11 +79,18 @@ import com.formkiq.client.model.DeleteType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentSearch;
+import com.formkiq.client.model.DocumentSearchMeta;
+import com.formkiq.client.model.DocumentSearchMeta.IndexTypeEnum;
+import com.formkiq.client.model.DocumentSearchRequest;
+import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.GetDocumentActionsResponse;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.aws.dynamodb.actions.Queue;
+import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -90,8 +98,10 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.lambda.s3.DocumentActionsProcessor;
 import com.formkiq.validation.ValidationException;
 import org.junit.jupiter.api.Timeout;
 
@@ -106,6 +116,8 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   private DynamoDbService db;
   /** {@link ActionsService}. */
   private ActionsService service;
+  /** {@link DocumentService}. */
+  private DocumentService documentService;
 
   private void assertDocumentAction(final DocumentAction action, final DocumentActionType type,
       final DocumentActionStatus status, final String message) {
@@ -135,11 +147,16 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
     this.db = awsServices.getExtension(DynamoDbService.class);
     this.service = awsServices.getExtension(ActionsService.class);
+    this.documentService = awsServices.getExtension(DocumentService.class);
     this.configService = awsServices.getExtension(ConfigService.class);
   }
 
   private ActionBuilder createAction(final DocumentArtifact document) {
     return new ActionBuilder().document(document).type(ActionType.OCR).userId("joe").indexUlid();
+  }
+
+  private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
+    return new ActionBuilder().document(document).type(actionType).userId("joe").indexUlid();
   }
 
   private ActionBuilder createAction(final String documentId, final ActionType actionType) {
@@ -164,9 +181,19 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     return getDocumentActions(siteId, DocumentArtifact.of(documentId, null), null);
   }
 
+  private DocumentActionsProcessor getDocumentActionsProcessor() {
+    return new DocumentActionsProcessor(getAwsServices());
+  }
+
   private List<Document> getFailedActionDocuments(final String siteId) throws ApiException {
     return notNull(new GetDocumentsRequestBuilder().actionStatus(FAILED.name())
         .submit(client, siteId).throwIfError().response().getDocuments());
+  }
+
+  private void processDocumentActions(final String siteId, final DocumentArtifact document) {
+    DocumentEvent event = new DocumentEvent().siteId(siteId).documentId(document.documentId())
+        .artifactId(document.artifactId()).type("actions");
+    getDocumentActionsProcessor().processEvent(getAwsServices().getLogger(), event);
   }
 
   private DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)
@@ -198,6 +225,15 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
     AddDocumentResponse response = new AddDocumentRequestBuilder().content().path(path)
         .submit(client, siteId).throwIfError().response();
     return response.getDocumentId();
+  }
+
+  private DocumentArtifact saveDocumentWithDocumentService(final String siteId, final String path)
+      throws ValidationException {
+    String documentId = ID.uuid();
+    DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+    item.setPath(path);
+    this.documentService.saveDocument(siteId, item, null);
+    return DocumentArtifact.of(documentId, null);
   }
 
   /**
@@ -1183,6 +1219,57 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
             "{\"errors\":[{\"key\":\"type\"," + "\"error\":\"action type cannot be 'MOVE'\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /search after workflow-only MOVE action avoids duplicate paths.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePostDocumentActionsMove02() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      final String filename = "test-" + ID.ulid() + ".md";
+      final String sourcePath = "issue-516/source/" + filename;
+      final String destinationFolder = "issue-516/destination-" + ID.ulid() + "/";
+      final String expectedPath = destinationFolder + filename;
+
+      var document0 = saveDocumentWithDocumentService(siteId, sourcePath);
+      this.service.saveNewActions(List.of(createAction(document0, ActionType.MOVE)
+          .parameters(Map.of("path", destinationFolder)).build(siteId)));
+      processDocumentActions(siteId, document0);
+
+      var document1 = saveDocumentWithDocumentService(siteId, sourcePath);
+      this.service.saveNewActions(List.of(createAction(document1, ActionType.MOVE)
+          .parameters(Map.of("path", destinationFolder)).build(siteId)));
+
+      // when
+      processDocumentActions(siteId, document1);
+
+      // then
+      String expectedRenamedPath =
+          destinationFolder + filename.replace(".md", " (" + document1.documentId() + ").md");
+      assertEquals(expectedPath, this.documentsApi
+          .getDocument(document0.documentId(), siteId, document0.artifactId(), null).getPath());
+      assertEquals(expectedRenamedPath, this.documentsApi
+          .getDocument(document1.documentId(), siteId, document1.artifactId(), null).getPath());
+
+      DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
+          .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(destinationFolder)));
+      DocumentSearchResponse response =
+          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+
+      assertEquals(2, documents.size());
+      assertEquals(2L,
+          documents.stream().map(SearchResultDocument::getDocumentId).distinct().count());
+      assertEquals(List.of(expectedPath, expectedRenamedPath).stream().sorted().toList(),
+          documents.stream().map(SearchResultDocument::getPath).sorted().toList());
     }
   }
 
