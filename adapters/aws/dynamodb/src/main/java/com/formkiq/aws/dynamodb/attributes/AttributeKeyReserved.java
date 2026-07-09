@@ -390,7 +390,7 @@ public enum AttributeKeyReserved {
   /** LLM Model Id. */
   LLM_MODEL_ID("LlmModelId"),
   /** LLM Max Token. */
-  LLM_MAX_TOKEN("LlmMaxToken", AttributeType.STANDARD, AttributeDataType.NUMBER, null),
+  LLM_MAX_TOKENS("LlmMaxTokens", AttributeType.STANDARD, AttributeDataType.NUMBER, null),
   /** LLM Analysis Category. */
   LLM_ANALYSIS_CATEGORY("LlmAnalysisCategory");
 
