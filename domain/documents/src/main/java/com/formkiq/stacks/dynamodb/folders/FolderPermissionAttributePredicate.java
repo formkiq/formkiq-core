@@ -42,6 +42,8 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.formkiq.strings.Strings.isEmpty;
+
 /**
  * {@link Predicate} to test {@link FolderRolePermission}.
  */
@@ -73,10 +75,9 @@ public class FolderPermissionAttributePredicate implements
   public List<Map<String, AttributeValue>> apply(final String siteId,
       final List<Map<String, AttributeValue>> attrs) {
 
-    List<DynamoDbKey> pathKeys = attrs.stream()
-        .map(a -> FolderPermissionRecord.builder()
-            .path(root + "/" + DynamoDbTypes.toString(a.get("path"))).buildKey(siteId))
-        .filter(Objects::nonNull).toList();
+    List<DynamoDbKey> pathKeys =
+        attrs.stream().map(a -> FolderPermissionRecord.builder().path(getPath(a)).buildKey(siteId))
+            .filter(Objects::nonNull).toList();
 
     List<FolderPermissionRecord> perm = db.get(db.getTableName(), pathKeys).stream()
         .map(FolderPermissionRecord::fromAttributeMap).toList();
@@ -90,5 +91,10 @@ public class FolderPermissionAttributePredicate implements
           permMap.get(new StringToFolder().apply(DynamoDbTypes.toString(a.get("path"))));
       return pred.test(siteId, perms);
     }).toList() : attrs;
+  }
+
+  private String getPath(final Map<String, AttributeValue> a) {
+    String path = DynamoDbTypes.toString(a.get("path"));
+    return !isEmpty(root) ? Strings.removeBackSlashes(root) + "/" + path : path;
   }
 }

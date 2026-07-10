@@ -25,9 +25,13 @@ package com.formkiq.testutils.api.folders;
 
 import com.formkiq.client.api.DocumentFoldersApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.List;
 
 /**
  * Builder for Get Document Folders.
@@ -47,6 +51,11 @@ public class GetFoldersRequestBuilder implements HttpRequestBuilder<GetFoldersRe
    * constructor.
    */
   public GetFoldersRequestBuilder() {}
+
+  public List<SearchResultDocument> getFolderDocuments(final ApiClient apiClient,
+      final String siteId) throws ApiException {
+    return submitOk(apiClient, siteId).response().getDocuments();
+  }
 
   /**
    * Set the index key for filtering results.

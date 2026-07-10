@@ -405,7 +405,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   @Override
   public FolderPermissionRecord getFolderPermissionsByIndexKey(final String siteId,
       final String indexKey) {
-    String path = toPathFromIndexKey(indexKey);
+    var path = toPath(siteId, indexKey);
     return getFolderPermissions(siteId, path);
   }
 
@@ -764,18 +764,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return String.join("/", sb);
-  }
-
-  private String toPathFromIndexKey(final String indexKey) {
-    String path = null;
-    String index = URLDecoder.decode(indexKey, StandardCharsets.UTF_8);
-
-    int pos = index.indexOf(TAG_DELIMINATOR);
-    if (pos != -1) {
-      path = index.substring(pos + 1);
-    }
-
-    return path;
   }
 
   /**
