@@ -96,6 +96,22 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     return key.build();
   }
 
+  /**
+   * Builds a primary-key-only {@link DynamoDbKey} for this folder index record.
+   * <p>
+   * This helper only populates the table {@code PK} and {@code SK}; it does not populate GSI keys.
+   * Use this when reading an existing folder index record by parent folder id and path, especially
+   * before the folder record's own {@code documentId} is known. Use
+   * {@link #buildNonShardKey(String)} when the record is complete and GSI key values are required.
+   *
+   * @param siteId site identifier
+   * @return primary-key-only {@link DynamoDbKey}
+   */
+  public DynamoDbKey buildPrimaryKey(final String siteId) {
+    DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
+    return key.build();
+  }
+
   private void checkParentId() {
     if (this.parentDocumentId == null) {
       throw new IllegalArgumentException("'parentDocumentId' is required");

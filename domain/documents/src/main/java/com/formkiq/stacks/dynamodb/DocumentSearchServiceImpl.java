@@ -1140,6 +1140,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     FolderPermissionAttributePredicate pred =
         new FolderPermissionAttributePredicate(db, ApiPermission.READ, path);
     List<Map<String, AttributeValue>> apply = pred.apply(siteId, result.items());
+    // List<Map<String, AttributeValue>> apply = result.items();
     List<DynamicDocumentItem> results = apply.stream().map(r -> {
 
       AttributeValue documentId = r.get("documentId");

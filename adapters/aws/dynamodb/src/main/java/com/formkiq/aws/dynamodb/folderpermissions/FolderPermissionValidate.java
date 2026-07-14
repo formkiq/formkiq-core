@@ -24,13 +24,11 @@
 package com.formkiq.aws.dynamodb.folderpermissions;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
-import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.folders.FindFolderIdByPath;
 import com.formkiq.validation.UnAuthorizedValidationError;
 import com.formkiq.validation.ValidationBuilder;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
@@ -58,13 +56,17 @@ public class FolderPermissionValidate implements BiFunction<String, String, Void
   @Override
   public Void apply(final String siteId, final String path) {
 
-    DynamoDbKey key =
-        FolderPermissionRecord.builder().path(new StringToFolder().apply(path)).buildKey(siteId);
-    Map<String, AttributeValue> attributes = db.get(key);
+    var folderId = new FindFolderIdByPath().find(db, siteId, path);
+    if (folderId == null) {
+      return null;
+    }
+
+    var folderPermissionRecordKey =
+        FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId);
+    var attributes = db.get(folderPermissionRecordKey);
 
     if (!attributes.isEmpty()) {
-      FolderPermissionRecord folderPermissions =
-          FolderPermissionRecord.fromAttributeMap(attributes);
+      var folderPermissions = FolderPermissionRecord.fromAttributeMap(attributes);
 
       boolean authorized = pred.test(siteId, folderPermissions.rolePermissions());
       new ValidationBuilder().isRequired(authorized, new UnAuthorizedValidationError()).check();

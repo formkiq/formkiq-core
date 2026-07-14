@@ -148,4 +148,8 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
   public static DocumentRecordBuilder builder() {
     return new DocumentRecordBuilder();
   }
+
+  public DocumentArtifact document() {
+    return DocumentArtifact.of(documentId, artifactId);
+  }
 }

@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionPredicate;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
+import com.formkiq.aws.dynamodb.folders.FindFolderIdByPath;
 
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -62,14 +63,18 @@ public class FolderPermissionPathPredicate implements BiFunction<String, String,
 
     if (!isEmpty(path)) {
 
-      var pathKey = FolderPermissionRecord.builder().path(path).buildKey(siteId);
-      var pathAttributes = db.get(pathKey);
+      var folderId = new FindFolderIdByPath().find(this.db, siteId, path);
 
-      if (!pathAttributes.isEmpty()) {
-        var folderPermissionRecord = FolderPermissionRecord.fromAttributeMap(pathAttributes);
-        var folderRolePermissions = folderPermissionRecord.rolePermissions();
+      if (folderId != null) {
+        var pathKey = FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId);
+        var pathAttributes = db.get(pathKey);
 
-        match = pred.test(siteId, folderRolePermissions);
+        if (!pathAttributes.isEmpty()) {
+          var folderPermissionRecord = FolderPermissionRecord.fromAttributeMap(pathAttributes);
+          var folderRolePermissions = folderPermissionRecord.rolePermissions();
+
+          match = pred.test(siteId, folderRolePermissions);
+        }
       }
     }
 

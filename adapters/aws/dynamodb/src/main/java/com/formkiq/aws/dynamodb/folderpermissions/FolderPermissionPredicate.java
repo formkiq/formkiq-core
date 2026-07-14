@@ -29,6 +29,8 @@ import com.formkiq.aws.dynamodb.ApiPermission;
 import java.util.Collection;
 import java.util.function.BiPredicate;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+
 public class FolderPermissionPredicate
     implements BiPredicate<String, Collection<FolderRolePermission>> {
 
@@ -47,7 +49,7 @@ public class FolderPermissionPredicate
   public FolderPermissionPredicate(final ApiPermission apiPermission) {
 
     authorization = ApiAuthorization.getAuthorization();
-    roles = authorization.getRoles();
+    roles = notNull(authorization.getRoles());
     permission = apiPermission;
   }
 

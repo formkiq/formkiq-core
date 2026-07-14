@@ -61,6 +61,8 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
+import com.formkiq.aws.dynamodb.folders.FindFolderIdByIndexKey;
+import com.formkiq.aws.dynamodb.folders.FindFolderIdByPath;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
 import com.formkiq.aws.dynamodb.folders.FolderType;
@@ -368,6 +370,11 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         .collect(Collectors.toMap(FolderIndexRecord::documentId, r -> r));
   }
 
+  @Override
+  public String getFolderId(final String siteId, final String path) {
+    return new FindFolderIdByPath().find(db, siteId, path);
+  }
+
   /**
    * Get Folder Id.
    * 
@@ -397,16 +404,29 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
   @Override
   public FolderPermissionRecord getFolderPermissions(final String siteId, final String path) {
-    DynamoDbKey key = FolderPermissionRecord.builder().path(path).buildKey(siteId);
-    Map<String, AttributeValue> attributes = db.get(key);
+    String folderId = getFolderId(siteId, path);
+    return getFolderPermissionsByFolderId(siteId, folderId);
+  }
+
+  @Override
+  public FolderPermissionRecord getFolderPermissionsByFolderId(final String siteId,
+      final String folderId) {
+
+    if (isEmpty(folderId)) {
+      return null;
+    }
+
+    var folderPermissionRecord =
+        FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId);
+    var attributes = db.get(folderPermissionRecord);
     return !attributes.isEmpty() ? FolderPermissionRecord.fromAttributeMap(attributes) : null;
   }
 
   @Override
   public FolderPermissionRecord getFolderPermissionsByIndexKey(final String siteId,
       final String indexKey) {
-    var path = toPath(siteId, indexKey);
-    return getFolderPermissions(siteId, path);
+    var folderId = new FindFolderIdByIndexKey().find(db, siteId, indexKey);
+    return getFolderPermissionsByFolderId(siteId, folderId);
   }
 
   @Override
@@ -621,46 +641,41 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
   }
 
+  @Override
+  public void moveFolder(final String siteId, final String sourcePath, final String targetPath) {
+
+    moveFolderToFolder(siteId, sourcePath, targetPath);
+  }
+
   /**
    * Moves one Folder to another.
    * 
    * @param siteId {@link String}
    * @param sourcePath {@link String}
-   * @param targetPath {@link String}
-   * @param userId {@link String}
-   * @throws IOException IOException
+   * @param targetPath {@link String}g}
    */
   private void moveFolderToFolder(final String siteId, final String sourcePath,
-      final String targetPath, final String userId) throws IOException {
+      final String targetPath) {
 
     final int pos = targetPath.substring(0, targetPath.length() - 1).lastIndexOf("/");
-    final String newTargetPath = pos > -1 ? targetPath.substring(0, pos) + "/" : "/";
-    final String newPath = removeBackSlashes(pos > -1 ? targetPath.substring(pos) : targetPath);
+    final var newTargetPath = pos > -1 ? targetPath.substring(0, pos) + "/" : "/";
+    final var newPath = removeBackSlashes(pos > -1 ? targetPath.substring(pos) : targetPath);
 
-    Date now = new Date();
+    var targetFolders = createFolders(siteId, newTargetPath);
+    var sourceRecords = getFolderIndexRecords(siteId, sourcePath);
 
-    List<FolderIndexRecordExtended> sourceRecords = get(siteId, sourcePath, "folder", userId, now);
-    List<FolderIndexRecordExtended> targetRecords =
-        get(siteId, newTargetPath, "folder", userId, now);
+    var sourceFolderIndexRecord = last(sourceRecords);
+    var targetFolderIndexRecord = last(targetFolders);
 
-    validateExists(sourcePath, sourceRecords);
+    if (sourceFolderIndexRecord != null && targetFolderIndexRecord != null) {
 
-    FolderIndexRecord source = last(sourceRecords).record();
-    FolderIndexRecord target = last(targetRecords).record();
+      var dynamoDbShardKey = sourceFolderIndexRecord.buildKey(siteId);
+      this.db.deleteItem(dynamoDbShardKey.key());
 
-    this.db.deleteItem(fromS(source.pk(siteId)), fromS(source.sk()));
-
-    source.parentDocumentId(target.documentId());
-    source.path(newPath);
-
-    // save target folder if needed and source
-    List<Map<String, AttributeValue>> toBeSaved =
-        targetRecords.stream().filter(FolderIndexRecordExtended::isChanged)
-            .map(r -> r.record().getAttributes(siteId)).collect(Collectors.toList());
-    toBeSaved.add(source.getAttributes(siteId));
-    this.db.putItems(toBeSaved);
-
-    // this.eventService.publish(event);
+      sourceFolderIndexRecord.parentDocumentId(targetFolderIndexRecord.documentId());
+      sourceFolderIndexRecord.path(newPath);
+      this.db.putItem(sourceFolderIndexRecord.getAttributes(siteId));
+    }
   }
 
   @Override
@@ -676,7 +691,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
     } else if ("folder".equals(sourceType) && "folder".equals(targetType)) {
 
-      moveFolderToFolder(siteId, sourcePath, targetPath, userId);
+      moveFolder(siteId, sourcePath, targetPath);
 
     } else {
       throw new RuntimeException(
@@ -705,9 +720,10 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     getIndex(siteId, new StringToFolder().apply(path));
 
     String folderPath = new StringToFolder().apply(path);
+    String folderId = getFolderId(siteId, folderPath);
     String userId = ApiAuthorization.getAuthorization().getUsername();
     FolderPermissionRecord.Builder builder =
-        FolderPermissionRecord.builder().path(folderPath).type("folder").userId(userId);
+        FolderPermissionRecord.builder().folderId(folderId).type("folder").userId(userId);
 
     if (!notNull(roles).isEmpty()) {
       FolderPermissionRecord record = builder.rolePermissions(roles).build(siteId);

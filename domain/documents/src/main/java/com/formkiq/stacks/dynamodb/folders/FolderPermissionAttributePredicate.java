@@ -30,19 +30,14 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionPredicate;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
-import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
-import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static com.formkiq.strings.Strings.isEmpty;
 
 /**
  * {@link Predicate} to test {@link FolderRolePermission}.
@@ -75,26 +70,25 @@ public class FolderPermissionAttributePredicate implements
   public List<Map<String, AttributeValue>> apply(final String siteId,
       final List<Map<String, AttributeValue>> attrs) {
 
-    List<DynamoDbKey> pathKeys =
-        attrs.stream().map(a -> FolderPermissionRecord.builder().path(getPath(a)).buildKey(siteId))
-            .filter(Objects::nonNull).toList();
+    List<DynamoDbKey> pathKeys = attrs.stream().filter(this::isFolder)
+        .map(a -> DynamoDbTypes.toString(a.get("documentId"))).filter(folderId -> folderId != null)
+        .map(folderId -> FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId))
+        .toList();
 
     List<FolderPermissionRecord> perm = db.get(db.getTableName(), pathKeys).stream()
         .map(FolderPermissionRecord::fromAttributeMap).toList();
 
-    Map<String, Collection<FolderRolePermission>> permMap = perm.stream()
-        .collect(Collectors.toMap(p -> new StringToFolder().apply(Strings.getFilename(p.path())),
-            FolderPermissionRecord::rolePermissions));
+    Map<String, Collection<FolderRolePermission>> permMap = perm.stream().collect(Collectors
+        .toMap(FolderPermissionRecord::folderId, FolderPermissionRecord::rolePermissions));
 
     return !permMap.isEmpty() ? attrs.stream().filter(a -> {
       Collection<FolderRolePermission> perms =
-          permMap.get(new StringToFolder().apply(DynamoDbTypes.toString(a.get("path"))));
+          isFolder(a) ? permMap.get(DynamoDbTypes.toString(a.get("documentId"))) : null;
       return pred.test(siteId, perms);
     }).toList() : attrs;
   }
 
-  private String getPath(final Map<String, AttributeValue> a) {
-    String path = DynamoDbTypes.toString(a.get("path"));
-    return !isEmpty(root) ? Strings.removeBackSlashes(root) + "/" + path : path;
+  private boolean isFolder(final Map<String, AttributeValue> a) {
+    return "folder".equals(DynamoDbTypes.toString(a.get("type")));
   }
 }
