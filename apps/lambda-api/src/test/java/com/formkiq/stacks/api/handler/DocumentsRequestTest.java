@@ -617,6 +617,45 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Hard-deleting one soft-deleted document should not remove other soft-deleted documents from the
+   * list.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentsSoftDeleted02() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      String doc0 = new AddDocumentRequestBuilder().content("doc0").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+      String doc1 = new AddDocumentRequestBuilder().content("doc1").submit(client, siteId)
+          .throwIfError().response().getDocumentId();
+
+      new DeleteDocumentRequestBuilder(doc0).softDelete(true).submit(client, siteId).throwIfError();
+      new DeleteDocumentRequestBuilder(doc1).softDelete(true).submit(client, siteId).throwIfError();
+
+      var before = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      assertEquals(List.of(doc0, doc1),
+          notNull(before.getDocuments()).stream().map(Document::getDocumentId).toList());
+
+      // when
+      new DeleteDocumentRequestBuilder(doc0).softDelete(false).submit(client, siteId)
+          .throwIfError();
+
+      // then
+      var after = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
+          .submit(client, siteId).throwIfError().response();
+
+      assertEquals(List.of(doc1),
+          notNull(after.getDocuments()).stream().map(Document::getDocumentId).toList());
+    }
+  }
+
+  /**
    * Save new File.
    * 
    * @throws ApiException ApiException

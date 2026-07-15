@@ -57,7 +57,7 @@ public class DeleteSoftDeletedDocumentQuery implements DynamoDbDeleteQuery, DbKe
       final int limit) {
 
     var key = new DocumentRecordBuilder().document(this.document).buildSoftDeleteKey(siteId);
-    return DynamoDbQueryBuilder.builder().pk(key.pk()).limit(limit).build(tableName);
+    return DynamoDbQueryBuilder.builder().pk(key.pk()).eq(key.sk()).limit(limit).build(tableName);
   }
 
   @Override
