@@ -43,6 +43,7 @@ import java.util.concurrent.Executors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.FolderPermission;
@@ -52,6 +53,7 @@ import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
@@ -65,6 +67,8 @@ import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.client.model.MoveFolderRequest;
+import com.formkiq.client.model.MoveFolderResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 
 /**
@@ -149,43 +153,98 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
     final int threadPool = 5;
     final int numberOfThreads = 5;
     final String content = "some content";
-    ExecutorService executorService = Executors.newFixedThreadPool(threadPool);
-    CountDownLatch latch = new CountDownLatch(numberOfThreads);
+    try (ExecutorService executorService = Executors.newFixedThreadPool(threadPool)) {
+      CountDownLatch latch = new CountDownLatch(numberOfThreads);
 
-    String siteId = ID.uuid();
+      String siteId = ID.uuid();
 
-    List<ApiClient> clients = getApiClients(siteId);
-    final String random = ID.uuid();
+      List<ApiClient> clients = getApiClients(siteId);
+      final String random = ID.uuid();
 
-    ApiClient apiClient = clients.get(0);
+      ApiClient apiClient = clients.getFirst();
 
-    // when
-    for (int i = 0; i < numberOfThreads; i++) {
-      final int ii = i;
-      executorService.submit(() -> {
-        try {
+      // when
+      for (int i = 0; i < numberOfThreads; i++) {
+        final int ii = i;
+        executorService.submit(() -> {
           try {
-            String path = "Chicago_" + random + "/sample" + ii + ".txt";
-            addDocument(apiClient, siteId, path, content.getBytes(StandardCharsets.UTF_8),
-                "text/plain", null);
-          } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
-            throw new RuntimeException(e);
+            try {
+              String path = "Chicago_" + random + "/sample" + ii + ".txt";
+              addDocument(apiClient, siteId, path, content.getBytes(StandardCharsets.UTF_8),
+                  "text/plain", null);
+            } catch (IOException | InterruptedException | URISyntaxException | ApiException e) {
+              throw new RuntimeException(e);
+            }
+          } finally {
+            latch.countDown();
           }
-        } finally {
-          latch.countDown();
-        }
-      });
+        });
+      }
+
+      // then
+      latch.await();
+      executorService.shutdown();
+
+      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+      List<SearchResultDocument> docs = notNull(foldersApi
+          .getFolderDocuments(siteId, null, "Chicago_" + random, "200", null, null).getDocuments());
+
+      assertEquals(numberOfThreads, docs.size());
     }
+  }
 
-    // then
-    latch.await();
-    executorService.shutdown();
+  /**
+   * Test POST /folders/{indexKey}/moves.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testMoveFolder01() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.ulid())) {
 
-    DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-    List<SearchResultDocument> docs = notNull(foldersApi
-        .getFolderDocuments(siteId, null, "Chicago_" + random, "200", null, null).getDocuments());
+      ApiClient apiClient = getApiClients(siteId).getFirst();
 
-    assertEquals(numberOfThreads, docs.size());
+      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+
+      String sourceFolder = "/movetest/source-" + ID.uuid();
+      String targetFolder = "/movetest/target-" + ID.uuid();
+      String sourceFilePath = sourceFolder + "/root.txt";
+      String sourceChildFilePath = sourceFolder + "/child/nested.txt";
+      String targetFilePath = targetFolder + "/root.txt";
+      String targetChildFilePath = targetFolder + "/child/nested.txt";
+
+      // when
+      var sourceDocument = new AddDocumentRequestBuilder().content().path(sourceFilePath)
+          .getDocument(apiClient, siteId);
+      var childDocument = new AddDocumentRequestBuilder().content().path(sourceChildFilePath)
+          .getDocument(apiClient, siteId);
+
+      // then
+      waitForDocumentContent(apiClient, siteId, sourceDocument.documentId());
+      waitForDocumentContent(apiClient, siteId, childDocument.documentId());
+
+      // when
+      var folderDocs =
+          new GetFoldersRequestBuilder().path(sourceFolder).getFolderDocuments(apiClient, siteId);
+
+      // then
+      assertEquals(1, folderDocs.size());
+
+      // given
+      var indexKey = folderDocs.getFirst().getIndexKey();
+      assertNotNull(indexKey);
+
+      // when
+      MoveFolderResponse response =
+          foldersApi.moveFolder(indexKey, new MoveFolderRequest().path(targetFolder), siteId);
+
+      // then
+      assertEquals("folder move request created", response.getMessage());
+      waitForFolderMove(apiClient, siteId, sourceDocument, targetFilePath, childDocument,
+          targetChildFilePath, targetFolder);
+    }
   }
 
   /**
@@ -229,7 +288,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
         List<SearchResultDocument> docs = notNull(submit.response().getDocuments());
         assertEquals(1, docs.size());
-        assertEquals(folder + "/test.txt", docs.get(0).getPath());
+        assertEquals(folder + "/test.txt", docs.getFirst().getPath());
       }
     }
   }
@@ -250,7 +309,7 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
       String folder = "mydoc_" + ID.uuid();
       String path = folder + "/doc.txt";
       ApiHttpResponse<AddDocumentResponse> addDoc =
-          new AddDocumentRequestBuilder().content().path(path).submit(clients.get(0), siteId);
+          new AddDocumentRequestBuilder().content().path(path).submit(clients.getFirst(), siteId);
       assertNull(addDoc.exception());
 
       String indexKey = new StringToBase64Encoder().apply("#" + folder);
@@ -270,9 +329,9 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
         assertNull(getPerms.exception());
         List<FolderPermission> roles = notNull(getPerms.response().getRoles());
         assertEquals(1, roles.size());
-        assertEquals("myrole", roles.get(0).getRoleName());
+        assertEquals("myrole", roles.getFirst().getRoleName());
         assertEquals("WRITE", String.join(",",
-            notNull(roles.get(0).getPermissions()).stream().map(Enum::name).toList()));
+            notNull(roles.getFirst().getPermissions()).stream().map(Enum::name).toList()));
       }
 
       // when
@@ -281,5 +340,28 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
       // then
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), setPerm.exception().getCode());
     }
+  }
+
+  private void waitForFolderMove(final ApiClient apiClient, final String siteId,
+      final DocumentArtifact sourceDocument, final String targetFilePath,
+      final DocumentArtifact childDocument, final String targetChildFilePath,
+      final String targetFolder) throws Exception {
+
+    new GetDocumentRequestBuilder(sourceDocument).submitUntil(apiClient, siteId,
+        resp -> !resp.isError() && targetFilePath.equals(resp.response().getPath()));
+    new GetDocumentRequestBuilder(childDocument).submitUntil(apiClient, siteId,
+        resp -> !resp.isError() && targetChildFilePath.equals(resp.response().getPath()));
+
+    DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
+    List<SearchResultDocument> targetFolderDocuments = notNull(foldersApi
+        .getFolderDocuments(siteId, null, targetFolder, "100", null, null).getDocuments());
+    List<SearchResultDocument> targetChildFolderDocuments = notNull(
+        foldersApi.getFolderDocuments(siteId, null, targetFolder + "/child", "100", null, null)
+            .getDocuments());
+
+    assertEquals(1,
+        targetFolderDocuments.stream().filter(d -> targetFilePath.equals(d.getPath())).count());
+    assertEquals(1, targetChildFolderDocuments.stream()
+        .filter(d -> targetChildFilePath.equals(d.getPath())).count());
   }
 }

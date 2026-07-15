@@ -36,6 +36,7 @@ import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
+import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -130,6 +131,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_B64_EXT = ".fkb64";
+  /** Folder move staging key prefix. */
+  private static final String FOLDER_MOVES_PREFIX = "tempfiles/moves/";
   /** {@link ActionsNotificationService}. */
   private static ActionsNotificationService notificationService;
   /** {@link S3Service}. */
@@ -389,6 +392,21 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         parts.artifactId());
   }
 
+  /**
+   * Handle Folder Move Request.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @throws IOException IOException
+   */
+  private void handleFolderMoveRequest(final String bucket, final String key) throws IOException {
+    final String contentString = s3.getContentAsString(bucket, key, null);
+    FolderMoveRequest content = this.gson.fromJson(contentString, FolderMoveRequest.class);
+
+    folderIndexProcesor.moveFolder(content.siteId(), content.sourcePath(), content.targetPath());
+    s3.deleteObject(bucket, key, null);
+  }
+
   @Override
   public Void handleRequest(final Map<String, Object> map, final Context context) {
 
@@ -523,6 +541,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       if (key.startsWith("tempfiles/eventcallback/")) {
         handleEventCallBack(key);
+      } else if (key.startsWith(FOLDER_MOVES_PREFIX) && Strings.getExtension(key).equals("json")) {
+        handleFolderMoveRequest(bucket, key);
       } else if (Strings.getExtension(key).equals("json")) {
         handleCompressionRequest(bucket, key);
       } else {

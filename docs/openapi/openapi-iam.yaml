@@ -3699,7 +3699,6 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/indexKeyParam'
-      - $ref: '#/components/parameters/shareKeyParam'
       requestBody:
         required: true
         content:
@@ -11380,6 +11379,8 @@ components:
           description: Folder Index Key
     MoveFolderRequest:
       type: object
+      required:
+      - path
       properties:
         path:
           type: string

@@ -80,7 +80,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/indexKeyParam'
-        - $ref: '#/components/parameters/shareKeyParam'
       requestBody:
         required: true
         content:
@@ -248,6 +247,8 @@ components:
     #@overlay/match missing_ok=True
     MoveFolderRequest:
       type: "object"
+      required:
+        - path
       properties:
         path:
           type: "string"

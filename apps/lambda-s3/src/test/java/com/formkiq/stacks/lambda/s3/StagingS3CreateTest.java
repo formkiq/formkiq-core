@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
@@ -73,6 +74,7 @@ import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -128,6 +130,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.apimodels.AddDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
@@ -1795,6 +1798,82 @@ public class StagingS3CreateTest implements DbKeys {
       assertNull(r.getBooleanValue());
       assertNull(r.getNumberValue());
     }
+  }
+
+  /**
+   * Tests processing a staged folder move request.
+   * <p>
+   * The test creates a source folder with one file directly in it and one file in a child folder,
+   * writes a {@link FolderMoveRequest} JSON file to the staging bucket under
+   * {@code tempfiles/moves/}, and invokes the S3 create handler with an event for that staged
+   * object. It verifies that the handler moves the folder index from the source path to the target
+   * path, updates all document paths below the moved folder, and deletes the staged request after
+   * processing.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  void testFolderMoveRequest() throws Exception {
+    // given
+    final var sourcePath = "folder-move-" + ID.uuid() + "/source/";
+    final var targetPath = "folder-move-" + ID.uuid() + "/target/";
+    final var sourceFilePath = sourcePath + "root.txt";
+    final var childFolderPath = sourcePath + "child/";
+    final var childFilePath = childFolderPath + "nested.txt";
+    final var targetFilePath = targetPath + "root.txt";
+    final var targetChildFolderPath = targetPath + "child/";
+    final var targetChildFilePath = targetChildFolderPath + "nested.txt";
+    final var key = "tempfiles/moves/" + ID.uuid() + ".json";
+
+    final var sourceDocument = DocumentRecord.builder().document().path(sourceFilePath)
+        .userId("joesmith").build(DEFAULT_SITE_ID);
+
+    final var childDocument = DocumentRecord.builder().document().path(childFilePath)
+        .userId("joesmith").build(DEFAULT_SITE_ID);
+
+    // when
+    service.saveDocument(DEFAULT_SITE_ID, sourceDocument, new SaveDocumentOptions());
+    service.saveDocument(DEFAULT_SITE_ID, childDocument, new SaveDocumentOptions());
+
+    // then
+    assertEquals("source", folderIndexProcesor.getIndex(DEFAULT_SITE_ID, sourcePath).get("path"));
+    assertEquals("root.txt",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, sourceFilePath).get("path"));
+    assertEquals("child",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, childFolderPath).get("path"));
+    assertEquals("nested.txt",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, childFilePath).get("path"));
+
+    // given
+    var folderMoveRequest =
+        new FolderMoveRequest(sourcePath, targetPath, DEFAULT_SITE_ID, "joesmith");
+    s3.putObject(STAGING_BUCKET, key, GSON.toJson(folderMoveRequest).getBytes(UTF_8),
+        "application/json");
+
+    // when
+    var map = loadFileAsMap(this, "/documents-compress-event.json",
+        "tempfiles/665f0228-4fbc-4511-912b-6cb6f566e1c0.json", key);
+    this.handleRequest(map);
+
+    // then
+    assertThrows(IllegalArgumentException.class,
+        () -> folderIndexProcesor.getFolderIndexRecords(DEFAULT_SITE_ID, sourcePath));
+    assertEquals("target", folderIndexProcesor.getIndex(DEFAULT_SITE_ID, targetPath).get("path"));
+    assertEquals("root.txt",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, targetFilePath).get("path"));
+    assertEquals("child",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, targetChildFolderPath).get("path"));
+    assertEquals("nested.txt",
+        folderIndexProcesor.getIndex(DEFAULT_SITE_ID, targetChildFilePath).get("path"));
+    assertEquals(targetFilePath,
+        service
+            .findDocument(DEFAULT_SITE_ID, DocumentArtifact.of(sourceDocument.documentId(), null))
+            .path());
+    assertEquals(targetChildFilePath,
+        service.findDocument(DEFAULT_SITE_ID, DocumentArtifact.of(childDocument.documentId(), null))
+            .path());
+    assertFalse(s3.getObjectMetadata(STAGING_BUCKET, key, null).isObjectExists());
   }
 
   /**

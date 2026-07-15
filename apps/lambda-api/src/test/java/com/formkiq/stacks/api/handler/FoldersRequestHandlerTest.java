@@ -32,6 +32,7 @@ import static com.formkiq.client.model.FolderPermissionType.DELETE;
 import static com.formkiq.client.model.FolderPermissionType.WRITE;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,6 +57,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
@@ -88,7 +90,10 @@ import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.client.model.MoveFolderRequest;
+import com.formkiq.client.model.MoveFolderResponse;
 import com.formkiq.client.model.SearchResultDocument;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 
 /**
  * 
@@ -125,6 +130,46 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     // then
     assertEquals(HttpStatus.BAD_REQUEST, response.statusCode());
     assertEquals("{\"message\":\"invalid JSON body\"}", response.body());
+  }
+
+  /**
+   * POST /folders/{indexKey}/moves.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void addFolderMoveRequest() throws Exception {
+    // given
+    S3Service s3 = getAwsServices().getExtension(S3Service.class);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      s3.deleteAllFiles(STAGE_BUCKET_NAME);
+      setBearerToken(siteId);
+
+      String sourcePath = "source-" + ID.uuid();
+      String targetPath = "target-" + ID.uuid();
+      String indexKey = createFolder(siteId, sourcePath);
+
+      // when
+      MoveFolderResponse response =
+          this.foldersApi.moveFolder(indexKey, new MoveFolderRequest().path(targetPath), siteId);
+
+      // then
+      assertEquals("folder move request created", response.getMessage());
+
+      ListObjectsResponse listObjects = s3.listObjects(STAGE_BUCKET_NAME, "tempfiles/moves/");
+      assertEquals(1, listObjects.contents().size());
+
+      String key = listObjects.contents().getFirst().key();
+      Map<String, Object> request =
+          fromJson(s3.getContentAsString(STAGE_BUCKET_NAME, key, null), Map.class);
+      s3.deleteObject(STAGE_BUCKET_NAME, key, null);
+
+      assertEquals(sourcePath + "/", request.get("sourcePath"));
+      assertEquals(targetPath + "/", request.get("targetPath"));
+      assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, request.get("siteId"));
+      assertEquals("joesmith", request.get("userId"));
+    }
   }
 
   /**
