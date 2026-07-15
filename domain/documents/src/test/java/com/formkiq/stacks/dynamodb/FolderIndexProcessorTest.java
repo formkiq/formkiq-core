@@ -649,10 +649,7 @@ class FolderIndexProcessorTest implements DbKeys {
       list = results.getResults();
       assertEquals(1, list.size());
 
-      // this is probably wrong as the folder structure doesn't equal the document path
-      // path is stored on the document also in the folder index. They are stored separately
-      // it's possible to update all the documents in the same folder but TBD at a later date.
-      assertEquals("/something/else/test.txt", list.getFirst().get("path"));
+      assertEquals("/a/b/test.txt", list.getFirst().get("path"));
 
       smc = new SearchMetaCriteria(null, "something", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -892,8 +889,8 @@ class FolderIndexProcessorTest implements DbKeys {
       Map<String, Object> destAttr = index.getIndex(siteId, destinationPath);
       assertEquals("secured", destAttr.get("path"));
 
-      // method does NOT update document path
-      assertEquals(sourcePathChild + "test.txt", service.findDocument(siteId, document).path());
+      assertEquals(destinationPath + "child/test.txt",
+          service.findDocument(siteId, document).path());
 
       var results = searchByPath(siteId, "").getResults();
       assertEquals(2, results.size());
@@ -902,6 +899,10 @@ class FolderIndexProcessorTest implements DbKeys {
       results = searchByPath(siteId, destinationPath).getResults();
       assertEquals(1, results.size());
       assertEquals("child", results.getFirst().getPath());
+
+      results = searchByPath(siteId, destinationPath + "child/").getResults();
+      assertEquals(1, results.size());
+      assertEquals(destinationPath + "child/test.txt", results.getFirst().getPath());
     }
   }
 
@@ -937,9 +938,8 @@ class FolderIndexProcessorTest implements DbKeys {
       Map<String, Object> destAttr = index.getIndex(siteId, destinationFolder);
       assertEquals("new-name", destAttr.get("path"));
 
-      // method does NOT update document path
       var documentPath = service.findDocument(siteId, document).path();
-      assertEquals(sourceFolder + "test.txt", documentPath);
+      assertEquals(destinationFolder + "test.txt", documentPath);
 
       var results = searchByPath(siteId, "").getResults();
       assertEquals(1, results.size());
@@ -950,8 +950,6 @@ class FolderIndexProcessorTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals(documentPath, results.getFirst().getPath());
 
-      // TODO fix this path
-      // assertEquals(destinationFolder + "test.txt", results.getFirst().getPath());
     }
   }
 

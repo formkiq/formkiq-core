@@ -57,13 +57,17 @@ import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.QueryResult;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.aws.dynamodb.folders.FindFolderIdByIndexKey;
 import com.formkiq.aws.dynamodb.folders.FindFolderIdByPath;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.aws.dynamodb.folders.GetAllFolderAndFilesQuery;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionValidate;
 import com.formkiq.aws.dynamodb.folders.FolderType;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
@@ -86,7 +90,7 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
 
   /**
    * Is File Token.
-   * 
+   *
    * @param path {@link String}
    * @param i int
    * @param len int
@@ -581,6 +585,26 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     return found;
   }
 
+  private void moveFile(final WriteRequestBuilder writeRequestBuilder, final String siteId,
+      final Map<String, String> folderPaths, final Map<String, AttributeValue> item) {
+
+    var folderIndexRecord = FolderIndexRecord.getFromAttributesMap(item);
+    String path = folderIndexRecord.path();
+    String type = folderIndexRecord.type();
+    String documentId = folderIndexRecord.documentId();
+    String parentDocumentId = folderIndexRecord.parentDocumentId();
+    String parentPath = folderPaths.get(parentDocumentId);
+
+    if (parentPath != null) {
+      if (FolderType.isFolder(type)) {
+        folderPaths.put(documentId, parentPath + path + "/");
+      } else if (FolderType.isFile(type)) {
+        writeRequestBuilder.appendUpdate(this.documentTableName,
+            updateDocumentPathAttributes(siteId, documentId, parentPath + path));
+      }
+    }
+  }
+
   /**
    * Move File to Folder.
    * 
@@ -628,8 +652,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
         targetRecords.stream().map(r -> !isEmpty(r.record().path()) ? r.record().path() + "/" : "")
             .collect(Collectors.joining("")) + source.path();
 
-    Map<String, AttributeValue> keys = keysDocument(siteId, source.documentId());
-    this.db.updateValues(keys.get(PK), keys.get(SK), Map.of("path", fromS(newPath)));
+    Map<String, AttributeValue> attributes =
+        updateDocumentPathAttributes(siteId, source.documentId(), newPath);
+    this.db.updateValues(attributes.get(PK), attributes.get(SK), Map.of("path", fromS(newPath)));
 
     // update parent folder lastModifiedDate
     if (!isEmpty(target.documentId())) {
@@ -639,6 +664,33 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       this.db.updateValues(fromS(target.pk(siteId)), fromS(target.sk()),
           Map.of("lastModifiedDate", fromS(lastModifiedDate)));
     }
+  }
+
+  // Update document paths for every file under a moved folder.
+  private void moveFiles(final String siteId, final String folderDocumentId,
+      final String targetPath) {
+
+    final int limit = 100;
+    String nextToken = null;
+    Map<String, String> folderPaths = new HashMap<>();
+    folderPaths.put(folderDocumentId, new StringToFolder().apply(targetPath));
+
+    WriteRequestBuilder writeRequestBuilder = new WriteRequestBuilder();
+    GetAllFolderAndFilesQuery query = new GetAllFolderAndFilesQuery(folderDocumentId);
+
+    do {
+
+      QueryResult result = query.query(db, documentTableName, siteId, nextToken, limit);
+
+      for (Map<String, AttributeValue> item : result.items()) {
+        moveFile(writeRequestBuilder, siteId, folderPaths, item);
+      }
+
+      nextToken = result.toNextToken();
+
+    } while (nextToken != null);
+
+    writeRequestBuilder.transactWriteItems(this.dbClient);
   }
 
   @Override
@@ -675,6 +727,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       sourceFolderIndexRecord.parentDocumentId(targetFolderIndexRecord.documentId());
       sourceFolderIndexRecord.path(newPath);
       this.db.putItem(sourceFolderIndexRecord.getAttributes(siteId));
+
+      moveFiles(siteId, sourceFolderIndexRecord.documentId(), targetPath);
     }
   }
 
@@ -780,6 +834,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
 
     return String.join("/", sb);
+  }
+
+  private Map<String, AttributeValue> updateDocumentPathAttributes(final String siteId,
+      final String documentId, final String path) {
+    Map<String, AttributeValue> attributes =
+        new HashMap<>(new DocumentRecordBuilder().documentId(documentId).buildKey(siteId).toMap());
+    attributes.put("path", fromS(path));
+    return attributes;
   }
 
   /**

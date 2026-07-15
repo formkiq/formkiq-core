@@ -26,7 +26,6 @@ package com.formkiq.aws.dynamodb.folders;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbShardQuery;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -41,20 +40,40 @@ import static com.formkiq.strings.Strings.isEmpty;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 /**
- * {@link DynamoDbShardQuery} for finding filenames in folders.
+ * {@link DynamoDbQuery} for walking the folder index and returning every folder and file record.
+ * <p>
+ * The query starts at the configured folder parent. The default parent is the root folder,
+ * represented by an empty parent document id. Any folder records found in the result are queued so
+ * subsequent calls can query their children. This gives callers a breadth-first traversal of the
+ * folder tree through repeated calls to
+ * {@link #query(DynamoDbService, String, String, String, int)} on the same query instance.
+ * <p>
+ * DynamoDB pagination tokens are passed through while a parent folder still has more results. When
+ * a parent folder has been fully read but queued child folders remain, the returned
+ * {@link QueryResult} contains a synthetic {@code parentId} token so the next call advances to the
+ * next queued folder.
  */
 public class GetAllFolderAndFilesQuery implements DynamoDbQuery {
 
-  /** Document Parent Id. */
+  /** Parent document id currently being queried; an empty value represents the root. */
   private String documentParentId;
-  /** {@link Deque} of unprocessed document parent ids. */
+  /** Queue of folder document ids whose children have not yet been queried. */
   private final Deque<String> documentParentIds = new ArrayDeque<>();
 
   /**
-   * constructor.
+   * Creates a query positioned at the root folder parent.
    */
   public GetAllFolderAndFilesQuery() {
-    documentParentId = "";
+    this("");
+  }
+
+  /**
+   * Creates a query positioned at the supplied folder parent.
+   *
+   * @param parentDocumentId parent folder document id; {@code null} is treated as the root parent
+   */
+  public GetAllFolderAndFilesQuery(final String parentDocumentId) {
+    documentParentId = parentDocumentId != null ? parentDocumentId : "";
   }
 
   @Override

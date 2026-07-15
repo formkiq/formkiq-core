@@ -55,6 +55,16 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   /** Index Folder SK. */
   public static final String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
+  public static FolderIndexRecord getFromAttributesMap(final Map<String, AttributeValue> attrs) {
+    return new FolderIndexRecord().documentId(DynamoDbTypes.toString(attrs.get("documentId")))
+        .path(DynamoDbTypes.toString(attrs.get("path")))
+        .type(DynamoDbTypes.toString(attrs.get("type")))
+        .userId(DynamoDbTypes.toString(attrs.get("userId")))
+        .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
+        .insertedDate(toDate(attrs.get("inserteddate")))
+        .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
+  }
+
   /** Document Id. */
   private String documentId;
   /** Record inserted date. */
@@ -67,6 +77,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   private String path;
   /** Folder Type. */
   private String type;
+
   /** Creator of record. */
   private String userId;
 
@@ -167,15 +178,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Override
   public FolderIndexRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
-
-    FolderIndexRecord record =
-        new FolderIndexRecord().documentId(DynamoDbTypes.toString(attrs.get("documentId")))
-            .path(DynamoDbTypes.toString(attrs.get("path")))
-            .type(DynamoDbTypes.toString(attrs.get("type")))
-            .userId(DynamoDbTypes.toString(attrs.get("userId")))
-            .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
-            .insertedDate(toDate(attrs.get("inserteddate")))
-            .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
+    var record = getFromAttributesMap(attrs);
 
     if (this.parentDocumentId == null) {
       String pk = DynamoDbTypes.toString(attrs.get(PK));
