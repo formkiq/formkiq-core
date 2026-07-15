@@ -3689,6 +3689,43 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
+  /folders/{indexKey}/moves:
+    post:
+      operationId: MoveFolder
+      summary: Move document folder
+      description: Creates an asynchronous folder move request
+      tags:
+      - Document Folders
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/indexKeyParam'
+      - $ref: '#/components/parameters/shareKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveFolderRequest'
+      responses:
+        "201":
+          description: 201 CREATED
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveFolderResponse'
+              example:
+                message: folder move request created
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi201'
   /folders/{indexKey}:
     delete:
       operationId: DeleteFolder
@@ -11341,6 +11378,18 @@ components:
         indexKey:
           type: string
           description: Folder Index Key
+    MoveFolderRequest:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Target folder path
+    MoveFolderResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Folder move request status message
     DeleteFolderResponse:
       type: object
       properties:
