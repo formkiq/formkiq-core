@@ -41,7 +41,7 @@
 			<allow pkg="java.security" />
 		</subpackage>
 
-		<subpackage name="base64">
+		<subpackage name="folders">
 			<allow pkg="java.nio.charset" />
 		</subpackage>
 	</subpackage>

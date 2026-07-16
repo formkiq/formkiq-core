@@ -36,6 +36,7 @@ import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
+import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
@@ -45,6 +46,11 @@ import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
+import com.formkiq.aws.dynamodb.useractivities.ActivityRecordBuilder;
+import com.formkiq.aws.dynamodb.useractivities.DocumentActivityEventRecord;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityStatus;
+import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -87,6 +93,8 @@ import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
+import com.formkiq.stacks.dynamodb.folders.FolderMoveDocument;
+import com.formkiq.stacks.dynamodb.folders.FolderMoveResponse;
 import com.formkiq.stacks.dynamodb.apimodels.MatchDocumentTag;
 import com.formkiq.stacks.dynamodb.apimodels.UpdateMatchingDocumentTagsRequest;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
@@ -130,6 +138,8 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
   /** Extension for FormKiQ config file. */
   public static final String FORMKIQ_B64_EXT = ".fkb64";
+  /** Folder move staging key prefix. */
+  private static final String FOLDER_MOVES_PREFIX = "tempfiles/moves/";
   /** {@link ActionsNotificationService}. */
   private static ActionsNotificationService notificationService;
   /** {@link S3Service}. */
@@ -138,10 +148,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   private static DocumentService service;
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
+  /** Audit Table DynamoDb. */
+  private static String auditTable;
   /** SNS Document Event Arn. */
   private static String snsDocumentEvent;
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService = null;
+  /** {@link DynamoDbService}. */
+  private static DynamoDbService versionService;
   /** {@link Logger}. */
   private static Logger logger;
 
@@ -207,12 +221,14 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
 
+    auditTable = awsServiceCache.environment("DOCUMENTS_AUDIT_TABLE");
     documentsBucket = awsServiceCache.environment("DOCUMENTS_S3_BUCKET");
     syncService = awsServiceCache.getExtension(DocumentSyncService.class);
 
     service = awsServiceCache.getExtension(DocumentService.class);
     actionsService = awsServiceCache.getExtension(ActionsService.class);
     s3 = awsServiceCache.getExtension(S3Service.class);
+    versionService = awsServiceCache.getExtension(DynamoDbService.class);
 
     snsDocumentEvent = awsServiceCache.environment("SNS_DOCUMENT_EVENT");
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
@@ -289,6 +305,30 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
   public StagingS3Create(final AwsServiceCache awsServiceCache) {
     initialize(awsServiceCache);
     serviceCache = awsServiceCache;
+  }
+
+  private void createAudit(final String siteId, final DocumentArtifact document,
+      final Map<String, Object> changes) {
+
+    if (isEmpty(auditTable)) {
+      logger.trace("Skipping audit write because DOCUMENTS_AUDIT_TABLE is not configured.");
+      return;
+    }
+
+    String username = ApiAuthorization.getAuthorization().getUsername();
+
+    Map<String, Object> resourceIds = document.artifactId() != null
+        ? Map.of("documentId", document.documentId(), "artifactId", document.artifactId())
+        : Map.of("documentId", document.documentId());
+
+    ActivityRecord ua = new ActivityRecordBuilder(null, null).resource("documents")
+        .source("S3Event").type(UserActivityType.UPDATE_VERSION).status(UserActivityStatus.COMPLETE)
+        .resourceIds(resourceIds).userId(username).insertedDate(new Date()).changes(changes)
+        .build(siteId);
+
+    DocumentActivityEventRecord event = DocumentActivityEventRecord.builder().document(document)
+        .activityKeys(List.of(ua.key())).build(siteId);
+    versionService.putItems(auditTable, List.of(ua.getAttributes(), event.getAttributes()));
   }
 
   private void createDocument(final String siteId, final DocumentArtifact document,
@@ -387,6 +427,23 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     SiteIdKeyGenerator.S3KeyParts parts = SiteIdKeyGenerator.getS3KeyParts(key);
     notificationService.publishNextActionEvent(parts.siteId(), parts.documentId(),
         parts.artifactId());
+  }
+
+  /**
+   * Handle Folder Move Request.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @throws IOException IOException
+   */
+  private void handleFolderMoveRequest(final String bucket, final String key) throws IOException {
+    final String contentString = s3.getContentAsString(bucket, key, null);
+    FolderMoveRequest content = this.gson.fromJson(contentString, FolderMoveRequest.class);
+
+    FolderMoveResponse response = folderIndexProcesor.moveFolder(content.siteId(),
+        content.sourcePath(), content.targetPath());
+    putFolderMoveAudit(content.siteId(), content.userId(), response);
+    s3.deleteObject(bucket, key, null);
   }
 
   @Override
@@ -519,21 +576,25 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     logger.info(s);
 
     final String tempFolder = "tempfiles/";
-    if (objectCreated && key.startsWith(tempFolder)) {
+    if (objectCreated) {
+      if (key.startsWith(tempFolder)) {
 
-      if (key.startsWith("tempfiles/eventcallback/")) {
-        handleEventCallBack(key);
-      } else if (Strings.getExtension(key).equals("json")) {
-        handleCompressionRequest(bucket, key);
-      } else {
-        logger.trace(String.format("skipping event for key %s", key));
-      }
+        if (key.startsWith("tempfiles/eventcallback/")) {
+          handleEventCallBack(key);
+        } else if (key.startsWith(FOLDER_MOVES_PREFIX)) {
+          handleFolderMoveRequest(bucket, key);
+        } else if (Strings.getExtension(key).equals("json")) {
+          handleCompressionRequest(bucket, key);
+        } else {
+          logger.trace(String.format("skipping event for key %s", key));
+        }
 
-    } else if (objectCreated) {
-      if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
-        processPatchDocumentsTags(siteId, bucket, s3Key, date);
       } else {
-        processDefaultFile(siteId, bucket, s3Key);
+        if (s3Key.contains("patch_documents_tags_") && s3Key.endsWith(FORMKIQ_B64_EXT)) {
+          processPatchDocumentsTags(siteId, bucket, s3Key, date);
+        } else {
+          processDefaultFile(siteId, bucket, s3Key);
+        }
       }
     }
 
@@ -605,6 +666,19 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
     }
   }
 
+  private void putFolderMoveAudit(final String siteId, final String userId,
+      final FolderMoveResponse response) {
+
+    ApiAuthorization.login(new ApiAuthorization().username(!isEmpty(userId) ? userId : "System"));
+
+    for (FolderMoveDocument movedDocument : response.documents()) {
+      DocumentArtifact document = DocumentArtifact.of(movedDocument.documentId(), null);
+      Map<String, Object> changes = Map.of("path",
+          Map.of("oldValue", movedDocument.sourcePath(), "newValue", movedDocument.targetPath()));
+      createAudit(siteId, document, changes);
+    }
+  }
+
   private void runPatchDocumentsTags(final String siteId,
       final UpdateMatchingDocumentTagsRequest request, final SearchTagCriteria query,
       final Date date, final String user) {
@@ -629,11 +703,13 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
 
       for (String documentId : documentIds) {
 
-        List<DocumentTagRecord> tags = addTags.stream()
-            .flatMap(t -> DocumentTagRecord.builder().documentId(documentId).tagKey(t.getKey())
+        var document = DocumentArtifact.of(documentId, null);
+
+        var documentTags = addTags.stream()
+            .flatMap(t -> DocumentTagRecord.builder().document(document).tagKey(t.getKey())
                 .tagValue(t.getValue()).insertedDate(date).userId(user).build(siteId).stream())
             .toList();
-        tagMap.put(DocumentArtifact.of(documentId, null), tags);
+        tagMap.put(DocumentArtifact.of(documentId, null), documentTags);
       }
 
       service.addTags(siteId, tagMap, null);

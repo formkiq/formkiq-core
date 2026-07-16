@@ -102,6 +102,7 @@ import com.formkiq.stacks.api.handler.entity.EntityRequestHandlerInterceptor;
 import com.formkiq.stacks.api.handler.entity.EntityTypeRequestHandler;
 import com.formkiq.stacks.api.handler.entity.EntityTypesRequestHandler;
 import com.formkiq.stacks.api.handler.folders.FoldersIndexKeyRequestHandler;
+import com.formkiq.stacks.api.handler.folders.FoldersIndexKeyMovesRequestHandler;
 import com.formkiq.stacks.api.handler.folders.FoldersPermissionRequestHandler;
 import com.formkiq.stacks.api.handler.folders.FoldersPermissionsRequestHandler;
 import com.formkiq.stacks.api.handler.folders.FoldersRequestHandler;
@@ -270,6 +271,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new DocumentsActionsRetryRequestHandler());
     addRequestHandler(new FoldersRequestHandler());
     addRequestHandler(new FoldersIndexKeyRequestHandler());
+    addRequestHandler(new FoldersIndexKeyMovesRequestHandler());
     addRequestHandler(new FoldersPermissionsRequestHandler());
     addRequestHandler(new FoldersPermissionRequestHandler());
     addRequestHandler(new DocumentTagValueRequestHandler());
