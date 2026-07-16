@@ -206,14 +206,12 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
 
       ApiClient apiClient = getApiClients(siteId).getFirst();
 
-      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
-
-      String sourceFolder = "/movetest/source-" + ID.uuid();
-      String targetFolder = "/movetest/target-" + ID.uuid();
-      String sourceFilePath = sourceFolder + "/root.txt";
-      String sourceChildFilePath = sourceFolder + "/child/nested.txt";
-      String targetFilePath = targetFolder + "/root.txt";
-      String targetChildFilePath = targetFolder + "/child/nested.txt";
+      final String sourceFolder = "/movetest/source-" + ID.uuid();
+      final String targetFolder = "/movetest/target-" + ID.uuid();
+      final String sourceFilePath = sourceFolder + "/root.txt";
+      final String sourceChildFilePath = sourceFolder + "/child/nested.txt";
+      final String targetFilePath = targetFolder + "/root.txt";
+      final String targetChildFilePath = targetFolder + "/child/nested.txt";
 
       // when
       var sourceDocument = new AddDocumentRequestBuilder().content().path(sourceFilePath)
@@ -235,6 +233,8 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
       // given
       var indexKey = folderDocs.getFirst().getIndexKey();
       assertNotNull(indexKey);
+
+      DocumentFoldersApi foldersApi = new DocumentFoldersApi(apiClient);
 
       // when
       MoveFolderResponse response =

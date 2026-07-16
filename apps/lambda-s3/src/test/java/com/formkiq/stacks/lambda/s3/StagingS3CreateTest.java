@@ -74,6 +74,7 @@ import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
@@ -154,8 +155,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -336,7 +335,7 @@ public class StagingS3CreateTest implements DbKeys {
             siteId = p.get().getValues().getFirst().getValue();
           }
 
-          var tags = DocumentTagRecord.builder().documentId(documentId).tagKey("test")
+          var tags = DocumentTagRecord.builder().document(document).tagKey("test")
               .tagValue("novalue").userId("joe").build(siteId);
           service.addTags(siteId, document, tags, null);
 
@@ -1159,15 +1158,9 @@ public class StagingS3CreateTest implements DbKeys {
       String content = s3.getContentAsString(DOCUMENTS_BUCKET, key, null);
       assertEquals("VGhpcyBpcyBhIHRlc3Q=", content);
 
-      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.getDocumentId()))
-          .tableName(DOCUMENTS_TABLE).build();
-
-      DynamoDbConnectionBuilder dbBuilder =
-          awsServices.getExtension(DynamoDbConnectionBuilder.class);
-      try (DynamoDbClient dbClient = dbBuilder.build()) {
-        Map<String, AttributeValue> result = dbClient.getItem(r).item();
-        assertEquals(timeToLive, result.get("TimeToLive").n());
-      }
+      var document =
+          new FindDocumentById().find(db, siteId, DocumentArtifact.of(item.getDocumentId(), null));
+      assertEquals(timeToLive, document.timeToLive());
     }
   }
 

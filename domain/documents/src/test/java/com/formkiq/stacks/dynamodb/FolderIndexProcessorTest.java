@@ -67,6 +67,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderMoveResponse;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import com.formkiq.testutils.aws.TestEnvironment;
@@ -867,9 +868,15 @@ class FolderIndexProcessorTest implements DbKeys {
           List.of(new FolderRolePermission("readers2", List.of(ApiPermission.READ))));
 
       // when
-      index.moveFolder(siteId, sourcePath, destinationPath);
+      FolderMoveResponse response = index.moveFolder(siteId, sourcePath, destinationPath);
 
       // then
+      assertEquals(1, response.documents().size());
+      assertEquals(documentRecord.documentId(), response.documents().getFirst().documentId());
+      assertEquals(sourcePathChild + "test.txt", response.documents().getFirst().sourcePath());
+      assertEquals(destinationPath + "child/test.txt",
+          response.documents().getFirst().targetPath());
+
       try {
         index.getFolderIndexRecords(siteId, sourcePath);
         fail();
@@ -928,9 +935,14 @@ class FolderIndexProcessorTest implements DbKeys {
           List.of(new FolderRolePermission("readers", List.of(ApiPermission.READ))));
 
       // when
-      index.moveFolder(siteId, sourceFolder, destinationFolder);
+      FolderMoveResponse response = index.moveFolder(siteId, sourceFolder, destinationFolder);
 
       // then
+      assertEquals(1, response.documents().size());
+      assertEquals(document.documentId(), response.documents().getFirst().documentId());
+      assertEquals(sourceFolder + "test.txt", response.documents().getFirst().sourcePath());
+      assertEquals(destinationFolder + "test.txt", response.documents().getFirst().targetPath());
+
       assertNull(index.getFolderPermissions(siteId, sourceFolder));
       assertFolderPermission(index.getFolderPermissions(siteId, destinationFolder), "readers",
           ApiPermission.READ);

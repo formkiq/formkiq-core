@@ -586,21 +586,28 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   private void moveFile(final WriteRequestBuilder writeRequestBuilder, final String siteId,
-      final Map<String, String> folderPaths, final Map<String, AttributeValue> item) {
+      final Map<String, String> sourceFolderPaths, final Map<String, String> targetFolderPaths,
+      final List<FolderMoveDocument> movedDocuments, final Map<String, AttributeValue> item) {
 
     var folderIndexRecord = FolderIndexRecord.getFromAttributesMap(item);
     String path = folderIndexRecord.path();
     String type = folderIndexRecord.type();
     String documentId = folderIndexRecord.documentId();
     String parentDocumentId = folderIndexRecord.parentDocumentId();
-    String parentPath = folderPaths.get(parentDocumentId);
+    String sourceParentPath = sourceFolderPaths.get(parentDocumentId);
+    String targetParentPath = targetFolderPaths.get(parentDocumentId);
 
-    if (parentPath != null) {
+    if (sourceParentPath != null && targetParentPath != null) {
       if (FolderType.isFolder(type)) {
-        folderPaths.put(documentId, parentPath + path + "/");
+        sourceFolderPaths.put(documentId, sourceParentPath + path + "/");
+        targetFolderPaths.put(documentId, targetParentPath + path + "/");
       } else if (FolderType.isFile(type)) {
+        String sourcePath = sourceParentPath + path;
+        String targetPath = targetParentPath + path;
+
         writeRequestBuilder.appendUpdate(this.documentTableName,
-            updateDocumentPathAttributes(siteId, documentId, parentPath + path));
+            updateDocumentPathAttributes(siteId, documentId, targetPath));
+        movedDocuments.add(new FolderMoveDocument(documentId, sourcePath, targetPath));
       }
     }
   }
@@ -667,13 +674,16 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   }
 
   // Update document paths for every file under a moved folder.
-  private void moveFiles(final String siteId, final String folderDocumentId,
-      final String targetPath) {
+  private List<FolderMoveDocument> moveFiles(final String siteId, final String folderDocumentId,
+      final String sourcePath, final String targetPath) {
 
     final int limit = 100;
     String nextToken = null;
-    Map<String, String> folderPaths = new HashMap<>();
-    folderPaths.put(folderDocumentId, new StringToFolder().apply(targetPath));
+    Map<String, String> sourceFolderPaths = new HashMap<>();
+    sourceFolderPaths.put(folderDocumentId, new StringToFolder().apply(sourcePath));
+    Map<String, String> targetFolderPaths = new HashMap<>();
+    targetFolderPaths.put(folderDocumentId, new StringToFolder().apply(targetPath));
+    List<FolderMoveDocument> movedDocuments = new ArrayList<>();
 
     WriteRequestBuilder writeRequestBuilder = new WriteRequestBuilder();
     GetAllFolderAndFilesQuery query = new GetAllFolderAndFilesQuery(folderDocumentId);
@@ -683,7 +693,8 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       QueryResult result = query.query(db, documentTableName, siteId, nextToken, limit);
 
       for (Map<String, AttributeValue> item : result.items()) {
-        moveFile(writeRequestBuilder, siteId, folderPaths, item);
+        moveFile(writeRequestBuilder, siteId, sourceFolderPaths, targetFolderPaths, movedDocuments,
+            item);
       }
 
       nextToken = result.toNextToken();
@@ -691,12 +702,14 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     } while (nextToken != null);
 
     writeRequestBuilder.transactWriteItems(this.dbClient);
+    return movedDocuments;
   }
 
   @Override
-  public void moveFolder(final String siteId, final String sourcePath, final String targetPath) {
+  public FolderMoveResponse moveFolder(final String siteId, final String sourcePath,
+      final String targetPath) {
 
-    moveFolderToFolder(siteId, sourcePath, targetPath);
+    return moveFolderToFolder(siteId, sourcePath, targetPath);
   }
 
   /**
@@ -705,8 +718,9 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
    * @param siteId {@link String}
    * @param sourcePath {@link String}
    * @param targetPath {@link String}g}
+   * @return {@link FolderMoveResponse}
    */
-  private void moveFolderToFolder(final String siteId, final String sourcePath,
+  private FolderMoveResponse moveFolderToFolder(final String siteId, final String sourcePath,
       final String targetPath) {
 
     final int pos = targetPath.substring(0, targetPath.length() - 1).lastIndexOf("/");
@@ -728,8 +742,12 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       sourceFolderIndexRecord.path(newPath);
       this.db.putItem(sourceFolderIndexRecord.getAttributes(siteId));
 
-      moveFiles(siteId, sourceFolderIndexRecord.documentId(), targetPath);
+      List<FolderMoveDocument> documents =
+          moveFiles(siteId, sourceFolderIndexRecord.documentId(), sourcePath, targetPath);
+      return new FolderMoveResponse(documents);
     }
+
+    return new FolderMoveResponse(List.of());
   }
 
   @Override

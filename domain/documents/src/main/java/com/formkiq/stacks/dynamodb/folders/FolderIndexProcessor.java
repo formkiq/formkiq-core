@@ -229,9 +229,11 @@ public interface FolderIndexProcessor {
    * @param siteId {@link String}
    * @param sourcePath source folder path
    * @param targetPath target folder path
+   * @return {@link FolderMoveResponse}
    * @throws IOException IOException
    */
-  void moveFolder(String siteId, String sourcePath, String targetPath) throws IOException;
+  FolderMoveResponse moveFolder(String siteId, String sourcePath, String targetPath)
+      throws IOException;
 
   /**
    * Move Index from one to another.

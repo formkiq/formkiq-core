@@ -85,6 +85,10 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     Collection<DocumentMetadata> metadata =
         new AttributeValueToDocumentMetadata().apply(attributes);
 
+    Long timeTolive =
+        attributes.containsKey("TimeToLive") ? DynamoDbTypes.toLong(attributes.get("TimeToLive"))
+            : null;
+
     return new DocumentRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toString(attributes.get("artifactId")),
         DynamoDbTypes.toString(attributes.get("artifactCategory")),
@@ -100,7 +104,7 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         DynamoDbTypes.toString(attributes.get("version")),
         DynamoDbTypes.toString(attributes.get("width")),
         DynamoDbTypes.toString(attributes.get("height")),
-        DynamoDbTypes.toString(attributes.get("timeToLive")),
+        timeTolive != null ? String.valueOf(timeTolive) : null,
         DynamoDbTypes.toDate(attributes.get("inserteddate")),
         DynamoDbTypes.toDate(attributes.get("lastModifiedDate")), metadata,
         attributes.containsKey("hasArtifacts")
