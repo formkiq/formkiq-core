@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.folderpermissions;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.validation.ValidationChecks;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
@@ -34,13 +35,17 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.formkiq.aws.dynamodb.builder.DynamoDbTypes.toCustom;
-import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
 
 /**
  * Record representing an entity, with its DynamoDB key structure and metadata.
  */
-public record FolderPermissionRecord(DynamoDbKey key, String path, String type, Date insertedDate,
-    String userId, Collection<FolderRolePermission> rolePermissions) {
+public record FolderPermissionRecord(DynamoDbKey key, String folderId, String type,
+    Date insertedDate, String userId, Collection<FolderRolePermission> rolePermissions) {
+
+  /** Folder Permissions PK. */
+  private static final String FOLDER_PERMISSIONS_PK = "global#folders#permissions";
+  /** Folder Permissions SK Prefix. */
+  private static final String FOLDER_PERMISSIONS_SK = "fp#";
 
   /** {@link FolderRolePermissionAttributeBuilder}. */
   private static final FolderRolePermissionAttributeBuilder FOLDER_ROLE_BUILDER =
@@ -51,7 +56,7 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
    */
   public FolderPermissionRecord {
     Objects.requireNonNull(key, "key must not be null");
-    Objects.requireNonNull(path, "path must not be null");
+    Objects.requireNonNull(folderId, "folderId must not be null");
     Objects.requireNonNull(type, "type must not be null");
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(rolePermissions, "rolePermissions must not be null");
@@ -73,7 +78,7 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
       final Map<String, AttributeValue> attributes) {
     Objects.requireNonNull(attributes, "attributes must not be null");
     DynamoDbKey key = DynamoDbKey.fromAttributeMap(attributes);
-    return new FolderPermissionRecord(key, DynamoDbTypes.toString(attributes.get("path")),
+    return new FolderPermissionRecord(key, DynamoDbTypes.toString(attributes.get("folderId")),
         DynamoDbTypes.toString(attributes.get("type")),
         DynamoDbTypes.toDate(attributes.get("inserteddate")),
         DynamoDbTypes.toString(attributes.get("userId")),
@@ -87,7 +92,7 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
    * @return a Map of attribute names to {@link AttributeValue} instances
    */
   public Map<String, AttributeValue> getAttributes() {
-    return key.getAttributesBuilder().withString("path", path).withString("type", type)
+    return key.getAttributesBuilder().withString("folderId", folderId).withString("type", type)
         .withString("userId", userId).withDate("inserteddate", insertedDate)
         .withCustom(null, this.rolePermissions, FOLDER_ROLE_BUILDER).build();
   }
@@ -107,8 +112,8 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
   public static class Builder implements DynamoDbEntityBuilder<FolderPermissionRecord> {
     /** Inserted Date. */
     private final Date insertedDate = new Date();
-    /** Folder Path. */
-    private String path;
+    /** Folder Document Id. */
+    private String folderId;
     /** Path Type. */
     private String type;
     /** User Id. */
@@ -118,7 +123,7 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
 
     @Override
     public FolderPermissionRecord build(final DynamoDbKey key) {
-      return new FolderPermissionRecord(key, path, type, insertedDate, userId, rolePermissions);
+      return new FolderPermissionRecord(key, folderId, type, insertedDate, userId, rolePermissions);
     }
 
     @Override
@@ -130,22 +135,20 @@ public record FolderPermissionRecord(DynamoDbKey key, String path, String type, 
     @Override
     public DynamoDbKey buildKey(final String siteId) {
 
-      Objects.requireNonNull(path, "path must not be null");
+      ValidationChecks.checkNotNull("folderId", folderId);
 
-      String pk = "global#folders#permissions";
-      String sk = INDEX_FOLDER_SK + path;
-
-      return DynamoDbKey.builder().pk(siteId, pk).sk(sk).build();
+      String sk = FOLDER_PERMISSIONS_SK + folderId;
+      return DynamoDbKey.builder().pk(siteId, FOLDER_PERMISSIONS_PK).sk(sk).build();
     }
 
     /**
-     * Sets the path.
+     * Sets the folder id.
      *
-     * @param folderPath the folder path
+     * @param id folder id
      * @return this Builder
      */
-    public Builder path(final String folderPath) {
-      this.path = new StringToFolder().apply(folderPath);
+    public Builder folderId(final String id) {
+      this.folderId = id;
       return this;
     }
 

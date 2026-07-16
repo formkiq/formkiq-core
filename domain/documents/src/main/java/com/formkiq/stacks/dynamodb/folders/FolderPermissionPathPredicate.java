@@ -21,20 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.folderpermissions;
+package com.formkiq.stacks.dynamodb.folders;
 
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionPredicate;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 import com.formkiq.aws.dynamodb.folders.FindFolderIdByPath;
-import com.formkiq.validation.UnAuthorizedValidationError;
-import com.formkiq.validation.ValidationBuilder;
 
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
+
+import static com.formkiq.strings.Strings.isEmpty;
 
 /**
- * Validate Folder Permissions to Role.
+ * {@link Predicate} to test path against {@link FolderRolePermission}.
  */
-public class FolderPermissionValidate implements BiFunction<String, String, Void> {
+public class FolderPermissionPathPredicate implements BiFunction<String, String, Boolean> {
 
   /** {@link FolderPermissionPredicate}. */
   private final FolderPermissionPredicate pred;
@@ -43,35 +47,37 @@ public class FolderPermissionValidate implements BiFunction<String, String, Void
 
   /**
    * constructor.
-   * 
+   *
    * @param dbService {@link DynamoDbService}
    * @param apiPermission {@link ApiPermission}
    */
-  public FolderPermissionValidate(final DynamoDbService dbService,
+  public FolderPermissionPathPredicate(final DynamoDbService dbService,
       final ApiPermission apiPermission) {
     pred = new FolderPermissionPredicate(apiPermission);
     this.db = dbService;
   }
 
-  @Override
-  public Void apply(final String siteId, final String path) {
+  public Boolean apply(final String siteId, final String path) {
 
-    var folderId = new FindFolderIdByPath().find(db, siteId, path);
-    if (folderId == null) {
-      return null;
+    boolean match = true;
+
+    if (!isEmpty(path)) {
+
+      var folderId = new FindFolderIdByPath().find(this.db, siteId, path);
+
+      if (folderId != null) {
+        var pathKey = FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId);
+        var pathAttributes = db.get(pathKey);
+
+        if (!pathAttributes.isEmpty()) {
+          var folderPermissionRecord = FolderPermissionRecord.fromAttributeMap(pathAttributes);
+          var folderRolePermissions = folderPermissionRecord.rolePermissions();
+
+          match = pred.test(siteId, folderRolePermissions);
+        }
+      }
     }
 
-    var folderPermissionRecordKey =
-        FolderPermissionRecord.builder().folderId(folderId).buildKey(siteId);
-    var attributes = db.get(folderPermissionRecordKey);
-
-    if (!attributes.isEmpty()) {
-      var folderPermissions = FolderPermissionRecord.fromAttributeMap(attributes);
-
-      boolean authorized = pred.test(siteId, folderPermissions.rolePermissions());
-      new ValidationBuilder().isRequired(authorized, new UnAuthorizedValidationError()).check();
-    }
-
-    return null;
+    return match;
   }
 }
