@@ -57,6 +57,7 @@ import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.stacks.dynamodb.folders.FolderPermissionAttributePredicate;
+import com.formkiq.stacks.dynamodb.folders.FolderPermissionPathPredicate;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceDynamodb;
@@ -161,7 +162,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     results.forEach(r -> {
 
       List<Map<String, AttributeValue>> attributeMatches = matchedTags.get(r.getDocumentId());
-      Map<String, AttributeValue> attributeMatch = attributeMatches.get(0);
+      Map<String, AttributeValue> attributeMatch = attributeMatches.getFirst();
 
       Map<String, Object> values = getAttributeValuesMap(attributeMatch);
       r.put("matchedAttribute", values);
@@ -690,10 +691,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         DocumentRecord item =
             this.docService.findDocument(siteId, DocumentArtifact.of(documentId, null));
 
-        // AttributeValueToMapConfig config =
-        // AttributeValueToMapConfig.builder().removeDbKeys(true).build();
-        // Map<String, Object> values = new AttributeValueToMap(config).apply(item.getAttributes());
-
         DynamicDocumentItem result = new DocumentRecordToDynamicDocumentItem().apply(item);
         results = new Pagination<>(Collections.singletonList(result));
 
@@ -957,9 +954,15 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       final String indexFilterBeginsWith, final String nextToken, final int maxresults,
       final String path) {
 
+    boolean hasAccess =
+        new FolderPermissionPathPredicate(db, ApiPermission.READ).apply(siteId, path);
+
     Pagination<DynamicDocumentItem> result;
 
-    if (value != null) {
+    if (!hasAccess) {
+      result = new Pagination<>(Collections.emptyList());
+
+    } else if (value != null) {
 
       String expression = PK + " = :pk";
       Map<String, AttributeValue> values = new HashMap<>();
@@ -1137,6 +1140,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     FolderPermissionAttributePredicate pred =
         new FolderPermissionAttributePredicate(db, ApiPermission.READ, path);
     List<Map<String, AttributeValue>> apply = pred.apply(siteId, result.items());
+    // List<Map<String, AttributeValue>> apply = result.items();
     List<DynamicDocumentItem> results = apply.stream().map(r -> {
 
       AttributeValue documentId = r.get("documentId");
@@ -1201,9 +1205,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
       return new SearchMetaCriteria(folder, null, meta.indexFilterBeginsWith(), "folder",
           meta.path());
-      // meta.indexType("folder");
-      // meta.eq(folder);
-      // meta.folder(null);
     }
 
     // return folder;

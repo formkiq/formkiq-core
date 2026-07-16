@@ -41,20 +41,29 @@ import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
 import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
 
 /**
- * {@link DynamoDbShardQuery} for finding filenames in folders.
+ * {@link DynamoDbShardQuery} for finding folder index records by file or folder name prefix.
+ * <p>
+ * The query targets the sharded {@link DbKeys#GSI2} filename index created by
+ * {@link FolderIndexRecord}. It builds one {@link QueryRequest} per folder-index shard and filters
+ * by the index sort-key prefix for either files or folders. Results are ordered by the indexed
+ * {@code path} attribute.
+ * <p>
+ * Use this query for search criteria such as {@code filename.beginsWith} and
+ * {@code folder.beginsWith}. The supplied prefix should already be normalized in the same way as
+ * folder index records are stored.
  */
 public class GetFolderFilesByNameQuery implements DynamoDbShardQuery {
 
-  /** Begins With {@link String}. */
+  /** Name prefix used in the GSI2 sort-key begins-with condition. */
   private final String begins;
-  /** Is Folder Search. */
+  /** Whether to search folder records instead of file records. */
   private final boolean folderSearch;
 
   /**
-   * constructor.
+   * Creates a query for file or folder records whose indexed name starts with the supplied prefix.
    *
-   * @param isFolderSearch Is folder search
-   * @param beginsWith {@link String}
+   * @param isFolderSearch {@code true} to search folders; {@code false} to search files
+   * @param beginsWith normalized name prefix to match against the folder index sort key
    */
   public GetFolderFilesByNameQuery(final boolean isFolderSearch, final String beginsWith) {
     this.begins = beginsWith;

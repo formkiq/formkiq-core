@@ -32,6 +32,7 @@ import static com.formkiq.client.model.FolderPermissionType.DELETE;
 import static com.formkiq.client.model.FolderPermissionType.WRITE;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,9 +57,11 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
+import com.formkiq.aws.s3.S3Service;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchMeta;
+import com.formkiq.client.model.DocumentSearchMeta.IndexTypeEnum;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.FolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
@@ -87,7 +90,10 @@ import com.formkiq.client.model.AddFolderRequest;
 import com.formkiq.client.model.AddFolderResponse;
 import com.formkiq.client.model.DeleteFolderResponse;
 import com.formkiq.client.model.GetFoldersResponse;
+import com.formkiq.client.model.MoveFolderRequest;
+import com.formkiq.client.model.MoveFolderResponse;
 import com.formkiq.client.model.SearchResultDocument;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 
 /**
  * 
@@ -127,6 +133,46 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /folders/{indexKey}/moves.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void addFolderMoveRequest() throws Exception {
+    // given
+    S3Service s3 = getAwsServices().getExtension(S3Service.class);
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      s3.deleteAllFiles(STAGE_BUCKET_NAME);
+      setBearerToken(siteId);
+
+      String sourcePath = "source-" + ID.uuid();
+      String targetPath = "target-" + ID.uuid();
+      String indexKey = createFolder(siteId, sourcePath);
+
+      // when
+      MoveFolderResponse response =
+          this.foldersApi.moveFolder(indexKey, new MoveFolderRequest().path(targetPath), siteId);
+
+      // then
+      assertEquals("folder move request created", response.getMessage());
+
+      ListObjectsResponse listObjects = s3.listObjects(STAGE_BUCKET_NAME, "tempfiles/moves/");
+      assertEquals(1, listObjects.contents().size());
+
+      String key = listObjects.contents().getFirst().key();
+      Map<String, Object> request =
+          fromJson(s3.getContentAsString(STAGE_BUCKET_NAME, key, null), Map.class);
+      s3.deleteObject(STAGE_BUCKET_NAME, key, null);
+
+      assertEquals(sourcePath + "/", request.get("sourcePath"));
+      assertEquals(targetPath + "/", request.get("targetPath"));
+      assertEquals(siteId != null ? siteId : DEFAULT_SITE_ID, request.get("siteId"));
+      assertEquals("joesmith", request.get("userId"));
+    }
+  }
+
+  /**
    * Assert Document Forbidden.
    * 
    * @param siteId {@link String}
@@ -139,9 +185,9 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     assertEquals(SC_UNAUTHORIZED.getStatusCode(), submit.exception().getCode());
   }
 
-  private void assertFolderPermission(final String indexKey, final String roleName,
-      final String permissions) {
-    List<FolderPermission> roles = getFolderPermissions(indexKey);
+  private void assertFolderPermission(final String siteId, final String indexKey,
+      final String roleName, final String permissions) {
+    List<FolderPermission> roles = getFolderPermissions(siteId, indexKey);
     assertEquals(1, roles.size());
     assertEquals(roleName, roles.getFirst().getRoleName());
     assertEquals(permissions, notNull(roles.getFirst().getPermissions()).stream()
@@ -156,7 +202,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     int pos = path.lastIndexOf('/');
     var parentFolder = pos > 0 ? path.substring(0, pos) : "";
     var filename = Strings.getFilename(path);
-    var files = new GetFoldersRequestBuilder().path(parentFolder).limit("100").submit(client, null);
+    var files =
+        new GetFoldersRequestBuilder().path(parentFolder).limit("100").submit(client, siteId);
 
     List<SearchResultDocument> docs = notNull(files.response().getDocuments());
     return docs.stream().filter(d -> d.getIndexKey() != null && filename.equals(d.getPath()))
@@ -167,8 +214,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     return new DocumentsS3Update(getAwsServices());
   }
 
-  private List<FolderPermission> getFolderPermissions(final String indexKey) {
-    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, null);
+  private List<FolderPermission> getFolderPermissions(final String siteId, final String indexKey) {
+    var perm = new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submit(client, siteId);
     return notNull(perm.response().getRoles());
   }
 
@@ -185,10 +232,17 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
   }
 
-  private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId, final String path,
-      final List<FolderPermissionType> permission) {
-    return new SetFolderPermissionsRequestBuilder().path(path).addRole("aRole", permission)
-        .submit(client, siteId);
+  private List<SearchResultDocument> searchMetaFolderEq(final String siteId, final String path)
+      throws ApiException {
+    DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch()
+        .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(path)));
+    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+  }
+
+  private void setPathPermissions(final String siteId, final String path,
+      final List<FolderPermissionType> permission) throws ApiException {
+    new SetFolderPermissionsRequestBuilder().path(path).addRole("aRole", permission)
+        .submitOk(client, siteId);
   }
 
   private ApiHttpResponse<SetResponse> setPathPermissions(final String siteId,
@@ -295,23 +349,29 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   void testAddFolderPermissionsThenRemove() throws ApiException {
     // given
     setBearerToken("Admins");
-    var path = "somefolder23";
-    var indexKey = createFolder(null, path);
 
-    // when
-    var resp = setPathReadPermissions(null, "myrole", path);
+    for (String siteId : Arrays.asList(null, ID.ulid())) {
 
-    // then
-    assertFalse(resp.isError());
-    assertFolderPermission(indexKey, "myrole", "READ");
+      for (String path : List.of("somefolder23", "a/b/c")) {
 
-    // when
-    var set = new SetFolderPermissionsRequestBuilder().path(path).addRole("john", List.of())
-        .submit(client, null);
+        var indexKey = createFolder(siteId, path);
 
-    // then
-    assertFalse(set.isError());
-    assertFolderPermission(indexKey, "john", "");
+        // when
+        var resp = setPathReadPermissions(siteId, "myrole", path);
+
+        // then
+        assertFalse(resp.isError());
+        assertFolderPermission(siteId, indexKey, "myrole", "READ");
+
+        // when
+        var set = new SetFolderPermissionsRequestBuilder().path(path).addRole("john", List.of())
+            .submit(client, siteId);
+
+        // then
+        assertFalse(set.isError());
+        assertFolderPermission(siteId, indexKey, "john", "");
+      }
+    }
   }
 
   /**
@@ -864,7 +924,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     createFolder(siteId, path);
 
     // set folder permissions
-    assertFalse(setPathPermissions(siteId, path, List.of()).isError());
+    setPathPermissions(siteId, path, List.of());
 
     // given
     String content = "mycontent";
@@ -968,6 +1028,96 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     assertEquals(2, withPermsSearch.size());
     assertEquals("path2", withPermsSearch.get(0).getPath());
     assertEquals("path3", withPermsSearch.get(1).getPath());
+  }
+
+  /**
+   * Test folder READ permission filters documents from listing.
+   *
+   */
+  @Test
+  void testListDocumentWithoutFolderReadPermission() throws ApiException {
+    // given
+    for (var siteId : Arrays.asList(DEFAULT_SITE_ID, ID.ulid())) {
+      var folder = "noReadFolder-" + ID.uuid();
+
+      new SetBearers().apply(client, new String[] {siteId, "Admins"});
+      createFolder(siteId, folder);
+
+      new SetFolderPermissionsRequestBuilder().path(folder).addRole("API_KEY", List.of())
+          .addRole("FormKiQ_User", List.of()).submitOk(client, siteId);
+
+      var document0 = new AddDocumentRequestBuilder().path(folder + "/test0.txt").content()
+          .getDocument(client, siteId);
+      var document1 = new AddDocumentRequestBuilder().path(folder + "/test1.txt").content()
+          .getDocument(client, siteId);
+
+      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
+
+      // when
+      var url = new GetDocumentUrlRequestBuilder(document0).submit(client, siteId);
+      var docContent = new GetDocumentContentRequestBuilder(document1).submit(client, siteId);
+      final var rootFolder =
+          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
+      final var folderDocuments =
+          new GetFoldersRequestBuilder().path(folder).getFolderDocuments(client, siteId);
+      final var searchDocuments = searchMeta(siteId, folder);
+
+      // then
+      assertTrue(url.isError());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), url.exception().getCode());
+      assertTrue(docContent.isError());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), docContent.exception().getCode());
+      assertEquals(0, rootFolder.size(), "GET root folder");
+      assertEquals(0, folderDocuments.size(), "GET /folders");
+      assertEquals(0, searchDocuments.size(), "POST /search");
+
+      // given - subfolder with folder permissions
+      new SetBearers().apply(client, new String[] {siteId, "Admins"});
+      createFolder(siteId, "anotherfolder/" + folder);
+      new SetFolderPermissionsRequestBuilder().path("anotherfolder/" + folder)
+          .addRole("API_KEY", List.of()).addRole("FormKiQ_User", List.of())
+          .submitOk(client, siteId);
+
+      new AddDocumentRequestBuilder().path("anotherfolder/" + folder + "/test2.txt").content()
+          .getDocument(client, siteId);
+
+      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
+
+      // when
+      final var rootFolder2 =
+          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
+      var anotherFolder =
+          new GetFoldersRequestBuilder().path("anotherfolder/").getFolderDocuments(client, siteId);
+
+      // then
+      assertEquals(1, rootFolder2.size(), "GET root folder");
+      assertEquals(0, anotherFolder.size(), "GET anotherFolder/ folder");
+    }
+  }
+
+  /**
+   * Test folder READ permission filters POST /search meta indexType=folder with trailing slash eq.
+   *
+   */
+  @Test
+  void testSearchFolderEqTrailingSlashWithoutFolderReadPermission() throws ApiException {
+    // given
+    var parent = "parent-" + ID.uuid();
+    var child = "hidden-" + ID.uuid();
+
+    setBearerToken(new String[] {"Admins"});
+    createFolder(DEFAULT_SITE_ID, parent + "/" + child);
+
+    new SetFolderPermissionsRequestBuilder().path(parent + "/" + child)
+        .addRole("default_read", List.of()).submitOk(client, DEFAULT_SITE_ID);
+
+    setBearerToken(new String[] {"default_read"});
+
+    // when
+    var documents = searchMetaFolderEq(DEFAULT_SITE_ID, parent + "/");
+
+    // then
+    assertEquals(0, documents.size(), "POST /search meta.indexType=folder eq with trailing slash");
   }
 
   /**

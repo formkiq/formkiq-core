@@ -553,6 +553,16 @@ public interface DocumentService {
       Collection<DocumentAttributeRecord> documentAttributes, SaveDocumentOptions options)
       throws ValidationException;
 
+
+  /**
+   * New Save Document method that should be used instead of the others.
+   *
+   * @param siteId {@link String}
+   * @param record {@link DocumentRecord}
+   * @param options {@link SaveDocumentOptions}
+   */
+  void saveDocument(String siteId, DocumentRecord record, SaveDocumentOptions options);
+
   /**
    * New Save Document method that should be used instead of the others.
    * 

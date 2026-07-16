@@ -129,6 +129,15 @@ public interface FolderIndexProcessor {
   Map<String, FolderIndexRecord> getFolderByDocumentIds(String siteId, List<String> documentIds);
 
   /**
+   * Get Folder Id by path.
+   *
+   * @param siteId {@link String}
+   * @param path {@link String}
+   * @return {@link String}
+   */
+  String getFolderId(String siteId, String path);
+
+  /**
    * Get Folder Index Records.
    *
    * @param siteId {@link String}
@@ -145,6 +154,15 @@ public interface FolderIndexProcessor {
    * @return {@link FolderPermissionRecord}
    */
   FolderPermissionRecord getFolderPermissions(String siteId, String path);
+
+  /**
+   * Get Folder Permissions Record.
+   *
+   * @param siteId {@link String}
+   * @param folderId {@link String}
+   * @return {@link FolderPermissionRecord}
+   */
+  FolderPermissionRecord getFolderPermissionsByFolderId(String siteId, String folderId);
 
   /**
    * Get Folder Permissions Record.
@@ -204,6 +222,18 @@ public interface FolderIndexProcessor {
    * @throws IOException IOException
    */
   boolean isFolderIdInPath(String siteId, String path, String folderId) throws IOException;
+
+  /**
+   * Move Folder from one path to another.
+   *
+   * @param siteId {@link String}
+   * @param sourcePath source folder path
+   * @param targetPath target folder path
+   * @return {@link FolderMoveResponse}
+   * @throws IOException IOException
+   */
+  FolderMoveResponse moveFolder(String siteId, String sourcePath, String targetPath)
+      throws IOException;
 
   /**
    * Move Index from one to another.

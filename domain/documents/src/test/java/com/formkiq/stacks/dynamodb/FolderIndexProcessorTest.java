@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import java.net.URISyntaxException;
@@ -49,10 +50,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
+import com.formkiq.aws.dynamodb.folderpermissions.FolderRolePermission;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -62,6 +67,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
+import com.formkiq.stacks.dynamodb.folders.FolderMoveResponse;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexRecordExtended;
 import com.formkiq.testutils.aws.TestEnvironment;
@@ -126,13 +132,31 @@ class FolderIndexProcessorTest implements DbKeys {
     service = awsServiceCache.getExtension(DocumentService.class);
     searchService = awsServiceCache.getExtension(DocumentSearchService.class);
     dbService = awsServiceCache.getExtension(DynamoDbService.class);
+  }
 
+  private static void login() {
     ApiAuthorization.login(new ApiAuthorization().username("joe"));
+  }
+
+  private static Pagination<DynamicDocumentItem> searchByPath(final String siteId,
+      final String path) {
+    SearchMetaCriteria smc = new SearchMetaCriteria(null, path, null, null, null);
+    SearchQuery q = new SearchQueryBuilder().meta(smc).build();
+    return searchService.search(siteId, q, null, null, MAX_RESULTS);
+  }
+
+  private void assertFolderPermission(final FolderPermissionRecord record, final String role,
+      final ApiPermission permission) {
+    assertNotNull(record);
+    assertEquals(role, record.rolePermissions().iterator().next().roleName());
+    assertEquals(List.of(permission), record.rolePermissions().iterator().next().permissions());
   }
 
   @BeforeEach
   void before() throws URISyntaxException {
     clearSqsQueue(sqsQueueUrl);
+
+    login();
   }
 
   @Test
@@ -483,6 +507,37 @@ class FolderIndexProcessorTest implements DbKeys {
   }
 
   @Test
+  void testGetFolderId01() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      String root = "folder-id-" + ID.uuid();
+      String path = root + "/a/b/test.pdf";
+
+      List<FolderIndexRecord> indexes = index.createFolders(siteId, path);
+      assertEquals(3, indexes.size());
+
+      // when / then
+      assertEquals(indexes.get(0).documentId(), index.getFolderId(siteId, root));
+      assertEquals(indexes.get(1).documentId(), index.getFolderId(siteId, root + "/a"));
+      assertEquals(indexes.get(2).documentId(), index.getFolderId(siteId, root + "/a/b"));
+      assertEquals(indexes.get(2).documentId(), index.getFolderId(siteId, root + "/a/b/"));
+    }
+  }
+
+  @Test
+  void testGetFolderId02() {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      // when / then
+      assertNull(index.getFolderId(siteId, null));
+      assertNull(index.getFolderId(siteId, ""));
+      assertNull(index.getFolderId(siteId, "/"));
+    }
+  }
+
+  @Test
   void testGetFoldersByDocumentId01() {
     // given
     final int expected = 3;
@@ -575,16 +630,13 @@ class FolderIndexProcessorTest implements DbKeys {
       index.moveIndex(siteId, source, destination, userId);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
-      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
-      Pagination<DynamicDocumentItem> results =
-          searchService.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DynamicDocumentItem> results = searchByPath(siteId, "");
       List<DynamicDocumentItem> list = results.getResults();
       assertEquals(2, list.size());
       assertEquals("a", list.get(0).get("path"));
       assertEquals("something", list.get(1).get("path"));
 
-      smc = new SearchMetaCriteria(null, "a", null, null, null);
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "a", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       list = results.getResults();
@@ -598,10 +650,7 @@ class FolderIndexProcessorTest implements DbKeys {
       list = results.getResults();
       assertEquals(1, list.size());
 
-      // this is probably wrong as the folder structure doesn't equal the document path
-      // path is stored on the document also in the folder index. They are stored separately
-      // it's possible to update all the documents in the same folder but TBD at a later date.
-      assertEquals("/something/else/test.txt", list.getFirst().get("path"));
+      assertEquals("/a/b/test.txt", list.getFirst().get("path"));
 
       smc = new SearchMetaCriteria(null, "something", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -790,6 +839,129 @@ class FolderIndexProcessorTest implements DbKeys {
 
       List<Message> messages = getMessagesFromSqs(sqsQueueUrl);
       assertEquals(0, messages.size());
+    }
+  }
+
+  /**
+   * Move folder to new directory with folder permissions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testMoveFolderToNewDirectoryWithPermissions() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      final var sourcePath = "perm-" + ID.uuid() + "/secured/";
+      final var sourcePathChild = sourcePath + "child/";
+      final var destinationPath = "perm-target-" + ID.uuid() + "/secured/";
+
+      var documentRecord = DocumentRecord.builder().documentId(ID.uuid())
+          .path(sourcePathChild + "test.txt").build(siteId);
+      service.saveDocument(siteId, documentRecord, new SaveDocumentOptions());
+      final var document =
+          DocumentArtifact.of(documentRecord.documentId(), documentRecord.artifactId());
+
+      index.setPermissions(siteId, sourcePath,
+          List.of(new FolderRolePermission("readers", List.of(ApiPermission.READ))));
+      index.setPermissions(siteId, sourcePathChild,
+          List.of(new FolderRolePermission("readers2", List.of(ApiPermission.READ))));
+
+      // when
+      FolderMoveResponse response = index.moveFolder(siteId, sourcePath, destinationPath);
+
+      // then
+      assertEquals(1, response.documents().size());
+      assertEquals(documentRecord.documentId(), response.documents().getFirst().documentId());
+      assertEquals(sourcePathChild + "test.txt", response.documents().getFirst().sourcePath());
+      assertEquals(destinationPath + "child/test.txt",
+          response.documents().getFirst().targetPath());
+
+      try {
+        index.getFolderIndexRecords(siteId, sourcePath);
+        fail();
+      } catch (IllegalArgumentException e) {
+        assertTrue(e.getMessage().startsWith("Cannot find folder"));
+      }
+
+      assertEquals(2, index.getFolderIndexRecords(siteId, destinationPath).size());
+
+      assertNull(index.getFolderPermissions(siteId, sourcePath));
+      assertNull(index.getFolderPermissions(siteId, sourcePathChild));
+      assertFolderPermission(index.getFolderPermissions(siteId, destinationPath), "readers",
+          ApiPermission.READ);
+      assertFolderPermission(index.getFolderPermissions(siteId, destinationPath + "child/"),
+          "readers2", ApiPermission.READ);
+
+      Map<String, Object> destAttr = index.getIndex(siteId, destinationPath);
+      assertEquals("secured", destAttr.get("path"));
+
+      assertEquals(destinationPath + "child/test.txt",
+          service.findDocument(siteId, document).path());
+
+      var results = searchByPath(siteId, "").getResults();
+      assertEquals(2, results.size());
+
+      ApiAuthorization.login(new ApiAuthorization().roles(List.of("readers", "readers2")));
+      results = searchByPath(siteId, destinationPath).getResults();
+      assertEquals(1, results.size());
+      assertEquals("child", results.getFirst().getPath());
+
+      results = searchByPath(siteId, destinationPath + "child/").getResults();
+      assertEquals(1, results.size());
+      assertEquals(destinationPath + "child/test.txt", results.getFirst().getPath());
+    }
+  }
+
+  /**
+   * Rename folder with folder permissions.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testRenameFolderWithPermissions() throws Exception {
+    // given
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      final var parentFolder = "rename-" + ID.uuid();
+      final var sourceFolder = parentFolder + "/old-name/";
+      final var destinationFolder = parentFolder + "/new-name/";
+
+      var documentRecord =
+          DocumentRecord.builder().document().path(sourceFolder + "test.txt").build(siteId);
+      final var document = documentRecord.document();
+      service.saveDocument(siteId, documentRecord, new SaveDocumentOptions());
+
+      index.setPermissions(siteId, sourceFolder,
+          List.of(new FolderRolePermission("readers", List.of(ApiPermission.READ))));
+
+      // when
+      FolderMoveResponse response = index.moveFolder(siteId, sourceFolder, destinationFolder);
+
+      // then
+      assertEquals(1, response.documents().size());
+      assertEquals(document.documentId(), response.documents().getFirst().documentId());
+      assertEquals(sourceFolder + "test.txt", response.documents().getFirst().sourcePath());
+      assertEquals(destinationFolder + "test.txt", response.documents().getFirst().targetPath());
+
+      assertNull(index.getFolderPermissions(siteId, sourceFolder));
+      assertFolderPermission(index.getFolderPermissions(siteId, destinationFolder), "readers",
+          ApiPermission.READ);
+
+      Map<String, Object> destAttr = index.getIndex(siteId, destinationFolder);
+      assertEquals("new-name", destAttr.get("path"));
+
+      var documentPath = service.findDocument(siteId, document).path();
+      assertEquals(destinationFolder + "test.txt", documentPath);
+
+      var results = searchByPath(siteId, "").getResults();
+      assertEquals(1, results.size());
+      assertEquals(parentFolder, results.getFirst().getPath());
+
+      ApiAuthorization.login(new ApiAuthorization().roles(List.of("readers", "writers")));
+      results = searchByPath(siteId, destinationFolder).getResults();
+      assertEquals(1, results.size());
+      assertEquals(documentPath, results.getFirst().getPath());
+
     }
   }
 
