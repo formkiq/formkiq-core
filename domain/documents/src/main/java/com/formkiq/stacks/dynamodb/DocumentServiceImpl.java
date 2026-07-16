@@ -1762,6 +1762,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
+  public void saveDocument(final String siteId, final DocumentRecord documentRecord,
+      final SaveDocumentOptions options) throws ValidationException {
+    saveDocument(siteId, DocumentRecordSet.builder().documentRecord(documentRecord).build(),
+        options);
+  }
+
+  @Override
   public void saveDocument(final String siteId, final DocumentRecordSet documentRecordSet,
       final SaveDocumentOptions options) throws ValidationException {
 

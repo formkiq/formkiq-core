@@ -55,6 +55,16 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   /** Index Folder SK. */
   public static final String INDEX_FOLDER_SK = "ff" + DbKeys.TAG_DELIMINATOR;
 
+  public static FolderIndexRecord getFromAttributesMap(final Map<String, AttributeValue> attrs) {
+    return new FolderIndexRecord().documentId(DynamoDbTypes.toString(attrs.get("documentId")))
+        .path(DynamoDbTypes.toString(attrs.get("path")))
+        .type(DynamoDbTypes.toString(attrs.get("type")))
+        .userId(DynamoDbTypes.toString(attrs.get("userId")))
+        .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
+        .insertedDate(toDate(attrs.get("inserteddate")))
+        .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
+  }
+
   /** Document Id. */
   private String documentId;
   /** Record inserted date. */
@@ -67,6 +77,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   private String path;
   /** Folder Type. */
   private String type;
+
   /** Creator of record. */
   private String userId;
 
@@ -93,6 +104,22 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
     key = key.gsi1Pk(siteId, pkGsi1(null)).gsi1Sk(skGsi1());
 
     key = key.gsi2Pk(siteId, pkGsi2(null)).gsi2Sk(skGsi2());
+    return key.build();
+  }
+
+  /**
+   * Builds a primary-key-only {@link DynamoDbKey} for this folder index record.
+   * <p>
+   * This helper only populates the table {@code PK} and {@code SK}; it does not populate GSI keys.
+   * Use this when reading an existing folder index record by parent folder id and path, especially
+   * before the folder record's own {@code documentId} is known. Use
+   * {@link #buildNonShardKey(String)} when the record is complete and GSI key values are required.
+   *
+   * @param siteId site identifier
+   * @return primary-key-only {@link DynamoDbKey}
+   */
+  public DynamoDbKey buildPrimaryKey(final String siteId) {
+    DynamoDbKey.Builder key = DynamoDbKey.builder().pk(siteId, pk(null)).sk(sk());
     return key.build();
   }
 
@@ -151,15 +178,7 @@ public class FolderIndexRecord implements DynamodbRecord<FolderIndexRecord>, DbK
   @Override
   public FolderIndexRecord getFromAttributes(final String siteId,
       final Map<String, AttributeValue> attrs) {
-
-    FolderIndexRecord record =
-        new FolderIndexRecord().documentId(DynamoDbTypes.toString(attrs.get("documentId")))
-            .path(DynamoDbTypes.toString(attrs.get("path")))
-            .type(DynamoDbTypes.toString(attrs.get("type")))
-            .userId(DynamoDbTypes.toString(attrs.get("userId")))
-            .parentDocumentId(DynamoDbTypes.toString(attrs.get("parentDocumentId")))
-            .insertedDate(toDate(attrs.get("inserteddate")))
-            .lastModifiedDate(toDate(attrs.get("lastModifiedDate")));
+    var record = getFromAttributesMap(attrs);
 
     if (this.parentDocumentId == null) {
       String pk = DynamoDbTypes.toString(attrs.get(PK));

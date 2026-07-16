@@ -25,6 +25,7 @@ package com.formkiq.aws.dynamodb.documents;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
@@ -276,6 +277,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
 
   public DocumentRecordBuilder deepLinkPath(final String dl) {
     this.deepLinkPath = dl;
+    return this;
+  }
+
+  public DocumentRecordBuilder document() {
+    this.documentId = ID.uuid();
+    this.artifactId = null;
     return this;
   }
 

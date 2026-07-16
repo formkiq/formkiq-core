@@ -447,7 +447,7 @@ Resources:
       Runtime: provided.al2023
       Architectures:
         - Ref: LambdaArchitecture
-      Timeout: 300
+      Timeout: 900
       MemorySize: 
         Fn::Sub: "${LambdaMemory}"
       CodeUri: ./lambda-s3-graalvm.zip
