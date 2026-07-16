@@ -60,12 +60,16 @@ import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentConfig;
+import com.formkiq.client.model.DocumentConfigDispositionAction;
+import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
 import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
+import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
@@ -1741,6 +1745,34 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           "{\"errors\":[{\"key\":\"contentType\","
               + "\"error\":\"Content type 'text/plain' is not allowed\"}]}",
           response.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents/upload with document retention config but without content-type config.
+   *
+   */
+  @Test
+  public void testPostUploadWithDocumentConfigNoContentTypes() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken("Admins");
+      UpdateConfigurationRequest req = new UpdateConfigurationRequest().document(
+          new DocumentConfig().retentionAndDisposition(new DocumentConfigRetentionAndDisposition()
+              .dispositionAction(DocumentConfigDispositionAction.SOFT_DELETE)
+              .softDeleteRetentionInDays(30)));
+      this.systemApi.updateConfiguration(siteId, req);
+
+      setBearerToken(siteId);
+
+      // when
+      var response =
+          new AddDocumentUploadRequestBuilder().contentType("text/plain").submit(client, siteId);
+
+      // then
+      assertNull(response.exception());
+      assertNotNull(response.response().getUrl());
     }
   }
 

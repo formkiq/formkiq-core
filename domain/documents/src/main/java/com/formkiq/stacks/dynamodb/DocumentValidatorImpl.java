@@ -83,13 +83,15 @@ public class DocumentValidatorImpl implements DocumentValidator {
     if (config != null && config.document() != null) {
 
       SiteConfigurationDocumentContentTypes contentTypes = config.document().contentTypes();
-      List<String> allowlist = notNull(contentTypes.allowlist());
-      List<String> denylist = notNull(contentTypes.denylist());
+      if (contentTypes != null) {
+        List<String> allowlist = notNull(contentTypes.allowlist());
+        List<String> denylist = notNull(contentTypes.denylist());
 
-      if (!allowlist.isEmpty() && !allowlist.contains(contentType)) {
-        vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
-      } else if (!denylist.isEmpty() && denylist.contains(contentType)) {
-        vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
+        if (!allowlist.isEmpty() && !allowlist.contains(contentType)) {
+          vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
+        } else if (!denylist.isEmpty() && denylist.contains(contentType)) {
+          vb.addError("contentType", "Content type '" + contentType + "' is not allowed");
+        }
       }
     }
   }
