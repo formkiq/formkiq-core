@@ -69,6 +69,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -319,8 +320,7 @@ public class DocumentsRequestHandler
     DocumentsUploadRequestHandler handler = new DocumentsUploadRequestHandler();
 
     String siteId = authorization.getSiteId();
-    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request = JsonToObject.fromJson(
-        awsservice, event, com.formkiq.stacks.dynamodb.documents.AddDocumentRequest.class);
+    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
 
     validatePost(request);
 
