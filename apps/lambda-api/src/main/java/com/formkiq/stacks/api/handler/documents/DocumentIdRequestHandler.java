@@ -71,6 +71,7 @@ import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.validation.ValidationBuilder;
@@ -213,8 +214,7 @@ public class DocumentIdRequestHandler
     String artifactId = event.getQueryStringParameter("artifactId");
     DocumentArtifact document = new DocumentArtifact(documentId, artifactId);
 
-    com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request = JsonToObject.fromJson(
-        awsservice, event, com.formkiq.stacks.dynamodb.documents.AddDocumentRequest.class);
+    AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
     request.setDocumentId(documentId);
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
