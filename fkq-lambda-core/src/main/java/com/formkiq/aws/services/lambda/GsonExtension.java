@@ -42,6 +42,15 @@ public class GsonExtension implements AwsServiceExtension<Gson> {
    */
   public GsonExtension() {}
 
+  /**
+   * constructor.
+   * 
+   * @param gsonOverride {@link Gson}
+   */
+  public GsonExtension(final Gson gsonOverride) {
+    this.gson = gsonOverride;
+  }
+
   @Override
   public Gson loadService(final AwsServiceCache awsServiceCache) {
     if (this.gson == null) {
