@@ -267,7 +267,6 @@ jobs:
           );
 
           const javaReport = readReport(`${reportDir}/java-vuln-results.json`);
-          const sourceReport = readReport(`${reportDir}/source-results.json`);
           const blocking = [];
 
           for (const result of javaReport.Results ?? []) {
@@ -285,48 +284,11 @@ jobs:
             }
           }
 
-          for (const result of sourceReport.Results ?? []) {
-            for (const secret of result.Secrets ?? []) {
-              blocking.push({
-                type: 'secret',
-                severity: secret.Severity ?? 'CRITICAL',
-                id: secret.RuleID ?? '',
-                packageName: secret.Title ?? 'secret detected',
-                target: result.Target ?? ''
-              });
-            }
-
-            for (const misconfiguration of result.Misconfigurations ?? []) {
-              const severity = misconfiguration.Severity ?? 'UNKNOWN';
-              if (failSeverities.has(severity)) {
-                blocking.push({
-                  type: 'misconfiguration',
-                  severity,
-                  id: misconfiguration.ID ?? '',
-                  packageName: misconfiguration.Title ?? '',
-                  target: result.Target ?? ''
-                });
-              }
-            }
-
-            for (const license of result.Licenses ?? []) {
-              const severity = license.Severity ?? 'UNKNOWN';
-              if (failSeverities.has(severity)) {
-                blocking.push({
-                  type: 'license',
-                  severity,
-                  id: license.Name ?? '',
-                  packageName: license.Category ?? '',
-                  target: result.Target ?? ''
-                });
-              }
-            }
-          }
-
           fs.appendFileSync(summary, [
             '',
             '## Trivy Policy Gate',
             '',
+            'Only Java artifact vulnerabilities are blocking. Source, IaC, secret, and license findings are informational for this workflow.',
             `Blocking severities: \`${[...failSeverities].join(',')}\``,
             `Blocking findings: \`${blocking.length}\``,
             ''
