@@ -50,14 +50,16 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Create report directory
-        run: mkdir -p "${TRIVY_REPORT_DIR}"
-
       - name: Build Java artifacts for Trivy
         run: ./gradlew clean jar --no-daemon --console=plain
 
+      - name: Create report directory
+        run: mkdir -p "${TRIVY_REPORT_DIR}"
+
       - name: Generate Trivy JSON report
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_SKIP_VERSION_CHECK: true
         with:
           scan-type: rootfs
           scan-ref: .
@@ -71,6 +73,8 @@ jobs:
 
       - name: Generate Trivy SARIF report
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_SKIP_VERSION_CHECK: true
         with:
           scan-type: rootfs
           scan-ref: .
