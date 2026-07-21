@@ -78,7 +78,8 @@ jobs:
           cat > "${RUNNER_TEMP}/trivy-runtime-classpath.gradle" <<'EOF'
           allprojects {
             plugins.withType(JavaPlugin).configureEach {
-              if (project.path == ':apps:netty-server' || project.path.startsWith(':testing')) {
+              if (project.path == ':adapters:aws:xray' || project.path == ':apps:netty-server'
+                  || project.path.startsWith(':testing')) {
                 return
               }
 
