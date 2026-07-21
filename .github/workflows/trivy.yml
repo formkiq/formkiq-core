@@ -31,7 +31,7 @@ jobs:
 
     env:
       TRIVY_REPORT_DIR: build/reports/trivy
-      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+      TRIVY_CACHE_DIR: .trivy-cache
 
     steps:
       - name: Checkout repository
