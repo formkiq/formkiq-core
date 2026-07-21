@@ -51,6 +51,7 @@ jobs:
       TRIVY_CACHE_DIR: .trivy-cache
       TRIVY_ARTIFACT_SCAN_DIR: build/trivy-artifacts
       TRIVY_REPORT_DIR: build/reports/trivy
+      TRIVY_FAIL_SEVERITIES: HIGH,CRITICAL
       TRIVY_SOURCE_SKIP_DIRS: archived,apps/netty-server,testing,build,**/build
       TRIVY_SEVERITY: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
       TRIVY_SKIP_VERSION_CHECK: true
@@ -250,3 +251,115 @@ jobs:
           name: trivy-reports
           path: ${{ env.TRIVY_REPORT_DIR }}
           retention-days: 14
+
+      - name: Enforce Trivy policy
+        if: always()
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const reportDir = process.env.TRIVY_REPORT_DIR;
+          const summary = process.env.GITHUB_STEP_SUMMARY;
+          const failSeverities = new Set(
+            (process.env.TRIVY_FAIL_SEVERITIES ?? 'HIGH,CRITICAL')
+              .split(',')
+              .map((severity) => severity.trim().toUpperCase())
+              .filter(Boolean)
+          );
+
+          const javaReport = readReport(`${reportDir}/java-vuln-results.json`);
+          const sourceReport = readReport(`${reportDir}/source-results.json`);
+          const blocking = [];
+
+          for (const result of javaReport.Results ?? []) {
+            for (const vulnerability of result.Vulnerabilities ?? []) {
+              const severity = vulnerability.Severity ?? 'UNKNOWN';
+              if (failSeverities.has(severity)) {
+                blocking.push({
+                  type: 'vulnerability',
+                  severity,
+                  id: vulnerability.VulnerabilityID ?? '',
+                  packageName: vulnerability.PkgName ?? '',
+                  target: vulnerability.PkgPath ?? result.Target ?? ''
+                });
+              }
+            }
+          }
+
+          for (const result of sourceReport.Results ?? []) {
+            for (const secret of result.Secrets ?? []) {
+              blocking.push({
+                type: 'secret',
+                severity: secret.Severity ?? 'CRITICAL',
+                id: secret.RuleID ?? '',
+                packageName: secret.Title ?? 'secret detected',
+                target: result.Target ?? ''
+              });
+            }
+
+            for (const misconfiguration of result.Misconfigurations ?? []) {
+              const severity = misconfiguration.Severity ?? 'UNKNOWN';
+              if (failSeverities.has(severity)) {
+                blocking.push({
+                  type: 'misconfiguration',
+                  severity,
+                  id: misconfiguration.ID ?? '',
+                  packageName: misconfiguration.Title ?? '',
+                  target: result.Target ?? ''
+                });
+              }
+            }
+
+            for (const license of result.Licenses ?? []) {
+              const severity = license.Severity ?? 'UNKNOWN';
+              if (failSeverities.has(severity)) {
+                blocking.push({
+                  type: 'license',
+                  severity,
+                  id: license.Name ?? '',
+                  packageName: license.Category ?? '',
+                  target: result.Target ?? ''
+                });
+              }
+            }
+          }
+
+          fs.appendFileSync(summary, [
+            '',
+            '## Trivy Policy Gate',
+            '',
+            `Blocking severities: \`${[...failSeverities].join(',')}\``,
+            `Blocking findings: \`${blocking.length}\``,
+            ''
+          ].join('\n'));
+
+          if (blocking.length > 0) {
+            fs.appendFileSync(summary, [
+              '| Type | Severity | ID | Package/Title | Target |',
+              '| --- | --- | --- | --- | --- |',
+              ...blocking.slice(0, 50).map((finding) => [
+                finding.type,
+                finding.severity,
+                code(finding.id),
+                code(finding.packageName),
+                code(finding.target)
+              ].join(' | ').replace(/^/, '| ').replace(/$/, ' |')),
+              ''
+            ].join('\n'));
+
+            console.error(`Trivy policy failed with ${blocking.length} blocking finding(s).`);
+            process.exit(1);
+          }
+
+          console.log('Trivy policy passed.');
+
+          function readReport(file) {
+            if (!fs.existsSync(file)) {
+              throw new Error(`Expected Trivy report does not exist: ${file}`);
+            }
+            return JSON.parse(fs.readFileSync(file, 'utf8'));
+          }
+
+          function code(value) {
+            return `\`${String(value ?? '').replace(/\|/g, '\\|')}\``;
+          }
+          EOF
