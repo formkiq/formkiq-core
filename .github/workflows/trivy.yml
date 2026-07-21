@@ -1,0 +1,161 @@
+name: Trivy Repository Scan
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    outputs:
+      report_artifact: ${{ steps.report-outputs.outputs.report_artifact }}
+      json_report: ${{ steps.report-outputs.outputs.json_report }}
+      sarif_report: ${{ steps.report-outputs.outputs.sarif_report }}
+      text_report: ${{ steps.report-outputs.outputs.text_report }}
+      readable_report: ${{ steps.report-outputs.outputs.readable_report }}
+      sarif_html_report: ${{ steps.report-outputs.outputs.sarif_html_report }}
+      total_vulnerabilities: ${{ steps.report-outputs.outputs.total_vulnerabilities }}
+      critical_vulnerabilities: ${{ steps.report-outputs.outputs.critical_vulnerabilities }}
+      high_vulnerabilities: ${{ steps.report-outputs.outputs.high_vulnerabilities }}
+      medium_vulnerabilities: ${{ steps.report-outputs.outputs.medium_vulnerabilities }}
+      low_vulnerabilities: ${{ steps.report-outputs.outputs.low_vulnerabilities }}
+      unknown_vulnerabilities: ${{ steps.report-outputs.outputs.unknown_vulnerabilities }}
+
+    env:
+      TRIVY_REPORT_DIR: build/reports/trivy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Create report directory
+        run: mkdir -p "${TRIVY_REPORT_DIR}"
+
+      - name: Build Java artifacts for Trivy
+        run: ./gradlew clean jar --no-daemon --console=plain
+
+      - name: Generate Trivy JSON report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: rootfs
+          scan-ref: .
+          scanners: vuln
+          skip-dirs: archived
+          format: json
+          output: ${{ env.TRIVY_REPORT_DIR }}/trivy-results.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0
+
+      - name: Generate Trivy SARIF report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: rootfs
+          scan-ref: .
+          scanners: vuln
+          skip-dirs: archived
+          format: sarif
+          output: ${{ env.TRIVY_REPORT_DIR }}/trivy-results.sarif
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0
+          skip-setup-trivy: true
+
+      - name: Generate Trivy text report
+        run: trivy convert --format table --output "${TRIVY_REPORT_DIR}/trivy-results.txt" --scanners vuln "${TRIVY_REPORT_DIR}/trivy-results.json"
+
+      - name: Generate readable Trivy report
+        run: node scripts/trivy-readable-report.mjs --input "${TRIVY_REPORT_DIR}/trivy-results.json" --output "${TRIVY_REPORT_DIR}/readable-report.md" --root .
+
+      - name: Generate SARIF HTML report
+        run: |
+          python -m pip install --disable-pip-version-check sarif-tools
+          sarif html "${TRIVY_REPORT_DIR}/trivy-results.sarif" --output "${TRIVY_REPORT_DIR}/sarif-report.html"
+
+      - name: Expose Trivy report outputs
+        id: report-outputs
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const reportDir = process.env.TRIVY_REPORT_DIR;
+          const output = process.env.GITHUB_OUTPUT;
+          const summary = process.env.GITHUB_STEP_SUMMARY;
+          const report = JSON.parse(fs.readFileSync(`${reportDir}/trivy-results.json`, 'utf8'));
+          const counts = {
+            CRITICAL: 0,
+            HIGH: 0,
+            MEDIUM: 0,
+            LOW: 0,
+            UNKNOWN: 0
+          };
+
+          for (const result of report.Results ?? []) {
+            for (const vulnerability of result.Vulnerabilities ?? []) {
+              const severity = vulnerability.Severity ?? 'UNKNOWN';
+              counts[severity] = (counts[severity] ?? 0) + 1;
+            }
+          }
+
+          const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+          const outputs = {
+            report_artifact: 'trivy-reports',
+            json_report: `${reportDir}/trivy-results.json`,
+            sarif_report: `${reportDir}/trivy-results.sarif`,
+            text_report: `${reportDir}/trivy-results.txt`,
+            readable_report: `${reportDir}/readable-report.md`,
+            sarif_html_report: `${reportDir}/sarif-report.html`,
+            total_vulnerabilities: total,
+            critical_vulnerabilities: counts.CRITICAL,
+            high_vulnerabilities: counts.HIGH,
+            medium_vulnerabilities: counts.MEDIUM,
+            low_vulnerabilities: counts.LOW,
+            unknown_vulnerabilities: counts.UNKNOWN
+          };
+
+          fs.appendFileSync(output, Object.entries(outputs).map(([key, value]) => `${key}=${value}`).join('\n') + '\n');
+
+          fs.appendFileSync(summary, [
+            '## Trivy Report Outputs',
+            '',
+            '| Output | Value |',
+            '| --- | --- |',
+            ...Object.entries(outputs).map(([key, value]) => `| \`${key}\` | \`${value}\` |`),
+            ''
+          ].join('\n'));
+          EOF
+
+      - name: Upload Trivy SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        with:
+          sarif_file: ${{ env.TRIVY_REPORT_DIR }}/trivy-results.sarif
+
+      - name: Upload Trivy reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-reports
+          path: ${{ env.TRIVY_REPORT_DIR }}
+          retention-days: 14
