@@ -115,8 +115,8 @@ lines.push(`Generated from \`${input}\`.`);
 lines.push('');
 lines.push(`- Scan time: \`${trivy.CreatedAt ?? 'unknown'}\``);
 lines.push(`- Trivy version: \`${trivy.ArtifactName ? 'reported in JSON metadata' : 'unknown'}\``);
-lines.push('- Enabled scanners: `vuln`, `secret`, `misconfig`, `license`');
-lines.push('- Java dependency source: built JAR artifacts from `./gradlew clean jar`');
+lines.push('- Enabled scanners: `vuln`');
+lines.push('- Java dependency source: built JAR artifacts and collected Gradle runtime classpaths');
 lines.push('- Configuration priority: runtime, compile, integration, test, tooling, unknown');
 lines.push('');
 

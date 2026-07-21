@@ -49,8 +49,8 @@ jobs:
 
     env:
       TRIVY_CACHE_DIR: .trivy-cache
+      TRIVY_ARTIFACT_SCAN_DIR: build/trivy-artifacts
       TRIVY_REPORT_DIR: build/reports/trivy
-      TRIVY_ARTIFACT_SKIP_DIRS: archived,apps/netty-server,testing
       TRIVY_SOURCE_SKIP_DIRS: archived,apps/netty-server,testing,build,**/build
       TRIVY_SEVERITY: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
       TRIVY_SKIP_VERSION_CHECK: true
@@ -73,8 +73,27 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Build Java artifacts for Trivy
-        run: ./gradlew clean jar --no-daemon --console=plain
+      - name: Build and collect Java artifacts for Trivy
+        run: |
+          cat > "${RUNNER_TEMP}/trivy-runtime-classpath.gradle" <<'EOF'
+          allprojects {
+            plugins.withType(JavaPlugin).configureEach {
+              if (project.path == ':apps:netty-server' || project.path.startsWith(':testing')) {
+                return
+              }
+
+              def runtimeClasspath = configurations.findByName('runtimeClasspath')
+              if (runtimeClasspath != null) {
+                tasks.register('copyTrivyRuntimeClasspath', Copy) {
+                  from(runtimeClasspath)
+                  into(rootProject.layout.buildDirectory.dir("trivy-artifacts/${project.path.replace(':', '/').replaceFirst('^/', '')}/runtimeClasspath"))
+                }
+              }
+            }
+          }
+          EOF
+
+          ./gradlew clean jar copyTrivyRuntimeClasspath --no-daemon --console=plain --init-script "${RUNNER_TEMP}/trivy-runtime-classpath.gradle"
 
       - name: Set Trivy cache key
         id: trivy-cache-key
@@ -95,9 +114,8 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: rootfs
-          scan-ref: .
+          scan-ref: ${{ env.TRIVY_ARTIFACT_SCAN_DIR }}
           scanners: vuln
-          skip-dirs: ${{ env.TRIVY_ARTIFACT_SKIP_DIRS }}
           format: json
           output: ${{ env.TRIVY_REPORT_DIR }}/java-vuln-results.json
           severity: ${{ env.TRIVY_SEVERITY }}
