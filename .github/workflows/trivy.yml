@@ -31,6 +31,7 @@ jobs:
 
     env:
       TRIVY_REPORT_DIR: build/reports/trivy
+      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
 
     steps:
       - name: Checkout repository
@@ -52,6 +53,18 @@ jobs:
 
       - name: Build Java artifacts for Trivy
         run: ./gradlew clean jar --no-daemon --console=plain
+
+      - name: Set Trivy cache key
+        id: trivy-cache-key
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore Trivy cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TRIVY_CACHE_DIR }}
+          key: trivy-${{ runner.os }}-${{ steps.trivy-cache-key.outputs.date }}
+          restore-keys: |
+            trivy-${{ runner.os }}-
 
       - name: Create report directory
         run: mkdir -p "${TRIVY_REPORT_DIR}"
