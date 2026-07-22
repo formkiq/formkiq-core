@@ -1,0 +1,38 @@
+name: No Snapshot Dependencies
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-build-gradle-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for snapshot dependencies
+        shell: bash
+        run: |
+          set +e
+          matches="$(git grep -n -- '-SNAPSHOT' -- build.gradle '**/build.gradle')"
+          status=$?
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            echo "${matches}"
+            echo "::error::-SNAPSHOT dependencies are not allowed in build.gradle files."
+            exit 1
+          fi
+
+          if [ "${status}" -ne 1 ]; then
+            exit "${status}"
+          fi
