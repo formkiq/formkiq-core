@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.validation.ValidationBuilder;
+import com.formkiq.validation.ValidationChecks;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
@@ -159,9 +160,9 @@ public record EntityTypeRecord(DynamoDbKey key, String documentId, EntityTypeNam
     @Override
     public DynamoDbKey buildKey(final String siteId) {
 
-      Objects.requireNonNull(documentId, "documentId must not be null");
-      Objects.requireNonNull(namespace, "namespace must not be null");
-      Objects.requireNonNull(name, "name must not be null");
+      ValidationChecks.checkNotNull("documentId", documentId);
+      ValidationChecks.checkNotNull("namespace", namespace);
+      ValidationChecks.checkNotNull("name", name);
 
       String pk = "entityType#" + documentId;
       String sk = "entityType";

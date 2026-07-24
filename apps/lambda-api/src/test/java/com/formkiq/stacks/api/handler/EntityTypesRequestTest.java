@@ -111,6 +111,32 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Post /entityTypes missing 'namespace'.
+   *
+   */
+  @Test
+  public void testAddEntityTypes03() {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      setBearerToken(new String[] {siteId});
+
+      AddEntityTypeRequest req = new AddEntityTypeRequest()
+          .entityType(new AddEntityType().name("RetentionAssignmentRule"));
+
+      // when
+      try {
+        this.entityApi.addEntityType(req, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+        assertEquals("{\"errors\":[{\"key\":\"namespace\",\"error\":\"'namespace' is required\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * Post /entityTypes CUSTOM.
    *
    * @throws Exception an error has occurred
