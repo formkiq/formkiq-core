@@ -123,7 +123,7 @@ tasks.register('localstackUp', Exec) {
 tasks.register('waitForLocalstack', Exec) {
   group = "verification"
   description = "Waits for LocalStack to be ready."
-  commandLine shCmd("${project.rootDir}/wait-for-localstack.sh 4567")
+  commandLine shCmd("${project.projectDir}/wait-for-localstack.sh 4567")
   outputs.upToDateWhen { false }
 }
 
