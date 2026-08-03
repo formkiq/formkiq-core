@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.objects.Objects;
 
 /**
@@ -154,6 +155,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public String getPromotedArtifactId() {
     return getString("promotedArtifactId");
+  }
+
+  @Override
+  public DocumentResourceType getResourceType() {
+    return DocumentResourceType.fromString(getString("resourceType"));
   }
 
   @Override
@@ -292,6 +298,11 @@ public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
   @Override
   public void setPromotedArtifactId(final String artifactId) {
     put("promotedArtifactId", artifactId);
+  }
+
+  @Override
+  public void setResourceType(final DocumentResourceType resourceType) {
+    put("resourceType", resourceType != null ? resourceType.name() : null);
   }
 
   @Override

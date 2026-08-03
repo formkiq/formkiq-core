@@ -27,6 +27,7 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.objects.Strings;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
@@ -39,10 +40,11 @@ import java.util.Objects;
  */
 public record DocumentRecord(DynamoDbKey key, String documentId, String artifactId,
     String artifactCategory, String belongsToDocumentId, String path, String deepLinkPath,
-    String contentType, Long contentLength, String checksum, String checksumType, String s3version,
-    String userId, String version, String width, String height, String timeToLive,
-    Date insertedDate, Date lastModifiedDate, Collection<DocumentMetadata> metadata,
-    Boolean hasArtifacts, String promotedArtifactId, Date deletedDate) {
+    DocumentResourceType resourceType, String contentType, Long contentLength, String checksum,
+    String checksumType, String s3version, String userId, String version, String width,
+    String height, String timeToLive, Date insertedDate, Date lastModifiedDate,
+    Collection<DocumentMetadata> metadata, Boolean hasArtifacts, String promotedArtifactId,
+    Date deletedDate) {
 
   /**
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
@@ -89,12 +91,14 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         attributes.containsKey("TimeToLive") ? DynamoDbTypes.toLong(attributes.get("TimeToLive"))
             : null;
 
+    String deepLinkPath = DynamoDbTypes.toString(attributes.get("deepLinkPath"));
+    DocumentResourceType resourceType = getResourceType(attributes, deepLinkPath);
+
     return new DocumentRecord(key, DynamoDbTypes.toString(attributes.get("documentId")),
         DynamoDbTypes.toString(attributes.get("artifactId")),
         DynamoDbTypes.toString(attributes.get("artifactCategory")),
         DynamoDbTypes.toString(attributes.get("belongsToDocumentId")),
-        DynamoDbTypes.toString(attributes.get("path")),
-        DynamoDbTypes.toString(attributes.get("deepLinkPath")),
+        DynamoDbTypes.toString(attributes.get("path")), deepLinkPath, resourceType,
         DynamoDbTypes.toString(attributes.get("contentType")),
         DynamoDbTypes.toLong(attributes.get("contentLength")),
         DynamoDbTypes.toString(attributes.get("checksum")),
@@ -114,6 +118,19 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         DynamoDbTypes.toDate(attributes.get("deletedDate")));
   }
 
+  private static DocumentResourceType getResourceType(final Map<String, AttributeValue> attributes,
+      final String deepLinkPath) {
+    DocumentResourceType resourceType =
+        DocumentResourceType.fromString(DynamoDbTypes.toString(attributes.get("resourceType")));
+
+    if (resourceType == null) {
+      resourceType = !Strings.isEmpty(deepLinkPath) ? DocumentResourceType.DEEP_LINK
+          : DocumentResourceType.DOCUMENT;
+    }
+
+    return resourceType;
+  }
+
   /**
    * Builds the DynamoDB item attribute map for this document, starting from the key attributes and
    * adding metadata fields.
@@ -131,14 +148,15 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
         key.getAttributesBuilder().withString("documentId", documentId)
             .withString("artifactId", artifactId).withString("artifactCategory", artifactCategory)
             .withString("belongsToDocumentId", belongsToDocumentId).withString("path", path)
-            .withString("deepLinkPath", deepLinkPath).withString("contentType", contentType)
-            .withLong("contentLength", contentLength).withString("checksum", checksum)
-            .withString("checksumType", checksumType).withString("s3version", s3version)
-            .withString("userId", userId).withString("version", version).withString("width", width)
-            .withString("height", height).withNumber("TimeToLive", timeToLive)
-            .withDate("inserteddate", insertedDate).withDate("lastModifiedDate", lastModifiedDate)
-            .withDate("deletedDate", deletedDate).withMap(metadataAttrs)
-            .withBoolean("hasArtifacts", hasArtifacts)
+            .withString("deepLinkPath", deepLinkPath)
+            .withString("resourceType", resourceType != null ? resourceType.name() : null)
+            .withString("contentType", contentType).withLong("contentLength", contentLength)
+            .withString("checksum", checksum).withString("checksumType", checksumType)
+            .withString("s3version", s3version).withString("userId", userId)
+            .withString("version", version).withString("width", width).withString("height", height)
+            .withNumber("TimeToLive", timeToLive).withDate("inserteddate", insertedDate)
+            .withDate("lastModifiedDate", lastModifiedDate).withDate("deletedDate", deletedDate)
+            .withMap(metadataAttrs).withBoolean("hasArtifacts", hasArtifacts)
             .withString("promotedArtifactId", promotedArtifactId);
 
     return map.build();

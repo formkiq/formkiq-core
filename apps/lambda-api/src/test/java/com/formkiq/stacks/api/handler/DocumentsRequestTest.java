@@ -64,6 +64,7 @@ import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigDispositionAction;
 import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
 import com.formkiq.client.model.DocumentMetadata;
+import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.SearchResultDocument;
@@ -746,8 +747,107 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals("https://google.com", document.getDeepLinkPath());
+      assertEquals(DocumentResourceType.DEEP_LINK, document.getResourceType());
       assertNull(document.getLastModifiedDate());
       assertNull(document.getContentLength());
+    }
+  }
+
+  /**
+   * Save new document resourceType with deep link.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03ResourceTypeDocumentWithDeepLinkPath01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var resp = new AddDocumentRequestBuilder().deepLink("https://google.com")
+          .resourceType(DocumentResourceType.DOCUMENT).submitError(client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"resourceType\",\"error\":\"resourceType 'DOCUMENT' "
+              + "cannot be set when 'deepLinkPath' is specified\"}]}",
+          resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Save new dossier without content or deep link.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03ResourceTypeDossier01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      // when
+      AddDocumentResponse response = new AddDocumentRequestBuilder()
+          .resourceType(DocumentResourceType.DOSSIER).submitOk(client, siteId).response();
+
+      // then
+      assertNotNull(response.getDocumentId());
+      assertNull(response.getUploadUrl());
+
+      GetDocumentResponse document =
+          this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
+      assertEquals(DocumentResourceType.DOSSIER, document.getResourceType());
+      assertNull(document.getContentLength());
+      assertNull(document.getDeepLinkPath());
+    }
+  }
+
+  /**
+   * Save dossier with content.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03ResourceTypeDossierWithContent01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var resp = new AddDocumentRequestBuilder().content("dummy data")
+          .resourceType(DocumentResourceType.DOSSIER).submitError(client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"content\",\"error\":\"'content' cannot be set when "
+          + "resourceType is 'DOSSIER'\"}]}", resp.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * Save dossier with deep link.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03ResourceTypeDossierWithDeepLinkPath01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var resp = new AddDocumentRequestBuilder().deepLink("https://google.com")
+          .resourceType(DocumentResourceType.DOSSIER).submitError(client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), resp.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"resourceType\",\"error\":\"resourceType 'DOSSIER' "
+              + "cannot be set when 'deepLinkPath' is specified\"}]}",
+          resp.exception().getResponseBody());
     }
   }
 
@@ -1081,6 +1181,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
         GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals(e.getValue(), doc.getContentType());
+        assertEquals(DocumentResourceType.DEEP_LINK, doc.getResourceType());
 
         // given
         req.setContentType("application/pdf");
@@ -1092,6 +1193,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(documentId);
         doc = this.documentsApi.getDocument(documentId, siteId, null, null);
         assertEquals("application/pdf", doc.getContentType());
+        assertEquals(DocumentResourceType.DEEP_LINK, doc.getResourceType());
       }
     }
   }
@@ -1155,6 +1257,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(deepLink, document.getDeepLinkPath());
+      assertEquals(DocumentResourceType.DEEP_LINK, document.getResourceType());
     }
   }
 

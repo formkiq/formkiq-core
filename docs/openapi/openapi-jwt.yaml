@@ -8272,6 +8272,13 @@ components:
         type: boolean
         default: false
   schemas:
+    DocumentResourceType:
+      type: string
+      description: Document resource type
+      enum:
+      - DOCUMENT
+      - DOSSIER
+      - DEEP_LINK
     ValidationErrorsResponse:
       type: object
       properties:
@@ -8784,6 +8791,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -8893,6 +8902,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         contentType:
           type: string
           description: Document media type
@@ -8945,6 +8956,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         contentType:
           type: string
           description: Document Content-Type
@@ -9051,6 +9064,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -9107,6 +9122,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -9980,6 +9997,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -10044,6 +10063,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         checksum:
           type: string
           description: Document checksum, changes when document file changes
@@ -10089,6 +10110,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         checksum:
           type: string
           description: Document checksum, changes when document file changes
@@ -10140,6 +10163,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         checksum:
           type: string
           description: Document checksum, changes when document file changes
@@ -12679,6 +12704,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -12832,6 +12859,8 @@ components:
         deepLinkPath:
           type: string
           description: Path or Name of deep link
+        resourceType:
+          $ref: '#/components/schemas/DocumentResourceType'
         insertedDate:
           type: string
           description: Inserted Timestamp

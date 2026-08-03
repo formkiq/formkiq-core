@@ -32,6 +32,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyVal
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.RetentionEffectiveEndDateAttribute;
@@ -176,7 +177,7 @@ public class AddDocumentRequestToPresignedUrls
     map.put("artifactId", artifactId);
     DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
 
-    if (isEmpty(req.getDeepLinkPath())) {
+    if (isPresignedUrlRequired(req)) {
       String docUrl = generatePresignedUrl(req, document);
       addHeaders(map, req);
       map.put("url", docUrl);
@@ -192,7 +193,7 @@ public class AddDocumentRequestToPresignedUrls
       m.put("documentId", docid);
       document = DocumentArtifact.of(docid, null);
 
-      if (isEmpty(o.getDeepLinkPath())) {
+      if (isPresignedUrlRequired(o)) {
         String url = generatePresignedUrl(o, document);
         m.put("url", url);
       }
@@ -241,5 +242,9 @@ public class AddDocumentRequestToPresignedUrls
     }
 
     return null;
+  }
+
+  private boolean isPresignedUrlRequired(final AddDocumentRequest req) {
+    return isEmpty(req.getDeepLinkPath()) && req.getResourceType() != DocumentResourceType.DOSSIER;
   }
 }

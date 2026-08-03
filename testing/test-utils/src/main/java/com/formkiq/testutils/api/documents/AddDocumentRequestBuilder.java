@@ -39,6 +39,7 @@ import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.EntityTypeNamespace;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -341,6 +342,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    */
   public AddDocumentRequestBuilder path(final String path) {
     this.request.setPath(path);
+    return this;
+  }
+
+  /**
+   * Set Resource Type.
+   *
+   * @param resourceType {@link DocumentResourceType}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder resourceType(final DocumentResourceType resourceType) {
+    this.request.setResourceType(resourceType);
     return this;
   }
 

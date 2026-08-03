@@ -75,6 +75,7 @@ public class DocumentItemToDynamicDocumentItem
     map.put("lastModifiedDate", item.getLastModifiedDate());
     map.put("path", item.getPath());
     map.put("deepLinkPath", item.getDeepLinkPath());
+    map.put("resourceType", item.getResourceType() != null ? item.getResourceType().name() : null);
     map.put("userId", item.getUserId());
     map.put("belongsToDocumentId", item.getBelongsToDocumentId());
     map.put("TimeToLive", item.getTimeToLive());
