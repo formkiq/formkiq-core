@@ -64,6 +64,8 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private String path;
   /** Deep Link Path. */
   private String deepLinkPath;
+  /** Document Resource Type. */
+  private DocumentResourceType resourceType;
   /** Content Type. */
   private String contentType;
   /** Content Length. */
@@ -156,12 +158,14 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   @Override
   public DocumentRecord build(final DynamoDbKey key) {
     updateDeepLink();
-    Collection<DocumentMetadata> documentMetadata = updateDefaultValues();
 
-    validate();
+    final Collection<DocumentMetadata> documentMetadata = updateDefaultValues();
 
     Map<String, AttributeValue> prev =
         defaultValues != null ? defaultValues.getAttributes() : Collections.emptyMap();
+    updateResourceType(prev);
+
+    validate();
 
     String cs = ps(checksum, prev, "checksum");
     Boolean ha = hasArtifacts;
@@ -171,11 +175,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     return new DocumentRecord(key, documentId, ps(artifactId, prev, "artifactId"),
         ps(artifactCategory, prev, "artifactCategory"),
         ps(belongsToDocumentId, prev, "belongsToDocumentId"), ps(path, prev, "path"), deepLinkPath,
-        ps(contentType, prev, "contentType"), ps(contentLength, prev, "contentLength"),
-        cs != null ? removeQuotes(cs) : null, ps(checksumType, prev, "checksumType"),
-        ps(s3version, prev, "s3version"), ps(userId, prev, "userId"), ps(version, prev, "version"),
-        ps(width, prev, "width"), ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"),
-        insertedDate, lastModifiedDate, documentMetadata,
+        ps(resourceType, prev, "resourceType"), ps(contentType, prev, "contentType"),
+        ps(contentLength, prev, "contentLength"), cs != null ? removeQuotes(cs) : null,
+        ps(checksumType, prev, "checksumType"), ps(s3version, prev, "s3version"),
+        ps(userId, prev, "userId"), ps(version, prev, "version"), ps(width, prev, "width"),
+        ps(height, prev, "height"), ps(timeToLive, prev, "TimeToLive"), insertedDate,
+        lastModifiedDate, documentMetadata,
         !isEmpty(ps(artifactId, prev, "artifactId")) ? Boolean.FALSE : ha,
         ps(promotedArtifactId, prev, "promotedArtifactId"), null);
   }
@@ -365,6 +370,12 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     return this;
   }
 
+  private DocumentResourceType ps(final DocumentResourceType current,
+      final Map<String, AttributeValue> map, final String key) {
+    return current != null ? current
+        : DocumentResourceType.fromString(DynamoDbTypes.toString(map.get(key)));
+  }
+
   private Long ps(final Long current, final Map<String, AttributeValue> map, final String key) {
     return current != null ? current : DynamoDbTypes.toLong(map.get(key));
   }
@@ -384,6 +395,11 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     this.metadataDeleteKeys =
         Stream.concat(notNull(this.metadataDeleteKeys).stream(), keys.stream()).distinct().toList();
     metadata = notNull(metadata).stream().filter(m -> !keys.contains(m.key())).toList();
+    return this;
+  }
+
+  public DocumentRecordBuilder resourceType(final DocumentResourceType type) {
+    this.resourceType = type;
     return this;
   }
 
@@ -489,6 +505,24 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     return documentMetaData;
   }
 
+  private void updateResourceType(final Map<String, AttributeValue> prev) {
+    if (resourceType == null) {
+      resourceType =
+          DocumentResourceType.fromString(DynamoDbTypes.toString(prev.get("resourceType")));
+    }
+
+    if (resourceType == null) {
+      String dl =
+          !isEmpty(deepLinkPath) ? deepLinkPath : DynamoDbTypes.toString(prev.get("deepLinkPath"));
+
+      if (!isEmpty(dl)) {
+        resourceType = DocumentResourceType.DEEP_LINK;
+      } else {
+        resourceType = DocumentResourceType.DOCUMENT;
+      }
+    }
+  }
+
   public DocumentRecordBuilder userId(final String u) {
     this.userId = u;
     return this;
@@ -500,6 +534,7 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     validateArtifactCategory(vb);
     validateDeepLinkPath(vb);
     validateDocumentPath(vb);
+    validateResourceType(vb);
 
     validateDimension(vb, "width", width);
     validateDimension(vb, "height", height);
@@ -536,6 +571,13 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
   private void validateDocumentPath(final ValidationBuilder vb) {
     if (path != null && path.contains("//")) {
       vb.addError("path", "invalid Path contains multiple '//' characters");
+    }
+  }
+
+  private void validateResourceType(final ValidationBuilder vb) {
+    if (!Strings.isEmpty(deepLinkPath) && resourceType != DocumentResourceType.DEEP_LINK) {
+      vb.addError("resourceType", "resourceType '" + resourceType.name()
+          + "' cannot be set when 'deepLinkPath' is specified");
     }
   }
 

@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -274,6 +275,11 @@ public class DocumentsUploadRequestHandler
     return Optional.of(access);
   }
 
+  private boolean isDocumentsUploadRequest(final ApiGatewayRequestEvent event) {
+    return "/documents/upload".equals(event.getResource()) || (event.getResource() == null
+        && !isEmpty(event.getPath()) && event.getPath().startsWith("/documents/upload"));
+  }
+
   @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -304,7 +310,7 @@ public class DocumentsUploadRequestHandler
     SiteConfiguration config = configService.get(siteId);
 
     this.documentEntityValidator.validate(awsservice, config, siteId, request);
-    validatePost(awsservice, config, siteId, request);
+    validatePost(awsservice, config, siteId, request, event);
 
     var documentRecordSet = getDocumentRecordSet(authorization, awsservice, request, siteId);
 
@@ -381,7 +387,8 @@ public class DocumentsUploadRequestHandler
   }
 
   private void validatePost(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final AddDocumentRequest item) throws BadException, ValidationException {
+      final String siteId, final AddDocumentRequest item, final ApiGatewayRequestEvent event)
+      throws BadException, ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
     Collection<ValidationError> errors = this.documentValidator.validate(item.getMetadata());
@@ -389,7 +396,19 @@ public class DocumentsUploadRequestHandler
     this.documentValidator.validateContentType(config, item.getContentType(), vb);
 
     validateMaxDocuments(vb, awsservice, config, siteId);
+    validateResourceType(vb, item, event);
 
     vb.check();
+  }
+
+  private void validateResourceType(final ValidationBuilder vb, final AddDocumentRequest item,
+      final ApiGatewayRequestEvent event) {
+    DocumentResourceType resourceType = item.getResourceType();
+
+    if (isDocumentsUploadRequest(event) && resourceType != null
+        && resourceType != DocumentResourceType.DOCUMENT) {
+      vb.addError("resourceType",
+          "resourceType '" + resourceType.name() + "' is not allowed for /documents/upload");
+    }
   }
 }
