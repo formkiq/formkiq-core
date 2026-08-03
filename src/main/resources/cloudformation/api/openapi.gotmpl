@@ -759,6 +759,13 @@ components:
       schema:
         type: string
   schemas:
+    DocumentResourceType:
+      type: string
+      description: Document resource type
+      enum:
+        - DOCUMENT
+        - DOSSIER
+        - DEEP_LINK
     ValidationErrorsResponse:
       type: "object"
       properties:

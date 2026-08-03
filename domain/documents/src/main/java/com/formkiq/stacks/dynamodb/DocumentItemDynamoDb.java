@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /** Holder class for Document(s). */
@@ -81,6 +82,9 @@ public class DocumentItemDynamoDb implements DocumentItem {
   /** Promoted Artifact Id. */
   @Reflectable
   private String promotedArtifactId;
+  /** Document Resource Type. */
+  @Reflectable
+  private DocumentResourceType resourceType;
   /** S3 Version. */
   @Reflectable
   private String s3version;
@@ -206,6 +210,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   }
 
   @Override
+  public DocumentResourceType getResourceType() {
+    return this.resourceType;
+  }
+
+  @Override
   public String getS3version() {
     return this.s3version;
   }
@@ -321,6 +330,11 @@ public class DocumentItemDynamoDb implements DocumentItem {
   @Override
   public void setPromotedArtifactId(final String id) {
     this.promotedArtifactId = id;
+  }
+
+  @Override
+  public void setResourceType(final DocumentResourceType documentResourceType) {
+    this.resourceType = documentResourceType;
   }
 
   @Override

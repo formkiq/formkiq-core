@@ -246,6 +246,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         insertedDate:
           type: "string"
           description: "Inserted Timestamp"
@@ -314,6 +316,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         checksum:
           type: "string"
           description: "Document checksum, changes when document file changes"
@@ -361,6 +365,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         checksum:
           type: "string"
           description: "Document checksum, changes when document file changes"
@@ -416,6 +422,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         checksum:
           type: "string"
           description: "Document checksum, changes when document file changes"

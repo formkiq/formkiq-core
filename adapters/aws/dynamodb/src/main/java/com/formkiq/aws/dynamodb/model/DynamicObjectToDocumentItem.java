@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DynamicObject;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 
 /**
  * 
@@ -51,6 +52,7 @@ public class DynamicObjectToDocumentItem implements Function<DynamicObject, Docu
     item.setDocumentId(t.getString("documentId"));
     item.setInsertedDate(t.getDate("insertedDate"));
     item.setPath(t.getString("path"));
+    item.setResourceType(DocumentResourceType.fromString(t.getString("resourceType")));
     item.setUserId(t.getString("userId"));
 
     List<DynamicObject> list = t.getList("documents");
@@ -60,6 +62,7 @@ public class DynamicObjectToDocumentItem implements Function<DynamicObject, Docu
       i.setArtifactCategory(l.getString("artifactCategory"));
       i.setPromotedArtifactId(l.getString("promotedArtifactId"));
       i.setDocumentId(l.getString("documentId"));
+      i.setResourceType(DocumentResourceType.fromString(l.getString("resourceType")));
       return i;
     }).collect(Collectors.toList());
 

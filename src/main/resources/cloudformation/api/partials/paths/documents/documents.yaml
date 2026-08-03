@@ -334,6 +334,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         insertedDate:
           type: "string"
           description: "Inserted Timestamp"
@@ -447,6 +449,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         contentType:
           type: "string"
           description: "Document media type"
@@ -501,6 +505,8 @@ components:
         deepLinkPath:
           type: "string"
           description: "Path or Name of deep link"
+        resourceType:
+          $ref: "#/components/schemas/DocumentResourceType"
         contentType:
           type: "string"
           description: "Document Content-Type"
