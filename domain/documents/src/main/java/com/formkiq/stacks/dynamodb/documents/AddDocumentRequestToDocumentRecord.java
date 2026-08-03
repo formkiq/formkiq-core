@@ -99,7 +99,8 @@ public class AddDocumentRequestToDocumentRecord
     }
 
     builder.width(r.getWidth()).height(r.getHeight()).checksum(r.getChecksum())
-        .checksumType(r.getChecksumType()).timeToLive(r.getTimeToLive());
+        .checksumType(r.getChecksumType()).resourceType(r.getResourceType())
+        .timeToLive(r.getTimeToLive());
 
     updateArtifactId(r, builder);
     builder.artifactCategory(r.getArtifactCategory());

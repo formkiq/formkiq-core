@@ -64,6 +64,7 @@ import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
@@ -299,6 +300,30 @@ public class DocumentsRequestHandler
     return Map.of("next", nextToken, "documents", documents);
   }
 
+  private boolean isChecksumTypeMissing(final AddDocumentRequest item) {
+    return !isEmpty(item.getChecksum()) && item.getChecksumType() == null;
+  }
+
+  private boolean isContentAndDeepLinkSet(final AddDocumentRequest item) {
+    return !isEmpty(item.getDeepLinkPath()) && !isEmpty(item.getContent());
+  }
+
+  private boolean isDocumentPayloadMissing(final AddDocumentRequest item) {
+    boolean emptyContent = isEmpty(item.getContent());
+    boolean emptyDocuments = notNull(item.getDocuments()).isEmpty();
+    boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
+
+    return emptyContent && emptyDocuments && emptyDeepLink;
+  }
+
+  private boolean isDocumentPayloadRequired(final AddDocumentRequest item) {
+    return !isFolder(item) && item.getResourceType() != DocumentResourceType.DOSSIER;
+  }
+
+  private boolean isDossierContentSet(final AddDocumentRequest item) {
+    return item.getResourceType() == DocumentResourceType.DOSSIER && !isEmpty(item.getContent());
+  }
+
   private boolean isFolder(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item) {
     return !isEmpty(item.getPath()) && item.getPath().endsWith("/");
   }
@@ -376,22 +401,19 @@ public class DocumentsRequestHandler
     }
   }
 
-  private void validatePost(final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item)
-      throws ValidationException {
+  private void validatePost(final AddDocumentRequest item) throws ValidationException {
 
-    boolean isFolder = isFolder(item);
-
-    boolean emptyContent = isEmpty(item.getContent());
-    boolean emptyDeepLink = isEmpty(item.getDeepLinkPath());
     ValidationBuilder vb = new ValidationBuilder();
 
-    if (!isFolder && emptyContent && notNull(item.getDocuments()).isEmpty() && emptyDeepLink) {
+    if (isDocumentPayloadRequired(item) && isDocumentPayloadMissing(item)) {
       vb.addError(null, "either 'content', 'documents', or 'deepLinkPath' are required");
-    } else if (!emptyDeepLink && !emptyContent) {
+    } else if (isDossierContentSet(item)) {
+      vb.addError("content", "'content' cannot be set when resourceType is 'DOSSIER'");
+    } else if (isContentAndDeepLinkSet(item)) {
       vb.addError(null, "both 'content', and 'deepLinkPath' cannot be set");
     }
 
-    if (!isEmpty(item.getChecksum()) && item.getChecksumType() == null) {
+    if (isChecksumTypeMissing(item)) {
       vb.addError("checksumType", "'checksumType' required when 'checksum' is set");
     }
 

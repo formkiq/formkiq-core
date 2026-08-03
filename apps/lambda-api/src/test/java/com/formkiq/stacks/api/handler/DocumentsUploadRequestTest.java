@@ -36,6 +36,7 @@ import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentActionStatus;
 import com.formkiq.client.model.DocumentActionType;
+import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.DocumentTag;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentTagsResponse;
@@ -526,6 +527,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
       assertEquals(documentId, document.getDocumentId());
+      assertEquals(DocumentResourceType.DOCUMENT, document.getResourceType());
     }
   }
 

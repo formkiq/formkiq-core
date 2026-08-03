@@ -25,10 +25,12 @@ package com.formkiq.aws.dynamodb.documents;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.validation.ValidationException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -127,6 +129,85 @@ public class DocumentRecordBuilderTest {
   }
 
   @Test
+  void testBuildResourceType01() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid())
+        .resourceType(DocumentResourceType.DOCUMENT).build((String) null);
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
+    assertEquals("DOCUMENT", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType02() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid())
+        .deepLinkPath("https://example.com/test.txt").build((String) null);
+
+    assertEquals(DocumentResourceType.DEEP_LINK, record.resourceType());
+    assertEquals("DEEP_LINK", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType03() {
+    DocumentRecord record =
+        new DocumentRecordBuilder().documentId(ID.uuid()).contentLength(123L).build((String) null);
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
+    assertEquals("DOCUMENT", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType04() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid()).build((String) null);
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
+    assertEquals("DOCUMENT", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType05() {
+    DocumentRecord record = new DocumentRecordBuilder().documentId(ID.uuid()).contentLength(123L)
+        .resourceType(DocumentResourceType.DOSSIER).build((String) null);
+
+    assertEquals(DocumentResourceType.DOSSIER, record.resourceType());
+    assertEquals("DOSSIER", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType06() {
+    String documentId = ID.uuid();
+    DocumentRecord previous = new DocumentRecordBuilder().documentId(documentId)
+        .resourceType(DocumentResourceType.DOCUMENT).build((String) null);
+
+    DocumentRecord record = new DocumentRecordBuilder().documentId(documentId)
+        .setDefaultValues(previous).build((String) null);
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
+    assertEquals("DOCUMENT", record.getAttributes().get("resourceType").s());
+  }
+
+  @Test
+  void testBuildResourceType07() {
+    ValidationException ex = assertThrows(ValidationException.class,
+        () -> new DocumentRecordBuilder().documentId(ID.uuid())
+            .deepLinkPath("https://example.com/test.txt")
+            .resourceType(DocumentResourceType.DOCUMENT).build((String) null));
+
+    assertEquals("resourceType 'DOCUMENT' cannot be set when 'deepLinkPath' is specified",
+        ex.errors().iterator().next().error());
+  }
+
+  @Test
+  void testBuildResourceType08() {
+    ValidationException ex = assertThrows(ValidationException.class,
+        () -> new DocumentRecordBuilder().documentId(ID.uuid())
+            .deepLinkPath("https://example.com/test.txt").resourceType(DocumentResourceType.DOSSIER)
+            .build((String) null));
+
+    assertEquals("resourceType 'DOSSIER' cannot be set when 'deepLinkPath' is specified",
+        ex.errors().iterator().next().error());
+  }
+
+  @Test
   void testBuildSoftDeleteKey01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
@@ -170,5 +251,52 @@ public class DocumentRecordBuilderTest {
             "artifactCategory", AttributeValue.fromS("ocr")));
 
     assertEquals("ocr", record.artifactCategory());
+  }
+
+  @Test
+  void testFromAttributeMapResourceType01() {
+    String documentId = ID.uuid();
+
+    DocumentRecord record =
+        DocumentRecord.fromAttributeMap(Map.of("PK", AttributeValue.fromS("docs#" + documentId),
+            "SK", AttributeValue.fromS("document"), "documentId", AttributeValue.fromS(documentId),
+            "resourceType", AttributeValue.fromS("DEEP_LINK")));
+
+    assertEquals(DocumentResourceType.DEEP_LINK, record.resourceType());
+  }
+
+  @Test
+  void testFromAttributeMapResourceType02() {
+    String documentId = ID.uuid();
+
+    DocumentRecord record =
+        DocumentRecord.fromAttributeMap(Map.of("PK", AttributeValue.fromS("docs#" + documentId),
+            "SK", AttributeValue.fromS("document"), "documentId", AttributeValue.fromS(documentId),
+            "resourceType", AttributeValue.fromS("dOcUmEnT")));
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
+  }
+
+  @Test
+  void testFromAttributeMapResourceType03() {
+    String documentId = ID.uuid();
+
+    DocumentRecord record =
+        DocumentRecord.fromAttributeMap(Map.of("PK", AttributeValue.fromS("docs#" + documentId),
+            "SK", AttributeValue.fromS("document"), "documentId", AttributeValue.fromS(documentId),
+            "deepLinkPath", AttributeValue.fromS("https://example.com/test.txt")));
+
+    assertEquals(DocumentResourceType.DEEP_LINK, record.resourceType());
+  }
+
+  @Test
+  void testFromAttributeMapResourceType04() {
+    String documentId = ID.uuid();
+
+    DocumentRecord record = DocumentRecord
+        .fromAttributeMap(Map.of("PK", AttributeValue.fromS("docs#" + documentId), "SK",
+            AttributeValue.fromS("document"), "documentId", AttributeValue.fromS(documentId)));
+
+    assertEquals(DocumentResourceType.DOCUMENT, record.resourceType());
   }
 }

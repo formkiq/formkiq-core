@@ -27,6 +27,7 @@ import java.util.List;
 
 import com.formkiq.aws.dynamodb.actions.AddAction;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
@@ -63,6 +64,8 @@ public class AddDocumentRequest {
   private List<DocumentMetadata> metadata;
   /** Document Path. */
   private String path;
+  /** Resource Type. */
+  private String resourceType;
   /** Document Tags. */
   private List<AddDocumentTag> tags;
   /** Height. */
@@ -221,6 +224,15 @@ public class AddDocumentRequest {
    */
   public String getPath() {
     return this.path;
+  }
+
+  /**
+   * Get Resource Type.
+   *
+   * @return {@link DocumentResourceType}
+   */
+  public DocumentResourceType getResourceType() {
+    return DocumentResourceType.fromString(this.resourceType);
   }
 
   /**
@@ -427,6 +439,24 @@ public class AddDocumentRequest {
    */
   public void setPath(final String documentPath) {
     this.path = documentPath;
+  }
+
+  /**
+   * Set Resource Type.
+   *
+   * @param documentResourceType {@link DocumentResourceType}
+   */
+  public void setResourceType(final DocumentResourceType documentResourceType) {
+    this.resourceType = documentResourceType != null ? documentResourceType.name() : null;
+  }
+
+  /**
+   * Set Resource Type.
+   *
+   * @param documentResourceType {@link String}
+   */
+  public void setResourceType(final String documentResourceType) {
+    this.resourceType = documentResourceType;
   }
 
   /**

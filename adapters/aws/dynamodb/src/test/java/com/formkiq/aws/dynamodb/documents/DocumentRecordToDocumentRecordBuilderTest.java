@@ -45,10 +45,10 @@ public class DocumentRecordToDocumentRecordBuilderTest {
     DocumentRecord record = DocumentRecord.builder().documentId("doc01").artifactId("artifact01")
         .artifactCategory("ocr").belongsToDocumentId("belongsTo01").path("test.txt")
         .deepLinkPath("https://example.com/test.txt").contentType("text/plain")
-        .contentLength(Long.valueOf(123)).checksum("checksum").checksumType("SHA256")
-        .s3version("s3version").userId("joe").version("v1").width("100").height("200")
-        .timeToLive("1000").insertedDate(insertedDate).lastModifiedDate(lastModifiedDate)
-        .metadata(metadata).build((String) null);
+        .resourceType(DocumentResourceType.DEEP_LINK).contentLength(Long.valueOf(123))
+        .checksum("checksum").checksumType("SHA256").s3version("s3version").userId("joe")
+        .version("v1").width("100").height("200").timeToLive("1000").insertedDate(insertedDate)
+        .lastModifiedDate(lastModifiedDate).metadata(metadata).build((String) null);
 
     // when
     DocumentRecord copy =
@@ -62,6 +62,7 @@ public class DocumentRecordToDocumentRecordBuilderTest {
     assertEquals("belongsTo01", copy.belongsToDocumentId());
     assertEquals("test.txt", copy.path());
     assertEquals("https://example.com/test.txt", copy.deepLinkPath());
+    assertEquals(DocumentResourceType.DEEP_LINK, copy.resourceType());
     assertEquals("text/plain", copy.contentType());
     assertEquals(Long.valueOf(123), copy.contentLength());
     assertEquals("checksum", copy.checksum());

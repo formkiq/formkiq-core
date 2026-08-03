@@ -34,6 +34,7 @@ import java.util.function.Function;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -99,6 +100,7 @@ public class AttributeValueToDocumentItem
 
     item.setPath((String) map.get("path"));
     item.setDeepLinkPath(getDeepLinkPath(attrs));
+    item.setResourceType(DocumentResourceType.fromString(getString(attrs.get("resourceType"))));
 
     item.setContentType((String) map.get("contentType"));
 

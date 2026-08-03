@@ -24,6 +24,7 @@
 package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 
 import java.util.Collection;
 import java.util.Date;
@@ -150,6 +151,13 @@ public interface DocumentItem {
    * @return {@link String}
    */
   String getPromotedArtifactId();
+
+  /**
+   * Get Document Resource Type.
+   *
+   * @return {@link DocumentResourceType}
+   */
+  DocumentResourceType getResourceType();
 
   /**
    * Get S3 Version.
@@ -304,6 +312,13 @@ public interface DocumentItem {
    * @param artifactId {@link String}
    */
   void setPromotedArtifactId(String artifactId);
+
+  /**
+   * Set Document Resource Type.
+   *
+   * @param resourceType {@link DocumentResourceType}
+   */
+  void setResourceType(DocumentResourceType resourceType);
 
   /**
    * Set S3 Version.
