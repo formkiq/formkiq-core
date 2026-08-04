@@ -4,4 +4,7 @@ description = "FKQ Validation Library"
 dependencies {
   annotationProcessor libs.formkiq.graalvm.annotations.processor
   implementation libs.formkiq.graalvm.annotations
+
+  testImplementation libs.junit.jupiter.engine
+  testRuntimeOnly  libs.junit.platform.launcher
 }

@@ -24,8 +24,10 @@
 package com.formkiq.stacks.dynamodb.attributes;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,6 +38,7 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
@@ -75,7 +78,7 @@ public class DynamicObjectToDocumentAttributeRecord
 
   private void addToList(final Collection<DocumentAttributeRecord> list,
       final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
+      final Boolean boolValue, final Double numberValue, final Date dateValue) {
 
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
@@ -83,6 +86,7 @@ public class DynamicObjectToDocumentAttributeRecord
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);
+    a.setDateValue(dateValue);
     a.setValueType(valueType);
     a.setUserId(this.user);
 
@@ -113,7 +117,7 @@ public class DynamicObjectToDocumentAttributeRecord
       if (!Objects.isEmpty(stringValues)) {
 
         for (String value : stringValues) {
-          addToList(list, DocumentAttributeValueType.STRING, key, value, null, null);
+          addToList(list, DocumentAttributeValueType.STRING, key, value, null, null, null);
         }
       }
 
@@ -121,13 +125,22 @@ public class DynamicObjectToDocumentAttributeRecord
       if (!Objects.isEmpty(numberValues)) {
 
         for (Double value : numberValues) {
-          addToList(list, DocumentAttributeValueType.NUMBER, key, null, null, value);
+          addToList(list, DocumentAttributeValueType.NUMBER, key, null, null, value, null);
         }
       }
 
       Boolean bool = (Boolean) o.getOrDefault("booleanValue", null);
       if (bool != null) {
-        addToList(list, DocumentAttributeValueType.BOOLEAN, key, null, bool, null);
+        addToList(list, DocumentAttributeValueType.BOOLEAN, key, null, bool, null, null);
+      }
+
+      List<String> dateValues = getDateValues(o);
+      if (!Objects.isEmpty(dateValues)) {
+
+        for (String value : dateValues) {
+          addToList(list, DocumentAttributeValueType.DATE, key, null, null, null,
+              DateUtil.toDateFromString(value, ZoneOffset.UTC));
+        }
       }
     }
     return list;
@@ -234,6 +247,9 @@ public class DynamicObjectToDocumentAttributeRecord
                   String s = Objects.formatDouble(c.getNumberValue(), Objects.DOUBLE_FORMAT);
                   newCompositeValues.get(index).add(s);
                   break;
+                case DATE:
+                  newCompositeValues.get(index).add(c.getDateValueAsString());
+                  break;
                 default:
                   throw new IllegalArgumentException("Unexpected value: " + c.getValueType());
               }
@@ -248,6 +264,21 @@ public class DynamicObjectToDocumentAttributeRecord
     }
 
     return compositeKeys;
+  }
+
+  private List<String> getDateValues(final DynamicObject o) {
+
+    List<String> list = o.getStringList("dateValues");
+    if (Objects.isEmpty(list)) {
+      list = new ArrayList<>();
+
+      String s = o.getString("dateValue");
+      if (!Strings.isEmpty(s)) {
+        list.add(s);
+      }
+    }
+
+    return list;
   }
 
   private List<Double> getNumberValues(final DynamicObject o) {

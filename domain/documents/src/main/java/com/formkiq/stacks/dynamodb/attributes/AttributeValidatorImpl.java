@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.attributes;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
+import java.time.DateTimeException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +48,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
@@ -92,7 +94,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
   private boolean isKeyOnlyValues(final DocumentAttributeRecord da) {
     return isEmpty(da.getStringValue()) && da.getNumberValue() == null
-        && da.getBooleanValue() == null;
+        && da.getBooleanValue() == null && isEmpty(da.getDateValueAsString());
   }
 
   private boolean validateAllowedValues(final List<String> allowedValues,
@@ -107,7 +109,10 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     boolean matchNumber = DocumentAttributeValueType.NUMBER.equals(r.getValueType())
         && allowedValues.contains(r.getNumberValue().toString());
 
-    return matchString || matchBoolean || matchNumber;
+    boolean matchDate = DocumentAttributeValueType.DATE.equals(r.getValueType())
+        && allowedValues.stream().anyMatch(v -> isDateMatch(v, r.getDateValueAsString()));
+
+    return matchString || matchBoolean || matchNumber || matchDate;
   }
 
   private void validateAllowedValues(
@@ -148,6 +153,16 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateNumberOfValues(documentAttributeMap, attributeKey, a.minNumberOfValues(),
           a.maxNumberOfValues(), vb);
     });
+  }
+
+  private boolean isDateMatch(final String allowedValue, final String dateValue) {
+    boolean match = false;
+    try {
+      match = DateUtil.normalizeDateValue(allowedValue).equals(dateValue);
+    } catch (DateTimeException e) {
+      // ignore
+    }
+    return match;
   }
 
   private void validateNumberOfValues(
@@ -269,6 +284,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       case ENTITY -> validateEntity(siteId, a, vb);
       case NUMBER ->
         vb.isRequired(a.getKey(), a.getNumberValue(), "attribute only support number value");
+      case DATE -> validateDate(a, vb);
       case BOOLEAN -> vb.isRequired(a.getKey(), a.getBooleanValue() != null,
           "attribute only support boolean value");
       case KEY_ONLY -> {
@@ -278,6 +294,18 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
         }
       }
       default -> {
+      }
+    }
+  }
+
+  private void validateDate(final DocumentAttributeRecord a, final ValidationBuilder vb) {
+    vb.isRequired(a.getKey(), a.getDateValue(), "attribute only support date value");
+
+    if (!isEmpty(a.getDateValueAsString())) {
+      try {
+        DateUtil.normalizeDateValue(a.getDateValueAsString());
+      } catch (DateTimeException e) {
+        vb.addError(a.getKey(), "invalid date value");
       }
     }
   }
