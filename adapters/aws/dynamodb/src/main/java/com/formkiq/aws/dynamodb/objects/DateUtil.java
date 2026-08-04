@@ -133,6 +133,17 @@ public final class DateUtil {
   }
 
   /**
+   * Normalize an attribute date value to UTC ISO-8601 instant format.
+   *
+   * @param value {@link String}
+   * @return {@link String}
+   */
+  public static String normalizeDateValue(final String value) {
+    Date date = toDateFromString(value, ZoneOffset.UTC);
+    return getInIso8601Format(date);
+  }
+
+  /**
    * Convert {@link String} Date format and Tz to {@link Date}.
    * 
    * @param date {@link String}

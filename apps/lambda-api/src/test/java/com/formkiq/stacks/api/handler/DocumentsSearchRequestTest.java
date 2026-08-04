@@ -57,6 +57,7 @@ import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
+import com.formkiq.client.model.SearchRangeDataType;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
 import com.formkiq.client.model.Watermark;
@@ -67,6 +68,8 @@ import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -89,6 +92,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1449,5 +1453,193 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       List<SearchResultDocument> documents = notNull(response.getDocuments());
       assertEquals(1, documents.size());
     }
+  }
+
+  /**
+   * Post search by composite attributes including DATE range.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequestDateAttributeCompositeRange01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key("category")), siteId);
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key("dueDate").dataType(AttributeDataType.DATE)), siteId);
+
+    new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("category")
+        .addRequiredAttribute("dueDate").addCompositeKey("category", "dueDate")
+        .submitOk(client, siteId);
+
+    String documentId = new AddDocumentRequestBuilder().content()
+        .addAttribute("category", "invoice").addDateAttribute("dueDate", "2026-08-04")
+        .submitOk(client, siteId).response().getDocumentId();
+    String otherCategoryDocumentId = new AddDocumentRequestBuilder().content()
+        .addAttribute("category", "receipt").addDateAttribute("dueDate", "2026-08-04")
+        .submitOk(client, siteId).response().getDocumentId();
+    String otherDateDocumentId = new AddDocumentRequestBuilder().content()
+        .addAttribute("category", "invoice").addDateAttribute("dueDate", "2026-09-01")
+        .submitOk(client, siteId).response().getDocumentId();
+
+    DocumentSearchRange range = new DocumentSearchRange().start("2026-08-01").end("2026-08-31")
+        .type(SearchRangeDataType.DATE);
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .query(new DocumentSearch()
+            .attributes(List.of(new DocumentSearchAttribute().key("category").eq("invoice"),
+                new DocumentSearchAttribute().key("dueDate").range(range))))
+        .submitOk(client, siteId).response();
+
+    // then
+    List<String> documentIds =
+        notNull(response.getDocuments()).stream().map(SearchResultDocument::getDocumentId).toList();
+    assertTrue(documentIds.contains(documentId));
+    assertFalse(documentIds.contains(otherCategoryDocumentId));
+    assertFalse(documentIds.contains(otherDateDocumentId));
+  }
+
+  /**
+   * Post search by DATE attribute "eq".
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequestDateAttributeEq01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+    String documentId =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
+            .submitOk(client, siteId).response().getDocumentId();
+    String otherDocumentId =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-06")
+            .submitOk(client, siteId).response().getDocumentId();
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .attribute(new DocumentSearchAttribute().key(attributeKey).eq("2026-08-04"))
+        .submitOk(client, siteId).response();
+
+    // then
+    List<String> documentIds =
+        notNull(response.getDocuments()).stream().map(SearchResultDocument::getDocumentId).toList();
+    assertTrue(documentIds.contains(documentId));
+    assertFalse(documentIds.contains(otherDocumentId));
+  }
+
+  /**
+   * Post search by DATE attribute "eq" with invalid date.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequestDateAttributeEqInvalid01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+    // when
+    var response = new SearchDocumentRequestBuilder()
+        .attribute(new DocumentSearchAttribute().key(attributeKey).eq("bad-date"))
+        .submit(client, siteId);
+
+    // then
+    assertNotNull(response.exception());
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+    assertEquals("{\"errors\":[{\"key\":\"dueDate\",\"error\":\"invalid date value\"}]}",
+        response.exception().getResponseBody());
+  }
+
+  /**
+   * Post search by DATE attribute "eqOr".
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequestDateAttributeEqOr01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+    String documentId0 =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
+            .submitOk(client, siteId).response().getDocumentId();
+    String documentId1 =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-05")
+            .submitOk(client, siteId).response().getDocumentId();
+    String otherDocumentId =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-06")
+            .submitOk(client, siteId).response().getDocumentId();
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder().attribute(
+        new DocumentSearchAttribute().key(attributeKey).eqOr(List.of("2026-08-04", "2026-08-05")))
+        .submitOk(client, siteId).response();
+
+    // then
+    List<String> documentIds =
+        notNull(response.getDocuments()).stream().map(SearchResultDocument::getDocumentId).toList();
+    assertTrue(documentIds.contains(documentId0));
+    assertTrue(documentIds.contains(documentId1));
+    assertFalse(documentIds.contains(otherDocumentId));
+  }
+
+  /**
+   * Post search by DATE attribute range.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSearchRequestDateAttributeRange01() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    this.attributesApi.addAttribute(new AddAttributeRequest()
+        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+    String documentId0 =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
+            .submitOk(client, siteId).response().getDocumentId();
+    String documentId1 =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-31")
+            .submitOk(client, siteId).response().getDocumentId();
+    String otherDocumentId =
+        new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-09-01")
+            .submitOk(client, siteId).response().getDocumentId();
+
+    DocumentSearchRange range = new DocumentSearchRange().start("2026-08-01").end("2026-08-31")
+        .type(SearchRangeDataType.DATE);
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .attribute(new DocumentSearchAttribute().key(attributeKey).range(range))
+        .submitOk(client, siteId).response();
+
+    // then
+    List<String> documentIds =
+        notNull(response.getDocuments()).stream().map(SearchResultDocument::getDocumentId).toList();
+    assertTrue(documentIds.contains(documentId0));
+    assertTrue(documentIds.contains(documentId1));
+    assertFalse(documentIds.contains(otherDocumentId));
   }
 }

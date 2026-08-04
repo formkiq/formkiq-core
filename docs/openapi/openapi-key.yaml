@@ -8588,6 +8588,7 @@ components:
       - STRING
       - NUMBER
       - BOOLEAN
+      - DATE
       - KEY_ONLY
       - PUBLICATION
       - WATERMARK
@@ -9448,6 +9449,14 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValue:
+          type: string
+          description: Attribute with date value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
     SetDocumentAttributeRequest:
       type: object
       description: Set List of document attributes
@@ -9504,6 +9513,14 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValue:
+          type: string
+          description: Attribute with date value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -9524,6 +9541,7 @@ components:
       description: Attribute Value Type
       enum:
       - BOOLEAN
+      - DATE
       - KEY_ONLY
       - NUMBER
       - STRING
@@ -9577,6 +9595,14 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValue:
+          type: string
+          description: Attribute with date value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
     AddDocumentAttributeClassification:
       required:
       - classificationId
@@ -12458,12 +12484,16 @@ components:
         booleanValue:
           type: boolean
           description: Search for boolean value
+        dateValue:
+          type: string
+          description: Search for date value
     SearchRangeDataType:
       type: string
       description: Search Range Data Type
       enum:
       - STRING
       - NUMBER
+      - DATE
       default: STRING
     DocumentFulltextAttribute:
       required:
@@ -12787,6 +12817,11 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
     DocumentSearchMatchTag:
@@ -12816,6 +12851,9 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValue:
+          type: string
+          description: Attribute with date value
     DocumentFulltextRequest:
       required:
       - query
@@ -12912,6 +12950,11 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
     QueryFulltextRequest:

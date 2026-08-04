@@ -175,6 +175,34 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Add Document Date Attribute.
+   *
+   * @param key {@link String}
+   * @param values {@link List} {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addDateAttribute(final String key, final List<String> values) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).dateValues(values));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add Document Date Attribute.
+   *
+   * @param key {@link String}
+   * @param value {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addDateAttribute(final String key, final String value) {
+    AddDocumentAttribute attr =
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).dateValue(value));
+    this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
    * Add Metadata.
    *
    * @param key {@link String}
