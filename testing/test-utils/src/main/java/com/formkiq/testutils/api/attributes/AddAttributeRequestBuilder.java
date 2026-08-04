@@ -73,6 +73,18 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
   }
 
   /**
+   * Set Date Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsDate(final String attributeKey) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)
+        .type(AttributeType.STANDARD));
+    return this;
+  }
+
+  /**
    * Set Number Attribute Key.
    *
    * @param attributeKey {@link String}

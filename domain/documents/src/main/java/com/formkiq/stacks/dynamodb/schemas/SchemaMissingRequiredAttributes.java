@@ -25,9 +25,11 @@ package com.formkiq.stacks.dynamodb.schemas;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -136,10 +139,13 @@ public class SchemaMissingRequiredAttributes
           AttributeDataType.BOOLEAN.equals(dataType) ? Boolean.valueOf(value) : null;
       Double numberValue =
           AttributeDataType.NUMBER.equals(dataType) ? convertToDouble(value) : null;
+      Date dateValue =
+          AttributeDataType.DATE.equals(dataType) ? DateUtil.toDateFromString(value, ZoneOffset.UTC)
+              : null;
 
       DocumentAttributeRecord a = new DocumentAttributeRecord().setKey(attributeKey)
           .setDocument(documentArtifact).setStringValue(stringValue).setBooleanValue(booleanValue)
-          .setNumberValue(numberValue);
+          .setNumberValue(numberValue).setDateValue(dateValue);
       a.updateValueType();
 
       records.add(a);

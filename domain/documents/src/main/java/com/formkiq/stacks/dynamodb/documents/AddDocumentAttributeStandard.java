@@ -33,6 +33,6 @@ import java.util.List;
  */
 @Reflectable
 public record AddDocumentAttributeStandard(String key, String stringValue,
-    List<String> stringValues, Double numberValue, List<Double> numberValues,
-    Boolean booleanValue) implements AddDocumentAttribute {
+    List<String> stringValues, Double numberValue, List<Double> numberValues, Boolean booleanValue,
+    String dateValue, List<String> dateValues) implements AddDocumentAttribute {
 }

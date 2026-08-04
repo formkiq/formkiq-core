@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -37,6 +38,7 @@ import com.formkiq.stacks.dynamodb.schemas.Schema;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributes;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
 
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -180,6 +182,10 @@ public class SchemaRequiredDefaultValueKeyGenerator {
       case NUMBER -> {
         r.setValueType(DocumentAttributeValueType.NUMBER);
         r.setNumberValue(Double.valueOf(defaultValue));
+      }
+      case DATE -> {
+        r.setValueType(DocumentAttributeValueType.DATE);
+        r.setDateValue(DateUtil.toDateFromString(defaultValue, ZoneOffset.UTC));
       }
       case STRING -> {
         r.setValueType(DocumentAttributeValueType.STRING);

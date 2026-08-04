@@ -200,7 +200,6 @@ components:
           description: "Search for boolean value"
         dateValue:
           type: "string"
-          format: "date-time"
           description: "Search for date value"
 
     #@overlay/match missing_ok=True
@@ -571,7 +570,6 @@ components:
           description: "Attribute with date values"
           items:
             type: "string"
-            format: "date-time"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
 
@@ -607,7 +605,6 @@ components:
           description: "Attribute with boolean value"
         dateValue:
           type: "string"
-          format: "date-time"
           description: "Attribute with date value"
 
     #@overlay/match missing_ok=True
@@ -718,7 +715,6 @@ components:
           description: "Attribute with date values"
           items:
             type: "string"
-            format: "date-time"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
 

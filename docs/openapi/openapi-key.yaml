@@ -9451,14 +9451,12 @@ components:
           description: Attribute with boolean value
         dateValue:
           type: string
-          format: date-time
           description: Attribute with date value
         dateValues:
           type: array
           description: Attribute with date values
           items:
             type: string
-            format: date-time
     SetDocumentAttributeRequest:
       type: object
       description: Set List of document attributes
@@ -9517,14 +9515,12 @@ components:
           description: Attribute with boolean value
         dateValue:
           type: string
-          format: date-time
           description: Attribute with date value
         dateValues:
           type: array
           description: Attribute with date values
           items:
             type: string
-            format: date-time
         insertedDate:
           type: string
           description: Inserted Timestamp
@@ -9601,14 +9597,12 @@ components:
           description: Attribute with boolean value
         dateValue:
           type: string
-          format: date-time
           description: Attribute with date value
         dateValues:
           type: array
           description: Attribute with date values
           items:
             type: string
-            format: date-time
     AddDocumentAttributeClassification:
       required:
       - classificationId
@@ -12492,7 +12486,6 @@ components:
           description: Search for boolean value
         dateValue:
           type: string
-          format: date-time
           description: Search for date value
     SearchRangeDataType:
       type: string
@@ -12829,7 +12822,6 @@ components:
           description: Attribute with date values
           items:
             type: string
-            format: date-time
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
     DocumentSearchMatchTag:
@@ -12861,7 +12853,6 @@ components:
           description: Attribute with boolean value
         dateValue:
           type: string
-          format: date-time
           description: Attribute with date value
     DocumentFulltextRequest:
       required:
@@ -12964,7 +12955,6 @@ components:
           description: Attribute with date values
           items:
             type: string
-            format: date-time
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
     QueryFulltextRequest:

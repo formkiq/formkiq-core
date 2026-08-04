@@ -44,7 +44,6 @@ public enum DocumentResourceType {
    * @return {@link DocumentResourceType}
    */
   public static DocumentResourceType fromString(final String value) {
-    return isEmpty(value) ? null
-        : DocumentResourceType.valueOf(value.trim().toUpperCase());
+    return isEmpty(value) ? null : DocumentResourceType.valueOf(value.trim().toUpperCase());
   }
 }
