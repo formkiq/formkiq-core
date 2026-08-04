@@ -130,6 +130,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -594,18 +595,46 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       final String attributeKey, final String attributeValue,
       final AttributeValidationAccess validationAccess) throws ValidationException {
 
-    Schema schema = getSchame(siteId);
-    Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttributeValue(
-        schema, siteId, attributeKey, attributeValue, validationAccess);
+    var schema = getSchame(siteId);
+    var errors = this.attributeValidator.validateDeleteAttributeValue(schema, siteId, attributeKey,
+        attributeValue, validationAccess);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
 
-    DocumentAttributeRecord r =
+    var documentAttributeRecord =
         new DocumentAttributeRecord().setDocument(document).setKey(attributeKey)
             .setStringValue(attributeValue).setValueType(DocumentAttributeValueType.STRING);
-    return this.dbService.deleteItem(Map.of(PK, r.fromS(r.pk(siteId)), SK, r.fromS(r.sk())));
+
+    var attributeDataType = getAttributeDataType(siteId, attributeKey);
+
+    if (AttributeDataType.DATE.equals(attributeDataType)) {
+      var dateValue = getAttributeValueAsDate(attributeKey, attributeValue);
+      documentAttributeRecord.setDateValue(dateValue).setValueType(DocumentAttributeValueType.DATE);
+    }
+
+    return this.dbService
+        .deleteItem(Map.of(PK, documentAttributeRecord.fromS(documentAttributeRecord.pk(siteId)),
+            SK, documentAttributeRecord.fromS(documentAttributeRecord.sk())));
+  }
+
+  private Date getAttributeValueAsDate(final String attributeKey, final String attributeValue) {
+    try {
+      return DateUtil.toDateFromString(attributeValue, ZoneOffset.UTC);
+    } catch (DateTimeException e) {
+      throw ValidationException.builder().error(attributeKey, "invalid date value").build();
+    }
+  }
+
+  private AttributeDataType getAttributeDataType(final String siteId, final String attributeKey) {
+    AttributeKeyReserved reserved = AttributeKeyReserved.find(attributeKey);
+    if (reserved != null) {
+      return reserved.getDataType();
+    }
+
+    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
+    return attribute != null ? attribute.getDataType() : null;
   }
 
   @Override

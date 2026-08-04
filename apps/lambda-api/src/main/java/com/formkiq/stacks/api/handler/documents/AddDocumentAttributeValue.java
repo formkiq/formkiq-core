@@ -32,5 +32,6 @@ import java.util.List;
  */
 @Reflectable
 public record AddDocumentAttributeValue(String stringValue, List<String> stringValues,
-    Double numberValue, List<Double> numberValues, Boolean booleanValue) {
+    Double numberValue, List<Double> numberValues, Boolean booleanValue, String dateValue,
+    List<String> dateValues) {
 }

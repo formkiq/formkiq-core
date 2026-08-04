@@ -31,8 +31,12 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Unit tests for {@link DocumentAttributeRecord}.
@@ -136,5 +140,38 @@ public class DocumentAttributeRecordTest {
         "DynamoDB sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + skBytes);
     assertTrue(gsi1SkBytes <= MAX_SORT_KEY_BYTES,
         "DynamoDB GSI1 sort key exceeds " + MAX_SORT_KEY_BYTES + " bytes: " + gsi1SkBytes);
+  }
+
+  /**
+   * Verify DATE attributes use the date value for storage and index keys.
+   */
+  @Test
+  void testBuildKey05() {
+    String siteId = ID.uuid();
+    String documentId = ID.uuid();
+    String attributeKey = "dueDate";
+    String value = "2026-08-04T00:00:00Z";
+    Date date = Date.from(Instant.parse(value));
+
+    DocumentAttributeRecord record =
+        DocumentAttributeRecord.builder().document(DocumentArtifact.of(documentId, null))
+            .key(attributeKey).dateValue(date).build().updateValueType();
+
+    assertEquals(DocumentAttributeValueType.DATE, record.getValueType());
+    assertEquals("attr#" + attributeKey + "#" + value, record.sk());
+
+    DynamoDbKey key = record.buildKey(siteId);
+    assertKeyEquals(siteId, "docs#attr#" + attributeKey, key.gsi1Pk());
+    assertEquals(value, key.gsi1Sk());
+
+    Map<String, AttributeValue> attrs = record.getAttributes(siteId);
+    assertEquals("DATE", attrs.get("valueType").s());
+    assertEquals(value, attrs.get("dateValue").s());
+
+    DocumentAttributeRecord restored =
+        new DocumentAttributeRecord().getFromAttributes(siteId, attrs);
+    assertEquals(DocumentAttributeValueType.DATE, restored.getValueType());
+    assertEquals(date, restored.getDateValue());
+    assertEquals(value, restored.getDateValueAsString());
   }
 }
