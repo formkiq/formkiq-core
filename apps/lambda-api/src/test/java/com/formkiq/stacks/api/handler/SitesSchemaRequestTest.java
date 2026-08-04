@@ -66,6 +66,7 @@ import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateDocumentRequest;
 import com.formkiq.testutils.api.ApiHttpClient;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentAttributeValueRequestBuilder;
@@ -916,6 +917,79 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
     assertEquals(HttpStatus.BAD_REQUEST, resp.statusCode());
     assertEquals("{\"message\":\"invalid JSON body\"}", resp.body());
 
+  }
+
+  /**
+   * POST /documents with DATE site schema allowed values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentWithSetSitesSchemaDateAllowedValues01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "invoiceDate";
+      addAttribute(siteId, key, AttributeDataType.DATE);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addOptionalItem(
+              createOptional(key).allowedValues(List.of("2026-08-04", "2026-08-05T13:30:00Z"))));
+      this.schemasApi.setSitesSchema(siteId, req);
+
+      // when
+      AddDocumentResponse validResponse = new AddDocumentRequestBuilder().content()
+          .addDateAttribute(key, List.of("2026-08-04", "2026-08-05T13:30:00Z"))
+          .submitOk(client, siteId).response();
+
+      // then
+      assertNotNull(validResponse.getDocumentId());
+
+      // when
+      var response = new AddDocumentRequestBuilder().content().addDateAttribute(key, "2026-08-06")
+          .submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
+          response.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"invoiceDate\","
+          + "\"error\":\"invalid attribute value 'invoiceDate', only allowed values are "
+          + "2026-08-04,2026-08-05T13:30:00Z\"}]}", response.exception().getResponseBody());
+    }
+  }
+
+  /**
+   * POST /documents with DATE site schema required default value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddDocumentWithSetSitesSchemaDateDefaultValue01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "dueDate";
+      new AddAttributeRequestBuilder().keyAsDate(key).submitOk(client, siteId);
+      new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute(key, "2026-08-04")
+          .submitOk(client, siteId);
+
+      // when
+      String documentId = new AddDocumentRequestBuilder().content().submitOk(client, siteId)
+          .response().getDocumentId();
+
+      // then
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(1, attributes.size());
+      assertEquals(key, attributes.getFirst().getKey());
+      assertEquals(AttributeValueType.DATE, attributes.getFirst().getValueType());
+      assertEquals("2026-08-04T00:00:00Z", attributes.getFirst().getDateValue());
+      assertTrue(notNull(attributes.getFirst().getDateValues()).isEmpty());
+    }
   }
 
   /**

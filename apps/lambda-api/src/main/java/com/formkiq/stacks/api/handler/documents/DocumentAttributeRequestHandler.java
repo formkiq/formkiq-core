@@ -216,7 +216,7 @@ public class DocumentAttributeRequestHandler
     AddDocumentAttributeValue a = request.attribute();
     com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute addAttribute =
         new AddDocumentAttributeStandard(attributeKey, a.stringValue(), a.stringValues(),
-            a.numberValue(), a.numberValues(), a.booleanValue());
+            a.numberValue(), a.numberValues(), a.booleanValue(), a.dateValue(), a.dateValues());
 
     return new AddDocumentAttributeToDocumentAttributeRecord(awsservice, siteId,
         DocumentArtifact.of(documentId, artifactId)).apply(addAttribute);

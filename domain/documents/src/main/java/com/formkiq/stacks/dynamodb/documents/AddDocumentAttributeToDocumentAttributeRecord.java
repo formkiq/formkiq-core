@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
@@ -37,8 +38,11 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
+import java.time.DateTimeException;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.function.Function;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -80,7 +84,8 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     String k = AttributeKeyReserved.CLASSIFICATION.getKey();
 
     if (!isEmpty(a.classificationId())) {
-      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.classificationId(), null, null);
+      addToList(c, DocumentAttributeValueType.CLASSIFICATION, k, a.classificationId(), null, null,
+          null);
     }
   }
 
@@ -90,31 +95,42 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     String key = a.key();
     if (!isEmpty(a.stringValue())) {
       used = true;
-      addToList(c, DocumentAttributeValueType.STRING, key, a.stringValue(), null, null);
+      addToList(c, DocumentAttributeValueType.STRING, key, a.stringValue(), null, null, null);
     }
 
     if (a.numberValue() != null) {
       used = true;
-      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.numberValue());
+      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, a.numberValue(), null);
     }
 
     if (a.booleanValue() != null) {
       used = true;
-      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.booleanValue(), null);
+      addToList(c, DocumentAttributeValueType.BOOLEAN, key, null, a.booleanValue(), null, null);
+    }
+
+    if (!isEmpty(a.dateValue())) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.DATE, key, null, null, null,
+          toDateValue(a.dateValue()));
     }
 
     for (String stringValue : notNull(a.stringValues())) {
       used = true;
-      addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null);
+      addToList(c, DocumentAttributeValueType.STRING, key, stringValue, null, null, null);
     }
 
     for (Double numberValue : notNull(a.numberValues())) {
       used = true;
-      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue);
+      addToList(c, DocumentAttributeValueType.NUMBER, key, null, null, numberValue, null);
+    }
+
+    for (String dateValue : notNull(a.dateValues())) {
+      used = true;
+      addToList(c, DocumentAttributeValueType.DATE, key, null, null, null, toDateValue(dateValue));
     }
 
     if (!used) {
-      addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null);
+      addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null, null);
     }
 
   }
@@ -152,7 +168,7 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     DocumentAttributeEntityKeyValue val =
         new DocumentAttributeEntityKeyValue(entityTypeId, entityId);
 
-    addToList(c, DocumentAttributeValueType.ENTITY, key, val.getStringValue(), null, null);
+    addToList(c, DocumentAttributeValueType.ENTITY, key, val.getStringValue(), null, null, null);
   }
 
   private void addRelationship(
@@ -167,27 +183,21 @@ public class AddDocumentAttributeToDocumentAttributeRecord
   }
 
   private void addToList(final Collection<DocumentAttributeRecord> list,
-      final DocumentArtifact document, final DocumentAttributeValueType valueType, final String key,
-      final String stringValue, final Boolean boolValue, final Double numberValue) {
+      final DocumentAttributeValueType valueType, final String key, final String stringValue,
+      final Boolean boolValue, final Double numberValue, final Date dateValue) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
     DocumentAttributeRecord a = new DocumentAttributeRecord();
     a.setKey(key);
-    a.setDocument(document);
+    a.setDocument(fromDocument);
     a.setStringValue(stringValue);
     a.setBooleanValue(boolValue);
     a.setNumberValue(numberValue);
+    a.setDateValue(dateValue);
     a.setValueType(valueType);
     a.setUserId(username);
 
     list.add(a);
-  }
-
-  private void addToList(final Collection<DocumentAttributeRecord> list,
-      final DocumentAttributeValueType valueType, final String key, final String stringValue,
-      final Boolean boolValue, final Double numberValue) {
-
-    addToList(list, fromDocument, valueType, key, stringValue, boolValue, numberValue);
   }
 
   @Override
@@ -208,30 +218,38 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     if (a != null) {
       boolean used = false;
 
-      if (a instanceof AddDocumentAttributeEntities e) {
-        addEntities(e, c);
-      } else if (a instanceof AddDocumentAttributeEntity e) {
-        addEntity(e, c);
-      } else if (a instanceof AddDocumentAttributeRelationship e) {
-        addRelationship(e, c);
-      } else if (a instanceof AddDocumentAttributeClassification e) {
-        addClassification(e, c);
-      } else if (a instanceof AddDocumentAttributeStandard e) {
+      switch (a) {
+        case AddDocumentAttributeEntities e -> addEntities(e, c);
+        case AddDocumentAttributeEntity e -> addEntity(e, c);
+        case AddDocumentAttributeRelationship e -> addRelationship(e, c);
+        case AddDocumentAttributeClassification e -> addClassification(e, c);
+        case AddDocumentAttributeStandard e -> {
 
-        if (AttributeKeyReserved.CLASSIFICATION.getKey().equals(e.key())) {
-          if (!isEmpty(e.stringValue())) {
-            addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), e.stringValue(), null,
-                null);
+          if (AttributeKeyReserved.CLASSIFICATION.getKey().equals(e.key())) {
+            if (!isEmpty(e.stringValue())) {
+              addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), e.stringValue(),
+                  null, null, null);
+            }
+
+            notNull(e.stringValues()).forEach(v -> addToList(c,
+                DocumentAttributeValueType.CLASSIFICATION, e.key(), v, null, null, null));
+          } else {
+            addDocumentAttributeStandard(e, c, used);
           }
-
-          notNull(e.stringValues()).forEach(
-              v -> addToList(c, DocumentAttributeValueType.CLASSIFICATION, e.key(), v, null, null));
-        } else {
-          addDocumentAttributeStandard(e, c, used);
+        }
+        default -> {
         }
       }
     }
 
     return c;
+  }
+
+  private Date toDateValue(final String value) {
+    try {
+      return DateUtil.toDateFromString(value, ZoneOffset.UTC);
+    } catch (DateTimeException e) {
+      throw ValidationException.builder().error("dateValue", "invalid date value").build();
+    }
   }
 }

@@ -31,6 +31,8 @@ public enum DocumentAttributeValueType {
   BOOLEAN,
   /** Composite String. */
   COMPOSITE_STRING,
+  /** Date. */
+  DATE,
   /** Key Only. */
   KEY_ONLY,
   /** Number. */

@@ -47,9 +47,15 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.base64.Pagination;
@@ -74,6 +80,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.utils.StringUtils;
 
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,6 +129,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private final FolderIndexProcessor folderIndexProcesor;
   /** {@link SchemaService}. */
   private final SchemaService schemaService;
+  /** {@link AttributeService}. */
+  private final AttributeService attributeService;
 
   /**
    * constructor.
@@ -145,6 +154,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable,
         FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     this.schemaService = new SchemaServiceDynamodb(this.db);
+    this.attributeService = new AttributeServiceDynamodb(this.db);
   }
 
   private void addMatchAttributes(final List<Map<String, AttributeValue>> items,
@@ -190,7 +200,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         sr.setDocument(DocumentArtifact.of(item.getDocumentId(), null));
 
         QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
-            .projectionExpression("#key,valueType,stringValue,numberValue,booleanValue,documentId")
+            .projectionExpression(
+                "#key,valueType,stringValue,numberValue,booleanValue,dateValue,documentId")
             .expressionAttributeNames(Map.of("#key", "key"));
 
         AttributeValue pk = sr.fromS(sr.pk(siteId));
@@ -213,6 +224,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
           } else if (a.containsKey("numberValue")) {
             a.put("numberValues", List.of(a.get("numberValue")));
             a.remove("numberValue");
+          } else if (a.containsKey("dateValue")) {
+            a.put("dateValues", List.of(a.get("dateValue")));
+            a.remove("dateValue");
           }
         });
 
@@ -225,6 +239,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
                 Map.of("valueType", a.get("valueType"), "booleanValue", a.get("booleanValue")));
             case NUMBER -> attributeFields.put((String) a.get("key"),
                 Map.of("valueType", a.get("valueType"), "numberValues", a.get("numberValues")));
+            case DATE -> attributeFields.put((String) a.get("key"),
+                Map.of("valueType", a.get("valueType"), "dateValues", a.get("dateValues")));
             case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
               attributeFields.put((String) a.get("key"),
                   Map.of("stringValues", a.get("stringValues"), "valueType", a.get("valueType")));
@@ -241,7 +257,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private SearchAttributeCriteria createAttributesCriteria(final String siteId,
       final SearchQuery query) throws ValidationException {
 
-    List<SearchAttributeCriteria> attributes = query.attributes();
+    List<SearchAttributeCriteria> attributes =
+        query.attributes().stream().map(a -> normalizeSearchAttributeCriteria(siteId, a)).toList();
     SchemaCompositeKeyRecord compositeKey = validateSearchAttributeCriteria(siteId, attributes);
     return new SearchAttributesToCriteria(compositeKey).apply(attributes);
   }
@@ -546,6 +563,10 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         values.put("stringValue", attributeMatch.get("stringValue").s());
         break;
 
+      case DATE:
+        values.put("dateValue", attributeMatch.get("dateValue").s());
+        break;
+
       default:
         break;
     }
@@ -647,7 +668,9 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
 
-      SearchAttributeCriteria search = query.attribute();
+      SearchAttributeCriteria search =
+          query.attribute() != null ? normalizeSearchAttributeCriteria(siteId, query.attribute())
+              : null;
 
       if (!notNull(query.attributes()).isEmpty()) {
 
@@ -840,8 +863,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
         boolean match = false;
 
-        if (a.containsKey("stringValue")) {
-          String s = a.get("stringValue").s();
+        if (a.containsKey("stringValue") || a.containsKey("dateValue")) {
+          String s = a.containsKey("dateValue") ? a.get("dateValue").s() : a.get("stringValue").s();
           match = start.compareTo(s) <= 0 && s.compareTo(end) <= 0;
         }
 
@@ -1232,6 +1255,55 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     r.put("matchedTags", matchedTags);
     r.remove("matchedTag");
+  }
+
+  private SearchAttributeCriteria normalizeSearchAttributeCriteria(final String siteId,
+      final SearchAttributeCriteria search) {
+
+    AttributeDataType dataType = getAttributeDataType(siteId, search.key());
+    boolean isDate = AttributeDataType.DATE.equals(dataType)
+        || search.range() != null && "date".equalsIgnoreCase(search.range().type());
+
+    if (isDate) {
+      return createDateSearchCriteria(search);
+    }
+
+    return search;
+  }
+
+  private static SearchAttributeCriteria createDateSearchCriteria(
+      final SearchAttributeCriteria search) {
+
+    try {
+      String eq = !Strings.isEmpty(search.eq()) ? DateUtil.normalizeDateValue(search.eq()) : null;
+      Collection<String> eqOr =
+          search.eqOr() != null ? search.eqOr().stream().map(DateUtil::normalizeDateValue).toList()
+              : null;
+
+      SearchTagCriteriaRange range = search.range();
+      if (range != null) {
+        String start =
+            !Strings.isEmpty(range.start()) ? DateUtil.normalizeDateValue(range.start()) : null;
+        String end =
+            !Strings.isEmpty(range.end()) ? DateUtil.normalizeDateValue(range.end()) : null;
+        range = new SearchTagCriteriaRange(start, end, range.type());
+      }
+
+      return new SearchAttributeCriteria(search.key(), search.beginsWith(), eq, eqOr, range);
+    } catch (DateTimeException e) {
+      throw ValidationException.builder().error(search.key(), "invalid date value").build();
+    }
+  }
+
+  private AttributeDataType getAttributeDataType(final String siteId, final String key) {
+    AttributeRecord record = this.attributeService.getAttribute(siteId, key);
+
+    if (record != null) {
+      return record.getDataType();
+    }
+
+    AttributeKeyReserved reserved = AttributeKeyReserved.find(key);
+    return reserved != null ? reserved.getDataType() : null;
   }
 
   private void validate(final SearchAttributeCriteria search) throws ValidationException {

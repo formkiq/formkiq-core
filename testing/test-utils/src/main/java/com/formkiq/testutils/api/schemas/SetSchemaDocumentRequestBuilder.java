@@ -112,6 +112,20 @@ public class SetSchemaDocumentRequestBuilder implements HttpRequestBuilder<SetRe
   }
 
   /**
+   * Add Required Attribute with Default Value.
+   *
+   * @param key {@link String}
+   * @param defaultValue {@link String}
+   * @return SetDocumentAttributesRequestBuilder
+   */
+  public SetSchemaDocumentRequestBuilder addRequiredAttribute(final String key,
+      final String defaultValue) {
+    attributes.addRequiredItem(
+        new AddAttributeSchemaRequired().attributeKey(key).defaultValue(defaultValue));
+    return this;
+  }
+
+  /**
    * Add Required Entity Attribute.
    *
    * @param key {@link String}

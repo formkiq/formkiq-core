@@ -32,6 +32,8 @@ import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
+import java.util.List;
+
 /**
  * Builder for {@link SetDocumentAttributeRequest}.
  */
@@ -52,6 +54,28 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
   public SetDocumentAttributeValueRequestBuilder(final DocumentArtifact documentArtifact) {
     this.request = new SetDocumentAttributeRequest();
     this.document = documentArtifact;
+  }
+
+  /**
+   * Add Date Attribute Value.
+   *
+   * @param dateValue {@link String}
+   * @return SetDocumentAttributeRequestBuilder
+   */
+  public SetDocumentAttributeValueRequestBuilder dateValue(final String dateValue) {
+    this.request.setAttribute(new AddDocumentAttributeValue().dateValue(dateValue));
+    return this;
+  }
+
+  /**
+   * Add Date Attribute Values.
+   *
+   * @param dateValues {@link List} {@link String}
+   * @return SetDocumentAttributeRequestBuilder
+   */
+  public SetDocumentAttributeValueRequestBuilder dateValues(final List<String> dateValues) {
+    this.request.setAttribute(new AddDocumentAttributeValue().dateValues(dateValues));
+    return this;
   }
 
   /**

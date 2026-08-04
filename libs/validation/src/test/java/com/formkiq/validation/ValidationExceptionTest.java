@@ -21,31 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.attributes;
+package com.formkiq.validation;
 
-import com.formkiq.graalvm.annotations.Reflectable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * Attribute Data Type.
- */
-@Reflectable
-public enum AttributeDataType {
-  /** {@link Boolean}. */
-  BOOLEAN,
-  /** Date. */
-  DATE,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** {@link String}. */
-  STRING,
-  /** Publication. */
-  PUBLICATION,
-  /** Watermark. */
-  WATERMARK,
-  /** Relationship. */
-  RELATIONSHIP,
-  /** Entity. */
-  ENTITY;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+/** Unit tests for {@link ValidationException}. */
+public class ValidationExceptionTest {
+
+  /** Builder creates validation exception with keyed errors. */
+  @Test
+  void testBuilder01() {
+    // when
+    ValidationException exception = ValidationException.builder()
+        .error("dueDate", "invalid date value").error("missing value").build();
+
+    // then
+    List<ValidationError> errors = exception.errors().stream().toList();
+    assertEquals("invalid date value,missing value", exception.getMessage());
+    assertEquals(2, errors.size());
+    assertEquals("dueDate", errors.get(0).key());
+    assertEquals("invalid date value", errors.get(0).error());
+    assertNull(errors.get(1).key());
+    assertEquals("missing value", errors.get(1).error());
+  }
 }

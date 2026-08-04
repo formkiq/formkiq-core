@@ -23,14 +23,76 @@
  */
 package com.formkiq.validation;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /** {@link Exception} that will return a 400 error. */
 public class ValidationException extends RuntimeException {
 
+  /** Builder for {@link ValidationException}. */
+  public static class Builder {
+
+    /** {@link ValidationError}. */
+    private final List<ValidationError> errors = new ArrayList<>();
+
+    /**
+     * Build {@link ValidationException}.
+     *
+     * @return {@link ValidationException}
+     */
+    public ValidationException build() {
+      return new ValidationException(this.errors);
+    }
+
+    /**
+     * Add {@link ValidationError}.
+     *
+     * @param error {@link String}
+     * @return {@link Builder}
+     */
+    public Builder error(final String error) {
+      this.errors.add(new ValidationErrorImpl().error(error));
+      return this;
+    }
+
+    /**
+     * Add {@link ValidationError}.
+     *
+     * @param key {@link String}
+     * @param error {@link String}
+     * @return {@link Builder}
+     */
+    public Builder error(final String key, final String error) {
+      this.errors.add(new ValidationErrorImpl().key(key).error(error));
+      return this;
+    }
+
+    /**
+     * Add {@link ValidationError}.
+     *
+     * @param validationErrors {@link Collection} {@link ValidationError}
+     * @return {@link Builder}
+     */
+    public Builder errors(final Collection<ValidationError> validationErrors) {
+      this.errors.addAll(validationErrors);
+      return this;
+    }
+  }
+
   /** serialVersionUID. */
   private static final long serialVersionUID = -3307615320614370509L;
+
+  /**
+   * Create {@link Builder}.
+   *
+   * @return {@link Builder}
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
   /** {@link ValidationError}. */
   private final Collection<ValidationError> errors;
 

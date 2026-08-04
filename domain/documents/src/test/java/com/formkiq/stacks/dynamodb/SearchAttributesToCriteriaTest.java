@@ -291,4 +291,26 @@ public class SearchAttributesToCriteriaTest {
             + "B::222::55,B::222::66,C::111::55,C::111::66,C::222::55,C::222::66",
         String.join(",", sac.eqOr()));
   }
+
+  /**
+   * Single attribute Date Range.
+   */
+  @Test
+  void testAttribute12() {
+    // given
+    SearchAttributeCriteria attribute = new SearchAttributeCriteria("dueDate", null, null, null,
+        new SearchTagCriteriaRange("2026-08-04", "2026-08-05T13:30:00Z", "date"));
+
+    // when
+    SearchAttributeCriteria sac = apply(List.of(attribute));
+
+    // then
+    assertEquals("dueDate", sac.key());
+    assertNull(sac.eq());
+    assertEquals("date", sac.range().type());
+    assertEquals("2026-08-04T00:00:00Z", sac.range().start());
+    assertEquals("2026-08-05T13:30:00Z", sac.range().end());
+    assertNull(sac.beginsWith());
+    assertNull(sac.eqOr());
+  }
 }

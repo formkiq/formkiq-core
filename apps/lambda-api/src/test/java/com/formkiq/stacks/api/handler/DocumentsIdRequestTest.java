@@ -55,6 +55,7 @@ import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeDataType;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
@@ -77,15 +78,19 @@ import com.formkiq.module.http.HttpHeaders;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentAttributeValueRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentTagRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.documents.RestoreDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentAttributeValueRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.BeforeEach;
@@ -700,6 +705,109 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
       assertEquals(1, getSoftDeletedDocuments(siteId).size());
     }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} with DATE attribute
+   * value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDocumentDeleteAttributeValueDate01() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    String attributeValue = "2026-08-04";
+    final String normalizedAttributeValue = "2026-08-04T00:00:00Z";
+
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
+
+    AddDocumentResponse response = new AddDocumentRequestBuilder().content()
+        .addDateAttribute(attributeKey, attributeValue).submitOk(client, siteId).response();
+    DocumentArtifact document = DocumentArtifact.of(response.getDocumentId(), null);
+
+    List<DocumentAttribute> attributes =
+        new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+    assertEquals(1, attributes.size());
+    assertEquals(attributeKey, attributes.getFirst().getKey());
+    assertEquals(AttributeValueType.DATE, attributes.getFirst().getValueType());
+    assertEquals(normalizedAttributeValue, attributes.getFirst().getDateValue());
+
+    // when
+    new DeleteDocumentAttributeValueRequestBuilder(document, attributeKey, attributeValue)
+        .submitOk(client, siteId);
+
+    // then
+    attributes = new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+    assertEquals(0, attributes.size());
+  }
+
+  /**
+   * PATCH /documents/{documentId}/attributes/{attributeKey} with single DATE attribute value.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDocumentSetAttributeValueDate01() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
+
+    AddDocumentResponse response = new AddDocumentRequestBuilder().content()
+        .addDateAttribute(attributeKey, "2026-08-04").submitOk(client, siteId).response();
+    DocumentArtifact document = DocumentArtifact.of(response.getDocumentId(), null);
+
+    // when
+    new SetDocumentAttributeValueRequestBuilder(document).setKey(attributeKey)
+        .dateValue("2026-08-06").submitOk(client, siteId);
+
+    // then
+    List<DocumentAttribute> attributes =
+        new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+    assertEquals(1, attributes.size());
+    assertEquals(attributeKey, attributes.getFirst().getKey());
+    assertEquals(AttributeValueType.DATE, attributes.getFirst().getValueType());
+    assertEquals("2026-08-06T00:00:00Z", attributes.getFirst().getDateValue());
+    assertTrue(notNull(attributes.getFirst().getDateValues()).isEmpty());
+  }
+
+  /**
+   * PATCH /documents/{documentId}/attributes/{attributeKey} with multiple DATE attribute values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDocumentSetAttributeValueDate02() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String attributeKey = "dueDate";
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
+
+    AddDocumentResponse response = new AddDocumentRequestBuilder().content()
+        .addDateAttribute(attributeKey, "2026-08-04").submitOk(client, siteId).response();
+    DocumentArtifact document = DocumentArtifact.of(response.getDocumentId(), null);
+
+    // when
+    new SetDocumentAttributeValueRequestBuilder(document).setKey(attributeKey)
+        .dateValues(List.of("2026-08-06", "2026-08-07T10:15:30Z")).submitOk(client, siteId);
+
+    // then
+    List<DocumentAttribute> attributes =
+        new GetDocumentAttributesRequestBuilder(document).getAttributes(client, siteId);
+    assertEquals(1, attributes.size());
+    assertEquals(attributeKey, attributes.getFirst().getKey());
+    assertEquals(AttributeValueType.DATE, attributes.getFirst().getValueType());
+    assertNull(attributes.getFirst().getDateValue());
+    assertEquals(List.of("2026-08-06T00:00:00Z", "2026-08-07T10:15:30Z"),
+        attributes.getFirst().getDateValues());
   }
 
   /**

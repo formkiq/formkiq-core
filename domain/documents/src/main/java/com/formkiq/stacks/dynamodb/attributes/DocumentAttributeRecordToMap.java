@@ -99,6 +99,22 @@ public class DocumentAttributeRecordToMap implements
     this.doc = document;
   }
 
+  private void addDateValues(final Map<String, Object> lastValues,
+      final DocumentAttributeRecord a) {
+    if (lastValues.containsKey("dateValue")) {
+
+      List<String> s = new ArrayList<>();
+      s.add((String) lastValues.get("dateValue"));
+      s.add(a.getDateValueAsString());
+
+      lastValues.remove("dateValue");
+      lastValues.put("dateValues", s);
+
+    } else if (lastValues.containsKey("dateValues")) {
+      ((List<String>) lastValues.get("dateValues")).add(a.getDateValueAsString());
+    }
+  }
+
   private void addEntityValue(final DocumentAttributeRecord a,
       final Map<String, Map<String, AttributeValue>> entityMap,
       final Map<String, Object> lastValues) {
@@ -206,6 +222,10 @@ public class DocumentAttributeRecordToMap implements
         } else if (a.getNumberValue() != null) {
 
           addNumberValues(lastValues, a);
+
+        } else if (!isEmpty(a.getDateValueAsString())) {
+
+          addDateValues(lastValues, a);
         }
 
       } else {

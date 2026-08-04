@@ -52,7 +52,9 @@ import com.formkiq.client.model.AddDocumentMetadata;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentTag;
+import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
+import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.Document;
@@ -1798,6 +1800,107 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
                 + "\"error\":\"'checksumType' required when 'checksum' is set\"}]}",
             e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * POST /documents with single DATE attribute value.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostDateAttribute01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "dueDate";
+      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+          new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+      // when
+      String documentId =
+          new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
+              .submitOk(client, siteId).response().getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.getFirst();
+      assertEquals(attributeKey, attribute.getKey());
+      assertEquals(AttributeValueType.DATE, attribute.getValueType());
+      assertEquals("2026-08-04T00:00:00Z", attribute.getDateValue());
+      assertTrue(notNull(attribute.getDateValues()).isEmpty());
+    }
+  }
+
+  /**
+   * POST /documents with multiple DATE attribute values.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostDateAttribute02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "dueDate";
+      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+          new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+      // when
+      String documentId = new AddDocumentRequestBuilder().content()
+          .addDateAttribute(attributeKey, List.of("2026-08-04", "2026-08-05T13:30:00Z"))
+          .submitOk(client, siteId).response().getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+
+      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      assertEquals(1, attributes.size());
+
+      DocumentAttribute attribute = attributes.getFirst();
+      assertEquals(attributeKey, attribute.getKey());
+      assertEquals(AttributeValueType.DATE, attribute.getValueType());
+      assertNull(attribute.getDateValue());
+      assertEquals(List.of("2026-08-04T00:00:00Z", "2026-08-05T13:30:00Z"),
+          attribute.getDateValues());
+    }
+  }
+
+  /**
+   * POST /documents rejects invalid DATE attribute value.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPostDateAttributeInvalid01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String attributeKey = "dueDate";
+      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
+          new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+
+      // when
+      var response = new AddDocumentRequestBuilder().content()
+          .addDateAttribute(attributeKey, "not-a-date").submit(client, siteId);
+
+      // then
+      assertNotNull(response.exception());
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+      assertEquals("{\"errors\":[{\"key\":\"dateValue\",\"error\":\"invalid date value\"}]}",
+          response.exception().getResponseBody());
     }
   }
 

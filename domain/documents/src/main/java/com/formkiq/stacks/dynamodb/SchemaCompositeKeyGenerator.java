@@ -152,6 +152,7 @@ public class SchemaCompositeKeyGenerator {
                 }
                 case BOOLEAN ->
                   newCompositeValues.get(index).add(String.valueOf(c.getBooleanValue()));
+                case DATE -> newCompositeValues.get(index).add(c.getDateValueAsString());
                 default ->
                   throw new IllegalArgumentException("Unexpected value: " + c.getValueType());
               }

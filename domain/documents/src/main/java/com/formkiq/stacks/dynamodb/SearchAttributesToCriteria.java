@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteriaRange;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.stacks.dynamodb.schemas.SchemaCompositeKeyRecord;
 
@@ -150,6 +151,9 @@ public class SearchAttributesToCriteria
         start = range.start();
         end = range.end();
       }
+    } else if ("date".equalsIgnoreCase(range.type())) {
+      start = DateUtil.normalizeDateValue(range.start());
+      end = DateUtil.normalizeDateValue(range.end());
     }
 
     String s = !isEmpty(eq) ? eq + DbKeys.COMPOSITE_KEY_DELIM + start : start;

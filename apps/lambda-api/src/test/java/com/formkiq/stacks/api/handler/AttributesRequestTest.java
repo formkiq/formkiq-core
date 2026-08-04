@@ -698,6 +698,36 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * POST /attributes with DATE data type.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testAddAttributesDate01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(null, SITE_ID)) {
+
+      String key = "dueDate_" + (siteId != null ? siteId : "default");
+      setBearerToken(siteId);
+      AddAttributeRequest req = new AddAttributeRequest()
+          .attribute(new AddAttribute().key(key).dataType(AttributeDataType.DATE));
+
+      // when
+      AddResponse response = this.attributesApi.addAttribute(req, siteId);
+
+      // then
+      assertEquals("Attribute '" + key + "' created", response.getMessage());
+
+      GetAttributeResponse getResponse = this.attributesApi.getAttribute(key, siteId);
+      Attribute attribute = getResponse.getAttribute();
+      assertNotNull(attribute);
+      assertEquals(key, attribute.getKey());
+      assertEquals(AttributeType.STANDARD, attribute.getType());
+      assertEquals(AttributeDataType.DATE, attribute.getDataType());
+    }
+  }
+
+  /**
    * POST /attributes watermark with font size.
    *
    */

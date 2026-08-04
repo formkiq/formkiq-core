@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */
   private Boolean booleanValue;
+  /** Date valueAttribute. */
+  private String dateValue;
   /** Attribute Document Id. */
   private String documentId;
   /** Artifact Id. */
@@ -153,6 +156,10 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       map.put("booleanValue", AttributeValue.fromBool(this.booleanValue));
     }
 
+    if (this.dateValue != null) {
+      map.put("dateValue", fromS(this.dateValue));
+    }
+
     if (this.numberValue != null) {
       map.put("numberValue", AttributeValue.fromN(formatDouble(this.numberValue)));
     }
@@ -187,6 +194,10 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
       if (attrs.containsKey("booleanValue")) {
         record.setBooleanValue(bb(attrs, "booleanValue"));
+      }
+
+      if (attrs.containsKey("dateValue")) {
+        record.dateValue = ss(attrs, "dateValue");
       }
 
       if (attrs.containsKey("numberValue")) {
@@ -251,6 +262,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
     switch (this.valueType) {
       case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
         val += this.stringValue;
+      case DATE -> val += this.dateValue;
       case BOOLEAN -> val += this.booleanValue;
       case NUMBER -> val += formatDouble(this.numberValue);
       case KEY_ONLY, PUBLICATION, WATERMARK -> {
@@ -265,6 +277,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
     return switch (this.valueType) {
       case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY -> truncateSk(this.stringValue);
+      case DATE -> truncateSk(this.dateValue);
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
       case CLASSIFICATION, PUBLICATION -> truncateSk(this.stringValue);
@@ -411,6 +424,36 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   }
 
   /**
+   * Get Date value.
+   *
+   * @return {@link Date}
+   */
+  public Date getDateValue() {
+    return this.dateValue != null ? DateUtil.toDateFromString(this.dateValue, ZoneOffset.UTC)
+        : null;
+  }
+
+  /**
+   * Get Date value as String.
+   *
+   * @return {@link String}
+   */
+  public String getDateValueAsString() {
+    return this.dateValue;
+  }
+
+  /**
+   * Set Date value.
+   *
+   * @param value {@link Date}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setDateValue(final Date value) {
+    this.dateValue = value != null ? DateUtil.getInIso8601Format(value) : null;
+    return this;
+  }
+
+  /**
    * Update Value Type.
    *
    * @return DocumentAttributeRecord
@@ -420,6 +463,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
     if (!isEmpty(this.stringValue)) {
       this.valueType = DocumentAttributeValueType.STRING;
+    } else if (!isEmpty(this.dateValue)) {
+      this.valueType = DocumentAttributeValueType.DATE;
     } else if (this.numberValue != null) {
       this.valueType = DocumentAttributeValueType.NUMBER;
     } else if (this.booleanValue != null) {
@@ -506,6 +551,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
     private Boolean booleanValue;
     /** Number Value. */
     private Double numberValue;
+    /** Date Value. */
+    private String dateValue;
     /** Inserted Date. */
     private Date insertedDate;
 
@@ -534,8 +581,20 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       r.setStringValue(stringValue);
       r.setBooleanValue(booleanValue);
       r.setNumberValue(numberValue);
+      r.dateValue = dateValue;
       r.setInsertedDate(insertedDate);
       return r;
+    }
+
+    /**
+     * Set Date Value.
+     * 
+     * @param value {@link Date}
+     * @return Builder
+     */
+    public Builder dateValue(final Date value) {
+      this.dateValue = value != null ? DateUtil.getInIso8601Format(value) : null;
+      return this;
     }
 
     /**

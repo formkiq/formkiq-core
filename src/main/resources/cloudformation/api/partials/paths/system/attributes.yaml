@@ -311,6 +311,7 @@ components:
         - STRING
         - NUMBER
         - BOOLEAN
+        - DATE
         - KEY_ONLY
         - PUBLICATION
         - WATERMARK
