@@ -208,6 +208,16 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValue:
+          type: "string"
+          format: "date-time"
+          description: "Attribute with date value"
+        dateValues:
+          type: "array"
+          description: "Attribute with date values"
+          items:
+            type: "string"
+            format: "date-time"
 
 
     #@overlay/match missing_ok=True
@@ -276,6 +286,16 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValue:
+          type: "string"
+          format: "date-time"
+          description: "Attribute with date value"
+        dateValues:
+          type: "array"
+          description: "Attribute with date values"
+          items:
+            type: "string"
+            format: "date-time"
         insertedDate:
           type: "string"
           description: "Inserted Timestamp"
@@ -298,6 +318,7 @@ components:
       description: Attribute Value Type
       enum:
         - BOOLEAN
+        - DATE
         - KEY_ONLY
         - NUMBER
         - STRING
@@ -357,6 +378,16 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValue:
+          type: "string"
+          format: "date-time"
+          description: "Attribute with date value"
+        dateValues:
+          type: "array"
+          description: "Attribute with date values"
+          items:
+            type: "string"
+            format: "date-time"
 
     #@overlay/match missing_ok=True
     AddDocumentAttributeClassification:

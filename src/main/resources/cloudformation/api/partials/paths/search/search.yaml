@@ -198,6 +198,10 @@ components:
         booleanValue:
           type: "boolean"
           description: "Search for boolean value"
+        dateValue:
+          type: "string"
+          format: "date-time"
+          description: "Search for date value"
 
     #@overlay/match missing_ok=True
     SearchRangeDataType:
@@ -206,6 +210,7 @@ components:
       enum:
         - STRING
         - NUMBER
+        - DATE
       default: "STRING"
 
     #@overlay/match missing_ok=True
@@ -561,6 +566,12 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValues:
+          type: "array"
+          description: "Attribute with date values"
+          items:
+            type: "string"
+            format: "date-time"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
 
@@ -594,6 +605,10 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValue:
+          type: "string"
+          format: "date-time"
+          description: "Attribute with date value"
 
     #@overlay/match missing_ok=True
     DocumentFulltextRequest:
@@ -698,6 +713,12 @@ components:
         booleanValue:
           type: "boolean"
           description: "Attribute with boolean value"
+        dateValues:
+          type: "array"
+          description: "Attribute with date values"
+          items:
+            type: "string"
+            format: "date-time"
         valueType:
           $ref: "#/components/schemas/AttributeValueType"
 
