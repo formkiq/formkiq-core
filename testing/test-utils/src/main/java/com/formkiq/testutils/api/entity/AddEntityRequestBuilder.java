@@ -34,6 +34,7 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Builder for {@link AddEntityRequest}.
@@ -81,6 +82,13 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
       final Boolean booleanValue) {
     addEntity
         .addAttributesItem(new AddEntityAttribute().key(attributeKey).booleanValue(booleanValue));
+    return this;
+  }
+
+  public AddEntityRequestBuilder addAttribute(final String attributeKey,
+      final List<String> stringValues) {
+    addEntity
+        .addAttributesItem(new AddEntityAttribute().key(attributeKey).stringValues(stringValues));
     return this;
   }
 

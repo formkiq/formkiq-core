@@ -26,6 +26,8 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 
+import java.util.Collection;
+
 /**
  * Derived Document Attribute that returns a {@link String}.
  *
@@ -36,16 +38,18 @@ public interface DerivedDocumentAttributeString extends DerivedDocumentAttribute
    *
    * @param entityRecord {@link EntityRecord}
    * @param document {@link DocumentRecord}
+   * @param documentAttributes {@link Collection} of {@link DocumentAttributeRecord}
    * @return T
    */
-  String calculate(EntityRecord entityRecord, DocumentRecord document);
+  String calculate(EntityRecord entityRecord, DocumentRecord document,
+      Collection<DocumentAttributeRecord> documentAttributes);
 
   default DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document) {
+      DocumentRecord document, Collection<DocumentAttributeRecord> documentAttributes) {
 
     return new DocumentAttributeRecord()
         .setDocument(DocumentArtifact.of(document.documentId(), document.artifactId()))
         .setUserId("System").setKey(getAttributeKey())
-        .setStringValue(calculate(entityRecord, document)).updateValueType();
+        .setStringValue(calculate(entityRecord, document, documentAttributes)).updateValueType();
   }
 }

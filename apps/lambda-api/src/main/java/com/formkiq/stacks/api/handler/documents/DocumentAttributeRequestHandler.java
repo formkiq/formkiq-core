@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,9 +38,9 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.QueryDocumentAttributesByKey;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
-import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
@@ -67,9 +68,12 @@ public class DocumentAttributeRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   private static Collection<Map<String, Object>> findDerivedAttribute(
-      final AwsServiceCache awsservice, final DynamoDbService db, final String tableName,
-      final String siteId, final DocumentRecord document, final String attributeKey,
+      final AwsServiceCache awsservice, final String tableName, final String siteId,
+      final DocumentRecord document, final String attributeKey,
       final DocumentAttributeRecordToMap toMap) {
+
+    final DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    final DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
     final DocumentArtifact documentArtifact =
         DocumentArtifact.of(document.documentId(), document.artifactId());
@@ -85,8 +89,8 @@ public class DocumentAttributeRequestHandler
 
         var derivedAttribute = presetEntity.get().findDerivedAttribute(attributeKey)
             .filter(Predicate.not(StoredDerivedAttribute.class::isInstance));
-        if (derivedAttribute.isPresent()) {
 
+        if (derivedAttribute.isPresent()) {
 
           var documentAttributes =
               new QueryDocumentAttributesByKey(documentArtifact, presetEntity.get().getName())
@@ -94,22 +98,41 @@ public class DocumentAttributeRequestHandler
 
           if (!documentAttributes.items().isEmpty()) {
 
-            var documentAttribute = documentAttributes.items().get(0);
+            var documentAttribute = documentAttributes.items().getFirst();
             var stringValue = DynamoDbTypes.toString(documentAttribute.get("stringValue"));
 
             var entityKeyValue = DocumentAttributeEntityKeyValue.fromString(stringValue);
             var entityRecord = new FindEntityById().find(db, tableName, siteId, entityKeyValue);
 
             if (entityRecord != null) {
-              var documentAttributeRecord =
-                  derivedAttribute.get().getDocumentAttributeRecord(entityRecord, document);
+              var derivedDocumentAttribute = derivedAttribute.get();
+
+              var documentAttributeKeys =
+                  derivedDocumentAttribute.getDocumentAttributeKeys(entityRecord);
+              var sourceDocumentAttributes = findDocumentAttributes(documentService, siteId,
+                  documentArtifact, documentAttributeKeys);
+
+              var documentAttributeRecord = derivedDocumentAttribute
+                  .getDocumentAttributeRecord(entityRecord, document, sourceDocumentAttributes);
               map = toMap.apply(siteId, List.of(documentAttributeRecord));
             }
           }
         }
       }
     }
+
     return map;
+  }
+
+  private static List<DocumentAttributeRecord> findDocumentAttributes(
+      final DocumentService documentService, final String siteId,
+      final DocumentArtifact documentArtifact, final Collection<String> documentAttributeKeys) {
+    List<DocumentAttributeRecord> list = new ArrayList<>();
+    documentAttributeKeys.forEach(a -> {
+      list.addAll(documentService.findDocumentAttribute(siteId, documentArtifact, a));
+    });
+
+    return list;
   }
 
   private static Optional<PresetEntity> findPresetEntityByDerivedAttribute(
@@ -165,7 +188,6 @@ public class DocumentAttributeRequestHandler
 
     String attributeKey = event.getPathParameter("attributeKey");
     String siteId = authorization.getSiteId();
-    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     String tableName = awsservice.environment("DOCUMENTS_TABLE");
 
     DocumentRecord document = verifyDocument(awsservice, siteId, documentId, artifactId);
@@ -179,7 +201,7 @@ public class DocumentAttributeRequestHandler
 
     if (map.isEmpty()) {
 
-      map = findDerivedAttribute(awsservice, db, tableName, siteId, document, attributeKey, toMap);
+      map = findDerivedAttribute(awsservice, tableName, siteId, document, attributeKey, toMap);
 
       if (map.isEmpty()) {
         throw new NotFoundException(

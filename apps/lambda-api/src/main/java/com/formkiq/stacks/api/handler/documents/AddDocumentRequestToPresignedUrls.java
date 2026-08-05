@@ -159,8 +159,8 @@ public class AddDocumentRequestToPresignedUrls
 
           if (RetentionMode.GOVERNANCE.name().equals(retentionMode)) {
             map.put(OBJECT_LOCK_RETENTION_MODE, RetentionMode.GOVERNANCE.name());
-            map.put(OBJECT_LOCK_RETAIN_UNTIL_DATE,
-                new RetentionEffectiveEndDateAttribute().calculate(entity, documentRecord));
+            map.put(OBJECT_LOCK_RETAIN_UNTIL_DATE, new RetentionEffectiveEndDateAttribute()
+                .calculate(entity, documentRecord, documentAttributes));
           }
         }
       }

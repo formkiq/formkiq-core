@@ -68,11 +68,14 @@ public enum AttributeKeyReserved {
   /** Agreement Currency. */
   AGREEMENT_CURRENCY("AgreementCurrency"),
   /** Agreement Effective Date. */
-  AGREEMENT_EFFECTIVE_DATE("AgreementEffectiveDate"),
+  AGREEMENT_EFFECTIVE_DATE("AgreementEffectiveDate", AttributeType.STANDARD, AttributeDataType.DATE,
+      null),
   /** Agreement Expiration Date. */
-  AGREEMENT_EXPIRATION_DATE("AgreementExpirationDate"),
+  AGREEMENT_EXPIRATION_DATE("AgreementExpirationDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Execution Date. */
-  AGREEMENT_EXECUTION_DATE("AgreementExecutionDate"),
+  AGREEMENT_EXECUTION_DATE("AgreementExecutionDate", AttributeType.STANDARD, AttributeDataType.DATE,
+      null),
   /** Agreement Auto Renew. */
   AGREEMENT_AUTO_RENEW("AgreementAutoRenew", AttributeType.STANDARD, AttributeDataType.BOOLEAN,
       null),
@@ -272,11 +275,14 @@ public enum AttributeKeyReserved {
   AGREEMENT_OBLIGATION_RESPONSIBLE_CONTACT("AgreementObligationResponsibleContact",
       AttributeType.STANDARD, AttributeDataType.ENTITY, null),
   /** Agreement Obligation Due Date. */
-  AGREEMENT_OBLIGATION_DUE_DATE("AgreementObligationDueDate"),
+  AGREEMENT_OBLIGATION_DUE_DATE("AgreementObligationDueDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Obligation Start Date. */
-  AGREEMENT_OBLIGATION_START_DATE("AgreementObligationStartDate"),
+  AGREEMENT_OBLIGATION_START_DATE("AgreementObligationStartDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Obligation End Date. */
-  AGREEMENT_OBLIGATION_END_DATE("AgreementObligationEndDate"),
+  AGREEMENT_OBLIGATION_END_DATE("AgreementObligationEndDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Obligation Is Recurring. */
   AGREEMENT_OBLIGATION_IS_RECURRING("AgreementObligationIsRecurring", AttributeType.STANDARD,
       AttributeDataType.BOOLEAN, null),
@@ -319,9 +325,11 @@ public enum AttributeKeyReserved {
   /** Agreement Milestone Milestone Type. */
   AGREEMENT_MILESTONE_MILESTONE_TYPE("AgreementMilestoneMilestoneType"),
   /** Agreement Milestone Due Date. */
-  AGREEMENT_MILESTONE_DUE_DATE("AgreementMilestoneDueDate"),
+  AGREEMENT_MILESTONE_DUE_DATE("AgreementMilestoneDueDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Milestone Completed Date. */
-  AGREEMENT_MILESTONE_COMPLETED_DATE("AgreementMilestoneCompletedDate"),
+  AGREEMENT_MILESTONE_COMPLETED_DATE("AgreementMilestoneCompletedDate", AttributeType.STANDARD,
+      AttributeDataType.DATE, null),
   /** Agreement Milestone Amount. */
   AGREEMENT_MILESTONE_AMOUNT("AgreementMilestoneAmount", AttributeType.STANDARD,
       AttributeDataType.NUMBER, null),
@@ -377,6 +385,35 @@ public enum AttributeKeyReserved {
   /** Retention Effective Status. */
   RETENTION_EFFECTIVE_STATUS("RetentionEffectiveStatus", AttributeType.STANDARD,
       AttributeDataType.STRING, AttributeDerivedType.STANDARD),
+  /** Reminder Policy. */
+  REMINDER_POLICY("ReminderPolicy", AttributeType.STANDARD, AttributeDataType.ENTITY, null),
+  /** Reminder Date Source Attribute Key. */
+  REMINDER_DATE_SOURCE_ATTRIBUTE_KEY("ReminderDateSourceAttributeKey", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Period In Days. */
+  REMINDER_PERIOD_IN_DAYS("ReminderPeriodInDays", AttributeType.STANDARD, AttributeDataType.NUMBER,
+      null),
+  /** Reminder Repeat Interval In Days. */
+  REMINDER_REPEAT_INTERVAL_IN_DAYS("ReminderRepeatIntervalInDays", AttributeType.STANDARD,
+      AttributeDataType.NUMBER, null),
+  /** Reminder Notification Type. */
+  REMINDER_NOTIFICATION_TYPE("ReminderNotificationType", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Notification To Cc. */
+  REMINDER_NOTIFICATION_TO_CC("ReminderNotificationToCc", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Notification To Bcc. */
+  REMINDER_NOTIFICATION_TO_BCC("ReminderNotificationToBcc", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Notification Subject. */
+  REMINDER_NOTIFICATION_SUBJECT("ReminderNotificationSubject", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Notification Text. */
+  REMINDER_NOTIFICATION_TEXT("ReminderNotificationText", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
+  /** Reminder Due Date. */
+  REMINDER_DUE_DATE("ReminderDueDate", AttributeType.STANDARD, AttributeDataType.DATE,
+      AttributeDerivedType.STANDARD),
   /** LLM User Prompt. */
   LLM_USER_PROMPT("UserPrompt"),
   /** LLM System Prompt. */
