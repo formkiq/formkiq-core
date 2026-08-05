@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
+import java.util.Collection;
 import java.util.List;
 
 import static com.formkiq.aws.dynamodb.DbKeys.COMPOSITE_KEY_DELIM;
@@ -49,7 +50,7 @@ public class RetentionDispositionCompositeAttribute extends DispositionDateAttri
 
   @Override
   public DocumentAttributeRecord getDocumentAttributeRecord(final EntityRecord entityRecord,
-      final DocumentRecord document) {
+      final DocumentRecord document, final Collection<DocumentAttributeRecord> documentAttributes) {
 
     var sourceType = getSourceType(entityRecord);
     var date = getDispositionField(entityRecord, document);
