@@ -25,19 +25,18 @@ package com.formkiq.stacks.dynamodb.attributes;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
-import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.aws.dynamodb.entity.AttributeValueToEntityTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityAttributeTransformer;
 import com.formkiq.aws.dynamodb.entity.EntityDocumentAttributeEntityKeyValueGet;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
-import com.formkiq.aws.dynamodb.documents.StoredDerivedAttribute;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -117,7 +116,8 @@ public class DocumentAttributeRecordToMap implements
 
   private void addEntityValue(final DocumentAttributeRecord a,
       final Map<String, Map<String, AttributeValue>> entityMap,
-      final Map<String, Object> lastValues) {
+      final Map<String, Object> lastValues,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
 
     if (DocumentAttributeValueType.ENTITY.equals(a.getValueType())
         && !isEmpty(a.getStringValue())) {
@@ -131,7 +131,7 @@ public class DocumentAttributeRecordToMap implements
         new EntityAttributeTransformer().apply(values);
 
         EntityRecord entityRecord = EntityRecord.fromAttributeMap(entityAttributes);
-        updateDervivedAttributes(entityRecord, a.getKey(), values);
+        updateDervivedAttributes(entityRecord, a.getKey(), values, documentAttributes);
 
         lastValues.put("entity", values);
       }
@@ -140,7 +140,8 @@ public class DocumentAttributeRecordToMap implements
 
   private void addEntityValues(final DocumentAttributeRecord a,
       final Map<String, Map<String, AttributeValue>> entityMap,
-      final Map<String, Object> lastValues) {
+      final Map<String, Object> lastValues,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
 
     if (DocumentAttributeValueType.ENTITY.equals(a.getValueType()) && !isEmpty(a.getStringValue())
         && entityMap.containsKey(a.getStringValue())) {
@@ -151,7 +152,7 @@ public class DocumentAttributeRecordToMap implements
       new EntityAttributeTransformer().apply(values);
 
       EntityRecord entityRecord = EntityRecord.fromAttributeMap(entityAttributes);
-      updateDervivedAttributes(entityRecord, a.getKey(), values);
+      updateDervivedAttributes(entityRecord, a.getKey(), values, documentAttributes);
 
       if (lastValues.containsKey("entity")) {
         List<Map<String, Object>> entities = new ArrayList<>();
@@ -217,7 +218,7 @@ public class DocumentAttributeRecordToMap implements
         if (!isEmpty(a.getStringValue())) {
 
           addStringValues(lastValues, a);
-          addEntityValues(a, entityMap, lastValues);
+          addEntityValues(a, entityMap, lastValues, attributes);
 
         } else if (a.getNumberValue() != null) {
 
@@ -239,7 +240,7 @@ public class DocumentAttributeRecordToMap implements
           lastValues.remove("inserteddate");
         }
 
-        addEntityValue(a, entityMap, lastValues);
+        addEntityValue(a, entityMap, lastValues, attributes);
 
         c.add(lastValues);
 
@@ -276,11 +277,10 @@ public class DocumentAttributeRecordToMap implements
   }
 
   private void updateDervivedAttributes(final EntityRecord entityRecord, final String key,
-      final Map<String, Object> values) {
+      final Map<String, Object> values,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
 
-    String retentionPolicyKey = AttributeKeyReserved.RETENTION_POLICY.getKey();
-
-    if (doc != null && retentionPolicyKey.equals(key)) {
+    if (doc != null) {
 
       Object rawAttributes = values.get("attributes");
       List<Map<String, Object>> attributes = new ArrayList<>(
@@ -289,13 +289,13 @@ public class DocumentAttributeRecordToMap implements
                   .collect(Collectors.toCollection(ArrayList::new))
               : List.of());
 
-      Optional<PresetEntity> o = new GetPresetEntity(awsServiceCache).apply(retentionPolicyKey);
+      Optional<PresetEntity> o = new GetPresetEntity(awsServiceCache).apply(key);
 
       o.ifPresent(presetEntityI -> presetEntityI.getDerivedAttributes().stream()
           .filter(Predicate.not(StoredDerivedAttribute.class::isInstance)).forEach(da -> {
 
             var transformer = new AttributeValueToEntityTransformer();
-            var dar = da.getDocumentAttributeRecord(entityRecord, doc);
+            var dar = da.getDocumentAttributeRecord(entityRecord, doc, documentAttributes);
             Map<String, Object> map = transformer.apply(dar.getAttributes(null));
             map.remove("userId");
             map.remove("entityId");

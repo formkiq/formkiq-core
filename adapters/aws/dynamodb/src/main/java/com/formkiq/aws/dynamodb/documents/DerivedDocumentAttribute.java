@@ -26,6 +26,9 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 
+import java.util.Collection;
+import java.util.Collections;
+
 /**
  * Represents a document attribute whose value is derived dynamically from document data rather than
  * stored explicitly.
@@ -41,12 +44,23 @@ public interface DerivedDocumentAttribute {
   String getAttributeKey();
 
   /**
-   * Create {@link DocumentAttributeRecord}.
+   * Get Document Attribute Keys required for Derived Attribute.
    * 
    * @param entityRecord {@link EntityRecord}
+   * @return {@link Collection} {@link String}
+   */
+  default Collection<String> getDocumentAttributeKeys(final EntityRecord entityRecord) {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Create {@link DocumentAttributeRecord}.
+   *
+   * @param entityRecord {@link EntityRecord}
    * @param document {@link DocumentRecord}
+   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @return {@link DocumentAttributeRecord}
    */
   DocumentAttributeRecord getDocumentAttributeRecord(EntityRecord entityRecord,
-      DocumentRecord document);
+      DocumentRecord document, Collection<DocumentAttributeRecord> documentAttributes);
 }

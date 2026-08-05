@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -56,12 +57,17 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesOptional;
 import com.formkiq.stacks.dynamodb.schemas.SchemaAttributesRequired;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * {@link AttributeValidator} implementation.
  */
 public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
+  /** Reserved preset entity document attribute keys. */
+  private static final Set<String> RESERVED_PRESET_ENTITY_KEYS =
+      Set.of(AttributeKeyReserved.RETENTION_POLICY.getKey(),
+          AttributeKeyReserved.REMINDER_POLICY.getKey());
   /** {@link AttributeService}. */
   private final AttributeService attributeService;
   /** {@link DynamoDbService}. */
@@ -332,9 +338,27 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
               .documentId(entityKey.entityTypeId()).buildKey(siteId);
       vb.isRequired("entityTypeId", this.db.exists(entityType), "EntityTypeId does not exist");
 
+      validateReservedPresetEntityType(a, entityType, vb);
+
       DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityKey.entityTypeId())
           .documentId(entityKey.entityId()).buildKey(siteId);
       vb.isRequired("entityId", this.db.exists(entity), "EntityId does not exist");
+    }
+  }
+
+  private void validateReservedPresetEntityType(final DocumentAttributeRecord a,
+      final DynamoDbKey entityType, final ValidationBuilder vb) {
+    if (RESERVED_PRESET_ENTITY_KEYS.contains(a.getKey())) {
+      Map<String, AttributeValue> attributes = this.db.get(entityType);
+
+      if (!attributes.isEmpty()) {
+        EntityTypeRecord entityTypeRecord = EntityTypeRecord.fromAttributeMap(attributes);
+        if (!EntityTypeNamespace.PRESET.equals(entityTypeRecord.namespace())
+            || !a.getKey().equals(entityTypeRecord.name())) {
+          vb.addError(a.getKey(),
+              "attribute '" + a.getKey() + "' must use entityType '" + a.getKey() + "'");
+        }
+      }
     }
   }
 

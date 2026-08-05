@@ -2043,7 +2043,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
               .lastModifiedDate(lastModifiedDate).build(siteId);
 
           dar = new RetentionDispositionCompositeAttribute()
-              .getDocumentAttributeRecord(entityRecord, documentRecord);
+              .getDocumentAttributeRecord(entityRecord, documentRecord, Collections.emptyList());
 
           saveDocumentAttributes(siteId, document, List.of(dar), AttributeValidationType.NONE,
               AttributeValidationAccess.ADMIN_UPDATE);
@@ -2073,7 +2073,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
           p.get().getDerivedAttributes().forEach(da -> {
             if (da instanceof StoredDerivedAttribute) {
-              DocumentAttributeRecord der = da.getDocumentAttributeRecord(entityRecord, item);
+              DocumentAttributeRecord der =
+                  da.getDocumentAttributeRecord(entityRecord, item, newAttributes);
               list.add(der);
 
             }

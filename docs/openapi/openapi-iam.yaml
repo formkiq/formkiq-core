@@ -11149,6 +11149,14 @@ components:
         booleanValue:
           type: boolean
           description: Attribute with boolean value
+        dateValue:
+          type: string
+          description: Attribute with date value
+        dateValues:
+          type: array
+          description: Attribute with date values
+          items:
+            type: string
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
     GetEntityTypesResponse:

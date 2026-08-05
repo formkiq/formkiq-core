@@ -25,12 +25,14 @@ package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttributeString;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Date;
 
 /**
@@ -38,7 +40,8 @@ import java.util.Date;
  */
 public class RetentionEffectiveEndDateAttribute implements DerivedDocumentAttributeString {
   @Override
-  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
+  public String calculate(final EntityRecord entityRecord, final DocumentRecord document,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
     var sourceType = DynamoDbTypes.toString(entityRecord.getAttributes()
         .get(AttributeKeyReserved.RETENTION_START_DATE_SOURCE_TYPE.getKey()));
     var periodInDays = DynamoDbTypes.toLong(

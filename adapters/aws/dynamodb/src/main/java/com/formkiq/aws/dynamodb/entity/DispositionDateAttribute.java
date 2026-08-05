@@ -25,11 +25,13 @@ package com.formkiq.aws.dynamodb.entity;
 
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Date;
 
 import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.DISPOSITION_DATE;
@@ -40,7 +42,8 @@ import static com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved.DISPOSITI
 public class DispositionDateAttribute extends RetentionEffectiveEndDateAttribute {
 
   @Override
-  public String calculate(final EntityRecord entityRecord, final DocumentRecord document) {
+  public String calculate(final EntityRecord entityRecord, final DocumentRecord document,
+      final Collection<DocumentAttributeRecord> documentAttributes) {
 
     var periodInDays = DynamoDbTypes.toLong(
         entityRecord.getAttributes().get(AttributeKeyReserved.DISPOSITION_DATE_IN_DAYS.getKey()),

@@ -33,6 +33,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,8 @@ class DispositionDateAttributeTest {
         RETENTION_START_DATE_SOURCE_TYPE.getKey(),
         fromS(RetentionStartDateSourceType.DATE_INSERTED.name())));
 
-    String value = new DispositionDateAttribute().calculate(entityRecord, document);
+    String value =
+        new DispositionDateAttribute().calculate(entityRecord, document, Collections.emptyList());
 
     assertEquals("2025-01-03T00:00:00+0000", value);
   }
@@ -62,7 +64,8 @@ class DispositionDateAttributeTest {
         RETENTION_START_DATE_SOURCE_TYPE.getKey(),
         fromS(RetentionStartDateSourceType.DATE_LAST_MODIFIED.name())));
 
-    String value = new DispositionDateAttribute().calculate(entityRecord, document);
+    String value =
+        new DispositionDateAttribute().calculate(entityRecord, document, Collections.emptyList());
 
     assertEquals("2025-02-04T00:00:00+0000", value);
   }
