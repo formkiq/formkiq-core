@@ -390,12 +390,11 @@ public enum AttributeKeyReserved {
   /** Reminder Date Source Attribute Key. */
   REMINDER_DATE_SOURCE_ATTRIBUTE_KEY("ReminderDateSourceAttributeKey", AttributeType.STANDARD,
       AttributeDataType.STRING, null),
-  /** Reminder Period In Days. */
-  REMINDER_PERIOD_IN_DAYS("ReminderPeriodInDays", AttributeType.STANDARD, AttributeDataType.NUMBER,
-      null),
-  /** Reminder Repeat Interval In Days. */
-  REMINDER_REPEAT_INTERVAL_IN_DAYS("ReminderRepeatIntervalInDays", AttributeType.STANDARD,
-      AttributeDataType.NUMBER, null),
+  /** Reminder Period. */
+  REMINDER_PERIOD("ReminderPeriod", AttributeType.STANDARD, AttributeDataType.STRING, null),
+  /** Reminder Repeat Interval. */
+  REMINDER_REPEAT_INTERVAL("ReminderRepeatInterval", AttributeType.STANDARD,
+      AttributeDataType.STRING, null),
   /** Reminder Notification Type. */
   REMINDER_NOTIFICATION_TYPE("ReminderNotificationType", AttributeType.STANDARD,
       AttributeDataType.STRING, null),
