@@ -41,6 +41,24 @@ class AttributeKeyReservedTest {
   }
 
   @Test
+  void testFindReminderPeriod() {
+    assertEquals(AttributeKeyReserved.REMINDER_PERIOD, AttributeKeyReserved.find("reminderperiod"));
+    assertEquals("ReminderPeriod", AttributeKeyReserved.REMINDER_PERIOD.getKey());
+    assertEquals(AttributeType.STANDARD, AttributeKeyReserved.REMINDER_PERIOD.getType());
+    assertEquals(AttributeDataType.STRING, AttributeKeyReserved.REMINDER_PERIOD.getDataType());
+  }
+
+  @Test
+  void testFindReminderRepeatInterval() {
+    assertEquals(AttributeKeyReserved.REMINDER_REPEAT_INTERVAL,
+        AttributeKeyReserved.find("reminderrepeatinterval"));
+    assertEquals("ReminderRepeatInterval", AttributeKeyReserved.REMINDER_REPEAT_INTERVAL.getKey());
+    assertEquals(AttributeType.STANDARD, AttributeKeyReserved.REMINDER_REPEAT_INTERVAL.getType());
+    assertEquals(AttributeDataType.STRING,
+        AttributeKeyReserved.REMINDER_REPEAT_INTERVAL.getDataType());
+  }
+
+  @Test
   void testFindSensitivity() {
     assertEquals(AttributeKeyReserved.SENSITIVITY, AttributeKeyReserved.find("sensitivity"));
     assertEquals("Sensitivity", AttributeKeyReserved.SENSITIVITY.getKey());
