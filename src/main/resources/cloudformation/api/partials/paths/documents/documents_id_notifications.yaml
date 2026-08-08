@@ -1,0 +1,101 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/notifications:
+    get:
+      operationId: GetDocumentNotifications
+      summary: Get document notifications
+      description: Get notifications attached to a document or one of its artifacts
+      tags:
+        - Document Notifications
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentNotificationsResponse'
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetDocumentNotificationsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        notifications:
+          type: array
+          description: List of document notifications
+          items:
+            $ref: '#/components/schemas/DocumentNotification'
+
+    #@overlay/match missing_ok=True
+    DocumentNotification:
+      type: object
+      properties:
+        entityTypeId:
+          type: string
+          description: Reminder Policy entity type identifier
+        entityId:
+          type: string
+          description: Reminder Policy entity identifier
+        cc:
+          type: array
+          description: Normalized CC recipient email addresses
+          items:
+            type: string
+        bcc:
+          type: array
+          description: Normalized BCC recipient email addresses
+          items:
+            type: string
+        notificationType:
+          $ref: '#/components/schemas/DocumentNotificationType'
+        notificationDate:
+          type: string
+          description: Scheduled notification occurrence date
+        status:
+          $ref: '#/components/schemas/DocumentNotificationStatus'
+        actionSk:
+          type: string
+          description: Sort key of the created Document Action
+        insertedDate:
+          type: string
+          description: Inserted timestamp
+
+    #@overlay/match missing_ok=True
+    DocumentNotificationType:
+      type: string
+      description: Type of document notification
+      enum:
+        - EMAIL
+        - IN_APP
+
+    #@overlay/match missing_ok=True
+    DocumentNotificationStatus:
+      type: string
+      description: Status of the document notification
+      enum:
+        - PENDING
+        - ACTION_CREATED

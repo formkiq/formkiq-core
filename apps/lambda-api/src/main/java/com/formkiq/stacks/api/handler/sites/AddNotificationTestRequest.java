@@ -21,52 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.secretsmanager;
+package com.formkiq.stacks.api.handler.sites;
+
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Aws Secrets Manager Service.
+ * Request to send a test notification.
+ *
+ * @param to recipient email address
  */
-public interface SecretsManagerService {
-
-  /**
-   * Put a Secret {@link String} in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value {@link String}
-   * @return {@link String}
-   */
-  String createSecret(String name, String value);
-
-  /**
-   * Put a Secret byte[] in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value byte[]
-   * @return {@link String}
-   */
-  String createSecret(String name, byte[] value);
-
-  /**
-   * Returns whether a Secret exists by ARN.
-   *
-   * @param arn {@link String}
-   * @return true if the Secret exists
-   */
-  boolean exists(String arn);
-
-  /**
-   * Load Secret by Arn.
-   * 
-   * @param arn {@link String}
-   * @return byte[]
-   */
-  byte[] loadSecretBytesByArn(String arn);
-
-  /**
-   * Load Secret by Arn.
-   *
-   * @param arn {@link String}
-   * @return {@link String}
-   */
-  String loadSecretStringByArn(String arn);
+@Reflectable
+public record AddNotificationTestRequest(String to) {
 }

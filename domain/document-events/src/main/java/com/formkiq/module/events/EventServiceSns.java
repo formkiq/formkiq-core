@@ -30,6 +30,7 @@ import com.formkiq.aws.sns.SnsService;
 import com.formkiq.aws.sns.SnsServiceImpl;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -117,6 +118,27 @@ public final class EventServiceSns implements EventService {
 
     logger.trace("publishing to: " + this.topicArn + " body: " + eventJson);
     PublishResponse response = this.snsService.publish(this.topicArn, eventJson, tags);
+    logger.trace("publishing to: " + this.topicArn + " messageId: " + response.messageId()
+        + " body: " + eventJson);
+
+    return eventJson;
+  }
+
+  @Override
+  public String publish(final Logger logger, final NotificationTestEvent event) {
+    String eventJson = this.gson.toJson(event);
+
+    MessageAttributeValue typeAttr =
+        MessageAttributeValue.builder().dataType("String").stringValue(event.type()).build();
+    MessageAttributeValue siteIdAttr = MessageAttributeValue.builder().dataType("String")
+        .stringValue(convertToPrintableCharacters(event.siteId())).build();
+    Map<String, MessageAttributeValue> attributes = Map.of("type", typeAttr, "siteId", siteIdAttr);
+    if (event.userId() != null) {
+      MessageAttributeValue userIdAttr = MessageAttributeValue.builder().dataType("String")
+          .stringValue(convertToPrintableCharacters(event.userId())).build();
+      attributes = Map.of("type", typeAttr, "siteId", siteIdAttr, "userId", userIdAttr);
+    }
+    PublishResponse response = this.snsService.publish(this.topicArn, eventJson, attributes);
     logger.trace("publishing to: " + this.topicArn + " messageId: " + response.messageId()
         + " body: " + eventJson);
 

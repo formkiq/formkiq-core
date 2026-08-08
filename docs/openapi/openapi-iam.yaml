@@ -1986,6 +1986,37 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/antivirusLambdaApi200'
+  /documents/{documentId}/notifications:
+    get:
+      operationId: GetDocumentNotifications
+      summary: Get document notifications
+      description: Get notifications attached to a document or one of its artifacts
+      tags:
+      - Document Notifications
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocumentNotificationsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/ocr:
     get:
       operationId: GetDocumentOcr
@@ -6404,6 +6435,45 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /sites/{siteId}/configuration/notification/test:
+    post:
+      operationId: AddNotificationTest
+      description: Queues a test email using the site's saved notification configuration
+      summary: Send a test notification
+      tags:
+      - System Management
+      parameters:
+      - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNotificationTestRequest'
+      responses:
+        "202":
+          description: Test notification queued
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddNotificationTestResponse'
+        "400":
+          description: Invalid request or notification configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /sites/{siteId}/apiKeys:
     get:
       operationId: GetApiKeys
@@ -10271,6 +10341,61 @@ components:
       - MALICIOUS
       - ERROR
       - CLEAN
+    GetDocumentNotificationsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        notifications:
+          type: array
+          description: List of document notifications
+          items:
+            $ref: '#/components/schemas/DocumentNotification'
+    DocumentNotification:
+      type: object
+      properties:
+        entityTypeId:
+          type: string
+          description: Reminder Policy entity type identifier
+        entityId:
+          type: string
+          description: Reminder Policy entity identifier
+        cc:
+          type: array
+          description: Normalized CC recipient email addresses
+          items:
+            type: string
+        bcc:
+          type: array
+          description: Normalized BCC recipient email addresses
+          items:
+            type: string
+        notificationType:
+          $ref: '#/components/schemas/DocumentNotificationType'
+        notificationDate:
+          type: string
+          description: Scheduled notification occurrence date
+        status:
+          $ref: '#/components/schemas/DocumentNotificationStatus'
+        actionSk:
+          type: string
+          description: Sort key of the created Document Action
+        insertedDate:
+          type: string
+          description: Inserted timestamp
+    DocumentNotificationType:
+      type: string
+      description: Type of document notification
+      enum:
+      - EMAIL
+      - IN_APP
+    DocumentNotificationStatus:
+      type: string
+      description: Status of the document notification
+      enum:
+      - PENDING
+      - ACTION_CREATED
     OcrTableData:
       type: object
       properties:
@@ -14095,7 +14220,11 @@ components:
           description: Set Maximum number of Webhooks allowed
         notificationEmail:
           type: string
-          description: Email address to use for notifications
+          format: email
+          deprecated: true
+          description: Deprecated. Use notification.email instead. Email address to use for SES notifications.
+        notification:
+          $ref: '#/components/schemas/NotificationConfig'
         document:
           $ref: '#/components/schemas/DocumentConfig'
         ocr:
@@ -14110,6 +14239,67 @@ components:
         message:
           type: string
           description: Result message
+    NotificationConfig:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to use as the From address for notifications
+        provider:
+          $ref: '#/components/schemas/NotificationEmailProvider'
+        smtp:
+          $ref: '#/components/schemas/NotificationEmailSmtpConfig'
+    NotificationEmailProvider:
+      type: string
+      default: SES
+      enum:
+      - SES
+      - SMTP
+    NotificationEmailSmtpConfig:
+      required:
+      - host
+      - port
+      - connectionSecurity
+      - credentialsSecretArn
+      type: object
+      properties:
+        host:
+          type: string
+          description: SMTP server hostname
+        port:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          description: SMTP server port
+        connectionSecurity:
+          $ref: '#/components/schemas/NotificationEmailSmtpConnectionSecurity'
+        credentialsSecretArn:
+          type: string
+          description: 'AWS Secrets Manager ARN for a secret whose value is a JSON object containing non-empty string properties named "username" and "password", for example: {"username":"smtp-user@example.com","password":"smtp-password"}.'
+    NotificationEmailSmtpConnectionSecurity:
+      type: string
+      enum:
+      - STARTTLS
+      - IMPLICIT_TLS
+    AddNotificationTestRequest:
+      type: object
+      required:
+      - to
+      properties:
+        to:
+          type: string
+          format: email
+          description: Recipient of the test email
+    AddNotificationTestResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Queueing result
     DocumentConfig:
       type: object
       properties:
@@ -14171,7 +14361,11 @@ components:
           description: Set Maximum number of Webhooks allowed
         notificationEmail:
           type: string
-          description: Email address to use for notifications (Must be verified identity created in AWS SES)
+          format: email
+          deprecated: true
+          description: Deprecated. Use notification.email instead. Email address to use for SES notifications.
+        notification:
+          $ref: '#/components/schemas/NotificationConfig'
         document:
           $ref: '#/components/schemas/DocumentConfig'
         ocr:

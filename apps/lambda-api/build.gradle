@@ -37,6 +37,7 @@ dependencies {
   api project(':adapters:aws:ssm')
   api project(':adapters:aws:sns')
   api project(':adapters:aws:ses')
+  api project(':adapters:aws:secrets-manager')
   api project(':adapters:aws:dynamodb')
   api project(':domain:documents')
   api project(':domain:actions')
