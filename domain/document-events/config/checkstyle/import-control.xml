@@ -11,6 +11,7 @@
 		<allow pkg="com.formkiq.module.lambdaservices" />
 		<allow pkg="com.formkiq.module.events.document" />
 		<allow pkg="com.formkiq.module.events.folder" />
+		<allow pkg="com.formkiq.module.events.notification" />
 		<allow pkg="java.util" />
 		<allow pkg="com.formkiq.aws.sns" />
 		<allow pkg="com.google.gson" />
@@ -22,6 +23,11 @@
 
 		<subpackage name="folder">
 			<allow pkg="com.formkiq.graalvm.annotations" />
+		</subpackage>
+
+		<subpackage name="notification">
+			<allow pkg="com.formkiq.graalvm.annotations" />
+			<allow pkg="com.formkiq.module.events.document" />
 		</subpackage>
 
 	</subpackage>

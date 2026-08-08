@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
@@ -58,8 +59,8 @@ public class TestCoreRequestHandler extends AbstractCoreRequestHandler {
     this.serviceCache =
         new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
-                new SnsAwsServiceRegistry(), new SqsAwsServiceRegistry(),
-                new SsmAwsServiceRegistry())
+                new SecretsManagerAwsServiceRegistry(), new SnsAwsServiceRegistry(),
+                new SqsAwsServiceRegistry(), new SsmAwsServiceRegistry())
             .build();
 
     initialize(this.serviceCache);

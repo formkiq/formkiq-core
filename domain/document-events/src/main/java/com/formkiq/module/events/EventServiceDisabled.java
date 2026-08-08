@@ -25,6 +25,7 @@ package com.formkiq.module.events;
 
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
@@ -38,6 +39,11 @@ public class EventServiceDisabled implements EventService {
 
   @Override
   public String publish(final Logger logger, final FolderEvent event) {
+    throw new UnsupportedOperationException("Operational Mode 'Disabled'");
+  }
+
+  @Override
+  public String publish(final Logger logger, final NotificationTestEvent event) {
     throw new UnsupportedOperationException("Operational Mode 'Disabled'");
   }
 }

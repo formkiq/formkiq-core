@@ -21,52 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.secretsmanager;
+package com.formkiq.stacks.dynamodb.config;
 
 /**
- * Aws Secrets Manager Service.
+ * Supported notification email providers.
  */
-public interface SecretsManagerService {
-
-  /**
-   * Put a Secret {@link String} in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value {@link String}
-   * @return {@link String}
-   */
-  String createSecret(String name, String value);
-
-  /**
-   * Put a Secret byte[] in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value byte[]
-   * @return {@link String}
-   */
-  String createSecret(String name, byte[] value);
-
-  /**
-   * Returns whether a Secret exists by ARN.
-   *
-   * @param arn {@link String}
-   * @return true if the Secret exists
-   */
-  boolean exists(String arn);
-
-  /**
-   * Load Secret by Arn.
-   * 
-   * @param arn {@link String}
-   * @return byte[]
-   */
-  byte[] loadSecretBytesByArn(String arn);
-
-  /**
-   * Load Secret by Arn.
-   *
-   * @param arn {@link String}
-   * @return {@link String}
-   */
-  String loadSecretStringByArn(String arn);
+public enum SiteConfigurationNotificationProvider {
+  /** Amazon Simple Email Service. */
+  SES,
+  /** Simple Mail Transfer Protocol. */
+  SMTP
 }

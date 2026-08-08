@@ -48,6 +48,7 @@ import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.ses.SesConnectionBuilder;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
+import com.formkiq.aws.secretsmanager.SecretsManagerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.stacks.dynamodb.GsonUtil;
@@ -59,6 +60,9 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentDispositionAc
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocumentRetentionAndDisposition;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationDocusign;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationGoogle;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotification;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationProvider;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationSmtp;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
@@ -81,6 +85,8 @@ public class ConfigurationRequestHandler
   private static final int RSA_PRIVATE_KEY_MASK = 40;
   /** HMAC Signature Mask. */
   private static final int HMAC_SIG_KEY_MASK = 4;
+  /** Maximum SMTP port. */
+  private static final int MAX_SMTP_PORT = 65535;
 
   /**
    * constructor.
@@ -118,7 +124,8 @@ public class ConfigurationRequestHandler
     obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
         getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
         getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
-        getNotNullOrDefault(obj.notificationEmail(), ""), normalizeDocument(obj.document()),
+        getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
+        normalizeDocument(obj.document()),
         Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
         Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)), Objects
             .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
@@ -133,9 +140,9 @@ public class ConfigurationRequestHandler
 
   private List<Object> getConfigValues(final SiteConfiguration config) {
     return Arrays.asList(config.chatGptApiKey(), config.maxContentLengthBytes(),
-        config.maxDocuments(), config.maxWebhooks(), config.notificationEmail(), config.document(),
-        config.ocr(), config.google(), config.docusign(), config.documentTimeToLive(),
-        config.webhookTimeToLive());
+        config.maxDocuments(), config.maxWebhooks(), config.notificationEmail(),
+        config.notification(), config.document(), config.ocr(), config.google(), config.docusign(),
+        config.documentTimeToLive(), config.webhookTimeToLive());
   }
 
   @Override
@@ -217,18 +224,11 @@ public class ConfigurationRequestHandler
     ValidationBuilder vb = new ValidationBuilder();
     vb.isRequired(null, getConfigValues(config), "missing required body parameters");
 
-    String notificationEmail = config.notificationEmail();
-    if (notificationEmail != null) {
-
-      initSes(awsservice);
-
-      SesService sesService = awsservice.getExtension(SesService.class);
-      Optional<String> o = sesService.getEmailAddresses().identities().stream()
-          .filter(i -> i.equals(notificationEmail)).findFirst();
-
-      if (o.isEmpty()) {
-        vb.addError("notificationEmail", "'notificationEmail' is not setup in AWS SES");
-      }
+    SiteConfigurationNotification notification = config.notification();
+    if (notification != null) {
+      validateNotification(awsservice, notification, vb);
+    } else if (config.notificationEmail() != null) {
+      validateSesEmail(awsservice, config.notificationEmail(), "notificationEmail", vb);
     }
 
     validateGoogle(config, vb);
@@ -299,6 +299,74 @@ public class ConfigurationRequestHandler
         vb.addError("google",
             "all 'googleWorkloadIdentityAudience', 'googleWorkloadIdentityServiceAccount' "
                 + "are required for google setup");
+      }
+    }
+  }
+
+  private void validateNotification(final AwsServiceCache awsservice,
+      final SiteConfigurationNotification notification, final ValidationBuilder vb) {
+    if (isEmpty(notification.email())) {
+      vb.addError("notification.email", "'notification.email' is required");
+    }
+
+    SiteConfigurationNotificationProvider provider = notification.provider();
+    if (provider == null) {
+      vb.addError("notification.provider", "'notification.provider' is required");
+    } else if (provider == SiteConfigurationNotificationProvider.SES) {
+      if (notification.smtp() != null) {
+        vb.addError("notification.smtp", "'notification.smtp' is only supported for SMTP");
+      }
+      if (!isEmpty(notification.email())) {
+        validateSesEmail(awsservice, notification.email(), "notification.email", vb);
+      }
+    } else {
+      validateSmtp(awsservice, notification.smtp(), vb);
+    }
+  }
+
+  private void validateSesEmail(final AwsServiceCache awsservice, final String email,
+      final String key, final ValidationBuilder vb) {
+    initSes(awsservice);
+
+    SesService sesService = awsservice.getExtension(SesService.class);
+    Optional<String> identity =
+        sesService.getEmailAddresses().identities().stream().filter(email::equals).findFirst();
+
+    if (identity.isEmpty()) {
+      vb.addError(key, "'" + key + "' is not setup in AWS SES");
+    }
+  }
+
+  private void validateSmtp(final AwsServiceCache awsservice,
+      final SiteConfigurationNotificationSmtp smtp, final ValidationBuilder vb) {
+    if (smtp == null) {
+      vb.addError("notification.smtp", "'notification.smtp' is required");
+      return;
+    }
+
+    if (isEmpty(smtp.host())) {
+      vb.addError("notification.smtp.host", "'notification.smtp.host' is required");
+    }
+
+    Integer port = smtp.port();
+    if (port == null || port < 1 || port > MAX_SMTP_PORT) {
+      vb.addError("notification.smtp.port", "'notification.smtp.port' must be between 1 and 65535");
+    }
+
+    if (smtp.connectionSecurity() == null) {
+      vb.addError("notification.smtp.connectionSecurity",
+          "'notification.smtp.connectionSecurity' is required");
+    }
+
+    String credentialsSecretArn = smtp.credentialsSecretArn();
+    if (isEmpty(credentialsSecretArn)) {
+      vb.addError("notification.smtp.credentialsSecretArn",
+          "'notification.smtp.credentialsSecretArn' is required");
+    } else {
+      SecretsManagerService service = awsservice.getExtension(SecretsManagerService.class);
+      if (!service.exists(credentialsSecretArn)) {
+        vb.addError("notification.smtp.credentialsSecretArn",
+            "'notification.smtp.credentialsSecretArn' does not exist");
       }
     }
   }

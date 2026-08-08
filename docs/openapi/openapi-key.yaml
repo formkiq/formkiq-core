@@ -6435,6 +6435,45 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /sites/{siteId}/configuration/notification/test:
+    post:
+      operationId: AddNotificationTest
+      description: Queues a test email using the site's saved notification configuration
+      summary: Send a test notification
+      tags:
+      - System Management
+      parameters:
+      - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNotificationTestRequest'
+      responses:
+        "202":
+          description: Test notification queued
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddNotificationTestResponse'
+        "400":
+          description: Invalid request or notification configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /sites/{siteId}/apiKeys:
     get:
       operationId: GetApiKeys
@@ -14181,7 +14220,11 @@ components:
           description: Set Maximum number of Webhooks allowed
         notificationEmail:
           type: string
-          description: Email address to use for notifications
+          format: email
+          deprecated: true
+          description: Deprecated. Use notification.email instead. Email address to use for SES notifications.
+        notification:
+          $ref: '#/components/schemas/NotificationConfig'
         document:
           $ref: '#/components/schemas/DocumentConfig'
         ocr:
@@ -14196,6 +14239,67 @@ components:
         message:
           type: string
           description: Result message
+    NotificationConfig:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to use as the From address for notifications
+        provider:
+          $ref: '#/components/schemas/NotificationEmailProvider'
+        smtp:
+          $ref: '#/components/schemas/NotificationEmailSmtpConfig'
+    NotificationEmailProvider:
+      type: string
+      default: SES
+      enum:
+      - SES
+      - SMTP
+    NotificationEmailSmtpConfig:
+      required:
+      - host
+      - port
+      - connectionSecurity
+      - credentialsSecretArn
+      type: object
+      properties:
+        host:
+          type: string
+          description: SMTP server hostname
+        port:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          description: SMTP server port
+        connectionSecurity:
+          $ref: '#/components/schemas/NotificationEmailSmtpConnectionSecurity'
+        credentialsSecretArn:
+          type: string
+          description: 'AWS Secrets Manager ARN for a secret whose value is a JSON object containing non-empty string properties named "username" and "password", for example: {"username":"smtp-user@example.com","password":"smtp-password"}.'
+    NotificationEmailSmtpConnectionSecurity:
+      type: string
+      enum:
+      - STARTTLS
+      - IMPLICIT_TLS
+    AddNotificationTestRequest:
+      type: object
+      required:
+      - to
+      properties:
+        to:
+          type: string
+          format: email
+          description: Recipient of the test email
+    AddNotificationTestResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Queueing result
     DocumentConfig:
       type: object
       properties:
@@ -14257,7 +14361,11 @@ components:
           description: Set Maximum number of Webhooks allowed
         notificationEmail:
           type: string
-          description: Email address to use for notifications (Must be verified identity created in AWS SES)
+          format: email
+          deprecated: true
+          description: Deprecated. Use notification.email instead. Email address to use for SES notifications.
+        notification:
+          $ref: '#/components/schemas/NotificationConfig'
         document:
           $ref: '#/components/schemas/DocumentConfig'
         ocr:
