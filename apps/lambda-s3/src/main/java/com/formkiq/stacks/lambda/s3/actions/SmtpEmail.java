@@ -21,52 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.secretsmanager;
+package com.formkiq.stacks.lambda.s3.actions;
 
-/**
- * Aws Secrets Manager Service.
- */
-public interface SecretsManagerService {
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationSmtp;
 
-  /**
-   * Put a Secret {@link String} in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value {@link String}
-   * @return {@link String}
-   */
-  String createSecret(String name, String value);
+record SmtpEmail(String source, String to, String cc, String bcc, String subject, String text,
+    String html, SiteConfigurationNotificationSmtp smtp, String username, String password) {
 
-  /**
-   * Put a Secret byte[] in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value byte[]
-   * @return {@link String}
-   */
-  String createSecret(String name, byte[] value);
-
-  /**
-   * Returns whether a Secret exists by ARN.
-   *
-   * @param arn {@link String}
-   * @return true if the Secret exists
-   */
-  boolean exists(String arn);
-
-  /**
-   * Load Secret by Arn.
-   * 
-   * @param arn {@link String}
-   * @return byte[]
-   */
-  byte[] loadSecretBytesByArn(String arn);
-
-  /**
-   * Load Secret by Arn.
-   *
-   * @param arn {@link String}
-   * @return {@link String}
-   */
-  String loadSecretStringByArn(String arn);
+  @Override
+  public String toString() {
+    return "SmtpEmail[redacted]";
+  }
 }

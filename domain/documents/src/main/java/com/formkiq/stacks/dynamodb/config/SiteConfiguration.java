@@ -25,7 +25,6 @@ package com.formkiq.stacks.dynamodb.config;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_CONFIG;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
-import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
@@ -38,10 +37,8 @@ import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
-import static com.formkiq.strings.Strings.trim;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
-import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -59,9 +56,9 @@ import java.util.Objects;
 @Reflectable
 public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String maxContentLengthBytes,
     String maxDocuments, String maxWebhooks, String notificationEmail,
-    SiteConfigurationDocument document, SiteConfigurationOcr ocr, SiteConfigurationGoogle google,
-    SiteConfigurationDocusign docusign, String documentTimeToLive, String webhookTimeToLive,
-    SiteConfigurationWebUi webui) {
+    SiteConfigurationNotification notification, SiteConfigurationDocument document,
+    SiteConfigurationOcr ocr, SiteConfigurationGoogle google, SiteConfigurationDocusign docusign,
+    String documentTimeToLive, String webhookTimeToLive, SiteConfigurationWebUi webui) {
 
   /**
    * Construct a {@link SiteConfiguration} from a DynamoDB attribute map.
@@ -88,10 +85,12 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     SiteConfigurationDocusign docusign = getSiteConfigurationDocusign(attributes);
     SiteConfigurationDocument document = getSiteConfigurationDocument(attributes);
     SiteConfigurationWebUi webui = getSiteConfigurationWebUi(attributes);
+    SiteConfigurationNotification notification =
+        SiteConfigurationNotification.fromAttributeMap(attributes);
 
     return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
-        maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
-        webhookTimeToLive, webui);
+        maxWebhooks, notificationEmail, notification, document, ocr, google, docusign,
+        documentTimeToLive, webhookTimeToLive, webui);
   }
 
   private static SiteConfigurationDocument getSiteConfigurationDocument(
@@ -197,55 +196,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
    * @return DynamoDB item map containing key attributes and config values
    */
   public Map<String, AttributeValue> getAttributes() {
-
-    DynamoDbAttributeMapBuilder map =
-        key.getAttributesBuilder().withString(CHATGPT_API_KEY, chatGptApiKey)
-            .withString(MAX_DOCUMENT_SIZE_BYTES, maxContentLengthBytes)
-            .withString(MAX_DOCUMENTS, maxDocuments).withString(MAX_WEBHOOKS, maxWebhooks)
-            .withString(NOTIFICATION_EMAIL, notificationEmail)
-            .withString(DOCUMENT_TIME_TO_LIVE, documentTimeToLive)
-            .withString(WEBHOOK_TIME_TO_LIVE, webhookTimeToLive);
-
-    if (document != null) {
-      SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
-      if (contentTypes != null) {
-        map.withStrings("documentContentTypesAllowlist", notNull(contentTypes.allowlist()))
-            .withStrings("documentContentTypesDenylist", notNull(contentTypes.denylist()));
-      }
-
-      SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
-          document.withDefaults().retentionAndDisposition();
-      map.withString("documentDispositionAction",
-          retentionAndDisposition.dispositionAction().name())
-          .withNumber("documentSoftDeleteRetentionInDays",
-              retentionAndDisposition.softDeleteRetentionInDays());
-    }
-
-    if (google != null) {
-      map.withString("googleWorkloadIdentityAudience", google.workloadIdentityAudience())
-          .withString("googleWorkloadIdentityServiceAccount",
-              google.workloadIdentityServiceAccount());
-    }
-
-    if (ocr != null) {
-      long maxTx = ocr.maxTransactions();
-      long maxPages = ocr.maxPagesPerTransaction();
-      map.withNumber("maxTransactions", maxTx != 0 ? maxTx : -1);
-      map.withNumber("maxPagesPerTransaction", maxPages != 0 ? maxPages : -1);
-    }
-
-    if (docusign != null) {
-      map.withString(KEY_DOCUSIGN_USER_ID, trim(docusign.userId()))
-          .withString(KEY_DOCUSIGN_INTEGRATION_KEY, trim(docusign.integrationKey()))
-          .withString(KEY_DOCUSIGN_RSA_PRIVATE_KEY, trim(docusign.rsaPrivateKey()))
-          .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, trim(docusign.hmacSignature()));
-    }
-
-    if (webui != null) {
-      map.withBoolean(KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED, webui.ssoAutomaticSignIn());
-    }
-
-    return map.build();
+    return SiteConfigurationAttributeMapper.toAttributeMap(this);
   }
 
   /**
@@ -273,6 +224,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     private String maxWebhooks;
     /** Notification email address. */
     private String notificationEmail;
+    /** Notification configuration. */
+    private SiteConfigurationNotification notification;
     /** OCR configuration. */
     private SiteConfigurationOcr ocr;
     /** Google integration configuration. */
@@ -290,8 +243,9 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
 
     @Override
     public SiteConfiguration build(final DynamoDbKey key) {
+      String email = notification != null ? notification.email() : notificationEmail;
       return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
-          maxWebhooks, notificationEmail, document, ocr, google, docusign, documentTimeToLive,
+          maxWebhooks, email, notification, document, ocr, google, docusign, documentTimeToLive,
           webhookTimeToLive, webui);
     }
 
@@ -344,6 +298,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       webhookTimeToLive(config.webhookTimeToLive);
       ocr(config.ocr);
       notificationEmail(config.notificationEmail);
+      notification(config.notification);
       maxWebhooks(config.maxWebhooks);
       maxDocuments(config.maxDocuments);
       maxContentLengthBytes(config.maxContentLengthBytes);
@@ -429,6 +384,17 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
      */
     public Builder maxWebhooks(final String value) {
       this.maxWebhooks = value;
+      return this;
+    }
+
+    /**
+     * Set the notification configuration.
+     *
+     * @param value notification configuration
+     * @return this builder
+     */
+    public Builder notification(final SiteConfigurationNotification value) {
+      this.notification = value;
       return this;
     }
 

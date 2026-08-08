@@ -39,4 +39,6 @@ public interface DocumentEventType {
   String SOFT_DELETE = "softDelete";
   /** Actions Event Type. */
   String ACTIONS = "actions";
+  /** Test Notification Event Type. */
+  String TEST_NOTIFICATION = "testNotification";
 }

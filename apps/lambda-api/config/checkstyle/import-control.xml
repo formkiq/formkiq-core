@@ -46,6 +46,7 @@
 			<allow pkg="com.formkiq.aws.dynamodb" />
 			<allow pkg="com.formkiq.aws.services.lambda" />
 			<allow pkg="com.formkiq.aws.s3" />
+			<allow pkg="com.formkiq.aws.secretsmanager" />
 			<allow pkg="com.formkiq.aws.sqs" />
 			<allow pkg="com.formkiq.aws.ssm" />
 			<allow pkg="com.formkiq.aws.sns" />
@@ -80,6 +81,7 @@
 				<allow pkg="com.formkiq.module.typesense" />
 				<allow pkg="com.formkiq.module.http" />
 				<allow pkg="com.formkiq.aws.ses" />
+				<allow pkg="com.formkiq.aws.secretsmanager" />
 				<allow pkg="com.formkiq.module.ocr" />
 				<allow pkg="com.formkiq.plugins.useractivity" />
 				<allow pkg="com.formkiq.stacks.api" />

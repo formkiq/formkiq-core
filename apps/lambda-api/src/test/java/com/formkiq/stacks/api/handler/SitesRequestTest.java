@@ -140,7 +140,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // then
     List<Site> sites = notNull(response.getSites());
     assertEquals(1, sites.size());
-    assertEquals("test", sites.get(0).getSiteId());
+    assertEquals("test", sites.getFirst().getSiteId());
     assertEquals("test", String.join(", ", notNull(response.getRoles())));
     assertEquals("asd", String.join(", ", notNull(response.getSamlGroups())));
   }
@@ -169,7 +169,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
 
-    Site site = sites.get(0);
+    Site site = sites.getFirst();
     assertEquals(DEFAULT_SITE_ID, site.getSiteId());
     assertEquals(SitePermission.READ_WRITE, site.getPermission());
     assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE",
@@ -220,7 +220,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     // then
     List<Site> sites = notNull(response.getSites());
     assertEquals(2, sites.size());
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
+    assertEquals(DEFAULT_SITE_ID, sites.getFirst().getSiteId());
     assertEquals(SitePermission.READ_WRITE, sites.get(0).getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
@@ -250,8 +250,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     List<Site> sites = notNull(response.getSites());
 
     assertEquals(2, sites.size());
-    assertEquals(DEFAULT_SITE_ID, sites.get(0).getSiteId());
-    assertEquals(SitePermission.READ_ONLY, sites.get(0).getPermission());
+    assertEquals(DEFAULT_SITE_ID, sites.getFirst().getSiteId());
+    assertEquals(SitePermission.READ_ONLY, sites.getFirst().getPermission());
     assertNull(sites.get(0).getUploadEmail());
 
     assertNull(ssm.getParameterValue(String.format("/formkiq/%s/siteid/%s/email",
@@ -297,7 +297,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     List<Site> sites = notNull(response.getSites());
 
     assertEquals(1, sites.size());
-    Site site = sites.get(0);
+    Site site = sites.getFirst();
     assertEquals(siteId, site.getSiteId());
     assertEquals(SitePermission.READ_WRITE, site.getPermission());
 

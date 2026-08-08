@@ -27,8 +27,11 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.CreateSecretRequest;
 import software.amazon.awssdk.services.secretsmanager.model.CreateSecretResponse;
+import software.amazon.awssdk.services.secretsmanager.model.DescribeSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.DescribeSecretResponse;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
+import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundException;
 
 /**
  * {@link SecretsManagerService} implementation.
@@ -59,6 +62,17 @@ public class SecretsManagerServiceImpl implements SecretsManagerService {
     CreateSecretResponse resp = client.createSecret(CreateSecretRequest.builder().name(name)
         .secretBinary(SdkBytes.fromByteArray(value)).build());
     return resp.arn();
+  }
+
+  @Override
+  public boolean exists(final String arn) {
+    try {
+      DescribeSecretResponse response =
+          client.describeSecret(DescribeSecretRequest.builder().secretId(arn).build());
+      return response.deletedDate() == null;
+    } catch (ResourceNotFoundException e) {
+      return false;
+    }
   }
 
   @Override

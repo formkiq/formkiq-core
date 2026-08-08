@@ -347,6 +347,11 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+              - secretsmanager:DescribeSecret
+              Resource:
+              - Fn::Sub: "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+            - Effect: Allow
+              Action:
               - s3:GetObject
               Resource: "*"
             - Effect: Allow

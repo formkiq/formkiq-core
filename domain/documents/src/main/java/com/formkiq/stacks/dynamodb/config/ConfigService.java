@@ -44,6 +44,17 @@ public interface ConfigService {
   String WEBHOOK_TIME_TO_LIVE = "WebhookTimeToLive";
   /** Notification Email. */
   String NOTIFICATION_EMAIL = "NotificationEmail";
+  /** Notification Email Provider. */
+  String NOTIFICATION_EMAIL_PROVIDER = "NotificationEmailProvider";
+  /** Notification Email SMTP Host. */
+  String NOTIFICATION_EMAIL_SMTP_HOST = "NotificationEmailSmtpHost";
+  /** Notification Email SMTP Port. */
+  String NOTIFICATION_EMAIL_SMTP_PORT = "NotificationEmailSmtpPort";
+  /** Notification Email SMTP Connection Security. */
+  String NOTIFICATION_EMAIL_SMTP_CONNECTION_SECURITY = "NotificationEmailSmtpConnectionSecurity";
+  /** Notification Email SMTP Credentials Secret ARN. */
+  String NOTIFICATION_EMAIL_SMTP_CREDENTIALS_SECRET_ARN =
+      "NotificationEmailSmtpCredentialsSecretArn";
   /** Docusign User Id. */
   String KEY_DOCUSIGN_USER_ID = "docusignUserId";
   /** Docusign Integration Key / Client Id. */

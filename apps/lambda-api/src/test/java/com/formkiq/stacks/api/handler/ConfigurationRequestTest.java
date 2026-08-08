@@ -26,9 +26,13 @@ package com.formkiq.stacks.api.handler;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.s3.S3Service;
+import com.formkiq.aws.secretsmanager.SecretsManagerService;
+import com.formkiq.aws.secretsmanager.SecretsManagerServiceImpl;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddNotificationTestRequest;
+import com.formkiq.client.model.AddNotificationTestResponse;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigContentTypes;
 import com.formkiq.client.model.DocumentConfigDispositionAction;
@@ -37,6 +41,10 @@ import com.formkiq.client.model.DocusignConfig;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.GetSystemConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
+import com.formkiq.client.model.NotificationConfig;
+import com.formkiq.client.model.NotificationEmailProvider;
+import com.formkiq.client.model.NotificationEmailSmtpConfig;
+import com.formkiq.client.model.NotificationEmailSmtpConnectionSecurity;
 import com.formkiq.client.model.OcrConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
@@ -45,10 +53,13 @@ import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotification;
+import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationProvider;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.SetBearers;
 import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSystemConfigurationRequestBuilder;
+import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -154,6 +165,22 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     Map<String, Object> consoleConfig = GsonUtil.getInstance()
         .fromJson(s3.getContentAsString(BUCKET_NAME, "1.0/assets/config.json", null), Map.class);
     return (Boolean) consoleConfig.get("ssoAutomaticSignIn");
+  }
+
+  private void saveSesNotificationConfiguration() {
+    SiteConfigurationNotification notification = new SiteConfigurationNotification(
+        "notifications@example.com", SiteConfigurationNotificationProvider.SES, null);
+    this.config.save(DEFAULT_SITE_ID,
+        SiteConfiguration.builder().notification(notification).build(DEFAULT_SITE_ID));
+  }
+
+  private UpdateConfigurationRequest smtpConfiguration(final String secretArn) {
+    NotificationEmailSmtpConfig smtp = new NotificationEmailSmtpConfig().host("smtp.gmail.com")
+        .port(587).connectionSecurity(NotificationEmailSmtpConnectionSecurity.STARTTLS)
+        .credentialsSecretArn(secretArn);
+    NotificationConfig notification = new NotificationConfig().email("notifications@example.com")
+        .provider(NotificationEmailProvider.SMTP).smtp(smtp);
+    return new UpdateConfigurationRequest().notification(notification);
   }
 
   /**
@@ -555,6 +582,131 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e", docusign.getUserId());
     assertEquals("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEow*******OAMrFWnb"
         + "\\n-----END RSA PRIVATE KEY-----\"", docusign.getRsaPrivateKey());
+  }
+
+  /**
+   * PATCH SMTP configuration with an existing credentials Secret.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandlePatchSmtpConfigurationExistingSecret() throws Exception {
+    // given
+    setBearerToken("Admins");
+    SecretsManagerService secrets =
+        new SecretsManagerServiceImpl(TestServices.getSecretsManagerConnection(null));
+    String secretArn = secrets.createSecret("smtp-" + ID.ulid(),
+        "{\"username\":\"user\",\"password\":\"password\"}");
+
+    // when
+    UpdateConfigurationResponse response =
+        this.systemApi.updateConfiguration(DEFAULT_SITE_ID, smtpConfiguration(secretArn));
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+    assertEquals(secretArn, this.systemApi.getConfiguration(DEFAULT_SITE_ID).getNotification()
+        .getSmtp().getCredentialsSecretArn());
+  }
+
+  /** PATCH SMTP configuration with a credentials Secret that does not exist. */
+  @Test
+  public void testHandlePatchSmtpConfigurationMissingSecret() {
+    // given
+    setBearerToken("Admins");
+    String secretArn = "arn:aws:secretsmanager:us-east-1:000000000000:secret:missing";
+
+    // when
+    try {
+      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, smtpConfiguration(secretArn));
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"notification.smtp.credentialsSecretArn\","
+              + "\"error\":\"'notification.smtp.credentialsSecretArn' does not exist\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST a test notification using the generated client.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testHandlePostNotificationTest() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    saveSesNotificationConfiguration();
+
+    // when
+    AddNotificationTestResponse response = this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
+        new AddNotificationTestRequest().to("recipient@example.com"));
+
+    // then
+    assertEquals("Test notification queued", response.getMessage());
+  }
+
+  /** POST a test notification as a non-admin user. */
+  @Test
+  public void testHandlePostNotificationTestAsUser() {
+    // given
+    setBearerToken(DEFAULT_SITE_ID);
+    saveSesNotificationConfiguration();
+
+    // when
+    try {
+      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
+          new AddNotificationTestRequest().to("recipient@example.com"));
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals("{\"message\":\"user is unauthorized\"}", e.getResponseBody());
+    }
+  }
+
+  /** POST a test notification with an invalid recipient email address. */
+  @Test
+  public void testHandlePostNotificationTestInvalidEmail() {
+    // given
+    setBearerToken("Admins");
+    saveSesNotificationConfiguration();
+
+    // when
+    try {
+      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
+          new AddNotificationTestRequest().to("not-an-email"));
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"to\"," + "\"error\":\"'to' must be a valid email address\"}]}",
+          e.getResponseBody());
+    }
+  }
+
+  /** POST a test notification without configuring a notification provider. */
+  @Test
+  public void testHandlePostNotificationTestMissingConfiguration() {
+    // given
+    setBearerToken("Admins");
+    this.config.save(DEFAULT_SITE_ID,
+        SiteConfiguration.builder().chatGptApiKey("somevalue").build(DEFAULT_SITE_ID));
+
+    // when
+    try {
+      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
+          new AddNotificationTestRequest().to("recipient@example.com"));
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
+      assertEquals("{\"errors\":[{\"key\":\"notification\","
+          + "\"error\":\"Site notification configuration is not set\"}]}", e.getResponseBody());
+    }
   }
 
   /**

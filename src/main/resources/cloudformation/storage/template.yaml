@@ -776,7 +776,7 @@ Resources:
         - Arn
       TopicArn:
         Ref: SnsDocumentEvent
-      FilterPolicy: '{"type": ["actions"]}'      
+      FilterPolicy: '{"type": ["actions", "testNotification"]}'
 
   DocumentsStagingQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -917,6 +917,11 @@ Resources:
             Action:
             - ses:SendEmail
             Resource: "*"
+          - Effect: Allow
+            Action:
+            - secretsmanager:GetSecretValue
+            Resource:
+            - Fn::Sub: "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
           - Effect: Allow
             Action:
               - events:PutEvents

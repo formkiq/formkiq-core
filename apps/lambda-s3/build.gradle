@@ -25,6 +25,7 @@ dependencies {
   implementation project(':adapters:aws:sns')
   implementation project(':adapters:aws:ssm')
   implementation project(':adapters:aws:ses')
+  implementation project(':adapters:aws:secrets-manager')
   implementation project(':adapters:aws:eventbridge')
   implementation project(':adapters:aws:dynamodb')
   implementation project(':domain:plugins')
@@ -42,6 +43,8 @@ dependencies {
   implementation libs.aws.lambda.core
   implementation libs.gson
   implementation libs.thumbnailator
+  implementation libs.jakarta.mail.api
+  runtimeOnly libs.angus.mail
 
   implementation libs.formkiq.lambda.runtime.graalvm
   implementation libs.formkiq.graalvm.annotations

@@ -25,6 +25,7 @@ package com.formkiq.module.events;
 
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
@@ -51,4 +52,13 @@ public interface EventService {
    * @return {@link String}
    */
   String publish(Logger logger, FolderEvent event);
+
+  /**
+   * Send a {@link NotificationTestEvent} to the event system.
+   *
+   * @param logger {@link Logger}
+   * @param event {@link NotificationTestEvent}
+   * @return serialized event
+   */
+  String publish(Logger logger, NotificationTestEvent event);
 }

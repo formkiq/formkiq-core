@@ -5,6 +5,7 @@ aws-sdk = "2.42.8"
 aws-sdk-s3 = "2.43.1"
 aws-sdk-secrets-manager = "2.31.59"
 aws-xray = "2.20.0"
+angus-mail = "2.0.4"
 commons-cli = "1.11.0"
 commons-codec = "1.20.0"
 commons-csv = "1.14.1"
@@ -20,6 +21,7 @@ gson = "2.13.2"
 gson-secrets-manager = "2.13.1"
 guava = "33.5.0-jre"
 java-websocket = "1.6.0"
+jakarta-mail = "2.1.3"
 jjwt = "0.13.0"
 jna = "5.18.1"
 junit = "6.0.3"
@@ -67,6 +69,7 @@ aws-sdk-url-connection-client-s3 = { module = "software.amazon.awssdk:url-connec
 aws-sdk-url-connection-client-secrets-manager = { module = "software.amazon.awssdk:url-connection-client", version.ref = "aws-sdk-secrets-manager" }
 aws-sdk-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws-sdk" }
 aws-xray-recorder-sdk-aws-sdk-v2 = { module = "com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2", version.ref = "aws-xray" }
+angus-mail = { module = "org.eclipse.angus:angus-mail", version.ref = "angus-mail" }
 commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commons-csv" }
@@ -80,6 +83,7 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 gson-secrets-manager = { module = "com.google.code.gson:gson", version.ref = "gson-secrets-manager" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "java-websocket" }
+jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api", version.ref = "jakarta-mail" }
 jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
 jjwt-gson = { module = "io.jsonwebtoken:jjwt-gson", version.ref = "jjwt" }
 jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }

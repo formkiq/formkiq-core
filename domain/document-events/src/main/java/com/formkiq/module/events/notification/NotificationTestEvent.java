@@ -21,52 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.secretsmanager;
+package com.formkiq.module.events.notification;
+
+import static com.formkiq.module.events.document.DocumentEventType.TEST_NOTIFICATION;
+
+import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * Aws Secrets Manager Service.
+ * Event requesting delivery of a test notification using a site's saved configuration.
+ *
+ * @param type event type
+ * @param siteId site identifier
+ * @param to recipient email address
+ * @param userId requesting user
  */
-public interface SecretsManagerService {
+@Reflectable
+public record NotificationTestEvent(String type, String siteId, String to, String userId) {
 
   /**
-   * Put a Secret {@link String} in Secrets Manager.
+   * Creates a test-notification event.
    *
-   * @param name {@link String}
-   * @param value {@link String}
-   * @return {@link String}
+   * @param siteId site identifier
+   * @param to recipient email address
+   * @param userId requesting user
    */
-  String createSecret(String name, String value);
-
-  /**
-   * Put a Secret byte[] in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value byte[]
-   * @return {@link String}
-   */
-  String createSecret(String name, byte[] value);
-
-  /**
-   * Returns whether a Secret exists by ARN.
-   *
-   * @param arn {@link String}
-   * @return true if the Secret exists
-   */
-  boolean exists(String arn);
-
-  /**
-   * Load Secret by Arn.
-   * 
-   * @param arn {@link String}
-   * @return byte[]
-   */
-  byte[] loadSecretBytesByArn(String arn);
-
-  /**
-   * Load Secret by Arn.
-   *
-   * @param arn {@link String}
-   * @return {@link String}
-   */
-  String loadSecretStringByArn(String arn);
+  public NotificationTestEvent(final String siteIdParam, final String toParam,
+      final String userIdParam) {
+    this(TEST_NOTIFICATION, siteIdParam, toParam, userIdParam);
+  }
 }
