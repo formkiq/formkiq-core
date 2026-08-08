@@ -48,6 +48,9 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.ses.SesAwsServiceRegistry;
 import com.formkiq.aws.ses.SesService;
 import com.formkiq.aws.ses.SesServiceExtension;
+import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
+import com.formkiq.aws.secretsmanager.SecretsManagerService;
+import com.formkiq.aws.secretsmanager.SecretsManagerServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
@@ -65,6 +68,7 @@ import com.formkiq.module.actions.workflows.DocumentWorkflowStatusUpdate;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceSnsExtension;
 import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
 import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.httpsigv4.HttpServiceSigv4;
@@ -139,6 +143,7 @@ import static com.formkiq.aws.dynamodb.actions.ActionStatus.ASYNC_COMPLETE;
 import static com.formkiq.aws.dynamodb.actions.ActionStatus.PENDING;
 import static com.formkiq.aws.dynamodb.actions.ActionStatus.WAITING_FOR_RETRY;
 import static com.formkiq.module.events.document.DocumentEventType.ACTIONS;
+import static com.formkiq.module.events.document.DocumentEventType.TEST_NOTIFICATION;
 import static com.formkiq.stacks.lambda.s3.DetailTypeResolver.DEFAULT_DETAIL;
 
 /** {@link RequestHandler} for handling Document Actions. */
@@ -157,7 +162,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
           EnvironmentVariableCredentialsProvider.create())
           .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
               new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(), new SesAwsServiceRegistry(),
-              new EventBridgeAwsServiceRegistry())
+              new SecretsManagerAwsServiceRegistry(), new EventBridgeAwsServiceRegistry())
           .build();
 
       initialize(serviceCache);
@@ -187,6 +192,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     awsServiceCache.register(ActionsNotificationService.class,
         new ActionsNotificationServiceExtension());
     awsServiceCache.register(SesService.class, new SesServiceExtension());
+    awsServiceCache.register(SecretsManagerService.class, new SecretsManagerServiceExtension());
     awsServiceCache.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
     awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
     awsServiceCache.register(EventBridgeService.class, new EventBridgeServiceExtension());
@@ -617,8 +623,16 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     return map.values();
   }
 
-  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map) {
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map)
+      throws IOException {
     DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
+
+    if (TEST_NOTIFICATION.equals(event.type())) {
+      NotificationTestEvent notificationEvent =
+          this.gson.fromJson(map.message(), NotificationTestEvent.class);
+      processNotificationTest(logger, notificationEvent);
+      return;
+    }
 
     String s = String.format(
         "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
@@ -629,6 +643,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     logger.info(s);
     processEvent(logger, event);
+  }
+
+  private void processNotificationTest(final Logger logger, final NotificationTestEvent event)
+      throws IOException {
+    logger.info("Processing notification test for site " + event.siteId());
+    new NotificationAction(event.siteId(), serviceCache).sendTestNotification(event.siteId(),
+        event.to());
   }
 
   /**

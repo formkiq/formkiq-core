@@ -32,14 +32,23 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetConfigurationResponse;
+import com.formkiq.client.model.NotificationConfig;
+import com.formkiq.client.model.NotificationEmailProvider;
+import com.formkiq.client.model.NotificationEmailSmtpConfig;
+import com.formkiq.client.model.NotificationEmailSmtpConnectionSecurity;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.DeleteSecretRequest;
 
 /**
  * Process Urls.
@@ -106,7 +115,7 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
     addAndLoginCognito(FINANCE_EMAIL, List.of("default_read"));
 
     List<ApiClient> apiClients = getApiClients(siteId);
-    SystemManagementApi api = new SystemManagementApi(apiClients.get(0));
+    SystemManagementApi api = new SystemManagementApi(apiClients.getFirst());
     UpdateConfigurationRequest req = new UpdateConfigurationRequest().chatGptApiKey(chatGptApiKey);
     api.updateConfiguration(siteId, req);
 
@@ -229,5 +238,90 @@ public class ConfigurationRequestTest extends AbstractAwsIntegrationTest {
         assertEquals(expected, e.getResponseBody());
       }
     }
+  }
+
+  /**
+   * PATCH /config with an SES notification provider.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testPatchConfiguration05() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    ApiClient client = getApiClients(null).getFirst();
+    SystemManagementApi api = new SystemManagementApi(client);
+    String adminEmail =
+        getSsm().getParameterValue("/formkiq/" + getAppenvironment() + "/console/AdminEmail");
+    NotificationConfig notification =
+        new NotificationConfig().email(adminEmail).provider(NotificationEmailProvider.SES);
+    UpdateConfigurationRequest request =
+        new UpdateConfigurationRequest().notification(notification);
+
+    // when
+    UpdateConfigurationResponse update = api.updateConfiguration(siteId, request);
+    GetConfigurationResponse configuration = api.getConfiguration(siteId);
+
+    // then
+    assertEquals("Config saved", update.getMessage());
+    NotificationConfig actual = configuration.getNotification();
+    assertNotNull(actual);
+    assertEquals(adminEmail, actual.getEmail());
+    assertEquals(NotificationEmailProvider.SES, actual.getProvider());
+  }
+
+  /**
+   * PATCH /config with an SMTP notification provider.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testPatchConfiguration06() throws Exception {
+    // given
+    String siteId = SiteIdKeyGenerator.DEFAULT_SITE_ID;
+    ApiClient client = getApiClients(null).getFirst();
+    SystemManagementApi api = new SystemManagementApi(client);
+    String email = "notifications@example.com";
+    UpdateConfigurationResponse update;
+    GetConfigurationResponse configuration;
+    String secretArn;
+    try (
+        ProfileCredentialsProvider credentials = ProfileCredentialsProvider.create(getAwsprofile());
+        SecretsManagerClient secrets = SecretsManagerClient.builder()
+            .credentialsProvider(credentials).region(getAwsregion()).build()) {
+      secretArn =
+          secrets.createSecret(CreateSecretRequest.builder().name("formkiq-smtp-test-" + ID.ulid())
+              .secretString("{\"username\":\"user\",\"password\":\"password\"}").build()).arn();
+      NotificationEmailSmtpConfig smtp = new NotificationEmailSmtpConfig().host("smtp.gmail.com")
+          .port(587).connectionSecurity(NotificationEmailSmtpConnectionSecurity.STARTTLS)
+          .credentialsSecretArn(secretArn);
+      NotificationConfig notification =
+          new NotificationConfig().email(email).provider(NotificationEmailProvider.SMTP).smtp(smtp);
+      UpdateConfigurationRequest request =
+          new UpdateConfigurationRequest().notification(notification);
+
+      // when
+      try {
+        update = api.updateConfiguration(siteId, request);
+        configuration = api.getConfiguration(siteId);
+      } finally {
+        secrets.deleteSecret(DeleteSecretRequest.builder().secretId(secretArn)
+            .forceDeleteWithoutRecovery(true).build());
+      }
+    }
+
+    // then
+    assertEquals("Config saved", update.getMessage());
+    NotificationConfig actual = configuration.getNotification();
+    assertNotNull(actual);
+    assertEquals(email, actual.getEmail());
+    assertEquals(NotificationEmailProvider.SMTP, actual.getProvider());
+    NotificationEmailSmtpConfig actualSmtp = actual.getSmtp();
+    assertNotNull(actualSmtp);
+    assertEquals("smtp.gmail.com", actualSmtp.getHost());
+    assertEquals(587, actualSmtp.getPort());
+    assertEquals(NotificationEmailSmtpConnectionSecurity.STARTTLS,
+        actualSmtp.getConnectionSecurity());
+    assertEquals(secretArn, actualSmtp.getCredentialsSecretArn());
   }
 }

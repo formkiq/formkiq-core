@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
 import com.formkiq.module.lambdaservices.logger.Logger;
 
 /**
@@ -40,12 +41,16 @@ public class EventServiceMock implements EventService {
   /** {@link List} {@link FolderEvent}. */
   private List<FolderEvent> folderEvents = new ArrayList<FolderEvent>();
 
+  /** {@link List} {@link NotificationTestEvent}. */
+  private List<NotificationTestEvent> notificationTestEvents = new ArrayList<>();
+
   /**
    * Clear Events.
    */
   public void clear() {
     this.folderEvents.clear();
     this.documentEvents.clear();
+    this.notificationTestEvents.clear();
   }
 
   /**
@@ -66,6 +71,15 @@ public class EventServiceMock implements EventService {
     return this.folderEvents;
   }
 
+  /**
+   * Get test notification events.
+   *
+   * @return test notification events
+   */
+  public List<NotificationTestEvent> getNotificationTestEvents() {
+    return this.notificationTestEvents;
+  }
+
   @Override
   public String publish(final Logger logger, final DocumentEvent event) {
     this.documentEvents.add(event);
@@ -75,6 +89,12 @@ public class EventServiceMock implements EventService {
   @Override
   public String publish(final Logger logger, final FolderEvent event) {
     this.folderEvents.add(event);
+    return null;
+  }
+
+  @Override
+  public String publish(final Logger logger, final NotificationTestEvent event) {
+    this.notificationTestEvents.add(event);
     return null;
   }
 

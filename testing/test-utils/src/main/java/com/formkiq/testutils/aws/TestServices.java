@@ -196,8 +196,8 @@ public final class TestServices {
         TestServices.getEndpoint(Service.S3, null), "ssm",
         TestServices.getEndpoint(Service.SSM, null), "sqs",
         TestServices.getEndpoint(Service.SQS, null), "sns",
-        TestServices.getEndpoint(Service.SECRETSMANAGER, null), "secretsmanager",
-        TestServices.getEndpoint(Service.SNS, null));
+        TestServices.getEndpoint(Service.SNS, null), "secretsmanager",
+        TestServices.getEndpoint(Service.SECRETSMANAGER, null));
     return endpoints;
   }
 

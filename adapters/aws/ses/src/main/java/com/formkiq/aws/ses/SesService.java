@@ -43,7 +43,7 @@ public class SesService {
   /** List Max Identiify. */
   private static final int LIST_MAX = 1000;
   /** {@link SesClient}. */
-  private SesClient client;
+  private final SesClient client;
 
   /**
    * constructor.
@@ -61,21 +61,26 @@ public class SesService {
    */
   public ListIdentitiesResponse getEmailAddresses() {
     return this.client.listIdentities(ListIdentitiesRequest.builder()
-        .identityType(IdentityType.EMAIL_ADDRESS).maxItems(Integer.valueOf(LIST_MAX)).build());
+        .identityType(IdentityType.EMAIL_ADDRESS).maxItems(LIST_MAX).build());
   }
 
   /**
    * Send SES Message.
-   * 
-   * @param source {@link String}
-   * @param cc {@link String}
-   * @param bcc {@link String}
-   * @param message {@link Message}
+   *
+   * @param source source email address
+   * @param to to email addresses
+   * @param cc cc email addresses
+   * @param bcc bcc email addresses
+   * @param message message
    * @return {@link SendEmailResponse}
    */
-  public SendEmailResponse sendEmail(final String source, final String cc, final String bcc,
-      final Message message) {
+  public SendEmailResponse sendEmail(final String source, final String to, final String cc,
+      final String bcc, final Message message) {
     Builder destination = Destination.builder();
+
+    if (to != null) {
+      destination = destination.toAddresses(to.split(","));
+    }
 
     if (cc != null) {
       destination = destination.ccAddresses(cc.split(","));
