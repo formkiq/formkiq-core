@@ -283,19 +283,28 @@ public class ApiAuthorizationBuilder {
       Object obj = claims.get(key);
       if (obj != null) {
 
-        String s = obj.toString().trim();
-        if (s.startsWith("[")) {
-          s = s.substring(1);
-        }
+        if (obj instanceof Collection<?> values) {
+          for (Object value : values) {
+            if (value != null && !value.toString().trim().isEmpty()) {
+              groups.add(value.toString().trim());
+            }
+          }
+        } else {
+          String s = obj.toString().trim();
+          if (s.startsWith("[")) {
+            s = s.substring(1);
+          }
 
-        if (s.endsWith("]")) {
-          s = s.substring(0, s.length() - 1);
-        }
+          if (s.endsWith("]")) {
+            s = s.substring(0, s.length() - 1);
+          }
 
-        String delimiterRegex = s.indexOf(',') >= 0 ? "," : " ";
-        for (String token : s.split(delimiterRegex)) {
-          if (!token.isEmpty()) {
-            groups.add(token);
+          String delimiterRegex = s.indexOf(',') >= 0 ? "," : " ";
+          for (String token : s.split(delimiterRegex)) {
+            token = token.trim();
+            if (!token.isEmpty()) {
+              groups.add(token);
+            }
           }
         }
       }
