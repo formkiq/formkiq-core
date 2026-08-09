@@ -2017,6 +2017,46 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+    post:
+      operationId: AddDocumentNotification
+      summary: Add an ad hoc document notification
+      description: Queue an ad hoc notification for a document or one of its artifacts
+      tags:
+      - Document Notifications
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocumentNotificationRequest'
+      responses:
+        "202":
+          description: Notification accepted for delivery
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocumentNotificationResponse'
+        "400":
+          description: Invalid notification request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /documents/{documentId}/ocr:
     get:
       operationId: GetDocumentOcr
@@ -10352,6 +10392,48 @@ components:
           description: List of document notifications
           items:
             $ref: '#/components/schemas/DocumentNotification'
+    AddDocumentNotificationRequest:
+      type: object
+      description: At least one CC or BCC recipient is required
+      required:
+      - notificationType
+      - subject
+      - body
+      properties:
+        notificationType:
+          $ref: '#/components/schemas/DocumentNotificationType'
+        cc:
+          type: array
+          description: CC recipient email addresses
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: email
+        bcc:
+          type: array
+          description: BCC recipient email addresses
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: email
+        subject:
+          type: string
+          minLength: 1
+          description: Notification subject
+        body:
+          type: string
+          minLength: 1
+          description: Notification body
+    AddDocumentNotificationResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Notification queueing result
     DocumentNotification:
       type: object
       properties:
@@ -10378,9 +10460,8 @@ components:
           description: Scheduled notification occurrence date
         status:
           $ref: '#/components/schemas/DocumentNotificationStatus'
-        actionSk:
-          type: string
-          description: Sort key of the created Document Action
+        action:
+          $ref: '#/components/schemas/DocumentAction'
         insertedDate:
           type: string
           description: Inserted timestamp
