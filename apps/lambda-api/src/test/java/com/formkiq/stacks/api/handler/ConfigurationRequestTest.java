@@ -604,8 +604,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals("Config saved", response.getMessage());
-    assertEquals(secretArn, this.systemApi.getConfiguration(DEFAULT_SITE_ID).getNotification()
-        .getSmtp().getCredentialsSecretArn());
+    NotificationConfig notification =
+        this.systemApi.getConfiguration(DEFAULT_SITE_ID).getNotification();
+    assertEquals(NotificationEmailProvider.SMTP, notification.getProvider());
+    assertEquals(NotificationEmailSmtpConnectionSecurity.STARTTLS,
+        notification.getSmtp().getConnectionSecurity());
+    assertEquals(secretArn, notification.getSmtp().getCredentialsSecretArn());
   }
 
   /** PATCH SMTP configuration with a credentials Secret that does not exist. */

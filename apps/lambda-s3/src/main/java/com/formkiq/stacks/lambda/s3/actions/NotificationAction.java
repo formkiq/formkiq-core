@@ -150,7 +150,7 @@ public class NotificationAction implements DocumentAction {
   private void sendSmtp(final SiteConfigurationNotification notification, final String to,
       final String cc, final String bcc, final String subject, final String text, final String html)
       throws IOException {
-    
+
     SiteConfigurationNotificationSmtp smtp = notification.smtp();
     if (smtp == null) {
       throw new IOException("SMTP notification configuration is not set");
@@ -164,8 +164,8 @@ public class NotificationAction implements DocumentAction {
       String username = getCredential(credentials, "username");
       String password = getCredential(credentials, "password");
 
-      smtpEmailSender.send(new SmtpEmail(notification.email(), to, cc, bcc, subject, text, html, smtp,
-          username, password));
+      smtpEmailSender.send(new SmtpEmail(notification.email(), to, cc, bcc, subject, text, html,
+          smtp, username, password));
 
     } catch (JsonParseException e) {
       throw new IOException("SMTP credentials secret must contain valid JSON", e);

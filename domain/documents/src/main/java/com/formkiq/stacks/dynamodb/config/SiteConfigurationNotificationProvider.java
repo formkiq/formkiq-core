@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.config;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Supported notification email providers.
  */
+@Reflectable
 public enum SiteConfigurationNotificationProvider {
   /** Amazon Simple Email Service. */
   SES,

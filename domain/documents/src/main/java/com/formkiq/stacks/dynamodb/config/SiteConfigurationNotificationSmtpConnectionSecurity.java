@@ -23,9 +23,12 @@
  */
 package com.formkiq.stacks.dynamodb.config;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Supported SMTP connection security modes.
  */
+@Reflectable
 public enum SiteConfigurationNotificationSmtpConnectionSecurity {
   /** Upgrade a plain connection using STARTTLS. */
   STARTTLS,
