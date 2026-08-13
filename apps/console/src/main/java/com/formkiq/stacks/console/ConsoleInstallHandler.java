@@ -34,6 +34,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,9 @@ import java.util.zip.ZipInputStream;
 
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
+import com.formkiq.aws.s3.PresignGetUrlConfig;
+import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.S3PresignerServiceExtension;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
@@ -85,6 +90,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
   private static void initialize(final AwsServiceCache cache) {
     cache.register(ConfigService.class, new ConfigServiceExtension());
+    cache.register(S3PresignerService.class, new S3PresignerServiceExtension());
     cache.register(S3Service.class, new S3ServiceExtension());
     serviceCache = cache;
   }
@@ -268,6 +274,34 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   }
 
   /**
+   * Generate a presigned URL when a Console module is stored in S3.
+   *
+   * @param moduleZipUrl Console module ZIP URL
+   * @return URL used to download the module
+   */
+  protected String getConsoleModuleZipDownloadUrl(final String moduleZipUrl) {
+    URI uri = URI.create(moduleZipUrl);
+    String host = uri.getHost();
+    int s3Index = host != null ? host.indexOf(".s3.") : -1;
+
+    if (s3Index < 1 || !host.endsWith(".amazonaws.com")) {
+      return moduleZipUrl;
+    }
+
+    String bucket = host.substring(0, s3Index);
+    String path = uri.getPath();
+    if (path == null || path.length() < 2) {
+      throw new IllegalArgumentException("Console module S3 URL must include an object key");
+    }
+
+    String key = path.substring(1);
+    S3PresignerService presigner = serviceCache.getExtension(S3PresignerService.class);
+    return presigner
+        .presignGetUrl(bucket, key, Duration.ofMinutes(5), null, new PresignGetUrlConfig())
+        .toExternalForm();
+  }
+
+  /**
    * Get console zip as {@link InputStream}.
    *
    * @param consoleZipUrl {@link String}
@@ -298,6 +332,41 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    */
   protected String getConsoleZipUrl() {
     return serviceCache.environment("CONSOLE_ZIP_URL");
+  }
+
+  private List<String> getConsoleZipUrls(final Map<String, Object> input) {
+    List<String> zipUrls = new ArrayList<>();
+    zipUrls.add(getConsoleZipUrl());
+
+    Object resourceProperties = input.get("ResourceProperties");
+    if (!(resourceProperties instanceof Map<?, ?> properties)) {
+      return zipUrls;
+    }
+
+    Object consoleModuleZipUrls = properties.get("ConsoleModuleZipUrls");
+    if (consoleModuleZipUrls == null) {
+      return zipUrls;
+    }
+
+    if (!(consoleModuleZipUrls instanceof List<?> moduleZipUrls)) {
+      throw new IllegalArgumentException("ConsoleModuleZipUrls must be a list");
+    }
+
+    for (Object moduleZipUrl : moduleZipUrls) {
+      if (!(moduleZipUrl instanceof String zipUrl)) {
+        throw new IllegalArgumentException("ConsoleModuleZipUrls must contain strings");
+      }
+
+      if (!zipUrl.isBlank()) {
+        URI uri = URI.create(zipUrl);
+        if (!"https".equalsIgnoreCase(uri.getScheme())) {
+          throw new IllegalArgumentException("ConsoleModuleZipUrls must use HTTPS");
+        }
+        zipUrls.add(zipUrl);
+      }
+    }
+
+    return zipUrls;
   }
 
   private String getDriveCognitoAuthorizeUrl() {
@@ -346,7 +415,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
       if (unzip) {
 
-        unzipConsole(s3, input, context, logger);
+        unzipConsole(s3, input, logger);
         installDriveLoginPage(logger, s3);
         installDriveLoginSuccessPage(logger, s3);
         updateDriveCognitoUserPoolClient(logger);
@@ -364,17 +433,14 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
       } else {
 
-        sendResponse(input, logger, context, "FAILURE",
+        sendResponse(input, logger, context, "FAILED",
             "received RequestType " + requestType + " skipping unpacking");
       }
 
     } catch (Exception e) {
 
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw);
-      e.printStackTrace(pw);
-
-      sendResponse(input, logger, context, "FAILURE", sw.toString());
+      logStacktrace(context, e);
+      sendResponse(input, logger, context, "FAILED", e.getMessage());
     }
 
     return null;
@@ -498,23 +564,24 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
    *
    * @param s3 {@link S3Service}
    * @param input {@link Map}
-   * @param context {@link Context}
    * @param logger {@link LambdaLogger}
+   * @throws IOException IOException
    */
   private void unzipConsole(final S3Service s3, final Map<String, Object> input,
-      final Context context, final LambdaLogger logger) {
+      final LambdaLogger logger) throws IOException {
 
     String consoleversion = serviceCache.environment("CONSOLE_VERSION");
     String destinationBucket = serviceCache.environment("CONSOLE_BUCKET");
-    String consoleZipUrl = getConsoleZipUrl();
-    logger.log("unpacking " + consoleZipUrl + " to bucket " + destinationBucket);
 
-    try (InputStream stream = getConsoleZipInputStream(consoleZipUrl)) {
-      writeToBucket(s3, stream, destinationBucket, consoleversion);
-    } catch (IOException e) {
+    List<String> consoleZipUrls = getConsoleZipUrls(input);
+    for (int i = 0; i < consoleZipUrls.size(); i++) {
+      String consoleZipUrl = consoleZipUrls.get(i);
+      logger.log("unpacking " + consoleZipUrl + " to bucket " + destinationBucket);
 
-      logStacktrace(context, e);
-      sendResponse(input, logger, context, "FAILED", "Unable to Write files to Bucket.");
+      String downloadUrl = i == 0 ? consoleZipUrl : getConsoleModuleZipDownloadUrl(consoleZipUrl);
+      try (InputStream stream = getConsoleZipInputStream(downloadUrl)) {
+        writeToBucket(s3, stream, destinationBucket, consoleversion);
+      }
     }
   }
 
