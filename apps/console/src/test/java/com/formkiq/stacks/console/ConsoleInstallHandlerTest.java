@@ -25,13 +25,16 @@ package com.formkiq.stacks.console;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -142,7 +145,8 @@ public class ConsoleInstallHandlerTest {
 
   /** before. */
   @BeforeEach
-  public void before() {
+  public void before() throws IOException {
+    connection = new HttpUrlConnectionRecorder(URI.create("http://localhost").toURL());
     serviceCache.environment().remove("COGNITO_SINGLE_SIGN_ON_URL");
     createHandler();
   }
@@ -462,7 +466,7 @@ public class ConsoleInstallHandlerTest {
   @Test
   public void testHandleRequest04() {
     // given
-    final int contentlength = 122;
+    final int contentlength = 121;
     final Map<String, Object> input = createInput("UNKNOWN");
 
     // when
@@ -476,9 +480,124 @@ public class ConsoleInstallHandlerTest {
 
     assertTrue(this.logger.containsString("received RequestType UNKNOWN skipping unpacking"));
     assertTrue(
-        this.logger.containsString("sending FAILURE to https://cloudformation-custom-resource"));
+        this.logger.containsString("sending FAILED to https://cloudformation-custom-resource"));
 
-    assertTrue(connection.contains("\"Status\":\"FAILURE\""));
+    assertTrue(connection.contains("\"Status\":\"FAILED\""));
+  }
+
+  /**
+   * Verify a module ZIP failure stops installation and sends only a failed response.
+   *
+   */
+  @Test
+  public void testHandleRequestConsoleModuleZipFailure() {
+    // given
+    String module = "https://example.com/modules/workflows.zip";
+    List<String> fetchedUrls = new ArrayList<>();
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected InputStream getConsoleZipInputStream(final String consoleZipUrl)
+          throws IOException {
+        fetchedUrls.add(consoleZipUrl);
+        if (module.equals(consoleZipUrl)) {
+          throw new IOException("unable to download console module ZIP");
+        }
+        return ConsoleInstallHandlerTest.class.getResourceAsStream("/test.zip");
+      }
+    };
+
+    Map<String, Object> input = createInput("Create");
+    input.put("ResourceProperties", Map.of("ConsoleModuleZipUrls", List.of(module)));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertEquals(List.of(serviceCache.environment("CONSOLE_ZIP_URL"), module), fetchedUrls);
+    assertTrue(connection.contains("\"Status\":\"FAILED\""));
+    assertFalse(connection.contains("\"Status\":\"SUCCESS\""));
+  }
+
+  /**
+   * Verify additional console module ZIP files are installed after the base console.
+   *
+   */
+  @Test
+  public void testHandleRequestConsoleModuleZipUrls() {
+    // given
+    String module1 = "https://private-bucket.s3.us-east-2.amazonaws.com/modules/workflows.zip";
+    String module2 = "https://example.com/modules/esignature.zip";
+    List<String> fetchedUrls = new ArrayList<>();
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected InputStream getConsoleZipInputStream(final String consoleZipUrl) {
+        fetchedUrls.add(consoleZipUrl);
+        return ConsoleInstallHandlerTest.class.getResourceAsStream("/test.zip");
+      }
+    };
+
+    Map<String, Object> input = createInput("Create");
+    input.put("ResourceProperties", Map.of("ConsoleModuleZipUrls", List.of("", module1, module2)));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertEquals(3, fetchedUrls.size());
+    assertEquals(serviceCache.environment("CONSOLE_ZIP_URL"), fetchedUrls.get(0));
+    assertTrue(fetchedUrls.get(1).contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+    assertTrue(fetchedUrls.get(1).contains("private-bucket"));
+    assertTrue(fetchedUrls.get(1).contains("modules/workflows.zip"));
+    assertEquals(module2, fetchedUrls.get(2));
+    assertFalse(this.logger.containsString("X-Amz-Algorithm"));
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+  }
+
+  /**
+   * Verify a console ZIP download failure sends only a failed response.
+   *
+   */
+  @Test
+  public void testHandleRequestConsoleZipDownloadFailure() {
+    // given
+    final String message = "unable to download console ZIP";
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected InputStream getConsoleZipInputStream(final String consoleZipUrl)
+          throws IOException {
+        throw new IOException(message);
+      }
+    };
+
+    // when
+    this.handler.handleRequest(createInput("Create"), this.context);
+
+    // then
+    assertTrue(
+        this.logger.containsString("sending FAILED to https://cloudformation-custom-resource"));
+    assertFalse(
+        this.logger.containsString("sending SUCCESS to https://cloudformation-custom-resource"));
+    assertTrue(connection.contains("\"Status\":\"FAILED\""));
+    assertTrue(connection.contains(message));
+    assertFalse(connection.contains("\"Status\":\"SUCCESS\""));
   }
 
   private void verifyCognitoConfig() {
