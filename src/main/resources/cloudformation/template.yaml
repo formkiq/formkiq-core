@@ -12,6 +12,11 @@ Parameters:
     Default: ""
     Description: ARN of the Console WAF WebACL to associate with the CloudFront distribution
 
+  ConsoleModuleZipUrls:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: Optional HTTPS URLs for additional console module ZIP files
+
   AdminEmail:
     Type: String
     Description: Administrator Email (required)
@@ -304,6 +309,10 @@ Resources:
           Ref: AdminEmail
         WAFWebACLId:
           Ref: ConsoleWafACLId
+        ConsoleModuleZipUrls:
+          Fn::Join:
+            - ","
+            - Ref: ConsoleModuleZipUrls
         IsGovCloud:
           Fn::If:
           - IsGovCloud
