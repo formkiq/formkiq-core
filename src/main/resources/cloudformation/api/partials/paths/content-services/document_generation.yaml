@@ -73,6 +73,16 @@ components:
         saveAsDocumentId:
           type: "string"
           description: "Save the generated document with a specific documentId"
+        saveAsArtifact:
+          type: "boolean"
+          default: false
+          description: "Create the output as a new artifact of saveAsDocumentId"
+        saveAsArtifactId:
+          type: "string"
+          description: "Save the output as a new version of an existing artifact"
+        artifactCategory:
+          type: "string"
+          description: "Optional caller-defined category for artifact output"
         path:
           type: "string"
           description: "The path of the generated document"
@@ -135,3 +145,6 @@ components:
         documentId:
           type: "string"
           description: "Generated document identifier"
+        artifactId:
+          type: "string"
+          description: "Artifact Identifier"
