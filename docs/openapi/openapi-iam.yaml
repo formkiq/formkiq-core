@@ -3672,6 +3672,53 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/sender:
+    post:
+      operationId: AddDocusignSenderView
+      summary: Create Docusign Sender View request
+      description: DocuSign create Docusign Sender View request; available as an Add-On Module
+      tags:
+      - E-Signature
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocusignSenderViewRequest'
+            example:
+              environment: DEVELOPMENT
+              returnUrl: https://console.example.com/agreements/123/esignature
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocusignSenderViewResponse'
+              example:
+                viewUrl: https://...
+        "400":
+          description: 400 OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
   /esignature/docusign/events:
     post:
       operationId: AddEsignatureDocusignEvents
@@ -11433,6 +11480,16 @@ components:
       enum:
       - PRODUCTION
       - DEVELOPMENT
+    DocusignEnvelopeStatus:
+      type: string
+      description: |-
+        Controls how the envelope is created:
+        * `created` saves the envelope as a draft without notifying recipients.
+        * `sent` immediately sends the envelope to recipients.
+      enum:
+      - created
+      - sent
+      default: sent
     DocusignRecipientView:
       type: object
       properties:
@@ -11471,6 +11528,8 @@ components:
           description: The subject line of the email message that is sent to all recipients
         environment:
           $ref: '#/components/schemas/DocusignEnvironment'
+        status:
+          $ref: '#/components/schemas/DocusignEnvelopeStatus'
         signers:
           type: array
           description: List of DocuSign Signers
@@ -11626,6 +11685,23 @@ components:
         viewUrl:
           type: string
           description: The view URL to be navigated to complete DocuSign signing
+    AddDocusignSenderViewRequest:
+      type: object
+      required:
+      - environment
+      - returnUrl
+      properties:
+        environment:
+          $ref: '#/components/schemas/DocusignEnvironment'
+        returnUrl:
+          type: string
+          description: The URL to which the sender is redirected after exiting the sender view
+    AddDocusignSenderViewResponse:
+      type: object
+      properties:
+        viewUrl:
+          type: string
+          description: The URL for the embedded DocuSign sender view
     GetFoldersResponse:
       type: object
       properties:
