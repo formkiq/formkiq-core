@@ -33,6 +33,7 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
@@ -134,7 +135,7 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
         assertEquals("softdelete#docs#attr#category", result.get(DbKeys.GSI1_PK).s());
       }
 
-      assertEquals("softdelete#attr#category#111", result.get(DbKeys.SK).s());
+      assertEquals("attr#category#111", result.get(DbKeys.SK).s());
       assertEquals("111", result.get(DbKeys.GSI1_SK).s());
 
       // given
@@ -155,6 +156,45 @@ class DocumentDeleteMoveAttributeFunctionTest implements DbKeys {
 
       assertEquals("attr#category#111", restore.get(DbKeys.SK).s());
       assertEquals("111", restore.get(DbKeys.GSI1_SK).s());
+
+      // Legacy soft-deleted records prefixed the SK and must remain restorable.
+      Map<String, AttributeValue> legacy = new HashMap<>(result);
+      legacy.put(SK, fromS(DocumentDeleteMoveAttributeFunction.SOFT_DELETE + attrs.get(SK).s()));
+      Map<String, AttributeValue> legacyRestore = rfn.transform(legacy);
+      assertEquals("attr#category#111", legacyRestore.get(DbKeys.SK).s());
     }
+  }
+
+  /**
+   * Test soft deleting and restoring a document attribute with a maximum-length sort key.
+   */
+  @Test
+  void testTransformDocumentAttributeMaximumSortKeyLength() {
+    // given
+    String documentId = ID.uuid();
+    DocumentArtifact document = DocumentArtifact.of(documentId, null);
+    String skPrefix = "attr#";
+    String sk = skPrefix + "a".repeat(1024 - skPrefix.length());
+
+    Map<String, AttributeValue> attrs = new HashMap<>();
+    attrs.put(PK, fromS("docs#" + documentId));
+    attrs.put(SK, fromS(sk));
+
+    // when
+    DocumentDeleteMoveAttributeFunction deleteFn =
+        new DocumentDeleteMoveAttributeFunction(null, document);
+    Map<String, AttributeValue> deleted = deleteFn.transform(attrs);
+
+    // then
+    assertEquals(1024, deleted.get(SK).s().getBytes(StandardCharsets.UTF_8).length);
+    assertEquals(sk, deleted.get(SK).s());
+
+    // when
+    DocumentRestoreMoveAttributeFunction restoreFn =
+        new DocumentRestoreMoveAttributeFunction(null, document);
+    Map<String, AttributeValue> restored = restoreFn.transform(deleted);
+
+    // then
+    assertEquals(sk, restored.get(SK).s());
   }
 }
