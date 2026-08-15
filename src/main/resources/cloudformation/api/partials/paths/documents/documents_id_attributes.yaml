@@ -182,6 +182,49 @@ paths:
       x-amazon-apigateway-integration:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
+  #@overlay/match missing_ok=True
+  /documents/{documentId}/attributes/{attributeKey}/generate:
+    post:
+      operationId: GenerateDocumentAttributeValue
+      description: Allocates the next value from the numbering sequence configured for the attribute key and stores it on the document. If the document already has a value for the attribute key, the existing value is returned.
+      summary: Generate document attribute value
+      tags:
+        - Document Attributes
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/attributeKeyParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateDocumentAttributeValueResponse'
+        '400':
+          description: Attribute key is not eligible for generated values
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        '404':
+          description: Document or numbering sequence not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
 components:
   schemas:
     #@overlay/match missing_ok=True
@@ -257,6 +300,26 @@ components:
       properties:
         attribute:
           $ref: "#/components/schemas/DocumentAttribute"
+
+    #@overlay/match missing_ok=True
+    GenerateDocumentAttributeValueResponse:
+      type: "object"
+      required:
+        - attribute
+        - sequence
+        - period
+      properties:
+        attribute:
+          $ref: "#/components/schemas/DocumentAttribute"
+        sequence:
+          type: "integer"
+          format: "int64"
+          description: "Allocated sequence number"
+          example: 1
+        period:
+          type: "string"
+          description: "Sequence period used for the allocation"
+          example: "2026"
 
     #@overlay/match missing_ok=True
     DocumentAttribute:
