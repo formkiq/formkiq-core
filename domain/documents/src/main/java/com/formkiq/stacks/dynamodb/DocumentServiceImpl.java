@@ -1584,8 +1584,12 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         AttributeValueToMap toMap = new AttributeValueToMap();
 
         list.forEach(i -> {
-          if (i.containsKey("SK") && i.get("SK").s().startsWith("softdelete#attr#")) {
-            this.interceptor.restoreSoftDeletedDocumentAttribute(siteId, document, toMap.apply(i));
+          if (i.containsKey("SK")) {
+            String sk = i.get("SK").s();
+            if (sk.startsWith("attr#") || sk.startsWith("softdelete#attr#")) {
+              this.interceptor.restoreSoftDeletedDocumentAttribute(siteId, document,
+                  toMap.apply(i));
+            }
           }
         });
 

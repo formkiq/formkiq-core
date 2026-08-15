@@ -53,6 +53,10 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
     this.document = documentArtifact;
   }
 
+  private String removeSoftDeletePrefix(final String value) {
+    return value.startsWith(SOFT_DELETE) ? value.substring(SOFT_DELETE.length()) : value;
+  }
+
   @Override
   public Map<String, AttributeValue> transform(final Map<String, AttributeValue> attr) {
     Map<String, AttributeValue> a = new HashMap<>(attr);
@@ -68,8 +72,8 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
       a.put(SK, key.get(SK));
 
       if (a.containsKey(GSI1_PK)) {
-        a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));
-        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI1_PK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI1_PK).s())));
+        a.put(GSI1_SK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI1_SK).s())));
       }
 
       a.remove(GSI2_PK);
@@ -78,17 +82,17 @@ public class DocumentRestoreMoveAttributeFunction implements MoveAttributeFuncti
 
     } else {
 
-      a.put(PK, AttributeValue.fromS(pk.replaceAll(SOFT_DELETE, "")));
-      a.put(SK, AttributeValue.fromS(sk.replaceAll(SOFT_DELETE, "")));
+      a.put(PK, AttributeValue.fromS(removeSoftDeletePrefix(pk)));
+      a.put(SK, AttributeValue.fromS(removeSoftDeletePrefix(sk)));
 
       if (a.containsKey(GSI1_PK)) {
-        a.put(GSI1_PK, AttributeValue.fromS(a.get(GSI1_PK).s().replaceAll(SOFT_DELETE, "")));
-        a.put(GSI1_SK, AttributeValue.fromS(a.get(GSI1_SK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI1_PK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI1_PK).s())));
+        a.put(GSI1_SK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI1_SK).s())));
       }
 
       if (a.containsKey(GSI2_PK)) {
-        a.put(GSI2_PK, AttributeValue.fromS(a.get(GSI2_PK).s().replaceAll(SOFT_DELETE, "")));
-        a.put(GSI2_SK, AttributeValue.fromS(a.get(GSI2_SK).s().replaceAll(SOFT_DELETE, "")));
+        a.put(GSI2_PK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI2_PK).s())));
+        a.put(GSI2_SK, AttributeValue.fromS(removeSoftDeletePrefix(a.get(GSI2_SK).s())));
       }
     }
 
