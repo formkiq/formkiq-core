@@ -7386,6 +7386,35 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/dataClassificationLambdaApi200'
+  /userNotifications:
+    get:
+      operationId: GetUserNotifications
+      summary: Get user notifications
+      description: Retrieve notifications where the authenticated user's email is a CC or BCC recipient
+      tags:
+      - Document Notifications
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/limitParam'
+      - $ref: '#/components/parameters/nextParam'
+      responses:
+        "200":
+          description: 200 OK
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserNotificationsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /version:
     get:
       operationId: GetVersion
@@ -14973,6 +15002,29 @@ components:
         geo:
           type: string
           example: US
+    GetUserNotificationsResponse:
+      type: object
+      properties:
+        next:
+          type: string
+          description: Next page of results token
+        notifications:
+          type: array
+          description: List of notifications where the authenticated user's email is a CC or BCC recipient
+          items:
+            $ref: '#/components/schemas/UserNotification'
+    UserNotification:
+      description: A document notification associated with the authenticated user's email address
+      type: object
+      properties:
+        documentId:
+          type: string
+          description: Document identifier
+        artifactId:
+          type: string
+          description: Document artifact identifier
+        notification:
+          $ref: '#/components/schemas/DocumentNotification'
     GetVersionResponse:
       type: object
       properties:
