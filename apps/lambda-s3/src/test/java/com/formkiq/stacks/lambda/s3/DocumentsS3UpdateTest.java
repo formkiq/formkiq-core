@@ -208,7 +208,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   private static void assertCreateDocumentSnsMessage(final String siteId, final String eventType,
       final int expected) throws InterruptedException {
-    List<Message> messages = eventQueue.get(List.of("\\\"type\\\":\\\"" + eventType + "\\\""));
+    List<Message> messages =
+        eventQueue.get(List.of("\\\"type\\\":\\\"" + eventType + "\\\""), expected);
     assertEquals(expected, messages.size());
     Message m = messages.getFirst();
 
