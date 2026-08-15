@@ -29,7 +29,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +44,8 @@ public class SqsMessageReceiver {
   private static final int SLEEP_DELAY = 20;
   /** Retry Limit. */
   private static final int RETRY_LIMIT = 10;
+  /** Matching message retry limit. */
+  private static final int MATCHING_MESSAGE_RETRY_LIMIT = 500;
   /** {@link SqsService}. */
   private final SqsService sqs;
   /** Sqs Queue Url. */
@@ -74,8 +76,11 @@ public class SqsMessageReceiver {
    * Clears all messages in queue.
    */
   public void clear() {
-    ReceiveMessageResponse response = sqs.receiveMessages(queueUrl);
-    response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
+    ReceiveMessageResponse response;
+    do {
+      response = sqs.receiveMessages(queueUrl, MESSAGE_COUNT);
+      response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
+    } while (!response.messages().isEmpty());
   }
 
   /**
@@ -108,23 +113,40 @@ public class SqsMessageReceiver {
    * @throws InterruptedException InterruptedException
    */
   public List<Message> get(final List<String> searchStrings) throws InterruptedException {
+    return get(searchStrings, 1);
+  }
+
+  /**
+   * Get the expected number of matching messages.
+   *
+   * @param searchStrings {@link List} {@link String}
+   * @param expectedCount expected number of matching messages
+   * @return {@link List} {@link Message}
+   * @throws InterruptedException InterruptedException
+   */
+  public List<Message> get(final List<String> searchStrings, final int expectedCount)
+      throws InterruptedException {
+    if (expectedCount < 1) {
+      throw new IllegalArgumentException("'expectedCount' must be greater than zero");
+    }
+
     int retry = 0;
-    List<Message> messages = Collections.emptyList();
+    List<Message> messages = new ArrayList<>();
 
-    while (messages.isEmpty()) {
+    while (messages.size() < expectedCount) {
       ReceiveMessageResponse response = sqs.receiveMessages(queueUrl, MESSAGE_COUNT);
-      messages = response.messages();
-      messages.forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
-      messages = messages.stream().filter(m -> searchStrings.stream().allMatch(m.body()::contains))
-          .toList();
+      response.messages().forEach(m -> sqs.deleteMessage(queueUrl, m.receiptHandle()));
+      messages.addAll(response.messages().stream()
+          .filter(m -> searchStrings.stream().allMatch(m.body()::contains)).toList());
 
-      if (messages.isEmpty()) {
+      if (messages.size() < expectedCount) {
         retry++;
         TimeUnit.MILLISECONDS.sleep(SLEEP_DELAY);
       }
 
-      if (retry > RETRY_LIMIT) {
-        throw new RuntimeException("Timeout waiting for SQS message");
+      if (retry > MATCHING_MESSAGE_RETRY_LIMIT) {
+        throw new RuntimeException("Timeout waiting for " + expectedCount
+            + " matching SQS messages; received " + messages.size());
       }
     }
 
