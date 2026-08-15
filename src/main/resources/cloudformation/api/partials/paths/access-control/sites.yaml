@@ -1058,6 +1058,120 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
 
   #@overlay/match missing_ok=True
+  /sites/{siteId}/numberingSequences:
+    get:
+      operationId: GetNumberingSequences
+      description: Returns the numbering sequences configured for a site
+      summary: Get numbering sequences
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/nextParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNumberingSequencesResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /sites/{siteId}/numberingSequences/{attributeKey}:
+    get:
+      operationId: GetNumberingSequence
+      description: Returns the numbering sequence configured for an attribute key
+      summary: Get numbering sequence
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/attributeKeyParam'
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNumberingSequenceResponse'
+        '404':
+          description: Numbering sequence not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+    put:
+      operationId: SetNumberingSequence
+      description: Creates or updates the numbering sequence for an attribute key
+      summary: Set numbering sequence
+      tags:
+        - System Management
+      parameters:
+        - $ref: '#/components/parameters/siteIdPathParam'
+        - $ref: '#/components/parameters/attributeKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetNumberingSequenceRequest'
+            examples:
+              ContractNumber:
+                value:
+                  pattern: "CONTRACT-{YEAR}-{SEQUENCE}"
+                  startAt: 1
+                  padding: 5
+                  reset: YEARLY
+                  timezone: America/Winnipeg
+      responses:
+        '200':
+          description: "200 OK"
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNumberingSequenceResponse'
+        '400':
+          description: Invalid numbering sequence configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
+
+  #@overlay/match missing_ok=True
   /sites/{siteId}/configuration/notification/test:
     post:
       operationId: AddNotificationTest
@@ -2788,6 +2902,125 @@ components:
         maxTransactions:
           type: "number"
           description: "Max number of OCR actions that can be created (-1 for unlimited)"
+
+    #@overlay/match missing_ok=True
+    NumberingSequenceReset:
+      type: "string"
+      description: "Frequency at which the sequence restarts at startAt"
+      enum:
+        - NONE
+        - YEARLY
+
+    #@overlay/match missing_ok=True
+    NumberingSequence:
+      type: "object"
+      required:
+        - attributeKey
+        - pattern
+        - startAt
+        - padding
+        - reset
+      properties:
+        attributeKey:
+          type: "string"
+          description: "Attribute key where generated values are stored"
+        pattern:
+          type: "string"
+          description: "Number format using supported tokens such as {YEAR} and {SEQUENCE}"
+          example: "CONTRACT-{YEAR}-{SEQUENCE}"
+        startAt:
+          type: "integer"
+          format: "int64"
+          minimum: 1
+          description: "First sequence number allocated for a new period"
+          example: 1
+        padding:
+          type: "integer"
+          minimum: 1
+          description: "Minimum width of the generated sequence number, padded with leading zeroes"
+          example: 5
+        reset:
+          $ref: '#/components/schemas/NumberingSequenceReset'
+        timezone:
+          type: "string"
+          description: "IANA timezone used to determine the active period; defaults to UTC"
+          default: "UTC"
+          example: "America/Winnipeg"
+        currentPeriod:
+          type: "string"
+          nullable: true
+          readOnly: true
+          description: "Active sequence period, or null if no number has been allocated"
+          example: "2026"
+        currentSequence:
+          type: "integer"
+          format: "int64"
+          nullable: true
+          readOnly: true
+          description: "Most recently allocated sequence number, or null if none has been allocated"
+          example: 2
+        lastValue:
+          type: "string"
+          nullable: true
+          readOnly: true
+          description: "Most recently generated attribute value, or null if none has been allocated"
+          example: "CONTRACT-2026-00002"
+
+    #@overlay/match missing_ok=True
+    SetNumberingSequenceRequest:
+      type: "object"
+      required:
+        - pattern
+        - startAt
+        - padding
+        - reset
+      properties:
+        pattern:
+          type: "string"
+          description: "Number format using supported tokens such as {YEAR} and {SEQUENCE}"
+          example: "CONTRACT-{YEAR}-{SEQUENCE}"
+        startAt:
+          type: "integer"
+          format: "int64"
+          minimum: 1
+          description: "First sequence number allocated for a new period"
+          example: 1
+        padding:
+          type: "integer"
+          minimum: 1
+          description: "Minimum width of the generated sequence number, padded with leading zeroes"
+          example: 5
+        reset:
+          $ref: '#/components/schemas/NumberingSequenceReset'
+        timezone:
+          type: "string"
+          description: "IANA timezone used to determine the active period; defaults to UTC"
+          default: "UTC"
+          example: "America/Winnipeg"
+
+    #@overlay/match missing_ok=True
+    GetNumberingSequencesResponse:
+      type: "object"
+      required:
+        - numberingSequences
+      properties:
+        next:
+          type: "string"
+          description: "Next page of results token"
+        numberingSequences:
+          type: "array"
+          description: "List of numbering sequences"
+          items:
+            $ref: '#/components/schemas/NumberingSequence'
+
+    #@overlay/match missing_ok=True
+    GetNumberingSequenceResponse:
+      type: "object"
+      required:
+        - numberingSequence
+      properties:
+        numberingSequence:
+          $ref: '#/components/schemas/NumberingSequence'
 
     #@overlay/match missing_ok=True
     UpdateConfigurationRequest:

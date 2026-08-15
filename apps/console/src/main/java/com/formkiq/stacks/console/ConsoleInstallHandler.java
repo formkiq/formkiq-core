@@ -84,6 +84,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       "DRIVE_COGNITO_USER_POOL_CLIENT_ID";
   /** Console URL environment variable. */
   private static final String CONSOLE_URL = "CONSOLE_URL";
+  /** Console module presigned URL expiry in minutes. */
+  private static final long CONSOLE_MODULE_PRESIGNED_URL_EXPIRY_MINUTES = 5;
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
@@ -297,7 +299,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String key = path.substring(1);
     S3PresignerService presigner = serviceCache.getExtension(S3PresignerService.class);
     return presigner
-        .presignGetUrl(bucket, key, Duration.ofMinutes(5), null, new PresignGetUrlConfig())
+        .presignGetUrl(bucket, key, Duration.ofMinutes(CONSOLE_MODULE_PRESIGNED_URL_EXPIRY_MINUTES),
+            null, new PresignGetUrlConfig())
         .toExternalForm();
   }
 

@@ -70,6 +70,7 @@ import com.formkiq.stacks.api.handler.VersionRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributeRequestHandler;
 import com.formkiq.stacks.api.handler.attributes.AttributesRequestHandler;
+import com.formkiq.stacks.api.handler.documents.DocumentAttributeGenerateRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentAttributeRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentAttributesRequestHandler;
 import com.formkiq.stacks.api.handler.documents.DocumentAttributesValueRequestHandler;
@@ -123,6 +124,8 @@ import com.formkiq.stacks.api.handler.sites.ConfigurationApiKeyRequestHandler;
 import com.formkiq.stacks.api.handler.sites.ConfigurationApiKeysRequestHandler;
 import com.formkiq.stacks.api.handler.sites.ConfigurationRequestHandler;
 import com.formkiq.stacks.api.handler.sites.ConfigurationNotificationTestRequestHandler;
+import com.formkiq.stacks.api.handler.sites.NumberingSequenceRequestHandler;
+import com.formkiq.stacks.api.handler.sites.NumberingSequencesRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesClassificationAllowedValuesRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesClassificationIdRequestHandler;
 import com.formkiq.stacks.api.handler.sites.SitesClassificationRequestHandler;
@@ -167,6 +170,8 @@ import com.formkiq.stacks.dynamodb.locale.LocaleService;
 import com.formkiq.stacks.dynamodb.locale.LocaleServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 import com.formkiq.stacks.dynamodb.mappings.MappingServiceExtension;
+import com.formkiq.stacks.dynamodb.numbering.NumberingSequenceService;
+import com.formkiq.stacks.dynamodb.numbering.NumberingSequenceServiceExtension;
 import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.stacks.dynamodb.schemas.SchemaServiceExtension;
 import com.google.gson.Gson;
@@ -195,6 +200,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
   private static void addDocumentAttributeEndpoints() {
     addRequestHandler(new DocumentAttributesRequestHandler());
     addRequestHandler(new DocumentAttributeRequestHandler());
+    addRequestHandler(new DocumentAttributeGenerateRequestHandler());
     addRequestHandler(new DocumentAttributesValueRequestHandler());
   }
 
@@ -254,6 +260,8 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     addRequestHandler(new VersionRequestHandler());
     addRequestHandler(new SitesRequestHandler());
     addRequestHandler(new ConfigurationRequestHandler());
+    addRequestHandler(new NumberingSequencesRequestHandler());
+    addRequestHandler(new NumberingSequenceRequestHandler());
     addRequestHandler(new ConfigurationNotificationTestRequestHandler());
     addRequestHandler(new SystemConfigurationRequestHandler());
     addRequestHandler(new ConfigurationApiKeysRequestHandler());
@@ -381,6 +389,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
     serviceCache.register(SchemaService.class, new SchemaServiceExtension());
     serviceCache.register(MappingService.class, new MappingServiceExtension());
     serviceCache.register(LocaleService.class, new LocaleServiceExtension());
+    serviceCache.register(NumberingSequenceService.class, new NumberingSequenceServiceExtension());
     serviceCache.register(Gson.class, new CoreGsonExtension());
 
     serviceCache.registerAppend(ApiRequestHandlerInterceptor.class,
