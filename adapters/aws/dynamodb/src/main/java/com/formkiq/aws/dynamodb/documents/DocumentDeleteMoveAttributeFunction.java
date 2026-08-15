@@ -91,7 +91,10 @@ public class DocumentDeleteMoveAttributeFunction implements MoveAttributeFunctio
     } else {
 
       a.put(PK, fromS(SOFT_DELETE + pk));
-      a.put(SK, fromS(SOFT_DELETE + sk));
+
+      // The PK already moves the item into the soft-delete namespace. Preserve the SK so a key at
+      // DynamoDB's 1,024-byte limit does not overflow and can be restored without truncation.
+      a.put(SK, fromS(sk));
 
       if (a.containsKey(GSI1_PK)) {
         a.put(GSI1_PK, fromS(SOFT_DELETE + a.get(GSI1_PK).s()));

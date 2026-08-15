@@ -90,6 +90,7 @@ import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.api.documents.PromoteDocumentArtifactRequestBuilder;
+import com.formkiq.testutils.api.documents.RestoreDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSitesConfigurationRequestBuilder;
@@ -115,6 +116,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
+import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentNotFound;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -660,6 +662,46 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals(List.of(doc1),
           notNull(after.getDocuments()).stream().map(Document::getDocumentId).toList());
     }
+  }
+
+  /**
+   * Soft delete a document with an attribute whose sort key is truncated to DynamoDB's 1,024-byte
+   * limit.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testHandleSoftDeleteDocumentWithLargeAttribute() throws Exception {
+    // given
+    String siteId = DEFAULT_SITE_ID;
+    setBearerToken(siteId);
+
+    String attributeKey = "largeAttributeForSoftDelete";
+    this.attributesApi.addAttribute(
+        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+
+    final int valueLength = 3000;
+    String attributeValue = Strings.generateRandomString(valueLength);
+    var document = new AddDocumentRequestBuilder().content("test data")
+        .addAttribute(attributeKey, attributeValue).getDocument(client, siteId);
+
+    // when
+    new DeleteDocumentRequestBuilder(document).softDelete(true).submit(client, siteId)
+        .throwIfError();
+
+    // then
+    assertDocumentNotFound(client, siteId, document);
+
+    // when
+    new RestoreDocumentRequestBuilder(document).submit(client, siteId).throwIfError();
+
+    // then
+    assertDocumentFound(client, siteId, document);
+    List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
+        .getDocumentAttributes(document.documentId(), siteId, null, null, null).getAttributes());
+    assertEquals(1, attributes.size());
+    assertEquals(attributeKey, attributes.getFirst().getKey());
+    assertEquals(attributeValue, attributes.getFirst().getStringValue());
   }
 
   /**
