@@ -110,7 +110,7 @@ public abstract class AbstractIntelligentDocumentProcessingAction implements Doc
         logger.debug(s);
       }
 
-      this.http.sendRequest(siteId, method, url, json);
+      this.http.sendRequest(siteId, method, url, json, document);
     }
 
     return new ProcessActionStatus(status);

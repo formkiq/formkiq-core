@@ -571,6 +571,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private DocumentArtifact createDocument2(final String siteId, final DocumentArtifact document,
       final String contentType) {
     DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+    item.setArtifactId(document.artifactId());
     item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
     return document;
@@ -617,6 +618,13 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     response.messages().forEach(m -> sqsService.deleteMessage(sqsQueueUrl, m.receiptHandle()));
     return response;
+  }
+
+  private HttpRequest getRecordedRequest(final String method, final String path) {
+    HttpRequest[] requests =
+        mockServer.retrieveRecordedRequests(request().withMethod(method).withPath(path));
+    assertTrue(requests.length > 0);
+    return requests[requests.length - 1];
   }
 
   private void processIdpRequest(final String siteId, final DocumentArtifact document,
@@ -744,6 +752,43 @@ public class DocumentActionsProcessorTest implements DbKeys {
           "76cef72e24a58b90331bc9a31e9400c0356d2101b6e3051fe61f1ec4c582d6d7"
               + "c7f695289d8f4a41288c4af8a2d01d6777bbabd51906508e5132cdf4dbabd567",
           item.checksum());
+    }
+  }
+
+  /**
+   * Handle completed artifact action workflow decision callback.
+   */
+  @Test
+  public void testCompletedArtifactActionWorkflowDecision() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String workflowId = ID.uuid();
+      DocumentArtifact document =
+          createDocument2(siteId, DocumentArtifact.of(ID.uuid(), ID.uuid()), "text/plain");
+
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      s3Service.putObject(BUCKET_NAME, s3Key, "content".getBytes(StandardCharsets.UTF_8),
+          "text/plain");
+
+      List<Action> actions = List.of(
+          new ActionBuilder().type(ActionType.CHECKSUM).userId("joe").document(document).indexUlid()
+              .workflowId(workflowId).parameters(Map.of("checksumType", "SHA256")).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      // when
+      processor.handleRequest(buildAwsEvent(siteId, document), null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertEquals("/documents/" + document.documentId() + "/workflow/" + workflowId + "/decisions",
+          lastRequest.getPath().getValue());
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+      if (siteId != null) {
+        assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+      }
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.COMPLETE, action.status());
     }
   }
 
@@ -1761,7 +1806,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (ActionType type : List.of(ActionType.ANTIVIRUS, ActionType.MALWARE_SCAN)) {
       for (String siteId : Arrays.asList(null, ID.uuid())) {
         // given
-        DocumentArtifact document = createDocument2(siteId, "application/pdf");
+        DocumentArtifact document =
+            createDocument2(siteId, DocumentArtifact.of(ID.uuid(), ID.uuid()), "application/pdf");
 
         List<Action> actions = List.of(createAction(document, type).build(siteId));
         actionsService.saveNewActions(actions);
@@ -1776,6 +1822,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
         assertEquals(1, list.size());
         assertEquals(type, list.getFirst().type());
         assertEquals(ActionStatus.RUNNING, list.getFirst().status());
+
+        HttpRequest lastRequest = CALLBACK.getLastRequest();
+        assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
       }
     }
   }
@@ -1958,6 +2007,30 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle Fulltext artifact as unsupported.
+   */
+  @Test
+  public void testHandleFulltextArtifactUnsupported() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = DocumentArtifact.of(ID.uuid(), ID.uuid());
+      List<Action> actions = List.of(createAction(document, ActionType.FULLTEXT).build(siteId));
+      actionsService.saveNewActions(actions);
+
+      // when
+      processor.handleRequest(buildAwsEvent(siteId, document), null);
+
+      // then
+      assertNull(CALLBACK.getLastRequest());
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.FAILED, action.status());
+      assertEquals("Fulltext action is unsupported for document artifacts", action.message());
+      assertNotNull(action.startDate());
+      assertNotNull(action.completedDate());
+    }
+  }
+
+  /**
    * Handle OCR Action ocrParseTypes FORMS, TABLES, QUERIES.
    *
    */
@@ -2044,13 +2117,17 @@ public class DocumentActionsProcessorTest implements DbKeys {
           AttributeDataType.STRING, null);
 
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest =
+          getRecordedRequest("GET", "/documents/" + document.documentId() + "/malwareScan");
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2081,13 +2158,16 @@ public class DocumentActionsProcessorTest implements DbKeys {
           AttributeDataType.STRING, null);
 
       String documentId = ID.uuid();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       Mapping mapping = createMapping("malwareStatus", MappingAttributeSourceType.MALWARE_SCAN);
 
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2114,7 +2194,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
@@ -2127,6 +2207,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       // when
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest = getRecordedRequest("GET",
+          "/documents/" + document.documentId() + "/ai/prompts/Another%20Prompt");
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+      assertEquals("1", lastRequest.getFirstQueryStringParameter("limit"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2153,7 +2238,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
@@ -2164,6 +2249,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest =
+          getRecordedRequest("GET", "/documents/" + document.documentId() + "/dataClassification");
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+      assertEquals("100", lastRequest.getFirstQueryStringParameter("limit"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2245,7 +2335,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "someattr",
           AttributeDataType.STRING, null);
@@ -2255,6 +2345,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest =
+          getRecordedRequest("GET", "/documents/" + document.documentId() + "/dataClassification");
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+      assertEquals("100", lastRequest.getFirstQueryStringParameter("limit"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2280,7 +2375,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = DOCUMENT_ID_DATACLASSIFICATION;
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           AttributeDataType.STRING, null);
@@ -2292,6 +2387,11 @@ public class DocumentActionsProcessorTest implements DbKeys {
       MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
 
       processIdpRequest(siteId, document, mappingRecord);
+
+      HttpRequest lastRequest = getRecordedRequest("GET",
+          "/documents/" + document.documentId() + "/metadataExtractionResults/Another%20Prompt");
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+      assertEquals("1", lastRequest.getFirstQueryStringParameter("limit"));
 
       // then
       Action action = actionsService.getActions(siteId, document).getFirst();
@@ -2429,9 +2529,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
       configService.save(siteId, siteConfig);
 
       String documentId = ID.uuid();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      item.setArtifactId(document.artifactId());
       item.setDeepLinkPath(
           "https://docs.google.com/document/d/1Vtwhg36ViJVoO4VHTzHv-uMIpw1hqMR2ttB8EhxXHzA/edit");
       documentService.saveDocument(siteId, item, null);
@@ -2439,7 +2540,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       List<Action> actions = List.of(createAction(document, ActionType.PDFEXPORT).build(siteId));
       actionsService.saveNewActions(actions);
 
-      AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
+      AwsEvent map = buildAwsEvent(siteId, document);
 
       // when
       processor.handleRequest(map, null);
@@ -2457,6 +2558,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       if (siteId != null) {
         assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
       }
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
     }
   }
 

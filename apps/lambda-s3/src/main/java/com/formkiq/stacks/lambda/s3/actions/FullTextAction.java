@@ -135,6 +135,10 @@ public class FullTextAction implements DocumentAction {
       final DocumentArtifact document, final List<Action> actions, final Action action)
       throws IOException {
 
+    if (document.artifactId() != null) {
+      throw new IOException("Fulltext action is unsupported for document artifacts");
+    }
+
     ActionStatus status = ActionStatus.PENDING;
     DocumentRecord item = this.documentService.findDocument(siteId, document);
     debug(logger, siteId, item);

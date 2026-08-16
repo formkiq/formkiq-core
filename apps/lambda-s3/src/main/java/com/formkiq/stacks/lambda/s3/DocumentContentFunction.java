@@ -91,7 +91,7 @@ public class DocumentContentFunction {
    */
   public List<Map<String, Object>> findContentKeyValues(final Logger logger, final String siteId,
       final DocumentRecord item) throws IOException {
-    Map<String, Object> map = findDocumentOcr(logger, siteId, item.documentId(), true);
+    Map<String, Object> map = findDocumentOcr(logger, siteId, item, true);
     return (List<Map<String, Object>>) map.getOrDefault("keyValues", Collections.emptyList());
   }
 
@@ -124,7 +124,7 @@ public class DocumentContentFunction {
 
     } else {
 
-      Map<String, Object> map = findDocumentOcr(logger, siteId, documentId, false);
+      Map<String, Object> map = findDocumentOcr(logger, siteId, item, false);
 
       if (map != null && map.containsKey("contentUrls")) {
         urls = (List<String>) map.get("contentUrls");
@@ -135,7 +135,7 @@ public class DocumentContentFunction {
   }
 
   private Map<String, Object> findDocumentOcr(final Logger logger, final String siteId,
-      final String documentId, final boolean contentKeyValues) throws IOException {
+      final DocumentRecord item, final boolean contentKeyValues) throws IOException {
     Map<String, String> parameters = new HashMap<>();
 
     if (contentKeyValues) {
@@ -148,8 +148,11 @@ public class DocumentContentFunction {
     if (siteId != null) {
       parameters.put("siteId", siteId);
     }
+    if (item.artifactId() != null) {
+      parameters.put("artifactId", item.artifactId());
+    }
 
-    String url = this.documentsIamUrl + "/documents/" + documentId + "/ocr";
+    String url = this.documentsIamUrl + "/documents/" + item.documentId() + "/ocr";
 
     HttpResponse<String> response = this.http.get(url, Optional.empty(), Optional.of(parameters));
     logger.debug("GET /documents/{documentId}/ocr response: " + response.body());
@@ -194,7 +197,6 @@ public class DocumentContentFunction {
    */
   public List<String> getContentUrls(final Logger logger, final String siteId,
       final DocumentRecord item) throws IOException {
-
     List<String> contentUrls = findContentUrls(logger, siteId, item);
     logger.trace("FOUND: " + contentUrls.size() + " content urls");
 

@@ -342,8 +342,8 @@ public class IdpAction implements DocumentAction {
   private String getScanStatus(final String siteId, final DocumentArtifact document)
       throws IOException {
     String documentId = document.documentId();
-    HttpResponse<String> response =
-        this.http.sendRequest(siteId, "get", "/documents/" + documentId + "/malwareScan", "");
+    HttpResponse<String> response = this.http.sendRequest(siteId, "get",
+        "/documents/" + documentId + "/malwareScan", "", document);
     String body = response.body();
     MalwareScanResponse data = gson.fromJson(body, MalwareScanResponse.class);
     if (data == null || notNull(data.malwareScanResults()).isEmpty()) {
@@ -402,9 +402,10 @@ public class IdpAction implements DocumentAction {
 
     for (String llmPromptEntityName : llmPromptEntityNames) {
 
-      HttpResponse<String> response =
-          this.http.sendRequest(siteId, "get", "/documents/" + documentId + "/ai/prompts/"
-              + UrlPathEncoder.encodePathSegment(llmPromptEntityName) + "?limit=1", "");
+      HttpResponse<String> response = this.http.sendRequest(siteId, "get",
+          "/documents/" + documentId + "/ai/prompts/"
+              + UrlPathEncoder.encodePathSegment(llmPromptEntityName),
+          "", document, Map.of("limit", "1"));
 
       String body = response.body();
       AiPromptResultsResponse data = gson.fromJson(body, AiPromptResultsResponse.class);
@@ -464,8 +465,8 @@ public class IdpAction implements DocumentAction {
 
       HttpResponse<String> response = this.http.sendRequest(siteId, "get",
           "/documents/" + documentId + "/metadataExtractionResults/"
-              + UrlPathEncoder.encodePathSegment(llmPromptEntityName) + "?limit=1",
-          "");
+              + UrlPathEncoder.encodePathSegment(llmPromptEntityName),
+          "", document, Map.of("limit", "1"));
 
       String body = response.body();
       MetadataExtractionsResponse data = gson.fromJson(body, MetadataExtractionsResponse.class);
@@ -489,7 +490,7 @@ public class IdpAction implements DocumentAction {
 
     String documentId = document.documentId();
     HttpResponse<String> response = this.http.sendRequest(siteId, "get",
-        "/documents/" + documentId + "/dataClassification?limit=100", "");
+        "/documents/" + documentId + "/dataClassification", "", document, Map.of("limit", "100"));
     String body = response.body();
     DataClassificationsResponse data = gson.fromJson(body, DataClassificationsResponse.class);
     List<DataClassification> dataClassifications = notNull(data.dataClassifications());

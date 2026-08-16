@@ -96,6 +96,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -413,6 +414,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
   private void createDocument(final String siteId, final DocumentArtifact document,
       final String contentType) {
     DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+    item.setArtifactId(document.artifactId());
     item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
   }
@@ -789,7 +791,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = addPdfToBucket(siteId);
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      DocumentArtifact document = DocumentArtifact.of(documentId, ID.uuid());
 
       attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, "certificate_number",
           null, null);
@@ -803,6 +805,11 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       // run twice
       for (int i = 0; i < 2; i++) {
         processIdpRequest(siteId, document, "application/pdf", mappingRecord);
+
+        HttpRequest[] requests = mockServer.retrieveRecordedRequests(
+            request().withMethod("GET").withPath("/documents/" + document.documentId() + "/ocr"));
+        assertEquals(document.artifactId(),
+            requests[requests.length - 1].getFirstQueryStringParameter("artifactId"));
 
         // then
         Action action = actionsService.getActions(siteId, document).getFirst();

@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.lambda.s3.actions;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.module.http.HttpResponseStatus;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -78,6 +79,46 @@ public class SendHttpRequest {
       final String url, final String payload) throws IOException {
 
     return sendRequest(siteId, method, url, payload, Map.of());
+  }
+
+  /**
+   * Send Http Request for a document or document artifact.
+   *
+   * @param siteId {@link String}
+   * @param method {@link String}
+   * @param url {@link String}
+   * @param payload {@link String}
+   * @param document {@link DocumentArtifact}
+   * @return {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  public HttpResponse<String> sendRequest(final String siteId, final String method,
+      final String url, final String payload, final DocumentArtifact document) throws IOException {
+
+    return sendRequest(siteId, method, url, payload, document, Map.of());
+  }
+
+  /**
+   * Send Http Request for a document or document artifact.
+   *
+   * @param siteId {@link String}
+   * @param method {@link String}
+   * @param url {@link String}
+   * @param payload {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param queryParameters {@link Map}
+   * @return {@link HttpResponse}
+   * @throws IOException IOException
+   */
+  public HttpResponse<String> sendRequest(final String siteId, final String method,
+      final String url, final String payload, final DocumentArtifact document,
+      final Map<String, String> queryParameters) throws IOException {
+
+    Map<String, String> parameters = new HashMap<>(queryParameters);
+    if (document.artifactId() != null) {
+      parameters.put("artifactId", document.artifactId());
+    }
+    return sendRequest(siteId, method, url, payload, parameters);
   }
 
   /**
