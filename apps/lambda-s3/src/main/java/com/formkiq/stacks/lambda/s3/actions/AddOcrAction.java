@@ -129,6 +129,8 @@ public class AddOcrAction implements DocumentAction {
       throws IOException {
     Map<String, Object> payload = buildAddOcrPayload(action);
     String json = this.gson.toJson(payload);
+    Map<String, String> queryParameters =
+        document.artifactId() != null ? Map.of("artifactId", document.artifactId()) : Map.of();
 
     if (logger.isLogged(LogLevel.DEBUG)) {
       String s = String.format("{\"type\",\"%s\",\"method\":\"%s\",\"url\":\"%s\",\"body\":\"%s\"}",
@@ -136,7 +138,8 @@ public class AddOcrAction implements DocumentAction {
       logger.debug(s);
     }
 
-    this.http.sendRequest(siteId, "post", "/documents/" + document.documentId() + "/ocr", json);
+    this.http.sendRequest(siteId, "post", "/documents/" + document.documentId() + "/ocr", json,
+        queryParameters);
     return new ProcessActionStatus(ActionStatus.RUNNING);
   }
 }
