@@ -888,12 +888,12 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       AttributeRecord ar = attributes.get(attributeKey);
 
       if (AttributeDataType.ENTITY.equals(ar.getDataType())) {
-        if (isEmpty(a.getDefaultEntityTypeId()) && !isEmpty(a.getDefaultEntityId())) {
-          errors.add(
-              new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
-        }
-
-        if (errors.isEmpty()) {
+        if (isEmpty(a.getDefaultEntityTypeId())) {
+          if (!isEmpty(a.getDefaultEntityId())) {
+            errors.add(
+                new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
+          }
+        } else if (errors.isEmpty()) {
           validateEntity(siteId, a.getDefaultEntityTypeId(), a.getDefaultEntityId(), errors);
         }
       }
