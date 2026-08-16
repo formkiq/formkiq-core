@@ -102,7 +102,7 @@ public class PdfExportAction implements DocumentAction {
 
       String documentId = document.documentId();
       String url = String.format("/integrations/google/drive/documents/%s/export", documentId);
-      this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}");
+      this.sendHttpRequest.sendRequest(siteId, "POST", url, "{\"outputType\": \"PDF\"}", document);
     } else {
       throw new IllegalArgumentException("PdfExport only supports Google DeepLink");
     }

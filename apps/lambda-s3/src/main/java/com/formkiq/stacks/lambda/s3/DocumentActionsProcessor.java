@@ -133,6 +133,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -365,7 +366,7 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       case ANTIVIRUS, MALWARE_SCAN -> {
         new SendHttpRequest(serviceCache).sendRequest(siteId, "PUT",
-            "/documents/" + document.documentId() + "/malwareScan", "");
+            "/documents/" + document.documentId() + "/malwareScan", "", document);
         actionStatus = new ProcessActionStatus(ActionStatus.RUNNING);
       }
 
@@ -755,9 +756,16 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         && !isEmpty(action.workflowId())) {
       HttpService http = serviceCache.getExtension(HttpService.class);
       String url = serviceCache.environment("documentsIamUrl");
+      Map<String, String> queryParameters = new HashMap<>();
+      if (siteId != null) {
+        queryParameters.put("siteId", siteId);
+      }
+      if (document.artifactId() != null) {
+        queryParameters.put("artifactId", document.artifactId());
+      }
       HttpResponse<String> response =
           http.post(url + "/documents/" + document.documentId() + "/workflow/" + action.workflowId()
-              + "/decisions", Optional.empty(), Optional.of(Map.of("siteId", siteId)), "{}");
+              + "/decisions", Optional.empty(), Optional.of(queryParameters), "{}");
       if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
         throw new IOException(
             "Error sending workflow decision: " + response.statusCode() + ":" + response.body());

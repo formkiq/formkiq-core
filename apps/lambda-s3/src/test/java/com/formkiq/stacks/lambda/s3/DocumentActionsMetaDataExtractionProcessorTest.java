@@ -358,6 +358,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
   private DocumentArtifact createDocument(final String siteId, final DocumentArtifact document,
       final String contentType) {
     DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
+    item.setArtifactId(document.artifactId());
     item.setContentType(contentType);
     documentService.saveDocument(siteId, item, null);
     return document;
@@ -376,7 +377,8 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
   public void testHandleDataClassification01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentArtifact document = createDocument(siteId, "text/plain");
+      DocumentArtifact document =
+          createDocument(siteId, DocumentArtifact.of(ID.uuid(), ID.uuid()), "text/plain");
 
       for (ActionType type : List.of(DATA_CLASSIFICATION, METADATA_EXTRACTION, LLMPROMPT)) {
 
@@ -396,6 +398,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
 
         // then
         HttpRequest lastRequest = CALLBACK.getLastRequest();
+        assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
 
         if (DATA_CLASSIFICATION.equals(type)) {
           assertTrue(lastRequest.getPath().toString().endsWith("/dataClassification"));
