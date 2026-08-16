@@ -1999,6 +1999,39 @@ public class DocumentActionsProcessorTest implements DbKeys {
   }
 
   /**
+   * Handle OCR Action for a document artifact.
+   *
+   */
+  @Test
+  public void testHandleOcrArtifact01() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      DocumentArtifact document = DocumentArtifact.of(ID.uuid(), ID.uuid());
+      List<Action> actions = List
+          .of(createAction(document, ActionType.OCR).document(document).indexUlid().build(siteId));
+      actionsService.saveNewActions(actions);
+
+      AwsEvent map = buildAwsEvent(siteId, document);
+
+      // when
+      processor.handleRequest(map, null);
+
+      // then
+      HttpRequest lastRequest = CALLBACK.getLastRequest();
+      assertEquals("/documents/" + document.documentId() + "/ocr",
+          lastRequest.getPath().getValue());
+      assertEquals(document.artifactId(), lastRequest.getFirstQueryStringParameter("artifactId"));
+
+      if (siteId != null) {
+        assertEquals(siteId, lastRequest.getFirstQueryStringParameter("siteId"));
+      }
+
+      Action action = actionsService.getActions(siteId, document).getFirst();
+      assertEquals(ActionStatus.RUNNING, action.status());
+    }
+  }
+
+  /**
    * Handle Idp with Mapping Action application/pdf and SourceType MALWARE_SCAN.
    *
    * @throws ValidationException ValidationException
