@@ -3505,6 +3505,32 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * PUT /sites/{siteId}/schema/document with an optional entity attribute and no default entity.
+   *
+   */
+  @Test
+  public void testSetSitesSchema12() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      String key = "typeDocument";
+      addAttribute(siteId, key, AttributeDataType.ENTITY, AttributeType.STANDARD);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("schema-dossier-etudiant")
+          .attributes(new SetSchemaAttributes().allowAdditionalAttributes(Boolean.TRUE)
+              .addOptionalItem(createOptional(key)));
+
+      // when
+      SetResponse response = this.schemasApi.setSitesSchema(siteId, req);
+
+      // then
+      assertEquals("Sites Schema set", response.getMessage());
+    }
+  }
+
+  /**
    * PATCH /documents after site schema is applied and without attributes.
    *
    * @throws ApiException an error has occurred
