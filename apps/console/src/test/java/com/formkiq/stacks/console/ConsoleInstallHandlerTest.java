@@ -108,7 +108,7 @@ public class ConsoleInstallHandlerTest {
     map.put("AWS_REGION", "us-east-2");
     map.put("CONSOLE_VERSION", "0.1");
     map.put("CONSOLE_ZIP_URL",
-        "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip");
+        "https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip");
     map.put("REGION", "us-east-1");
     map.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
     map.put("CONSOLE_URL", "https://console.formkiq.example.com");
@@ -214,7 +214,7 @@ public class ConsoleInstallHandlerTest {
     this.logger.log(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
     this.logger.log(
-        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
@@ -249,7 +249,7 @@ public class ConsoleInstallHandlerTest {
     this.logger.log(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
     this.logger.log(
-        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
@@ -318,7 +318,7 @@ public class ConsoleInstallHandlerTest {
     this.logger.log(
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
     this.logger.log(
-        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
     this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
     this.logger.log("Request Create was successful!");
 
@@ -394,7 +394,7 @@ public class ConsoleInstallHandlerTest {
         "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Update}"));
 
     assertTrue(this.logger.containsString(
-        "unpacking https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket"));
+        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket"));
     assertTrue(
         this.logger.containsString("sending SUCCESS to https://cloudformation-custom-resource"));
     assertTrue(this.logger.containsString("Request Update was successful!"));
