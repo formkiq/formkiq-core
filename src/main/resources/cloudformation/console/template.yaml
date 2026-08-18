@@ -482,7 +482,7 @@ Resources:
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           CONSOLE_ZIP_URL:
-            Fn::Sub: "https://formkiq-distribution-console.s3.us-east-1.amazonaws.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
+            Fn::Sub: "https://artifacts.formkiq.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
           API_URL:
             Ref: ApiUrl
           API_IAM_URL:
@@ -636,6 +636,8 @@ Resources:
     Type: Custom::ConsoleInstallerRef
     Condition: IsNotGovCloud
     Properties:
+      ConsoleZipUrl:
+        Fn::Sub: "https://artifacts.formkiq.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
       ConsoleModuleZipUrls:
         Ref: ConsoleModuleZipUrls
       Nonce:
