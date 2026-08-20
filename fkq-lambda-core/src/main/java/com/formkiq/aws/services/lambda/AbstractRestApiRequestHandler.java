@@ -432,9 +432,12 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   }
 
   private void log(final ApiAuthorization authorization, final ApiGatewayRequestEvent event,
-      final ApiRequestHandlerResponse response, final Exception e) {
+      final ApiRequestHandlerResponse response, final Throwable throwable) {
 
     Logger logger = getAwsServices().getLogger();
+    ApiRequestHandlerResponse logResponse = response != null ? response
+        : ApiRequestHandlerResponse.builder().status(SC_ERROR)
+            .body("message", "Internal Server Error").build();
 
     if (event != null) {
       ApiGatewayRequestContext rc = event.getRequestContext() != null ? event.getRequestContext()
@@ -444,15 +447,15 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       Map<String, Object> identity = rc.getIdentity() != null ? rc.getIdentity() : Map.of();
 
       String responseBody = null;
-      if (response.statusCode() >= ApiResponseStatus.SC_BAD_REQUEST.getStatusCode()
-          && response.body() instanceof Map m) {
+      if (logResponse.statusCode() >= ApiResponseStatus.SC_BAD_REQUEST.getStatusCode()
+          && logResponse.body() instanceof Map m) {
         if (m.containsKey("message")) {
           responseBody = (String) m.get("message");
         }
       }
 
-      HttpAccessLog accessLog =
-          buildHttpAccessLog(authorization, event, response, rc, identity, responseBody, userAgent);
+      HttpAccessLog accessLog = buildHttpAccessLog(authorization, event, logResponse, rc, identity,
+          responseBody, userAgent);
 
       logger.info(gson.toJson(accessLog));
 
@@ -460,8 +463,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       logger.error("{\"requestId\": \"invalid\"}");
     }
 
-    if (e != null && SC_ERROR.getStatusCode() == response.statusCode()) {
-      logger.error(e);
+    if (throwable != null && SC_ERROR.getStatusCode() == logResponse.statusCode()) {
+      logger.error(throwable);
     }
   }
 
@@ -479,7 +482,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     ApiAuthorization authorization = null;
     ApiRequestHandlerResponse response = null;
-    Exception exception = null;
+    Throwable throwable = null;
     List<ApiRequestHandlerInterceptor> requestInterceptors = Collections.emptyList();
 
     try {
@@ -505,7 +508,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
     } catch (Exception e) {
 
-      exception = e;
+      throwable = e;
       response = ApiRequestHandlerResponse.builder().exception(logger, e).build();
 
       for (ApiRequestHandlerInterceptor interceptor : requestInterceptors) {
@@ -514,8 +517,12 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
       writeJson(output, response.toMap());
 
+    } catch (Error e) {
+      throwable = e;
+      throw e;
+
     } finally {
-      log(authorization, event, response, exception);
+      log(authorization, event, response, throwable);
       resetThreadLocal();
     }
   }
