@@ -31,11 +31,6 @@ Parameters:
     Description: Version of FormKiQ console to deploy
     Default: v4.2.0
 
-  ConsoleModuleZipUrls:
-    Type: CommaDelimitedList
-    Description: Optional HTTPS URLs for additional console module ZIP files
-    Default: ""
-
   CognitoConfigBucket:
     Type: String
     Description: Cognito Config S3 Bucket
@@ -638,8 +633,7 @@ Resources:
     Properties:
       ConsoleZipUrl:
         Fn::Sub: "https://artifacts.formkiq.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
-      ConsoleModuleZipUrls:
-        Ref: ConsoleModuleZipUrls
+      ConsoleModuleZipUrls: []
       Nonce:
         Ref: ConsoleVersion
       API_URL:
