@@ -24,6 +24,8 @@
 package com.formkiq.aws.services.lambda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,6 +40,7 @@ import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -55,6 +58,20 @@ class RestApiRequestHandlerEventInterceptorTest {
     @Override
     public void beforeBuildAuthorization(final ApiGatewayRequestEvent event) {
       event.setQueryStringParameters(Map.of("siteId", "finance"));
+    }
+  }
+
+  private static class TestErrorRequestHandler implements ApiGatewayRequestHandler {
+
+    @Override
+    public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
+        final ApiAuthorization authorization, final AwsServiceCache awsServices) {
+      throw new AssertionError("original failure");
+    }
+
+    @Override
+    public String getRequestUrl() {
+      return "/test";
     }
   }
 
@@ -78,11 +95,16 @@ class RestApiRequestHandlerEventInterceptorTest {
     /** {@link AwsServiceCache}. */
     private final AwsServiceCache services;
     /** Url Map. */
-    private final Map<String, ApiGatewayRequestHandler> urlMap =
-        Map.of("/test", new TestRequestHandler());
+    private final Map<String, ApiGatewayRequestHandler> urlMap;
 
     TestRestApiRequestHandler(final AwsServiceCache awsServices) {
+      this(awsServices, new TestRequestHandler());
+    }
+
+    TestRestApiRequestHandler(final AwsServiceCache awsServices,
+        final ApiGatewayRequestHandler requestHandler) {
       this.services = awsServices;
+      this.urlMap = Map.of("/test", requestHandler);
     }
 
     @Override
@@ -121,6 +143,29 @@ class RestApiRequestHandlerEventInterceptorTest {
     event.setRequestContext(context);
 
     return event;
+  }
+
+  @Test
+  void handleRequestLogsErrorWhenResponseIsNull() {
+    // given
+    LoggerRecorder logger = new LoggerRecorder();
+    AwsServiceCache services = new AwsServiceCache().environment(Map.of()).setLogger(logger);
+    services.registerAppend(ApiAuthorizationInterceptor.class,
+        new ClassServiceExtension<>(new TestApiAuthorizationInterceptor()));
+    TestRestApiRequestHandler handler =
+        new TestRestApiRequestHandler(services, new TestErrorRequestHandler());
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    // when
+    AssertionError error = assertThrows(AssertionError.class,
+        () -> handler.handleRequest(
+            new ByteArrayInputStream(this.gson.toJson(event()).getBytes(StandardCharsets.UTF_8)),
+            output, null));
+
+    // then
+    assertEquals("original failure", error.getMessage());
+    assertTrue(logger.containsString("original failure"));
+    assertTrue(logger.containsString("\"status\":500"));
   }
 
   @Test
