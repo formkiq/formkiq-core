@@ -53,6 +53,7 @@ import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.GetBucketNotificationConfigurationResponse;
 import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
 import software.amazon.awssdk.services.s3.model.QueueConfiguration;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.net.URL;
 import java.net.http.HttpClient;
@@ -89,6 +90,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AwsResourceTest extends AbstractAwsTest {
   /** Sleep Timeout. */
   private static final long SLEEP = 500L;
+  /** Number of SQS messages to receive. */
+  private static final int SQS_MESSAGE_COUNT = 10;
   /** Test Timeout. */
   private static final long TEST_TIMEOUT = 30;
   /** Document Event Queue 1. */
@@ -113,42 +116,36 @@ public class AwsResourceTest extends AbstractAwsTest {
    *
    * @param queueUrl {@link String}
    * @param type {@link String}
+   * @param documentId {@link String}
    * @throws InterruptedException InterruptedException
    */
-  private static void assertSnsMessage(final String queueUrl, final String type)
-      throws InterruptedException {
-
-    List<Map<String, String>> receiveMessages;
+  private static void assertSnsMessage(final String queueUrl, final String type,
+      final String documentId) throws InterruptedException {
     Gson gson = new GsonBuilder().create();
 
-    do {
+    while (true) {
+      List<Message> messages =
+          getSqsService().receiveMessages(queueUrl, SQS_MESSAGE_COUNT).messages();
 
-      receiveMessages = getSqsService().receiveMessages(queueUrl).messages().stream()
-          .map(m -> (Map<String, String>) gson.fromJson(m.body(), Map.class))
-          .filter(m -> m != null && type.equals(m.get("type"))).toList();
+      for (Message receivedMessage : messages) {
+        getSqsService().deleteMessage(queueUrl, receivedMessage.receiptHandle());
 
-      if (receiveMessages.size() != 1) {
-        TimeUnit.SECONDS.sleep(1);
+        Map<String, String> message = gson.fromJson(receivedMessage.body(), Map.class);
+        if (message != null && type.equals(message.get("type"))
+            && documentId.equals(message.get("documentId"))) {
+          assertEquals(type, message.get("type"));
+          assertEquals(documentId, message.get("documentId"));
+
+          if (!"delete".equals(type)) {
+            assertNotNull(message.get("userId"));
+          }
+
+          return;
+        }
       }
 
-    } while (receiveMessages.size() != 1);
-
-    Map<String, String> message = receiveMessages.getFirst();
-
-    assertNotNull(message.get("documentId"));
-    assertNotNull(message.get("type"));
-
-    if (type.equals(message.get("type"))) {
-
-      if (!"delete".equals(type)) {
-        assertNotNull(message.get("userId"));
-      }
-
-    } else {
-      assertSnsMessage(queueUrl, type);
+      TimeUnit.SECONDS.sleep(1);
     }
-
-    getSqsService().clearQueue(queueUrl);
   }
 
   @BeforeAll
@@ -197,7 +194,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     verifyFileExistsInDocumentsS3(key, contentType);
     verifyFileNotExistInStagingS3(key);
-    assertSnsMessage(documentSnsQueue, "create");
+    assertSnsMessage(documentSnsQueue, "create", key);
 
     // when
     key = writeToStaging(key, contentType);
@@ -205,13 +202,13 @@ public class AwsResourceTest extends AbstractAwsTest {
     // then
     verifyFileExistsInDocumentsS3(key, contentType);
     verifyFileNotExistInStagingS3(key);
-    assertSnsMessage(documentSnsQueue, "create");
+    assertSnsMessage(documentSnsQueue, "create", key);
 
     // when
     getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
     // then
-    assertSnsMessage(documentSnsQueue, "delete");
+    assertSnsMessage(documentSnsQueue, "delete", key);
   }
 
   /**
@@ -227,7 +224,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     String key = ID.uuid();
     String contentType = "text/plain";
     DocumentArtifact document = DocumentArtifact.of(key, null);
-    DocumentRecord record = new DocumentRecordBuilder().document(document).build((String) null);
+    DocumentRecord record =
+        new DocumentRecordBuilder().document(document).userId("joe").build((String) null);
     DocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(record);
 
     // new DocumentItemDynamoDb(key, new Date(), "test");
@@ -252,7 +250,10 @@ public class AwsResourceTest extends AbstractAwsTest {
       record = getDocumentService().findDocument(null, DocumentArtifact.of(key, null));
     }
 
+    assertSnsMessage(documentSnsQueue, "create", key);
+
     getS3Service().deleteObject(getDocumentsbucketname(), key, null);
+    assertSnsMessage(documentSnsQueue, "delete", key);
   }
 
   /**
@@ -289,13 +290,13 @@ public class AwsResourceTest extends AbstractAwsTest {
       // then
       assertEquals(statusCode, put.statusCode());
       verifyFileExistsInDocumentsS3(key, contentType);
-      assertSnsMessage(documentSnsQueue, "create");
+      assertSnsMessage(documentSnsQueue, "create", key);
 
       // when
       getS3Service().deleteObject(getDocumentsbucketname(), key, null);
 
       // then
-      assertSnsMessage(documentSnsQueue, "delete");
+      assertSnsMessage(documentSnsQueue, "delete", key);
     }
   }
 
@@ -348,6 +349,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     assertEquals("this is a test",
         getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
+    assertSnsMessage(documentSnsQueue, "create", documentId);
   }
 
   /**
@@ -473,8 +475,8 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
 
     assertEquals(1, result.getResults().size());
-    assertSnsMessage(documentSnsQueue, "create");
     String documentId = result.getResults().getFirst().getDocumentId();
+    assertSnsMessage(documentSnsQueue, "create", documentId);
 
     DocumentArtifact document = DocumentArtifact.of(documentId, null);
     DocumentRecord item = getDocumentService().findDocument(siteId, document);
@@ -495,7 +497,7 @@ public class AwsResourceTest extends AbstractAwsTest {
 
     assertEquals(txt2,
         getS3Service().getContentAsString(getDocumentsbucketname(), documentId, null));
-    assertSnsMessage(documentSnsQueue, "create");
+    assertSnsMessage(documentSnsQueue, "create", documentId);
     Pagination<DocumentTag> list =
         getDocumentService().findDocumentTags(siteId, document, null, MAX_RESULTS);
     assertEquals("[status]",
