@@ -23,9 +23,12 @@
  */
 package com.formkiq.aws.dynamodb.documentattributes;
 
+import com.formkiq.graalvm.annotations.Reflectable;
+
 /**
  * Attribute Search Type.
  */
+@Reflectable
 public enum DocumentAttributeValueType {
   /** Boolean. */
   BOOLEAN,
