@@ -189,9 +189,9 @@ public class ApiAuthorizationBuilder {
     Map<String, String> roleSiteMap = getRoleSiteMap(event);
     Map<String, Object> userClaims = getUserCustomClaims(event);
 
-    ApiAuthorization authorization =
-        new ApiAuthorization().siteId(defaultSiteId).username(getUsername(event))
-            .samlGroups(samlGroups).roles(roles).roleSiteMap(roleSiteMap).userClaims(userClaims);
+    ApiAuthorization authorization = new ApiAuthorization().siteId(defaultSiteId)
+        .username(getUsername(event)).customEmail(getCustomEmail(event)).samlGroups(samlGroups)
+        .roles(roles).roleSiteMap(roleSiteMap).userClaims(userClaims);
 
     addPermissions(event, authorization, groups, admin);
 
@@ -302,6 +302,14 @@ public class ApiAuthorizationBuilder {
     }
 
     return groups;
+  }
+
+  private String getCustomEmail(final ApiGatewayRequestEvent event) {
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+    Map<String, Object> authorizer = requestContext != null ? requestContext.getAuthorizer() : null;
+    Map<String, Object> claims = getAuthorizerClaims(authorizer);
+    Object customEmail = claims != null ? claims.get("custom:email") : null;
+    return customEmail != null ? customEmail.toString() : null;
   }
 
   private String getDefaultSiteId(final ApiGatewayRequestEvent event,
