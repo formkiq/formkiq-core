@@ -83,6 +83,19 @@ public class ApiHttpRequest {
     return this;
   }
 
+  /**
+   * Set custom email claim.
+   *
+   * @param email {@link String}
+   * @return {@link ApiHttpRequest}
+   */
+  public ApiHttpRequest customEmail(final String email) {
+    if (email != null) {
+      getClaims().put("custom:email", email);
+    }
+    return this;
+  }
+
   @SuppressWarnings("unchecked")
   private Map<String, Object> getClaims() {
     Map<String, Object> authorizer = (Map<String, Object>) this.requestContext.get("authorizer");
