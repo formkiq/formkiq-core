@@ -97,8 +97,9 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
 
     return new ApiHttpRequest().headers(httpHeaders).httpMethod(httpRequest.getMethod().getValue())
         .resource(resource).path(path).pathParameters(pathParameters)
-        .queryParameters(queryParameters).user(getUsername(decoder)).group(group)
-        .samlGroups(samlGroups).permissions(permissions).roleSiteMap(roleSiteMap).body(body);
+        .queryParameters(queryParameters).user(getUsername(decoder))
+        .customEmail(getCustomEmail(decoder)).group(group).samlGroups(samlGroups)
+        .permissions(permissions).roleSiteMap(roleSiteMap).body(body);
   }
 
   /**
@@ -178,6 +179,10 @@ public class HttpRequestToApiHttpRequest implements Function<HttpRequest, ApiHtt
     }
 
     return map;
+  }
+
+  private String getCustomEmail(final JwtTokenDecoder decoder) {
+    return decoder != null ? decoder.getCustomEmail() : null;
   }
 
   private JwtTokenDecoder getDecoder(final List<String> headers) {

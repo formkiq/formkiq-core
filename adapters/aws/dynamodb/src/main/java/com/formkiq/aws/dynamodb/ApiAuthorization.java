@@ -80,6 +80,8 @@ public class ApiAuthorization {
    * {@link Object} Cache.
    */
   private final Map<String, Object> cache = new HashMap<>();
+  /** Custom email claim. */
+  private String customEmail;
   /**
    * Get Default SiteId.
    */
@@ -155,6 +157,17 @@ public class ApiAuthorization {
   }
 
   /**
+   * Set the custom email claim.
+   *
+   * @param email {@link String}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization customEmail(final String email) {
+    this.customEmail = email;
+    return this;
+  }
+
+  /**
    * Return Access Summary.
    * 
    * @return {@link String}
@@ -189,6 +202,15 @@ public class ApiAuthorization {
    */
   public <T> T getCacheObject(final String key) {
     return (T) this.cache.get(key);
+  }
+
+  /**
+   * Get the custom email claim.
+   *
+   * @return {@link String}
+   */
+  public String getCustomEmail() {
+    return this.customEmail;
   }
 
   /**

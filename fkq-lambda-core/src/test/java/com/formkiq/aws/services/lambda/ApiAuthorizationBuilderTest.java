@@ -117,10 +117,17 @@ class ApiAuthorizationBuilderTest {
    * @return {@link ApiGatewayRequestEvent}
    */
   private ApiGatewayRequestEvent getJwtEvent(final String group) {
+    return getJwtEvent(group, Map.of());
+  }
+
+  private ApiGatewayRequestEvent getJwtEvent(final String group,
+      final Map<String, Object> additionalClaims) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
-    content.setAuthorizer(
-        Map.of("claims", Map.of("cognito:username", "myuser", "cognito:groups", group)));
+    Map<String, Object> claims =
+        new HashMap<>(Map.of("cognito:username", "myuser", "cognito:groups", group));
+    claims.putAll(additionalClaims);
+    content.setAuthorizer(Map.of("claims", claims));
     event.setRequestContext(content);
     return event;
   }
@@ -965,7 +972,8 @@ class ApiAuthorizationBuilderTest {
   @Test
   void testApiAuthorizerJwtClaims() throws Exception {
     // given
-    ApiGatewayRequestEvent event = getJwtEvent("[default]");
+    ApiGatewayRequestEvent event =
+        getJwtEvent("[default]", Map.of("custom:email", "test.user@example.com"));
     event.addHeader("Authorization",
         toJwt(Map.of("sub", "1234", "tenant", "acme", "profile", Map.of("department", "sales"))));
 
@@ -977,6 +985,7 @@ class ApiAuthorizationBuilderTest {
     assertEquals("acme", authorization.getUserClaims().get("tenant"));
     assertEquals(Map.of("department", "sales"), authorization.getUserClaims().get("profile"));
     assertNull(authorization.getUserClaims().get("sub"));
+    assertEquals("test.user@example.com", authorization.getCustomEmail());
   }
 
   /**

@@ -43,6 +43,8 @@ public final class JwtTokenDecoder {
   private Map<String, String> roleSiteMap;
   /** Groups. */
   private List<String> groups;
+  /** Custom email claim. */
+  private String customEmail;
   /** Username. */
   private String username;
   /** {@link Map}. */
@@ -61,6 +63,7 @@ public final class JwtTokenDecoder {
     Map<String, Object> map = gson.fromJson(s, Map.class);
 
     this.username = (String) map.get("cognito:username");
+    this.customEmail = (String) map.get("custom:email");
 
     if (map.containsKey("sitesClaims")) {
       map = (Map<String, Object>) map.get("sitesClaims");
@@ -70,6 +73,15 @@ public final class JwtTokenDecoder {
 
     this.groups = (List<String>) map.get("cognito:groups");
     this.samlGroups = (List<String>) map.get("samlGroups");
+  }
+
+  /**
+   * Get custom email claim.
+   *
+   * @return {@link String}
+   */
+  public String getCustomEmail() {
+    return this.customEmail;
   }
 
   /**
