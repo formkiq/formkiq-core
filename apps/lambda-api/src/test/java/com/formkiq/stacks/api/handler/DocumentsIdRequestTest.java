@@ -60,6 +60,7 @@ import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
@@ -1733,6 +1734,37 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(getDocument(siteId, documentId0).response());
       assertNotNull(
           getDocument(siteId, DocumentArtifact.of(documentId0, resp.getArtifactId())).exception());
+    }
+  }
+
+  /**
+   * Update a dossier artifact category without changing its resource type.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testUpdateDossierArtifactCategory() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      var document =
+          new AddDocumentRequestBuilder().artifacts(true).resourceType(DocumentResourceType.DOSSIER)
+              .artifactCategory("category0").getDocument(client, siteId);
+
+      var doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId).response();
+      assertEquals(DocumentResourceType.DOSSIER, doc.getResourceType());
+      assertEquals("category0", doc.getArtifactCategory());
+
+      // when
+      new UpdateDocumentRequestBuilder(document).artifactCategory("category1").submitOk(client,
+          siteId);
+
+      // then
+      doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId).response();
+      assertEquals(DocumentResourceType.DOSSIER, doc.getResourceType());
+      assertEquals("category1", doc.getArtifactCategory());
     }
   }
 
