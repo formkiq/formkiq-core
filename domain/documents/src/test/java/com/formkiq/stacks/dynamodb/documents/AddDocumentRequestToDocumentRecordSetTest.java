@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import java.util.List;
@@ -111,5 +113,25 @@ public class AddDocumentRequestToDocumentRecordSetTest {
 
     assertTrue(recordSet.documentRecord().artifactId() != null);
     assertEquals("ocr", recordSet.documentRecord().artifactCategory());
+  }
+
+  @Test
+  void testApplyArtifactCategoryPreservesResourceType() {
+    DocumentRecord existing = DocumentRecord.builder().documentId("doc01").artifactId("art01")
+        .artifactCategory("category0").resourceType(DocumentResourceType.DOSSIER).build("siteId");
+
+    AddDocumentRequest request = new AddDocumentRequest();
+    request.setDocumentId("doc01");
+    request.setArtifactCategory("category1");
+
+    AddDocumentRequestToDocumentRecordSet transform =
+        new AddDocumentRequestToDocumentRecordSet(new AwsServiceCache(), existing, "joe");
+
+    // when
+    DocumentRecord record = transform.apply("siteId", request).documentRecord();
+
+    // then
+    assertEquals(DocumentResourceType.DOSSIER, record.resourceType());
+    assertEquals("category1", record.artifactCategory());
   }
 }
