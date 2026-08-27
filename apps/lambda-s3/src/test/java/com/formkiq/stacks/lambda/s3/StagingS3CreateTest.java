@@ -1087,8 +1087,12 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key));
 
       // then
-      assertEquals(1,
-          service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
+      List<String> expectedDocumentIds =
+          List.of(documentId0, documentId1, documentId2).stream().sorted().toList();
+      List<String> actualDocumentIds =
+          service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().stream()
+              .map(DocumentItem::getDocumentId).sorted().toList();
+      assertEquals(expectedDocumentIds, actualDocumentIds);
 
       DocumentArtifact document0 = new DocumentArtifact(documentId0, null);
       DocumentItem di =

@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +47,15 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
+import com.formkiq.client.model.AddChildDocument;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AttributeDataType;
@@ -104,11 +108,15 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.DeleteType;
+import com.formkiq.client.model.ChildDocument;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.SetDocumentRestoreResponse;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 
 /** Unit Tests for request /documents/{documentId}. */
 public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
@@ -129,14 +137,45 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     return DocumentArtifact.of(response.getDocumentId(), response.getArtifactId());
   }
 
+  private void assertDocumentDateIndexDoesNotExist(final String siteId,
+      final String parentDocumentId, final String documentId) throws URISyntaxException {
+    Map<String, AttributeValue> key = new DocumentRecordBuilder().parentDocumentId(parentDocumentId)
+        .documentId(documentId).buildKey(siteId).toMap();
+
+    try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
+      Map<String, AttributeValue> item = db.getItem(
+          GetItemRequest.builder().tableName(DOCUMENTS_TABLE).key(key).consistentRead(true).build())
+          .item();
+
+      assertNull(item.get(DbKeys.GSI1_PK), "GSI1PK exists for child document link " + documentId);
+      assertNull(item.get(DbKeys.GSI1_SK), "GSI1SK exists for child document link " + documentId);
+    }
+  }
+
+  private DynamoDbKey assertDocumentDateIndexExists(final String siteId, final String documentId)
+      throws URISyntaxException {
+    Map<String, AttributeValue> key =
+        new DocumentRecordBuilder().documentId(documentId).buildKey(siteId).toMap();
+
+    try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
+      Map<String, AttributeValue> item = db.getItem(
+          GetItemRequest.builder().tableName(DOCUMENTS_TABLE).key(key).consistentRead(true).build())
+          .item();
+
+      assertNotNull(item.get(DbKeys.GSI1_PK), "GSI1PK is missing for document " + documentId);
+      assertNotNull(item.get(DbKeys.GSI1_SK), "GSI1SK is missing for document " + documentId);
+      return DynamoDbKey.fromAttributeMap(item);
+    }
+  }
+
   private void assertExists(final String siteId, final DocumentArtifact document) {
-    var resp = getDocument(siteId, document);
+    var resp = getDocumentAsResponse(siteId, document);
     assertNotNull(resp.response());
     assertNull(resp.exception());
   }
 
   private void assertNotExists(final String siteId, final DocumentArtifact document) {
-    var resp = getDocument(siteId, document);
+    var resp = getDocumentAsResponse(siteId, document);
     assertNull(resp.response());
     assertNotNull(resp.exception());
     assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), resp.exception().getCode());
@@ -198,14 +237,19 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         : Objects.requireNonNull(resp.response().getAttribute()).getStringValue();
   }
 
-  private ApiHttpResponse<GetDocumentResponse> getDocument(final String siteId,
+  private GetDocumentResponse getDocument(final String siteId, final DocumentArtifact document)
+      throws ApiException {
+    return new GetDocumentRequestBuilder(document).getDocument(client, siteId);
+  }
+
+  private ApiHttpResponse<GetDocumentResponse> getDocumentAsResponse(final String siteId,
       final DocumentArtifact document) {
     return new GetDocumentRequestBuilder(document).submit(client, siteId);
   }
 
-  private ApiHttpResponse<GetDocumentResponse> getDocument(final String siteId,
+  private ApiHttpResponse<GetDocumentResponse> getDocumentAsResponse(final String siteId,
       final String documentId) {
-    return getDocument(siteId, DocumentArtifact.of(documentId, null));
+    return getDocumentAsResponse(siteId, DocumentArtifact.of(documentId, null));
   }
 
   private List<Document> getDocuments(final String siteId) throws ApiException {
@@ -257,6 +301,34 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     DocumentSearchRequest sreq = new DocumentSearchRequest().query(
         new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
     return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
+  }
+
+  /**
+   * Child documents must be included in the document date index.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testChildDocumentHasDocumentDateIndex() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      // when
+      var document = new AddDocumentRequestBuilder().content("parent").contentType("text/plain")
+          .addChildDocument(new AddChildDocument().content("child").contentType("application/json"))
+          .getDocument(client, siteId);
+
+      // then
+      assertDocumentDateIndexExists(siteId, document.documentId());
+
+      GetDocumentResponse response = getDocument(siteId, document);
+      List<ChildDocument> children = notNull(response.getDocuments());
+      assertEquals(1, children.size());
+      String childDocumentId = children.getFirst().getDocumentId();
+      assertDocumentDateIndexExists(siteId, childDocumentId);
+      assertDocumentDateIndexDoesNotExist(siteId, document.documentId(), childDocumentId);
+    }
   }
 
   /**
@@ -467,9 +539,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(artifact.artifactId());
 
       GetDocumentResponse baseDocument =
-          getDocument(siteId, document.getDocumentId()).throwIfError().response();
+          getDocumentAsResponse(siteId, document.getDocumentId()).throwIfError().response();
       GetDocumentResponse artifactDocument =
-          getDocument(siteId, artifact).throwIfError().response();
+          getDocumentAsResponse(siteId, artifact).throwIfError().response();
       assertNotNull(baseDocument);
       assertNotNull(artifactDocument);
       assertEquals(Boolean.TRUE, baseDocument.getHasArtifacts());
@@ -483,11 +555,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(0, softDeletedDocuments.size());
 
-      baseDocument = getDocument(siteId, document.getDocumentId()).throwIfError().response();
+      baseDocument =
+          getDocumentAsResponse(siteId, document.getDocumentId()).throwIfError().response();
       assertNotNull(baseDocument);
       assertEquals(Boolean.FALSE, baseDocument.getHasArtifacts());
 
-      ApiHttpResponse<GetDocumentResponse> artifactResponse = getDocument(siteId, artifact);
+      ApiHttpResponse<GetDocumentResponse> artifactResponse =
+          getDocumentAsResponse(siteId, artifact);
       assertNotNull(artifactResponse.exception());
       assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(),
           artifactResponse.exception().getCode());
@@ -580,8 +654,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .artifacts(true).content().getDocument(client, siteId);
 
       // then
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
-      assertEquals(Boolean.FALSE, getDocument(siteId, artifact).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, artifact).response().getHasArtifacts());
 
       // when
       new DeleteDocumentRequestBuilder(artifact).softDelete(true).submit(client, siteId)
@@ -589,7 +665,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertDocumentNotFound(client, siteId, artifact);
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
 
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
@@ -602,7 +679,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertDocumentNotFound(client, siteId, artifact);
-      assertEquals(Boolean.FALSE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
       assertEquals(0, getSoftDeletedDocuments(siteId).size());
     }
   }
@@ -628,9 +706,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .artifacts(true).content().getDocument(client, siteId);
 
       // then
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
-      assertEquals(Boolean.FALSE, getDocument(siteId, artifact0).response().getHasArtifacts());
-      assertEquals(Boolean.FALSE, getDocument(siteId, artifact1).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, artifact0).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, artifact1).response().getHasArtifacts());
 
       // when
       new DeleteDocumentRequestBuilder(artifact0).softDelete(true).submit(client, siteId)
@@ -639,7 +720,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertDocumentNotFound(client, siteId, artifact0);
       assertDocumentFound(client, siteId, artifact1);
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
 
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(1, softDeletedDocuments.size());
@@ -653,7 +735,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertDocumentNotFound(client, siteId, artifact0);
       assertDocumentFound(client, siteId, artifact1);
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
       assertEquals(0, getSoftDeletedDocuments(siteId).size());
     }
   }
@@ -678,9 +761,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .artifacts(true).content().getDocument(client, siteId);
 
       // then
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
-      assertEquals(Boolean.FALSE, getDocument(siteId, artifact0).response().getHasArtifacts());
-      assertEquals(Boolean.FALSE, getDocument(siteId, artifact1).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, artifact0).response().getHasArtifacts());
+      assertEquals(Boolean.FALSE,
+          getDocumentAsResponse(siteId, artifact1).response().getHasArtifacts());
 
       // when
       new DeleteDocumentRequestBuilder(artifact0).softDelete(true).submit(client, siteId)
@@ -691,7 +777,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertDocumentNotFound(client, siteId, artifact0);
       assertDocumentNotFound(client, siteId, artifact1);
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
 
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
       assertEquals(2, softDeletedDocuments.size());
@@ -703,7 +790,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertDocumentNotFound(client, siteId, artifact0);
       assertDocumentNotFound(client, siteId, artifact1);
-      assertEquals(Boolean.TRUE, getDocument(siteId, document).response().getHasArtifacts());
+      assertEquals(Boolean.TRUE,
+          getDocumentAsResponse(siteId, document).response().getHasArtifacts());
       assertEquals(1, getSoftDeletedDocuments(siteId).size());
     }
   }
@@ -1703,13 +1791,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(documentId0, resp.getDocumentId());
 
-      var doc = getDocument(siteId, documentId0).throwIfError().response();
+      var doc = getDocumentAsResponse(siteId, documentId0).throwIfError().response();
       assertEquals("a1.txt", doc.getPath());
       assertEquals("A", new GetDocumentContentRequestBuilder(documentId0).submit(client, siteId)
           .throwIfError().response().getContent());
 
       var document = DocumentArtifact.of(documentId0, resp.getArtifactId());
-      doc = getDocument(siteId, document).throwIfError().response();
+      doc = getDocumentAsResponse(siteId, document).throwIfError().response();
       assertEquals("b2.txt", doc.getPath());
       assertEquals("BB", new GetDocumentContentRequestBuilder(document).submit(client, siteId)
           .throwIfError().response().getContent());
@@ -1731,9 +1819,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .submit(client, siteId).throwIfError();
 
       // then
-      assertNotNull(getDocument(siteId, documentId0).response());
+      assertNotNull(getDocumentAsResponse(siteId, documentId0).response());
       assertNotNull(
-          getDocument(siteId, DocumentArtifact.of(documentId0, resp.getArtifactId())).exception());
+          getDocumentAsResponse(siteId, DocumentArtifact.of(documentId0, resp.getArtifactId()))
+              .exception());
     }
   }
 
@@ -1765,6 +1854,31 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       doc = new GetDocumentRequestBuilder(document).submitOk(client, siteId).response();
       assertEquals(DocumentResourceType.DOSSIER, doc.getResourceType());
       assertEquals("category1", doc.getArtifactCategory());
+    }
+  }
+
+  /**
+   * Updating a document must preserve its document date index.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  public void testUpdatePreservesDocumentDateIndex() throws Exception {
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      var document = new AddDocumentRequestBuilder().content("before").contentType("text/plain")
+          .getDocument(client, siteId);
+      DynamoDbKey before = assertDocumentDateIndexExists(siteId, document.documentId());
+
+      // when
+      new UpdateDocumentRequestBuilder(document).content("after").submitOk(client, siteId);
+
+      // then
+      DynamoDbKey after = assertDocumentDateIndexExists(siteId, document.documentId());
+      assertEquals(before.gsi1Pk(), after.gsi1Pk(), "GSI1PK changed after document update");
+      assertEquals(before.gsi1Sk(), after.gsi1Sk(), "GSI1SK changed after document update");
     }
   }
 
