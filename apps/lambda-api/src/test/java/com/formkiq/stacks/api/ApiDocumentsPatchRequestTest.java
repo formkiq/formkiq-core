@@ -35,10 +35,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -200,12 +200,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       String userId = "jsmith";
       final long contentLength = 1000;
 
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      DocumentItemDynamoDb item =
+          new DocumentItemDynamoDb(documentId, Date.from(Instant.now().minusSeconds(1)), userId);
       item.setPath("test.txt");
       item.setContentLength(contentLength);
       getDocumentService().saveDocument(siteId, item, new ArrayList<>());
 
-      TimeUnit.SECONDS.sleep(1);
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
       setPathParameter(event, "documentId", documentId);

@@ -100,6 +100,10 @@ tasks.register("integrationTest", Test) {
   maxHeapSize = '2G'
 }
 
+tasks.named('test', Test) {
+  maxParallelForks = providers.gradleProperty('testForks').orElse('6').get().toInteger()
+}
+
 task buildJava11Zip(type: Zip) {
   from compileJava
   into('lib') {

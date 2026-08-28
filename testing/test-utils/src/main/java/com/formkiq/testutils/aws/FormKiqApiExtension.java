@@ -38,7 +38,6 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -54,23 +53,10 @@ import org.mockserver.integration.ClientAndServer;
 public class FormKiqApiExtension
     implements BeforeAllCallback, AfterAllCallback, ExtensionContext.Store.CloseableResource {
 
-  /** {@link Random}. */
-  private static final Random NUM_RAND = new Random();
   /** NIO Thread Count. */
   private static final int NIO_THREAD_COUNT = 16;
   /** Action Thread Count. */
   private static final int ACTION_THREAD_COUNT = 32;
-
-  /**
-   * Generate Random Port.
-   * 
-   * @return int
-   */
-  public static int generatePort() {
-    final int topPort = 8000;
-    final int bottomPort = 5000;
-    return NUM_RAND.nextInt(topPort - bottomPort) + bottomPort;
-  }
 
   /** {@link FormKiQApiExtensionConfig}. */
   private final FormKiQApiExtensionConfig config;
@@ -85,7 +71,7 @@ public class FormKiqApiExtension
   /** {@link LocalStackExtension}. */
   private final LocalStackExtension localStackExtension;
   /** Port to run Test server. */
-  private final int port;
+  private int port;
   /** Is server running. */
   private boolean running = false;
   /** {@link TypesenseExtension}. */
@@ -105,7 +91,6 @@ public class FormKiqApiExtension
 
     this.localStackExtension = localstack;
     this.typeSenseExtension = typeSense;
-    this.port = generatePort();
     this.callback = responseCallback;
     this.config = extensionConfig;
   }
@@ -128,7 +113,8 @@ public class FormKiqApiExtension
       ConfigurationProperties.nioEventLoopThreadCount(NIO_THREAD_COUNT);
       ConfigurationProperties.actionHandlerThreadCount(ACTION_THREAD_COUNT);
 
-      this.formkiqServer = startClientAndServer(this.port);
+      this.formkiqServer = startClientAndServer(0);
+      this.port = this.formkiqServer.getPort();
 
       this.formkiqServer.when(request()).respond(this.callback);
       this.running = true;

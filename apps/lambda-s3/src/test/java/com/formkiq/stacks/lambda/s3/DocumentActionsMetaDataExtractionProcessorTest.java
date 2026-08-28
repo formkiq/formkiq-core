@@ -128,12 +128,10 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
   private static final String DOCUMENT_ID_OCR_KEY_VALUE = ID.uuid();
   /** {@link Gson}. */
   private static final Gson GSON = GsonUtil.getInstance();
-  /** Port to run Test server. */
-  private static final int PORT = 8888;
   /** Sns Document Event. */
   private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
   /** Test server URL. */
-  private static final String URL = "http://localhost:" + PORT;
+  private static String url;
   /** {@link TypesenseExtension}. */
   @RegisterExtension
   static TypesenseExtension typesenseExtension = new TypesenseExtension();
@@ -227,7 +225,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
 
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", url);
 
     String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
@@ -265,7 +263,8 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
    */
   private static void createMockServer() throws IOException {
 
-    mockServer = startClientAndServer(PORT);
+    mockServer = startClientAndServer(0);
+    url = "http://localhost:" + mockServer.getPort();
 
     final int status = 200;
 
@@ -290,7 +289,7 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
 
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
-            .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
+            .response("{\"contentUrls\":[\"" + url + "/" + DOCUMENT_ID_OCR + "\"]}"));
 
     Map<String, Object> dataClassification = Map.of("dataClassifications",
         List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),

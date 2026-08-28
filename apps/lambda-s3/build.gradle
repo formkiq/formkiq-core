@@ -76,6 +76,10 @@ compileJava {
   options.annotationProcessorPath += configurations.runtimeClasspath
 }
 
+tasks.named('test', Test) {
+  maxParallelForks = providers.gradleProperty('testForks').orElse('4').get().toInteger()
+}
+
 nativeImage {
   dockerFile = "${project.projectDir}/Dockerfile"
 }
