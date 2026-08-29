@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import com.formkiq.validation.ValidationException;
 
 /**
@@ -34,7 +35,7 @@ import com.formkiq.validation.ValidationException;
 public interface DocumentEntityValidator {
 
   /**
-   * Valiate {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}.
+   * Valiate {@link AddDocumentRequest}.
    *
    * @param awsservice {@link AwsServiceCache}
    * @param config {@link SiteConfiguration}
@@ -43,5 +44,5 @@ public interface DocumentEntityValidator {
    * @throws ValidationException ValidationException
    */
   void validate(AwsServiceCache awsservice, SiteConfiguration config, String siteId,
-      com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item) throws ValidationException;
+      AddDocumentRequest item) throws ValidationException;
 }

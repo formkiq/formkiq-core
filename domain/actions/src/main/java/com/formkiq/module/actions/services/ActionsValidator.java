@@ -26,6 +26,7 @@ package com.formkiq.module.actions.services;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.validation.ValidationBuilder;
 
 /**
@@ -40,22 +41,24 @@ public interface ActionsValidator {
    *
    * @param vb {@link ValidationBuilder}
    * @param siteId {@link String}
+   * @param resourceType {@link DocumentResourceType}
    * @param action {@link Action}
    * @param chatGptApiKey {@link String}
    * @param notificationsEmail {@link String}
    */
-  void validation(ValidationBuilder vb, String siteId, Action action, String chatGptApiKey,
-      String notificationsEmail);
+  void validation(ValidationBuilder vb, String siteId, DocumentResourceType resourceType,
+      Action action, String chatGptApiKey, String notificationsEmail);
 
   /**
    * Validates {@link List} {@link Action}.
    *
    * @param vb {@link ValidationBuilder}
    * @param siteId {@link String}
-   * @param action {@link Action}
+   * @param resourceType {@link DocumentResourceType}
+   * @param actions {@link Action}
    * @param chatGptApiKey {@link String}
    * @param notificationsEmail {@link String}
    */
-  void validation(ValidationBuilder vb, String siteId, List<Action> action, String chatGptApiKey,
-      String notificationsEmail);
+  void validation(ValidationBuilder vb, String siteId, DocumentResourceType resourceType,
+      List<Action> actions, String chatGptApiKey, String notificationsEmail);
 }
