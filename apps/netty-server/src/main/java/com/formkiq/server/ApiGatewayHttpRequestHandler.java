@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +48,8 @@ import com.formkiq.module.httpsigv4.HttpServiceSigv4Validator;
 import com.formkiq.server.auth.IAuthCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -110,6 +113,34 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return response;
+  }
+
+  /**
+   * Create the API Gateway authorizer claims from the validated JWT.
+   *
+   * @param request {@link FullHttpRequest}
+   * @return {@link Map} of claims
+   */
+  private Map<String, Object> createAuthorizerClaims(final FullHttpRequest request) {
+    String authorization = request.headers().get("Authorization");
+
+    try {
+      String[] parts = authorization != null ? authorization.split("\\.") : new String[0];
+      if (parts.length >= 2) {
+        String payload =
+            new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        Map<String, Object> claims =
+            this.gson.fromJson(payload, new TypeToken<Map<String, Object>>() {}.getType());
+
+        if (claims != null) {
+          return claims;
+        }
+      }
+    } catch (IllegalArgumentException | JsonSyntaxException e) {
+      // Non-JWT credentials use the legacy default claims.
+    }
+
+    return Map.of("cognito:username", "admin", "cognito:groups", "[" + DEFAULT_SITE_ID + "]");
   }
 
   private Map<String, String> createHeaders(final FullHttpRequest request) {
@@ -190,8 +221,7 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     apiEvent.setHeaders(createHeaders(request));
 
     ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
-    requestContext.setAuthorizer(Map.of("claims",
-        Map.of("cognito:username", "admin", "cognito:groups", "[" + DEFAULT_SITE_ID + "]")));
+    requestContext.setAuthorizer(Map.of("claims", createAuthorizerClaims(request)));
     apiEvent.setRequestContext(requestContext);
 
     String body = getBody(request.content());
