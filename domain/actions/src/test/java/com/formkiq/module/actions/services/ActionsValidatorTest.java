@@ -79,7 +79,7 @@ class ActionsValidatorTest {
     ValidationBuilder vb = new ValidationBuilder();
 
     // when
-    validator.validation(vb, null, action, null, null);
+    validator.validation(vb, null, null, action, null, null);
 
     // then
     boolean shouldHaveError = errorMessage != null;
@@ -172,7 +172,7 @@ class ActionsValidatorTest {
     ValidationBuilder vb = new ValidationBuilder();
 
     // when
-    validator.validation(vb, null, actions, null, null);
+    validator.validation(vb, null, null, actions, null, null);
 
     // then
     var errorList = vb.getErrors();
