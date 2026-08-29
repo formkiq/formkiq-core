@@ -27,12 +27,15 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentTagValidator;
 import com.formkiq.stacks.dynamodb.DocumentTagValidatorImpl;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
+import com.formkiq.stacks.dynamodb.documents.AddDocumentTag;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
  * {@link DocumentEntityValidator} implementation.
@@ -48,6 +52,16 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   /** {@link ActionsValidator}. */
   private ActionsValidator actionsValidator = null;
+
+  private DocumentResourceType getResourceType(final AddDocumentRequest item) {
+    DocumentResourceType resourceType = item.getResourceType();
+    if (resourceType == null) {
+      resourceType = !isEmpty(item.getDeepLinkPath()) ? DocumentResourceType.DEEP_LINK
+          : DocumentResourceType.DOCUMENT;
+    }
+
+    return resourceType;
+  }
 
   private void initActionsValidator(final AwsServiceCache awsservice) {
     if (this.actionsValidator == null) {
@@ -58,8 +72,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   @Override
   public void validate(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request)
-      throws ValidationException {
+      final String siteId, final AddDocumentRequest request) throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
     validateTags(vb, request);
@@ -70,8 +83,7 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
   // TODO merge with ApiValidator validateActions
   private void validateActions(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest item,
-      final ValidationBuilder vb) {
+      final String siteId, final AddDocumentRequest item, final ValidationBuilder vb) {
 
     initActionsValidator(awsservice);
     DocumentArtifact document =
@@ -82,13 +94,15 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
 
     if (!actions.isEmpty()) {
       int beforeActionErrors = vb.getErrors().size();
+      DocumentResourceType resourceType = getResourceType(item);
 
       for (Action action : actions) {
-        this.actionsValidator.validation(vb, siteId, action, config.chatGptApiKey(),
+        this.actionsValidator.validation(vb, siteId, resourceType, action, config.chatGptApiKey(),
             config.notificationEmail());
       }
 
-      if (vb.getErrors().size() == beforeActionErrors) {
+      if (DocumentResourceType.DOCUMENT.equals(resourceType)
+          && vb.getErrors().size() == beforeActionErrors) {
         actions.stream().filter(a -> ApiValidator.WORKFLOW_ONLY_ACTION_TYPES.contains(a.type()))
             .findFirst().ifPresent(action -> vb.addError("type",
                 "action type cannot be '" + action.type().name() + "'"));
@@ -96,41 +110,22 @@ public class DocumentEntityValidatorImpl implements DocumentEntityValidator {
     }
   }
 
-  // /**
-  // * Validate {@link AddDocumentRequest} against a TagSchema.
-  // *
-  // * @param item {@link AddDocumentRequest}
-  // * @param userId {@link String}
-  // * @return {@link List} {@link DocumentTag}
-  // */
-  // private List<DocumentTag> validateTagSchema(final AddDocumentRequest item, final String userId)
-  // {
-  //
-  // List<AddDocumentTag> doctags = notNull(item.getTags());
-  // AddDocumentTagToDocumentTag transform =
-  // new AddDocumentTagToDocumentTag(item.getDocumentId(), userId);
-  //
-  // return doctags.stream().map(transform).collect(Collectors.toList());
-  // }
-
   /**
    * Validate Document Tags.
    *
    * @param vb {@link ValidationBuilder}
-   * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
+   * @param request {@link AddDocumentRequest}
    */
-  private void validateTags(final ValidationBuilder vb,
-      final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request) {
+  private void validateTags(final ValidationBuilder vb, final AddDocumentRequest request) {
 
     DocumentTagValidator validator = new DocumentTagValidatorImpl();
 
-    var tagKeys = Stream
-        .concat(
-            notNull(request.getTags()).stream()
-                .map(com.formkiq.stacks.dynamodb.documents.AddDocumentTag::getKey),
-            notNull(request.getDocuments()).stream().flatMap(doc -> notNull(doc.getTags()).stream())
-                .map(com.formkiq.stacks.dynamodb.documents.AddDocumentTag::getKey))
-        .distinct().toList();
+    var tagKeys =
+        Stream
+            .concat(notNull(request.getTags()).stream().map(AddDocumentTag::getKey),
+                notNull(request.getDocuments()).stream()
+                    .flatMap(doc -> notNull(doc.getTags()).stream()).map(AddDocumentTag::getKey))
+            .distinct().toList();
 
     validator.validateKeys(vb, tagKeys);
   }

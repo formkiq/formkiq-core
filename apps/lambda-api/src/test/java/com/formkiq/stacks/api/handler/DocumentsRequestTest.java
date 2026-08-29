@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.actions.Queue;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
@@ -42,6 +43,8 @@ import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.client.model.AddAction;
+import com.formkiq.client.model.AddActionParameters;
+import com.formkiq.client.model.AddActionParameters.NotificationTypeEnum;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddChildDocument;
@@ -65,6 +68,7 @@ import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigDispositionAction;
 import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
+import com.formkiq.client.model.DeleteType;
 import com.formkiq.client.model.DocumentMetadata;
 import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.DocumentTag;
@@ -79,6 +83,8 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.config.ConfigService;
+import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentPurgeRequestBuilder;
@@ -108,6 +114,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -897,6 +904,106 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Save dossier and deep link documents with supported actions.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  public void testPost03ResourceTypesWithSupportedActions01() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    String queueId = ID.uuid();
+
+    AwsServiceCache awsServices = getAwsServices();
+    awsServices.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    DynamoDbService db = awsServices.getExtension(DynamoDbService.class);
+    db.putItem(new Queue().documentId(queueId).name("test").getAttributes(siteId));
+
+    ConfigService configService = awsServices.getExtension(ConfigService.class);
+    configService.save(siteId,
+        SiteConfiguration.builder().notificationEmail("test@formkiq.com").build(siteId));
+
+    List<AddAction> actions = List.of(
+        new AddAction().type(DocumentActionType.MOVE)
+            .parameters(new AddActionParameters().path("/destination/")),
+        new AddAction().type(DocumentActionType.DELETE)
+            .parameters(new AddActionParameters().deleteType(DeleteType.SOFT_DELETE)),
+        new AddAction().type(DocumentActionType.QUEUE).queueId(queueId),
+        new AddAction().type(DocumentActionType.NOTIFICATION)
+            .parameters(new AddActionParameters().notificationType(NotificationTypeEnum.EMAIL)
+                .notificationToCc("test@formkiq.com").notificationSubject("test subject")
+                .notificationText("test text")),
+        new AddAction().type(DocumentActionType.WEBHOOK)
+            .parameters(new AddActionParameters().url("https://localhost")),
+        new AddAction().type(DocumentActionType.EVENTBRIDGE)
+            .parameters(new AddActionParameters().eventBusName("default")));
+    Set<DocumentActionType> expectedActionTypes = Set.of(DocumentActionType.MOVE,
+        DocumentActionType.DELETE, DocumentActionType.QUEUE, DocumentActionType.NOTIFICATION,
+        DocumentActionType.WEBHOOK, DocumentActionType.EVENTBRIDGE);
+
+    setBearerToken(siteId);
+
+    for (DocumentResourceType resourceType : List.of(DocumentResourceType.DOSSIER,
+        DocumentResourceType.DEEP_LINK)) {
+      AddDocumentRequest request =
+          new AddDocumentRequest().resourceType(resourceType).actions(actions);
+      if (DocumentResourceType.DEEP_LINK.equals(resourceType)) {
+        request.setDeepLinkPath("https://example.com/document");
+      }
+
+      // when
+      AddDocumentResponse response = this.documentsApi.addDocument(request, siteId, null);
+
+      // then
+      assertNotNull(response.getDocumentId());
+      List<DocumentAction> documentActions =
+          new GetDocumentActionsRequestBuilder(response.getDocumentId()).getActions(client, siteId);
+      assertEquals(expectedActionTypes,
+          documentActions.stream().map(DocumentAction::getType).collect(Collectors.toSet()));
+    }
+  }
+
+  /**
+   * Reject unsupported actions for dossier and deep link documents.
+   */
+  @Test
+  public void testPost03ResourceTypesWithUnsupportedActions01() {
+    // given
+    String siteId = ID.uuid();
+    Set<DocumentActionType> supportedActionTypes = Set.of(DocumentActionType.MOVE,
+        DocumentActionType.DELETE, DocumentActionType.QUEUE, DocumentActionType.NOTIFICATION,
+        DocumentActionType.WEBHOOK, DocumentActionType.EVENTBRIDGE);
+
+    setBearerToken(siteId);
+
+    for (DocumentResourceType resourceType : List.of(DocumentResourceType.DOSSIER,
+        DocumentResourceType.DEEP_LINK)) {
+      for (DocumentActionType actionType : DocumentActionType.values()) {
+        if (!supportedActionTypes.contains(actionType)) {
+          AddDocumentRequest request = new AddDocumentRequest().resourceType(resourceType)
+              .actions(List.of(new AddAction().type(actionType)));
+          if (DocumentResourceType.DEEP_LINK.equals(resourceType)) {
+            request.setDeepLinkPath("https://example.com/document");
+          }
+
+          // when
+          try {
+            this.documentsApi.addDocument(request, siteId, null);
+            fail();
+          } catch (ApiException e) {
+            // then
+            assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
+            assertEquals(
+                "{\"errors\":[{\"key\":\"type\",\"error\":\"action type '" + actionType.name()
+                    + "' is not allowed for resourceType '" + resourceType.name() + "'\"}]}",
+                e.getResponseBody());
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Save document with subdocuments.
    * 
    * @throws Exception Exception
@@ -1259,7 +1366,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       String deepLink = "https://docs.google.com/document/d/1tyOQ3yUL9dtpbuMOt7s/edit?usp=sharing";
 
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink)
-          .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+          .addActionsItem(new AddAction().type(DocumentActionType.WEBHOOK)
+              .parameters(new AddActionParameters().url("https://localhost")));
 
       // when
       AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);

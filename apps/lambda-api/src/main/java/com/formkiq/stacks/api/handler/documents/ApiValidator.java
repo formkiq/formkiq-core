@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionType;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.module.actions.services.ActionsValidator;
 import com.formkiq.module.actions.services.ActionsValidatorImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -50,13 +51,15 @@ public interface ApiValidator {
       List.of(ActionType.QUEUE, ActionType.MOVE, ActionType.DELETE);
 
   default void validateActions(AwsServiceCache awsservice, SiteConfiguration config,
-      final String siteId, List<Action> actions) throws ValidationException {
+      final String siteId, final DocumentResourceType resourceType, final List<Action> actions)
+      throws ValidationException {
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     ActionsValidator validator = new ActionsValidatorImpl(db);
 
     ValidationBuilder vb = new ValidationBuilder();
-    validator.validation(vb, siteId, actions, config.chatGptApiKey(), config.notificationEmail());
+    validator.validation(vb, siteId, resourceType, actions, config.chatGptApiKey(),
+        config.notificationEmail());
 
     vb.check();
 
