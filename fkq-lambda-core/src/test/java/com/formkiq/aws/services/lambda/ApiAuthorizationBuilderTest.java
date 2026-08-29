@@ -113,14 +113,14 @@ class ApiAuthorizationBuilderTest {
   /**
    * Get {@link ApiGatewayRequestEvent}.
    * 
-   * @param group {@link String}
+   * @param group group claim
    * @return {@link ApiGatewayRequestEvent}
    */
-  private ApiGatewayRequestEvent getJwtEvent(final String group) {
+  private ApiGatewayRequestEvent getJwtEvent(final Object group) {
     return getJwtEvent(group, Map.of());
   }
 
-  private ApiGatewayRequestEvent getJwtEvent(final String group,
+  private ApiGatewayRequestEvent getJwtEvent(final Object group,
       final Map<String, Object> additionalClaims) {
     ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
     ApiGatewayRequestContext content = new ApiGatewayRequestContext();
@@ -986,6 +986,25 @@ class ApiAuthorizationBuilderTest {
     assertEquals(Map.of("department", "sales"), authorization.getUserClaims().get("profile"));
     assertNull(authorization.getUserClaims().get("sub"));
     assertEquals("test.user@example.com", authorization.getCustomEmail());
+  }
+
+  /**
+   * JWT group arrays are handled without depending on group order.
+   */
+  @Test
+  void testApiAuthorizerJwtGroupList() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getJwtEvent(List.of("default", "Admins"));
+
+    // when
+    ApiAuthorization api = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals(DEFAULT_SITE_ID, api.getSiteId());
+    assertEquals("Admins,default",
+        api.getRoles().stream().sorted().collect(Collectors.joining(",")));
+    assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE",
+        api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
   }
 
   /**

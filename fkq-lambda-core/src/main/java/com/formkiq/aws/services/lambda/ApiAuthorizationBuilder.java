@@ -105,6 +105,39 @@ public class ApiAuthorizationBuilder {
    */
   public ApiAuthorizationBuilder() {}
 
+  private void addClaimValue(final Collection<String> groups, final Object value) {
+    if (value != null) {
+      String group = value.toString().trim();
+      if (!group.isEmpty()) {
+        groups.add(group);
+      }
+    }
+  }
+
+  private void addClaimValues(final Collection<String> groups, final Object value) {
+    if (value instanceof Collection<?> values) {
+      values.forEach(v -> addClaimValue(groups, v));
+    } else if (value != null) {
+      addDelimitedClaimValues(groups, value);
+    }
+  }
+
+  private void addDelimitedClaimValues(final Collection<String> groups, final Object value) {
+    String claims = value.toString().trim();
+    if (claims.startsWith("[")) {
+      claims = claims.substring(1);
+    }
+
+    if (claims.endsWith("]")) {
+      claims = claims.substring(0, claims.length() - 1);
+    }
+
+    String delimiterRegex = claims.indexOf(',') >= 0 ? "," : " ";
+    for (String token : claims.split(delimiterRegex)) {
+      addClaimValue(groups, token);
+    }
+  }
+
   /**
    * Add Permissions.
    * 
@@ -280,25 +313,7 @@ public class ApiAuthorizationBuilder {
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
     if (claims.containsKey(key)) {
-      Object obj = claims.get(key);
-      if (obj != null) {
-
-        String s = obj.toString().trim();
-        if (s.startsWith("[")) {
-          s = s.substring(1);
-        }
-
-        if (s.endsWith("]")) {
-          s = s.substring(0, s.length() - 1);
-        }
-
-        String delimiterRegex = s.indexOf(',') >= 0 ? "," : " ";
-        for (String token : s.split(delimiterRegex)) {
-          if (!token.isEmpty()) {
-            groups.add(token);
-          }
-        }
-      }
+      addClaimValues(groups, claims.get(key));
     }
 
     return groups;
