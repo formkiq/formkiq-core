@@ -1485,7 +1485,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       UpdateDocumentRequest updateReq =
           new UpdateDocumentRequest().deepLinkPath("https://www.google.com/2")
-              .addActionsItem(new AddAction().type(DocumentActionType.PDFEXPORT));
+              .addActionsItem(new AddAction().type(DocumentActionType.WEBHOOK)
+                  .parameters(new AddActionParameters().url("https://localhost")));
 
       // when
       AddDocumentResponse updateResponse =

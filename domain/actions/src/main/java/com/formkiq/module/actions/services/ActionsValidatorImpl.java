@@ -28,9 +28,12 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.actions.Action;
+import com.formkiq.aws.dynamodb.actions.ActionType;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.validation.ValidationBuilder;
 
 /**
@@ -40,6 +43,10 @@ import com.formkiq.validation.ValidationBuilder;
  */
 public class ActionsValidatorImpl implements ActionsValidator {
 
+  /** Action types supported by documents without stored content. */
+  private static final Set<ActionType> NON_DOCUMENT_ACTION_TYPES =
+      Set.of(ActionType.MOVE, ActionType.DELETE, ActionType.QUEUE, ActionType.NOTIFICATION,
+          ActionType.WEBHOOK, ActionType.EVENTBRIDGE);
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
 
@@ -56,6 +63,13 @@ public class ActionsValidatorImpl implements ActionsValidator {
     return action.parameters() != null ? action.parameters() : Collections.emptyMap();
   }
 
+  private boolean isUnsupported(final DocumentResourceType resourceType,
+      final ActionType actionType) {
+    return (DocumentResourceType.DOSSIER.equals(resourceType)
+        || DocumentResourceType.DEEP_LINK.equals(resourceType))
+        && !NON_DOCUMENT_ACTION_TYPES.contains(actionType);
+  }
+
   private void validateActionParameters(final String siteId, final Action action,
       final String chatGptApiKey, final String notificationsEmail, final ValidationBuilder vb) {
 
@@ -64,8 +78,9 @@ public class ActionsValidatorImpl implements ActionsValidator {
   }
 
   @Override
-  public void validation(final ValidationBuilder vb, final String siteId, final Action action,
-      final String chatGptApiKey, final String notificationsEmail) {
+  public void validation(final ValidationBuilder vb, final String siteId,
+      final DocumentResourceType resourceType, final Action action, final String chatGptApiKey,
+      final String notificationsEmail) {
 
     if (action == null) {
 
@@ -76,6 +91,11 @@ public class ActionsValidatorImpl implements ActionsValidator {
       if (action.type() == null) {
 
         vb.addError("type", "action 'type' is required");
+
+      } else if (isUnsupported(resourceType, action.type())) {
+
+        vb.addError("type", "action type '" + action.type().name()
+            + "' is not allowed for resourceType '" + resourceType.name() + "'");
 
       } else if (isEmpty(action.userId())) {
 
@@ -90,7 +110,9 @@ public class ActionsValidatorImpl implements ActionsValidator {
 
   @Override
   public void validation(final ValidationBuilder vb, final String siteId,
-      final List<Action> actions, final String chatGptApiKey, final String notificationsEmail) {
-    actions.forEach(a -> validation(vb, siteId, a, chatGptApiKey, notificationsEmail));
+      final DocumentResourceType resourceType, final List<Action> actions,
+      final String chatGptApiKey, final String notificationsEmail) {
+    actions
+        .forEach(a -> validation(vb, siteId, resourceType, a, chatGptApiKey, notificationsEmail));
   }
 }

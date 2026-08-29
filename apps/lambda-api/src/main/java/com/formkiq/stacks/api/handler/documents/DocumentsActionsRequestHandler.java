@@ -143,7 +143,7 @@ public class DocumentsActionsRequestHandler
         .toList();
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
-    validateActions(awsservice, config, siteId, actions);
+    validateActions(awsservice, config, siteId, item.resourceType(), actions);
 
     ActionsService service = awsservice.getExtension(ActionsService.class);
     service.saveNewActions(actions);
