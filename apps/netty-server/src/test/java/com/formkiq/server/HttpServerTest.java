@@ -42,6 +42,7 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentResponse;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TypesenseExtension;
@@ -53,6 +54,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.regions.Region;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -64,6 +67,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -395,6 +399,43 @@ public class HttpServerTest {
 
     assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
     assertEquals("request not supported", response.body());
+  }
+
+  /**
+   * Test an unverified SigV4-looking authorization header is rejected, including from loopback.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIME)
+  void testUnverifiedSigV4AuthorizationDenied() throws Exception {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request =
+        HttpRequest.newBuilder().header("Authorization", "AWS4-HMAC-SHA256 invalid")
+            .uri(new URI(BASE_URL + "/documents")).build();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(HttpResponseStatus.FORBIDDEN.code(), response.statusCode());
+    assertEquals("{\"message\":\"access denied, invalid Authorization\"}", response.body());
+  }
+
+  /**
+   * Test a request signed by {@link HttpServiceSigv4} is accepted.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIME)
+  void testVerifiedSigV4AuthorizationAccepted() throws Exception {
+    HttpServiceSigv4 http = new HttpServiceSigv4(Region.US_EAST_2,
+        AwsBasicCredentials.create(MinioTestServices.ACCESS_KEY, MinioTestServices.SECRET_KEY),
+        "execute-api");
+
+    HttpResponse<String> response =
+        http.get(BASE_URL + "/documents", Optional.empty(), Optional.empty());
+
+    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
   }
 
   /**
