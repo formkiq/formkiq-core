@@ -33,7 +33,7 @@ services:
       - -Daws.accountId=${ELASTICMQ_ACCOUNT_ID:-000000000000}
     
   api:
-    image: docker.io/formkiq/api-server:1.19.0
+    image: docker.io/formkiq/api-server:1.19.1
     depends_on:
       - minio
       - dynamodb

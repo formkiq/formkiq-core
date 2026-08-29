@@ -27,9 +27,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.runtime.graalvm.LambdaContext;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4Validator;
 import com.formkiq.server.auth.IAuthCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -61,19 +63,14 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
  */
 public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
 
-  /** Scheme separator. */
-  private static final String SCHEME_SEPARATOR = "://";
-  /** Scheme separator length. */
-  private static final int SCHEME_SEPARATOR_LENGTH = SCHEME_SEPARATOR.length();
-
   /** Auth Credentials. */
   private final IAuthCredentials authCredentials;
   /** {@link Gson}. */
   private final Gson gson = new GsonBuilder().create();
   /** {@link NettyRequestHandler}. */
   private final NettyRequestHandler handler;
-  /** Internal API Host. */
-  private final String internalApiHost;
+  /** SigV4 request validator. */
+  private final HttpServiceSigv4Validator sigv4Validator;
   /** {@link NettyRequestHandler} Urls. */
   private final Collection<String> urls;
 
@@ -82,14 +79,16 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
    * 
    * @param reqestHandler {@link NettyRequestHandler}
    * @param authCreds {@link IAuthCredentials}
+   * @param validator {@link HttpServiceSigv4Validator}
    * @param handlerUrls {@link Collection} {@link String}
    * 
    */
   public ApiGatewayHttpRequestHandler(final NettyRequestHandler reqestHandler,
-      final IAuthCredentials authCreds, final Collection<String> handlerUrls) {
+      final IAuthCredentials authCreds, final HttpServiceSigv4Validator validator,
+      final Collection<String> handlerUrls) {
     this.authCredentials = authCreds;
     this.handler = reqestHandler;
-    this.internalApiHost = getHost(reqestHandler.getAwsServices().environment("API_URL"));
+    this.sigv4Validator = validator;
     this.urls = handlerUrls;
   }
 
@@ -149,18 +148,6 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     }
 
     return map;
-  }
-
-  private String getHost(final String url) {
-    String host = null;
-
-    if (url != null && url.contains(SCHEME_SEPARATOR)) {
-      String u = url.substring(url.indexOf(SCHEME_SEPARATOR) + SCHEME_SEPARATOR_LENGTH);
-      int slash = u.indexOf("/");
-      host = slash > -1 ? u.substring(0, slash) : u;
-    }
-
-    return host;
   }
 
   /**
@@ -234,12 +221,11 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
   private boolean isAuthorized(final ChannelHandlerContext ctx, final FullHttpRequest req) {
     String authorization = req.headers().get("Authorization");
 
-    if (authorization != null && authorization.startsWith("AWS4-HMAC-SHA256 ")
-        && (isLoopbackRequest(ctx) || isInternalApiRequest(req))) {
-      return true;
-    }
+    boolean authorized =
+        authorization != null && authorization.startsWith("AWS4-HMAC-SHA256 ") ? isSigv4Valid(req)
+            : authCredentials.isApiKeyValid(authorization);
 
-    if (!authCredentials.isApiKeyValid(authorization)) {
+    if (!authorized) {
       sendResponse(ctx, HttpResponseStatus.FORBIDDEN,
           "{\"message\":\"access denied, invalid Authorization\"}");
 
@@ -249,16 +235,23 @@ public class ApiGatewayHttpRequestHandler implements HttpRequestHandler {
     return true;
   }
 
-  private boolean isInternalApiRequest(final FullHttpRequest req) {
-    String host = req.headers().get("Host");
-    return this.internalApiHost != null && this.internalApiHost.equalsIgnoreCase(host);
-  }
+  private boolean isSigv4Valid(final FullHttpRequest request) {
+    String host = request.headers().get("Host");
+    if (Strings.isEmpty(host)) {
+      return false;
+    }
 
-  private boolean isLoopbackRequest(final ChannelHandlerContext ctx) {
-    SocketAddress remoteAddress = ctx.channel().remoteAddress();
-
-    return remoteAddress instanceof InetSocketAddress inetSocketAddress
-        && inetSocketAddress.getAddress().isLoopbackAddress();
+    try {
+      URI uri = new URI("http://" + host + request.uri());
+      Map<String, List<String>> headers = new HashMap<>();
+      request.headers().forEach(
+          e -> headers.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue()));
+      byte[] payload = new byte[request.content().readableBytes()];
+      request.content().getBytes(request.content().readerIndex(), payload);
+      return this.sigv4Validator.isValid(request.method().name(), uri, headers, payload);
+    } catch (URISyntaxException e) {
+      return false;
+    }
   }
 
   @Override

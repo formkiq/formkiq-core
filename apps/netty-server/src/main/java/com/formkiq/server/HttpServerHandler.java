@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import com.formkiq.module.httpsigv4.HttpServiceSigv4Validator;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.server.auth.IAuthCredentials;
 import com.formkiq.server.auth.KeycloakAuthCredentials;
@@ -37,6 +38,7 @@ import com.formkiq.stacks.lambda.s3.StagingS3Create;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
 
 /**
  * {@link SimpleChannelInboundHandler} for Http Server.
@@ -72,12 +74,15 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         ? new SimpleAuthCredentials(adminUser, adminPassword, apiKey)
         : new KeycloakAuthCredentials(keycloakTokenEndpoint, keycloakClientId,
             keycloakClientSecret);
+    AwsCredentials awsCredentials = awsServices.getExtension(AwsCredentials.class);
+    HttpServiceSigv4Validator sigv4Validator =
+        new HttpServiceSigv4Validator("execute-api", awsServices.region(), awsCredentials);
 
     this.handlers = Arrays.asList(new OptionsHttpRequestHandler(),
         new MinioS3HttpRequestHandler(stagingS3Create, documentS3Update),
         new AuthenticationLoginHttpRequestHandler(authCredentials),
         new AuthenticationLoginRefreshHttpRequestHandler(authCredentials),
-        new ApiGatewayHttpRequestHandler(requestHandler, authCredentials, urls));
+        new ApiGatewayHttpRequestHandler(requestHandler, authCredentials, sigv4Validator, urls));
   }
 
   @Override

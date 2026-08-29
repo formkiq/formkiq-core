@@ -25,6 +25,7 @@ dependencies {
   implementation project(':apps:lambda-api')
   implementation project(':apps:lambda-ocr-tesseract')
   implementation project(':apps:lambda-typesense')
+  implementation project(':libs:http-sigv4')
   implementation libs.netty.all
   implementation libs.commons.cli
   implementation libs.minio
