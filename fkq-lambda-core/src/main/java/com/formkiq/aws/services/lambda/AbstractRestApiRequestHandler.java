@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
@@ -62,6 +63,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
 
   /** Define the size limit in bytes (6 MB = 6 * 1024 * 1024 bytes). */
   private static final long MAX_PAYLOAD_SIZE_MB = 6L * 1024 * 1024;
+  /** Request headers whose values must not be logged. */
+  private static final Set<String> SENSITIVE_REQUEST_HEADERS =
+      Set.of("authorization", "x-amz-security-token");
 
   private static void resetThreadLocal() {
     ApiAuthorization.logout();
@@ -257,7 +261,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     if (logger.isLogged(LogLevel.DEBUG)) {
       ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
       if (event != null && event.getHeaders() != null) {
-        event.getHeaders().put("authorization", "****");
+        event.getHeaders()
+            .replaceAll((key, value) -> isSensitiveRequestHeader(key) ? "****" : value);
         logger.debug(gson.toJson(event));
       }
     }
@@ -429,6 +434,10 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   private boolean isResponseTooLarge(final String input) {
     long sizeInBytes = input.getBytes(StandardCharsets.UTF_8).length;
     return sizeInBytes > MAX_PAYLOAD_SIZE_MB;
+  }
+
+  private boolean isSensitiveRequestHeader(final String key) {
+    return key != null && SENSITIVE_REQUEST_HEADERS.contains(key.toLowerCase());
   }
 
   private void log(final ApiAuthorization authorization, final ApiGatewayRequestEvent event,

@@ -24,6 +24,7 @@
 package com.formkiq.aws.services.lambda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,6 +167,32 @@ class RestApiRequestHandlerEventInterceptorTest {
     assertEquals("original failure", error.getMessage());
     assertTrue(logger.containsString("original failure"));
     assertTrue(logger.containsString("\"status\":500"));
+  }
+
+  @Test
+  void handleRequestRedactsSensitiveHeadersFromDebugLog() throws IOException {
+    // given
+    LoggerRecorder logger = new LoggerRecorder();
+    AwsServiceCache services = new AwsServiceCache().environment(Map.of()).setLogger(logger);
+    services.registerAppend(ApiAuthorizationInterceptor.class,
+        new ClassServiceExtension<>(new TestApiAuthorizationInterceptor()));
+    TestRestApiRequestHandler handler = new TestRestApiRequestHandler(services);
+    ApiGatewayRequestEvent event = event();
+    event.setHeaders(Map.of("Authorization", "authorization-secret", "X-Amz-Security-Token",
+        "security-token-secret", "X-Custom-Header", "visible-value"));
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    // when
+    handler.handleRequest(
+        new ByteArrayInputStream(this.gson.toJson(event).getBytes(StandardCharsets.UTF_8)), output,
+        null);
+
+    // then
+    assertTrue(logger.containsString("\"Authorization\":\"****\""));
+    assertTrue(logger.containsString("\"X-Amz-Security-Token\":\"****\""));
+    assertTrue(logger.containsString("\"X-Custom-Header\":\"visible-value\""));
+    assertFalse(logger.containsString("authorization-secret"));
+    assertFalse(logger.containsString("security-token-secret"));
   }
 
   @Test
