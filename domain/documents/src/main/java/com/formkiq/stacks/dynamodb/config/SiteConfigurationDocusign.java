@@ -29,6 +29,6 @@ import com.formkiq.graalvm.annotations.Reflectable;
  * Site Configuration Docusign.
  */
 @Reflectable
-public record SiteConfigurationDocusign(String userId, String integrationKey, String rsaPrivateKey,
-    String hmacSignature) {
+public record SiteConfigurationDocusign(String environment, String userId, String integrationKey,
+    String rsaPrivateKey, String hmacSignature) {
 }

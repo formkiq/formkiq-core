@@ -14863,6 +14863,8 @@ components:
     DocusignConfig:
       type: object
       properties:
+        environment:
+          $ref: '#/components/schemas/DocusignEnvironment'
         userId:
           type: string
           description: Docusign UserId

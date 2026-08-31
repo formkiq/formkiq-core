@@ -32,6 +32,8 @@ public interface ConfigService {
   String DOCUMENT_COUNT = "DocumentCount";
   /** ChatGpt Api Key. */
   String CHATGPT_API_KEY = "ChatGptApiKey";
+  /** Docusign environment. */
+  String DOCUSIGN_ENVIRONMENT = "docusignEnvironment";
   /** Document Time To Live Key. */
   String DOCUMENT_TIME_TO_LIVE = "DocumentTimeToLive";
   /** Max Document Size. */

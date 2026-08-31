@@ -38,6 +38,7 @@ import com.formkiq.client.model.DocumentConfigContentTypes;
 import com.formkiq.client.model.DocumentConfigDispositionAction;
 import com.formkiq.client.model.DocumentConfigRetentionAndDisposition;
 import com.formkiq.client.model.DocusignConfig;
+import com.formkiq.client.model.DocusignEnvironment;
 import com.formkiq.client.model.GetConfigurationResponse;
 import com.formkiq.client.model.GetSystemConfigurationResponse;
 import com.formkiq.client.model.GoogleConfig;
@@ -582,6 +583,24 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e", docusign.getUserId());
     assertEquals("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEow*******OAMrFWnb"
         + "\\n-----END RSA PRIVATE KEY-----\"", docusign.getRsaPrivateKey());
+  }
+
+  /** PATCH and GET Docusign environment configuration. */
+  @Test
+  public void testHandlePatchConfigurationEnvironment() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    UpdateConfigurationRequest request = new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().environment(DocusignEnvironment.PRODUCTION));
+
+    // when
+    UpdateConfigurationResponse response =
+        this.systemApi.updateConfiguration(DEFAULT_SITE_ID, request);
+    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+
+    // then
+    assertEquals("Config saved", response.getMessage());
+    assertEquals(DocusignEnvironment.PRODUCTION, configuration.getDocusign().getEnvironment());
   }
 
   /**

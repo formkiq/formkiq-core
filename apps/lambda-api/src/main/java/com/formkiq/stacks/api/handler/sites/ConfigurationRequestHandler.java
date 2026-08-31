@@ -116,8 +116,8 @@ public class ConfigurationRequestHandler
 
     SiteConfigurationDocusign docusign = obj.docusign();
     if (docusign != null) {
-      docusign = new SiteConfigurationDocusign(docusign.userId(), docusign.integrationKey(),
-          mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
+      docusign = new SiteConfigurationDocusign(docusign.environment(), docusign.userId(),
+          docusign.integrationKey(), mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
           mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK));
     }
 
@@ -127,8 +127,9 @@ public class ConfigurationRequestHandler
         getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
         normalizeDocument(obj.document()),
         Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
-        Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)), Objects
-            .getNotNullOrDefault(docusign, new SiteConfigurationDocusign(null, null, null, null)),
+        Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
+        Objects.getNotNullOrDefault(docusign,
+            new SiteConfigurationDocusign(null, null, null, null, null)),
         null, null, null);
 
     Gson gson = GsonUtil.getInstance();
