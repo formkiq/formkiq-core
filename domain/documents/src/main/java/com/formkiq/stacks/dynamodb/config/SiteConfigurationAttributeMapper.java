@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.config;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUSIGN_ENVIRONMENT;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
@@ -98,7 +99,8 @@ final class SiteConfigurationAttributeMapper {
 
     SiteConfigurationDocusign docusign = config.docusign();
     if (docusign != null) {
-      map.withString(KEY_DOCUSIGN_USER_ID, trim(docusign.userId()))
+      map.withString(DOCUSIGN_ENVIRONMENT, docusign.environment())
+          .withString(KEY_DOCUSIGN_USER_ID, trim(docusign.userId()))
           .withString(KEY_DOCUSIGN_INTEGRATION_KEY, trim(docusign.integrationKey()))
           .withString(KEY_DOCUSIGN_RSA_PRIVATE_KEY, trim(docusign.rsaPrivateKey()))
           .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, trim(docusign.hmacSignature()));

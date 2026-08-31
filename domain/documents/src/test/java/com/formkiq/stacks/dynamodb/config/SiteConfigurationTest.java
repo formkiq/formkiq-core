@@ -38,6 +38,20 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class SiteConfigurationTest {
 
   @Test
+  public void testDocusignEnvironmentIsNestedAndPersisted() {
+    SiteConfiguration config = SiteConfiguration.builder()
+        .docusign(new SiteConfigurationDocusign("PRODUCTION", null, null, null, null))
+        .build("default");
+
+    Map<String, AttributeValue> attributes = config.getAttributes();
+    SiteConfiguration result = SiteConfiguration.fromAttributeMap(attributes);
+
+    assertEquals("PRODUCTION", attributes.get(ConfigService.DOCUSIGN_ENVIRONMENT).s());
+    assertNotNull(result.docusign());
+    assertEquals("PRODUCTION", result.docusign().environment());
+  }
+
+  @Test
   public void testFromAttributeMapDefaultsDispositionAction() {
     SiteConfiguration config = SiteConfiguration.builder()
         .document(new SiteConfigurationDocument(

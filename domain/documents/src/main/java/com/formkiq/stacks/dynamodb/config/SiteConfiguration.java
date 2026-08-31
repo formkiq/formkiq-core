@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_CONFIG;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUSIGN_ENVIRONMENT;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
@@ -46,6 +47,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -125,6 +127,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
   private static SiteConfigurationDocusign getSiteConfigurationDocusign(
       final Map<String, AttributeValue> attributes) {
     SiteConfigurationDocusign docusign = null;
+    String environment = DynamoDbTypes.toString(attributes.get(DOCUSIGN_ENVIRONMENT));
     String docusignUserId = DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_USER_ID));
     String docusignIntegrationKey =
         DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_INTEGRATION_KEY));
@@ -133,9 +136,10 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     String docusignHmacSignature =
         DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_HMAC_SIGNATURE));
 
-    if (!Strings.isEmpty(docusignUserId) || !Strings.isEmpty(docusignIntegrationKey)
-        || !Strings.isEmpty(docusignRsaPrivateKey) || !Strings.isEmpty(docusignHmacSignature)) {
-      docusign = new SiteConfigurationDocusign(docusignUserId, docusignIntegrationKey,
+    String[] values = {environment, docusignUserId, docusignIntegrationKey, docusignRsaPrivateKey,
+        docusignHmacSignature};
+    if (Arrays.stream(values).anyMatch(value -> !Strings.isEmpty(value))) {
+      docusign = new SiteConfigurationDocusign(environment, docusignUserId, docusignIntegrationKey,
           docusignRsaPrivateKey, docusignHmacSignature);
     }
 
