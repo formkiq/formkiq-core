@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -64,6 +66,12 @@ import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationWebUi;
 import com.formkiq.urls.HttpStatus;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
+import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationRequest;
+import software.amazon.awssdk.services.cloudfront.model.GetInvalidationRequest;
+import software.amazon.awssdk.services.cloudfront.model.InvalidationBatch;
+import software.amazon.awssdk.services.cloudfront.model.Paths;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DescribeUserPoolClientRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.OAuthFlowType;
@@ -86,6 +94,21 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private static final String CONSOLE_URL = "CONSOLE_URL";
   /** Console module presigned URL expiry in minutes. */
   private static final long CONSOLE_MODULE_PRESIGNED_URL_EXPIRY_MINUTES = 5;
+  /** Stage console installation action. */
+  private static final String INSTALL_ACTION_STAGE = "Stage";
+  /** Finalize console installation action. */
+  private static final String INSTALL_ACTION_FINALIZE = "Finalize";
+  /** Cache policy for content-addressed assets. */
+  private static final String CACHE_CONTROL_IMMUTABLE = "public, max-age=31536000, immutable";
+  /** Cache policy for runtime configuration and discovery files. */
+  private static final String CACHE_CONTROL_NO_STORE = "no-store";
+  /** Cache policy for the application shell and non-content-addressed files. */
+  private static final String CACHE_CONTROL_REVALIDATE = "no-cache, max-age=0, must-revalidate";
+  /** Runtime configuration and discovery files that must not be cached. */
+  private static final List<String> CACHE_CONTROL_NO_STORE_FILES =
+      List.of("assets/config.json", "modules/index.json", "remoteentry.js", "module.manifest.json");
+  /** Pattern used by the console build for content-addressed filenames. */
+  private static final Pattern CONTENT_HASH_PATTERN = Pattern.compile(".*\\.[0-9a-f]{8,}\\.[^/]+$");
 
   /** {@link AwsServiceCache}. */
   private static AwsServiceCache serviceCache;
@@ -182,7 +205,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
     String fileName = consoleVersion + "/assets/config.json";
 
-    s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8), null, null);
+    s3.putObject(destinationBucket, fileName, json.getBytes(StandardCharsets.UTF_8),
+        "application/json", CACHE_CONTROL_NO_STORE, null);
 
     logger.log("writing Cognito config: " + json);
   }
@@ -228,6 +252,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     map.put(".eot", "application/vnd.ms-fontobject");
     map.put(".ico", "image/x-icon");
     map.put(".js", "application/javascript");
+    map.put(".json", "application/json");
     map.put(".svg", "image/svg+xml");
     map.put(".ttf", "font/ttf");
     map.put(".woff", "font/woff");
@@ -255,6 +280,32 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
   private String escapeHtml(final String value) {
     return value.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&#39;")
         .replace("<", "&lt;").replace(">", "&gt;");
+  }
+
+  private void finalizeConsole(final Map<String, Object> input, final LambdaLogger logger,
+      final S3Service s3) throws IOException {
+    installDriveLoginPage(input, logger, s3);
+    installDriveLoginSuccessPage(logger, s3);
+    updateDriveCognitoUserPoolClient(input, logger);
+
+    String distributionId = getResourceProperty(input, "DistributionId");
+    if (isBlank(distributionId)) {
+      throw new IllegalArgumentException("Finalize action requires DistributionId");
+    }
+    invalidateCloudFront(distributionId, logger);
+  }
+
+  String getCacheControl(final String entryName) {
+    String lowerCaseName = entryName.toLowerCase();
+    if (CACHE_CONTROL_NO_STORE_FILES.contains(lowerCaseName)
+        || lowerCaseName.endsWith("/remoteentry.js")
+        || lowerCaseName.endsWith("/module.manifest.json")) {
+      return CACHE_CONTROL_NO_STORE;
+    }
+    if (CONTENT_HASH_PATTERN.matcher(lowerCaseName).matches()) {
+      return CACHE_CONTROL_IMMUTABLE;
+    }
+    return CACHE_CONTROL_REVALIDATE;
   }
 
   private CognitoIdentityProviderClient getCognitoIdentityProviderClient() {
@@ -372,13 +423,13 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     return zipUrls;
   }
 
-  private String getDriveCognitoAuthorizeUrl() {
+  private String getDriveCognitoAuthorizeUrl(final Map<String, Object> input) {
     String authorizeUrl = serviceCache.environment(DRIVE_COGNITO_AUTHORIZE_URL);
     if (authorizeUrl == null || authorizeUrl.isBlank() || authorizeUrl.contains("redirect_uri=")) {
       return authorizeUrl;
     }
 
-    String callbackUrl = getDriveLoginSuccessUrl();
+    String callbackUrl = getDriveLoginSuccessUrl(input);
     if (callbackUrl == null) {
       return authorizeUrl;
     }
@@ -386,13 +437,27 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     return authorizeUrl + (authorizeUrl.contains("?") ? "&" : "?") + "redirect_uri=" + callbackUrl;
   }
 
-  private String getDriveLoginSuccessUrl() {
-    String consoleUrl = serviceCache.environment(CONSOLE_URL);
+  private String getDriveLoginSuccessUrl(final Map<String, Object> input) {
+    String consoleUrl = getResourceProperty(input, "ConsoleUrl");
+    if (isBlank(consoleUrl)) {
+      consoleUrl = serviceCache.environment(CONSOLE_URL);
+    }
     if (consoleUrl == null || consoleUrl.isBlank()) {
       return null;
     }
 
     return trimTrailingSlash(consoleUrl) + "/" + DRIVE_LOGIN_SUCCESS_PAGE;
+  }
+
+  private String getResourceProperty(final Map<String, Object> input, final String name) {
+    Object resourceProperties = input.get("ResourceProperties");
+    if (resourceProperties instanceof Map<?, ?> properties) {
+      Object value = properties.get(name);
+      if (value instanceof String stringValue) {
+        return stringValue;
+      }
+    }
+    return null;
   }
 
   /**
@@ -417,19 +482,26 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       var s3 = serviceCache.getExtension(S3Service.class);
 
       if (unzip) {
-
-        unzipConsole(s3, input, logger);
-        installDriveLoginPage(logger, s3);
-        installDriveLoginSuccessPage(logger, s3);
-        updateDriveCognitoUserPoolClient(logger);
-        createCognitoConfig(logger, s3);
-        createCognitoEmail(logger, s3);
+        String action = getResourceProperty(input, "Action");
+        if (INSTALL_ACTION_STAGE.equalsIgnoreCase(action)) {
+          stageConsole(input, logger, s3);
+        } else if (INSTALL_ACTION_FINALIZE.equalsIgnoreCase(action)) {
+          finalizeConsole(input, logger, s3);
+        } else {
+          // Backwards-compatible behavior for existing/direct invocations without an action.
+          stageConsole(input, logger, s3);
+          installDriveLoginPage(input, logger, s3);
+          installDriveLoginSuccessPage(logger, s3);
+          updateDriveCognitoUserPoolClient(input, logger);
+        }
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
 
       } else if (delete) {
-
-        deleteConsole(logger, s3);
+        String action = getResourceProperty(input, "Action");
+        if (!INSTALL_ACTION_FINALIZE.equalsIgnoreCase(action)) {
+          deleteConsole(logger, s3);
+        }
 
         sendResponse(input, logger, context, "SUCCESS",
             "Request " + requestType + " was successful!");
@@ -449,8 +521,9 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     return null;
   }
 
-  private void installDriveLoginPage(final LambdaLogger logger, final S3Service s3) {
-    String authorizeUrl = getDriveCognitoAuthorizeUrl();
+  private void installDriveLoginPage(final Map<String, Object> input, final LambdaLogger logger,
+      final S3Service s3) {
+    String authorizeUrl = getDriveCognitoAuthorizeUrl(input);
     if (authorizeUrl == null || authorizeUrl.isBlank()) {
       logger.log("skipping FormKiQ Drive login page, " + DRIVE_COGNITO_AUTHORIZE_URL
           + " is not configured");
@@ -463,7 +536,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     String html = buildDriveLoginPage(authorizeUrl);
 
     logger.log("writing FormKiQ Drive login page: " + key);
-    s3.putObject(destinationBucket, key, html.getBytes(StandardCharsets.UTF_8), "text/html", null);
+    s3.putObject(destinationBucket, key, html.getBytes(StandardCharsets.UTF_8), "text/html",
+        CACHE_CONTROL_NO_STORE, null);
   }
 
   private void installDriveLoginSuccessPage(final LambdaLogger logger, final S3Service s3)
@@ -477,7 +551,30 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
       if (is == null) {
         throw new IOException("missing resource " + DRIVE_LOGIN_SUCCESS_PAGE);
       }
-      s3.putObject(destinationBucket, key, is, "text/html");
+      s3.putObject(destinationBucket, key, S3Service.toByteArray(is), "text/html",
+          CACHE_CONTROL_NO_STORE, null);
+    }
+  }
+
+  protected void invalidateCloudFront(final String distributionId, final LambdaLogger logger) {
+    logger.log("invalidating CloudFront distribution " + distributionId);
+    try (CloudFrontClient cloudfront = CloudFrontClient.builder()
+        .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+        .region(Region.AWS_GLOBAL).build()) {
+      Paths paths = Paths.builder().quantity(1).items("/*").build();
+      InvalidationBatch batch = InvalidationBatch.builder()
+          .callerReference(UUID.randomUUID().toString()).paths(paths).build();
+      var invalidation = cloudfront.createInvalidation(CreateInvalidationRequest.builder()
+          .distributionId(distributionId).invalidationBatch(batch).build()).invalidation();
+      GetInvalidationRequest request = GetInvalidationRequest.builder()
+          .distributionId(distributionId).id(invalidation.id()).build();
+      try (var waiter = cloudfront.waiter()) {
+        var response = waiter.waitUntilInvalidationCompleted(request);
+        response.matched().exception().ifPresent(e -> {
+          throw new IllegalStateException("CloudFront invalidation failed", e);
+        });
+      }
+      logger.log("CloudFront invalidation completed: " + invalidation.id());
     }
   }
 
@@ -558,6 +655,13 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
   }
 
+  private void stageConsole(final Map<String, Object> input, final LambdaLogger logger,
+      final S3Service s3) throws IOException {
+    unzipConsole(s3, input, logger);
+    createCognitoConfig(logger, s3);
+    createCognitoEmail(logger, s3);
+  }
+
   private String trimTrailingSlash(final String value) {
     return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
   }
@@ -588,10 +692,11 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     }
   }
 
-  private void updateDriveCognitoUserPoolClient(final LambdaLogger logger) {
+  private void updateDriveCognitoUserPoolClient(final Map<String, Object> input,
+      final LambdaLogger logger) {
     String userPoolId = serviceCache.environment("COGNITO_USER_POOL_ID");
     String clientId = serviceCache.environment(DRIVE_COGNITO_USER_POOL_CLIENT_ID);
-    String callbackUrl = getDriveLoginSuccessUrl();
+    String callbackUrl = getDriveLoginSuccessUrl(input);
     if (isBlank(userPoolId) || isBlank(clientId) || isBlank(callbackUrl)) {
       logger.log("skipping FormKiQ Drive Cognito app client update");
       return;
@@ -656,7 +761,8 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
 
         byte[] byteArray = S3Service.toByteArray(zis);
 
-        s3.putObject(destinationBucket, fileName, byteArray, mimeType, null);
+        s3.putObject(destinationBucket, fileName, byteArray, mimeType,
+            getCacheControl(entry.getName()), null);
 
         entry = zis.getNextEntry();
       }

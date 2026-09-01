@@ -190,6 +190,23 @@ public class ConsoleInstallHandlerTest {
   }
 
   /**
+   * Verify console objects receive freshness-safe cache policies.
+   */
+  @Test
+  public void testCacheControl() {
+    assertEquals("no-store", this.handler.getCacheControl("assets/config.json"));
+    assertEquals("no-store", this.handler.getCacheControl("modules/index.json"));
+    assertEquals("no-store", this.handler.getCacheControl("modules/a/remoteEntry.js"));
+    assertEquals("no-store", this.handler.getCacheControl("modules/a/module.manifest.json"));
+    assertEquals("public, max-age=31536000, immutable",
+        this.handler.getCacheControl("main.0123456789abcdef.js"));
+    assertEquals("no-cache, max-age=0, must-revalidate",
+        this.handler.getCacheControl("index.html"));
+    assertEquals("no-cache, max-age=0, must-revalidate",
+        this.handler.getCacheControl("favicon.ico"));
+  }
+
+  /**
    * Test Handle Request 'CREATE' with Sso Login Redirect enabled.
    *
    */
@@ -277,6 +294,8 @@ public class ConsoleInstallHandlerTest {
 
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getContentType()
         .endsWith("/javascript"));
+    assertEquals("no-cache, max-age=0, must-revalidate",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.js", null).getCacheControl());
 
     assertEquals("image/svg+xml",
         s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/test.svg", null).getContentType());
@@ -600,6 +619,42 @@ public class ConsoleInstallHandlerTest {
     assertFalse(connection.contains("\"Status\":\"SUCCESS\""));
   }
 
+  /**
+   * Verify the finalizer uses the same Lambda handler after CloudFront is deployed.
+   *
+   */
+  @Test
+  public void testHandleRequestFinalize() {
+    // given
+    List<String> invalidatedDistributions = new ArrayList<>();
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected void invalidateCloudFront(final String distributionId,
+          final LambdaLogger lambdaLogger) {
+        invalidatedDistributions.add(distributionId);
+      }
+    };
+
+    Map<String, Object> input = createInput("Update");
+    input.put("ResourceProperties", Map.of("Action", "Finalize", "ConsoleUrl",
+        "https://new-console.example.com", "DistributionId", "E123"));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertEquals(List.of("E123"), invalidatedDistributions);
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(s3.getContentAsString(CONSOLE_BUCKET, "0.1/drive-login.html", null)
+        .contains("redirect_uri=https://new-console.example.com/drive-login-success.html"));
+  }
+
   private void verifyCognitoConfig() {
     assertTrue(s3.getObjectMetadata(CONSOLE_BUCKET,
         "formkiq/cognito/dev/CustomMessage_AdminCreateUser/Message", null).isObjectExists());
@@ -634,11 +689,16 @@ public class ConsoleInstallHandlerTest {
     assertEquals(ssoLoginRedirectEnabled, Boolean.valueOf(o.get("ssoAutomaticSignIn").toString()));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/iam/", o.get("apiIamUrl"));
     assertEquals("https://auth.execute-api.us-east-1.amazonaws.com/key/", o.get("apiKeyUrl"));
+    assertEquals("application/json",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/assets/config.json", null).getContentType());
+    assertEquals("no-store",
+        s3.getObjectMetadata(CONSOLE_BUCKET, "0.1/assets/config.json", null).getCacheControl());
   }
 
   private void verifyDriveLoginPage() {
     String key = "0.1/drive-login.html";
     assertEquals("text/html", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    assertEquals("no-store", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getCacheControl());
     String content = s3.getContentAsString(CONSOLE_BUCKET, key, null);
     assertTrue(content.contains("window.location.replace"));
     assertTrue(content.contains("client_id=drive"));
@@ -649,6 +709,7 @@ public class ConsoleInstallHandlerTest {
   private void verifyDriveLoginSuccessPage() {
     String key = "0.1/drive-login-success.html";
     assertEquals("text/html", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    assertEquals("no-store", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getCacheControl());
     assertTrue(s3.getContentAsString(CONSOLE_BUCKET, key, null)
         .contains("com.formkiq.drive://oauth2/callback"));
   }

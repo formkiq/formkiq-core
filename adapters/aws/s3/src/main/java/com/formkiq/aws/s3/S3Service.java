@@ -525,6 +525,7 @@ public class S3Service {
       Map<String, String> metadata = resp.metadata();
       md.setObjectExists(true);
       md.setContentType(resp.contentType());
+      md.setCacheControl(resp.cacheControl());
       md.setMetadata(metadata);
       md.setEtag(resp.eTag());
       md.setContentLength(resp.contentLength());
@@ -659,12 +660,32 @@ public class S3Service {
    */
   public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
       final String contentType, final Map<String, String> metadata) {
+    return putObject(bucket, key, data, contentType, null, metadata);
+  }
+
+  /**
+   * Put Object in Bucket.
+   *
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param data byte[]
+   * @param contentType {@link String}
+   * @param cacheControl {@link String}
+   * @param metadata {@link Map}
+   * @return {@link PutObjectResponse}
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final byte[] data,
+      final String contentType, final String cacheControl, final Map<String, String> metadata) {
     int contentLength = data.length;
     PutObjectRequest.Builder build =
         PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) contentLength);
 
     if (contentType != null) {
       build.contentType(contentType);
+    }
+
+    if (cacheControl != null) {
+      build.cacheControl(cacheControl);
     }
 
     if (metadata != null) {
