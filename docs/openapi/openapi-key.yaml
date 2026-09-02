@@ -3732,7 +3732,6 @@ paths:
             schema:
               $ref: '#/components/schemas/AddDocusignSenderViewRequest'
             example:
-              environment: DEVELOPMENT
               returnUrl: https://console.example.com/agreements/123/esignature
       responses:
         "200":
@@ -11674,7 +11673,7 @@ components:
       - CUSTOM
     DocusignEnvironment:
       type: string
-      description: Docusign Environment
+      description: Docusign environment. When omitted from an E-Signature request, defaults to docusignEnvironment in the site configuration.
       enum:
       - PRODUCTION
       - DEVELOPMENT
@@ -11718,8 +11717,6 @@ components:
             type: string
     AddDocusignEnvelopesRequest:
       type: object
-      required:
-      - environment
       properties:
         emailSubject:
           type: string
@@ -11870,7 +11867,6 @@ components:
     AddDocusignRecipientViewRequest:
       type: object
       required:
-      - environment
       - recipientView
       properties:
         environment:
@@ -11886,7 +11882,6 @@ components:
     AddDocusignSenderViewRequest:
       type: object
       required:
-      - environment
       - returnUrl
       properties:
         environment:
