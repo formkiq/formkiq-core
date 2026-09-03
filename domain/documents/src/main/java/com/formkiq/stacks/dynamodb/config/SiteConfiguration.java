@@ -28,6 +28,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUSIGN_ENVIRONMENT;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_CONNECT_URL;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
@@ -135,12 +136,13 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
         DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_RSA_PRIVATE_KEY));
     String docusignHmacSignature =
         DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_HMAC_SIGNATURE));
+    String docusignConnectUrl = DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_CONNECT_URL));
 
     String[] values = {environment, docusignUserId, docusignIntegrationKey, docusignRsaPrivateKey,
-        docusignHmacSignature};
+        docusignHmacSignature, docusignConnectUrl};
     if (Arrays.stream(values).anyMatch(value -> !Strings.isEmpty(value))) {
       docusign = new SiteConfigurationDocusign(environment, docusignUserId, docusignIntegrationKey,
-          docusignRsaPrivateKey, docusignHmacSignature);
+          docusignRsaPrivateKey, docusignHmacSignature, docusignConnectUrl);
     }
 
     return docusign;

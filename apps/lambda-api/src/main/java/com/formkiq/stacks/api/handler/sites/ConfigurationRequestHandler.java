@@ -118,19 +118,20 @@ public class ConfigurationRequestHandler
     if (docusign != null) {
       docusign = new SiteConfigurationDocusign(docusign.environment(), docusign.userId(),
           docusign.integrationKey(), mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
-          mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK));
+          mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK), docusign.connectUrl());
     }
 
-    obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
-        getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
-        getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
-        getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
-        normalizeDocument(obj.document()),
-        Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
-        Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
-        Objects.getNotNullOrDefault(docusign,
-            new SiteConfigurationDocusign(null, null, null, null, null)),
-        null, null, null);
+    obj =
+        new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
+            getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
+            getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
+            getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
+            normalizeDocument(obj.document()),
+            Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
+            Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
+            Objects.getNotNullOrDefault(docusign,
+                new SiteConfigurationDocusign(null, null, null, null, null, null)),
+            null, null, null);
 
     Gson gson = GsonUtil.getInstance();
     String json = gson.toJson(obj);

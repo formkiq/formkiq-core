@@ -3252,3 +3252,7 @@ components:
           type: "string"
           description: |-
             Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
+        connectUrl:
+          type: "string"
+          format: "uri"
+          description: "Public HTTPS URL that receives Docusign Connect event notifications."

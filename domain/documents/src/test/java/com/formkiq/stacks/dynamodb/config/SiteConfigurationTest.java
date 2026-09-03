@@ -40,7 +40,7 @@ public class SiteConfigurationTest {
   @Test
   public void testDocusignEnvironmentIsNestedAndPersisted() {
     SiteConfiguration config = SiteConfiguration.builder()
-        .docusign(new SiteConfigurationDocusign("PRODUCTION", null, null, null, null))
+        .docusign(new SiteConfigurationDocusign("PRODUCTION", null, null, null, null, null))
         .build("default");
 
     Map<String, AttributeValue> attributes = config.getAttributes();
