@@ -66,6 +66,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -459,7 +460,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     UpdateConfigurationRequest req = new UpdateConfigurationRequest()
         .docusign(new DocusignConfig().userId("123").integrationKey("111")
-            .rsaPrivateKey(RSA_PRIVATE_KEY).hmacSignature("222ljasdlksjakldjsadlsa"));
+            .rsaPrivateKey(RSA_PRIVATE_KEY).hmacSignature("222ljasdlksjakldjsadlsa")
+            .connectUrl(URI.create("https://api.example.com/esignature/docusign/events")));
 
     this.systemApi.updateConfiguration(siteId, req);
 
@@ -471,6 +473,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("111", configuration.getDocusign().getIntegrationKey());
     assertEquals("123", configuration.getDocusign().getUserId());
     assertEquals("222l*******dlsa", configuration.getDocusign().getHmacSignature());
+    assertEquals(URI.create("https://api.example.com/esignature/docusign/events"),
+        configuration.getDocusign().getConnectUrl());
     assertEquals("""
         -----BEGIN RSA PRIVATE KEY-----
         MIIEvQIB*******qFT4Ofeyc=
