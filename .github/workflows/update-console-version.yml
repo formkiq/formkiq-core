@@ -39,52 +39,33 @@ jobs:
         env:
           CONSOLE_VERSION: ${{ inputs.console-version }}
         run: |
-          python3 - <<'PYTHON'
-          import os
-          import re
-          from pathlib import Path
+          TEMPLATE=src/main/resources/cloudformation/console/template.yaml
+          AWS_TEST=apps/console/src/integration/java/com/formkiq/stacks/console/awstest/AwsResourceTest.java
+          VERSION_PATTERN='v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?'
 
-          version = os.environ["CONSOLE_VERSION"]
-          if not re.fullmatch(r"v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", version):
-              raise SystemExit(
-                  "console-version must use the format vX.Y.Z, optionally with a prerelease suffix"
-              )
+          if [[ ! "$CONSOLE_VERSION" =~ ^${VERSION_PATTERN}$ ]]; then
+            echo "console-version must use the format vX.Y.Z, optionally with a prerelease suffix"
+            exit 1
+          fi
 
-          replacements = (
-              (
-                  Path("src/main/resources/cloudformation/console/template.yaml"),
-                  re.compile(
-                      r"(?m)^(  ConsoleVersion:\n"
-                      r"    Type: String\n"
-                      r"    Description: Version of FormKiQ console to deploy\n"
-                      r"    Default: )\S+$"
-                  ),
-                  rf"\g<1>{version}",
-              ),
-              (
-                  Path(
-                      "apps/console/src/integration/java/com/formkiq/stacks/console/"
-                      "awstest/AwsResourceTest.java"
-                  ),
-                  re.compile(
-                      r'(?m)^(\s*assertEquals\(")[^"]+(\",\n'
-                      r'\s*ssmService\.getParameterValue\("/formkiq/" '
-                      r'\+ appenvironment \+ "/console/version"\)\);)$'
-                  ),
-                  rf"\g<1>{version}\g<2>",
-              ),
-          )
+          template_matches=$(grep -Ec "^    Default: ${VERSION_PATTERN}$" "$TEMPLATE" || true)
+          test_matches=$(grep -Ec "^[[:space:]]*assertEquals\\(\"${VERSION_PATTERN}\",$" "$AWS_TEST" || true)
 
-          for path, pattern, replacement in replacements:
-              original = path.read_text()
-              updated, count = pattern.subn(replacement, original)
-              if count != 1:
-                  raise SystemExit(f"Expected exactly one console version in {path}; found {count}")
-              path.write_text(updated)
-          PYTHON
+          if [[ "$template_matches" -ne 1 ]]; then
+            echo "Expected exactly one console version in ${TEMPLATE}; found ${template_matches}"
+            exit 1
+          fi
+
+          if [[ "$test_matches" -ne 1 ]]; then
+            echo "Expected exactly one console version in ${AWS_TEST}; found ${test_matches}"
+            exit 1
+          fi
+
+          sed -i -E "s|^(    Default: )${VERSION_PATTERN}$|\\1${CONSOLE_VERSION}|" "$TEMPLATE"
+          sed -i -E "s|^([[:space:]]*assertEquals\\(\")${VERSION_PATTERN}(\",)$|\\1${CONSOLE_VERSION}\\3|" "$AWS_TEST"
 
       - name: Run Spotless
-        run: ./gradlew spotlessApply spotlessCheck --no-daemon --console=plain
+        run: ./gradlew spotlessApply --no-daemon --console=plain
 
       - name: Commit and push the update
         env:
