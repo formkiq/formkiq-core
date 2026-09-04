@@ -1,0 +1,107 @@
+name: Update Console Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      console-version:
+        description: 'Console version to use (for example, v4.2.7)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-console-version-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-console-version:
+    if: startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the selected branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Update console version
+        env:
+          CONSOLE_VERSION: ${{ inputs.console-version }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          import re
+          from pathlib import Path
+
+          version = os.environ["CONSOLE_VERSION"]
+          if not re.fullmatch(r"v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", version):
+              raise SystemExit(
+                  "console-version must use the format vX.Y.Z, optionally with a prerelease suffix"
+              )
+
+          replacements = (
+              (
+                  Path("src/main/resources/cloudformation/console/template.yaml"),
+                  re.compile(
+                      r"(?m)^(  ConsoleVersion:\n"
+                      r"    Type: String\n"
+                      r"    Description: Version of FormKiQ console to deploy\n"
+                      r"    Default: )\S+$"
+                  ),
+                  rf"\g<1>{version}",
+              ),
+              (
+                  Path(
+                      "apps/console/src/integration/java/com/formkiq/stacks/console/"
+                      "awstest/AwsResourceTest.java"
+                  ),
+                  re.compile(
+                      r'(?m)^(\s*assertEquals\(")[^"]+(\",\n'
+                      r'\s*ssmService\.getParameterValue\("/formkiq/" '
+                      r'\+ appenvironment \+ "/console/version"\)\);)$'
+                  ),
+                  rf"\g<1>{version}\g<2>",
+              ),
+          )
+
+          for path, pattern, replacement in replacements:
+              original = path.read_text()
+              updated, count = pattern.subn(replacement, original)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one console version in {path}; found {count}")
+              path.write_text(updated)
+          PYTHON
+
+      - name: Run Spotless
+        run: ./gradlew spotlessApply spotlessCheck --no-daemon --console=plain
+
+      - name: Commit and push the update
+        env:
+          CONSOLE_VERSION: ${{ inputs.console-version }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          TEMPLATE=src/main/resources/cloudformation/console/template.yaml
+          AWS_TEST=apps/console/src/integration/java/com/formkiq/stacks/console/awstest/AwsResourceTest.java
+
+          git add "$TEMPLATE" "$AWS_TEST"
+
+          if git diff --cached --quiet; then
+            echo "Console version is already ${CONSOLE_VERSION}; nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update console version to ${CONSOLE_VERSION}"
+          git push origin "HEAD:${BRANCH_NAME}"
