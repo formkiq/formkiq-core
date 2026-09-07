@@ -14871,11 +14871,11 @@ components:
           description: Docusign Rsa Private Key
         hmacSignature:
           type: string
-          description: Enabled security with Docusign Connect using HMAC keys. When enabled these keys are known only by Docusign and your app, and will be used to sign all Connect messages sent from your Docusign account to your application.
+          description: Optional HMAC secret used to validate Docusign Connect event notifications. When configured, callbacks must include a matching Docusign HMAC signature. When omitted or empty, callbacks are processed without HMAC validation, including when connectUrl is configured.
         connectUrl:
           type: string
           format: uri
-          description: Public HTTPS URL that receives Docusign Connect event notifications.
+          description: Public HTTPS URL that receives Docusign Connect event notifications. May be configured with or without hmacSignature.
     AddDelegationTokenRequest:
       type: object
       required:
