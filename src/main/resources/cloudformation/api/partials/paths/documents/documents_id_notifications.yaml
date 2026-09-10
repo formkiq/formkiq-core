@@ -180,7 +180,11 @@ components:
     #@overlay/match missing_ok=True
     DocumentNotificationStatus:
       type: string
-      description: Status of the document notification
+      description: >-
+        Status of the document notification. WAITING awaits an external trigger and
+        is not eligible for processing. PENDING is ready for processing.
+        ACTION_CREATED indicates that a Document Action has been created.
       enum:
+        - WAITING
         - PENDING
         - ACTION_CREATED
