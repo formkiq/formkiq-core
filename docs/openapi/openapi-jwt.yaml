@@ -10730,8 +10730,9 @@ components:
       - IN_APP
     DocumentNotificationStatus:
       type: string
-      description: Status of the document notification
+      description: Status of the document notification. WAITING awaits an external trigger and is not eligible for processing. PENDING is ready for processing. ACTION_CREATED indicates that a Document Action has been created.
       enum:
+      - WAITING
       - PENDING
       - ACTION_CREATED
     OcrTableData:
@@ -11791,8 +11792,28 @@ components:
         suppressEmails:
           type: string
           description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
+        readyToSignNotification:
+          $ref: '#/components/schemas/DocusignSignerReadyToSignNotification'
         tabs:
           $ref: '#/components/schemas/DocusignSigningTabs'
+    DocusignSignerReadyToSignNotification:
+      type: object
+      description: Configuration for a FormKiQ-managed notification stored with status WAITING when the envelope is created. The Docusign recipient-completed callback for the immediately preceding signer in routing order releases it to PENDING. The callback updates the existing document notification without creating a separate user notification record. The notification is addressed to this signer's email address and does not require suppressEmails to be enabled. Requires a configured connectUrl, unique recipient IDs and unique positive integer routing orders for all signers, and at least one preceding signer. Only sequential signing is supported when readyToSignNotification is configured; parallel routing orders are rejected.
+      required:
+      - notificationType
+      - subject
+      - body
+      properties:
+        notificationType:
+          $ref: '#/components/schemas/DocumentNotificationType'
+        subject:
+          type: string
+          minLength: 1
+          description: Notification subject
+        body:
+          type: string
+          minLength: 1
+          description: Notification body
     DocusignSigningTabs:
       type: object
       properties:
