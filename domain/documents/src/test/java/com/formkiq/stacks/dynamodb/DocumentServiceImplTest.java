@@ -1297,7 +1297,7 @@ public class DocumentServiceImplTest implements DbKeys {
     // DynamicDocumentItem doc = createSubDocuments(now);
     DocumentRecordSet documentRecordSet = createSubDocuments2(now);
     // service.saveDocumentItemWithTag(null, doc);
-    service.saveDocument(null, documentRecordSet, new SaveDocumentOptions().saveDocumentDate(true));
+    service.saveDocument(null, documentRecordSet, new SaveDocumentOptions());
     ZonedDateTime date = service.findMostDocumentDate();
     assertNotNull(date);
 
@@ -1305,8 +1305,12 @@ public class DocumentServiceImplTest implements DbKeys {
     Pagination<DocumentItem> results = service.findDocumentsByDate(null, date, null, MAX_RESULTS);
 
     // then
-    assertEquals(1, results.getResults().size());
-    assertNull(results.getResults().getFirst().getBelongsToDocumentId());
+    assertEquals(3, results.getResults().size());
+    String parentDocumentId = documentRecordSet.documentRecord().documentId();
+    assertEquals(1, results.getResults().stream()
+        .filter(document -> document.getBelongsToDocumentId() == null).count());
+    assertEquals(2, results.getResults().stream()
+        .filter(document -> parentDocumentId.equals(document.getBelongsToDocumentId())).count());
   }
 
   /**
@@ -2109,7 +2113,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // when
       // service.saveDocumentItemWithTag(siteId, doc);
-      service.saveDocument(siteId, doc, new SaveDocumentOptions().saveDocumentDate(true));
+      service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       // then
       var iter = doc.children().iterator();
@@ -2154,7 +2158,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, tags.size());
       assertEquals("category2", tags.getFirst().getKey());
 
-      assertEquals(1,
+      assertEquals(3,
           service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().size());
     }
   }

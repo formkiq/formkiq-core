@@ -340,7 +340,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
         new AddDocumentRequestToDocumentRecordSet(serviceCache, existingDocument, userId)
             .apply(siteId, loadedDoc);
 
-    SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true);
+    SaveDocumentOptions options = new SaveDocumentOptions();
     service.saveDocument(siteId, recordSet, options);
 
     saveDocumentSync(siteId, recordSet.documentRecord().documentId(), loadedDoc.getAgent(),

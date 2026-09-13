@@ -275,8 +275,7 @@ public class AwsResourceTest extends AbstractAwsTest {
       DocumentRecord document = DocumentRecord.builder().documentId(key).insertedDate(new Date())
           .userId("joe").build((String) null);
       DocumentRecordSet documentRecordSet = new DocumentRecordSet(document, null, null, null);
-      getDocumentService().saveDocument(null, documentRecordSet,
-          new SaveDocumentOptions().saveDocumentDate(true));
+      getDocumentService().saveDocument(null, documentRecordSet, new SaveDocumentOptions());
 
       // when
       URL url = getS3PresignerService().presignPutUrl(getDocumentsbucketname(), key,
