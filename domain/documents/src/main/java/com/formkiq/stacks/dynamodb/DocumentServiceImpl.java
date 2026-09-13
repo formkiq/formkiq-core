@@ -1662,9 +1662,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       builder.timeToLive(options.timeToLive());
     }
 
-    builder.gsi1(options.saveDocumentDate());
-
     DocumentRecord previous = findDocument(siteId, documentArtifact);
+    boolean saveDocumentDate = parentDocumentId == null && documentArtifact.artifactId() == null;
+    builder.gsi1(saveDocumentDate);
+
     if (previous != null) {
       builder.lastModifiedDate(new Date());
       builder.setDefaultValues(previous);
@@ -1775,7 +1776,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           .map(DocumentTagRecord::tagKey).collect(Collectors.toSet());
       this.indexWriter.writeTagIndex(siteId, tagKeys);
 
-      if (options.saveDocumentDate()) {
+      if (parentDocumentId == null && documentArtifact.artifactId() == null) {
         saveDocumentDate(document);
       }
     }
@@ -1790,7 +1791,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         .flatMap(t -> DocumentTagRecord.builder().tag(t).build(siteId).stream()).toList();
     var documentRecordSet = new DocumentRecordSet(documentRecord, null, taglist, null);
 
-    SaveDocumentOptions options = new SaveDocumentOptions().saveDocumentDate(true).timeToLive(null);
+    SaveDocumentOptions options = new SaveDocumentOptions().timeToLive(null);
     saveDocument(siteId, documentRecordSet, options);
   }
 
@@ -1823,15 +1824,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     for (DocumentRecordSet childDoc : notNull(documentRecordSet.children())) {
 
-      SaveDocumentOptions childLinkOptions = new SaveDocumentOptions().saveDocumentDate(false)
+      SaveDocumentOptions childLinkOptions = new SaveDocumentOptions()
           .timeToLive(getChildTimeToLive(childDoc, options)).setSkipDocumentEventBridge(true);
 
       DocumentRecordSet childDocumentLink = createChildDocumentLink(siteId, documentId, childDoc);
       saveDocumentInternal(siteId, childDocumentLink, childLinkOptions, documentId);
 
-      SaveDocumentOptions childOptions =
-          new SaveDocumentOptions().validationAccess(options.getValidationAccess())
-              .saveDocumentDate(false).timeToLive(options.timeToLive());
+      SaveDocumentOptions childOptions = new SaveDocumentOptions()
+          .validationAccess(options.getValidationAccess()).timeToLive(options.timeToLive());
 
       saveDocument(siteId, childDoc, childOptions);
     }

@@ -30,6 +30,7 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAction;
 import com.formkiq.client.model.AddActionParameters;
+import com.formkiq.client.model.AddChildDocument;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeEntity;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
@@ -171,6 +172,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
     AddAction action = new AddAction().type(DocumentActionType.CHECKSUM)
         .parameters(new AddActionParameters().checksumType(type));
     this.request.addActionsItem(action);
+    return this;
+  }
+
+  /**
+   * Add Child Document.
+   *
+   * @param document {@link AddChildDocument}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder addChildDocument(final AddChildDocument document) {
+    this.request.addDocumentsItem(document);
     return this;
   }
 

@@ -128,8 +128,7 @@ public class DocumentsUploadRequestHandler
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
-    SaveDocumentOptions options =
-        new SaveDocumentOptions().saveDocumentDate(true).validationAccess(validationAccess);
+    SaveDocumentOptions options = new SaveDocumentOptions().validationAccess(validationAccess);
 
     Optional<Long> documentContentLength =
         calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config);

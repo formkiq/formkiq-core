@@ -31,8 +31,6 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
  */
 public class SaveDocumentOptions {
 
-  /** Whether to Save the Document Date. */
-  private boolean saveDocumentDate = false;
   /** Time to Live. */
   private String timeToLive;
   /** {@link AttributeValidationAccess}. */
@@ -63,26 +61,6 @@ public class SaveDocumentOptions {
    */
   public boolean isSkipDocumentEventBridge() {
     return this.skipDocumentEventBridge;
-  }
-
-  /**
-   * Whether to Save Document Date.
-   * 
-   * @return boolean
-   */
-  public boolean saveDocumentDate() {
-    return this.saveDocumentDate;
-  }
-
-  /**
-   * Set Save Document Date.
-   * 
-   * @param save boolean
-   * @return {@link SaveDocumentOptions}
-   */
-  public SaveDocumentOptions saveDocumentDate(final boolean save) {
-    this.saveDocumentDate = save;
-    return this;
   }
 
   /**

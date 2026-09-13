@@ -233,7 +233,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   }
 
   private void saveDocument(final String siteId, final DocumentRecordSet doc) {
-    this.service.saveDocument(siteId, doc, new SaveDocumentOptions().saveDocumentDate(true));
+    this.service.saveDocument(siteId, doc, new SaveDocumentOptions());
   }
 
   /**
