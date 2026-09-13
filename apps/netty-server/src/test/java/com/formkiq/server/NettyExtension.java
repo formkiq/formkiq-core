@@ -70,7 +70,9 @@ public class NettyExtension implements BeforeAllCallback, AfterAllCallback {
 
   @Override
   public void afterAll(final ExtensionContext context) {
-    this.serverThread.interrupt();
+    if (this.serverThread != null) {
+      this.serverThread.interrupt();
+    }
 
     if (this.elasticMqLocal != null) {
       this.elasticMqLocal.stop();
