@@ -114,6 +114,7 @@ import java.util.stream.Collectors;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.testutils.TestWait.untilNextSecond;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentNotFound;
@@ -560,9 +561,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new DeleteDocumentRequestBuilder(doc0).softDelete(true).submit(client, siteId).throwIfError();
-      Thread.sleep(1000);
+      untilNextSecond();
       new DeleteDocumentRequestBuilder(doc1).softDelete(true).submit(client, siteId).throwIfError();
-      Thread.sleep(1000);
+      untilNextSecond();
       new DeleteDocumentRequestBuilder(doc2).softDelete(true).submit(client, siteId).throwIfError();
 
       // then
@@ -2198,4 +2199,5 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       }
     }
   }
+
 }

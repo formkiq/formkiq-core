@@ -111,7 +111,7 @@ public class ApiKeysServiceDynamoDbTest {
     // given
     final int start = 100;
     final int limit = 200;
-    final int max = 300;
+    final int max = 203;
     String userId = "joe";
     Collection<ApiKeyPermission> permissions = List.of(ApiKeyPermission.READ);
 

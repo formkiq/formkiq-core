@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -138,6 +139,23 @@ class FolderIndexProcessorTest implements DbKeys {
     ApiAuthorization.login(new ApiAuthorization().username("joe"));
   }
 
+  /**
+   * Sets a folder's timestamps to an old value so tests can exercise stale-folder behavior without
+   * waiting for time to pass.
+   *
+   * @param siteId Site ID
+   * @param path folder path
+   * @throws IOException when the folder index records cannot be read
+   */
+  private static void makeFolderStale(final String siteId, final String path) throws IOException {
+    Date staleDate = new Date(0);
+    List<FolderIndexRecord> records = index.getFolderIndexRecords(siteId, path);
+    FolderIndexRecord folder = records.getLast();
+    folder.insertedDate(staleDate);
+    folder.lastModifiedDate(staleDate);
+    dbService.putItem(folder.getAttributes(siteId));
+  }
+
   private static Pagination<DynamicDocumentItem> searchByPath(final String siteId,
       final String path) {
     SearchMetaCriteria smc = new SearchMetaCriteria(null, path, null, null, null);
@@ -192,7 +210,7 @@ class FolderIndexProcessorTest implements DbKeys {
     List<FolderIndexRecord> indexes = processor.createFolders(siteId, folder + "/test0.txt");
     FolderIndexRecord parent = last(indexes);
 
-    TimeUnit.MILLISECONDS.sleep(1100);
+    parent.lastModifiedDate(new Date(0));
 
     // when
     FolderIndexRecord firstFile =
@@ -214,7 +232,9 @@ class FolderIndexProcessorTest implements DbKeys {
         dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
     assertEquals(afterFirstUpdate.lastModifiedDate(), afterSecondUpdate.lastModifiedDate());
 
-    TimeUnit.MILLISECONDS.sleep(2000);
+    Date staleLastModifiedDate = new Date(0);
+    afterSecondUpdate.lastModifiedDate(staleLastModifiedDate);
+    dbService.putItem(afterSecondUpdate.getAttributes(siteId));
 
     // when
     FolderIndexRecord thirdFile =
@@ -224,7 +244,7 @@ class FolderIndexProcessorTest implements DbKeys {
     // then
     FolderIndexRecord afterThirdUpdate = new FolderIndexRecord().getFromAttributes(siteId,
         dbService.get(fromS(parent.pk(siteId)), fromS(parent.sk())));
-    assertNotEquals(afterSecondUpdate.lastModifiedDate(), afterThirdUpdate.lastModifiedDate());
+    assertNotEquals(staleLastModifiedDate, afterThirdUpdate.lastModifiedDate());
   }
 
   /**
@@ -799,7 +819,7 @@ class FolderIndexProcessorTest implements DbKeys {
       item1.setPath(source1);
       service.saveDocument(siteId, item1, null);
 
-      TimeUnit.SECONDS.sleep(1);
+      makeFolderStale(siteId, destination);
 
       // when
       index.moveIndex(siteId, source0, destination, userId);

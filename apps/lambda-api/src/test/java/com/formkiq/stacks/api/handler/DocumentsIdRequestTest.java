@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.TestWait.until;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentNotFound;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.ID;
@@ -215,13 +215,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   private List<Document> getDocuments(final String siteId, final int expected)
       throws ApiException, InterruptedException {
-    List<Document> documents = getDocuments(siteId);
-    while (documents.size() != expected) {
-      TimeUnit.SECONDS.sleep(1);
-      documents = getDocuments(siteId);
-    }
-
-    return documents;
+    return until(expected + " documents", () -> getDocuments(siteId),
+        documents -> documents.size() == expected);
   }
 
 

@@ -84,12 +84,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
+import static com.formkiq.testutils.TestWait.until;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -857,32 +857,18 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     assertEquals(DocumentSyncStatus.COMPLETE, syncResponse.getSyncs().get(0).getStatus());
     assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().get(0).getService());
 
-    GetDocumentFulltextResponse getResponse = null;
-    while (getResponse == null) {
-      try {
-        getResponse = this.advancedSearchApi.getDocumentFulltext(documentId, null, null);
-      } catch (ApiException e) {
-        TimeUnit.SECONDS.sleep(1);
-      }
-    }
+    GetDocumentFulltextResponse getResponse = until("fulltext for document '" + documentId + "'",
+        () -> this.advancedSearchApi.getDocumentFulltext(documentId, null, null),
+        response -> response != null);
 
     assertEquals(path, getResponse.getPath());
 
     DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch().text(text));
 
-    List<SearchResultDocument> documents = null;
-
-    while (documents == null) {
-      // when
+    List<SearchResultDocument> documents = until("fulltext search result", () -> {
       DocumentSearchResponse response = this.searchApi.documentSearch(dsq, null, null, null, null);
-
-      // then
-      documents = notNull(response.getDocuments());
-      if (documents.isEmpty()) {
-        documents = null;
-        TimeUnit.SECONDS.sleep(1);
-      }
-    }
+      return notNull(response.getDocuments());
+    }, results -> !results.isEmpty());
 
     assertEquals(1, documents.size());
     assertEquals(documentId, documents.get(0).getDocumentId());
