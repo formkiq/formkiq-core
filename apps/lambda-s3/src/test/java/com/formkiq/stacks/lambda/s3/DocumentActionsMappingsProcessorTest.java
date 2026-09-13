@@ -138,12 +138,10 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       new RequestRecordExpectationResponseCallback(200, "{\"contentUrls\":[]}");
   /** Document Id with OCR Key/Value. */
   private static final String DOCUMENT_ID_OCR_KEY_VALUE = ID.uuid();
-  /** Port to run Test server. */
-  private static final int PORT = 8888;
   /** Sns Document Event. */
   private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
   /** Test server URL. */
-  private static final String URL = "http://localhost:" + PORT;
+  private static String url;
   /** Search Limit. */
   private static final int LIMIT = 100;
   /** {@link TypesenseExtension}. */
@@ -262,7 +260,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
 
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", url);
 
     String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
@@ -289,7 +287,7 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
     env.put("MODULE_" + "opensearch", "true");
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + "chatgpt1");
+    env.put("CHATGPT_API_COMPLETIONS_URL", url + "/" + "chatgpt1");
     env.put("OPERATIONAL_MODE", "ACTIVE");
     return env;
   }
@@ -309,7 +307,8 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
    */
   private static void createMockServer() {
 
-    mockServer = startClientAndServer(PORT);
+    mockServer = startClientAndServer(0);
+    url = "http://localhost:" + mockServer.getPort();
 
     addKeyValueOcrMock();
 

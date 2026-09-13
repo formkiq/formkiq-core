@@ -164,7 +164,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    * @param prefix DynamoDB PK Prefix
    * @return {@link List} {@link DocumentItem}
    */
-  private List<DocumentItem> createTestData(final String prefix) {
+  private List<DocumentItem> createTestData(final String prefix, final int count) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -175,7 +175,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
     List<DocumentItem> items = new ArrayList<>();
 
-    dates.forEach(date -> {
+    dates.stream().limit(count).forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
       String id = ID.uuid();
       items.add(createDocument(id, zdate));
@@ -243,10 +243,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    */
   @Test
   public void testSearch01() throws ValidationException {
+    createTestData("finance", 1);
     for (String prefix : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData("finance");
-      createTestData(prefix);
+      createTestData(prefix, MAX_RESULTS + 1);
       String tagKey = "status";
       String tagValue = "active";
       SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
@@ -283,7 +283,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch02() throws ValidationException {
     for (String prefix : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData(prefix);
+      createTestData(prefix, 1);
       String tagKey = "day";
       String tagValue = "today2";
       SearchTagCriteria c = new SearchTagCriteria(tagKey, null, tagValue, null, null);
@@ -306,10 +306,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    */
   @Test
   public void testSearch03() throws ValidationException {
+    createTestData("finance", 1);
     for (String prefix : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData(prefix);
-      createTestData("finance");
+      createTestData(prefix, MAX_RESULTS + 1);
       String tagKey = "status";
       SearchTagCriteria c = new SearchTagCriteria(tagKey, "a", null, null, null);
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
@@ -341,10 +341,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    */
   @Test
   public void testSearch04() throws ValidationException {
+    createTestData("finance", 1);
     for (String prefix : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData("finance");
-      createTestData(prefix);
+      createTestData(prefix, 2);
 
       int limit = 1;
       String tagKey = "status";
@@ -383,10 +383,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    */
   @Test
   public void testSearch05() throws ValidationException {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData("finance");
-      List<DocumentItem> items = createTestData(siteId);
+      List<DocumentItem> items = createTestData(siteId, 1);
       DocumentItem item = items.getFirst();
       DocumentTag tag =
           new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")

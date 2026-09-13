@@ -171,6 +171,9 @@ import static org.mockserver.model.HttpRequest.request;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
+  /** SQS polling interval. */
+  private static final long POLL_INTERVAL_MILLIS = 25;
+
   /** App Environment. */
   private static final String APP_ENVIRONMENT = "test";
   /** {@link RequestRecordExpectationResponseCallback}. */
@@ -193,12 +196,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final String DOCUMENT_ID_OCR_KEY_VALUE = ID.uuid();
   /** {@link Gson}. */
   private static final Gson GSON = GsonUtil.getInstance();
-  /** Port to run Test server. */
-  private static final int PORT = 8888;
   /** Sns Document Event. */
   private static final String SNS_DOCUMENT_EVENT_TOPIC = "SNS_DOCUMENT_EVENT";
   /** Test server URL. */
-  private static final String URL = "http://localhost:" + PORT;
+  private static String url;
   /** Search Limit. */
   private static final int LIMIT = 100;
   /** Test Timeout. */
@@ -323,7 +324,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     SsmConnectionBuilder ssmBuilder = TestServices.getSsmConnection(null);
 
     SsmService ssmService = new SsmServiceCache(ssmBuilder, 1, TimeUnit.DAYS);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", url);
 
     String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
@@ -359,7 +360,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("MODULE_" + module, "true");
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
     env.put("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName());
-    env.put("CHATGPT_API_COMPLETIONS_URL", URL + "/" + chatgptUrl);
+    env.put("CHATGPT_API_COMPLETIONS_URL", url + "/" + chatgptUrl);
     env.put("OPERATIONAL_MODE", "ACTIVE");
     return env;
   }
@@ -371,7 +372,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
    */
   private static void createMockServer() throws IOException {
 
-    mockServer = startClientAndServer(PORT);
+    mockServer = startClientAndServer(0);
+    url = "http://localhost:" + mockServer.getPort();
 
     final int status = 200;
 
@@ -396,7 +398,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     mockServer.when(request().withMethod("GET").withPath("/documents/" + DOCUMENT_ID_OCR + "/ocr*"))
         .respond(org.mockserver.model.HttpResponse
-            .response("{\"contentUrls\":[\"" + URL + "/" + DOCUMENT_ID_OCR + "\"]}"));
+            .response("{\"contentUrls\":[\"" + url + "/" + DOCUMENT_ID_OCR + "\"]}"));
 
     Map<String, Object> dataClassification = Map.of("dataClassifications",
         List.of(Map.of("attributes", List.of(Map.of("key", "certificate_number", "value", "12"),
@@ -546,7 +548,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     assertEquals(ActionStatus.WAITING_FOR_RETRY, action.status());
     assertNotNull(action.startDate());
     assertNotNull(action.insertedDate());
-    assertEquals("http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+    assertEquals(url + "/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
         action.message());
     assertNull(action.completedDate());
   }
@@ -612,7 +614,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       throws InterruptedException {
     ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
     while (response.messages().isEmpty()) {
-      TimeUnit.SECONDS.sleep(1);
+      TimeUnit.MILLISECONDS.sleep(POLL_INTERVAL_MILLIS);
       response = sqsService.receiveMessages(sqsQueueUrl);
     }
 
@@ -1578,7 +1580,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       DocumentArtifact document = createDocument2(siteId, "application/pdf");
 
       List<Action> actions = List.of(createAction(document, ActionType.WEBHOOK)
-          .parameters(Map.of("url", URL + "/callback")).build(siteId));
+          .parameters(Map.of("url", url + "/callback")).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = buildAwsEvent(siteId, document);
@@ -1637,7 +1639,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
           createAction(documentArtifact, ActionType.ANTIVIRUS).status(ActionStatus.COMPLETE)
               .build(siteId),
           createAction(documentArtifact, ActionType.WEBHOOK)
-              .parameters(Map.of("url", URL + "/callback")).build(siteId));
+              .parameters(Map.of("url", url + "/callback")).build(siteId));
       actionsService.saveNewActions(actions);
 
       AwsEvent map = SqsEventBuilder.builder().siteId(siteId).documentId(documentId).build();
@@ -1732,8 +1734,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<Action> actions = Arrays.asList(
           createAction(document, ActionType.WEBHOOK).status(ActionStatus.RUNNING)
-              .parameters(Map.of("url", URL + "/callback")).build(siteId),
-          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .parameters(Map.of("url", url + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", url + "/callback2"))
               .build(siteId));
       actionsService.saveNewActions(actions);
 
@@ -1766,8 +1768,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<Action> actions = Arrays.asList(
           createAction(document, ActionType.WEBHOOK).status(ActionStatus.FAILED)
-              .parameters(Map.of("url", URL + "/callback")).build(siteId),
-          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .parameters(Map.of("url", url + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", url + "/callback2"))
               .build(siteId));
       actionsService.saveNewActions(actions);
 
@@ -1843,8 +1845,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
       List<Action> actions = Arrays.asList(
           createAction(document, ActionType.WEBHOOK).status(ActionStatus.ASYNC_COMPLETE)
-              .parameters(Map.of("url", URL + "/callback")).build(siteId),
-          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", URL + "/callback2"))
+              .parameters(Map.of("url", url + "/callback")).build(siteId),
+          createAction(document, ActionType.WEBHOOK).parameters(Map.of("url", url + "/callback2"))
               .build(siteId));
       actionsService.saveNewActions(actions);
 
@@ -1999,8 +2001,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       assertEquals(ActionStatus.MAX_RETRIES_REACHED, action.status());
       assertNotNull(action.startDate());
       assertNotNull(action.insertedDate());
-      assertEquals(
-          "http://localhost:8888/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
+      assertEquals(url + "/documents/" + DOCUMENT_ID_429 + "/fulltext returned 429: ",
           action.message());
       assertNotNull(action.completedDate());
     }

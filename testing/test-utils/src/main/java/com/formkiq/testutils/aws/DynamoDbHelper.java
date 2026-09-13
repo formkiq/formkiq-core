@@ -25,11 +25,14 @@ package com.formkiq.testutils.aws;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
@@ -95,36 +98,22 @@ public class DynamoDbHelper {
   public void truncateTable(final String tableName) {
     final int maxPageSize = 100;
     Map<String, AttributeValue> startkey = null;
+    List<DynamoDbKey> keys = new ArrayList<>();
 
-    int iterations = 0;
-
-    while (true) {
+    do {
 
       ScanRequest sr = ScanRequest.builder().tableName(tableName).exclusiveStartKey(startkey)
+          .projectionExpression("#pk,#sk")
+          .expressionAttributeNames(Map.of("#pk", "PK", "#sk", "SK"))
           .limit(Integer.valueOf(maxPageSize)).build();
 
       ScanResponse result = this.db.scan(sr);
-
-      for (Map<String, AttributeValue> item : result.items()) {
-
-        AttributeValue pk = item.get("PK");
-        AttributeValue sk = item.get("SK");
-        this.db.deleteItem(DeleteItemRequest.builder().tableName(tableName)
-            .key(Map.of("PK", pk, "SK", sk)).build());
-      }
-
+      keys.addAll(result.items().stream().map(DynamoDbKey::fromAttributeMap).toList());
       startkey = result.lastEvaluatedKey();
+    } while (!startkey.isEmpty());
 
-      if (result.items().isEmpty()) {
-        break;
-
-      }
-
-      iterations++;
-
-      if (iterations > maxPageSize) {
-        throw new RuntimeException("endless loop break");
-      }
+    if (!keys.isEmpty()) {
+      new WriteRequestBuilder().appendDeletes(tableName, keys).batchWriteItem(this.db);
     }
   }
 }

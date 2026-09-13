@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.services.lambda.ApiAuthorizationBuilder.COGNITO_READ_SUFFIX;
+import static com.formkiq.testutils.TestWait.until;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,8 +110,6 @@ public abstract class AbstractApiClientRequestTest {
       () -> Map.of("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName()),
       new FormKiQResponseCallback());
 
-  /** 500 Milliseconds. */
-  private static final long SLEEP = 500L;
   /** Time out. */
   private static final int TIMEOUT = 30000;
 
@@ -237,15 +236,11 @@ public abstract class AbstractApiClientRequestTest {
     awsServices.register(SqsService.class, new SqsServiceExtension());
     SqsService sqsService = awsServices.getExtension(SqsService.class);
 
-    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    List<Map<String, Object>> list = msgs.stream().map(this::transform).toList();
-    sqsMessages.addAll(list);
-
-    while (sqsMessages.isEmpty() || !isMatch(sqsMessages, eventType, documentId)) {
-      Thread.sleep(SLEEP);
-      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-      sqsMessages.addAll(msgs.stream().map(this::transform).toList());
-    }
+    until("SQS event '" + eventType + "' for document '" + documentId + "'", () -> {
+      List<Message> messages = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
+      sqsMessages.addAll(messages.stream().map(this::transform).toList());
+      return sqsMessages;
+    }, messages -> isMatch(messages, eventType, documentId));
 
     return sqsMessages.stream().filter(m -> isMatch(m, eventType, documentId)).findAny().get();
   }

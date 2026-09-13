@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
@@ -89,7 +88,6 @@ import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,10 +168,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    */
   private static final int OK = 200;
   /**
-   * Port to run Test server.
-   */
-  private static final int PORT = 8888;
-  /**
    * {@link S3Service}.
    */
   private static S3Service s3service;
@@ -189,15 +183,19 @@ public class DocumentsS3UpdateTest implements DbKeys {
   /**
    * Test server URL.
    */
-  private static final String URL = "http://localhost:" + PORT;
+  private static String url;
   /** {@link SqsMessageReceiver}. */
   private static SqsMessageReceiver eventQueue;
+
+  /** {@link ClientAndServer}. */
+  private static ClientAndServer mockServer;
 
   /**
    * After All.
    */
   @AfterAll
   public static void afterAll() {
+    mockServer.stop();
     db.close();
   }
 
@@ -293,7 +291,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
     cacheService = awsServices.getExtension(CacheService.class);
 
     SsmService ssmService = awsServices.getExtension(SsmService.class);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    createMockServer();
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", url);
 
     String eventSnsQueue = TestServices.createSqsSubscriptionToSnsTopic(snsDocumentEvent);
     eventQueue = new SqsMessageReceiver(awsServices, eventSnsQueue);
@@ -301,6 +300,19 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
   private static ActionBuilder createAction(final DocumentArtifact document) {
     return new ActionBuilder().document(document).type(ActionType.OCR).indexUlid().userId("joe");
+  }
+
+  /**
+   * Create Mock Server.
+   */
+  private static void createMockServer() {
+
+    mockServer = startClientAndServer(0);
+    url = "http://localhost:" + mockServer.getPort();
+
+    ExpectationStatusResponseCallback callback =
+        new ExpectationStatusResponseCallback(DocumentsS3UpdateTest.OK);
+    mockServer.when(request().withMethod("DELETE")).respond(callback);
   }
 
   private static Map<String, Object> createS3Map(final String siteId, final DocumentRecordSet doc) {
@@ -316,9 +328,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
             .withS3(new S3EventJsonBuilder.S3Builder().withBucket(bucket).withObject(s3Key)))
         .build();
   }
-
-  /** {@link ClientAndServer}. */
-  private ClientAndServer mockServer;
 
   private void addS3File(final String bucket, final String key, final String contentType,
       final boolean addTags, final String content) {
@@ -339,17 +348,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   private void addS3File(final String key, final String contentType, final boolean addTags,
       final String content) {
     addS3File("example-bucket", key, contentType, addTags, content);
-  }
-
-  /**
-   * After Class.
-   */
-  @AfterEach
-  public void afterClass() {
-    if (this.mockServer != null) {
-      this.mockServer.stop();
-    }
-    this.mockServer = null;
   }
 
   /**
@@ -425,18 +423,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
     service.saveDocument(siteId, documentRecordSet,
         new SaveDocumentOptions().saveDocumentDate(true));
     return documentRecordSet;
-  }
-
-  /**
-   * Create Mock Server.
-   */
-  private void createMockServer() {
-
-    this.mockServer = startClientAndServer(PORT);
-
-    ExpectationStatusResponseCallback callback =
-        new ExpectationStatusResponseCallback(DocumentsS3UpdateTest.OK);
-    this.mockServer.when(request().withMethod("DELETE")).respond(callback);
   }
 
   /**
@@ -570,8 +556,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
           new SaveDocumentOptions().saveDocumentDate(true));
 
       addS3File(key, "pdf", true, "testdata");
-
-      TimeUnit.SECONDS.sleep(1);
 
       // when
       final DocumentRecord item = handleRequest(siteId, documentId, map);
@@ -954,7 +938,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @Test
   public void testHandleRequest13() throws Exception {
 
-    createMockServer();
     before();
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {

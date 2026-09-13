@@ -74,6 +74,7 @@ import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
@@ -155,6 +156,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -173,6 +175,8 @@ public class StagingS3CreateTest implements DbKeys {
   private static DynamoDbHelper dbHelper;
   /** Documents S3 Bucket. */
   private static final String DOCUMENTS_BUCKET = "documentsbucket";
+  /** SQS polling interval. */
+  private static final long POLL_INTERVAL_MILLIS = 25;
   /** {@link FolderIndexProcessor}. */
   private static FolderIndexProcessor folderIndexProcesor;
 
@@ -185,8 +189,6 @@ public class StagingS3CreateTest implements DbKeys {
   static LocalStackExtension localStack = new LocalStackExtension();
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
-  /** Port to run Test server. */
-  private static final int PORT = 8888;
   /** {@link S3Service}. */
   private static S3Service s3;
   /** {@link S3PresignerService}. */
@@ -222,7 +224,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** Test TImeout. */
   private static final long TEST_TIMEOUT = 30;
   /** Test server URL. */
-  private static final String URL = "http://localhost:" + PORT;
+  private static String url;
   /** UUID 1. */
   private static final String UUID1 = "b53c92cf-f7b9-4787-9541-76574ec70d71";
   /** {@link StagingS3Create}. */
@@ -259,8 +261,10 @@ public class StagingS3CreateTest implements DbKeys {
     snsDocumentEvent = snsService.createTopic("createDocument1").topicArn();
     awsServices.environment().put("SNS_DOCUMENT_EVENT", snsDocumentEvent);
 
+    createMockServer();
+
     SsmService ssmService = awsServices.getExtension(SsmService.class);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", URL);
+    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/DocumentsIamUrl", url);
 
     createAwService();
 
@@ -290,8 +294,6 @@ public class StagingS3CreateTest implements DbKeys {
 
     dbHelper = new DynamoDbHelper(awsServices.getExtension(DynamoDbConnectionBuilder.class));
     createResources();
-
-    createMockServer();
   }
 
   private static void createAwService() {
@@ -313,7 +315,8 @@ public class StagingS3CreateTest implements DbKeys {
    */
   private static void createMockServer() {
 
-    mockServer = startClientAndServer(PORT);
+    mockServer = startClientAndServer(0);
+    url = "http://localhost:" + mockServer.getPort();
 
     final String documentId = "12345";
     DocumentArtifact document = new DocumentArtifact(documentId, null);
@@ -422,7 +425,7 @@ public class StagingS3CreateTest implements DbKeys {
   private void assertPublishedSnsMessage() throws InterruptedException {
     List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
     while (msgs.size() != 1) {
-      TimeUnit.SECONDS.sleep(1);
+      TimeUnit.MILLISECONDS.sleep(POLL_INTERVAL_MILLIS);
       msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
     }
     assertEquals(1, msgs.size());
@@ -571,7 +574,7 @@ public class StagingS3CreateTest implements DbKeys {
       throws InterruptedException {
     ReceiveMessageResponse response = sqsService.receiveMessages(sqsQueueUrl);
     while (response.messages().isEmpty()) {
-      TimeUnit.SECONDS.sleep(1);
+      TimeUnit.MILLISECONDS.sleep(POLL_INTERVAL_MILLIS);
       response = sqsService.receiveMessages(sqsQueueUrl);
     }
 
@@ -840,7 +843,12 @@ public class StagingS3CreateTest implements DbKeys {
       assertNotNull(item);
       assertEquals(item.insertedDate(), item.lastModifiedDate());
 
-      TimeUnit.SECONDS.sleep(1);
+      Date previousDate = new Date(item.insertedDate().getTime() - TimeUnit.MINUTES.toMillis(1));
+      DocumentRecord previousRecord = new DocumentRecordBuilder().document(document)
+          .insertedDate(previousDate).lastModifiedDate(previousDate).build(siteId);
+      Map<String, AttributeValue> attributes = previousRecord.getAttributes();
+      db.updateValues(attributes.get(PK), attributes.get(SK), Map.of("inserteddate",
+          attributes.get("inserteddate"), "lastModifiedDate", attributes.get("lastModifiedDate")));
 
       s3.putObject(STAGING_BUCKET, key, "second".getBytes(UTF_8), "text/plain");
       handleRequest(map);
@@ -1465,7 +1473,6 @@ public class StagingS3CreateTest implements DbKeys {
         s3.putObject(STAGING_BUCKET, key, content, null, null);
 
         handleRequest(map);
-        TimeUnit.SECONDS.sleep(1);
       }
 
       // then
@@ -1497,7 +1504,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension12() throws Exception {
-    final Date now = new Date();
+    final Date now = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
     final String userId = "joesmith";
     final long contentLength = 1000;
     final String documentId = ID.uuid();
@@ -1523,16 +1530,12 @@ public class StagingS3CreateTest implements DbKeys {
           .saveNewActions(List.of(new ActionBuilder().type(ActionType.FULLTEXT).userId("joe")
               .document(document).indexUlid().status(ActionStatus.COMPLETE).build(siteId)));
 
-      TimeUnit.SECONDS.sleep(1);
-
       String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
       byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
-
-      TimeUnit.SECONDS.sleep(1);
 
       // when
       handleRequest(map);

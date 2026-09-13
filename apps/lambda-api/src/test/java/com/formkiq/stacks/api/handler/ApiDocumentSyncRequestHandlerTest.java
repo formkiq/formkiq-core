@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.TestWait.untilNextMillisecond;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENT_SYNCS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,6 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
@@ -451,13 +451,13 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
       service.saveDocument(siteId, item, null);
 
-      syncService.saveSync(siteId, documentId,
-          com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.OPENSEARCH,
+      syncService.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
           com.formkiq.aws.dynamodb.model.DocumentSyncStatus.COMPLETE,
           com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, false);
-      TimeUnit.SECONDS.sleep(1);
-      syncService.saveSync(siteId, documentId,
-          com.formkiq.aws.dynamodb.model.DocumentSyncServiceType.TYPESENSE,
+
+      untilNextMillisecond();
+
+      syncService.saveSync(siteId, documentId, DocumentSyncServiceType.TYPESENSE,
           com.formkiq.aws.dynamodb.model.DocumentSyncStatus.FAILED,
           com.formkiq.aws.dynamodb.model.DocumentSyncType.METADATA, false);
 

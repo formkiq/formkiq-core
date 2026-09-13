@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api;
 
+import static com.formkiq.testutils.TestWait.until;
 import static com.formkiq.testutils.aws.DynamoDbExtension.CACHE_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_VERSION_TABLE;
@@ -88,8 +89,6 @@ public abstract class AbstractRequestHandler {
   private static TestCoreRequestHandler handler;
   /** Port to run Test server. */
   private static final int PORT = 8080;
-  /** 500 Milliseconds. */
-  private static final long SLEEP = 500L;
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
   /** SQS Create Url. */
@@ -392,11 +391,9 @@ public abstract class AbstractRequestHandler {
 
     SqsService sqsService = this.awsServices.getExtension(SqsService.class);
 
-    List<Message> msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    while (msgs.isEmpty()) {
-      Thread.sleep(SLEEP);
-      msgs = sqsService.receiveMessages(sqsDocumentEventUrl).messages();
-    }
+    List<Message> msgs =
+        until("SQS messages", () -> sqsService.receiveMessages(sqsDocumentEventUrl).messages(),
+            messages -> !messages.isEmpty());
 
     for (Message msg : msgs) {
       sqsService.deleteMessage(sqsDocumentEventUrl, msg.receiptHandle());

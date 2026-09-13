@@ -61,7 +61,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -199,6 +198,16 @@ public class DocumentServiceImplTest implements DbKeys {
     return (Boolean) method.invoke(service, siteId, documentId, hardDeletedArtifactId);
   }
 
+  private static Date makeFolderStale(final String siteId, final String path) throws IOException {
+    Date staleDate = new Date(0);
+    List<FolderIndexRecord> records = folderIndexProcessor.getFolderIndexRecords(siteId, path);
+    FolderIndexRecord folder = records.getLast();
+    folder.insertedDate(staleDate);
+    folder.lastModifiedDate(staleDate);
+    db.putItem(folder.getAttributes(siteId));
+    return staleDate;
+  }
+
   /** {@link SimpleDateFormat}. */
   private final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -283,6 +292,10 @@ public class DocumentServiceImplTest implements DbKeys {
    * @return {@link List} {@link DocumentItem}
    */
   private List<DocumentItem> createTestData(final String siteId) {
+    return createTestData(siteId, Integer.MAX_VALUE);
+  }
+
+  private List<DocumentItem> createTestData(final String siteId, final int count) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -293,7 +306,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
     List<DocumentItem> items = new ArrayList<>();
 
-    dates.forEach(date -> {
+    dates.stream().limit(count).forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
       items.add(createDocument(ID.uuid(), zdate));
     });
@@ -320,7 +333,7 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testAddTags01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId).getFirst();
+      DocumentItem document = createTestData(siteId, 1).getFirst();
       String documentId = document.getDocumentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
       String tagKey = "tag" + TAG_DELIMINATOR;
@@ -441,7 +454,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId).getFirst();
+      DocumentItem document = createTestData(siteId, 1).getFirst();
       String documentId = document.getDocumentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
       String tagKey = "category";
@@ -843,7 +856,7 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testFindDocument01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId).getFirst();
+      DocumentItem document = createTestData(siteId, 1).getFirst();
       String documentId = document.getDocumentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
@@ -962,10 +975,10 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Test Finding Document's Tag && Remove one. */
   @Test
   public void testFindDocumentTags01() {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData("finance");
-      String documentId = createTestData(siteId).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1003,7 +1016,7 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String tagKey = "status";
       String tagValue = "active";
-      String documentId = createTestData(siteId).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1020,7 +1033,7 @@ public class DocumentServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "status";
-      String documentId = createTestData(siteId).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1034,14 +1047,13 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Find documents. */
   @Test
   public void testFindDocuments01() {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      Iterator<DocumentItem> itr = createTestData(siteId).iterator();
+      Iterator<DocumentItem> itr = createTestData(siteId, 3).iterator();
       DocumentItem d0 = itr.next();
       DocumentItem d1 = itr.next();
       DocumentItem d2 = itr.next();
-
-      createTestData("finance");
 
       List<DocumentArtifact> documents =
           Arrays.asList(DocumentArtifact.of(d0.getDocumentId(), null),
@@ -1074,9 +1086,9 @@ public class DocumentServiceImplTest implements DbKeys {
   /** Find all documents. */
   @Test
   public void testFindDocuments02() {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      createTestData("finance");
       List<DocumentArtifact> documents = createTestData(siteId).stream()
           .map(d -> DocumentArtifact.of(d.getDocumentId(), d.getArtifactId())).toList();
 
@@ -1097,10 +1109,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindDocumentsByDate01() {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
-      createTestData("finance");
 
       List<String> expected = Arrays.asList("2020-01-30T00:00Z[UTC]", "2020-01-30T01:20Z[UTC]",
           "2020-01-30T02:20Z[UTC]", "2020-01-30T05:20Z[UTC]", "2020-01-30T11:45Z[UTC]",
@@ -1402,10 +1414,10 @@ public class DocumentServiceImplTest implements DbKeys {
    */
   @Test
   public void testFindMostDocumentDate01() {
+    createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       createTestData(siteId);
-      createTestData("finance");
 
       // when
       ZonedDateTime date = service.findMostDocumentDate();
@@ -2271,7 +2283,7 @@ public class DocumentServiceImplTest implements DbKeys {
     final int year = Calendar.getInstance().get(Calendar.YEAR);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final int numberOfTags = 500;
+      final int numberOfTags = MAX_RESULTS * MAX_RESULTS + 1;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
@@ -2414,11 +2426,11 @@ public class DocumentServiceImplTest implements DbKeys {
   /**
    * Test Saving / updating folders.
    * 
-   * @throws InterruptedException InterruptedException
+   * @throws IOException IOException
    * @throws ValidationException ValidationException
    */
   @Test
-  public void testSaveFolders01() throws InterruptedException, ValidationException {
+  public void testSaveFolders01() throws IOException, ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String userId0 = "joe";
@@ -2442,7 +2454,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("a", result.get("path"));
       assertEquals(userId0, result.get("userId"));
 
-      TimeUnit.SECONDS.sleep(1);
+      makeFolderStale(siteId, "a/");
 
       // given
       String userId1 = "frank";
@@ -2495,7 +2507,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals("a", result.get("path"));
       assertEquals(userId0, result.get("userId"));
 
-      TimeUnit.SECONDS.sleep(1);
+      makeFolderStale(siteId, "a/");
 
       // given
       String userId1 = "frank";
@@ -2539,7 +2551,7 @@ public class DocumentServiceImplTest implements DbKeys {
           service.findDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null))
               .lastModifiedDate();
 
-      TimeUnit.SECONDS.sleep(1);
+      Date staleDate = makeFolderStale(siteId, "a/b/");
 
       String documentId1 = ID.uuid();
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
@@ -2564,7 +2576,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, items.getResults().size());
       result = items.getResults().getFirst();
       assertEquals("b", result.get("path"));
-      assertNotEquals(item0Date, result.getLastModifiedDate());
+      assertNotEquals(staleDate, result.getLastModifiedDate());
 
       smc = new SearchMetaCriteria(null, "a/b", null, null, null);
       q = new SearchQueryBuilder().meta(smc).build();
