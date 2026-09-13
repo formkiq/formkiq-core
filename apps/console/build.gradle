@@ -30,6 +30,7 @@ dependencies {
 
   implementation libs.slf4j.simple
   implementation libs.aws.lambda.core
+  implementation libs.aws.sdk.cloudfront
   implementation libs.json
 
   testImplementation project(':adapters:aws:cognito-identity')

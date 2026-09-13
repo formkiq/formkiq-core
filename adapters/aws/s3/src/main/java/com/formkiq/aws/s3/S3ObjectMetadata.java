@@ -36,6 +36,8 @@ public class S3ObjectMetadata {
   private Long contentLength;
   /** Object Content Type. */
   private String contentType;
+  /** Object Cache Control. */
+  private String cacheControl;
   /** S3 Object ETag. */
   private String etag;
   /** Object Metadata. */
@@ -70,6 +72,15 @@ public class S3ObjectMetadata {
       hex.append(String.format("%02x", b));
     }
     return hex.toString();
+  }
+
+  /**
+   * Get Object Cache Control.
+   *
+   * @return {@link String}
+   */
+  public String getCacheControl() {
+    return this.cacheControl;
   }
 
   /**
@@ -210,6 +221,17 @@ public class S3ObjectMetadata {
    */
   private String removeQuotes(final String s) {
     return s.replaceAll("^['\"]|['\"]$", "");
+  }
+
+  /**
+   * Set Object Cache Control.
+   *
+   * @param objectCacheControl {@link String}
+   * @return {@link S3ObjectMetadata}
+   */
+  public S3ObjectMetadata setCacheControl(final String objectCacheControl) {
+    this.cacheControl = objectCacheControl;
+    return this;
   }
 
   /**

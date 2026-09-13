@@ -49,6 +49,7 @@ aws-sdk-apigateway = { module = "software.amazon.awssdk:apigateway", version.ref
 aws-sdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws-sdk" }
 aws-sdk-cognitoidentity = { module = "software.amazon.awssdk:cognitoidentity", version.ref = "aws-sdk" }
 aws-sdk-cognitoidentityprovider = { module = "software.amazon.awssdk:cognitoidentityprovider", version.ref = "aws-sdk" }
+aws-sdk-cloudfront = { module = "software.amazon.awssdk:cloudfront", version.ref = "aws-sdk" }
 aws-sdk-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "aws-sdk" }
 aws-sdk-eventbridge = { module = "software.amazon.awssdk:eventbridge", version.ref = "aws-sdk" }
 aws-sdk-http-client-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "aws-sdk" }
