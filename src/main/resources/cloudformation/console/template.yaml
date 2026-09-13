@@ -274,9 +274,32 @@ Resources:
         AppEnvironment:
           Fn::Sub: "${AppEnvironment}"
 
+  ConsoleCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Condition: IsNotGovCloud
+    Properties:
+      CachePolicyConfig:
+        Name:
+          Fn::Sub: "FormKiQ-${AppEnvironment}-Console"
+        Comment: Honor console object cache headers; do not cache objects without them
+        DefaultTTL: 0
+        MaxTTL: 31536000
+        MinTTL: 0
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Condition: IsNotGovCloud
+    DependsOn:
+      - ConsoleInstallerRef
     Properties:
       DistributionConfig:
         Comment:
@@ -296,12 +319,9 @@ Resources:
           S3OriginConfig:
             OriginAccessIdentity: ''
         DefaultCacheBehavior:
+          CachePolicyId:
+            Ref: ConsoleCachePolicy
           Compress: true
-          DefaultTTL: 600
-          MaxTTL: 600
-          MinTTL: 0
-          ForwardedValues:
-            QueryString: false
           TargetOriginId: s3origin
           ViewerProtocolPolicy: redirect-to-https
         DefaultRootObject: index.html
@@ -340,9 +360,11 @@ Resources:
         HttpVersion: http2and3
         CustomErrorResponses:
         - ErrorCode: '403'
+          ErrorCachingMinTTL: 0
           ResponsePagePath: "/index.html"
           ResponseCode: '200'
         - ErrorCode: '404'
+          ErrorCachingMinTTL: 0
           ResponsePagePath: "/index.html"
           ResponseCode: '200'
       Tags:
@@ -439,7 +461,7 @@ Resources:
       Runtime: java25
       Architectures:
         - Ref: LambdaArchitecture
-      Timeout: 300
+      Timeout: 900
       MemorySize: 512
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Role:
@@ -459,21 +481,6 @@ Resources:
             Fn::Sub: "${AWS::Region}"
           CONSOLE_BUCKET:
             Fn::Sub: "${WebUiConsole}"
-          CONSOLE_URL:
-            Fn::If:
-              - HasCertificateStackNameDomainName
-              - Fn::Join:
-                  - ""
-                  -
-                    - 'https://'
-                    - Ref: CertificateStackNameDomainName
-              - Fn::Join:
-                  - ""
-                  -
-                    - 'https://'
-                    - Fn::GetAtt:
-                        - CloudFrontDistribution
-                        - DomainName
           COGNITO_CONFIG_BUCKET:
             Fn::Sub: "${CognitoConfigBucket}"
           CONSOLE_ZIP_URL:
@@ -626,11 +633,17 @@ Resources:
                   - 'kms:GenerateDataKey*'
                   - 'kms:DescribeKey'
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetInvalidation
+                Resource: '*'
 
   ConsoleInstallerRef:
     Type: Custom::ConsoleInstallerRef
     Condition: IsNotGovCloud
     Properties:
+      Action: Stage
       ConsoleZipUrl:
         Fn::Sub: "https://artifacts.formkiq.com/formkiq-console/${ConsoleVersion}/formkiq-console.zip"
       ConsoleModuleZipUrls: []
@@ -644,6 +657,33 @@ Resources:
         Ref: KeyApiUrl
       API_AUTH_URL:
         Ref: AuthApiUrl
+      HttpApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
+          - ''
+      IamApiUrl:
+        Fn::If:
+          - HasCertificateStackName
+          - Fn::ImportValue:
+              Fn::Sub: '${CertificateStackName}-IamApiDomain'
+          - ''
+      ServiceToken:
+        Fn::GetAtt:
+          - ConsoleInstaller
+          - Arn
+
+  ConsoleInstallerFinalizeRef:
+    Type: Custom::ConsoleInstallerRef
+    Condition: IsNotGovCloud
+    DependsOn:
+      - CloudFrontDistribution
+      - WebUiConsoleBucketPolicy
+    Properties:
+      Action: Finalize
+      Nonce:
+        Ref: ConsoleVersion
       ConsoleUrl:
         Fn::If:
           - HasCertificateStackNameDomainName
@@ -659,22 +699,12 @@ Resources:
                 - Fn::GetAtt:
                     - CloudFrontDistribution
                     - DomainName
+      DistributionId:
+        Ref: CloudFrontDistribution
       DriveAuthorizeUrl:
         Ref: DriveAuthorizeUrl
       DriveCognitoUserPoolClientId:
         Ref: DriveCognitoUserPoolClientId
-      HttpApiUrl:
-        Fn::If:
-          - HasCertificateStackName
-          - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-HttpApiDomain'
-          - ''
-      IamApiUrl:
-        Fn::If:
-          - HasCertificateStackName
-          - Fn::ImportValue:
-              Fn::Sub: '${CertificateStackName}-IamApiDomain'
-          - ''
       ServiceToken:
         Fn::GetAtt:
           - ConsoleInstaller
