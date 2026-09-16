@@ -290,6 +290,15 @@ components:
         clientUserId:
           type: "string"
           description: "Specifies unique identifier for signer"
+        embeddedRecipientStartURL:
+          type: "string"
+          enum:
+            - "SIGN_AT_DOCUSIGN"
+          description: >-
+            Enables a Docusign signing invitation while retaining embedded signing
+            through clientUserId. Requires clientUserId. When omitted, the existing
+            signing behavior is unchanged. Hybrid recipients do not receive automated
+            reminders or expiration notifications.
         recipientId:
           type: "string"
           description: "A reference used to map recipients to other objects, such as specific document tabs."
