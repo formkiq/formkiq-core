@@ -59,6 +59,16 @@ public class Strings {
   }
 
   /**
+   * Checks whether a string is null or empty after {@link String#trim()}.
+   *
+   * @param s the string to check
+   * @return true if the string is null or empty after trimming
+   */
+  public static boolean isEmptyWithTrim(final String s) {
+    return isEmpty(trim(s));
+  }
+
+  /**
    * Splits the given string by each occurrence of the specified delimiter character.
    *
    * @param input the string to split
