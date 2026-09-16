@@ -290,7 +290,7 @@ components:
         clientUserId:
           type: "string"
           description: "Specifies unique identifier for signer"
-        embeddedRecipientStartURL:
+        embeddedRecipientStartUrl:
           type: "string"
           enum:
             - "SIGN_AT_DOCUSIGN"
