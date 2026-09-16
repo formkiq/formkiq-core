@@ -104,6 +104,17 @@ public class StringsTest {
   }
 
   @Test
+  void testIsEmptyWithTrim() {
+    assertTrue(Strings.isEmptyWithTrim(null));
+    assertTrue(Strings.isEmptyWithTrim(""));
+    assertTrue(Strings.isEmptyWithTrim(" "));
+    assertTrue(Strings.isEmptyWithTrim(" \t\r\n "));
+    assertFalse(Strings.isEmptyWithTrim("a"));
+    assertFalse(Strings.isEmptyWithTrim(" a "));
+    assertFalse(Strings.isEmptyWithTrim("\u2003"));
+  }
+
+  @Test
   void testLeftPad() {
     assertEquals("07", Strings.leftPad("7", 2, '0'));
     assertEquals("15", Strings.leftPad("15", 2, '0'));
