@@ -32,6 +32,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -147,6 +149,15 @@ class RestApiRequestHandlerEventInterceptorTest {
   }
 
   @Test
+  void handleRequestLogsBodyWithoutHeaders() throws IOException {
+    LoggerRecorder logger =
+        logRequestBody("{\"PDFBytes\":\"private-pdf\",\"status\":\"sent\"}", false, null);
+    assertFalse(logger.containsString("private-pdf"));
+    assertTrue(logger.containsString("\"PDFBytes\":\"[REDACTED]\""));
+    assertTrue(logger.containsString("\"status\":\"sent\""));
+  }
+
+  @Test
   void handleRequestLogsErrorWhenResponseIsNull() {
     // given
     LoggerRecorder logger = new LoggerRecorder();
@@ -167,6 +178,47 @@ class RestApiRequestHandlerEventInterceptorTest {
     assertEquals("original failure", error.getMessage());
     assertTrue(logger.containsString("original failure"));
     assertTrue(logger.containsString("\"status\":500"));
+  }
+
+  @Test
+  void handleRequestRedactsCallbackBodyWithoutChangingRequest() throws IOException {
+    String body = """
+        {"event":"envelope-completed","data":{"envelopeId":"envelope-123",
+          "envelopeSummary":{"status":"completed","envelopeDocuments":[
+            {"PDFBytes":"private-pdf-content","documentId":"1","name":"Agreement.pdf"},
+            {"pdfBytes":"second-pdf-content","documentId":"2"}]}},
+          "documents":[{"documentBase64":"outbound-pdf-content"}],
+          "access_token":"access-token-secret","refresh_token":"refresh-token-secret"}
+        """;
+    for (boolean base64 : List.of(false, true)) {
+      String requestBody =
+          base64 ? Base64.getEncoder().encodeToString(body.getBytes(StandardCharsets.UTF_8)) : body;
+      LoggerRecorder logger = logRequestBody(requestBody, base64,
+          Map.of("Authorization", "authorization-secret", "X-Amz-Security-Token",
+              "security-token-secret", "X-DocuSign-Signature-1", "test-signature"));
+      for (String secret : List.of("private-pdf-content", "second-pdf-content",
+          "outbound-pdf-content", "access-token-secret", "refresh-token-secret",
+          "authorization-secret", "security-token-secret", requestBody)) {
+        assertFalse(logger.containsString(secret));
+      }
+      for (String visible : List.of("envelope-123", "envelope-completed", "Agreement.pdf",
+          "\"status\":\"completed\"", "\"documentId\":\"1\"", "/esignature/docusign/events",
+          "\"PDFBytes\":\"[REDACTED]\"", "\"pdfBytes\":\"[REDACTED]\"",
+          "\"documentBase64\":\"[REDACTED]\"", "\"access_token\":\"[REDACTED]\"",
+          "\"refresh_token\":\"[REDACTED]\"")) {
+        assertTrue(logger.containsString(visible), visible);
+      }
+    }
+  }
+
+  @Test
+  void handleRequestRedactsMalformedBodiesWithoutChangingRequest() throws IOException {
+    for (boolean base64 : List.of(false, true)) {
+      LoggerRecorder logger = logRequestBody("{malformed-private-body", base64, null);
+      assertFalse(logger.containsString("malformed-private-body"));
+      assertTrue(
+          logger.containsString(base64 ? "body=\"[INVALID BASE64 BODY]\"" : "body=[REDACTED]"));
+    }
   }
 
   @Test
@@ -218,5 +270,37 @@ class RestApiRequestHandlerEventInterceptorTest {
     Map<String, Object> body = this.gson.fromJson((String) response.get("body"), Map.class);
     assertEquals("finance", body.get("siteId"));
     assertEquals("finance", body.get("requestSiteId"));
+  }
+
+  private LoggerRecorder logRequestBody(final String body, final boolean base64,
+      final Map<String, String> headers) throws IOException {
+    LoggerRecorder logger = new LoggerRecorder();
+    AwsServiceCache services = new AwsServiceCache().environment(Map.of()).setLogger(logger);
+    services.registerAppend(ApiAuthorizationInterceptor.class,
+        new ClassServiceExtension<>(new TestApiAuthorizationInterceptor()));
+    final TestRestApiRequestHandler handler =
+        new TestRestApiRequestHandler(services, new TestRequestHandler() {
+          @Override
+          public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent request,
+              final ApiAuthorization authorization, final AwsServiceCache awsServices) {
+            assertEquals(body, request.getBody());
+            assertEquals(base64, request.getIsBase64Encoded());
+            assertEquals(headers, request.getHeaders());
+            return ApiRequestHandlerResponse.builder().ok().build();
+          }
+        });
+    ApiGatewayRequestEvent event = event();
+    event.setPath("/esignature/docusign/events");
+    event.setHttpMethod("POST");
+    event.setHeaders(headers);
+    event.setBody(body);
+    event.setIsBase64Encoded(base64);
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    handler.handleRequest(
+        new ByteArrayInputStream(this.gson.toJson(event).getBytes(StandardCharsets.UTF_8)), output,
+        null);
+    Map<?, ?> response = this.gson.fromJson(output.toString(StandardCharsets.UTF_8), Map.class);
+    assertEquals(200, ((Number) response.get("statusCode")).intValue());
+    return logger;
   }
 }

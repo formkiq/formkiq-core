@@ -908,9 +908,9 @@ public class StagingS3CreateTest implements DbKeys {
 
       String documentId = ID.uuid();
       String s3Key = "tempfiles/eventcallback/" + siteId + "/" + documentId;
-      URL url = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1), null,
-          null, Optional.empty(), Map.of());
-      new HttpServiceJdk11().put(url.toString(), Optional.empty(), Optional.empty(), "");
+      URL presignedUrl = presignerService.presignPutUrl(STAGING_BUCKET, s3Key, Duration.ofDays(1),
+          null, null, Optional.empty(), Map.of());
+      new HttpServiceJdk11().put(presignedUrl.toString(), Optional.empty(), Optional.empty(), "");
 
       // when
       Map<String, Object> map = loadFileAsMap(this, "/documents-compress-event.json",
