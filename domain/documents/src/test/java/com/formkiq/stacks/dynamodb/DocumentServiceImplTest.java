@@ -2555,7 +2555,7 @@ public class DocumentServiceImplTest implements DbKeys {
           service.findDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null))
               .lastModifiedDate();
 
-      Date staleDate = makeFolderStale(siteId, "a/b/");
+      final Date staleDate = makeFolderStale(siteId, "a/b/");
 
       String documentId1 = ID.uuid();
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);

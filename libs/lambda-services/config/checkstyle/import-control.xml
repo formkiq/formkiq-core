@@ -16,6 +16,10 @@
 
 		<allow pkg="com.formkiq.module.lambdaservices.logger" />
 
+		<subpackage name="logger">
+			<allow pkg="com.google.gson" />
+		</subpackage>
+
 	</subpackage>
 
 </import-control>

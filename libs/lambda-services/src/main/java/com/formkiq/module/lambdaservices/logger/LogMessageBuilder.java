@@ -24,9 +24,21 @@
 package com.formkiq.module.lambdaservices.logger;
 
 import java.util.LinkedHashMap;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.Strictness;
 
 /**
  * Utility for building structured log messages with a title and key/value properties.
@@ -36,6 +48,25 @@ import java.util.StringJoiner;
  * UploadDocument | documentId=123 | userId=abc | size=2048
  */
 public final class LogMessageBuilder {
+
+  /** Strict JSON parser for log properties. */
+  private static final Gson GSON = new GsonBuilder().setStrictness(Strictness.STRICT).create();
+  /** Replacement for redacted values and invalid JSON. */
+  private static final String REDACTED = "[REDACTED]";
+
+  private static void redact(final JsonElement value, final Set<String> fields) {
+    if (value.isJsonObject()) {
+      value.getAsJsonObject().entrySet().forEach(entry -> {
+        if (fields.contains(entry.getKey().toLowerCase(Locale.ROOT))) {
+          entry.setValue(new JsonPrimitive(REDACTED));
+        } else {
+          redact(entry.getValue(), fields);
+        }
+      });
+    } else if (value.isJsonArray()) {
+      value.getAsJsonArray().forEach(element -> redact(element, fields));
+    }
+  }
 
   /**
    * Start building a log message with a title.
@@ -49,6 +80,7 @@ public final class LogMessageBuilder {
 
   /** Title. */
   private final String title;
+
   /** Properties. */
   private final Map<String, Object> properties = new LinkedHashMap<>();
 
@@ -96,5 +128,46 @@ public final class LogMessageBuilder {
       properties.put(key, value);
     }
     return this;
+  }
+
+  /**
+   * Add a JSON property, compacted onto one line without redaction. Null keys or values are
+   * ignored. Invalid or blank JSON is replaced with a placeholder.
+   *
+   * @param key property key
+   * @param json JSON value
+   * @return this builder
+   */
+  public LogMessageBuilder propertyJson(final String key, final String json) {
+    return propertyJson(key, json, List.of());
+  }
+
+  /**
+   * Add a JSON property with matching fields replaced by a placeholder at every nesting level,
+   * including inside arrays. Field names are matched case-insensitively. Unlisted fields remain
+   * visible. Null keys or JSON values are ignored; invalid or blank JSON is never logged verbatim.
+   *
+   * @param key property key
+   * @param json JSON value
+   * @param redactFields field names to redact; must not be null
+   * @return this builder
+   */
+  public LogMessageBuilder propertyJson(final String key, final String json,
+      final Collection<String> redactFields) {
+    if (key == null || json == null) {
+      return this;
+    }
+    Set<String> fields = redactFields.stream().filter(Objects::nonNull)
+        .map(field -> field.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+    try {
+      JsonElement value = GSON.fromJson(json, JsonElement.class);
+      if (value == null) {
+        return property(key, REDACTED);
+      }
+      redact(value, fields);
+      return property(key, value.toString());
+    } catch (JsonParseException e) {
+      return property(key, REDACTED);
+    }
   }
 }

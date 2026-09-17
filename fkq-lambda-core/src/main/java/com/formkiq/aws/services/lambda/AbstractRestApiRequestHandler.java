@@ -49,6 +49,7 @@ import com.formkiq.aws.sqs.events.SqsEvent;
 import com.formkiq.aws.sqs.events.SqsEventRecord;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogMessageBuilder;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.google.gson.Gson;
@@ -66,6 +67,9 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
   /** Request headers whose values must not be logged. */
   private static final Set<String> SENSITIVE_REQUEST_HEADERS =
       Set.of("authorization", "x-amz-security-token");
+  /** Document contents and OAuth tokens to redact from incoming JSON bodies. */
+  private static final List<String> SENSITIVE_REQUEST_BODY_FIELDS =
+      List.of("PDFBytes", "documentBase64", "access_token", "refresh_token");
 
   private static void resetThreadLocal() {
     ApiAuthorization.logout();
@@ -260,10 +264,17 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     Logger logger = awsservice.getLogger();
     if (logger.isLogged(LogLevel.DEBUG)) {
       ApiGatewayRequestEvent event = this.gson.fromJson(str, ApiGatewayRequestEvent.class);
-      if (event != null && event.getHeaders() != null) {
-        event.getHeaders()
-            .replaceAll((key, value) -> isSensitiveRequestHeader(key) ? "****" : value);
-        logger.debug(gson.toJson(event));
+      if (event != null && !isEmpty(event)) {
+        String body = getRequestBodyForLogging(event);
+        if (event.getHeaders() != null) {
+          event.getHeaders()
+              .replaceAll((key, value) -> isSensitiveRequestHeader(key) ? "****" : value);
+        }
+        // Only modify the logging copy; the original body is needed for signature verification.
+        event.setBody(null);
+        logger
+            .debug(LogMessageBuilder.title("API request").propertyJson("event", gson.toJson(event))
+                .propertyJson("body", body, SENSITIVE_REQUEST_BODY_FIELDS).build());
       }
     }
 
@@ -281,6 +292,16 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    * @return {@link AwsServiceCache}
    */
   public abstract AwsServiceCache getAwsServices();
+
+  private String getRequestBodyForLogging(final ApiGatewayRequestEvent event) {
+    try {
+      return event.getBody() != null ? new String(event.getBodyAsBytes(), StandardCharsets.UTF_8)
+          : null;
+    } catch (IllegalArgumentException e) {
+      // Malformed base64 must not prevent normal request handling or expose the raw body.
+      return this.gson.toJson("[INVALID BASE64 BODY]");
+    }
+  }
 
   /**
    * Get URL Map.

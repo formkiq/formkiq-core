@@ -162,6 +162,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
    * Create Test {@link DocumentItem}.
    *
    * @param prefix DynamoDB PK Prefix
+   * @param count maximum number of documents to create
    * @return {@link List} {@link DocumentItem}
    */
   private List<DocumentItem> createTestData(final String prefix, final int count) {

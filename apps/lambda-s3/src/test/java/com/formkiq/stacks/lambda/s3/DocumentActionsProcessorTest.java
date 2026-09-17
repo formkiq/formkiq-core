@@ -436,11 +436,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
 
     addKeyValueOcrMock();
 
-    mockServer.when(request().withMethod("PATCH")).respond(CALLBACK);
-    mockServer.when(request().withMethod("POST")).respond(CALLBACK);
-    mockServer.when(request().withMethod("PUT")).respond(CALLBACK);
-    mockServer.when(request().withMethod("DELETE")).respond(CALLBACK);
-    mockServer.when(request().withMethod("GET")).respond(CALLBACK);
+    for (String method : List.of("PATCH", "POST", "PUT", "DELETE", "GET")) {
+      mockServer.when(request().withMethod(method)).respond(CALLBACK);
+    }
   }
 
   private static List<DocumentAttributeRecord> findDocumentAttributes(final String siteId,

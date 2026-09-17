@@ -29,7 +29,11 @@ import java.util.function.Predicate;
 /** Bounded polling helper for eventually consistent test assertions. */
 public final class TestWait {
 
-  /** Supplier that may throw while the expected result is not yet available. */
+  /**
+   * Supplier that may throw while the expected result is not yet available.
+   *
+   * @param <T> supplied type
+   */
   @FunctionalInterface
   public interface CheckedSupplier<T> {
 
