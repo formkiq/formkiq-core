@@ -37,6 +37,10 @@ public class PresignGetUrlConfig {
   private String contentDisposition;
   /** Sets the <code>Content-Type</code> header of the response. */
   private String contentType;
+  /** Path used for the download filename. */
+  private String downloadPath;
+  /** Whether inline delivery was requested. */
+  private boolean inlineDelivery;
 
   /**
    * constructor.
@@ -46,12 +50,24 @@ public class PresignGetUrlConfig {
   }
 
   /**
-   * Get Content Disposition.
+   * Get Content Disposition, forcing attachment delivery for SVG documents.
    * 
    * @return {@link String}
    */
   public String contentDisposition() {
-    return this.contentDisposition;
+    String disposition = this.contentDisposition;
+    if (this.downloadPath != null) {
+      String encodedPath =
+          URLEncoder.encode(this.downloadPath, StandardCharsets.UTF_8).replaceAll("\\+", " ");
+      disposition = String.format("%s; filename*=UTF-8''%s",
+          this.inlineDelivery ? "inline" : "attachment", encodedPath);
+    }
+
+    if (isSvg(this.contentType, this.downloadPath)) {
+      int parameters = disposition != null ? disposition.indexOf(';') : -1;
+      disposition = "attachment" + (parameters >= 0 ? disposition.substring(parameters) : "");
+    }
+    return disposition;
   }
 
   /**
@@ -62,6 +78,7 @@ public class PresignGetUrlConfig {
    */
   public PresignGetUrlConfig contentDisposition(final String contentDispositionString) {
     this.contentDisposition = contentDispositionString;
+    this.downloadPath = null;
     return this;
   }
 
@@ -74,11 +91,9 @@ public class PresignGetUrlConfig {
    */
   public PresignGetUrlConfig contentDispositionByPath(final String path, final boolean inline) {
 
-    if (path != null) {
-      String s = inline ? "inline" : "attachment";
-      String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8).replaceAll("\\+", " ");
-      this.contentDisposition = String.format("%s; filename*=UTF-8''%s", s, encodedPath);
-    }
+    this.downloadPath = path;
+    this.inlineDelivery = inline;
+    this.contentDisposition = null;
     return this;
   }
 
@@ -101,4 +116,13 @@ public class PresignGetUrlConfig {
     this.contentType = contentTypeString;
     return this;
   }
+
+  private boolean isSvg(final String type, final String path) {
+    String mediaType = type != null ? type.split(";", 2)[0].trim() : "";
+    String filename = path != null ? path.trim() : "";
+    String extension = ".svg";
+    return "image/svg+xml".equalsIgnoreCase(mediaType) || filename.regionMatches(true,
+        filename.length() - extension.length(), extension, 0, extension.length());
+  }
+
 }

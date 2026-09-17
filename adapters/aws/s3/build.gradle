@@ -11,6 +11,9 @@ dependencies {
   implementation libs.gson
   implementation libs.aws.sdk.url.connection.client.s3
   implementation project(':libs:lambda-services')
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly libs.junit.platform.launcher
   //implementation project(':adapters:aws:xray')
 
   configurations.all {

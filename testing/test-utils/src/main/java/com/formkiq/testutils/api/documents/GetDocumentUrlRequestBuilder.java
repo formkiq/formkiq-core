@@ -44,6 +44,8 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
   private final DocumentArtifact document;
   /** Url Format. */
   private String urlFormat;
+  /** Inline delivery. */
+  private Boolean inline;
 
   /**
    * constructor.
@@ -68,11 +70,16 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
     return this;
   }
 
+  public GetDocumentUrlRequestBuilder setInline(final boolean inlineDelivery) {
+    this.inline = inlineDelivery;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
         () -> new DocumentsApi(apiClient).getDocumentUrl(this.document.documentId(), siteId,
-            this.document.artifactId(), null, null, null, null, null, urlFormat));
+            this.document.artifactId(), null, null, null, this.inline, null, urlFormat));
   }
 }

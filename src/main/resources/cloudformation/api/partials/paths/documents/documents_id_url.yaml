@@ -19,7 +19,7 @@ paths:
         - $ref: '#/components/parameters/shareKeyParam'
         - name: "inline"
           in: "query"
-          description: "Set the Content-Disposition to inline"
+          description: "Request inline delivery. S3-backed SVG documents identified by content type or filename are always served as attachments."
           schema:
             type: boolean
             default: false
