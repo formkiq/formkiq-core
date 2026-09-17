@@ -27,6 +27,7 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +45,7 @@ import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Decoder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -60,6 +63,7 @@ import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.urls.UrlParser;
 import com.formkiq.urls.UrlParts;
 import org.junit.jupiter.api.BeforeEach;
@@ -194,6 +198,48 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
             e.getResponseBody());
       }
     }
+  }
+
+  /**
+   * Script-bearing SVG must be downloaded even when inline delivery is requested.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testGetSvgDocumentUrlForcesAttachmentWhenInlineRequested() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+
+    String filename = "script-bearing.svg";
+    String contentType = "image/svg+xml";
+    String content = "<svg xmlns=\"http://www.w3.org/2000/svg\">"
+        + "<script>document.documentElement.setAttribute('data-script-executed', 'true');</script>"
+        + "</svg>";
+
+    DocumentArtifact document = new AddDocumentRequestBuilder().path(filename)
+        .contentType(contentType).content(content).getDocument(client, siteId);
+
+    // when
+    GetDocumentUrlResponse response = new GetDocumentUrlRequestBuilder(document).setInline(true)
+        .submitOk(client, siteId).response();
+    assertS3Url(response, siteId, document.documentId());
+    HttpResponse<String> download =
+        this.http.get(response.getUrl(), Optional.empty(), Optional.empty());
+
+    // then: verify delivery headers, not browser execution or access to Console privileges
+    assertEquals(ApiResponseStatus.SC_OK.getStatusCode(), download.statusCode());
+    assertEquals(content, download.body());
+    assertEquals(contentType, download.headers().firstValue("Content-Type").orElseThrow());
+    String expectedDisposition = "attachment; filename*=UTF-8''" + filename;
+    UrlParts parts = new UrlParser().apply(response.getUrl());
+    assertAll(
+        () -> assertEquals(expectedDisposition,
+            parts.queryParameters().get("response-content-disposition").get(0),
+            "The signed URL must force attachment delivery for SVG"),
+        () -> assertEquals(expectedDisposition,
+            download.headers().firstValue("Content-Disposition").orElseThrow(),
+            "The SVG response must be an attachment even when inline=true"));
   }
 
   /**
