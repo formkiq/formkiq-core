@@ -31,6 +31,7 @@ import static com.formkiq.testutils.aws.FkqDocumentService.waitForActionsComplet
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -46,6 +47,9 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -53,8 +57,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentAttributesApi;
@@ -66,6 +73,7 @@ import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.ChecksumType;
+import com.formkiq.client.model.Document;
 import com.formkiq.client.model.DocumentActionType;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentMetadata;
@@ -76,6 +84,11 @@ import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.testutils.TestWait;
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -165,6 +178,15 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     addAndLoginCognito(READONLY_EMAIL, List.of("default_read"));
     addAndLoginCognito(USER_EMAIL, List.of(DEFAULT_SITE_ID));
     addAndLoginCognito(FINANCE_EMAIL, List.of(GROUP_FINANCE));
+  }
+
+  private static DocumentService getDocumentService() {
+    String documentsTable = getSsm()
+        .getParameterValue("/formkiq/" + getAppenvironment() + "/dynamodb/DocumentsTableName");
+    DynamoDbConnectionBuilder connection = new DynamoDbConnectionBuilder(false)
+        .setCredentials(getAwsprofile()).setRegion(getAwsregion());
+    return new DocumentServiceImpl(connection, documentsTable, List.of(),
+        new DocumentVersionServiceNoVersioning(), null, null, 0);
   }
 
   /** {@link SimpleDateFormat}. */
@@ -334,7 +356,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testGet04() throws Exception {
     // given
     final String siteId = "finance";
-    ApiClient client = getApiClients(siteId).get(0);
+    ApiClient client = getApiClients(siteId).getFirst();
     // DocumentsApi api = new DocumentsApi(client);
     String date = this.df.format(new Date());
 
@@ -376,6 +398,73 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     // then
     assertNotNull(results0.getDocuments());
     assertNotNull(results1.getDocuments());
+  }
+
+  /**
+   * Issue #446: reaching the end of a date partition must not end pagination while older documents
+   * remain. Uses real DynamoDB because DynamoDB Local returns a different LastEvaluatedKey at this
+   * boundary.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  @Timeout(TEST_TIMEOUT)
+  void testGetDocumentsAtDateBoundary() throws Exception {
+    String siteId = "issue446-" + ID.uuid();
+    DocumentService documentService = getDocumentService();
+    List<String> documentIds = new ArrayList<>();
+
+    try {
+      // The reported distribution is 6, 5, and 4 documents on three separate dates.
+      LocalDate today = LocalDate.now(ZoneOffset.UTC);
+      List<LocalDate> dates = List.of(today.minusDays(1), today.minusDays(12), today.minusDays(19));
+      for (int day = 0; day < dates.size(); day++) {
+        for (int index = 0; index < 6 - day; index++) {
+          String documentId = ID.uuid();
+          documentIds.add(documentId);
+          Date insertedDate =
+              Date.from(dates.get(day).atTime(16 - index, 0).toInstant(ZoneOffset.UTC));
+          documentService.saveDocument(siteId,
+              new DocumentItemDynamoDb(documentId, insertedDate, "issue446"), new ArrayList<>());
+        }
+      }
+
+      ApiClient client = getApiClients(siteId).get(1);
+
+      List<String> expectedIds = documentIds.stream().sorted().toList();
+      TestWait.until("all 15 documents to be visible through GET /documents",
+          () -> new GetDocumentsRequestBuilder().limit(100).getDocuments(client, siteId),
+          response -> expectedIds.equals(notNull(response.getDocuments()).stream()
+              .map(Document::getDocumentId).sorted().toList()));
+
+      assertAll("GET /documents must return all documents at every page size",
+          Stream.of(1, 2, 3, 4, 5, 6, 7, 11, 100).map(limit -> () -> {
+            List<String> actualIds = new ArrayList<>();
+            String next = null;
+            int pages = 0;
+            do {
+              GetDocumentsResponse response = new GetDocumentsRequestBuilder().limit(limit)
+                  .next(next).submit(client, siteId).throwIfError().response();
+              assertTrue(notNull(response.getDocuments()).size() <= limit,
+                  "Page exceeds limit=" + limit);
+              notNull(response.getDocuments())
+                  .forEach(document -> actualIds.add(document.getDocumentId()));
+              next = response.getNext();
+              pages++;
+              assertTrue(pages <= expectedIds.size() + 1,
+                  "Pagination did not terminate for limit=" + limit);
+            } while (next != null && !next.isEmpty());
+
+            assertEquals(expectedIds.size(), actualIds.size(),
+                "GET /documents stopped early for limit=" + limit);
+            assertEquals(expectedIds, actualIds.stream().sorted().toList(),
+                "Missing or duplicate documents for limit=" + limit);
+          }));
+    } finally {
+      for (String documentId : documentIds) {
+        documentService.deleteDocument(siteId, DocumentArtifact.of(documentId, null), false);
+      }
+    }
   }
 
   /**
@@ -580,7 +669,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testPost04() throws Exception {
     // given
     String siteId = "finance";
-    ApiClient client = getApiClients(siteId).get(0);
+    ApiClient client = getApiClients(siteId).getFirst();
     DocumentsApi api = new DocumentsApi(client);
 
     AddDocumentRequest req =
@@ -639,7 +728,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     SiteConfiguration config = SiteConfiguration.builder().maxDocuments("1").build(SITEID1);
     configService.save(SITEID1, config);
 
-    ApiClient c = getApiClients(SITEID1).get(0);
+    ApiClient c = getApiClients(SITEID1).getFirst();
     DocumentsApi api = new DocumentsApi(c);
     AddDocumentRequest req =
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
@@ -693,8 +782,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(response.getUploadUrl());
 
         assertEquals(1, notNull(response.getDocuments()).size());
-        assertNotNull(response.getDocuments().get(0).getDocumentId());
-        assertNull(response.getDocuments().get(0).getUploadUrl());
+        assertNotNull(response.getDocuments().getFirst().getDocumentId());
+        assertNull(response.getDocuments().getFirst().getUploadUrl());
 
         // given
         content = "this is a test";
@@ -719,8 +808,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         // then
         assertNotNull(tags.getTags());
         assertEquals(1, tags.getTags().size());
-        assertEquals("formName", tags.getTags().get(0).getKey());
-        assertEquals("Job Application Form", tags.getTags().get(0).getValue());
+        assertEquals("formName", tags.getTags().getFirst().getKey());
+        assertEquals("Job Application Form", tags.getTags().getFirst().getValue());
 
         DocumentSearchApi searchApi = new DocumentSearchApi(client);
         DocumentSearchRequest searchReq = new DocumentSearchRequest()
@@ -728,16 +817,16 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         DocumentSearchResponse s = searchApi.documentSearch(searchReq, null, null, null, null);
 
         assertEquals(1, notNull(s.getDocuments()).size());
-        assertEquals(documentId, s.getDocuments().get(0).getDocumentId());
+        assertEquals(documentId, s.getDocuments().getFirst().getDocumentId());
 
         GetDocumentResponse documentc = api.getDocument(documentId, null, null, null);
         assertNotNull(documentc.getDocuments());
         assertEquals(1, documentc.getDocuments().size());
-        assertEquals(response.getDocuments().get(0).getDocumentId(),
-            documentc.getDocuments().get(0).getDocumentId());
+        assertEquals(response.getDocuments().getFirst().getDocumentId(),
+            documentc.getDocuments().getFirst().getDocumentId());
 
         // given
-        documentId = response.getDocuments().get(0).getDocumentId();
+        documentId = response.getDocuments().getFirst().getDocumentId();
         assertNotNull(documentId);
 
         // when
@@ -760,7 +849,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   @Timeout(value = TEST_TIMEOUT)
   public void testPost08() throws Exception {
     // given
-    ApiClient client = getApiClients(null).get(0);
+    ApiClient client = getApiClients(null).getFirst();
     String url = client.getBasePath() + "/documents";
 
     Optional<HttpHeaders> o =
@@ -985,8 +1074,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         final int expected = 1;
         assertEquals(expected, attributes.size());
-        assertEquals(attributeKey, attributes.get(0).getKey());
-        assertEquals(value, attributes.get(0).getStringValue());
+        assertEquals(attributeKey, attributes.getFirst().getKey());
+        assertEquals(value, attributes.getFirst().getStringValue());
       }
     }
   }
@@ -1084,7 +1173,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     // given
     String content = "test data";
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      ApiClient client = getApiClients(siteId).get(0);
+      ApiClient client = getApiClients(siteId).getFirst();
 
       DocumentsApi api = new DocumentsApi(client);
       String path = UUID.randomUUID() + ".txt";
@@ -1101,10 +1190,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       ApiResponse<Void> response = api.getPublishedDocumentContentWithHttpInfo(documentId, siteId);
 
-      String location = notNull(response.getHeaders()).get("content-disposition").get(0);
+      String location = notNull(response.getHeaders()).get("content-disposition").getFirst();
       assertEquals("attachment; filename*=UTF-8''" + path, location);
 
-      String contentType = notNull(response.getHeaders()).get("content-type").get(0);
+      String contentType = notNull(response.getHeaders()).get("content-type").getFirst();
       assertEquals("text/plain", contentType);
 
       // check attribute exists
