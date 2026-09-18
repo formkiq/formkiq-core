@@ -26,6 +26,7 @@ package com.formkiq.aws.dynamodb.documents;
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamodbLastEvaluatedKeyBuilder;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
@@ -54,6 +55,8 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
  */
 public class GetAllDocumentsQuery implements DynamoDbQuery {
 
+  /** Number of date records to fetch at a time. */
+  private static final int DATES_LIMIT = 100;
   /** {@link GetDocumentDatesQuery}. */
   private final GetDocumentDatesQuery datesQuery;
   /** Fetch All Attributes. */
@@ -87,7 +90,7 @@ public class GetAllDocumentsQuery implements DynamoDbQuery {
       final int limit, final String dateQuerySk) {
     String pk = SiteIdKeyGenerator.createDatabaseKey(siteId, "docts#" + dateQuerySk);
     return DynamoDbQueryBuilder.builder().scanIndexForward(Boolean.FALSE).indexName(GSI1).pk(pk)
-        .projectionExpression("PK,SK,documentId").nextToken(nextToken).limit(limit)
+        .projectionExpression("PK,SK,GSI1PK,GSI1SK,documentId").nextToken(nextToken).limit(limit)
         .build(tableName);
   }
 
@@ -99,25 +102,37 @@ public class GetAllDocumentsQuery implements DynamoDbQuery {
     var queryDatesResult = queryDates(db, tableName, siteId, next);
     var iter = queryDatesResult.items().iterator();
 
-    int limitCount = limit;
     List<Map<String, AttributeValue>> results = new ArrayList<>();
-    Map<String, AttributeValue> lastEvaluatedKey = null;
 
-    while (iter.hasNext() && limitCount > 0) {
+    // Look beyond the requested page, including older dates, before deciding whether it is last.
+    while (results.size() <= limit) {
+      if (!iter.hasNext()) {
+        String nextDate = queryDatesResult.toNextToken();
+        if (isEmpty(nextDate)) {
+          break;
+        }
+        queryDatesResult = datesQuery.query(db, tableName, siteId, nextDate, DATES_LIMIT);
+        iter = queryDatesResult.items().iterator();
+        continue;
+      }
 
       String sk = DynamoDbTypes.toString(iter.next().get(SK));
 
-      QueryRequest queryRequest = build(tableName, siteId, next, limitCount, sk);
-      QueryResponse response = db.query(queryRequest, fetchAllAttributes);
-
-      results.addAll(response.items());
-      lastEvaluatedKey = response.lastEvaluatedKey();
-
-      limitCount -= response.items().size();
-      next = null;
+      do {
+        QueryRequest queryRequest = build(tableName, siteId, next, limit + 1 - results.size(), sk);
+        QueryResponse response = db.query(queryRequest, fetchAllAttributes);
+        results.addAll(response.items());
+        next = new QueryResult(response.items(), response.lastEvaluatedKey()).toNextToken();
+      } while (!isEmpty(next) && results.size() <= limit);
     }
 
-    return new QueryResult(results, lastEvaluatedKey);
+    if (results.size() > limit) {
+      List<Map<String, AttributeValue>> page = results.subList(0, limit);
+      var lastEvaluatedKey = new DynamodbLastEvaluatedKeyBuilder(page.getLast(), GSI1).build(false);
+      return new QueryResult(page, lastEvaluatedKey);
+    }
+
+    return new QueryResult(results, null);
   }
 
 
@@ -138,8 +153,7 @@ public class GetAllDocumentsQuery implements DynamoDbQuery {
       datesQueryNextToken = new MapAttributeValueToString().apply(key);
     }
 
-    final int datesLimit = 100;
-    QueryResult result = datesQuery.query(db, tableName, siteId, datesQueryNextToken, datesLimit);
+    QueryResult result = datesQuery.query(db, tableName, siteId, datesQueryNextToken, DATES_LIMIT);
     List<Map<String, AttributeValue>> items = result.items();
 
     if (!isEmpty(nextToken)) {
@@ -147,6 +161,6 @@ public class GetAllDocumentsQuery implements DynamoDbQuery {
       items.add(0, Map.of(PK, fromS(PREFIX_DOCUMENT_DATE), SK, fromS(nextTokenDate)));
     }
 
-    return new QueryResult(items, null);
+    return new QueryResult(items, result.lastEvaluatedKey());
   }
 }

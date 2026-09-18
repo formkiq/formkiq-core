@@ -400,7 +400,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       // then
       List<Document> documents = notNull(resp.getDocuments());
       assertEquals(DocumentService.MAX_RESULTS, documents.size());
-      assertFalse(isEmpty(resp.getNext()));
+      assertTrue(isEmpty(resp.getNext()));
       assertTrue(isEmpty(resp.getPrevious()));
     }
   }

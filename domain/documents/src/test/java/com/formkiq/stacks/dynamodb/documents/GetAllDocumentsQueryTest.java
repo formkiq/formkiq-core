@@ -51,9 +51,12 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.ZoneOffset;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,6 +71,9 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 /**
  * Unit Tests for {@link GetDocumentDatesQuery}.
@@ -87,7 +93,7 @@ public class GetAllDocumentsQueryTest {
     for (int i = 0; i < documentIds.size(); i++) {
       String documentId = documentIds.get(i);
       Map<String, AttributeValue> item = items.get(i);
-      assertEquals("PK, SK, documentId",
+      assertEquals("GSI1PK, GSI1SK, PK, SK, documentId",
           item.keySet().stream().sorted().collect(Collectors.joining(", ")));
       assertEquals(createDatabaseKey(siteId, "docs#" + documentId),
           DynamoDbTypes.toString(item.get(PK)));
@@ -135,6 +141,68 @@ public class GetAllDocumentsQueryTest {
     Date date = !isEmpty(insertedDate) ? DateUtil.toDateFromString(insertedDate, ZoneOffset.UTC)
         : new Date();
     return new DocumentItemDynamoDb(ID.uuid(), date, "joe");
+  }
+
+  /**
+   * Looking ahead must continue past a full page of date records belonging to other sites.
+   */
+  @Test
+  void testPaginationAcrossDatePages() throws ValidationException {
+    String siteId = ID.uuid();
+    List<String> expectedIds =
+        addDocuments(siteId, List.of("2026-09-11T16:00", "2026-01-01T16:00"));
+    for (int day = 1; day <= 100; day++) {
+      db.putItem(Map.of(PK, fromS("docdate"), SK,
+          fromS(LocalDate.of(2026, 9, 11).minusDays(day).toString())));
+    }
+
+    GetAllDocumentsQuery query = new GetAllDocumentsQuery();
+    QueryResult first = query.query(db, DOCUMENTS_TABLE, siteId, null, 1);
+    assertQueryResults(first, siteId, expectedIds.subList(0, 1));
+    assertTrue(first.hasLastEvaluatedKey());
+
+    QueryResult last = query.query(db, DOCUMENTS_TABLE, siteId, first.toNextToken(), 1);
+    assertQueryResults(last, siteId, expectedIds.subList(1, 2));
+    assertFalse(last.hasLastEvaluatedKey());
+  }
+
+  /**
+   * Pagination must cross date boundaries and omit the token on the final populated page.
+   *
+   * @param fetchAllAttributes whether to retrieve full documents or only projected keys
+   * @throws ValidationException invalid document
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void testPaginationAtDateBoundary(final boolean fetchAllAttributes) throws ValidationException {
+    String siteId = ID.uuid();
+    List<String> dates = new ArrayList<>();
+    for (int day = 0; day < 3; day++) {
+      for (int index = 0; index < 6 - day; index++) {
+        dates.add(LocalDate.of(2026, 9, 11).minusDays(day).atTime(16 - index, 0).toString());
+      }
+    }
+    List<String> expectedIds = addDocuments(siteId, dates);
+
+    for (int limit : List.of(1, 2, 3, 4, 5, 6, 7, 11, 100)) {
+      List<String> actualIds = new ArrayList<>();
+      String next = null;
+      do {
+        QueryResult result = new GetAllDocumentsQuery(null, fetchAllAttributes).query(db,
+            DOCUMENTS_TABLE, siteId, next, limit);
+        assertFalse(result.items().isEmpty(), "No empty terminal page for limit=" + limit);
+        assertTrue(result.items().size() <= limit);
+        result.items().forEach(item -> actualIds.add(item.get("documentId").s()));
+        assertTrue(actualIds.size() <= expectedIds.size(),
+            "Duplicate documents for limit=" + limit);
+        if (actualIds.size() == expectedIds.size()) {
+          assertFalse(result.hasLastEvaluatedKey(), "Final page has a token for limit=" + limit);
+        }
+        next = result.toNextToken();
+      } while (!isEmpty(next));
+      assertEquals(expectedIds, actualIds,
+          "Pagination changed documents or order for limit=" + limit);
+    }
   }
 
   /**
