@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentReviewsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.AddDocumentReview;
 import com.formkiq.client.model.AddDocumentReviewDecision;
 import com.formkiq.client.model.AddDocumentReviewDecisionRequest;
 import com.formkiq.client.model.AddDocumentReviewDecisionResponse;
@@ -86,6 +87,17 @@ public class AddDocumentReviewDecisionRequestBuilder
 
   public String getDecisionId(final ApiClient apiClient, final String siteId) throws ApiException {
     return submitOk(apiClient, siteId).response().getDecisionId();
+  }
+
+  /**
+   * Set the follow-up review.
+   *
+   * @param review {@link AddDocumentReview}
+   * @return {@link AddDocumentReviewDecisionRequestBuilder}
+   */
+  public AddDocumentReviewDecisionRequestBuilder review(final AddDocumentReview review) {
+    this.request.review(review);
+    return this;
   }
 
   @Override

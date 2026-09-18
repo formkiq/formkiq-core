@@ -26,12 +26,15 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentReviewsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDocumentNotificationRequest;
 import com.formkiq.client.model.AddDocumentReview;
 import com.formkiq.client.model.AddDocumentReviewRequest;
 import com.formkiq.client.model.AddDocumentReviewResponse;
 import com.formkiq.client.model.DocumentReviewStatus;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.List;
 
 /**
  * Builder for POST /documents/{documentId}/reviews.
@@ -57,6 +60,17 @@ public class AddDocumentReviewRequestBuilder
   }
 
   /**
+   * Set approval groups.
+   *
+   * @param approvalGroups {@link List} {@link String}
+   * @return {@link AddDocumentReviewRequestBuilder}
+   */
+  public AddDocumentReviewRequestBuilder approvalGroups(final List<String> approvalGroups) {
+    this.review.approvalGroups(approvalGroups);
+    return this;
+  }
+
+  /**
    * Set comments.
    *
    * @param comments {@link String}
@@ -64,6 +78,18 @@ public class AddDocumentReviewRequestBuilder
    */
   public AddDocumentReviewRequestBuilder comments(final String comments) {
     this.review.comments(comments);
+    return this;
+  }
+
+  /**
+   * Set review notifications.
+   *
+   * @param notifications {@link List} {@link AddDocumentNotificationRequest}
+   * @return {@link AddDocumentReviewRequestBuilder}
+   */
+  public AddDocumentReviewRequestBuilder notifications(
+      final List<AddDocumentNotificationRequest> notifications) {
+    this.review.notifications(notifications);
     return this;
   }
 
