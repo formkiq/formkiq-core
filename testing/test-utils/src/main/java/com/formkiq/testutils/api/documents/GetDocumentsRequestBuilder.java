@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -111,6 +112,11 @@ public class GetDocumentsRequestBuilder implements HttpRequestBuilder<GetDocumen
   public GetDocumentsRequestBuilder end(final OffsetDateTime documentEnd) {
     this.end = documentEnd;
     return this;
+  }
+
+  public GetDocumentsResponse getDocuments(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return submitOk(apiClient, siteId).response();
   }
 
   /**
