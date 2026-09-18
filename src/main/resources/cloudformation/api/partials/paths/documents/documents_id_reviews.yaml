@@ -37,7 +37,9 @@ paths:
     post:
       operationId: AddDocumentReview
       summary: Add document review
-      description: Add a review to a document
+      description: |-
+        Add a review to a document. When notifications are supplied, queue each notification
+        for delivery when the review is created.
       tags:
         - Document Reviews
       parameters:
@@ -161,7 +163,9 @@ paths:
     post:
       operationId: AddDocumentReviewDecision
       summary: Add document review decision
-      description: Add a decision to a document review
+      description: |-
+        Add a decision to a document review. When approvalGroups is set on the review,
+        the caller must belong to at least one of those groups, in addition to satisfying the existing authorization requirements, before the decision is added.
       tags:
         - Document Reviews
       parameters:
@@ -261,11 +265,21 @@ components:
           description: Review category
         reviewStatus:
           $ref: "#/components/schemas/DocumentReviewStatus"
+        approvalGroups:
+          type: array
+          description: Optional approval groups used for additional credential verification when submitting a decision to POST /documents/{documentId}/reviews/{reviewId}/decisions. The caller must belong to at least one of the listed groups, in addition to satisfying the existing authorization requirements.
+          items:
+            type: string
         requiredDecisions:
           type: integer
           format: int64
           minimum: 1
           description: Number of decisions required to complete the review
+        notifications:
+          type: array
+          description: Optional notifications to queue for delivery when the review is created. An empty list sends no notifications.
+          items:
+            $ref: "#/components/schemas/AddDocumentNotificationRequest"
         comments:
           type: string
           description: Review comments
@@ -330,6 +344,11 @@ components:
           description: Review category
         reviewStatus:
           $ref: "#/components/schemas/DocumentReviewStatus"
+        approvalGroups:
+          type: array
+          description: Optional approval groups used for additional credential verification when submitting a decision to POST /documents/{documentId}/reviews/{reviewId}/decisions. The caller must belong to at least one of the listed groups, in addition to satisfying the existing authorization requirements.
+          items:
+            type: string
         requiredDecisions:
           type: integer
           format: int64
@@ -355,6 +374,8 @@ components:
       properties:
         decision:
           $ref: "#/components/schemas/AddDocumentReviewDecision"
+        review:
+          $ref: "#/components/schemas/AddDocumentReview"
 
     #@overlay/match missing_ok=True
     AddDocumentReviewDecisionResponse:
