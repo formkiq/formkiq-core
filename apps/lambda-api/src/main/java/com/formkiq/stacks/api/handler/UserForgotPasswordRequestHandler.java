@@ -31,8 +31,13 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogMessageBuilder;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
 import java.security.SecureRandom;
@@ -64,6 +69,10 @@ public class UserForgotPasswordRequestHandler
   private static final String ALL = LOWERCASE + UPPERCASE + NUMBERS + SYMBOLS;
   /** Secure random generator. */
   private static final SecureRandom RANDOM = new SecureRandom();
+
+  private String diagnosticId(final String value) {
+    return value != null && value.matches("[A-Za-z0-9_-]{1,128}") ? value : "unavailable";
+  }
 
   private String generateTemporaryPassword() {
     List<Character> chars = new ArrayList<>();
@@ -108,7 +117,9 @@ public class UserForgotPasswordRequestHandler
         awsservice.getExtension(CognitoIdentityProviderService.class);
 
     String username = (String) map.get("username");
-    sendPasswordReset(service, username);
+    String requestId =
+        event.getRequestContext() != null ? event.getRequestContext().getRequestId() : null;
+    sendPasswordReset(service, username, awsservice.getLogger(), requestId);
 
     return ApiRequestHandlerResponse.builder().ok().body("message", "Password reset sent").build();
   }
@@ -118,16 +129,32 @@ public class UserForgotPasswordRequestHandler
   }
 
   private void sendPasswordReset(final CognitoIdentityProviderService service,
-      final String username) {
+      final String username, final Logger logger, final String requestId) {
+    String operation = "AdminGetUser";
     try {
       String userStatus = service.getUser(username).userStatusAsString();
       if ("FORCE_CHANGE_PASSWORD".equals(userStatus)) {
+        operation = "AdminSetUserPassword";
         service.setUserPassword(username, generateTemporaryPassword(), true);
       }
 
+      operation = "ForgotPassword";
       service.forgotPassword(username);
-    } catch (UserNotFoundException e) {
-      // ignore
+    } catch (CognitoIdentityProviderException e) {
+      // Keep account-dependent service outcomes private, but retain operational diagnostics.
+      // Never log the exception message, cause, request body, username, or generated password.
+      LogLevel level = e instanceof UserNotFoundException ? LogLevel.INFO : LogLevel.ERROR;
+      logger.log(level,
+          LogMessageBuilder.title("Password reset failure")
+              .property("event", "password_reset_failure").property("operation", operation)
+              .property("reason", e.getClass().getSimpleName()).property("status", e.statusCode())
+              .property("requestId", diagnosticId(requestId))
+              .property("awsRequestId", diagnosticId(e.requestId())).build());
+    } catch (SdkClientException e) {
+      logger.error(LogMessageBuilder.title("Password reset failure")
+          .property("event", "password_reset_failure").property("operation", operation)
+          .property("reason", e.getClass().getSimpleName())
+          .property("requestId", diagnosticId(requestId)).build());
     }
   }
 
