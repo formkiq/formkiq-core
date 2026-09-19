@@ -166,6 +166,7 @@ paths:
       description: |-
         Add a decision to a document review. When approvalGroups is set on the review,
         the caller must belong to at least one of those groups, in addition to satisfying the existing authorization requirements, before the decision is added.
+        Decisions submitted to a review that is already COMPLETED return 409 Conflict without creating a decision, follow-up review, notification, or activity record.
       tags:
         - Document Reviews
       parameters:
@@ -193,6 +194,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentReviewDecisionResponse'
+        '409':
+          description: The review is already complete. No decision was created.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: Review is already complete
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
