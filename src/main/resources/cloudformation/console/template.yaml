@@ -295,6 +295,29 @@ Resources:
           QueryStringsConfig:
             QueryStringBehavior: none
 
+  ConsoleResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Condition: IsNotGovCloud
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name:
+          Fn::Join:
+            - '-'
+            - - FormKiQ-ConsoleFraming
+              - Fn::Select:
+                  - 2
+                  - Fn::Split:
+                      - '/'
+                      - Ref: AWS::StackId
+        Comment: Prevent cross-origin framing while allowing the Console DocuSign return iframe
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: "frame-ancestors 'self'"
+            Override: true
+          FrameOptions:
+            FrameOption: SAMEORIGIN
+            Override: true
+
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Condition: IsNotGovCloud
@@ -321,6 +344,8 @@ Resources:
         DefaultCacheBehavior:
           CachePolicyId:
             Ref: ConsoleCachePolicy
+          ResponseHeadersPolicyId:
+            Ref: ConsoleResponseHeadersPolicy
           Compress: true
           TargetOriginId: s3origin
           ViewerProtocolPolicy: redirect-to-https
