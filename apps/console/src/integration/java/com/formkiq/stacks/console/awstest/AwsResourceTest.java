@@ -24,6 +24,7 @@
 package com.formkiq.stacks.console.awstest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -52,6 +53,18 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.formkiq.module.lambdaservices.logger.LogLevel;
+import com.formkiq.module.lambdaservices.logger.LogMessageBuilder;
+import com.formkiq.module.lambdaservices.logger.LogType;
+import com.formkiq.module.lambdaservices.logger.Logger;
+import com.formkiq.module.lambdaservices.logger.LoggerImpl;
+
 import software.amazon.awssdk.regions.Region;
 
 /**
@@ -71,6 +84,12 @@ public class AwsResourceTest {
   private static SsmService ssmService;
   /** Cognito User. */
   private static final String USER = "test12384@formkiq.com";
+
+  /** Network timeout. */
+  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+
+  /** Retest evidence logger. */
+  private static final Logger LOGGER = new LoggerImpl(LogLevel.INFO, LogType.TEXT);
 
   /**
    * beforeclass.
@@ -95,6 +114,86 @@ public class AwsResourceTest {
     FkqCognitoService cognito = new FkqCognitoService(awsprofile, region, appenvironment);
     cognito.addUser(USER, PASSWORD);
     cognito.addUserToGroup(USER, "default");
+  }
+
+  private String consoleUrl() {
+    return ssmService.getParameterValue("/formkiq/" + appenvironment + "/console/Url");
+  }
+
+  private HttpResponse<String> get(final HttpClient client, final URI uri)
+      throws IOException, InterruptedException {
+    return client.send(HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+  }
+
+  private URI origin(final URI uri) {
+    assertTrue(Set.of("http", "https").contains(uri.getScheme()), "HTTP(S) URL required");
+    assertTrue(uri.getHost() != null && uri.getUserInfo() == null,
+        "Host without credentials required");
+    return URI.create(uri.getScheme() + "://" + uri.getRawAuthority() + "/");
+  }
+
+  private void recordHeaders(final String owner, final HttpResponse<String> response) {
+    URI uri = response.uri();
+    // Do not record query parameters, OAuth codes, cookies, or response bodies.
+    LOGGER.info(LogMessageBuilder.title("Framing response").property("owner", owner)
+        .property("url", origin(uri).resolve(uri.getPath()))
+        .property("status", response.statusCode())
+        .property("csp", response.headers().allValues("Content-Security-Policy"))
+        .property("xfo", response.headers().allValues("X-Frame-Options")).build());
+  }
+
+  /**
+   * Record and check Cognito separately; this distribution is managed by AWS.
+   *
+   * @throws IOException network failure
+   * @throws InterruptedException interrupted request
+   */
+  @Test
+  public void testCognitoHeadersSeparately() throws IOException, InterruptedException {
+    try (HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT)
+        .followRedirects(HttpClient.Redirect.NORMAL).build()) {
+      HttpResponse<String> configResponse =
+          get(client, URI.create(consoleUrl()).resolve("/assets/config.json"));
+      assertEquals(200, configResponse.statusCode());
+      Map<String, Object> config =
+          new GsonBuilder().create().fromJson(configResponse.body(), Map.class);
+      String ssoUrl = (String) config.getOrDefault("cognitoSingleSignOnUrl", "");
+      assumeTrue(ssoUrl != null && !ssoUrl.isBlank(),
+          "Managed Cognito SSO is not configured in the deployed Console");
+      URI authorize = URI.create(ssoUrl);
+      assertNotNull(authorize.getRawQuery(),
+          "Configured SSO URL must include its OAuth parameters");
+      // Inspect Cognito's login page separately from automatic redirects to an external IdP.
+      String query = Arrays.stream(authorize.getRawQuery().split("&"))
+          .filter(parameter -> !parameter.startsWith("identity_provider=")
+              && !parameter.startsWith("idp_identifier="))
+          .collect(Collectors.joining("&"));
+      URI target = origin(authorize).resolve("/login?" + query);
+      HttpResponse<String> response = get(client, target);
+      recordHeaders("AWS-managed-Cognito-or-final-identity-provider", response);
+      assertEquals(200, response.statusCode());
+      assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("text/html"));
+      assertEquals(origin(target), origin(response.uri()),
+          "Login changed origin; inspect Cognito and the final identity provider separately");
+      List<String> ancestors = response.headers().allValues("Content-Security-Policy").stream()
+          .flatMap(policy -> Arrays.stream(policy.split(";")).map(String::trim)
+              .filter(directive -> directive.matches("(?i)frame-ancestors(?:\\s.*)?")).limit(1))
+          .toList();
+      if (!ancestors.isEmpty()) {
+        assertTrue(
+            ancestors.stream()
+                .anyMatch(directive -> directive.matches("frame-ancestors\\s+'(self|none)'\\s*")),
+            "Cognito must enforce same-origin framing or deny framing");
+      } else {
+        List<String> options = response.headers().allValues("X-Frame-Options");
+        assertEquals(1, options.size(), "Cognito needs an enforcing framing header");
+        assertTrue(
+            Set.of("SAMEORIGIN", "DENY")
+                .contains(options.getFirst().trim().toUpperCase(java.util.Locale.ROOT)),
+            "Cognito X-Frame-Options must block cross-origin framing");
+      }
+    }
   }
 
   /**
