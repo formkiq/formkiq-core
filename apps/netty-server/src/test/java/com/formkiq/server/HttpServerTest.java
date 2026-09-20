@@ -469,7 +469,7 @@ public class HttpServerTest {
     boolean found = false;
 
     for (int i = 0; i < OCR_TEST_TIME && !found; i++) {
-      response = searchApi.documentSearch(req, null, null, null, null);
+      response = searchApi.documentSearch(req, null, null, null, null, null);
       List<SearchResultDocument> documents = response.getDocuments();
       found = documents != null
           && documents.stream().anyMatch(document -> documentId.equals(document.getDocumentId()));

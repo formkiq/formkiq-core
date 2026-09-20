@@ -50,7 +50,6 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
    * Canonical constructor to enforce non-null properties and defensive copy of Date fields.
    */
   public DocumentRecord {
-    Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(documentId, "documentId must not be null");
 
     if (artifactId != null) {
@@ -66,6 +65,11 @@ public record DocumentRecord(DynamoDbKey key, String documentId, String artifact
     if (deletedDate != null) {
       deletedDate = new Date(deletedDate.getTime());
     }
+  }
+
+  public DocumentRecord(final String documentIdentifier, final String artifactIdentifier) {
+    this(null, documentIdentifier, artifactIdentifier, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   /**

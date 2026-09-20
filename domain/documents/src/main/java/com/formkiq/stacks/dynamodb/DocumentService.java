@@ -235,25 +235,25 @@ public interface DocumentService {
   boolean existsDocumentAttribute(String siteId, DocumentArtifact document, String attributeKey);
 
   /**
-   * Find {@link DocumentItem}.
+   * Find {@link DocumentRecord}.
    *
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentArtifact}
-   * @return {@link DocumentItem}
+   * @return {@link DocumentRecord}
    */
   DocumentRecord findDocument(String siteId, DocumentArtifact document);
 
   /**
-   * Find {@link DocumentItem}.
+   * Find {@link DocumentRecordSet}.
    * 
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentArtifact}
    * @param includeChildDocuments boolean
    * @param nextToken {@link String}
    * @param limit int
-   * @return {@link Pagination} {@link DocumentItem}
+   * @return {@link DocumentRecordSet}
    */
-  Pagination<DocumentItem> findDocument(String siteId, DocumentArtifact document,
+  Pagination<DocumentRecordSet> findDocument(String siteId, DocumentArtifact document,
       boolean includeChildDocuments, String nextToken, int limit);
 
   /**
@@ -330,7 +330,7 @@ public interface DocumentService {
   DocumentTag findDocumentTag(String siteId, DocumentArtifact document, String tagKey);
 
   /**
-   * Find Tags for {@link DocumentItem}.
+   * Find Tags for {@link DocumentTag}.
    * 
    * @param siteId Optional Grouping siteId
    * @param document {@link DocumentArtifact}
@@ -342,25 +342,25 @@ public interface DocumentService {
       String nextToken, int maxresults);
 
   /**
-   * Find {@link DocumentItem}.
+   * Find {@link DocumentRecord}.
    * 
    * @param siteId Optional Grouping siteId
    * @param documents {@link List} {@link DocumentArtifact}
-   * @return {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentRecord}
    */
-  List<DocumentItem> findDocuments(String siteId, List<DocumentArtifact> documents);
+  List<DocumentRecord> findDocuments(String siteId, List<DocumentArtifact> documents);
 
   /**
-   * Find {@link DocumentItem} by Inserted Date. Order in descending order.
+   * Find {@link DocumentRecord} by Inserted Date. Order in descending order.
    * 
    * @param siteId Optional Grouping siteId
    * @param date {@link ZonedDateTime}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link Pagination} {@link DocumentItem}
+   * @return {@link Pagination} {@link DocumentRecord}
    */
-  Pagination<DocumentItem> findDocumentsByDate(String siteId, ZonedDateTime date, String nextToken,
-      int maxresults);
+  Pagination<DocumentRecord> findDocumentsByDate(String siteId, ZonedDateTime date,
+      String nextToken, int maxresults);
 
   /**
    * Find Document Tags for number of DocumentIds.
@@ -442,7 +442,7 @@ public interface DocumentService {
   DocumentPublicationRecord findPublishDocument(String siteId, String documentId);
 
   /**
-   * Find Deleted {@link DocumentItem}.
+   * Find Deleted {@link DocumentRecord}.
    *
    * @param siteId Optional Grouping siteId
    * @param start {@link Date}
@@ -456,7 +456,7 @@ public interface DocumentService {
       String sort, String nextToken, int limit);
 
   /**
-   * Find Deleted {@link DocumentItem}.
+   * Find Deleted {@link DocumentRecord}.
    * 
    * @param siteId Optional Grouping siteId
    * @param nextToken {@link String}
@@ -535,7 +535,9 @@ public interface DocumentService {
    * @param document {@link DocumentItem}
    * @param tags {@link Collection} {@link DocumentTag}
    * @throws ValidationException ValidationException
+   * @deprecated method to be deleted
    */
+  @Deprecated
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags)
       throws ValidationException;
 
@@ -548,7 +550,9 @@ public interface DocumentService {
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
    * @param options {@link SaveDocumentOptions}
    * @throws ValidationException ValidationException
+   * @deprecated method to be deleted
    */
+  @Deprecated
   void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
       Collection<DocumentAttributeRecord> documentAttributes, SaveDocumentOptions options)
       throws ValidationException;

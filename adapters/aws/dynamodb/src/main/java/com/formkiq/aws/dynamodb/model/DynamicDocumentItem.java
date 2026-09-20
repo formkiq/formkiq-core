@@ -37,8 +37,11 @@ import com.formkiq.aws.dynamodb.objects.Objects;
 /**
  * 
  * {@link DynamicObject} implementation of the {@link DocumentItem}.
+ * 
+ * @deprecated To be removed
  *
  */
+@Deprecated
 public class DynamicDocumentItem extends DynamicObject implements DocumentItem {
 
   /** serialVersionUID. */

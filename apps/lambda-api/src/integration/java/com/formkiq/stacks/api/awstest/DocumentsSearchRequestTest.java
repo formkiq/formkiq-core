@@ -57,6 +57,7 @@ import static com.formkiq.testutils.aws.FkqDocumentService.addDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -91,7 +92,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
           .query(new DocumentSearch().tag(new DocumentSearchTag().key("untagged")));
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
@@ -126,7 +127,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentSearchApi api = new DocumentSearchApi(client);
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
@@ -160,7 +161,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentSearchApi api = new DocumentSearchApi(client);
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       assertEquals(0, notNull(results.getDocuments()).size());
@@ -194,7 +195,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       DocumentSearchApi api = new DocumentSearchApi(client);
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
@@ -214,7 +215,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
               .documentIds(Collections.singletonList(documentId)));
 
       // when
-      results = api.documentSearch(req, null, null, null, null);
+      results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       assertEquals(0, notNull(results.getDocuments()).size());
@@ -247,7 +248,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
               .tag(new DocumentSearchTag().key("test").eqOr(List.of("somevalue"))));
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
@@ -263,7 +264,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
           .tag(new DocumentSearchTag().key("test").eqOr(List.of("somevalue2"))));
 
       // when
-      results = api.documentSearch(req, null, null, null, null);
+      results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       assertEquals(0, notNull(results.getDocuments()).size());
@@ -296,7 +297,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
           new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue")));
 
       // when
-      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null);
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
@@ -312,10 +313,46 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
           new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).addEqOrItem("somevalue2")));
 
       // when
-      results = api.documentSearch(req, null, null, null, null);
+      results = api.documentSearch(req, null, null, null, null, null);
 
       // then
       assertEquals(0, notNull(results.getDocuments()).size());
+    }
+  }
+
+  /**
+   * Test /search count projection.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testDocumentsSearch07() throws Exception {
+    // given
+    for (ApiClient client : getApiClients(null)) {
+      String tagKey = ID.uuid();
+      String tagValue = "person";
+
+      String documentId = addDocument(client, null, null, new byte[] {}, null, null);
+      addDocumentTag(client, null, documentId, tagKey, tagValue);
+      documentId = addDocument(client, null, null, new byte[] {}, null, null);
+      addDocumentTag(client, null, documentId, tagKey, tagValue);
+      documentId = addDocument(client, null, null, new byte[] {}, null, null);
+      addDocumentTag(client, null, documentId, tagKey, "other");
+
+      DocumentSearchRequest req = new DocumentSearchRequest()
+          .query(new DocumentSearch().tag(new DocumentSearchTag().key(tagKey).eq(tagValue)));
+      DocumentSearchApi api = new DocumentSearchApi(client);
+
+      // when
+      DocumentSearchResponse results = api.documentSearch(req, null, null, null, null, "COUNT");
+
+      // then
+      assertEquals(2, results.getCount());
+      assertFalse(results.getTruncated());
+      assertTrue(notNull(results.getDocuments()).isEmpty());
+      assertNull(results.getNext());
+      assertNull(results.getPrevious());
     }
   }
 
@@ -326,7 +363,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT * 2)
-  public void testDocumentsSearch07() throws Exception {
+  public void testDocumentsSearch08() throws Exception {
     // given
     String path = "some/thing/else/intelligent Documents.pdf";
     String text = "intelligent Documents";
@@ -348,7 +385,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         while (o.isEmpty()) {
-          results = api.documentSearch(req, null, limit, null, null);
+          results = api.documentSearch(req, null, limit, null, null, null);
           o = notNull(results.getDocuments()).stream()
               .filter(d -> documentId.equals(d.getDocumentId())).findAny();
 
@@ -370,7 +407,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
         // then
         while (o.isPresent()) {
-          results = api.documentSearch(req, null, limit, null, null);
+          results = api.documentSearch(req, null, limit, null, null, null);
           o = notNull(results.getDocuments()).stream()
               .filter(d -> documentId.equals(d.getDocumentId())).findAny();
           TimeUnit.SECONDS.sleep(1);

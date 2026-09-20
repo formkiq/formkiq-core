@@ -29,7 +29,6 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
@@ -40,6 +39,7 @@ import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -389,8 +389,8 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
-      assertTrue(documents.get(0).getString("insertedDate").startsWith("" + year));
-      assertTrue(documents.get(0).getString("lastModifiedDate").startsWith("" + year));
+      assertTrue(documents.getFirst().getString("insertedDate").startsWith("" + year));
+      assertTrue(documents.getFirst().getString("lastModifiedDate").startsWith("" + year));
     }
   }
 
@@ -434,10 +434,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       List<DynamicObject> documents = resp.getList("documents");
       assertEquals(1, documents.size());
-      assertEquals(documentId, documents.get(0).get("documentId"));
-      assertNotNull(documents.get(0).get("insertedDate"));
-      assertNotNull(documents.get(0).get("lastModifiedDate"));
-      assertNotNull(documents.get(0).get("userId"));
+      assertEquals(documentId, documents.getFirst().get("documentId"));
+      assertNotNull(documents.getFirst().get("insertedDate"));
+      assertNotNull(documents.getFirst().get("lastModifiedDate"));
+      assertNotNull(documents.getFirst().get("userId"));
     }
   }
 
@@ -807,7 +807,7 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       assertNotNull(documents.get(i).getString("uploadUrl"));
       assertNotNull(documents.get(i).getString("documentId"));
 
-      String documentId = documents.get(0).getString("documentId");
+      String documentId = documents.getFirst().getString("documentId");
       String key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
     }
@@ -840,17 +840,17 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       List<DynamicObject> documents = body.getList("documents");
       assertEquals(1, documents.size());
 
-      assertNull(documents.get(0).getString("uploadUrl"));
-      assertNotNull(documents.get(0).getString("documentId"));
+      assertNull(documents.getFirst().getString("uploadUrl"));
+      assertNotNull(documents.getFirst().getString("documentId"));
 
-      String key =
-          SiteIdKeyGenerator.createS3Key(siteId, documents.get(0).getString("documentId"), null);
+      String key = SiteIdKeyGenerator.createS3Key(siteId,
+          documents.getFirst().getString("documentId"), null);
       assertTrue(getS3().getObjectMetadata(BUCKET_NAME, key, null).isObjectExists());
 
       assertNotNull(getDocumentService().findDocument(siteId,
           DocumentArtifact.of(body.getString("documentId"), null)));
       assertNotNull(getDocumentService().findDocument(siteId,
-          DocumentArtifact.of(documents.get(0).getString("documentId"), null)));
+          DocumentArtifact.of(documents.getFirst().getString("documentId"), null)));
     }
   }
 
@@ -918,15 +918,15 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
       SearchQuery q =
           new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
-      Pagination<DynamicDocumentItem> results = search.search(siteId, q, null, null, 2);
+      Pagination<DocumentSearchResult> results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
-      assertEquals("something", results.getResults().get(0).get("path"));
+      assertEquals("something", results.getResults().getFirst().documentRecord().path());
 
       q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "something", null, null, null))
           .build();
       results = search.search(siteId, q, null, null, 2);
       assertEquals(1, results.getResults().size());
-      assertEquals("bleh", results.getResults().get(0).get("path"));
+      assertEquals("bleh", results.getResults().getFirst().documentRecord().path());
 
       // given
       // when
