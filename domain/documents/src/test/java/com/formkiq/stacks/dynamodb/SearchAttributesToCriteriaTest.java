@@ -313,4 +313,26 @@ public class SearchAttributesToCriteriaTest {
     assertNull(sac.beginsWith());
     assertNull(sac.eqOr());
   }
+
+  /**
+   * Composite attribute with leading EQ and final EQ OR.
+   */
+  @Test
+  void testAttribute13() {
+    // given
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, "person", null, null);
+    SearchAttributeCriteria attribute1 =
+        new SearchAttributeCriteria("player", null, null, List.of("111", "222"), null);
+
+    // when
+    SearchAttributeCriteria sac = apply(List.of(attribute0, attribute1));
+
+    // then
+    assertEquals("category::player", sac.key());
+    assertNull(sac.eq());
+    assertNull(sac.range());
+    assertNull(sac.beginsWith());
+    assertEquals(List.of("person::111", "person::222"), sac.eqOr());
+  }
 }

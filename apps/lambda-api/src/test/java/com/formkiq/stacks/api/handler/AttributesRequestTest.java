@@ -265,7 +265,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
   private void assertInvalidSearch(final String siteId, final DocumentSearchRequest searchRequest,
       final String responseBody) {
     try {
-      this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       fail();
     } catch (ApiException e) {
       assertEquals(responseBody, e.getResponseBody());
@@ -1360,7 +1360,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       for (String val : Arrays.asList(null, "confidential")) {
         searchAttribute.eq(val);
         DocumentSearchResponse response =
-            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
         assertEquals(2, Objects.requireNonNull(response.getDocuments()).size());
         SearchResultDocument sr = response.getDocuments().getFirst();
@@ -1372,12 +1372,12 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       query.addDocumentIdsItem(documentId1);
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
       assertEquals(documentId1, response.getDocuments().getFirst().getDocumentId());
 
       searchAttribute.eq("confidential2");
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
 
       Attribute attribute = getAttribute(siteId);
@@ -1413,7 +1413,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       for (Boolean val : Arrays.asList(null, Boolean.TRUE)) {
         attribute.eq(val != null ? val.toString() : null);
         DocumentSearchResponse response =
-            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
         assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
         SearchResultDocument sr = response.getDocuments().getFirst();
@@ -1424,7 +1424,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       attribute.eq(Boolean.FALSE.toString());
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
@@ -1461,7 +1461,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
         for (BigDecimal val : Arrays.asList(null, new BigDecimal(numberValue))) {
           attribute.eq(val != null ? val.toString() : null);
           DocumentSearchResponse response =
-              this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+              this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
           assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
           SearchResultDocument sr = response.getDocuments().getFirst();
@@ -1473,7 +1473,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
         attribute.eq("101");
         DocumentSearchResponse response =
-            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
         assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
       }
     }
@@ -1511,7 +1511,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       for (String val : Arrays.asList(null, "confidential1", "confidential2")) {
         attribute.eq(val);
         DocumentSearchResponse response =
-            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
         assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
         SearchResultDocument sr = response.getDocuments().getFirst();
@@ -1524,7 +1524,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       attribute.eq("confidential3");
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
@@ -1562,7 +1562,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       for (BigDecimal val : Arrays.asList(null, new BigDecimal("100"), new BigDecimal("200"))) {
         attribute.eq(val != null ? val.toString() : null);
         DocumentSearchResponse response =
-            this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+            this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
         assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
         SearchResultDocument sr = response.getDocuments().getFirst();
@@ -1580,7 +1580,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       attribute.eq("confidential3");
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
@@ -1611,14 +1611,14 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       DocumentSearch query = new DocumentSearch().attribute(attribute);
       DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
       final int expected = 4;
       assertEquals(expected, Objects.requireNonNull(response.getDocuments()).size());
 
       // range with start / end
       attribute.range(new DocumentSearchRange().start("2024-01-01").end("2024-01-02"));
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(2, Objects.requireNonNull(response.getDocuments()).size());
       assertEquals(doc0, response.getDocuments().get(0).getDocumentId());
       assertEquals(doc1, response.getDocuments().get(1).getDocumentId());
@@ -1626,7 +1626,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       // range with documents ids
       attribute.range(new DocumentSearchRange().start("2024-01-01").end("2024-01-02"));
       query.addDocumentIdsItem(doc1).addDocumentIdsItem(doc3);
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
       assertEquals(doc1, response.getDocuments().getFirst().getDocumentId());
       query.setDocumentIds(null);
@@ -1671,14 +1671,14 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       DocumentSearch query = new DocumentSearch().attribute(attribute);
       DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
       final int expected = 3;
       assertEquals(expected, Objects.requireNonNull(response.getDocuments()).size());
 
       // beginsWith
       attribute.beginsWith("2024-01");
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(2, Objects.requireNonNull(response.getDocuments()).size());
       SearchResultDocument doc = response.getDocuments().get(0);
       assertEquals(documentId0, doc.getDocumentId());
@@ -1686,7 +1686,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // correct documentids
       query.addDocumentIdsItem(documentId1);
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
       doc = response.getDocuments().getFirst();
       assertEquals(key, Objects.requireNonNull(doc.getMatchedAttribute()).getKey());
@@ -1694,7 +1694,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // incorrect document id
       query.setDocumentIds(Collections.singletonList(documentId2));
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
     }
   }
@@ -1728,7 +1728,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       DocumentSearchRequest searchRequest =
           new DocumentSearchRequest().query(new DocumentSearch().attribute(attribute));
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
       // then
       assertEquals(2, Objects.requireNonNull(response.getDocuments()).size());
@@ -1739,7 +1739,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       searchRequest.getQuery().addDocumentIdsItem(doc2).addDocumentIdsItem(doc3);
 
       // when
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
       // then
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
@@ -1780,7 +1780,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
 
       // then
       final int expected = 2;
@@ -1856,7 +1856,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       DocumentSearchRequest searchRequest = new DocumentSearchRequest().query(query);
 
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+          this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(0, Objects.requireNonNull(response.getDocuments()).size());
 
       // given
@@ -1867,7 +1867,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
 
       // then
-      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null);
+      response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
       assertEquals(1, Objects.requireNonNull(response.getDocuments()).size());
     }
   }

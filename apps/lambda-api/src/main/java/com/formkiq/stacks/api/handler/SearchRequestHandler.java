@@ -24,9 +24,8 @@
 package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.QueryRequest;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
@@ -47,10 +46,13 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
 import com.formkiq.stacks.api.QueryRequestValidator;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
+import com.formkiq.stacks.dynamodb.DocumentSearchResultToMap;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.SearchCountResult;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -61,6 +63,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -72,14 +75,39 @@ import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 /** {@link ApiGatewayRequestHandler} for "/search". */
 public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  /** Supported document search projections. */
+  private enum DocumentSearchProjection {
+    /** Return the bounded count of matching documents. */
+    COUNT,
+    /** Return matching documents. */
+    DOCUMENTS
+  }
+
   /** Maximum number of Document Ids that can be sent. */
   private static final int MAX_DOCUMENT_IDS = 100;
+  /** Maximum number of Documents that can be counted. */
+  private static final int MAX_DOCUMENT_COUNT = 10_000;
 
   /**
    * constructor.
    *
    */
   public SearchRequestHandler() {}
+
+  private DocumentSearchProjection getProjection(final ApiGatewayRequestEvent event)
+      throws BadException {
+    String projection = event.getQueryStringParameter("projection");
+
+    if (projection == null) {
+      return DocumentSearchProjection.DOCUMENTS;
+    }
+
+    try {
+      return DocumentSearchProjection.valueOf(projection.toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      throw new BadException("Unsupported projection '" + projection + "'");
+    }
+  }
 
   @Override
   public String getRequestUrl() {
@@ -92,19 +120,19 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @param documentService {@link DocumentService}
    * @param siteId {@link String}
    * @param responseFields {@link SearchResponseFields}
-   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @param documents {@link List} {@link DocumentSearchResult}
    * @return {@link Map}
    */
   private Map<String, Collection<DocumentTag>> getResponseTags(
       final DocumentService documentService, final String siteId,
-      final SearchResponseFields responseFields, final List<DynamicDocumentItem> documents) {
+      final SearchResponseFields responseFields, final List<DocumentSearchResult> documents) {
 
     Map<String, Collection<DocumentTag>> map = Collections.emptyMap();
 
     if (responseFields != null && !notNull(responseFields.tags()).isEmpty()) {
 
       Set<String> documentIds =
-          documents.stream().map(DynamicDocumentItem::getDocumentId).collect(Collectors.toSet());
+          documents.stream().map(a -> a.documentRecord().documentId()).collect(Collectors.toSet());
 
       map = documentService.findDocumentsTags(siteId, documentIds, responseFields.tags());
     }
@@ -124,17 +152,17 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   /**
    * Merge Response Tags into Response.
    * 
-   * @param documents {@link List} {@link DynamicDocumentItem}
+   * @param documents {@link List} of document response maps
    * @param responseTags {@link Map} {@link DocumentTag}
    */
-  private void mergeResponseTags(final List<DynamicDocumentItem> documents,
+  private void mergeResponseTags(final List<Map<String, Object>> documents,
       final Map<String, Collection<DocumentTag>> responseTags) {
 
     if (!responseTags.isEmpty()) {
 
       documents.forEach(doc -> {
 
-        Collection<DocumentTag> tags = notNull(responseTags.get(doc.getDocumentId()));
+        Collection<DocumentTag> tags = notNull(responseTags.get(doc.get("documentId")));
 
         Map<String, Object> map = new HashMap<>();
 
@@ -158,40 +186,49 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     QueryRequest q = JsonToObject.fromJson(awsservice, event, QueryRequest.class);
     q = validatePost(q);
 
-    DocumentService documentService = awsservice.getExtension(DocumentService.class);
-
-    CacheService cacheService = awsservice.getExtension(CacheService.class);
-    ApiPagination pagination = getPagination(cacheService, event);
-    String nextToken = pagination != null ? pagination.getNextToken() : null;
-    int limit =
-        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
+    DocumentSearchProjection projection = getProjection(event);
+    validateProjection(event, q, projection);
 
     Collection<String> documentIds = q.query().documentIds();
-
-    if (!Objects.isEmpty(documentIds)) {
-      if (documentIds.size() > MAX_DOCUMENT_IDS) {
-        throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
-      }
-
-      if (!getQueryParameterMap(event).containsKey("limit")) {
-        limit = documentIds.size();
-      }
+    if (!Objects.isEmpty(documentIds) && documentIds.size() > MAX_DOCUMENT_IDS) {
+      throw new BadException("Maximum number of DocumentIds is " + MAX_DOCUMENT_IDS);
     }
 
     String siteId = authorization.getSiteId();
     DocumentSearchService documentSearchService =
         awsservice.getExtension(DocumentSearchService.class);
 
-    Pagination<DynamicDocumentItem> results =
+    if (projection == DocumentSearchProjection.COUNT) {
+      SearchCountResult result = documentSearchService.count(siteId, q.query(), MAX_DOCUMENT_COUNT);
+      return ApiRequestHandlerResponse.builder().ok()
+          .body(Map.of("count", result.count(), "truncated", result.truncated())).build();
+    }
+
+    DocumentService documentService = awsservice.getExtension(DocumentService.class);
+    CacheService cacheService = awsservice.getExtension(CacheService.class);
+    ApiPagination pagination = getPagination(cacheService, event);
+    String nextToken = pagination != null ? pagination.getNextToken() : null;
+    int limit =
+        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
+
+    if (!Objects.isEmpty(documentIds)) {
+      if (!getQueryParameterMap(event).containsKey("limit")) {
+        limit = documentIds.size();
+      }
+    }
+
+    Pagination<DocumentSearchResult> results =
         query(awsservice, documentSearchService, siteId, q, nextToken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+    List<DocumentSearchResult> searchResults = subList(results.getResults(), limit);
 
     Map<String, Collection<DocumentTag>> responseTags =
-        getResponseTags(documentService, siteId, q.responseFields(), documents);
+        getResponseTags(documentService, siteId, q.responseFields(), searchResults);
+    List<Map<String, Object>> documents =
+        searchResults.stream().map(new DocumentSearchResultToMap()).toList();
     mergeResponseTags(documents, responseTags);
 
     Map<String, Object> map = new HashMap<>();
@@ -211,18 +248,18 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
    * @param q {@link QueryRequest}
    * @param nextToken {@link String}
    * @param limit int
-   * @return {@link Pagination} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DocumentSearchResult}
    * @throws IOException IOException
    * @throws BadException BadException
    * @throws ValidationException ValidationException
    */
-  private Pagination<DynamicDocumentItem> query(final AwsServiceCache awsservice,
+  private Pagination<DocumentSearchResult> query(final AwsServiceCache awsservice,
       final DocumentSearchService documentSearchService, final String siteId, final QueryRequest q,
       final String nextToken, final int limit)
       throws IOException, BadException, ValidationException {
 
     String text = q.query().text();
-    Pagination<DynamicDocumentItem> results;
+    Pagination<DocumentSearchResult> results;
 
     if (!isEmpty(text)) {
 
@@ -242,13 +279,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
       List<DocumentArtifact> documents =
           documentIds.stream().map(d -> DocumentArtifact.of(d, null)).toList();
 
-      List<DocumentItem> list = docService.findDocuments(siteId, documents);
+      List<DocumentRecord> list = docService.findDocuments(siteId, documents);
+      List<DocumentSearchResult> searchResults =
+          list != null ? list.stream().map(DocumentSearchResult::new).toList()
+              : Collections.emptyList();
 
-      List<DynamicDocumentItem> docs =
-          list != null ? list.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l))
-              .collect(Collectors.toList()) : Collections.emptyList();
-
-      results = new Pagination<>(docs);
+      results = new Pagination<>(searchResults);
 
     } else {
 
@@ -269,9 +305,36 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
       SearchTagCriteria tag = q.query().tags().get(0);
       return new QueryRequest()
-          .query(new SearchQuery(null, null, null, null, tag, null, null, null, null));
+          .query(new SearchQuery(null, null, null, null, tag, null, null, null, null))
+          .responseFields(q.responseFields());
     }
 
     return q;
+  }
+
+  private void validateProjection(final ApiGatewayRequestEvent event, final QueryRequest q,
+      final DocumentSearchProjection projection) throws ValidationException {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    if (projection == DocumentSearchProjection.COUNT) {
+      Map<String, String> parameters = getQueryParameterMap(event);
+
+      for (String parameter : List.of("limit", "next", "previous")) {
+        if (parameters.containsKey(parameter)) {
+          vb.addError(null, "projection=COUNT cannot be combined with '" + parameter + "'");
+        }
+      }
+
+      if (q.responseFields() != null) {
+        vb.addError(null, "projection=COUNT cannot be combined with 'responseFields'");
+      }
+
+      if (!isEmpty(q.query().text())) {
+        vb.addError(null, "projection=COUNT is not supported for text search");
+      }
+    }
+
+    vb.check();
   }
 }

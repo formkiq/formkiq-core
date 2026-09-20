@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -55,8 +56,6 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
   /** Attribute constant. */
   public static final String ATTR = "attr#";
-  /** {@link SimpleDateFormat}. */
-  private final SimpleDateFormat df = DateUtil.getIsoDateFormatter();
   /** Boolean value. */
   private Boolean booleanValue;
   /** Date valueAttribute. */
@@ -169,6 +168,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
     }
 
     if (this.insertedDate != null) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
       map.put("inserteddate", fromS(df.format(this.insertedDate)));
     }
 
@@ -183,13 +183,17 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
     if (!attrs.isEmpty()) {
 
-      record = new DocumentAttributeRecord().setUserId(ss(attrs, "userId"))
-          .setDocument(DocumentArtifact.of(ss(attrs, "documentId"), ss(attrs, "artifactId")))
-          .setKey(ss(attrs, "key"))
-          .setValueType(DocumentAttributeValueType.valueOf(ss(attrs, "valueType")));
+      var userIdAttr = DynamoDbTypes.toString(attrs.get("userId"));
+      var documentIdAttr = DynamoDbTypes.toString(attrs.get("documentId"));
+      var artifactIdAttr = DynamoDbTypes.toString(attrs.get("artifactId"));
+      var document = DocumentArtifact.of(documentIdAttr, artifactIdAttr);
+      var valueTypeAttr = DynamoDbTypes.toString(attrs.get("valueType"));
+      record = new DocumentAttributeRecord().setUserId(userIdAttr).setDocument(document)
+          .setKey(DynamoDbTypes.toString(attrs.get("key"))).setValueType(
+              valueTypeAttr != null ? DocumentAttributeValueType.valueOf(valueTypeAttr) : null);
 
       if (attrs.containsKey("stringValue")) {
-        record.setStringValue(ss(attrs, "stringValue"));
+        record.setStringValue(DynamoDbTypes.toString(attrs.get("stringValue")));
       }
 
       if (attrs.containsKey("booleanValue")) {
@@ -197,7 +201,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       }
 
       if (attrs.containsKey("dateValue")) {
-        record.dateValue = ss(attrs, "dateValue");
+        record.dateValue = DynamoDbTypes.toString(attrs.get("dateValue"));
       }
 
       if (attrs.containsKey("numberValue")) {
@@ -206,7 +210,9 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
       if (attrs.containsKey("inserteddate")) {
         try {
-          record = record.setInsertedDate(df.parse(ss(attrs, "inserteddate")));
+          SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+          String insereddate = DynamoDbTypes.toString(attrs.get("inserteddate"));
+          record = record.setInsertedDate(df.parse(insereddate));
         } catch (ParseException e) {
           // ignore
         }
@@ -276,11 +282,11 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   public String skGsi1() {
 
     return switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY -> truncateSk(this.stringValue);
+      case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY, CLASSIFICATION, PUBLICATION ->
+        truncateSk(this.stringValue);
       case DATE -> truncateSk(this.dateValue);
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
-      case CLASSIFICATION, PUBLICATION -> truncateSk(this.stringValue);
       case KEY_ONLY, WATERMARK -> "#";
     };
 
@@ -358,8 +364,10 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
    * @return {@link DocumentAttributeRecord}
    */
   public DocumentAttributeRecord setDocument(final DocumentArtifact documentArtifact) {
-    this.documentId = documentArtifact.documentId();
-    this.artifactId = documentArtifact.artifactId();
+    if (documentArtifact != null) {
+      this.documentId = documentArtifact.documentId();
+      this.artifactId = documentArtifact.artifactId();
+    }
     return this;
   }
 

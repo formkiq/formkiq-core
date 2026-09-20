@@ -66,7 +66,7 @@ public class GetFolderFilesByNameQuery implements DynamoDbShardQuery {
    * @param beginsWith normalized name prefix to match against the folder index sort key
    */
   public GetFolderFilesByNameQuery(final boolean isFolderSearch, final String beginsWith) {
-    this.begins = beginsWith;
+    this.begins = beginsWith.toLowerCase();
     this.folderSearch = isFolderSearch;
   }
 

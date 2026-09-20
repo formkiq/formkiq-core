@@ -30,7 +30,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-/** Holder class for Document(s). */
+/**
+ * Holder class for Document(s).
+ * 
+ * @deprecated To be removed
+ */
+@Deprecated
 public interface DocumentItem {
 
   /**

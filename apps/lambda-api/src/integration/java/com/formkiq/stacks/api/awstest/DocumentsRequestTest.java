@@ -814,7 +814,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         DocumentSearchApi searchApi = new DocumentSearchApi(client);
         DocumentSearchRequest searchReq = new DocumentSearchRequest()
             .query(new DocumentSearch().meta(new DocumentSearchMeta().path(documentId)));
-        DocumentSearchResponse s = searchApi.documentSearch(searchReq, null, null, null, null);
+        DocumentSearchResponse s =
+            searchApi.documentSearch(searchReq, null, null, null, null, null);
 
         assertEquals(1, notNull(s.getDocuments()).size());
         assertEquals(documentId, s.getDocuments().getFirst().getDocumentId());
