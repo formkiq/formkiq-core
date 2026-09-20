@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler.sites;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.HashMap;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
@@ -69,7 +70,7 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     SiteConfiguration config = configService.get(getSiteId());
 
-    return ApiRequestHandlerResponse.builder().ok().body(toResponse(config.webui())).build();
+    return ApiRequestHandlerResponse.builder().ok().body(toResponse(config)).build();
   }
 
   @Override
@@ -87,20 +88,30 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
 
     SiteConfiguration config = JsonToObject.fromJson(awsservice, event, SiteConfiguration.class);
 
-    config = SiteConfiguration.builder().webui(config.webui()).build(getSiteId());
+    config = SiteConfiguration.builder().webui(config.webui()).branding(config.branding())
+        .build(getSiteId());
 
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     if (configService.save(getSiteId(), config)) {
-      updateConsoleConfig(awsservice, config.webui());
+      // Branding-only updates do not change the console's SSO configuration.
+      if (config.webui() != null || config.branding() == null) {
+        updateConsoleConfig(awsservice, config.webui());
+      }
       return ApiRequestHandlerResponse.builder().ok().body("message", "Config saved").build();
     }
 
     throw new BadException("missing required body parameters");
   }
 
-  private Map<String, Object> toResponse(final SiteConfigurationWebUi webui) {
+  private Map<String, Object> toResponse(final SiteConfiguration config) {
+    SiteConfigurationWebUi webui = config.webui();
     Boolean ssoLoginRedirectEnabled = webui != null ? webui.ssoAutomaticSignIn() : Boolean.FALSE;
-    return Map.of("webui", Map.of("ssoAutomaticSignIn", ssoLoginRedirectEnabled));
+    Map<String, Object> response = new HashMap<>();
+    response.put("webui", Map.of("ssoAutomaticSignIn", ssoLoginRedirectEnabled));
+    if (config.branding() != null) {
+      response.put("branding", config.branding());
+    }
+    return response;
   }
 
   private void updateConsoleConfig(final AwsServiceCache awsservice,

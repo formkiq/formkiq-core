@@ -121,17 +121,16 @@ public class ConfigurationRequestHandler
           mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK), docusign.connectUrl());
     }
 
-    obj =
-        new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
-            getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
-            getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
-            getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
-            normalizeDocument(obj.document()),
-            Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
-            Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
-            Objects.getNotNullOrDefault(docusign,
-                new SiteConfigurationDocusign(null, null, null, null, null, null)),
-            null, null, null);
+    obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
+        getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
+        getNotNullOrDefault(obj.maxDocuments(), ""), getNotNullOrDefault(obj.maxWebhooks(), ""),
+        getNotNullOrDefault(obj.notificationEmail(), ""), obj.notification(),
+        normalizeDocument(obj.document()),
+        Objects.getNotNullOrDefault(obj.ocr(), new SiteConfigurationOcr(-1, -1)),
+        Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
+        Objects.getNotNullOrDefault(docusign,
+            new SiteConfigurationDocusign(null, null, null, null, null, null)),
+        null, null, null, obj.branding());
 
     Gson gson = GsonUtil.getInstance();
     String json = gson.toJson(obj);
@@ -144,7 +143,7 @@ public class ConfigurationRequestHandler
     return Arrays.asList(config.chatGptApiKey(), config.maxContentLengthBytes(),
         config.maxDocuments(), config.maxWebhooks(), config.notificationEmail(),
         config.notification(), config.document(), config.ocr(), config.google(), config.docusign(),
-        config.documentTimeToLive(), config.webhookTimeToLive());
+        config.documentTimeToLive(), config.webhookTimeToLive(), config.branding());
   }
 
   @Override

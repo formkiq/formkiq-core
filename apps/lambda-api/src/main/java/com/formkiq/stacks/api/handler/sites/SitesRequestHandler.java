@@ -74,6 +74,9 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
       config.put("maxContentLengthBytes", siteConfig.maxContentLengthBytes());
       config.put("maxDocuments", siteConfig.maxDocuments());
       config.put("maxWebhooks", siteConfig.maxWebhooks());
+      if (siteConfig.branding() != null) {
+        config.put("branding", siteConfig.branding());
+      }
 
       SiteConfigurationOcr ocr = siteConfig.ocr();
       if (ocr != null) {

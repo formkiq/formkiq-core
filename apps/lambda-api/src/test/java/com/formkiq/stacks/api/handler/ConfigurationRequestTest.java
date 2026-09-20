@@ -33,6 +33,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddNotificationTestRequest;
 import com.formkiq.client.model.AddNotificationTestResponse;
+import com.formkiq.client.model.BrandingConfig;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigContentTypes;
 import com.formkiq.client.model.DocumentConfigDispositionAction;
@@ -49,6 +50,7 @@ import com.formkiq.client.model.NotificationEmailSmtpConnectionSecurity;
 import com.formkiq.client.model.OcrConfig;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.client.model.UpdateConfigurationResponse;
+import com.formkiq.client.model.UpdateSystemConfigurationRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -64,6 +66,8 @@ import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -183,6 +187,33 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     NotificationConfig notification = new NotificationConfig().email("notifications@example.com")
         .provider(NotificationEmailProvider.SMTP).smtp(smtp);
     return new UpdateConfigurationRequest().notification(notification);
+  }
+
+  /**
+   * Branding updates preserve other settings and remain scoped to their configuration.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testBrandingConfigurationIsolation() throws ApiException {
+    setBearerToken("Admins");
+    this.systemApi.updateConfiguration(DEFAULT_SITE_ID, new UpdateConfigurationRequest()
+        .maxDocuments("100").branding(new BrandingConfig().theme("default-theme")));
+    this.systemApi.updateConfiguration("site1",
+        new UpdateConfigurationRequest().branding(new BrandingConfig().theme("site-theme")));
+    this.systemApi.updateSystemConfiguration(new UpdateSystemConfigurationRequest()
+        .branding(new BrandingConfig().theme("global-theme")));
+
+    this.systemApi.updateConfiguration(DEFAULT_SITE_ID,
+        new UpdateConfigurationRequest().branding(new BrandingConfig().theme("updated-theme")));
+
+    GetConfigurationResponse response = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    assertEquals("100", response.getMaxDocuments());
+    assertEquals("updated-theme", requireNonNull(response.getBranding()).getTheme());
+    assertEquals("site-theme",
+        requireNonNull(this.systemApi.getConfiguration("site1").getBranding()).getTheme());
+    assertEquals("global-theme",
+        requireNonNull(this.systemApi.getSystemConfiguration().getBranding()).getTheme());
   }
 
   /**
@@ -984,10 +1015,58 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Set and fetch global branding using the FormKiQ client.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testSetAndFetchGlobalBranding() throws ApiException {
+    // given
+    setBearerToken("Admins");
+
+    for (String theme : List.of("light", "dark")) {
+      // when
+      var update = this.systemApi.updateSystemConfiguration(
+          new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme(theme)));
+      GetSystemConfigurationResponse response = this.systemApi.getSystemConfiguration();
+
+      // then
+      assertEquals("Config saved", update.getMessage());
+      assertNotNull(response.getBranding());
+      assertEquals(theme, response.getBranding().getTheme());
+    }
+  }
+
+  /**
+   * Set and fetch site branding using the FormKiQ client.
+   *
+   * @param siteId site identifier
+   * @throws ApiException an API error has occurred
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_SITE_ID, "site1"})
+  public void testSetAndFetchSiteBranding(final String siteId) throws ApiException {
+    // given
+    setBearerToken("Admins");
+
+    for (String theme : List.of("light", "dark")) {
+      // when
+      UpdateConfigurationResponse update = this.systemApi.updateConfiguration(siteId,
+          new UpdateConfigurationRequest().branding(new BrandingConfig().theme(theme)));
+      GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+
+      // then
+      assertEquals("Config saved", update.getMessage());
+      assertNotNull(response.getBranding());
+      assertEquals(theme, response.getBranding().getTheme());
+    }
+  }
+
+  /**
    * Patch System Configuration empty as Admin.
    */
   @Test
-  public void testUpdateSystemConfigurationAsAdmin() {
+  public void testUpdateSystemConfigurationAsAdmin() throws ApiException {
     // given
     var ssm = getAwsServices().getExtension(SsmService.class);
     ssm.putParameter("/formkiq/test/s3/Console", BUCKET_NAME);
@@ -1022,6 +1101,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertTrue(getSsoAutomaticSignIn(resp));
     assertTrue(getSsoLoginRedirectEnabled(s3));
 
+    // A branding-only update must preserve SSO in both the API and console configuration.
+    this.systemApi.updateSystemConfiguration(
+        new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme("dark")));
+    resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
+    assertTrue(getSsoAutomaticSignIn(resp));
+    assertTrue(getSsoLoginRedirectEnabled(s3));
+    assertEquals("dark", requireNonNull(resp.response().getBranding()).getTheme());
+
     // when
     update = new UpdateSystemConfigurationRequestBuilder().ssoAutomaticSignIn(false).submit(client,
         null);
@@ -1031,6 +1118,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
     assertFalse(getSsoAutomaticSignIn(resp));
     assertFalse(getSsoLoginRedirectEnabled(s3));
+    assertEquals("dark", requireNonNull(resp.response().getBranding()).getTheme());
   }
 
   /**

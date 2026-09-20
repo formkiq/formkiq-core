@@ -51,6 +51,24 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  */
 final class SiteConfigurationAttributeMapper {
 
+  private static void addDocumentAttributes(final DynamoDbAttributeMapBuilder map,
+      final SiteConfigurationDocument document) {
+    if (document != null) {
+      SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
+      if (contentTypes != null) {
+        map.withStrings("documentContentTypesAllowlist", notNull(contentTypes.allowlist()))
+            .withStrings("documentContentTypesDenylist", notNull(contentTypes.denylist()));
+      }
+
+      SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
+          document.withDefaults().retentionAndDisposition();
+      map.withString("documentDispositionAction",
+          retentionAndDisposition.dispositionAction().name())
+          .withNumber("documentSoftDeleteRetentionInDays",
+              retentionAndDisposition.softDeleteRetentionInDays());
+    }
+  }
+
   /**
    * Convert a site configuration to DynamoDB attributes.
    *
@@ -67,21 +85,12 @@ final class SiteConfigurationAttributeMapper {
             .withString(DOCUMENT_TIME_TO_LIVE, config.documentTimeToLive())
             .withString(WEBHOOK_TIME_TO_LIVE, config.webhookTimeToLive());
 
-    SiteConfigurationDocument document = config.document();
-    if (document != null) {
-      SiteConfigurationDocumentContentTypes contentTypes = document.contentTypes();
-      if (contentTypes != null) {
-        map.withStrings("documentContentTypesAllowlist", notNull(contentTypes.allowlist()))
-            .withStrings("documentContentTypesDenylist", notNull(contentTypes.denylist()));
-      }
-
-      SiteConfigurationDocumentRetentionAndDisposition retentionAndDisposition =
-          document.withDefaults().retentionAndDisposition();
-      map.withString("documentDispositionAction",
-          retentionAndDisposition.dispositionAction().name())
-          .withNumber("documentSoftDeleteRetentionInDays",
-              retentionAndDisposition.softDeleteRetentionInDays());
+    SiteConfigurationBranding branding = config.branding();
+    if (branding != null) {
+      map.withString("brandingTheme", branding.theme());
     }
+
+    addDocumentAttributes(map, config.document());
 
     SiteConfigurationGoogle google = config.google();
     if (google != null) {

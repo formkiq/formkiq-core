@@ -144,9 +144,20 @@ components:
           description: "Enable SSO automatic sign in"
 
     #@overlay/match missing_ok=True
+    BrandingConfig:
+      type: object
+      description: "Branding configuration that can be set globally or for an individual site."
+      properties:
+        theme:
+          type: string
+          description: "Branding theme identifier."
+
+    #@overlay/match missing_ok=True
     GetSystemConfigurationResponse:
       type: object
       properties:
+        branding:
+          $ref: "#/components/schemas/BrandingConfig"
         webui:
           $ref: "#/components/schemas/SystemConfigurationWebUi"
 
@@ -154,6 +165,8 @@ components:
     UpdateSystemConfigurationRequest:
       type: object
       properties:
+        branding:
+          $ref: "#/components/schemas/BrandingConfig"
         webui:
           $ref: "#/components/schemas/SystemConfigurationWebUi"
 

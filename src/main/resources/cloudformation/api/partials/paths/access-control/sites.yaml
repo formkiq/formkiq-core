@@ -2871,6 +2871,8 @@ components:
     SiteConfig:
       type: "object"
       properties:
+        branding:
+          $ref: "#/components/schemas/BrandingConfig"
         maxContentLengthBytes:
           type: "string"
           description: "Set Maximum Document Content Length in Bytes"
@@ -3026,6 +3028,8 @@ components:
     UpdateConfigurationRequest:
       type: "object"
       properties:
+        branding:
+          $ref: "#/components/schemas/BrandingConfig"
         chatGptApiKey:
           type: "string"
           description: "ChatGPT Api Key"
@@ -3194,6 +3198,8 @@ components:
     GetConfigurationResponse:
       type: object
       properties:
+        branding:
+          $ref: "#/components/schemas/BrandingConfig"
         chatGptApiKey:
           type: "string"
           description: "ChatGPT API Key"

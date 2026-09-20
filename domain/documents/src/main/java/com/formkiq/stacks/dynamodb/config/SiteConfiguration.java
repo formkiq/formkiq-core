@@ -61,7 +61,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     String maxDocuments, String maxWebhooks, String notificationEmail,
     SiteConfigurationNotification notification, SiteConfigurationDocument document,
     SiteConfigurationOcr ocr, SiteConfigurationGoogle google, SiteConfigurationDocusign docusign,
-    String documentTimeToLive, String webhookTimeToLive, SiteConfigurationWebUi webui) {
+    String documentTimeToLive, String webhookTimeToLive, SiteConfigurationWebUi webui,
+    SiteConfigurationBranding branding) {
 
   /**
    * Construct a {@link SiteConfiguration} from a DynamoDB attribute map.
@@ -91,9 +92,13 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     SiteConfigurationNotification notification =
         SiteConfigurationNotification.fromAttributeMap(attributes);
 
+    String theme = DynamoDbTypes.toString(attributes.get("brandingTheme"));
+    SiteConfigurationBranding branding =
+        theme != null ? new SiteConfigurationBranding(theme) : null;
+
     return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
         maxWebhooks, notificationEmail, notification, document, ocr, google, docusign,
-        documentTimeToLive, webhookTimeToLive, webui);
+        documentTimeToLive, webhookTimeToLive, webui, branding);
   }
 
   private static SiteConfigurationDocument getSiteConfigurationDocument(
@@ -246,13 +251,26 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     private SiteConfigurationWebUi webui;
     /** {@link SiteConfigurationDocument}. */
     private SiteConfigurationDocument document;
+    /** Branding configuration. */
+    private SiteConfigurationBranding branding;
+
+    /**
+     * Set the branding configuration.
+     *
+     * @param value branding configuration
+     * @return this builder
+     */
+    public Builder branding(final SiteConfigurationBranding value) {
+      this.branding = value;
+      return this;
+    }
 
     @Override
     public SiteConfiguration build(final DynamoDbKey key) {
       String email = notification != null ? notification.email() : notificationEmail;
       return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
           maxWebhooks, email, notification, document, ocr, google, docusign, documentTimeToLive,
-          webhookTimeToLive, webui);
+          webhookTimeToLive, webui, branding);
     }
 
     /**
@@ -313,6 +331,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       documentTimeToLive(config.documentTimeToLive);
       document(config.document);
       webui(config.webui);
+      branding(config.branding);
       return this;
     }
 
