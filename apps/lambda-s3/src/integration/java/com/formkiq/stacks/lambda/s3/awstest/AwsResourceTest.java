@@ -31,13 +31,13 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
@@ -332,14 +332,14 @@ public class AwsResourceTest extends AbstractAwsTest {
     SearchQuery query = new SearchQueryBuilder()
         .tag(new SearchTagCriteria(mycategory, null, myvalue, null, null)).build();
 
-    Pagination<DynamicDocumentItem> results;
+    Pagination<DocumentSearchResult> results;
 
     do {
       results = getSearchService().search(null, query, null, null, MAX_RESULTS);
       TimeUnit.SECONDS.sleep(1);
     } while (results.getResults().isEmpty());
 
-    String documentId = results.getResults().getFirst().getDocumentId();
+    String documentId = results.getResults().getFirst().documentRecord().documentId();
 
     while (!getS3Service().getObjectMetadata(getDocumentsbucketname(), documentId, null)
         .isObjectExists()) {
@@ -466,7 +466,7 @@ public class AwsResourceTest extends AbstractAwsTest {
         new SearchQueryBuilder().meta(new SearchMetaCriteria(null, null, null, null, path)).build();
 
     // then
-    Pagination<DynamicDocumentItem> result = new Pagination<>(Collections.emptyList());
+    Pagination<DocumentSearchResult> result = new Pagination<>(Collections.emptyList());
 
     while (result.getResults().size() != 1) {
       result = getSearchService().search(siteId, q, null, null, DocumentService.MAX_RESULTS);
@@ -474,7 +474,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     }
 
     assertEquals(1, result.getResults().size());
-    String documentId = result.getResults().getFirst().getDocumentId();
+    String documentId = result.getResults().getFirst().documentRecord().documentId();
     assertSnsMessage(documentSnsQueue, "create", documentId);
 
     DocumentArtifact document = DocumentArtifact.of(documentId, null);

@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +43,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -152,7 +154,7 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
   }
 
   private ActionBuilder createAction(final DocumentArtifact document) {
-    return new ActionBuilder().document(document).type(ActionType.OCR).userId("joe").indexUlid();
+    return createAction(document, ActionType.OCR);
   }
 
   private ActionBuilder createAction(final DocumentArtifact document, final ActionType actionType) {
@@ -1174,7 +1176,6 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
       String documentId = saveDocument(siteId);
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest().actions(null);
 
@@ -1262,14 +1263,15 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
           .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(destinationFolder)));
       DocumentSearchResponse response =
-          this.searchApi.documentSearch(dsq, siteId, null, null, null);
+          this.searchApi.documentSearch(dsq, siteId, null, null, null, null);
       List<SearchResultDocument> documents = notNull(response.getDocuments());
 
       assertEquals(2, documents.size());
       assertEquals(2L,
           documents.stream().map(SearchResultDocument::getDocumentId).distinct().count());
-      assertEquals(List.of(expectedPath, expectedRenamedPath).stream().sorted().toList(),
-          documents.stream().map(SearchResultDocument::getPath).sorted().toList());
+
+      List<String> paths = documents.stream().map(SearchResultDocument::getPath).toList();
+      assertEquals(Stream.of(expectedPath, expectedRenamedPath).sorted().toList(), paths);
     }
   }
 

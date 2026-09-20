@@ -34,6 +34,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit Tests for {@link AttributeValueToGlobalMetaFolder}.
@@ -52,10 +53,10 @@ public class AttributeValueToGlobalMetaFolderTest {
     Map<String, AttributeValue> map = Collections.emptyMap();
 
     // when
-    Map<String, Object> results = avg.apply(map);
+    DocumentSearchResult result = avg.apply(map);
 
     // then
-    assertEquals(0, results.size());
+    assertNull(result);
   }
 
   /**
@@ -67,21 +68,49 @@ public class AttributeValueToGlobalMetaFolderTest {
     Map<String, AttributeValue> map = Map.of(DbKeys.PK, AttributeValue.fromS("alkdjsad"));
 
     // when
-    Map<String, Object> results = avg.apply(map);
+    DocumentSearchResult results = avg.apply(map);
 
     // then
-    final int expected = 6;
-    assertEquals(expected, results.size());
-    assertEquals("path,insertedDate,lastModifiedDate,indexKey,documentId,userId",
-        String.join(",", results.keySet().stream().toList()));
-    assertNull(results.get("path"));
-    assertNull(results.get("insertedDate"));
-    assertNull(results.get("lastModifiedDate"));
+    assertNull(results);
+  }
 
-    String indexKey = results.get("indexKey").toString();
-    assertEquals("YWxrZGpzYWQjbnVsbA", indexKey);
-    assertEquals("alkdjsad#null", new StringToBase64Decoder().apply(indexKey));
-    assertNull(results.get("documentId"));
-    assertNull(results.get("userId"));
+  /**
+   * Folder record.
+   */
+  @Test
+  void testApply03() {
+    // given
+    Map<String, AttributeValue> map = Map.of(DbKeys.PK, AttributeValue.fromS("alkdjsad"), DbKeys.SK,
+        AttributeValue.fromS("ff#folder"), "documentId", AttributeValue.fromS("document1"), "path",
+        AttributeValue.fromS("folder"));
+
+    // when
+    DocumentSearchResult results = avg.apply(map);
+
+    // then
+    assertEquals("folder", results.documentRecord().path());
+
+    String indexKey = results.folderIndex().indexKey();
+    assertTrue(results.folderIndex().folder());
+    assertEquals("alkdjsad#folder", new StringToBase64Decoder().apply(indexKey));
+    assertEquals("document1", results.documentRecord().documentId());
+    assertNull(results.documentRecord().userId());
+  }
+
+  /**
+   * Global tag record without a document id.
+   */
+  @Test
+  void testApply04() {
+    // given
+    Map<String, AttributeValue> map =
+        Map.of(DbKeys.PK, AttributeValue.fromS(DbKeys.GLOBAL_FOLDER_TAGS), "tagKey",
+            AttributeValue.fromS("category"));
+
+    // when
+    DocumentSearchResult result = avg.apply(map);
+
+    // then
+    assertEquals("category", result.value());
   }
 }

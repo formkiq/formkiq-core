@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -44,6 +43,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
+import com.formkiq.stacks.dynamodb.DocumentSearchResultToMap;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationError;
@@ -96,13 +97,14 @@ public class IndicesSearchRequestHandler
         .meta(new SearchMetaCriteria(null, null, null, body.get("indexType").toString(), null))
         .build();
 
-    Pagination<DynamicDocumentItem> results =
+    Pagination<DocumentSearchResult> results =
         documentSearchService.search(siteId, q, null, nextToken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+    List<Map<String, Object>> documents =
+        subList(results.getResults(), limit).stream().map(new DocumentSearchResultToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("values", documents);

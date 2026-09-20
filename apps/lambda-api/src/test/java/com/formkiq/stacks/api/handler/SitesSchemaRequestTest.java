@@ -2185,7 +2185,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
 
       // invalid search
@@ -2194,7 +2194,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       DocumentSearchResponse response1 =
-          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
       assertEquals(0, notNull(response1.getDocuments()).size());
 
       // wrong attribute order
@@ -2203,7 +2203,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222")));
 
       DocumentSearchResponse response2 =
-          this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq2, siteId, null, null, null, null);
       assertEquals(1, notNull(response2.getDocuments()).size());
     }
   }
@@ -2249,7 +2249,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").beginsWith("p")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
 
       // invalid search
@@ -2258,7 +2258,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").beginsWith("a")));
 
       DocumentSearchResponse response1 =
-          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
       assertEquals(0, notNull(response1.getDocuments()).size());
 
       // begingsWith as first element
@@ -2267,7 +2267,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("p")));
 
       try {
-        this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+        this.searchApi.documentSearch(sreq2, siteId, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2312,7 +2312,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .range(new DocumentSearchRange().start("2024-01-04").end("2024-01-10"))));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
 
       // then
       final int expected = 3;
@@ -2342,7 +2342,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .range(new DocumentSearchRange().start("2024-02-04").end("2024-03-05"))));
 
       try {
-        this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+        this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2386,7 +2386,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.searchApi.documentSearch(sreq2, siteId, null, null, null);
+        this.searchApi.documentSearch(sreq2, siteId, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2430,7 +2430,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new DocumentSearchRange().start("1").end("275").type(SearchRangeDataType.NUMBER))));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
 
       // then
       final int expected = 3;
@@ -2496,11 +2496,11 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       try {
-        this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+        this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
-        assertEquals("{\"errors\":[{\"key\":\"range\",\"error\":\"'eqOr' "
+        assertEquals("{\"errors\":[{\"key\":\"eqOr\",\"error\":\"'eqOr' "
             + "is not supported with composite keys\"}]}", e.getResponseBody());
       }
     }
@@ -2547,7 +2547,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
     }
   }
@@ -2600,7 +2600,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       try {
-        this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+        this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -2646,7 +2646,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .addAttributesItem(new DocumentSearchAttribute().key(key1).eq("person")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
       assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
     }
@@ -2700,7 +2700,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .eq("403cd39862564e36b490738c3c312b38")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
       assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
     }
@@ -2747,7 +2747,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .eq("403cd39862564e36b490738c3c312b38")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
       assertEquals(documentId0, response0.getDocuments().getFirst().getDocumentId());
     }
@@ -2794,7 +2794,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       DocumentSearchResponse response0 =
-          this.searchApi.documentSearch(sreq0, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
       assertEquals(1, notNull(response0.getDocuments()).size());
 
       // invalid search
@@ -2803,7 +2803,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
       DocumentSearchResponse response1 =
-          this.searchApi.documentSearch(sreq1, siteId, null, null, null);
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
       assertEquals(0, notNull(response1.getDocuments()).size());
     }
   }

@@ -287,7 +287,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
       throws ApiException {
-    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
   }
 
 
@@ -295,7 +295,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       final String attributeKey, final String limit) throws ApiException {
     DocumentSearchRequest sreq = new DocumentSearchRequest().query(
         new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
-    return notNull(this.searchApi.documentSearch(sreq, siteId, limit, null, null).getDocuments());
+    return notNull(
+        this.searchApi.documentSearch(sreq, siteId, limit, null, null, null).getDocuments());
   }
 
   /**

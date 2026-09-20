@@ -882,18 +882,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Pagination<DocumentItem> findDocument(final String siteId, final DocumentArtifact document,
-      final boolean includeChildDocuments, final String nextToken, final int limit) {
+  public Pagination<DocumentRecordSet> findDocument(final String siteId,
+      final DocumentArtifact document, final boolean includeChildDocuments, final String nextToken,
+      final int limit) {
 
-    DocumentItem item = null;
+    DocumentRecordSet drs = null;
     Map<String, AttributeValue> lastEvaluatedKey = null;
 
     DocumentRecord record = findDocument(siteId, document);
 
     if (record != null) {
 
-      Map<String, AttributeValue> result = record.getAttributes();
-      item = new AttributeValueToDocumentItem().apply(result);
+      Collection<DocumentRecordSet> childs = null;
 
       if (includeChildDocuments) {
 
@@ -903,14 +903,17 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         var childDocumentIds =
             childDocuments.items().stream().map(new AttributeValueToDocumentArtifact()).toList();
 
-        List<DocumentItem> childDocs = findDocuments(siteId, childDocumentIds);
-        item.setDocuments(childDocs);
+        List<DocumentRecord> childDocs = findDocuments(siteId, childDocumentIds);
+        childs = childDocs.stream().map(a -> new DocumentRecordSet(a, null, null, null)).toList();
+        // item.setDocuments(childDocs);
 
         lastEvaluatedKey = childDocuments.lastEvaluatedKey();
       }
+
+      drs = new DocumentRecordSet(record, null, null, childs);
     }
 
-    return new Pagination<>(item != null ? List.of(item) : null, lastEvaluatedKey);
+    return new Pagination<>(drs != null ? List.of(drs) : null, lastEvaluatedKey);
   }
 
   @Override
@@ -997,10 +1000,10 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public List<DocumentItem> findDocuments(final String siteId,
+  public List<DocumentRecord> findDocuments(final String siteId,
       final List<DocumentArtifact> documents) {
 
-    List<DocumentItem> results = Collections.emptyList();
+    List<DocumentRecord> results = Collections.emptyList();
 
     BatchGetConfig config = new BatchGetConfig();
 
@@ -1014,9 +1017,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<Map<String, AttributeValue>> result =
           !values.isEmpty() ? values.iterator().next() : Collections.emptyList();
 
-      AttributeValueToDocumentItem toDocumentItem = new AttributeValueToDocumentItem();
-      List<DocumentItem> items =
-          result.stream().map(a -> toDocumentItem.apply(Collections.singletonList(a))).toList();
+      List<DocumentRecord> items = result.stream().map(DocumentRecord::fromAttributeMap).toList();
 
       items = sortByIds(documents, items);
 
@@ -1029,19 +1030,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Pagination<DocumentItem> findDocumentsByDate(final String siteId, final ZonedDateTime date,
-      final String token, final int maxresults) {
+  public Pagination<DocumentRecord> findDocumentsByDate(final String siteId,
+      final ZonedDateTime date, final String token, final int maxresults) {
 
     List<Map<String, String>> searchMap = generateSearchCriteria(siteId, date, token);
 
-    Pagination<DocumentItem> results =
+    Pagination<DocumentRecord> results =
         findDocumentsBySearchMap(siteId, searchMap, token, maxresults);
 
     // if number of results == maxresult, check to see if next page has at least 1 record.
     if (results.getResults().size() == maxresults) {
       String nextToken = results.getNextToken();
       searchMap = generateSearchCriteria(siteId, date, nextToken);
-      Pagination<DocumentItem> next = findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
+      Pagination<DocumentRecord> next = findDocumentsBySearchMap(siteId, searchMap, nextToken, 1);
 
       if (next.getResults().isEmpty()) {
         results = new Pagination<>(results.getResults());
@@ -1060,19 +1061,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param maxresults int
    * @return {@link Pagination}
    */
-  private Pagination<DocumentItem> findDocumentsBySearchMap(final String siteId,
+  private Pagination<DocumentRecord> findDocumentsBySearchMap(final String siteId,
       final List<Map<String, String>> searchMap, final String nextToken, final int maxresults) {
 
     int max = maxresults;
     String itemsToken = null;
     String qtoken = nextToken;
-    List<DocumentItem> items = new ArrayList<>();
+    List<DocumentRecord> items = new ArrayList<>();
 
     for (Map<String, String> map : searchMap) {
       String pk = map.get("pk");
       String skMin = map.get("skMin");
       String skMax = map.get("skMax");
-      Pagination<DocumentItem> results = queryDocuments(siteId, pk, skMin, skMax, qtoken, max);
+      Pagination<DocumentRecord> results = queryDocuments(siteId, pk, skMin, skMax, qtoken, max);
 
       items.addAll(results.getResults());
       itemsToken = results.getNextToken();
@@ -1458,7 +1459,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
    * @param maxresults int
    * @return {@link Pagination}
    */
-  private Pagination<DocumentItem> queryDocuments(final String siteId, final String pk,
+  private Pagination<DocumentRecord> queryDocuments(final String siteId, final String pk,
       final String skMin, final String skMax, final String nextToken, final int maxresults) {
 
     String expr = GSI1_PK + " = :pk";
@@ -1481,20 +1482,14 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         .exclusiveStartKey(startkey).build();
 
     QueryResponse result = this.dbClient.query(q);
+    var documentRecords = result.items().stream().map(DocumentRecord::fromAttributeMap).toList();
 
-    List<DocumentItem> list = result.items().stream().map(s -> {
-      String documentId = s.get("documentId").s();
-      return new DocumentItemDynamoDb(documentId, null, null);
-    }).collect(Collectors.toList());
-
-    if (!list.isEmpty()) {
-      List<DocumentArtifact> documents = list.stream()
-          .map(d -> DocumentArtifact.of(d.getDocumentId(), d.getArtifactId())).toList();
-
-      list = findDocuments(siteId, documents);
+    if (!documentRecords.isEmpty()) {
+      var documents = documentRecords.stream().map(DocumentRecord::document).toList();
+      documentRecords = findDocuments(siteId, documents);
     }
 
-    return new Pagination<>(list, result.lastEvaluatedKey());
+    return new Pagination<>(documentRecords, result.lastEvaluatedKey());
   }
 
   @Override
@@ -2333,16 +2328,16 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   /**
-   * Sort {@link DocumentItem} to match DocumentIds {@link List}.
+   * Sort {@link DocumentRecord} to match DocumentIds {@link List}.
    *
    * @param documentIds {@link List} {@link String}
-   * @param documents {@link List} {@link DocumentItem}
-   * @return {@link List} {@link DocumentItem}
+   * @param documents {@link List} {@link DocumentRecord}
+   * @return {@link List} {@link DocumentRecord}
    */
-  private List<DocumentItem> sortByIds(final List<DocumentArtifact> documentIds,
-      final List<DocumentItem> documents) {
-    Map<DocumentArtifact, DocumentItem> map = documents.stream().collect(Collectors.toMap(
-        a -> DocumentArtifact.of(a.getDocumentId(), a.getArtifactId()), Function.identity()));
+  private List<DocumentRecord> sortByIds(final List<DocumentArtifact> documentIds,
+      final List<DocumentRecord> documents) {
+    Map<DocumentArtifact, DocumentRecord> map = documents.stream().collect(Collectors
+        .toMap(a -> DocumentArtifact.of(a.documentId(), a.artifactId()), Function.identity()));
     return documentIds.stream().map(map::get).filter(java.util.Objects::nonNull)
         .collect(Collectors.toList());
   }
