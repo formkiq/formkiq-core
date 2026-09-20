@@ -27,6 +27,8 @@ import com.formkiq.client.api.AdvancedDocumentSearchApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentFulltextResponse;
+import com.formkiq.client.model.DocumentFulltextAttribute;
+import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.DocumentFulltextRequest;
 import com.formkiq.client.model.DocumentFulltextSearch;
 import com.formkiq.client.model.FulltextSearchItem;
@@ -57,7 +59,30 @@ public class FulltextSearchDocumentRequestBuilder
    * constructor.
    */
   public FulltextSearchDocumentRequestBuilder() {
-    this.request = new DocumentFulltextRequest();
+    this.request = new DocumentFulltextRequest().query(new DocumentFulltextSearch());
+  }
+
+  /**
+   * Set attribute search criteria, preserving any text query.
+   *
+   * @param attributes attribute criteria
+   * @return this builder
+   */
+  public FulltextSearchDocumentRequestBuilder attributes(
+      final List<DocumentFulltextAttribute> attributes) {
+    this.request.getQuery().attributes(attributes);
+    return this;
+  }
+
+  /**
+   * Set the fields included in search results.
+   *
+   * @param fields response fields
+   * @return this builder
+   */
+  public FulltextSearchDocumentRequestBuilder responseFields(final SearchResponseFields fields) {
+    this.request.responseFields(fields);
+    return this;
   }
 
   /**
@@ -100,7 +125,7 @@ public class FulltextSearchDocumentRequestBuilder
           limit);
       List<FulltextSearchItem> documents = notNull(obj.getDocuments());
 
-      while (expected != null && expected > 0 && expected != documents.size()) {
+      while (expected != null && expected != documents.size()) {
         TimeUnit.SECONDS.sleep(1);
         obj = new AdvancedDocumentSearchApi(apiClient).searchFulltext(this.request, siteId, null,
             limit);
@@ -122,13 +147,13 @@ public class FulltextSearchDocumentRequestBuilder
   }
 
   /**
-   * Set the maximum number of results to return.
+   * Set the text query, preserving any attribute criteria.
    *
    * @param text {@link String}
    * @return this builder
    */
   public FulltextSearchDocumentRequestBuilder text(final String text) {
-    this.request.query(new DocumentFulltextSearch().text(text));
+    this.request.getQuery().text(text);
     return this;
   }
 }
