@@ -23,13 +23,13 @@ jobs:
         shell: bash
         run: |
           set +e
-          matches="$(git grep -n -- '-SNAPSHOT' -- build.gradle '**/build.gradle')"
+          matches="$(git grep -n -- '-SNAPSHOT' -- '*.gradle' '*.gradle.kts' '*.versions.toml')"
           status=$?
           set -e
 
           if [ "${status}" -eq 0 ]; then
             echo "${matches}"
-            echo "::error::-SNAPSHOT dependencies are not allowed in build.gradle files."
+            echo "::error::-SNAPSHOT dependencies are not allowed in Gradle files or version catalogs."
             exit 1
           fi
 
