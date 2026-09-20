@@ -46,6 +46,8 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   private String next;
   /** Limit. */
   private String limit;
+  /** Search response projection. */
+  private String projection;
 
   /**
    * constructor.
@@ -109,6 +111,17 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   }
 
   /**
+   * Set the search response projection.
+   *
+   * @param searchProjection search response projection
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder projection(final String searchProjection) {
+    this.projection = searchProjection;
+    return this;
+  }
+
+  /**
    * Set the document search query.
    *
    * @param query {@link DocumentSearch}
@@ -129,6 +142,6 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   public ApiHttpResponse<DocumentSearchResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new DocumentSearchApi(apiClient).documentSearch(this.request,
-        siteId, limit, next, previous));
+        siteId, limit, next, previous, projection));
   }
 }

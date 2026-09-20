@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -44,6 +43,8 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.IndexKeyToString;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
+import com.formkiq.stacks.dynamodb.DocumentSearchResultToMap;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
@@ -76,13 +77,14 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     String indexKey = getIndexKey(event, awsservice, siteId);
     String nextToken = pagination != null ? pagination.getNextToken() : null;
 
-    Pagination<DynamicDocumentItem> results =
+    Pagination<DocumentSearchResult> results =
         documentSearchService.findInFolder(siteId, indexKey, nextToken, limit);
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    List<DynamicDocumentItem> documents = subList(results.getResults(), limit);
+    List<Map<String, Object>> documents =
+        subList(results.getResults(), limit).stream().map(new DocumentSearchResultToMap()).toList();
 
     Map<String, Object> map = new HashMap<>();
     map.put("documents", documents);
@@ -145,7 +147,7 @@ public class FoldersRequestHandler implements ApiGatewayRequestHandler, ApiGatew
     }).toList();
 
     Map<String, Object> map =
-        Map.of("message", "created folder", "indexKey", list.get(list.size() - 1).get("indexKey"));
+        Map.of("message", "created folder", "indexKey", list.getLast().get("indexKey"));
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
 }

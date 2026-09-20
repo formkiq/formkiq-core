@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -38,15 +37,27 @@ import com.formkiq.validation.ValidationException;
 public interface DocumentSearchService {
 
   /**
+   * Count Documents matching a search.
+   *
+   * @param siteId Optional Grouping siteId
+   * @param search {@link SearchQuery}
+   * @param maxResults maximum number of documents to count
+   * @return {@link SearchCountResult}
+   * @throws ValidationException ValidationException
+   */
+  SearchCountResult count(String siteId, SearchQuery search, int maxResults)
+      throws ValidationException;
+
+  /**
    * Search for Documents in Folder.
    * 
    * @param siteId {@link String}
    * @param indexKey {@link String}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link Pagination} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DocumentSearchResult}
    */
-  Pagination<DynamicDocumentItem> findInFolder(String siteId, String indexKey, String nextToken,
+  Pagination<DocumentSearchResult> findInFolder(String siteId, String indexKey, String nextToken,
       int maxresults);
 
   /**
@@ -57,10 +68,10 @@ public interface DocumentSearchService {
    * @param searchResponseFields {@link SearchResponseFields}
    * @param nextToken {@link String}
    * @param maxresults int
-   * @return {@link Pagination} {@link DynamicDocumentItem}
+   * @return {@link Pagination} {@link DocumentSearchResult}
    * @throws ValidationException ValidationException
    */
-  Pagination<DynamicDocumentItem> search(String siteId, SearchQuery search,
+  Pagination<DocumentSearchResult> search(String siteId, SearchQuery search,
       SearchResponseFields searchResponseFields, String nextToken, int maxresults)
       throws ValidationException;
 

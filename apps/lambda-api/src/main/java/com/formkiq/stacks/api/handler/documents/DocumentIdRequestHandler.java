@@ -43,7 +43,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3ObjectMetadata;
 import com.formkiq.aws.s3.S3Service;
@@ -63,8 +63,8 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.document.DocumentEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.DocumentRecordSetToMap;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
@@ -176,17 +176,17 @@ public class DocumentIdRequestHandler
     ApiPagination pagination = getPagination(cacheService, event);
     String nextToken = pagination != null ? pagination.getNextToken() : null;
 
-    Pagination<DocumentItem> presult =
+    Pagination<DocumentRecordSet> presult =
         documentService.findDocument(siteId, document, true, nextToken, limit);
 
-    DocumentItem item =
+    DocumentRecordSet item =
         !notNull(presult.getResults()).isEmpty() ? presult.getResults().getFirst() : null;
     throwIfNull(item, new DocumentNotFoundException(documentId));
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, presult.getNextToken(), limit);
 
-    DynamicDocumentItem ditem = new DocumentItemToDynamicDocumentItem().apply(item);
+    Map<String, Object> ditem = new DocumentRecordSetToMap().apply(item);
     ditem.put("siteId", siteId != null ? siteId : DEFAULT_SITE_ID);
     ditem.put("previous", current.getPrevious());
     ditem.put("next", current.hasNext() ? current.getNext() : null);

@@ -436,7 +436,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
 
         // when EQ
         List<SearchResultDocument> response =
-            notNull(searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+            notNull(searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
 
         // then
         assertEquals(1, response.size());

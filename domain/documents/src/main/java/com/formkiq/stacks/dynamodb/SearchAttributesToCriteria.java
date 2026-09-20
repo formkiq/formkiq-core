@@ -92,6 +92,10 @@ public class SearchAttributesToCriteria
     }
 
     if (eqOrs != null) {
+      if (!isEmpty(eq) && compositeKeys.size() > 1) {
+        String prefix = eq + DbKeys.COMPOSITE_KEY_DELIM;
+        eqOrs = eqOrs.stream().map(value -> prefix + value).toList();
+      }
       eq = null;
     }
 

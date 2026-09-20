@@ -37,8 +37,11 @@ import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 /**
  * 
  * {@link Function} to convert {@link DocumentItem} to {@link DynamicDocumentItem}.
+ * 
+ * @deprecated to be removed in future release
  *
  */
+@Deprecated
 public class DocumentItemToDynamicDocumentItem
     implements Function<DocumentItem, DynamicDocumentItem> {
 

@@ -76,6 +76,14 @@ public class QueryRequestValidator {
     return q.query().tag() == null && notNull(q.query().tags()).isEmpty();
   }
 
+  private void validateFilenameDocumentIds(final QueryRequest q,
+      final Collection<ValidationError> errors) {
+    if (q.query().filename() != null && !Objects.isEmpty(q.query().documentIds())) {
+      errors
+          .add(new ValidationErrorImpl().error("'filename' cannot be combined with 'documentIds'"));
+    }
+  }
+
   private void validateMultiTags(final List<SearchTagCriteria> tags,
       final Collection<ValidationError> errors) {
     if (tags.size() > 1) {
@@ -126,6 +134,8 @@ public class QueryRequestValidator {
       boolean isAttributesEmpty = isAttributesEmpty(q);
       boolean isMetaEmpty = isQueryMetaDataEmpty(q);
       boolean hasText = !isEmpty(q.query().text());
+
+      validateFilenameDocumentIds(q, errors);
 
       if (!isMetaEmpty && (!isTagsEmpty || !isAttributesEmpty)) {
         errors.add(new ValidationErrorImpl()

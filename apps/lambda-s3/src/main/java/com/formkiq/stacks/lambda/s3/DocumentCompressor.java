@@ -33,7 +33,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3MultipartUploader;
 import com.formkiq.aws.s3.S3Service;
@@ -81,10 +81,10 @@ public class DocumentCompressor {
 
   private void archiveS3Objects(final String siteId, final String docsBucket,
       final String archiveBucket, final String archiveKey,
-      final Map<DocumentItem, Long> documentSizeMap) throws IOException {
+      final Map<DocumentRecord, Long> documentSizeMap) throws IOException {
 
-    Long totalFilesSize = documentSizeMap.values().stream().reduce(Long.valueOf(0), Long::sum);
-    boolean isMultiPartUpload = totalFilesSize.longValue() > this.maxInMemoryChunkSize;
+    Long totalFilesSize = documentSizeMap.values().stream().reduce(0L, Long::sum);
+    boolean isMultiPartUpload = totalFilesSize > this.maxInMemoryChunkSize;
 
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
@@ -94,12 +94,11 @@ public class DocumentCompressor {
 
     ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
 
-    for (Map.Entry<DocumentItem, Long> docSizePair : documentSizeMap.entrySet()) {
-      DocumentItem document = docSizePair.getKey();
+    for (Map.Entry<DocumentRecord, Long> docSizePair : documentSizeMap.entrySet()) {
+      DocumentRecord document = docSizePair.getKey();
       Long objectSize = docSizePair.getValue();
-      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.getDocumentId(),
-          document.getArtifactId());
-      ZipEntry zipEntry = new ZipEntry(document.getPath());
+      String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document.document());
+      ZipEntry zipEntry = new ZipEntry(document.path());
 
       zipOutputStream.putNextEntry(zipEntry);
 
@@ -139,22 +138,24 @@ public class DocumentCompressor {
       final String archiveBucket, final String archiveKey, final List<DocumentArtifact> documents)
       throws IOException {
 
-    Map<DocumentItem, Long> documentContentSize =
+    Map<DocumentRecord, Long> documentContentSize =
         getDocumentContentSizeMap(siteId, docsBucket, documents);
 
     archiveS3Objects(siteId, docsBucket, archiveBucket, archiveKey, documentContentSize);
   }
 
-  private Map<DocumentItem, Long> getDocumentContentSizeMap(final String siteId,
+  private Map<DocumentRecord, Long> getDocumentContentSizeMap(final String siteId,
       final String bucket, final List<DocumentArtifact> documents) {
 
-    List<DocumentItem> items = this.documentService.findDocuments(siteId, documents);
+    List<DocumentRecord> items = this.documentService.findDocuments(siteId, documents);
 
     return items.stream()
-        .collect(Collectors.toMap(item -> item,
-            item -> this.s3.getObjectMetadata(bucket,
-                SiteIdKeyGenerator.createS3Key(siteId, item.getDocumentId(), item.getArtifactId()),
-                null).getContentLength()));
+        .collect(
+            Collectors.toMap(item -> item,
+                item -> this.s3
+                    .getObjectMetadata(bucket,
+                        SiteIdKeyGenerator.createS3Key(siteId, item.document()), null)
+                    .getContentLength()));
   }
 
   private void transferObjectToZip(final ZipOutputStream outputStream, final String bucket,
@@ -169,13 +170,13 @@ public class DocumentCompressor {
       final String uploadId, final Long objectSize) throws IOException {
 
     final long maxChunkSize = this.maxInMemoryChunkSize;
-    final long lastByte = objectSize.longValue() - 1;
+    final long lastByte = objectSize - 1;
     long start = 0L;
     long end = Math.min(start + maxChunkSize, lastByte);
     for (; start <= lastByte; start += maxChunkSize + 1, end =
         Math.min(start + maxChunkSize, lastByte)) {
 
-      String rangeHeader = String.format("bytes=%d-%d", Long.valueOf(start), Long.valueOf(end));
+      String rangeHeader = String.format("bytes=%d-%d", start, end);
 
       try (InputStream chunk = this.s3.getContentPartAsInputStream(bucket, key, rangeHeader)) {
 
