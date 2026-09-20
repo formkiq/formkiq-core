@@ -169,7 +169,8 @@ public class DocumentAttributeRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (documentService.deleteDocumentAttribute(siteId, document, attributeKey,
-        AttributeValidationType.FULL, validationAccess).isEmpty()) {
+        AttributeValidationType.FULL, authorization.getAttributeAccessApproval(validationAccess))
+        .isEmpty()) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document '" + documentId + "'");
     }
@@ -272,7 +273,7 @@ public class DocumentAttributeRequestHandler
 
     AttributeValidationType type = getValidationType(documentAttributes);
     documentService.saveDocumentAttributes(siteId, document, documentAttributes, type,
-        validationAccess);
+        authorization.getAttributeAccessApproval(validationAccess));
 
     return ApiRequestHandlerResponse.builder().ok().body("message",
         "Updated attribute '" + attributeKey + "' on document '" + documentId + "'").build();

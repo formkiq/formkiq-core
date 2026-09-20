@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeType;
@@ -199,13 +200,13 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
    * @param siteId {@link String}
    * @param attributesMap {@link Map} {@link AttributeRecord}
    * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param access {@link AttributeValidationAccess}
+   * @param accessApproval {@link AttributeAccessApproval}
    * @param vb {@link ValidationBuilder}
    */
   private void validateAttributeExistsAndDataType(final String siteId,
       final Map<String, AttributeRecord> attributesMap,
       final Collection<DocumentAttributeRecord> documentAttributes,
-      final AttributeValidationAccess access, final ValidationBuilder vb) {
+      final AttributeAccessApproval accessApproval, final ValidationBuilder vb) {
 
     Collection<String> savedReservedKeys = new HashSet<>();
 
@@ -237,8 +238,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           validateDataType(siteId, da, dataType, vb);
           validateRegex(attribute, da, vb);
 
-          AttributeValidationAccess va =
-              da.getValidationAccess() != null ? da.getValidationAccess() : access;
+          AttributeValidationAccess va = da.getValidationAccess() != null ? da.getValidationAccess()
+              : accessApproval.accessFor(da.getKey());
           validateAttributeTypeOpaOrGoverance(attribute, va, vb);
         }
       }
@@ -366,7 +367,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Collection<ValidationError> validateDeleteAttributes(
       final List<SchemaAttributes> schemaAttributes, final Collection<String> attributeKeys,
       final Map<String, AttributeRecord> attributeRecordMap,
-      final AttributeValidationAccess validationAccess) {
+      final AttributeAccessApproval accessApproval) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
@@ -376,7 +377,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
 
       if (vb.isEmpty()) {
         AttributeRecord attributeRecord = attributeRecordMap.get(attributeKey);
-        validateAttributeTypeOpaOrGoverance(attributeRecord, validationAccess, vb);
+        validateAttributeTypeOpaOrGoverance(attributeRecord, accessApproval.accessFor(attributeKey),
+            vb);
 
         if (vb.isEmpty()) {
           for (SchemaAttributes schemaAttribute : schemaAttributes) {
@@ -392,14 +394,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   @Override
   public Collection<ValidationError> validateDeleteAttribute(final Schema schema,
       final String siteId, final String attributeKey,
-      final AttributeValidationAccess validationAccess) {
+      final AttributeAccessApproval accessApproval) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
     vb.isRequired("key", attributeKey);
 
     if (vb.isEmpty()) {
-      validateOpaGoveranceAttribute(siteId, attributeKey, validationAccess, vb);
+      validateOpaGoveranceAttribute(siteId, attributeKey, accessApproval.accessFor(attributeKey),
+          vb);
 
       if (vb.isEmpty() && schema != null) {
         validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
@@ -445,14 +448,15 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   @Override
   public Collection<ValidationError> validateDeleteAttributeValue(final Schema schema,
       final String siteId, final String attributeKey, final String attributeValue,
-      final AttributeValidationAccess validationAccess) {
+      final AttributeAccessApproval accessApproval) {
 
     ValidationBuilder vb = new ValidationBuilder();
     vb.isRequired("key", attributeKey);
     vb.isRequired("key", attributeValue);
 
     if (vb.isEmpty()) {
-      validateOpaGoveranceAttribute(siteId, attributeKey, validationAccess, vb);
+      validateOpaGoveranceAttribute(siteId, attributeKey, accessApproval.accessFor(attributeKey),
+          vb);
 
       if (vb.isEmpty() && schema != null) {
         validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
@@ -466,14 +470,16 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Collection<ValidationError> validateFullAttribute(
       final Collection<SchemaAttributes> schemaAttributes, final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes,
-      final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
+      final Map<String, AttributeRecord> attributesMap,
+      final AttributeAccessApproval accessApproval) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
     validateRequired(documentAttributes, vb);
 
     if (vb.isEmpty()) {
-      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, vb);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, accessApproval,
+          vb);
 
       notNull(schemaAttributes).forEach(schemaAttribute -> validateSitesSchema(schemaAttribute,
           siteId, attributesMap, documentAttributes, vb));
@@ -510,14 +516,16 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   public Collection<ValidationError> validatePartialAttribute(
       final Collection<SchemaAttributes> schemaAttributes, final String siteId,
       final Collection<DocumentAttributeRecord> documentAttributes,
-      final Map<String, AttributeRecord> attributesMap, final AttributeValidationAccess access) {
+      final Map<String, AttributeRecord> attributesMap,
+      final AttributeAccessApproval accessApproval) {
 
     ValidationBuilder vb = new ValidationBuilder();
 
     validateRequired(documentAttributes, vb);
 
     if (vb.isEmpty()) {
-      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, access, vb);
+      validateAttributeExistsAndDataType(siteId, attributesMap, documentAttributes, accessApproval,
+          vb);
 
       if (schemaAttributes != null) {
         notNull(schemaAttributes).forEach(

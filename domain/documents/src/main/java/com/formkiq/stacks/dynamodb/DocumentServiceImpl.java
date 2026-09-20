@@ -42,6 +42,7 @@ import com.formkiq.aws.dynamodb.ReadRequestBuilder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
 import com.formkiq.aws.dynamodb.WriteRequestOperations;
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeDerivedType;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -310,7 +311,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
   private Collection<DocumentAttributeRecord> generateDocumentAttributesToSave(final String siteId,
       final DocumentArtifact document, final DocumentAttributeRecordListBuilder listBuilder,
-      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeAccessApproval accessApproval)
       throws ValidationException {
 
     Collection<DocumentAttributeRecord> newDocumentAttributeRecords =
@@ -344,6 +345,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     newDocumentAttributeRecords = concat(newDocumentAttributeRecords, defaultValues);
     allAttributes = concat(allAttributes, defaultValues);
 
+    AttributeAccessApproval resolvedAccessApproval =
+        resolveAccessApproval(accessApproval, allAttributes);
+
     Collection<DocumentAttributeRecord> newCompositeKeys =
         new SchemaCompositeKeyGenerator().apply(schemaAttributes, document, allAttributes);
 
@@ -356,11 +360,19 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     // validation
     validateDocumentAttributes(schemaAttributes, siteId, document, documentAttributes,
         attributesToBeDeleted, previousDocumentAttributes,
-        new AttributeValidation(validation, validationAccess));
+        new AttributeValidation(validation, resolvedAccessApproval));
 
     listBuilder.setCompositeKeysToBeDeleted(compositeKeysToBeDeleted);
 
     return documentAttributes;
+  }
+
+  private AttributeAccessApproval resolveAccessApproval(
+      final AttributeAccessApproval accessApproval,
+      final Collection<DocumentAttributeRecord> effectiveAttributes) {
+    return accessApproval.resolve(effectiveAttributes).orElseThrow(() -> new ValidationException(
+        List.of(new ResponseStatusValidationError(HttpStatus.UNAUTHORIZED,
+            accessApproval.deniedMessage()))));
   }
 
   /**
@@ -520,34 +532,38 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public List<DocumentAttributeRecord> deleteDocumentAttribute(final String siteId,
       final DocumentArtifact document, final String attributeKey,
-      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeAccessApproval accessApproval)
       throws ValidationException {
+    Collection<DocumentAttributeRecord> allDocumentAttributes = findAllAttributes(siteId, document);
+    List<DocumentAttributeRecord> documentAttributes = allDocumentAttributes.stream().filter(a -> {
+
+      boolean match = a.getKey().equals(attributeKey);
+
+      if (PREDICIATE_COMPOSITE_KEY.test(a)) {
+        for (String s : a.getKey().split(DbKeys.COMPOSITE_KEY_DELIM)) {
+          if (attributeKey.equals(s)) {
+            match = true;
+            break;
+          }
+        }
+      }
+
+      return match;
+    }).toList();
+
+    Collection<DocumentAttributeRecord> effectiveAttributes =
+        allDocumentAttributes.stream().filter(Predicate.not(documentAttributes::contains)).toList();
+    AttributeAccessApproval resolvedAccessApproval =
+        resolveAccessApproval(accessApproval, effectiveAttributes);
 
     if (!AttributeValidationType.NONE.equals(validation)) {
       Schema schema = getSchame(siteId);
       Collection<ValidationError> errors = this.attributeValidator.validateDeleteAttribute(schema,
-          siteId, attributeKey, validationAccess);
+          siteId, attributeKey, resolvedAccessApproval);
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
       }
     }
-
-    List<DocumentAttributeRecord> documentAttributes =
-        findAllAttributes(siteId, document).stream().filter(a -> {
-
-          boolean match = a.getKey().equals(attributeKey);
-
-          if (PREDICIATE_COMPOSITE_KEY.test(a)) {
-            for (String s : a.getKey().split(DbKeys.COMPOSITE_KEY_DELIM)) {
-              if (attributeKey.equals(s)) {
-                match = true;
-                break;
-              }
-            }
-          }
-
-          return match;
-        }).toList();
 
     deleteStorageObjectLock(siteId, document, documentAttributes);
 
@@ -593,16 +609,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public boolean deleteDocumentAttributeValue(final String siteId, final DocumentArtifact document,
       final String attributeKey, final String attributeValue,
-      final AttributeValidationAccess validationAccess) throws ValidationException {
-
-    var schema = getSchame(siteId);
-    var errors = this.attributeValidator.validateDeleteAttributeValue(schema, siteId, attributeKey,
-        attributeValue, validationAccess);
-
-    if (!errors.isEmpty()) {
-      throw new ValidationException(errors);
-    }
-
+      final AttributeAccessApproval accessApproval) throws ValidationException {
     var documentAttributeRecord =
         new DocumentAttributeRecord().setDocument(document).setKey(attributeKey)
             .setStringValue(attributeValue).setValueType(DocumentAttributeValueType.STRING);
@@ -612,6 +619,22 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     if (AttributeDataType.DATE.equals(attributeDataType)) {
       var dateValue = getAttributeValueAsDate(attributeKey, attributeValue);
       documentAttributeRecord.setDateValue(dateValue).setValueType(DocumentAttributeValueType.DATE);
+    }
+
+    Collection<DocumentAttributeRecord> allDocumentAttributes = findAllAttributes(siteId, document);
+    var deletedAttributePredicate =
+        new DynamodbRecordKeyPredicate(List.of(documentAttributeRecord));
+    Collection<DocumentAttributeRecord> effectiveAttributes =
+        allDocumentAttributes.stream().filter(Predicate.not(deletedAttributePredicate)).toList();
+    AttributeAccessApproval resolvedAccessApproval =
+        resolveAccessApproval(accessApproval, effectiveAttributes);
+
+    var schema = getSchame(siteId);
+    var errors = this.attributeValidator.validateDeleteAttributeValue(schema, siteId, attributeKey,
+        attributeValue, resolvedAccessApproval);
+
+    if (!errors.isEmpty()) {
+      throw new ValidationException(errors);
     }
 
     return this.dbService
@@ -1742,8 +1765,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     writeOperations.appendsBatch(this.documentTableName, tagValues);
 
     DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, documentArtifact, document,
-        set.documentAttributeRecords(), AttributeValidationType.FULL,
-        options.getValidationAccess());
+        set.documentAttributeRecords(), AttributeValidationType.FULL, options.getAccessApproval());
 
     writeOperations.appendsBatch(this.documentTableName,
         tx.saves().stream().map(a -> a.getAttributes(siteId)).toList());
@@ -1831,7 +1853,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       saveDocumentInternal(siteId, childDocumentLink, childLinkOptions, documentId);
 
       SaveDocumentOptions childOptions = new SaveDocumentOptions()
-          .validationAccess(options.getValidationAccess()).timeToLive(options.timeToLive());
+          .accessApproval(options.getAccessApproval()).timeToLive(options.timeToLive());
 
       saveDocument(siteId, childDoc, childOptions);
     }
@@ -1948,7 +1970,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   @Override
   public void saveDocumentAttributes(final String siteId, final DocumentArtifact document,
       final Collection<DocumentAttributeRecord> attributes,
-      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeAccessApproval accessApproval)
       throws ValidationException {
 
     DocumentRecord doc = new FindDocumentById().find(dbService, siteId, document);
@@ -1956,8 +1978,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     validateDocumentPath(siteId, doc.path(), null);
 
-    DynamodbRecordTx tx = getSaveDocumentAttributesTx(siteId, document, doc, attributes, validation,
-        validationAccess);
+    DynamodbRecordTx tx =
+        getSaveDocumentAttributesTx(siteId, document, doc, attributes, validation, accessApproval);
 
     saveDocumentAttributes(siteId, document, tx);
   }
@@ -2098,22 +2120,24 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private DynamodbRecordTx getSaveDocumentAttributesTx(final String siteId,
       final DocumentArtifact document, final DocumentRecord item,
       final Collection<DocumentAttributeRecord> newAttributes,
-      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      final AttributeValidationType validation, final AttributeAccessApproval accessApproval)
       throws ValidationException {
 
     DynamodbRecordTx tx;
 
     if (newAttributes != null) {
 
-      DocumentAttributeRecordListBuilder listBuilder =
-          createAttributeListBuilder(siteId, document, item, newAttributes, validationAccess);
+      AttributeAccessApproval effectiveAccessApproval = accessApproval != null ? accessApproval
+          : new AttributeAccessApproval(AttributeValidationAccess.NONE);
+      DocumentAttributeRecordListBuilder listBuilder = createAttributeListBuilder(siteId, document,
+          item, newAttributes, effectiveAccessApproval.defaultAccess());
 
       Collection<DocumentAttributeRecord> compositeKeysToBeDeleted =
           getCompositeKeysToBeDeletedByAttributes(listBuilder);
 
       // generate Document Attributes To Save
       Collection<DocumentAttributeRecord> toSave = generateDocumentAttributesToSave(siteId,
-          document, listBuilder, validation, validationAccess);
+          document, listBuilder, validation, effectiveAccessApproval);
 
       compositeKeysToBeDeleted =
           Objects.concat(compositeKeysToBeDeleted, listBuilder.getCompositeKeysToBeDeleted());
@@ -2393,8 +2417,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     Collection<ValidationError> errors = new ArrayList<>();
 
-    AttributeValidationAccess validationAccess = validation.getValidationAccess();
-    validateDocumentAttributes(siteId, document, documentAttributes, validationAccess, errors);
+    AttributeAccessApproval accessApproval = validation.getAccessApproval();
+    AttributeValidationAccess defaultAccess = accessApproval.defaultAccess();
+    validateDocumentAttributes(siteId, document, documentAttributes, defaultAccess, errors);
 
     if (errors.isEmpty()) {
 
@@ -2410,15 +2435,15 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       List<String> toBeDeletedKeys = toBeDeleted.stream().map(DocumentAttributeRecord::getKey)
           .filter(k -> !toBeAddedKeys.contains(k)).toList();
       errors = this.attributeValidator.validateDeleteAttributes(schemaAttributes, toBeDeletedKeys,
-          attributeRecordMap, validationAccess);
+          attributeRecordMap, accessApproval);
 
       if (errors.isEmpty()) {
         switch (validation.getValidationType()) {
           case FULL -> errors = this.attributeValidator.validateFullAttribute(schemaAttributes,
-              siteId, documentAttributes, attributeRecordMap, validationAccess);
+              siteId, documentAttributes, attributeRecordMap, accessApproval);
           case PARTIAL ->
             errors = this.attributeValidator.validatePartialAttribute(schemaAttributes, siteId,
-                documentAttributes, attributeRecordMap, validationAccess);
+                documentAttributes, attributeRecordMap, accessApproval);
           case NONE -> {
           }
           default -> throw new IllegalArgumentException("Unexpected value: " + validation);
@@ -2426,7 +2451,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       }
     }
 
-    postValidateDocumentAttributeErrors(siteId, document, validationAccess, errors);
+    postValidateDocumentAttributeErrors(siteId, document, defaultAccess, errors);
 
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
