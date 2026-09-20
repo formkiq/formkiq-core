@@ -51,6 +51,7 @@ import com.formkiq.client.model.IndexSearchRequest;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
@@ -63,7 +64,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.client.invoker.ApiException;
@@ -127,10 +127,11 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
-      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DocumentSearchResult> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().getFirst();
-      String indexKey = folder.get("indexKey").toString();
+
+      DocumentSearchResult folder = results.getResults().getFirst();
+      String indexKey = folder.folderIndex().indexKey();
 
       // when
       DeleteIndicesResponse response = this.indexApi.deleteIndex(indexKey, "folder", siteId);
@@ -161,10 +162,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
-      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DocumentSearchResult> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().getFirst();
-      String indexKey = folder.get("indexKey").toString();
+      DocumentSearchResult folder = results.getResults().getFirst();
+      String indexKey = folder.folderIndex().indexKey();
 
       // when
       try {
@@ -224,7 +225,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
       documentService.saveDocument(siteId, item, List.of(tag));
 
-      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DocumentSearchResult> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
 
       String indexKey = "category";
@@ -284,10 +285,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
-      Pagination<DynamicDocumentItem> results = dss.search(siteId, q, null, null, MAX_RESULTS);
+      Pagination<DocumentSearchResult> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem folder = results.getResults().getFirst();
-      String indexKey = folder.get("indexKey").toString();
+      DocumentSearchResult folder = results.getResults().getFirst();
+      String indexKey = folder.folderIndex().indexKey();
 
       // when
       try {
@@ -330,8 +331,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
           new DocumentSearchRequest().query(new DocumentSearch().meta(meta));
 
       // when
-      List<SearchResultDocument> docs =
-          notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      List<SearchResultDocument> docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -345,7 +346,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       meta.folder("test");
 
       // when
-      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -360,7 +362,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("Folder deleted", response.getMessage());
-      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
       assertEquals(0, docs.size());
     }
   }
@@ -411,8 +414,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
           new DocumentSearchRequest().query(new DocumentSearch().meta(meta));
 
       // when
-      List<SearchResultDocument> docs =
-          notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      List<SearchResultDocument> docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -425,7 +428,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       meta.folder("test");
 
       // when
-      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -438,7 +442,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals("File deleted", response.getMessage());
-      docs = notNull(this.searchApi.documentSearch(sreq, siteId, null, null, null).getDocuments());
+      docs = notNull(
+          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
       assertEquals(0, docs.size());
     }
   }

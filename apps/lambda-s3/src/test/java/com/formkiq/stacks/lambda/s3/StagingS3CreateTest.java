@@ -77,6 +77,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -1099,14 +1100,15 @@ public class StagingS3CreateTest implements DbKeys {
           List.of(documentId0, documentId1, documentId2).stream().sorted().toList();
       List<String> actualDocumentIds =
           service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().stream()
-              .map(DocumentItem::getDocumentId).sorted().toList();
+              .map(DocumentRecord::documentId).sorted().toList();
       assertEquals(expectedDocumentIds, actualDocumentIds);
 
       DocumentArtifact document0 = new DocumentArtifact(documentId0, null);
-      DocumentItem di =
+      DocumentRecordSet drs =
           service.findDocument(siteId, document0, true, null, MAX_RESULTS).getResults().getFirst();
-      assertNull(di.getContentType());
-      verifyBelongsToDocument(di, Arrays.asList(documentId1, documentId2));
+      DocumentRecord di = drs.documentRecord();
+      assertNull(di.contentType());
+      verifyBelongsToDocument(drs, Arrays.asList(documentId1, documentId2));
 
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, document0, null, MAX_RESULTS).getResults();
@@ -1114,19 +1116,22 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("formName", tags.getFirst().getKey());
       assertEquals("Job Application Form", tags.getFirst().getValue());
 
-      String k = createDatabaseKey(siteId, di.getDocumentId());
+      String k = createDatabaseKey(siteId, di.documentId());
       assertFalse(s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).isObjectExists());
 
       DocumentArtifact document1 = new DocumentArtifact(documentId1, null);
-      di = service.findDocument(siteId, document1, true, null, MAX_RESULTS).getResults().getFirst();
-      assertEquals("application/json", di.getContentType());
-      assertEquals(documentId0, di.getBelongsToDocumentId());
+      drs =
+          service.findDocument(siteId, document1, true, null, MAX_RESULTS).getResults().getFirst();
+      di = drs.documentRecord();
+
+      assertEquals("application/json", di.contentType());
+      assertEquals(documentId0, di.belongsToDocumentId());
       tags = service.findDocumentTags(siteId, document1, null, MAX_RESULTS).getResults();
       assertEquals(1, tags.size());
       assertEquals("formData", tags.getFirst().getKey());
       assertEquals("", tags.getFirst().getValue());
 
-      k = createDatabaseKey(siteId, di.getDocumentId());
+      k = createDatabaseKey(siteId, di.documentId());
       assertEquals("application/json",
           s3.getObjectMetadata(DOCUMENTS_BUCKET, k, null).getContentType());
 
@@ -2048,13 +2053,18 @@ public class StagingS3CreateTest implements DbKeys {
     verifySqsMessages();
   }
 
-  private void verifyBelongsToDocument(final DocumentItem item, final List<String> documentIds) {
-    assertEquals(documentIds.size(), item.getDocuments().size());
+  private void verifyBelongsToDocument(final DocumentRecordSet item,
+      final List<String> documentIds) {
+    assertEquals(documentIds.size(), item.children().size());
 
-    for (int i = 0; i < documentIds.size(); i++) {
-      assertEquals(documentIds.get(i), item.getDocuments().get(i).getDocumentId());
-      assertNotNull(item.getDocuments().get(i).getInsertedDate());
-      assertNotNull(item.getDocuments().get(i).getBelongsToDocumentId());
+    int i = 0;
+
+    for (DocumentRecordSet documentRecordSet : item.children()) {
+      var documentRecord = documentRecordSet.documentRecord();
+      assertEquals(documentIds.get(i), documentRecord.documentId());
+      assertNotNull(documentRecord.insertedDate());
+      assertNotNull(documentRecord.belongsToDocumentId());
+      i++;
     }
   }
 

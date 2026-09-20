@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -36,6 +35,7 @@ import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.base64.Pagination;
@@ -62,7 +62,7 @@ public class SitesClassificationIdRequestHandler
         .attribute(new SearchAttributeCriteria(AttributeKeyReserved.CLASSIFICATION.getKey(), null,
             classificationId, null, null))
         .build();
-    Pagination<DynamicDocumentItem> items = searchService.search(siteId, req, null, null, 1);
+    Pagination<DocumentSearchResult> items = searchService.search(siteId, req, null, null, 1);
     if (!items.getResults().isEmpty()) {
       throw new BadException("Classification '" + classificationId + "' in use");
     }

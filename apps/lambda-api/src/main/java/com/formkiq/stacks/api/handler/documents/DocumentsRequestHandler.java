@@ -66,7 +66,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
-import com.formkiq.stacks.dynamodb.DocumentItemToDynamicDocumentItem;
+import com.formkiq.stacks.dynamodb.DocumentRecordSetToMap;
 import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
@@ -160,15 +160,14 @@ public class DocumentsRequestHandler
         actions.findDocumentsWithStatus(siteId, actionStatus, nextToken, limit);
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
-    List<DocumentItem> documents = documentService.findDocuments(siteId, results.getResults());
-
-    List<DynamicDocumentItem> docs =
-        documents.stream().map(l -> new DocumentItemToDynamicDocumentItem().apply(l)).toList();
+    List<DocumentRecord> records = documentService.findDocuments(siteId, results.getResults());
+    DocumentRecordSetToMap toMap = new DocumentRecordSetToMap();
+    List<Map<String, Object>> documents = records.stream().map(toMap::apply).toList();
 
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    map.put("documents", docs);
+    map.put("documents", documents);
     return current;
   }
 
@@ -191,7 +190,6 @@ public class DocumentsRequestHandler
 
     AttributeValueToDocumentItem toDocument = new AttributeValueToDocumentItem();
     List<DocumentItem> docs = result.items().stream().map(toDocument::apply).toList();
-
 
     return ApiRequestHandlerResponse.builder().ok().body("documents", docs)
         .next(result.toNextToken()).build();

@@ -24,22 +24,22 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FOLDER_SK;
 
 /**
- * Convert {@link Map} {@link AttributeValue} to {@link DocumentTag}.
+ * Convert {@link Map} {@link AttributeValue} to {@link DocumentSearchResult}.
  *
  */
 public class AttributeValueToGlobalMetaFolder
-    implements Function<Map<String, AttributeValue>, Map<String, Object>>, DbKeys {
+    implements Function<Map<String, AttributeValue>, DocumentSearchResult>, DbKeys {
 
   /** {@link AttributeValueToDate}. */
   private final AttributeValueToDate toInsertedDateDate = new AttributeValueToDate("inserteddate");
@@ -56,42 +56,39 @@ public class AttributeValueToGlobalMetaFolder
   public AttributeValueToGlobalMetaFolder() {}
 
   @Override
-  public Map<String, Object> apply(final Map<String, AttributeValue> map) {
-
-    Map<String, Object> result = new HashMap<>();
+  public DocumentSearchResult apply(final Map<String, AttributeValue> map) {
 
     String pk = getString(map.get(PK));
-    String sk = getString(map.get(SK));
 
-    if (pk != null && pk.contains(GLOBAL_FOLDER_TAGS)) {
-      result.put("value", map.get("tagKey").s());
-    } else if (pk != null) {
-
-      String documentId = getString(map.get("documentId"));
-      String path = getString(map.get("path"));
-
-      result.put("path", path);
-      result.put("documentId", documentId);
-
-      if (sk != null && sk.startsWith(INDEX_FOLDER_SK)) {
-        result.put("folder", Boolean.TRUE);
-      }
-
-      String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
-      String key = encoder.apply(parent + TAG_DELIMINATOR + path);
-      result.put("indexKey", key);
-
-      Date insertedDate = this.toInsertedDateDate.apply(map);
-      result.put("insertedDate", insertedDate);
-
-      Date lastmodifedDate = this.toLastModifiedDate.apply(map);
-      result.put("lastModifiedDate", lastmodifedDate);
-
-      String userId = map.containsKey("userId") ? map.get("userId").s() : null;
-      result.put("userId", userId);
+    if (pk == null) {
+      return null;
     }
 
-    return result;
+    if (pk.contains(GLOBAL_FOLDER_TAGS)) {
+      return new DocumentSearchResult(DynamoDbTypes.toString(map.get("tagKey")));
+    }
+
+    String documentId = getString(map.get("documentId"));
+    if (documentId == null) {
+      return null;
+    }
+
+    String path = getString(map.get("path"));
+    String parent = pk.substring(pk.lastIndexOf(TAG_DELIMINATOR) + 1);
+    String indexKey = encoder.apply(parent + TAG_DELIMINATOR + path);
+    String sk = getString(map.get(SK));
+    boolean folder = sk != null && sk.startsWith(INDEX_FOLDER_SK);
+    DocumentSearchFolderIndex indexRecord = new DocumentSearchFolderIndex(folder, indexKey);
+
+    Date insertedDate = this.toInsertedDateDate.apply(map);
+    Date lastmodifedDate = this.toLastModifiedDate.apply(map);
+    String userId = map.containsKey("userId") ? map.get("userId").s() : null;
+
+    DocumentRecord result =
+        DocumentRecord.builder().documentId(documentId).path(path).insertedDate(insertedDate)
+            .lastModifiedDate(lastmodifedDate).userId(userId).build((String) null);
+
+    return new DocumentSearchResult(result, indexRecord);
   }
 
   private String getString(final AttributeValue av) {

@@ -82,7 +82,6 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -156,7 +155,7 @@ class FolderIndexProcessorTest implements DbKeys {
     dbService.putItem(folder.getAttributes(siteId));
   }
 
-  private static Pagination<DynamicDocumentItem> searchByPath(final String siteId,
+  private static Pagination<DocumentSearchResult> searchByPath(final String siteId,
       final String path) {
     SearchMetaCriteria smc = new SearchMetaCriteria(null, path, null, null, null);
     SearchQuery q = new SearchQueryBuilder().meta(smc).build();
@@ -650,18 +649,18 @@ class FolderIndexProcessorTest implements DbKeys {
       index.moveIndex(siteId, source, destination, userId);
 
       // then
-      Pagination<DynamicDocumentItem> results = searchByPath(siteId, "");
-      List<DynamicDocumentItem> list = results.getResults();
+      Pagination<DocumentSearchResult> results = searchByPath(siteId, "");
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(2, list.size());
-      assertEquals("a", list.get(0).get("path"));
-      assertEquals("something", list.get(1).get("path"));
+      assertEquals("a", list.get(0).documentRecord().path());
+      assertEquals("something", list.get(1).documentRecord().path());
 
       SearchMetaCriteria smc = new SearchMetaCriteria(null, "a", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("b", list.getFirst().get("path"));
+      assertEquals("b", list.getFirst().documentRecord().path());
       // final String bDocumentId = list.get(0).get("documentId").toString();
 
       smc = new SearchMetaCriteria(null, "a/b", null, null, null);
@@ -670,7 +669,7 @@ class FolderIndexProcessorTest implements DbKeys {
       list = results.getResults();
       assertEquals(1, list.size());
 
-      assertEquals("/a/b/test.txt", list.getFirst().get("path"));
+      assertEquals("/a/b/test.txt", list.getFirst().documentRecord().path());
 
       smc = new SearchMetaCriteria(null, "something", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -708,12 +707,12 @@ class FolderIndexProcessorTest implements DbKeys {
 
       // then
       SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
-      Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+      Pagination<DocumentSearchResult> results = searchService.search(siteId,
           new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
-      assertEquals("directory1", results.getResults().get(0).get("path"));
-      assertEquals("directory2", results.getResults().get(1).get("path"));
+      assertEquals("directory1", results.getResults().get(0).documentRecord().path());
+      assertEquals("directory2", results.getResults().get(1).documentRecord().path());
 
       smc = new SearchMetaCriteria(null, "directory1", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -724,9 +723,9 @@ class FolderIndexProcessorTest implements DbKeys {
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       assertEquals(1, results.getResults().size());
-      DynamicDocumentItem doc2 = results.getResults().getFirst();
-      assertEquals("directory2/test.pdf", doc2.get("path"));
-      assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
+      DocumentSearchResult doc2 = results.getResults().getFirst();
+      assertEquals("directory2/test.pdf", doc2.documentRecord().path());
+      assertEquals(doc2.documentRecord().insertedDate(), doc2.documentRecord().lastModifiedDate());
 
       Map<String, Object> destAttr = index.getIndex(siteId, "directory2/test.pdf");
       assertEquals("test.pdf", destAttr.get("path"));
@@ -768,14 +767,14 @@ class FolderIndexProcessorTest implements DbKeys {
 
         // then
         SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
-        Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+        Pagination<DocumentSearchResult> results = searchService.search(siteId,
             new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
         assertEquals(2, results.getResults().size());
-        DynamicDocumentItem doc = results.getResults().get(0);
-        assertEquals("directory1", doc.get("path"));
-        DynamicDocumentItem dir2 = results.getResults().get(1);
-        assertEquals("test.pdf", dir2.get("path"));
+        DocumentSearchResult doc = results.getResults().get(0);
+        assertEquals("directory1", doc.documentRecord().path());
+        DocumentSearchResult dir2 = results.getResults().get(1);
+        assertEquals("test.pdf", dir2.documentRecord().path());
 
         smc = new SearchMetaCriteria(null, "directory1", null, null, null);
         results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null,
@@ -783,7 +782,7 @@ class FolderIndexProcessorTest implements DbKeys {
 
         assertEquals(1, results.getResults().size());
         doc = results.getResults().getFirst();
-        assertEquals("directory1/test2.pdf", doc.get("path"));
+        assertEquals("directory1/test2.pdf", doc.documentRecord().path());
 
         service.deleteDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null), false);
         service.deleteDocument(siteId, DocumentArtifact.of(item1.getDocumentId(), null), false);
@@ -826,12 +825,12 @@ class FolderIndexProcessorTest implements DbKeys {
 
       // then
       SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
-      Pagination<DynamicDocumentItem> results = searchService.search(siteId,
+      Pagination<DocumentSearchResult> results = searchService.search(siteId,
           new SearchQueryBuilder().meta(smc).build(), null, null, MAX_RESULTS);
 
       assertEquals(2, results.getResults().size());
-      assertEquals("d1", results.getResults().get(0).get("path"));
-      assertEquals("d2", results.getResults().get(1).get("path"));
+      assertEquals("d1", results.getResults().get(0).documentRecord().path());
+      assertEquals("d2", results.getResults().get(1).documentRecord().path());
 
       smc = new SearchMetaCriteria(null, "d1", null, null, null);
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
@@ -842,13 +841,13 @@ class FolderIndexProcessorTest implements DbKeys {
       results = searchService.search(siteId, new SearchQueryBuilder().meta(smc).build(), null, null,
           MAX_RESULTS);
       assertEquals(2, results.getResults().size());
-      DynamicDocumentItem doc1 = results.getResults().getFirst();
-      assertEquals("d2/test1.pdf", doc1.get("path"));
-      assertEquals(doc1.get("insertedDate"), doc1.get("lastModifiedDate"));
+      DocumentSearchResult doc1 = results.getResults().getFirst();
+      assertEquals("d2/test1.pdf", doc1.documentRecord().path());
+      assertEquals(doc1.documentRecord().insertedDate(), doc1.documentRecord().lastModifiedDate());
 
-      DynamicDocumentItem doc2 = results.getResults().get(1);
-      assertEquals("d2/test2.pdf", doc2.get("path"));
-      assertEquals(doc2.get("insertedDate"), doc2.get("lastModifiedDate"));
+      DocumentSearchResult doc2 = results.getResults().get(1);
+      assertEquals("d2/test2.pdf", doc2.documentRecord().path());
+      assertEquals(doc2.documentRecord().insertedDate(), doc2.documentRecord().lastModifiedDate());
 
       List<FolderIndexRecordExtended> list =
           index.get(siteId, source1, "file", "jsmith", new Date());
@@ -925,11 +924,11 @@ class FolderIndexProcessorTest implements DbKeys {
       ApiAuthorization.login(new ApiAuthorization().roles(List.of("readers", "readers2")));
       results = searchByPath(siteId, destinationPath).getResults();
       assertEquals(1, results.size());
-      assertEquals("child", results.getFirst().getPath());
+      assertEquals("child", results.getFirst().documentRecord().path());
 
       results = searchByPath(siteId, destinationPath + "child/").getResults();
       assertEquals(1, results.size());
-      assertEquals(destinationPath + "child/test.txt", results.getFirst().getPath());
+      assertEquals(destinationPath + "child/test.txt", results.getFirst().documentRecord().path());
     }
   }
 
@@ -975,12 +974,12 @@ class FolderIndexProcessorTest implements DbKeys {
 
       var results = searchByPath(siteId, "").getResults();
       assertEquals(1, results.size());
-      assertEquals(parentFolder, results.getFirst().getPath());
+      assertEquals(parentFolder, results.getFirst().documentRecord().path());
 
       ApiAuthorization.login(new ApiAuthorization().roles(List.of("readers", "writers")));
       results = searchByPath(siteId, destinationFolder).getResults();
       assertEquals(1, results.size());
-      assertEquals(documentPath, results.getFirst().getPath());
+      assertEquals(documentPath, results.getFirst().documentRecord().path());
 
     }
   }

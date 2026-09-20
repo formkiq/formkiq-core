@@ -178,7 +178,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
 
     DocumentSearchRequest req = new DocumentSearchRequest().query(ds);
-    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+    return notNull(
+        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
   }
 
   private void setClassification(final String siteId, final String classificationId,

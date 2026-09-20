@@ -17,6 +17,8 @@ paths:
         If Typesense is enabled, full text search is supported through the "text" parameter. Full text search will look for the text in the "content" and/or document "metadata".
         
         DocumentIds parameter allows you to filter your results to a specific set of documents. 
+
+        Use the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.
         
         See requestBody examples below for commmon examples.
 
@@ -31,6 +33,16 @@ paths:
           description: "Previous page of results token"
           schema:
             type: string
+        - name: projection
+          in: query
+          description: |-
+            Controls the search response projection. `DOCUMENTS` returns matching documents and pagination tokens. `COUNT` returns `count` and `truncated`, and omits `documents`, `next`, and `previous`.
+          schema:
+            type: string
+            enum:
+              - DOCUMENTS
+              - COUNT
+            default: DOCUMENTS
       requestBody:
         required: true
         content:
@@ -97,6 +109,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentSearchResponse'
+              examples:
+                Documents:
+                  value:
+                    documents: []
+                    next: null
+                    previous: null
+                Count:
+                  value:
+                    count: 10000
+                    truncated: true
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -288,6 +310,7 @@ components:
     #@overlay/match missing_ok=True
     DocumentSearchFilename:
       type: "object"
+      description: "Filename search criteria. Cannot be combined with `documentIds`."
       properties:
         beginsWith:
           type: "string"
@@ -337,7 +360,10 @@ components:
           description: "Searches for strings that eq"
         eqOr:
           type: array
-          description: "Searches for ANY strings that eq"
+          description: |
+            Searches for strings equal to any provided value. Pagination is not supported when
+            `eqOr` is used, so no `nextToken` is returned. The request limit is applied separately
+            to each value.
           items:
             type: "string"
         range:
@@ -375,7 +401,10 @@ components:
           description: "Searches for strings that eq"
         eqOr:
           type: array
-          description: "Searches for ANY strings that eq"
+          description: |
+            Searches for strings equal to any provided value. Pagination is not supported when
+            `eqOr` is used, so no `nextToken` is returned. The request limit is applied separately
+            to each value.
           items:
             type: "string"
         beginsWith:
@@ -429,7 +458,7 @@ components:
             $ref: "#/components/schemas/DocumentSearchTags"
         documentIds:
           type: array
-          description: "List of DocumentIds to filter search results on"
+          description: "List of DocumentIds to filter search results on. Cannot be combined with `filename`."
           items:
             type: "string"
 
@@ -448,18 +477,28 @@ components:
     #@overlay/match missing_ok=True
     DocumentSearchResponse:
       type: "object"
+      description: |-
+        Document search response. The `DOCUMENTS` projection returns `documents`, `next`, and `previous`. The `COUNT` projection returns `count` and `truncated` instead.
       properties:
         next:
           type: "string"
-          description: "Next page of results token"
+          description: "Next page of document results token; omitted for the COUNT projection"
         previous:
           type: "string"
-          description: "Previous page of results token"
+          description: "Previous page of document results token; omitted for the COUNT projection"
         documents:
           type: "array"
-          description: "List of search result documents"
+          description: "List of search result documents; omitted for the COUNT projection"
           items:
             $ref: "#/components/schemas/SearchResultDocument"
+        count:
+          type: "integer"
+          minimum: 0
+          maximum: 10000
+          description: "Number of matching documents counted, up to 10,000; only returned for the COUNT projection"
+        truncated:
+          type: "boolean"
+          description: "Whether counting stopped at the 10,000-document limit before the search was exhausted; only returned for the COUNT projection"
 
     #@overlay/match missing_ok=True
     SearchResultDocument:
