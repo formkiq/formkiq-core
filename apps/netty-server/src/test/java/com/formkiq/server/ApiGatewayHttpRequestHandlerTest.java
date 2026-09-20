@@ -116,7 +116,7 @@ class ApiGatewayHttpRequestHandlerTest {
     env.put("DOCUMENT_VERSIONS_PLUGIN",
         "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning");
     env.put("FORMKIQ_TYPE", "core");
-    env.put("FORMKIQ_VERSION", "1.19.1");
+    env.put("FORMKIQ_VERSION", "1.19.2");
     env.put("LOG_LEVEL", "error");
     env.put("MODULE_site_permissions", "automatic");
     env.put("OCR_S3_BUCKET", "ocr");

@@ -37,7 +37,6 @@ import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -69,6 +68,7 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
@@ -2604,7 +2604,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
       SearchAttributeCriteria attr = new SearchAttributeCriteria(
           AttributeKeyReserved.PUBLICATION.getKey(), null, null, null, null);
       SearchQuery req = new SearchQueryBuilder().attribute(attr).build();
-      List<DynamicDocumentItem> docs =
+      List<DocumentSearchResult> docs =
           notNull(documentSearchService.search(siteId, req, null, null, 2).getResults());
       assertEquals(1, docs.size());
     }

@@ -34,6 +34,7 @@ import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static java.lang.Boolean.TRUE;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -229,14 +230,16 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       throws ApiException {
     DocumentSearchRequest req = new DocumentSearchRequest()
         .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(path + "/")));
-    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+    return notNull(
+        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
   }
 
   private List<SearchResultDocument> searchMetaFolderEq(final String siteId, final String path)
       throws ApiException {
     DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch()
         .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(path)));
-    return notNull(this.searchApi.documentSearch(req, siteId, null, null, null).getDocuments());
+    return notNull(
+        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
   }
 
   private void setPathPermissions(final String siteId, final String path,
@@ -1118,6 +1121,44 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals(0, documents.size(), "POST /search meta.indexType=folder eq with trailing slash");
+  }
+
+  /**
+   * Test folder READ permission filters POST /search meta.path results.
+   *
+   * @throws ApiException ApiException
+   */
+  @Test
+  void testSearchMetaPathWithoutFolderReadPermission() throws ApiException {
+    // given
+    for (var siteId : Arrays.asList(DEFAULT_SITE_ID, ID.ulid())) {
+      var folder = "noMetaPathReadFolder-" + ID.uuid();
+      var path = folder + "/test.txt";
+      var restrictedRole = "restricted-meta-path";
+
+      new SetBearers().apply(client, new String[] {siteId, "Admins"});
+      createFolder(siteId, folder);
+      new SetFolderPermissionsRequestBuilder().path(folder).addRole(restrictedRole, List.of())
+          .submitOk(client, siteId);
+      new AddDocumentRequestBuilder().path(path).content().getDocument(client, siteId);
+
+      DocumentSearchRequest request = new DocumentSearchRequest()
+          .query(new DocumentSearch().meta(new DocumentSearchMeta().path(path)));
+
+      var authorizedCountResponse =
+          this.searchApi.documentSearch(request, siteId, null, null, null, "COUNT");
+
+      // when
+      new SetBearers().apply(client, new String[] {siteId, restrictedRole});
+      var documentResponse = this.searchApi.documentSearch(request, siteId, null, null, null, null);
+      var countResponse = this.searchApi.documentSearch(request, siteId, null, null, null, "COUNT");
+
+      // then
+      assertAll(() -> assertEquals(1, authorizedCountResponse.getCount()),
+          () -> assertEquals(0, notNull(documentResponse.getDocuments()).size()),
+          () -> assertEquals(0, countResponse.getCount()),
+          () -> assertFalse(countResponse.getTruncated()));
+    }
   }
 
   /**

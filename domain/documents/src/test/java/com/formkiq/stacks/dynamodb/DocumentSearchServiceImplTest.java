@@ -25,6 +25,7 @@ package com.formkiq.stacks.dynamodb;
 
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -44,10 +45,17 @@ import java.util.TimeZone;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
+import com.formkiq.aws.dynamodb.attributes.AttributeType;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
+import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
@@ -56,6 +64,8 @@ import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,7 +75,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
@@ -92,6 +101,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   /** {@link DocumentService}. */
   private DocumentSearchService searchService;
 
+  /** {@link AttributeService}. */
+  private AttributeService attributeService;
+
   /** {@link DocumentService}. */
   private DocumentService service;
 
@@ -108,6 +120,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     var awsServiceCache = new AwsServiceCacheBuilder(environment, TestServices.getEndpointMap(),
         awsCredentialsProvider).addService(new DynamoDbAwsServiceRegistry())
         .addService(new S3AwsServiceRegistry()).build();
+    awsServiceCache.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    awsServiceCache.register(AttributeService.class, new AttributeServiceExtension());
     awsServiceCache.register(DocumentService.class, new DocumentServiceExtension());
     awsServiceCache.register(DocumentSearchService.class, new DocumentSearchServiceExtension());
     awsServiceCache.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
@@ -116,6 +130,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     this.df.setTimeZone(TimeZone.getTimeZone("UTC"));
     this.service = awsServiceCache.getExtension(DocumentService.class);
     this.searchService = awsServiceCache.getExtension(DocumentSearchService.class);
+    this.attributeService = awsServiceCache.getExtension(AttributeService.class);
   }
 
   /**
@@ -233,6 +248,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     return new DocumentRecordSet(documentRecord, null, addTags, null);
   }
 
+  private String path(final DocumentSearchResult result) {
+    return result.documentRecord().path();
+  }
+
   private void saveDocument(final String siteId, final DocumentRecordSet doc) {
     this.service.saveDocument(siteId, doc, new SaveDocumentOptions());
   }
@@ -254,7 +273,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
@@ -262,14 +281,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNotNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("status", s.getMap("matchedTag").get("key"));
-        assertEquals("active", s.getMap("matchedTag").get("value"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("status", s.matchedTag().getKey());
+        assertEquals("active", s.matchedTag().getValue());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(prefix, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -291,7 +309,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
@@ -316,7 +334,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(prefix, q, null, null, MAX_RESULTS);
 
       // then
@@ -324,12 +342,11 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNotNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("status", s.getMap("matchedTag").get("key"));
-        assertEquals("active", s.getMap("matchedTag").get("value"));
-        DocumentRecord i =
-            this.service.findDocument(prefix, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("status", s.matchedTag().getKey());
+        assertEquals("active", s.matchedTag().getValue());
+        DocumentRecord i = this.service.findDocument(prefix, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -354,7 +371,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(prefix, q, null, null, limit);
 
       // then
@@ -365,15 +382,15 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       String startkey = results.getNextToken();
 
       // when
-      Pagination<DynamicDocumentItem> results2 =
+      Pagination<DocumentSearchResult> results2 =
           this.searchService.search(prefix, q, null, startkey, limit);
 
       // then
       assertEquals(1, results.getResults().size());
-      assertNotEquals(results.getResults().getFirst().getDocumentId(),
-          results2.getResults().getFirst().getDocumentId());
-      assertEquals("status", results.getResults().getFirst().getMap("matchedTag").get("key"));
-      assertEquals("active", results.getResults().getFirst().getMap("matchedTag").get("value"));
+      assertNotEquals(results.getResults().getFirst().documentRecord().documentId(),
+          results2.getResults().getFirst().documentRecord().documentId());
+      assertEquals("status", results.getResults().getFirst().matchedTag().getKey());
+      assertEquals("active", results.getResults().getFirst().matchedTag().getValue());
     }
   }
 
@@ -400,7 +417,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
@@ -408,12 +425,11 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("status", s.getMap("matchedTag").get("key"));
-        assertEquals("notactive", s.getMap("matchedTag").get("value"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("status", s.matchedTag().getKey());
+        assertEquals("notactive", s.matchedTag().getValue());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -445,7 +461,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
 
       // when - wrong document id
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
@@ -453,14 +469,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("category", s.getMap("matchedTag").get("key"));
-        assertEquals("thing", s.getMap("matchedTag").get("value"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("category", s.matchedTag().getKey());
+        assertEquals("thing", s.matchedTag().getValue());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
 
@@ -472,7 +487,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
       // then
       assertEquals(1, results.getResults().size());
-      assertEquals(documentId2, results.getResults().getFirst().getDocumentId());
+      assertEquals(documentId2, results.getResults().getFirst().documentRecord().documentId());
 
       // given
       q.documentIds(List.of("123"));
@@ -503,20 +518,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       saveDocument(siteId, doc2);
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       // then
       assertEquals(2, results.getResults().size());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("category", s.getMap("matchedTag").get("key"));
-        assertNotNull(s.getMap("matchedTag").get("value"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("category", s.matchedTag().getKey());
+        assertNotNull(s.matchedTag().getValue());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -542,7 +556,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       saveDocument(siteId, doc2);
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       // then
       assertEquals(0, results.getResults().size());
@@ -574,7 +588,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .documentIds(Arrays.asList(documentId0, documentId1)).build();
 
       // when - wrong document id
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
@@ -582,14 +596,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("category", s.getMap("matchedTag").get("key"));
-        assertEquals("thing", s.getMap("matchedTag").get("value"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("category", s.matchedTag().getKey());
+        assertEquals("thing", s.matchedTag().getValue());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -616,7 +629,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     SearchQuery q = new SearchQueryBuilder().tag(c).documentIds(docNumbers).build();
 
     // when - wrong document id
-    Pagination<DynamicDocumentItem> results =
+    Pagination<DocumentSearchResult> results =
         this.searchService.search(null, q, null, null, MAX_RESULTS);
 
     // then
@@ -650,7 +663,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .documentIds(Arrays.asList(documentId0, documentId1, documentId2));
 
       // when - wrong document id
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
@@ -658,14 +671,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertNull(results.getNextToken());
 
       results.getResults().forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("category", s.getMap("matchedTag").get("key"));
-        assertEquals("thing", s.getMap("matchedTag").get("value"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("category", s.matchedTag().getKey());
+        assertEquals("thing", s.matchedTag().getValue());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
 
@@ -716,28 +728,27 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .documentIds(Arrays.asList(documentId0, documentId1, documentId2, documentId3));
 
       // when - wrong document id
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q.build(), null, null, MAX_RESULTS);
 
       // then
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(2, list.size());
       assertNull(results.getNextToken());
 
-      assertEquals("category", list.getFirst().getMap("matchedTag").get("key"));
-      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
-      assertEquals("USERDEFINED", list.get(0).getMap("matchedTag").get("type"));
+      assertEquals("category", list.getFirst().matchedTag().getKey());
+      assertEquals("thing", list.get(0).matchedTag().getValue());
+      assertEquals(DocumentTagType.USERDEFINED, list.get(0).matchedTag().getType());
 
-      assertEquals("category", list.get(1).getMap("matchedTag").get("key"));
-      assertEquals("person2", list.get(1).getMap("matchedTag").get("value"));
-      assertEquals("USERDEFINED", list.get(1).getMap("matchedTag").get("type"));
+      assertEquals("category", list.get(1).matchedTag().getKey());
+      assertEquals("person2", list.get(1).matchedTag().getValue());
+      assertEquals(DocumentTagType.USERDEFINED, list.get(1).matchedTag().getType());
 
       list.forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
 
@@ -776,25 +787,24 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when - wrong document id
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(2, list.size());
       assertNull(results.getNextToken());
 
-      assertEquals("thing", list.get(0).getMap("matchedTag").get("value"));
-      assertEquals("person1", list.get(1).getMap("matchedTag").get("value"));
+      assertEquals("thing", list.get(0).matchedTag().getValue());
+      assertEquals("person1", list.get(1).matchedTag().getValue());
 
       list.forEach(s -> {
-        assertNotNull(s.getInsertedDate());
-        assertNotNull(s.getPath());
-        assertEquals("category", s.getMap("matchedTag").get("key"));
-        assertEquals("USERDEFINED", s.getMap("matchedTag").get("type"));
-        assertNull(s.getMap("matchedTag").get("documentId"));
-        DocumentRecord i =
-            this.service.findDocument(siteId, DocumentArtifact.of(s.getDocumentId(), null));
+        assertNotNull(s.documentRecord().insertedDate());
+        assertNotNull(s.documentRecord().path());
+        assertEquals("category", s.matchedTag().getKey());
+        assertEquals(DocumentTagType.USERDEFINED, s.matchedTag().getType());
+        assertNull(s.matchedTag().getDocumentId());
+        DocumentRecord i = this.service.findDocument(siteId, s.documentRecord().document());
         assertNotNull(i);
       });
     }
@@ -830,22 +840,22 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       final int expected = 3;
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(expected, list.size());
       assertNull(results.getNextToken());
 
       int i = 0;
-      assertNotNull(list.get(i).getDocumentId());
-      assertEquals("sample", list.get(i++).getPath());
-      assertEquals(doc1.getDocumentId(), results.getResults().get(i).getDocumentId());
-      assertEquals("test1.pdf", list.get(i++).getPath());
-      assertEquals(doc0.getDocumentId(), results.getResults().get(i).getDocumentId());
-      assertEquals("test2.pdf", list.get(i).getPath());
+      assertNotNull(list.get(i).documentRecord().documentId());
+      assertEquals("sample", list.get(i++).documentRecord().path());
+      assertEquals(doc1.getDocumentId(), results.getResults().get(i).documentRecord().documentId());
+      assertEquals("test1.pdf", list.get(i++).documentRecord().path());
+      assertEquals(doc0.getDocumentId(), results.getResults().get(i).documentRecord().documentId());
+      assertEquals("test2.pdf", list.get(i).documentRecord().path());
 
       // given
       folder = "sample";
@@ -858,10 +868,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       list = results.getResults();
       assertEquals(2, list.size());
-      assertEquals("anotherone", list.get(0).getPath());
-      assertNotNull(list.get(0).getDocumentId());
-      assertEquals("sample/test3.pdf", list.get(1).getPath());
-      assertEquals(doc2.getDocumentId(), list.get(1).getDocumentId());
+      assertEquals("anotherone", path(list.get(0)));
+      assertNotNull(list.get(0).documentRecord().documentId());
+      assertEquals("sample/test3.pdf", path(list.get(1)));
+      assertEquals(doc2.getDocumentId(), list.get(1).documentRecord().documentId());
 
       // given
       folder = "sample/anotherone";
@@ -874,8 +884,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("sample/anotherone/test4.pdf", list.getFirst().getPath());
-      assertEquals(doc3.getDocumentId(), list.getFirst().getDocumentId());
+      assertEquals("sample/anotherone/test4.pdf", path(list.getFirst()));
+      assertEquals(doc3.getDocumentId(), list.getFirst().documentRecord().documentId());
     }
   }
 
@@ -898,20 +908,20 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .meta(new SearchMetaCriteria(null, "sample", null, null, null)).build();
 
       // when
-      Pagination<DynamicDocumentItem> results0 =
+      Pagination<DocumentSearchResult> results0 =
           this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
 
-      Pagination<DynamicDocumentItem> results1 =
+      Pagination<DocumentSearchResult> results1 =
           this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
 
       // then
-      List<DynamicDocumentItem> list0 = results0.getResults();
+      List<DocumentSearchResult> list0 = results0.getResults();
       assertEquals(1, list0.size());
-      assertEquals("sample", list0.getFirst().getPath());
+      assertEquals("sample", path(list0.getFirst()));
 
-      List<DynamicDocumentItem> list1 = results1.getResults();
+      List<DocumentSearchResult> list1 = results1.getResults();
       assertEquals(1, list1.size());
-      assertEquals("sample/test2.pdf", list1.getFirst().getPath());
+      assertEquals("sample/test2.pdf", path(list1.getFirst()));
 
       // given
       q0 = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null))
@@ -926,7 +936,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
       list0 = results0.getResults();
       assertEquals(1, list0.size());
-      assertEquals("sample", list0.getFirst().getPath());
+      assertEquals("sample", path(list0.getFirst()));
 
       results1 = this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
       assertEquals(0, results1.getResults().size());
@@ -959,20 +969,20 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .meta(new SearchMetaCriteria(null, folder, null, null, null)).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       final int expected = 3;
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(expected, list.size());
       assertNull(results.getNextToken());
 
       int i = 0;
-      assertNotNull(list.get(i).getDocumentId());
-      assertEquals("aaaa", list.get(i++).getPath());
-      assertEquals("Chicago", list.get(i++).getPath());
-      assertEquals("abc.pdf", list.get(i).getPath());
+      assertNotNull(list.get(i).documentRecord().documentId());
+      assertEquals("aaaa", path(list.get(i++)));
+      assertEquals("Chicago", path(list.get(i++)));
+      assertEquals("abc.pdf", path(list.get(i)));
     }
   }
 
@@ -997,14 +1007,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().meta(meta).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(2, list.size());
-      assertEquals("a", list.get(0).getPath());
-      assertEquals("c", list.get(1).getPath());
+      assertEquals("a", path(list.get(0)));
+      assertEquals("c", path(list.get(1)));
 
       meta = new SearchMetaCriteria(null, "a/b", null, null, null);
       q = new SearchQueryBuilder().meta(meta).build();
@@ -1017,7 +1027,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
       list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals("/c/b/test3.pdf", list.getFirst().getPath());
+      assertEquals("/c/b/test3.pdf", path(list.getFirst()));
     }
   }
 
@@ -1039,14 +1049,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().meta(meta).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
-      List<DynamicDocumentItem> list = results.getResults();
+      List<DocumentSearchResult> list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals(doc.getDocumentId(), list.getFirst().getDocumentId());
-      assertEquals("/a/b/test2.pdf", list.getFirst().getPath());
+      assertEquals(doc.getDocumentId(), list.getFirst().documentRecord().documentId());
+      assertEquals("/a/b/test2.pdf", path(list.getFirst()));
 
       // given - invalid path
       path = ID.uuid();
@@ -1079,13 +1089,13 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       SearchQuery q = new SearchQueryBuilder().tag(c).build();
 
       // when
-      Pagination<DynamicDocumentItem> results =
+      Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
       // then
       assertEquals(2, results.getResults().size());
-      assertEquals(documentId0, results.getResults().get(0).getDocumentId());
-      assertEquals(documentId1, results.getResults().get(1).getDocumentId());
+      assertEquals(documentId0, results.getResults().get(0).documentRecord().documentId());
+      assertEquals(documentId1, results.getResults().get(1).documentRecord().documentId());
     }
   }
 
@@ -1110,6 +1120,156 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         assertEquals("duplicate attributes in query", e.errors().iterator().next().error());
       }
     }
+  }
+
+  /**
+   * Search every attribute value for a range when document IDs are supplied.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearchAttributeRangeWithDocumentIds01() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String attributeKey = ID.uuid();
+    this.attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.STRING, AttributeType.STANDARD);
+    DocumentItem document = createDocument(ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact artifact = DocumentArtifact.of(document.getDocumentId(), null);
+
+    Collection<DocumentAttributeRecord> attributes = List.of(
+        new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue("m-inside")
+            .setUserId("jsmith"),
+        new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue("z-outside")
+            .setUserId("jsmith"));
+
+    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
+
+    SearchTagCriteriaRange range = new SearchTagCriteriaRange("a", "n", "string");
+    SearchAttributeCriteria criteria =
+        new SearchAttributeCriteria(attributeKey, null, null, null, range);
+    SearchQuery query = new SearchQueryBuilder().attribute(criteria).build();
+
+    // when - search without a document ID filter
+    Pagination<DocumentSearchResult> results =
+        this.searchService.search(siteId, query, null, null, MAX_RESULTS);
+
+    // then
+    assertEquals(1, results.getResults().size());
+    assertEquals(document.getDocumentId(),
+        results.getResults().getFirst().documentRecord().documentId());
+
+    // when - search the same range with the matching document ID
+    query = new SearchQueryBuilder().attribute(criteria)
+        .documentIds(List.of(document.getDocumentId())).build();
+    results = this.searchService.search(siteId, query, null, null, MAX_RESULTS);
+
+    // then
+    assertEquals(1, results.getResults().size());
+    assertEquals(document.getDocumentId(),
+        results.getResults().getFirst().documentRecord().documentId());
+
+    // when - count the same range with the matching document ID
+    SearchCountResult count = this.searchService.count(siteId, query, 10_000);
+
+    // then
+    assertEquals(1, count.count());
+    assertFalse(count.truncated());
+  }
+
+  /**
+   * Composite attribute EQ OR validation uses the correct field key.
+   */
+  @Test
+  public void testSearchCompositeEqOrValidationKey01() {
+    // given
+    String siteId = ID.uuid();
+    SearchAttributeCriteria attribute0 =
+        new SearchAttributeCriteria("category", null, null, List.of("person", "company"), null);
+    SearchAttributeCriteria attribute1 =
+        new SearchAttributeCriteria("status", null, "active", null, null);
+    SearchQuery query =
+        new SearchQueryBuilder().attributes(List.of(attribute0, attribute1)).build();
+
+    // when
+    try {
+      this.searchService.search(siteId, query, null, null, MAX_RESULTS);
+      fail();
+    } catch (ValidationException e) {
+      // then
+      assertTrue(e.errors().stream().anyMatch(error -> "eqOr".equals(error.key())
+          && "'eqOr' is not supported with composite keys".equals(error.error())));
+    }
+  }
+
+  /**
+   * Count matching documents and report when the result is capped.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearchCount01() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String tagKey = ID.uuid();
+    createDocument(siteId, tagKey, "person");
+    createDocument(siteId, tagKey, "person");
+    createDocument(siteId, tagKey, "other");
+    SearchTagCriteria criteria = new SearchTagCriteria(tagKey, null, "person", null, null);
+    SearchQuery query = new SearchQueryBuilder().tag(criteria).build();
+
+    // when
+    SearchCountResult result = this.searchService.count(siteId, query, 10_000);
+
+    // then
+    assertEquals(2, result.count());
+    assertFalse(result.truncated());
+
+    // when
+    result = this.searchService.count(siteId, query, 1);
+
+    // then
+    assertEquals(1, result.count());
+    assertTrue(result.truncated());
+  }
+
+  /**
+   * Count a document with multiple matching attribute records only once.
+   *
+   * @throws ValidationException ValidationException
+   */
+  @Test
+  public void testSearchCount02() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String attributeKey = ID.uuid();
+    this.attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.STRING, AttributeType.STANDARD);
+    DocumentItem document = createDocument(ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact artifact = DocumentArtifact.of(document.getDocumentId(), null);
+    Collection<DocumentAttributeRecord> attributes = List.of(
+        new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue("first")
+            .setUserId("jsmith"),
+        new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
+            .setValueType(DocumentAttributeValueType.STRING).setStringValue("second")
+            .setUserId("jsmith"));
+    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
+    SearchAttributeCriteria criteria =
+        new SearchAttributeCriteria(attributeKey, null, null, List.of("first", "second"), null);
+    SearchQuery query = new SearchQueryBuilder().attribute(criteria).build();
+
+    // when
+    Pagination<DocumentSearchResult> documents =
+        this.searchService.search(siteId, query, null, null, MAX_RESULTS);
+    SearchCountResult result = this.searchService.count(siteId, query, 10_000);
+
+    // then
+    assertEquals(1, documents.getResults().size());
+    assertEquals(1, result.count());
+    assertFalse(result.truncated());
   }
 
   /**

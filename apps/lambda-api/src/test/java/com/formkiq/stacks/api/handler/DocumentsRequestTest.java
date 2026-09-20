@@ -126,6 +126,7 @@ import static com.formkiq.strings.Strings.isEmpty;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentFound;
 import static com.formkiq.testutils.api.documents.GetDocumentRequestBuilder.assertDocumentNotFound;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -656,7 +657,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       var before = new GetDocumentsRequestBuilder().softDeleted(true).sort("ASC").limit(10)
           .submit(client, siteId).throwIfError().response();
 
-      assertEquals(List.of(doc0, doc1),
+      assertEquals(List.of(requireNonNull(doc0), requireNonNull(doc1)),
           notNull(before.getDocuments()).stream().map(Document::getDocumentId).toList());
 
       // when

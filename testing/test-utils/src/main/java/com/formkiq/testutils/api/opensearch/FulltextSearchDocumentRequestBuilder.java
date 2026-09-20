@@ -75,17 +75,6 @@ public class FulltextSearchDocumentRequestBuilder
   }
 
   /**
-   * Set the fields included in search results.
-   *
-   * @param fields response fields
-   * @return this builder
-   */
-  public FulltextSearchDocumentRequestBuilder responseFields(final SearchResponseFields fields) {
-    this.request.responseFields(fields);
-    return this;
-  }
-
-  /**
    * Set the expected number of results.
    *
    * @param expectedCount {@link Integer}
@@ -104,6 +93,17 @@ public class FulltextSearchDocumentRequestBuilder
    */
   public FulltextSearchDocumentRequestBuilder limit(final String docsLimit) {
     this.limit = docsLimit;
+    return this;
+  }
+
+  /**
+   * Set the fields included in search results.
+   *
+   * @param fields response fields
+   * @return this builder
+   */
+  public FulltextSearchDocumentRequestBuilder responseFields(final SearchResponseFields fields) {
+    this.request.responseFields(fields);
     return this;
   }
 

@@ -83,7 +83,7 @@ public interface DynamoDbShardQuery {
    * @return {@link String}
    */
   default String getIndexName(final List<QueryRequest> queryRequest) {
-    return !isEmpty(queryRequest) ? queryRequest.get(0).indexName() : null;
+    return !isEmpty(queryRequest) ? queryRequest.getFirst().indexName() : null;
   }
 
   /**
@@ -128,5 +128,18 @@ public interface DynamoDbShardQuery {
     rb.items(list, limit);
     rb.lastEvaluatedKeyLastItem(GSI2, true);
     return rb.build();
+  }
+
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
+   * @param siteId Site Identifier
+   * @param nextToken Next Token
+   * @param limit int
+   * @return QueryResult
+   */
+  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
+    return query(db, db.getTableName(), siteId, nextToken, limit);
   }
 }
