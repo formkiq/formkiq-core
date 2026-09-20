@@ -44,6 +44,11 @@ dependencies {
   testRuntimeOnly  libs.junit.platform.launcher
 
   testImplementation libs.playwright
+
+  configurations.all {
+    exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
 }
 
 tasks.register("integrationTest", Test) {
