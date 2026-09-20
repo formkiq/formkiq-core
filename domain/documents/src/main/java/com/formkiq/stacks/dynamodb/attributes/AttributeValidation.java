@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb.attributes;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 
 /**
@@ -32,8 +33,20 @@ public class AttributeValidation {
 
   /** {@link AttributeValidationType}. */
   private final AttributeValidationType validationType;
-  /** {@link AttributeValidationAccess}. */
-  private final AttributeValidationAccess validationAccess;
+  /** {@link AttributeAccessApproval}. */
+  private final AttributeAccessApproval accessApproval;
+
+  /**
+   * constructor.
+   *
+   * @param attributeValidationType {@link AttributeValidationType}
+   * @param attributeAccessApproval {@link AttributeAccessApproval}
+   */
+  public AttributeValidation(final AttributeValidationType attributeValidationType,
+      final AttributeAccessApproval attributeAccessApproval) {
+    this.validationType = attributeValidationType;
+    this.accessApproval = attributeAccessApproval;
+  }
 
   /**
    * constructor.
@@ -43,8 +56,16 @@ public class AttributeValidation {
    */
   public AttributeValidation(final AttributeValidationType attributeValidationType,
       final AttributeValidationAccess attributeValidationAccess) {
-    this.validationType = attributeValidationType;
-    this.validationAccess = attributeValidationAccess;
+    this(attributeValidationType, new AttributeAccessApproval(attributeValidationAccess));
+  }
+
+  /**
+   * Get {@link AttributeAccessApproval}.
+   *
+   * @return {@link AttributeAccessApproval}
+   */
+  public AttributeAccessApproval getAccessApproval() {
+    return this.accessApproval;
   }
 
   /**
@@ -53,7 +74,7 @@ public class AttributeValidation {
    * @return {@link AttributeValidationAccess}
    */
   public AttributeValidationAccess getValidationAccess() {
-    return this.validationAccess;
+    return this.accessApproval.defaultAccess();
   }
 
   /**

@@ -156,7 +156,7 @@ public class DocumentAttributesRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     documentService.saveDocumentAttributes(siteId, document, attributes,
-        AttributeValidationType.FULL, validationAccess);
+        AttributeValidationType.FULL, authorization.getAttributeAccessApproval(validationAccess));
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "added attributes to documentId '" + documentId + "'").build();
@@ -182,7 +182,7 @@ public class DocumentAttributesRequestHandler
         AttributeValidationAccess.ADMIN_SET, AttributeValidationAccess.SET);
 
     documentService.saveDocumentAttributes(siteId, document, attributes,
-        AttributeValidationType.FULL, validationAccess);
+        AttributeValidationType.FULL, authorization.getAttributeAccessApproval(validationAccess));
 
     return ApiRequestHandlerResponse.builder().created()
         .body("message", "set attributes on documentId '" + documentId + "'").build();

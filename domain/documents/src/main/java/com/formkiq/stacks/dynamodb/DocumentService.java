@@ -39,6 +39,7 @@ import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
@@ -98,6 +99,21 @@ public interface DocumentService {
   boolean deleteDocument(String siteId, DocumentArtifact document, boolean softDelete);
 
   /**
+   * Delete Document Attribute with per-key access approval.
+   *
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param attributeKey {@link String}
+   * @param validation {@link AttributeValidationType}
+   * @param accessApproval {@link AttributeAccessApproval}
+   * @return {@link List} {@link DocumentAttributeRecord}
+   * @throws ValidationException ValidationException
+   */
+  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, DocumentArtifact document,
+      String attributeKey, AttributeValidationType validation,
+      AttributeAccessApproval accessApproval) throws ValidationException;
+
+  /**
    * Delete Document Attribute.
    * 
    * @param siteId {@link String}
@@ -108,9 +124,28 @@ public interface DocumentService {
    * @return {@link List} {@link DocumentAttributeRecord}
    * @throws ValidationException ValidationException
    */
-  List<DocumentAttributeRecord> deleteDocumentAttribute(String siteId, DocumentArtifact document,
-      String attributeKey, AttributeValidationType validation,
-      AttributeValidationAccess validationAccess) throws ValidationException;
+  default List<DocumentAttributeRecord> deleteDocumentAttribute(final String siteId,
+      final DocumentArtifact document, final String attributeKey,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
+    return deleteDocumentAttribute(siteId, document, attributeKey, validation,
+        new AttributeAccessApproval(validationAccess));
+  }
+
+  /**
+   * Delete Document Attribute Value with per-key access approval.
+   *
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param attributeKey {@link String}
+   * @param attributeValue {@link String}
+   * @param accessApproval {@link AttributeAccessApproval}
+   * @return boolean
+   * @throws ValidationException ValidationException
+   */
+  boolean deleteDocumentAttributeValue(String siteId, DocumentArtifact document,
+      String attributeKey, String attributeValue, AttributeAccessApproval accessApproval)
+      throws ValidationException;
 
   /**
    * Delete Document Attribute Value.
@@ -123,9 +158,12 @@ public interface DocumentService {
    * @return boolean
    * @throws ValidationException ValidationException
    */
-  boolean deleteDocumentAttributeValue(String siteId, DocumentArtifact document,
-      String attributeKey, String attributeValue, AttributeValidationAccess validationAccess)
-      throws ValidationException;
+  default boolean deleteDocumentAttributeValue(final String siteId, final DocumentArtifact document,
+      final String attributeKey, final String attributeValue,
+      final AttributeValidationAccess validationAccess) throws ValidationException {
+    return deleteDocumentAttributeValue(siteId, document, attributeKey, attributeValue,
+        new AttributeAccessApproval(validationAccess));
+  }
 
   /**
    * Delete Document Format.
@@ -574,6 +612,20 @@ public interface DocumentService {
       SaveDocumentOptions options);
 
   /**
+   * Save Document Attributes with per-key access approval.
+   *
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param attributes {@link Collection} {@link DocumentAttributeRecord}
+   * @param validation {@link AttributeValidationType}
+   * @param accessApproval {@link AttributeAccessApproval}
+   * @throws ValidationException ValidationException
+   */
+  void saveDocumentAttributes(String siteId, DocumentArtifact document,
+      Collection<DocumentAttributeRecord> attributes, AttributeValidationType validation,
+      AttributeAccessApproval accessApproval) throws ValidationException;
+
+  /**
    * Save Document Attributes.
    * 
    * @param siteId {@link String}
@@ -583,9 +635,13 @@ public interface DocumentService {
    * @param validationAccess {@link AttributeValidationAccess}
    * @throws ValidationException ValidationException
    */
-  void saveDocumentAttributes(String siteId, DocumentArtifact document,
-      Collection<DocumentAttributeRecord> attributes, AttributeValidationType validation,
-      AttributeValidationAccess validationAccess) throws ValidationException;
+  default void saveDocumentAttributes(final String siteId, final DocumentArtifact document,
+      final Collection<DocumentAttributeRecord> attributes,
+      final AttributeValidationType validation, final AttributeValidationAccess validationAccess)
+      throws ValidationException {
+    saveDocumentAttributes(siteId, document, attributes, validation,
+        new AttributeAccessApproval(validationAccess));
+  }
 
   /**
    * Save Document Format.
