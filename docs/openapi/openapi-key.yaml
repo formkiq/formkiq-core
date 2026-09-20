@@ -6879,6 +6879,68 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+  /sites/{siteId}/opa/accessPolicy/test:
+    post:
+      operationId: TestOpaAccessPolicy
+      description: |-
+        Evaluates the site's saved OPA access policy, or draft policy items supplied in the
+        request, against simulated request and user input. The operation does not persist
+        policies or modify documents.
+      summary: Test an OPA access policy, can only be requested with ADMIN privileges
+      tags:
+      - Access Control
+      parameters:
+      - $ref: '#/components/parameters/siteIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestOpaAccessPolicyRequest'
+      responses:
+        "200":
+          description: OPA access policy test completed
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestOpaAccessPolicyResponse'
+        "400":
+          description: Invalid OPA access policy test request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        "401":
+          description: User is not authenticated or does not have ADMIN privileges for the site
+        "404":
+          description: No saved OPA access policy exists for the site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpaPolicyTestErrorResponse'
+        "500":
+          description: OPA evaluation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpaPolicyTestErrorResponse'
+        "504":
+          description: OPA evaluation timed out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpaPolicyTestErrorResponse'
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /sites/{siteId}/opa/accessPolicy/policyItems:
     get:
       operationId: GetOpaAccessPolicyItems
@@ -14057,6 +14119,159 @@ components:
             $ref: '#/components/schemas/OpaPolicyAttribute'
         input:
           $ref: '#/components/schemas/OpaPolicyInput'
+    TestOpaAccessPolicyRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - input
+      properties:
+        policyItems:
+          type: array
+          description: |-
+            Draft OPA policy items to test without persisting them. When omitted, the site's
+            saved OPA access policy is tested. An explicitly empty array tests the generated
+            deny-all policy.
+          items:
+            $ref: '#/components/schemas/OpaPolicyItem'
+        input:
+          $ref: '#/components/schemas/OpaPolicyTestInput'
+    OpaPolicyTestHttpMethod:
+      type: string
+      description: HTTP method for the simulated request.
+      enum:
+      - DELETE
+      - GET
+      - HEAD
+      - OPTIONS
+      - PATCH
+      - POST
+      - PUT
+    OpaPolicyTestDecision:
+      type: string
+      description: |-
+        OPA policy evaluation decision. ALLOW maps to TRUE, DENY maps to FALSE, and PARTIAL
+        indicates that document criteria must be evaluated by the request interceptor.
+      enum:
+      - ALLOW
+      - DENY
+      - PARTIAL
+    OpaPolicyTestOperator:
+      type: string
+      description: Document attribute comparison operator produced by partial evaluation.
+      enum:
+      - EQ
+      - GT
+      - GTE
+      - LT
+      - LTE
+      - NEQ
+      - IN
+      - NOT_IN
+    OpaPolicyTestInputUser:
+      type: object
+      additionalProperties: false
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          description: Simulated username placed at input.user.username.
+          minLength: 1
+        roles:
+          type: array
+          description: Simulated roles placed at input.user.roles. Defaults to an empty array.
+          uniqueItems: true
+          items:
+            type: string
+        claims:
+          type: object
+          description: |-
+            JSON-compatible simulated claims placed at input.user.claims. Defaults to an empty
+            object.
+          additionalProperties: true
+    OpaPolicyTestInput:
+      type: object
+      additionalProperties: false
+      required:
+      - resource
+      - httpMethod
+      - user
+      properties:
+        resource:
+          type: string
+          description: API Gateway resource template, such as /documents/{documentId}.
+          minLength: 1
+        httpMethod:
+          $ref: '#/components/schemas/OpaPolicyTestHttpMethod'
+        pathParameters:
+          type: object
+          description: Simulated API Gateway path parameters. Defaults to an empty object.
+          additionalProperties:
+            type: string
+        queryParameters:
+          type: object
+          description: |-
+            Simulated API Gateway query parameters. The path siteId is added when siteId is
+            omitted; a different siteId is rejected.
+          additionalProperties:
+            type: string
+        user:
+          $ref: '#/components/schemas/OpaPolicyTestInputUser'
+    OpaPolicyTestCriterion:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - operator
+      - value
+      properties:
+        key:
+          type: string
+          description: Document attribute key referenced by the partial criterion.
+        operator:
+          $ref: '#/components/schemas/OpaPolicyTestOperator'
+        value:
+          description: String, number, boolean, array, or null value used by the criterion.
+          nullable: true
+    OpaPolicyTestCriteriaGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - criteria
+      properties:
+        criteria:
+          type: array
+          description: AND criteria within this group. Groups are combined using OR.
+          items:
+            $ref: '#/components/schemas/OpaPolicyTestCriterion'
+    TestOpaAccessPolicyResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - decision
+      - criteriaGroups
+      properties:
+        decision:
+          $ref: '#/components/schemas/OpaPolicyTestDecision'
+        criteriaGroups:
+          type: array
+          description: |-
+            OR groups containing AND document criteria returned by partial evaluation. Empty
+            when decision is ALLOW or DENY.
+          items:
+            $ref: '#/components/schemas/OpaPolicyTestCriteriaGroup'
+    OpaPolicyTestErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          description: Sanitized error message.
+        requestId:
+          type: string
+          description: Request identifier used to locate restricted diagnostic logs.
     ApiKey:
       type: object
       properties:

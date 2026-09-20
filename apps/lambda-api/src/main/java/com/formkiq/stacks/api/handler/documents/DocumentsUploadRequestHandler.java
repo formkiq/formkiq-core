@@ -48,6 +48,7 @@ import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
@@ -128,7 +129,9 @@ public class DocumentsUploadRequestHandler
 
     AttributeValidationAccess validationAccess =
         getAttributeValidationAccess(authorization, siteId);
-    SaveDocumentOptions options = new SaveDocumentOptions().validationAccess(validationAccess);
+    AttributeAccessApproval accessApproval =
+        authorization.getAttributeAccessApproval(validationAccess);
+    SaveDocumentOptions options = new SaveDocumentOptions().accessApproval(accessApproval);
 
     Optional<Long> documentContentLength =
         calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config);
