@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
+import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
+
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
@@ -75,6 +78,9 @@ public class ApiAuthorization {
   public static void logout() {
     CURRENT_AUTHORIZATION.remove();
   }
+
+  /** Request-scoped attribute access approval. */
+  private AttributeAccessApproval attributeAccessApproval;
 
   /**
    * {@link Object} Cache.
@@ -150,6 +156,17 @@ public class ApiAuthorization {
   }
 
   /**
+   * Sets request-scoped attribute access approval.
+   *
+   * @param approval {@link AttributeAccessApproval}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization attributeAccessApproval(final AttributeAccessApproval approval) {
+    this.attributeAccessApproval = approval;
+    return this;
+  }
+
+  /**
    * Clear Permissions Map.
    */
   public void clearPermissions() {
@@ -191,6 +208,19 @@ public class ApiAuthorization {
   public Collection<ApiPermission> getAllPermissions() {
     return this.permissionsBySiteId.keySet().stream()
         .flatMap(siteId -> getPermissions(siteId).stream()).collect(Collectors.toSet());
+  }
+
+  /**
+   * Gets the request-scoped attribute access approval using the supplied default access.
+   *
+   * @param defaultAccess {@link AttributeValidationAccess}
+   * @return {@link AttributeAccessApproval}
+   */
+  public AttributeAccessApproval getAttributeAccessApproval(
+      final AttributeValidationAccess defaultAccess) {
+    return this.attributeAccessApproval != null
+        ? this.attributeAccessApproval.withDefaultAccess(defaultAccess)
+        : new AttributeAccessApproval(defaultAccess);
   }
 
   /**

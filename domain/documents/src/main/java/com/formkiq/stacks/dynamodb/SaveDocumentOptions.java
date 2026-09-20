@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 
 /**
@@ -33,8 +34,8 @@ public class SaveDocumentOptions {
 
   /** Time to Live. */
   private String timeToLive;
-  /** {@link AttributeValidationAccess}. */
-  private AttributeValidationAccess validationAccess;
+  /** {@link AttributeAccessApproval}. */
+  private AttributeAccessApproval accessApproval;
   /** Whether to skip the Document Event Bridge. */
   private boolean skipDocumentEventBridge;
 
@@ -46,12 +47,32 @@ public class SaveDocumentOptions {
   }
 
   /**
+   * Set attribute access approval.
+   *
+   * @param approval {@link AttributeAccessApproval}
+   * @return {@link SaveDocumentOptions}
+   */
+  public SaveDocumentOptions accessApproval(final AttributeAccessApproval approval) {
+    this.accessApproval = approval;
+    return this;
+  }
+
+  /**
+   * Get {@link AttributeAccessApproval}.
+   *
+   * @return {@link AttributeAccessApproval}
+   */
+  public AttributeAccessApproval getAccessApproval() {
+    return this.accessApproval;
+  }
+
+  /**
    * Is Validation Access.
    * 
    * @return boolean
    */
   public AttributeValidationAccess getValidationAccess() {
-    return this.validationAccess;
+    return this.accessApproval != null ? this.accessApproval.defaultAccess() : null;
   }
 
   /**
@@ -101,7 +122,7 @@ public class SaveDocumentOptions {
    * @return {@link SaveDocumentOptions}
    */
   public SaveDocumentOptions validationAccess(final AttributeValidationAccess access) {
-    this.validationAccess = access;
+    this.accessApproval = new AttributeAccessApproval(access);
     return this;
   }
 }
