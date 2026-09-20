@@ -65,7 +65,7 @@ public class DocumentAttributesValueRequestHandler
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     if (!documentService.deleteDocumentAttributeValue(siteId, document, attributeKey,
-        attributeValue, validationAccess)) {
+        attributeValue, authorization.getAttributeAccessApproval(validationAccess))) {
       throw new NotFoundException(
           "attribute '" + attributeKey + "' not found on document ' " + documentId + "'");
     }

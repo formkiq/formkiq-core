@@ -241,8 +241,10 @@ public class DocumentIdRequestHandler
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
+    AttributeValidationAccess validationAccess =
+        getAttributeValidationAccess(authorization, siteId);
     SaveDocumentOptions options = new SaveDocumentOptions()
-        .validationAccess(getAttributeValidationAccess(authorization, siteId));
+        .accessApproval(authorization.getAttributeAccessApproval(validationAccess));
     service.saveDocument(siteId, documentRecordSet, options);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
