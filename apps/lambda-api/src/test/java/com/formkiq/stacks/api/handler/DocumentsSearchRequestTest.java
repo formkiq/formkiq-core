@@ -28,17 +28,15 @@ import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddAttribute;
-import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddDocumentAttribute;
 import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentTagsRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
-import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
@@ -67,6 +65,7 @@ import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorExtension;
 import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessorImpl;
 import com.formkiq.aws.dynamodb.folders.FolderIndexRecord;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
@@ -92,6 +91,7 @@ import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.testutils.TestWait.until;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static com.formkiq.testutils.api.ApiAsserts.assertNotTruncated;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -127,9 +127,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   }
 
   private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
-    AddAttributeRequest req =
-        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey));
-    this.attributesApi.addAttribute(req, siteId);
+    new AddAttributeRequestBuilder().keyAsString(attributeKey).submitOk(client, siteId);
   }
 
   private void addDocument(final String siteId, final List<AddDocumentTag> tags)
@@ -231,7 +229,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(2, response.getCount());
-      assertFalse(response.getTruncated());
+      assertNotTruncated(response);
       assertTrue(notNull(response.getDocuments()).isEmpty());
     }
   }
@@ -264,8 +262,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       List<String> paths = notNull(documentResponse.getDocuments()).stream()
           .map(SearchResultDocument::getPath).toList();
       assertAll(() -> assertEquals(List.of(path), paths),
-          () -> assertEquals(1, countResponse.getCount()),
-          () -> assertFalse(countResponse.getTruncated()));
+          () -> assertEquals(1, countResponse.getCount()), () -> assertNotTruncated(countResponse));
     }
   }
 
@@ -425,7 +422,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(2, response.getCount());
-      assertFalse(response.getTruncated());
+      assertNotTruncated(response);
       assertTrue(notNull(response.getDocuments()).isEmpty());
     }
   }
@@ -454,10 +451,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     // then
     assertEquals(2, response.getCount());
-    assertFalse(response.getTruncated());
+    assertNotTruncated(response);
     assertTrue(notNull(response.getDocuments()).isEmpty());
     assertNull(response.getNext());
     assertNull(response.getPrevious());
+    assertNotTruncated(response);
   }
 
   /**
@@ -999,8 +997,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     assertEquals(DocumentSyncService.TYPESENSE, syncResponse.getSyncs().getFirst().getService());
 
     GetDocumentFulltextResponse getResponse = until("fulltext for document '" + documentId + "'",
-        () -> this.advancedSearchApi.getDocumentFulltext(documentId, null, null),
-        response -> response != null);
+        () -> this.advancedSearchApi.getDocumentFulltext(documentId, null, null), Objects::nonNull);
 
     assertEquals(path, getResponse.getPath());
 
@@ -1204,7 +1201,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
       // then
       assertEquals(1, response.getCount());
-      assertFalse(response.getTruncated());
+      assertNotTruncated(response);
       assertTrue(notNull(response.getDocuments()).isEmpty());
 
       // given
@@ -1573,9 +1570,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // given
       setBearerToken(siteId);
 
-      AddAttributeRequest req = new AddAttributeRequest().attribute(new AddAttribute().key("wm1")
-          .watermark(new Watermark().text("123")).dataType(AttributeDataType.WATERMARK));
-      this.attributesApi.addAttribute(req, siteId);
+      new AddAttributeRequestBuilder().keyAsWatermark("wm1", new Watermark().text("123"))
+          .submitOk(client, siteId);
 
       AddDocumentUploadRequest uploadReq = new AddDocumentUploadRequest();
 
@@ -1612,10 +1608,8 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     String siteId = ID.uuid();
     setBearerToken(siteId);
 
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key("category")), siteId);
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key("dueDate").dataType(AttributeDataType.DATE)), siteId);
+    new AddAttributeRequestBuilder().keyAsString("category").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsDate("dueDate").submitOk(client, siteId);
 
     new SetSchemaDocumentRequestBuilder("joe").addRequiredAttribute("category")
         .addRequiredAttribute("dueDate").addCompositeKey("category", "dueDate")
@@ -1661,8 +1655,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     String attributeKey = "dueDate";
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
 
     String documentId =
         new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
@@ -1681,6 +1674,24 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
         notNull(response.getDocuments()).stream().map(SearchResultDocument::getDocumentId).toList();
     assertTrue(documentIds.contains(documentId));
     assertFalse(documentIds.contains(otherDocumentId));
+
+    // when - a singleton attributes array uses the same normalization and execution
+    response = new SearchDocumentRequestBuilder()
+        .queryAttributes(List.of(new DocumentSearchAttribute().key(attributeKey).eq("2026-08-04")))
+        .submitOk(client, siteId).response();
+
+    // then
+    assertEquals(List.of(documentId), notNull(response.getDocuments()).stream()
+        .map(SearchResultDocument::getDocumentId).toList());
+
+    // when
+    DocumentSearchResponse count = new SearchDocumentRequestBuilder()
+        .queryAttributes(List.of(new DocumentSearchAttribute().key(attributeKey).eq("2026-08-04")))
+        .projection("COUNT").submitOk(client, siteId).response();
+
+    // then
+    assertEquals(1, count.getCount());
+    assertNotTruncated(count);
   }
 
   /**
@@ -1695,8 +1706,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     String attributeKey = "dueDate";
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
 
     // when
     var response = new SearchDocumentRequestBuilder()
@@ -1722,8 +1732,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     String attributeKey = "dueDate";
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
 
     String documentId0 =
         new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
@@ -1760,8 +1769,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     String attributeKey = "dueDate";
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.DATE)), siteId);
+    new AddAttributeRequestBuilder().keyAsDate(attributeKey).submitOk(client, siteId);
 
     String documentId0 =
         new AddDocumentRequestBuilder().content().addDateAttribute(attributeKey, "2026-08-04")
@@ -1788,4 +1796,261 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     assertTrue(documentIds.contains(documentId1));
     assertFalse(documentIds.contains(otherDocumentId));
   }
+
+  /** Prefer the largest usable composite and fall back when its leading operator cannot match. */
+  @Test
+  public void testSearchMultipleAttributesCompositeSelection() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    for (String key : List.of("customer", "status", "region", "category")) {
+      new AddAttributeRequestBuilder().keyAsString(key).submitOk(client, siteId);
+    }
+
+    new SetSchemaDocumentRequestBuilder("composite-selection").addCompositeKey("customer", "status")
+        .addCompositeKey("customer", "status", "region").submitOk(client, siteId);
+
+    var document0 = new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+        .addAttribute("status", "approved").addAttribute("region", "us")
+        .addAttribute("category", "invoice").getDocument(client, siteId);
+
+    // dummy document that should be filtered
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+        .addAttribute("status", "approved").addAttribute("region", "us")
+        .addAttribute("category", "invoice2").getDocument(client, siteId);
+
+    for (boolean equality : List.of(true, false)) {
+      // given
+      DocumentSearchAttribute customer = new DocumentSearchAttribute().key("customer");
+      if (equality) {
+        customer.eq("123");
+      } else {
+        customer.beginsWith("12");
+      }
+      List<DocumentSearchAttribute> attributes =
+          List.of(new DocumentSearchAttribute().key("category").eq("invoice"), customer,
+              new DocumentSearchAttribute().key("region").eq("us"),
+              new DocumentSearchAttribute().key("status").eq("approved"));
+
+      // when
+      DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+          .queryAttributes(attributes).submitOk(client, siteId).response();
+
+      // then
+      assertEquals(List.of(document0.documentId()), notNull(response.getDocuments()).stream()
+          .map(SearchResultDocument::getDocumentId).toList());
+      assertEquals(equality ? "customer::status::region" : "category", Objects
+          .requireNonNull(response.getDocuments().getFirst().getMatchedAttribute()).getKey());
+    }
+  }
+
+  /** Explicit document IDs return all matching documents even when limit is smaller. */
+  @Test
+  public void testSearchMultipleAttributesDocumentIdsIgnoresLimit() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    new AddAttributeRequestBuilder().keyAsString("category").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsString("status").submitOk(client, siteId);
+    List<String> expected = new ArrayList<>();
+    for (int i = 0; i < 2; i++) {
+      expected.add(new AddDocumentRequestBuilder().content().addAttribute("category", "invoice")
+          .addAttribute("status", "approved").submitOk(client, siteId).response().getDocumentId());
+    }
+    List<String> ids = new ArrayList<>(expected);
+    ids.add(new AddDocumentRequestBuilder().content().addAttribute("category", "invoice")
+        .addAttribute("status", "pending").submitOk(client, siteId).response().getDocumentId());
+    ids.add(expected.getFirst());
+    ids.add(ID.uuid());
+    List<DocumentSearchAttribute> attributes =
+        List.of(new DocumentSearchAttribute().key("category").eq("invoice"),
+            new DocumentSearchAttribute().key("status").eq("approved"));
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .query(new DocumentSearch().attributes(attributes).documentIds(ids)).limit("1")
+        .submitOk(client, siteId).response();
+
+    // then
+    assertEquals(expected, notNull(response.getDocuments()).stream()
+        .map(SearchResultDocument::getDocumentId).toList());
+    assertNull(response.getNext());
+    assertNull(response.getPrevious());
+  }
+
+  /** Both attributes use EQ OR, with AND matching and no duplicate documents. */
+  @Test
+  public void testSearchMultipleAttributesEqOr() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    new AddAttributeRequestBuilder().keyAsString("customer").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsString("status").submitOk(client, siteId);
+
+    List<DocumentArtifact> expected = new ArrayList<>();
+    for (String customer : List.of("123", "456")) {
+      for (String status : List.of("approved", "pending")) {
+        expected.add(new AddDocumentRequestBuilder().content().addAttribute("customer", customer)
+            .addAttribute("status", status).getDocument(client, siteId));
+      }
+    }
+
+    expected.add(
+        new AddDocumentRequestBuilder().content().addAttribute("customer", List.of("123", "456"))
+            .addAttribute("status", List.of("approved", "pending")).getDocument(client, siteId));
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "789")
+        .addAttribute("status", "approved").submitOk(client, siteId);
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+        .addAttribute("status", "rejected").submitOk(client, siteId);
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "123").submitOk(client,
+        siteId);
+
+    List<DocumentSearchAttribute> attributes =
+        List.of(new DocumentSearchAttribute().key("customer").eqOr(List.of("456", "123")),
+            new DocumentSearchAttribute().key("status").eqOr(List.of("pending", "approved")));
+
+    // when
+    List<SearchResultDocument> documents =
+        new SearchDocumentRequestBuilder().queryAttributes(attributes).getDocuments(client, siteId);
+
+    // then
+    assertEquals(expected.stream().map(DocumentArtifact::documentId).sorted().toList(),
+        documents.stream().map(SearchResultDocument::getDocumentId).sorted().toList());
+
+    // when
+    DocumentSearchResponse count = new SearchDocumentRequestBuilder().queryAttributes(attributes)
+        .projection("COUNT").submitOk(client, siteId).response();
+
+    // then
+    assertEquals(expected.size(), count.getCount());
+    assertNotTruncated(count);
+  }
+
+  /** A composite covering two of three criteria drives pagination and count. */
+  @Test
+  public void testSearchMultipleAttributesPartialCompositeKey() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    for (String key : List.of("customer", "status", "region")) {
+      new AddAttributeRequestBuilder().keyAsString(key).submitOk(client, siteId);
+    }
+    new SetSchemaDocumentRequestBuilder("partial-composite").addCompositeKey("customer", "status")
+        .submitOk(client, siteId);
+    List<String> expected = new ArrayList<>();
+    for (int i = 0; i < 2; i++) {
+      expected.add(new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+          .addAttribute("status", List.of("approved", "review")).addAttribute("region", "us")
+          .submitOk(client, siteId).response().getDocumentId());
+    }
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+        .addAttribute("status", "approved").addAttribute("region", "eu").submitOk(client, siteId);
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "123")
+        .addAttribute("status", "approved").submitOk(client, siteId);
+    new AddDocumentRequestBuilder().content().addAttribute("customer", "456")
+        .addAttribute("status", "approved").addAttribute("region", "us").submitOk(client, siteId);
+    for (DocumentSearchAttribute status : List.of(
+        new DocumentSearchAttribute().key("status").eq("approved"),
+        new DocumentSearchAttribute().key("status").eqOr(List.of("review", "approved")),
+        new DocumentSearchAttribute().key("status").beginsWith("approv"),
+        new DocumentSearchAttribute().key("status")
+            .range(new DocumentSearchRange().start("approved").end("review")))) {
+      // given - neither the first criterion nor the request order identifies the composite
+      List<DocumentSearchAttribute> attributes =
+          List.of(new DocumentSearchAttribute().key("region").eq("us"), status,
+              new DocumentSearchAttribute().key("customer").eq("123"));
+      List<String> actual = new ArrayList<>();
+      String next = null;
+      int pages = 0;
+      do {
+        // when
+        DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+            .queryAttributes(attributes).limit("1").next(next).submitOk(client, siteId).response();
+
+        // then
+        assertTrue(notNull(response.getDocuments()).size() <= 1);
+        for (SearchResultDocument document : notNull(response.getDocuments())) {
+          assertEquals("customer::status",
+              Objects.requireNonNull(document.getMatchedAttribute()).getKey());
+          actual.add(document.getDocumentId());
+        }
+        next = response.getNext();
+        assertTrue(++pages < 10);
+      } while (next != null);
+      assertEquals(expected.stream().sorted().toList(), actual.stream().sorted().toList());
+
+      // when
+      DocumentSearchResponse count = new SearchDocumentRequestBuilder().queryAttributes(attributes)
+          .projection("COUNT").submitOk(client, siteId).response();
+
+      // then
+      assertEquals(2, count.getCount());
+      assertNotTruncated(count);
+    }
+  }
+
+  /**
+   * Multi-attribute fallback supports typed criteria, count and API pagination without a schema.
+   */
+  @Test
+  public void testSearchMultipleAttributesWithoutCompositeKey() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    new AddAttributeRequestBuilder().keyAsString("category").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsDate("dueDate").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsBoolean("approved").submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsNumber("amount").submitOk(client, siteId);
+    List<String> expected = new ArrayList<>();
+    for (String date : List.of("2026-08-04", "2026-08-06")) {
+      expected.add(new AddDocumentRequestBuilder().content().addAttribute("category", "invoice")
+          .addDateAttribute("dueDate", date).addAttribute("approved", true)
+          .addAttribute("amount", new java.math.BigDecimal("123.5")).submitOk(client, siteId)
+          .response().getDocumentId());
+    }
+    new AddDocumentRequestBuilder().content().addAttribute("category", "invoice")
+        .addDateAttribute("dueDate", "2026-08-05").addAttribute("approved", false)
+        .addAttribute("amount", new java.math.BigDecimal("123.5")).submitOk(client, siteId);
+    DocumentSearchAttribute date =
+        new DocumentSearchAttribute().key("dueDate").range(new DocumentSearchRange()
+            .start("2026-08-01").end("2026-08-31").type(SearchRangeDataType.DATE));
+    for (boolean dateFirst : List.of(false, true)) {
+      // given - drive the search by category or date
+      List<DocumentSearchAttribute> attributes =
+          new ArrayList<>(List.of(new DocumentSearchAttribute().key("category").eq("invoice"), date,
+              new DocumentSearchAttribute().key("approved").eq("true"),
+              new DocumentSearchAttribute().key("amount").eq("123.5")));
+      if (dateFirst) {
+        Collections.swap(attributes, 0, 1);
+      }
+
+      int pages = 0;
+      String next = null;
+      List<String> actual = new ArrayList<>();
+
+      do {
+        // when
+        DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+            .queryAttributes(attributes).limit("1").next(next).submitOk(client, siteId).response();
+
+        // then
+        actual.addAll(notNull(response.getDocuments()).stream()
+            .map(SearchResultDocument::getDocumentId).toList());
+        next = response.getNext();
+        assertTrue(++pages < 10);
+      } while (next != null);
+
+      // then - all pages contain exactly the matching documents
+      assertEquals(expected.stream().sorted().toList(), actual.stream().sorted().toList());
+
+      // when
+      DocumentSearchResponse count = new SearchDocumentRequestBuilder().queryAttributes(attributes)
+          .projection("COUNT").submitOk(client, siteId).response();
+
+      // then
+      assertEquals(2, count.getCount());
+      assertNotTruncated(count);
+    }
+  }
+
 }
