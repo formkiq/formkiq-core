@@ -116,7 +116,7 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   public static void beforeAll() throws URISyntaxException {
     DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
     db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
-    indexProcessor = new FolderIndexProcessorImpl(dbConnection, DOCUMENTS_TABLE,
+    indexProcessor = new FolderIndexProcessorImpl(db,
         FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
   }
 

@@ -23,8 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.lang.reflect.Proxy;
@@ -67,9 +69,16 @@ public class DocumentSearchMultiAttributeQueryTest {
   private final Set<String> missingValues = new HashSet<>();
 
   private DynamoDbClient createQueryClient(final List<Map<String, AttributeValue>> candidates,
-      final AtomicInteger examined) {
+      final AtomicInteger examined,
+      final Map<Map<String, AttributeValue>, Map<String, AttributeValue>> items) {
     int size = candidates.size();
     return stub(DynamoDbClient.class, (method, args) -> {
+      if ("batchGetItem".equals(method)) {
+        var request = (BatchGetItemRequest) args[0];
+        var found = request.requestItems().get("Documents").keys().stream().map(items::get)
+            .filter(java.util.Objects::nonNull).toList().reversed();
+        return BatchGetItemResponse.builder().responses(Map.of("Documents", found)).build();
+      }
       if (!"query".equals(method)) {
         throw new AssertionError(method);
       }
@@ -122,31 +131,21 @@ public class DocumentSearchMultiAttributeQueryTest {
       Map<String, AttributeValue> item = record(i, "customer", "123");
       candidates.add(item);
       items.put(key(item), item);
+      var document =
+          new DocumentRecordBuilder().documentId(Integer.toString(i)).build("site").getAttributes();
+      items.put(key(document), document);
       if (matches && (i == 42 || i == 10000)) {
         Map<String, AttributeValue> status = record(i, "status", "approved");
         items.put(key(status), status);
       }
     }
-    DynamoDbClient client = createQueryClient(candidates, examined);
-    DynamoDbService db = stub(DynamoDbService.class, (method, args) -> {
-      if ("getTableName".equals(method)) {
-        return "Documents";
-      }
-      if ("getBatchByKey".equals(method)) {
-        List<?> keys = (List<?>) args[1];
-        return keys.stream().map(DynamoDbKey.class::cast).map(DynamoDbKey::toMap).map(items::get)
-            .filter(java.util.Objects::nonNull).toList().reversed();
-      }
-      throw new AssertionError(method);
-    });
+    DynamoDbClient client = createQueryClient(candidates, examined, items);
+    DynamoDbService db = new DynamoDbServiceImpl(client, "Documents");
     DocumentService documents = stub(DocumentService.class, (method, args) -> {
-      if (!"findDocuments".equals(method)) {
-        throw new AssertionError(method);
-      }
+      assertEquals("findDocuments", method);
       List<?> artifacts = (List<?>) args[1];
-      return artifacts.stream()
-          .map(a -> new DocumentRecordBuilder().document((DocumentArtifact) a).build("site"))
-          .toList().reversed();
+      return artifacts.stream().map(DocumentArtifact.class::cast)
+          .map(artifact -> new DocumentRecordBuilder().document(artifact).build("site")).toList();
     });
     return new DocumentSearchMultiAttributeQuery(db, client, documents,
         stub(AttributeService.class, (method, args) -> null),
@@ -185,7 +184,9 @@ public class DocumentSearchMultiAttributeQueryTest {
     });
     return new DocumentSearchMultiAttributeQuery(db, client, documents,
         stub(AttributeService.class, (method, args) -> null),
-        stub(SchemaService.class, (method, args) -> null));
+        stub(SchemaService.class, (method, args) -> null), () -> {
+          throw new AssertionError("Explicit document IDs must not start a time budget");
+        });
   }
 
   private <T> T stub(final Class<T> type, final BiFunction<String, Object[], Object> handler) {

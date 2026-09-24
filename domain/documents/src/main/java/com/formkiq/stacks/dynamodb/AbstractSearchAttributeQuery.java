@@ -71,6 +71,9 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 /** Shared validation, attribute reads and result mapping for attribute searches. */
 public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuery {
 
+  /** Maximum keys in a DynamoDB batch read. */
+  private static final int MAX_ATTRIBUTE_BATCH_SIZE = 100;
+
   /** Database service. */
   protected final DynamoDbService db;
 
@@ -201,7 +204,7 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
 
   /**
    * Find matching rows for the supplied documents or artifacts.
-   * 
+   *
    * @param siteId site identifier
    * @param search resolved search criterion
    * @param artifacts documents or artifacts to check
@@ -209,6 +212,22 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
    */
   protected final List<Map<String, AttributeValue>> findMatchingAttributes(final String siteId,
       final SearchAttributeCriteria search, final List<DocumentArtifact> artifacts) {
+    return findMatchingAttributes(siteId, search, artifacts, () -> {
+    });
+  }
+
+  /**
+   * Find matching rows, checking whether another read may start before each request.
+   *
+   * @param siteId site identifier
+   * @param search resolved search criterion
+   * @param artifacts documents or artifacts to check
+   * @param beforeRead check invoked before each database request
+   * @return matching attribute rows
+   */
+  protected final List<Map<String, AttributeValue>> findMatchingAttributes(final String siteId,
+      final SearchAttributeCriteria search, final List<DocumentArtifact> artifacts,
+      final Runnable beforeRead) {
 
     if (artifacts.isEmpty()) {
       return List.of();
@@ -225,11 +244,18 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
           keys.add(record.buildKey(siteId));
         }
       }
-      return this.db.getBatchByKey(new BatchGetConfig(), keys.stream().distinct().toList());
+      List<Map<String, AttributeValue>> matches = new ArrayList<>();
+      for (List<DynamoDbKey> batch : com.formkiq.aws.dynamodb.objects.Objects
+          .parition(keys.stream().distinct().toList(), MAX_ATTRIBUTE_BATCH_SIZE)) {
+        beforeRead.run();
+        matches.addAll(this.db.getBatchByKey(new BatchGetConfig(), batch));
+      }
+      return matches;
     }
 
     List<Map<String, AttributeValue>> results = new ArrayList<>();
     for (DocumentArtifact artifact : artifacts) {
+      beforeRead.run();
       results.addAll(
           this.dbClient.query(createAttributeQueries(siteId, search, artifact).getFirst()).items());
     }

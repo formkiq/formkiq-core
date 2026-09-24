@@ -51,11 +51,9 @@ import com.formkiq.aws.dynamodb.AttributeValueToDynamicObject;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.WriteRequestBuilder;
@@ -120,17 +118,16 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
   private final long parentLastModifiedUpdateIntervalInMs;
 
   /**
-   * constructor.
-   * 
-   * @param connection {@link DynamoDbClient}
-   * @param documentsTable {@link String}
-   * @param parentLastModifiedUpdateIntervalMs long
+   * Construct a processor using an existing database service.
+   *
+   * @param database database service, optionally scoped to a request deadline
+   * @param parentLastModifiedUpdateIntervalMs parent update interval
    */
-  public FolderIndexProcessorImpl(final DynamoDbConnectionBuilder connection,
-      final String documentsTable, final long parentLastModifiedUpdateIntervalMs) {
-    this.dbClient = connection.build();
-    this.documentTableName = documentsTable;
-    this.db = new DynamoDbServiceImpl(connection, documentsTable);
+  public FolderIndexProcessorImpl(final DynamoDbService database,
+      final long parentLastModifiedUpdateIntervalMs) {
+    this.dbClient = database.getClient();
+    this.documentTableName = database.getTableName();
+    this.db = database;
     this.parentLastModifiedUpdateIntervalInMs = parentLastModifiedUpdateIntervalMs;
   }
 

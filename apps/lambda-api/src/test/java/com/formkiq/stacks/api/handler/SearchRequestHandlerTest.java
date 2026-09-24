@@ -31,6 +31,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.ClassServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
+import com.formkiq.stacks.dynamodb.SearchCountResult;
+import org.junit.jupiter.api.Test;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.google.gson.Gson;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +54,36 @@ class SearchRequestHandlerTest {
         (proxy, method, args) -> handler.apply(method.getName(), args)));
   }
 
+  /** A time-limited count remains a successful response with a lower bound and no cursor. */
+  @Test
+  void testPartialCountResponse() throws Exception {
+    // given
+    DocumentSearchService search = stub(DocumentSearchService.class, (method, args) -> {
+      assertEquals("count", method);
+      assertEquals(3, args.length);
+      return new SearchCountResult(7, true);
+    });
+    AwsServiceCache services = new AwsServiceCache();
+    services.register(Gson.class, new ClassServiceExtension<>(new Gson()));
+    services.register(DocumentSearchService.class, new ClassServiceExtension<>(search));
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    event.addQueryParameter("projection", "COUNT");
+    event.setBody("""
+        {"query":{"attributes":[
+          {"key":"customer","eq":"123"},
+          {"key":"status","eq":"approved"}
+        ]}}
+        """);
+
+    // when
+    var response =
+        new SearchRequestHandler().post(event, new ApiAuthorization().siteId("site"), services);
+
+    // then
+    assertEquals(200, response.statusCode());
+    assertEquals(Map.of("count", 7, "truncated", true), response.body());
+  }
+
   /**
    * A next token alone does not determine whether a page was truncated by its budget.
    *
@@ -65,6 +97,7 @@ class SearchRequestHandlerTest {
     Pagination<DocumentSearchResult> page = new Pagination<>(List.of(), "resume", truncated);
     DocumentSearchService search = stub(DocumentSearchService.class, (method, args) -> {
       assertEquals("search", method);
+      assertEquals(5, args.length);
       return page;
     });
     CacheService cache = stub(CacheService.class, (method, args) -> {
@@ -98,4 +131,5 @@ class SearchRequestHandlerTest {
     assertEquals(List.of(), body.get("documents"));
     assertNotNull(body.get("next"));
   }
+
 }

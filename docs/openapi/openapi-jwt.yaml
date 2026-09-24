@@ -5281,7 +5281,7 @@ paths:
     post:
       operationId: DocumentSearch
       summary: Document search
-      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\n\nSee requestBody examples below for commmon examples."
+      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
       tags:
       - Document Search
       parameters:
@@ -13333,11 +13333,11 @@ components:
             usable composite key supplies the initial matches and the remaining attributes filter them.
             Otherwise, the first attribute supplies matches and the remaining attributes filter them;
             put the most selective attribute first. No composite key or reindex is required for this fallback.
-            Each fallback request examines at most 10,000 candidate attribute records (or supplied document IDs).
+            Each fallback index request examines at most 10,000 candidate attribute records.
             Multivalued attributes may consume multiple candidate records. Results use the first matching value
             of the driving attribute as matchedAttribute. All conditions must match the same document or artifact.
             A short or empty document page can still include a next token; continue until next is absent.
-            COUNT can return fewer than 10,000 matches with truncated=true when the candidate budget is reached.
+            COUNT can return fewer than 10,000 matches with truncated=true when the record or time budget is reached.
             Existing composite-key ordering and operator restrictions still apply when a composite key is used.
           items:
             $ref: '#/components/schemas/DocumentSearchAttribute'
@@ -13388,13 +13388,14 @@ components:
         truncated:
           type: boolean
           description: |-
-            For DOCUMENTS, true when the 10,000 attribute-record processing budget stops the request
+            For DOCUMENTS, true when the 10,000 attribute-record budget or the multi-attribute fallback time budget stops the request
             before the requested page size is reached and search work remains. The response contains
             matches found so far, possibly none, and a next token to continue with a fresh budget.
             False when the requested page size is reached or the search is exhausted, even if next is
             present for ordinary pagination.
             For COUNT, true when counting stops at the result limit or the attribute-record processing
-            budget before the search is exhausted.
+            budget or multi-attribute fallback time budget before the search is exhausted. A truncated
+            count is a lower bound, not an exact total; COUNT does not return continuation tokens.
     SearchResultDocument:
       type: object
       properties:

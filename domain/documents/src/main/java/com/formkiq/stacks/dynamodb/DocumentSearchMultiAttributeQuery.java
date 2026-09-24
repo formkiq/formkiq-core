@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.function.LongSupplier;
 
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1_PK;
 import static com.formkiq.aws.dynamodb.DbKeys.GSI1_SK;
@@ -73,6 +74,8 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
   private static final String POSITION = "candidatePosition";
   /** Composite key definitions. */
   private final SchemaService schemaService;
+  /** Monotonic clock used to start a fresh fallback deadline per invocation. */
+  private final LongSupplier nanoTime;
 
   /**
    * Position within the driving queries.
@@ -86,6 +89,12 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
           new HashMap<>(notNull(new StringToMapAttributeValue().apply(nextToken)));
       AttributeValue value = start.remove(POSITION);
       return new CandidateCursor(value != null ? Integer.parseInt(value.s()) : 0, start);
+    }
+
+    private CandidateCursor advance(final QueryResponse response) {
+      return new CandidateCursor(
+          response.lastEvaluatedKey().isEmpty() ? this.position + 1 : this.position,
+          response.lastEvaluatedKey());
     }
 
     private Map<String, AttributeValue> encode(final int end) {
@@ -110,8 +119,25 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
   public DocumentSearchMultiAttributeQuery(final DynamoDbService database,
       final DynamoDbClient dbClient, final DocumentService documents,
       final AttributeService attributes, final SchemaService schemas) {
+    this(database, dbClient, documents, attributes, schemas, System::nanoTime);
+  }
+
+  /**
+   * Constructor with a controllable clock for deadline tests.
+   *
+   * @param database database service
+   * @param dbClient database client
+   * @param documents document service
+   * @param attributes attribute definitions
+   * @param schemas composite key definitions
+   * @param clock monotonic time source
+   */
+  DocumentSearchMultiAttributeQuery(final DynamoDbService database, final DynamoDbClient dbClient,
+      final DocumentService documents, final AttributeService attributes,
+      final SchemaService schemas, final LongSupplier clock) {
     super(database, dbClient, documents, attributes);
     this.schemaService = schemas;
+    this.nanoTime = clock;
   }
 
   private Map<String, AttributeValue> addResults(final String siteId,
@@ -158,16 +184,18 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
    * @param siteId site identifier
    * @param attributes search criteria combined with AND
    * @param attributeRows rows returned by the driving attribute index query
+   * @param budget deadline shared with the index loop
    * @return matching attribute rows in input order
    */
   private List<Map<String, AttributeValue>> filter(final String siteId,
       final List<SearchAttributeCriteria> attributes,
-      final List<Map<String, AttributeValue>> attributeRows) {
+      final List<Map<String, AttributeValue>> attributeRows, final SearchTimeBudget budget) {
 
+    budget.check();
     AttributeValueToDocumentArtifact toArtifact = new AttributeValueToDocumentArtifact();
     List<DocumentArtifact> artifacts = attributeRows.stream().map(toArtifact).distinct().toList();
     Map<DocumentArtifact, Map<String, AttributeValue>> matches =
-        firstMatches(siteId, attributes.getFirst(), artifacts);
+        firstMatches(siteId, attributes.getFirst(), artifacts, budget);
 
     // A multivalued driving attribute can appear on several index pages or eqOr
     // branches. Emit only its first matching row, avoiding a growing token of IDs.
@@ -177,8 +205,10 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
         .removeIf(item -> !attributeKeys.contains(new DynamoDbKey(item.get(PK), item.get(SK))));
 
     for (int i = 1; i < attributes.size() && !matches.isEmpty(); i++) {
+      budget.check();
       Set<DocumentArtifact> matching =
-          firstMatches(siteId, attributes.get(i), new ArrayList<>(matches.keySet())).keySet();
+          firstMatches(siteId, attributes.get(i), new ArrayList<>(matches.keySet()), budget)
+              .keySet();
       matches.keySet().retainAll(matching);
     }
 
@@ -202,13 +232,16 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
    * @param siteId site identifier
    * @param search attribute criterion to match
    * @param artifacts documents or artifacts to check, in the desired result order
+   * @param budget deadline checked before each attribute read
    * @return first matching attribute row per document or artifact, in supplied order
    */
   private Map<DocumentArtifact, Map<String, AttributeValue>> firstMatches(final String siteId,
-      final SearchAttributeCriteria search, final List<DocumentArtifact> artifacts) {
+      final SearchAttributeCriteria search, final List<DocumentArtifact> artifacts,
+      final SearchTimeBudget budget) {
     Map<DocumentArtifact, Map<String, AttributeValue>> matches = new LinkedHashMap<>();
     AttributeValueToDocumentArtifact toArtifact = new AttributeValueToDocumentArtifact();
-    for (Map<String, AttributeValue> item : findMatchingAttributes(siteId, search, artifacts)) {
+    for (Map<String, AttributeValue> item : findMatchingAttributes(siteId, search, artifacts,
+        budget::check)) {
       matches.merge(toArtifact.apply(item), item,
           (first, second) -> first.get(SK).s().compareTo(second.get(SK).s()) <= 0 ? first : second);
     }
@@ -248,6 +281,7 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
   private Pagination<DocumentSearchResult> queryByAttributeIndex(final String siteId,
       final List<SearchAttributeCriteria> criteria, final String nextToken, final int limit,
       final boolean count) {
+    SearchTimeBudget budget = new SearchTimeBudget(this.nanoTime);
     CandidateCursor cursor = CandidateCursor.decode(nextToken);
     List<QueryRequest> requests = createOrderedAttributeQueries(siteId, criteria.getFirst());
     List<DocumentSearchResult> results = new ArrayList<>();
@@ -261,21 +295,26 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
       int batchPosition = cursor.position();
       Map<String, AttributeValue> start = cursor.startKey();
 
-      QueryResponse response = this.dbClient.query(requests.get(batchPosition).toBuilder()
-          .exclusiveStartKey(start.isEmpty() ? null : start).limit(batchSize).build());
+      try {
+        budget.check();
+        QueryResponse response = this.dbClient.query(requests.get(batchPosition).toBuilder()
+            .exclusiveStartKey(start.isEmpty() ? null : start).limit(batchSize).build());
 
-      List<Map<String, AttributeValue>> attributeRows = response.items();
-      examined += attributeRows.size();
-      cursor = new CandidateCursor(
-          response.lastEvaluatedKey().isEmpty() ? batchPosition + 1 : batchPosition,
-          response.lastEvaluatedKey());
+        List<Map<String, AttributeValue>> attributeRows = response.items();
+        examined += attributeRows.size();
+        CandidateCursor completed = cursor.advance(response);
 
-      List<Map<String, AttributeValue>> matches = filter(siteId, criteria, attributeRows);
-      Map<String, AttributeValue> lastMatch =
-          addResults(siteId, matches, results, count, countedIds, limit);
-      if (results.size() == limit && lastMatch != null) {
-        // Resume after the last emitted candidate when only part of the batch fits.
-        cursor = resumeAfterMatch(attributeRows, lastMatch, batchPosition, cursor);
+        List<Map<String, AttributeValue>> matches = filter(siteId, criteria, attributeRows, budget);
+        budget.check();
+        Map<String, AttributeValue> lastMatch =
+            addResults(siteId, matches, results, count, countedIds, limit);
+        if (results.size() == limit && lastMatch != null) {
+          // Resume after the last emitted candidate when only part of the batch fits.
+          completed = resumeAfterMatch(attributeRows, lastMatch, batchPosition, completed);
+        }
+        cursor = completed;
+      } catch (SearchTimeBudgetExceededException e) {
+        return new Pagination<>(results, cursor.encode(requests.size()), true);
       }
     }
     Map<String, AttributeValue> nextKey = cursor.encode(requests.size());
