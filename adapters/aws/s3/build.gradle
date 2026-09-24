@@ -6,10 +6,10 @@ dependencies {
   annotationProcessor libs.formkiq.graalvm.annotations.processor
   implementation libs.formkiq.graalvm.annotations
 
-  api libs.aws.sdk.s3.adapter
+  api libs.aws.sdk.s3
 
   implementation libs.gson
-  implementation libs.aws.sdk.url.connection.client.s3
+  implementation libs.aws.sdk.url.connection.client
   implementation project(':libs:lambda-services')
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter

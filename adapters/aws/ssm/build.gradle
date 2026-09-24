@@ -12,7 +12,7 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
 
-  testImplementation libs.slf4j.simple
+  testRuntimeOnly libs.slf4j.simple
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
   testImplementation libs.testcontainers.localstack
