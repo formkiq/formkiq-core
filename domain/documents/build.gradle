@@ -31,17 +31,17 @@ dependencies {
 
   testImplementation project(':adapters:aws:ssm')
   testImplementation project(':testing:test-utils')
-  testImplementation libs.slf4j.api
-  testImplementation libs.guava
-  testImplementation libs.slf4j.simple
+  testRuntimeOnly libs.slf4j.simple
 
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter
   testRuntimeOnly  libs.junit.platform.launcher
 
-  testImplementation platform(libs.testcontainers.bom)
-  testImplementation libs.testcontainers
-  testImplementation libs.testcontainers.testcontainers.junit.jupiter
+  constraints {
+    testImplementation(libs.guava) {
+      because 'Preserve the Guava version used by the transitive MockServer dependency'
+    }
+  }
 
   configurations.all {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'
