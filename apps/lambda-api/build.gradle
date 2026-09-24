@@ -51,29 +51,25 @@ dependencies {
   api libs.formkiq.lambda.runtime.graalvm
   api libs.formkiq.graalvm.annotations
 
-  api libs.slf4j.simple
+  runtimeOnly libs.slf4j.simple
 
   testImplementation project(':adapters:aws:cognito-identity')
-  testImplementation project(':adapters:aws:cognito-identityprovider')
-  testImplementation project(':adapters:aws:iam')
-  testImplementation project(':adapters:aws:sts')
   testImplementation project(':apps:lambda-s3')
   testImplementation project(':testing:test-utils')
   testImplementation project(':apps:lambda-typesense')
 
-  testImplementation libs.aws.sdk.apigateway
-  testImplementation libs.aws.sdk.sts
-
+  testImplementation libs.commons.lang3
   testImplementation libs.commons.codec
+
+  // ProfileCredentialsProvider loads STS for assume-role integration-test profiles.
+  testRuntimeOnly libs.aws.sdk.sts
 
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter
   testRuntimeOnly  libs.junit.platform.launcher
 
   testImplementation platform(libs.testcontainers.bom)
-  testImplementation libs.testcontainers
-  testImplementation libs.testcontainers.testcontainers.junit.jupiter
-  testImplementation libs.testcontainers.localstack.bom
+  testImplementation libs.testcontainers.localstack
 
   testImplementation libs.mockserver.netty
 }

@@ -2,7 +2,6 @@
 description = "FormKiQ Test Utils"
 
 dependencies {
-  implementation project(':adapters:aws:cognito-identity')
   implementation project(':adapters:aws:cognito-identityprovider')
   implementation project(':adapters:aws:s3')
   api project(':adapters:aws:sns')
@@ -14,22 +13,22 @@ dependencies {
   implementation project(':libs:lambda-services')
   implementation project(':libs:strings')
 
-  implementation libs.aws.sdk.sso
-  implementation libs.aws.sdk.ssooidc
+  // Loaded by ProfileCredentialsProvider for AWS IAM Identity Center profiles.
+  runtimeOnly libs.aws.sdk.sso
+  runtimeOnly libs.aws.sdk.ssooidc
 
   implementation libs.aws.lambda.core
   api(libs.formkiq.client) {
     changing = true
   }
   implementation libs.gson
-  implementation libs.junit.jupiter.engine
-  testRuntimeOnly  libs.junit.platform.launcher
+  implementation libs.junit.jupiter.api
 
   implementation libs.testcontainers
   implementation libs.testcontainers.localstack
   api libs.mockserver.netty
   implementation libs.jjwt.api
-  implementation libs.jjwt.impl
-  implementation libs.jjwt.gson
+  runtimeOnly libs.jjwt.impl
+  runtimeOnly libs.jjwt.gson
   implementation libs.commons.csv
 }

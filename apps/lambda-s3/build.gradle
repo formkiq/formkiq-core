@@ -49,12 +49,10 @@ dependencies {
   implementation libs.formkiq.lambda.runtime.graalvm
   implementation libs.formkiq.graalvm.annotations
 
-  implementation libs.slf4j.simple
+  runtimeOnly libs.slf4j.simple
 
   testImplementation project(':adapters:aws:sqs')
   testImplementation project(':testing:test-utils')
-  testImplementation project(':libs:validation')
-  testImplementation libs.commons.lang3
 
   testImplementation libs.aws.sdk.dynamodb
   testImplementation libs.aws.sdk.s3
@@ -63,11 +61,6 @@ dependencies {
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter
   testRuntimeOnly  libs.junit.platform.launcher
-
-  testImplementation platform(libs.testcontainers.bom)
-  testImplementation libs.testcontainers
-  testImplementation libs.testcontainers.testcontainers.junit.jupiter
-  testImplementation libs.testcontainers.localstack.bom
 
   testImplementation libs.mockserver.netty
 }

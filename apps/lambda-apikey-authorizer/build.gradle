@@ -12,11 +12,8 @@ dependencies {
   implementation project(':domain:documents')
   implementation project(':libs:lambda-services')
 
-  implementation libs.slf4j.simple
-
   implementation(libs.aws.lambda.events)
-  implementation libs.slf4j.simple
-  implementation libs.slf4j.simple
+  runtimeOnly libs.slf4j.simple
   implementation libs.aws.lambda.core
   implementation libs.gson
 
@@ -27,8 +24,6 @@ dependencies {
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
-  testImplementation libs.testcontainers
-  testImplementation libs.testcontainers.junit.jupiter
 }
 
 compileJava {
