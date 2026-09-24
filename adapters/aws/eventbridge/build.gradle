@@ -12,7 +12,4 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
-
-  testImplementation libs.junit.jupiter.engine
-  testRuntimeOnly  libs.junit.platform.launcher
 }

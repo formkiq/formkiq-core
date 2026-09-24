@@ -17,21 +17,23 @@ dependencies {
   implementation project(':fkq-lambda-core')
   // 5.16.0 of tess4j breaks everything - should look at removing this
   implementation(libs.tess4j)
-  implementation(libs.slf4j.simple)
+  runtimeOnly(libs.slf4j.simple)
   implementation libs.aws.lambda.core
-  implementation libs.gson
-  implementation libs.jna
+
+  constraints {
+    implementation(libs.jna) {
+      because 'Keep Tess4J JNA aligned on compile and runtime classpaths'
+    }
+  }
 
   implementation libs.poi.ooxml
   implementation libs.poi.scratchpad
 
+  testImplementation libs.gson
   testImplementation project(':testing:test-utils')
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
-  testImplementation libs.testcontainers
-  testImplementation libs.testcontainers.junit.jupiter
-  testImplementation libs.testcontainers.localstack
 }
 
 tasks.register('downloadZipFile', Download) {

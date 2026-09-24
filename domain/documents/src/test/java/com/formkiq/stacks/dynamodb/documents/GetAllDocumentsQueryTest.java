@@ -47,7 +47,6 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.validation.ValidationException;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,8 +124,7 @@ public class GetAllDocumentsQueryTest {
     service = awsServiceCache.getExtension(DocumentService.class);
   }
 
-  private @NotNull List<String> addDocuments(final String siteId,
-      final List<String> insertedDates) {
+  private List<String> addDocuments(final String siteId, final List<String> insertedDates) {
     List<String> documentIds = new ArrayList<>();
 
     for (String date : insertedDates) {

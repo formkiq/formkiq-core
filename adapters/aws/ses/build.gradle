@@ -7,9 +7,6 @@ dependencies {
   implementation project(':libs:lambda-services')
   //implementation project(':adapters:aws:xray')
 
-  testImplementation libs.junit.jupiter.engine
-  testRuntimeOnly  libs.junit.platform.launcher
-
   configurations.all {
     exclude group: 'software.amazon.awssdk', module: 'apache-client'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
