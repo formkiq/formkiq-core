@@ -32,6 +32,7 @@ import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.SearchResultDocument;
+import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -73,7 +74,7 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   }
 
   /**
-   * Set the maximum number of results to return.
+   * Set the folder whose contents should be returned.
    *
    * @param folder {@link String}
    * @return this builder
@@ -160,6 +161,17 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   public SearchDocumentRequestBuilder queryAttributes(
       final List<DocumentSearchAttribute> attributes) {
     return query(new DocumentSearch().attributes(attributes));
+  }
+
+  /**
+   * Set the tags and attributes to include in search results.
+   *
+   * @param fields requested response fields
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder responseFields(final SearchResponseFields fields) {
+    this.request.responseFields(fields);
+    return this;
   }
 
   /**

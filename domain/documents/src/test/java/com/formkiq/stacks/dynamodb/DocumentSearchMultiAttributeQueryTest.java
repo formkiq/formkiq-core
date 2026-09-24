@@ -43,8 +43,10 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.IntStream;
@@ -53,10 +55,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Tests the production candidate budget without making 10,000 real database writes. */
+/** Tests index prechecks and the production search budget without 10,000 database writes. */
 public class DocumentSearchMultiAttributeQueryTest {
+
+  /** Equality index requests, separate from driving index pagination. */
+  private final List<QueryRequest> indexChecks = new ArrayList<>();
+  /** Values absent from the index, including documents outside the driving result set. */
+  private final Set<String> missingValues = new HashSet<>();
 
   private DynamoDbClient createQueryClient(final List<Map<String, AttributeValue>> candidates,
       final AtomicInteger examined) {
@@ -66,6 +74,16 @@ public class DocumentSearchMultiAttributeQueryTest {
         throw new AssertionError(method);
       }
       QueryRequest request = (QueryRequest) args[0];
+      if ("PK".equals(request.projectionExpression())) {
+        assertEquals(1, request.limit());
+        assertEquals("GSI1", request.indexName());
+        assertTrue(request.exclusiveStartKey().isEmpty());
+        this.indexChecks.add(request);
+        String value = request.expressionAttributeValues().get(":SK").s();
+        // A value can exist globally without matching any of the driving documents.
+        return QueryResponse.builder().items(this.missingValues.contains(value) ? List.of()
+            : List.of(Map.of("PK", AttributeValue.fromS("site/docs#outside")))).build();
+      }
       assertTrue(request.limit() <= 100);
       int start = request.exclusiveStartKey().isEmpty() ? 0
           : Integer.parseInt(request.exclusiveStartKey().get("offset").s());
@@ -245,6 +263,58 @@ public class DocumentSearchMultiAttributeQueryTest {
     assertFalse(results.isTruncated());
   }
 
+  /** Every alternative must be absent before an EQ OR index is considered empty. */
+  @Test
+  public void testEmptyEqOrIndex() {
+    // given
+    this.missingValues.addAll(List.of("missing", "approved"));
+    AtomicInteger examined = new AtomicInteger();
+    DocumentSearchQuery search = search(10001, examined, true);
+    SearchQuery query = new SearchQueryBuilder().attributes(List.of(query().attributes().getFirst(),
+        new SearchAttributeCriteria("status", null, null, List.of("missing", "approved"), null)))
+        .build();
+
+    // when
+    var results = search.query("site", query, null, 10);
+
+    // then
+    assertTrue(results.getResults().isEmpty());
+    assertFalse(results.isTruncated());
+    assertNull(results.getNextToken());
+    assertEquals(3, this.indexChecks.size());
+    assertEquals(0, examined.get());
+  }
+
+  /** An empty driving or residual equality index avoids all document batch reads. */
+  @Test
+  public void testEmptyEqualityIndex() {
+    for (String value : List.of("123", "approved")) {
+      // given
+      this.missingValues.clear();
+      this.missingValues.add(value);
+      this.indexChecks.clear();
+      AtomicInteger examined = new AtomicInteger();
+      DocumentSearchQuery search = search(10001, examined, true);
+
+      // when
+      var results = search.query("site", query(), null, 10);
+
+      // then
+      assertTrue(results.getResults().isEmpty());
+      assertNull(results.getNextToken());
+      assertFalse(results.isTruncated());
+      assertEquals(0, examined.get());
+      assertEquals("123".equals(value) ? 1 : 2, this.indexChecks.size());
+
+      // when
+      SearchCountResult count = search.count("site", query(), 10000);
+
+      // then
+      assertEquals(new SearchCountResult(0, false), count);
+      assertEquals(0, examined.get());
+    }
+  }
+
   /** Empty result pages preserve a cursor and resume after the bounded candidate batch. */
   @Test
   public void testEmptyPageResumes() {
@@ -260,6 +330,10 @@ public class DocumentSearchMultiAttributeQueryTest {
     assertNotNull(first.getNextToken());
     assertTrue(first.isTruncated());
     assertEquals(10000, examined.get());
+    assertEquals(2, this.indexChecks.size());
+
+    // given - continuation pages must not repeat index checks, even if index visibility changes.
+    this.missingValues.add("approved");
 
     // when
     var second = search.query("site", query(), first.getNextToken(), 10);
@@ -269,6 +343,30 @@ public class DocumentSearchMultiAttributeQueryTest {
     assertNull(second.getNextToken());
     assertFalse(second.isTruncated());
     assertEquals(10001, examined.get());
+    assertEquals(2, this.indexChecks.size());
+  }
+
+  /** A later matching EQ OR alternative allows normal filtering and skips further probes. */
+  @Test
+  public void testEqOrIndexHasLaterMatch() {
+    // given
+    this.missingValues.add("missing");
+    AtomicInteger examined = new AtomicInteger();
+    DocumentSearchQuery search = search(100, examined, true);
+    SearchQuery query = new SearchQueryBuilder()
+        .attributes(List.of(query().attributes().getFirst(), new SearchAttributeCriteria("status",
+            null, null, List.of("missing", "approved", "unused"), null)))
+        .build();
+
+    // when
+    var results = search.query("site", query, null, 10);
+
+    // then
+    assertEquals(List.of("42"),
+        results.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
+    assertEquals(List.of("123", "missing", "approved"), this.indexChecks.stream()
+        .map(request -> request.expressionAttributeValues().get(":SK").s()).toList());
+    assertEquals(100, examined.get());
   }
 
   /** Reaching exactly the budget at exhaustion does not mark the count truncated. */
@@ -291,6 +389,26 @@ public class DocumentSearchMultiAttributeQueryTest {
     // then
     assertFalse(page.isTruncated());
     assertNull(page.getNextToken());
+  }
+
+  /** Failed index checks propagate instead of being interpreted as an empty result. */
+  @Test
+  public void testIndexCheckFailure() {
+    // given
+    DynamoDbClient client = stub(DynamoDbClient.class, (method, args) -> {
+      throw new IllegalStateException("query failed");
+    });
+    DynamoDbService db = stub(DynamoDbService.class, (method, args) -> "Documents");
+    DocumentSearchQuery search = new DocumentSearchMultiAttributeQuery(db, client, null,
+        stub(AttributeService.class, (method, args) -> null),
+        stub(SchemaService.class, (method, args) -> null));
+
+    // when
+    IllegalStateException error =
+        assertThrows(IllegalStateException.class, () -> search.query("site", query(), null, 10));
+
+    // then
+    assertEquals("query failed", error.getMessage());
   }
 
   /** Filling the requested page is ordinary pagination, not budget truncation. */

@@ -236,14 +236,18 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
       final List<SearchAttributeCriteria> attributes, final Collection<String> documentIds,
       final String nextToken, final int limit, final boolean count) {
     List<String> ids = notNull(documentIds).stream().distinct().toList();
-    return ids.isEmpty() ? queryByAttributeIndex(siteId, attributes, nextToken, limit, count)
-        : queryWithDocumentIds(siteId, attributes, ids);
+    if (!ids.isEmpty()) {
+      return queryWithDocumentIds(siteId, attributes, ids);
+    }
+    List<SearchAttributeCriteria> criteria = createIndexSearchCriteria(siteId, attributes);
+    return isEmpty(nextToken) && hasEmptyAttributeIndex(siteId, criteria)
+        ? new Pagination<>(List.of())
+        : queryByAttributeIndex(siteId, criteria, nextToken, limit, count);
   }
 
   private Pagination<DocumentSearchResult> queryByAttributeIndex(final String siteId,
-      final List<SearchAttributeCriteria> attributes, final String nextToken, final int limit,
+      final List<SearchAttributeCriteria> criteria, final String nextToken, final int limit,
       final boolean count) {
-    List<SearchAttributeCriteria> criteria = createIndexSearchCriteria(siteId, attributes);
     CandidateCursor cursor = CandidateCursor.decode(nextToken);
     List<QueryRequest> requests = createOrderedAttributeQueries(siteId, criteria.getFirst());
     List<DocumentSearchResult> results = new ArrayList<>();
@@ -278,6 +282,24 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     boolean truncated = examined >= DocumentSearchService.MAX_DOCUMENT_SEARCH
         && results.size() < limit && nextKey != null;
     return new Pagination<>(results, nextKey, truncated);
+  }
+
+  /**
+   * Check equality indexes before reading and filtering batches of documents. An EQ OR criterion is
+   * empty only when all of its values are absent. Like the driving GSI query, these checks are
+   * eventually consistent; they do not guarantee visibility of recently written attributes.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized index criteria
+   * @return whether a required equality criterion has no indexed matches
+   */
+  private boolean hasEmptyAttributeIndex(final String siteId,
+      final List<SearchAttributeCriteria> attributes) {
+    return attributes.stream()
+        .filter(search -> !isEmpty(search.eq()) || !notNull(search.eqOr()).isEmpty())
+        .anyMatch(search -> createAttributeQueries(siteId, search, null).stream()
+            .map(request -> request.toBuilder().limit(1).projectionExpression(PK).build())
+            .noneMatch(request -> !this.dbClient.query(request).items().isEmpty()));
   }
 
   private Pagination<DocumentSearchResult> queryWithDocumentIds(final String siteId,
