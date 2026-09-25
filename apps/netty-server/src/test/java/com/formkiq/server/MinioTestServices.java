@@ -37,7 +37,7 @@ import org.testcontainers.containers.GenericContainer;
 public final class MinioTestServices {
 
   /** Minio Image. */
-  private static final String MINIO_IMAGE = "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z";
+  private static final String MINIO_IMAGE = "formkiq/minio:RELEASE.2025-09-07T16-13-09Z";
   /** Default Minio Port. */
   private static final Integer DEFAULT_PORT = Integer.valueOf(9000);
   /** Default Minio Console. */
