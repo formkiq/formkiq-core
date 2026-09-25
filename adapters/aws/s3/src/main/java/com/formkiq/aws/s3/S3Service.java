@@ -84,6 +84,7 @@ import java.time.Instant;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -389,6 +390,21 @@ public class S3Service {
     this.s3Client.deleteObject(
         DeleteObjectRequest.builder().bucket(bucket).key(key).versionId(versionId).build());
 
+  }
+
+  /**
+   * Download an object directly to a file without buffering its contents in memory. The destination
+   * must not exist. The caller owns cleanup of the destination on failure.
+   *
+   * @param bucket S3 bucket
+   * @param key S3 object key
+   * @param destination destination file
+   * @return object metadata, including the version of the downloaded object
+   */
+  public GetObjectResponse downloadToFile(final String bucket, final String key,
+      final Path destination) {
+    GetObjectRequest request = GetObjectRequest.builder().bucket(bucket).key(key).build();
+    return this.s3Client.getObject(request, destination);
   }
 
   private void emptyVersionedBucket(final String bucket) {
