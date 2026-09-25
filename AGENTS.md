@@ -1,25 +1,31 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Multi-module Gradle build (see `settings.gradle`): AWS adapters (`aws-*`), Lambdas (`lambda-*`, `lambda-*-graalvm`), shared libs (`fkq-*`, `http*`, `strings`), and UI (`console`).
+- Multi-module Gradle build (see `settings.gradle`): AWS adapters in `adapters/aws/`, application entry points and the console in `apps/`, business modules in `domain/`, shared code in `libs/`, test infrastructure in `testing/`, and distribution/specification projects in `packaging/`. The shared Lambda request handler remains in `fkq-lambda-core/`.
+- Use the actual Gradle project paths, such as `:adapters:aws:s3`, rather than the former flat module names.
 - Source lives under each module’s `src/main/java` and `src/main/resources`; tests under `src/test/java` with fixtures in `src/test/resources`.
 - Infrastructure templates and assets: `src/main/resources/cloudformation/`, `docs/`, `images/`, `docker/` and `docker-compose*.yml` for local stacks.
 
 ## Build, Test, and Development Commands
-- `./gradlew clean build` — compile all modules, generate CloudFormation artifacts, and run unit tests.
+- Use the Gradle wrapper and Java 25 toolchain configured by the build.
+- Prefer checks scoped to the affected modules. For S3 changes: `./gradlew :adapters:aws:s3:test :adapters:aws:s3:checkstyleMain :adapters:aws:s3:checkstyleTest :adapters:aws:s3:spotlessCheck`.
+- `./gradlew build` — run the broader build and verification tasks when cross-module changes warrant it; avoid `clean` unless stale outputs are part of the problem.
 - `./gradlew test` — run tests only; respects `-Ptestregion`, `-Ptestprofile`, `-Ptestappenvironment`, `-Ptestchatgptapikey` when AWS context is required.
-- `./gradlew spotlessCheck` — verify formatting; use `spotlessApply` before pushing.
+- Run the affected module’s `spotlessApply` after editing Java, then `spotlessCheck`, `checkstyleMain`, and `checkstyleTest`. Formatting alone does not satisfy Checkstyle; document fields and follow its naming and complexity rules.
 - `./gradlew licenseReport` — regenerate license inventory under `docs/licenses/`.
 
 ## Coding Style & Naming Conventions
 - Java code formatted via Spotless/Eclipse profile (`spotless.eclipseformat.xml`); let the formatter decide indentation and wrapping.
-- Use descriptive, AWS-aligned names for modules/resources (e.g., `lambda-s3`, `aws-dynamodb`), and keep package names consistent with service boundaries.
+- Use descriptive, AWS-aligned names for modules/resources (e.g., `apps/lambda-s3`, `adapters/aws/dynamodb`), and keep package names consistent with service boundaries.
 - Prefer immutable data where practical; validate inputs at module edges (API handlers, S3 triggers, event listeners).
 
 ## Testing Guidelines
 - Default to JUnit tests in `src/test/java`; mirror package structure of the code under test.
-- When tests hit AWS-dependent flows, supply Gradle properties (`-Ptestregion`, etc.) pointing to sandbox credentials/profiles.
-- Mark slow/integration tests with JUnit tags to allow selective execution (e.g., `./gradlew test -DexcludeTags=integration`).
+- Every new or modified test must clearly separate setup, execution, and assertions with the literal comments `// given`, `// when`, and `// then`, in that order. Follow nearby tests for naming and fixture conventions. For multi-step scenarios, repeat the execution/assertion sections as needed.
+- Keep the operation under test in the `// when` section and assertions in `// then`. For exception tests, define an `Executable` in `// when` and use `assertThrows` in `// then`, or follow an established nearby exception-test pattern that preserves these sections.
+- Test observable behavior and meaningful failure paths. For concurrency and streaming, use bounded synchronization to prove overlap or incremental progress rather than relying on elapsed-time speed assertions.
+- Prefer the existing local test infrastructure for AWS-dependent flows; tests using LocalStack or DynamoDB containers require Docker. Supply Gradle properties (`-Ptestregion`, etc.) when the selected tests require AWS context.
+- Run a focused test with `--tests 'fully.qualified.TestClass'`, then the affected module’s suite. Use tag filters only when the selected Gradle test task explicitly configures them; do not assume `-DexcludeTags=integration` is supported.
 - Add fixtures in `src/test/resources`; avoid hardcoding secrets.
 
 ## Commit & Pull Request Guidelines
