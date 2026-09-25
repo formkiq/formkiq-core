@@ -35,6 +35,7 @@ import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static com.formkiq.testutils.api.ApiAsserts.assertNotTruncated;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1156,8 +1157,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       // then
       assertAll(() -> assertEquals(1, authorizedCountResponse.getCount()),
           () -> assertEquals(0, notNull(documentResponse.getDocuments()).size()),
-          () -> assertEquals(0, countResponse.getCount()),
-          () -> assertFalse(countResponse.getTruncated()));
+          () -> assertEquals(0, countResponse.getCount()), () -> assertNotTruncated(countResponse));
     }
   }
 

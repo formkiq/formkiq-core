@@ -59,6 +59,26 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
   }
 
   /**
+   * Construct a primary key without secondary index keys.
+   *
+   * @param partitionKey the primary partition key
+   * @param sortKey the primary sort key
+   */
+  public DynamoDbKey(final String partitionKey, final String sortKey) {
+    this(partitionKey, sortKey, null, null, null, null);
+  }
+
+  /**
+   * Construct a primary key from string attributes without secondary index keys.
+   *
+   * @param partitionKey the primary partition key attribute
+   * @param sortKey the primary sort key attribute
+   */
+  public DynamoDbKey(final AttributeValue partitionKey, final AttributeValue sortKey) {
+    this(DynamoDbTypes.toString(partitionKey), DynamoDbTypes.toString(sortKey));
+  }
+
+  /**
    * Return Key {@link Map}.
    * 
    * @return {@link Map}
@@ -244,4 +264,3 @@ public record DynamoDbKey(String pk, String sk, String gsi1Pk, String gsi1Sk, St
     }
   }
 }
-

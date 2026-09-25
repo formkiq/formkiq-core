@@ -24,6 +24,7 @@
 package com.formkiq.testutils.api;
 
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.client.model.DocumentSearchResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,6 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Api Asserts Helper.
  */
 public interface ApiAsserts {
+
+  /**
+   * Assert that a search response explicitly reports an untruncated count.
+   *
+   * @param response {@link DocumentSearchResponse}
+   */
+  static void assertNotTruncated(final DocumentSearchResponse response) {
+    assertEquals(Boolean.FALSE, response.getTruncated(), "Expected truncated to be false");
+  }
 
   /**
    * Assert {@link ApiException}.

@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryConfig;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceDynamodb;
@@ -46,6 +47,8 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -97,6 +100,11 @@ public class SchemaServiceDynamodbTest {
         .allowedValues(List.of("invoice", "receipt"));
   }
 
+  private static List<SearchAttributeCriteria> equalityCriteria(final List<String> keys) {
+    return keys.stream().map(key -> new SearchAttributeCriteria(key, null, "value", null, null))
+        .toList();
+  }
+
   private static ClassificationRecord setClassification(final String siteId,
       final String classificationId, final String name, final SchemaAttributes schemaAttributes)
       throws ValidationException {
@@ -139,6 +147,142 @@ public class SchemaServiceDynamodbTest {
     }
   }
 
+  /** Choose site or classification composite keys without including another site's definitions. */
+  @Test
+  public void testGetCompositeKeyBestMatch() {
+    // given
+    String siteId = ID.uuid();
+    String otherSiteId = ID.uuid();
+    List<String> siteKeys = List.of("category", "docType");
+    List<String> classificationKeys = List.of("region", "category");
+    List<SchemaAttributesOptional> optional = List.of("category", "docType", "region").stream()
+        .map(key -> new SchemaAttributesOptional().attributeKey(key)).toList();
+    for (String site : List.of(siteId, otherSiteId)) {
+      for (String key : List.of("category", "docType", "region")) {
+        addAttribute(site, key);
+      }
+    }
+    assertTrue(setSitesSchema(siteId,
+        new SchemaAttributes().optional(optional)
+            .compositeKeys(List.of(new SchemaAttributesCompositeKey().attributeKeys(siteKeys))))
+        .isEmpty());
+    setClassification(siteId, null, "regional",
+        new SchemaAttributes().optional(optional).compositeKeys(
+            List.of(new SchemaAttributesCompositeKey().attributeKeys(classificationKeys))));
+    List<String> otherSiteKeys = List.of("docType", "category");
+    assertTrue(
+        setSitesSchema(otherSiteId,
+            new SchemaAttributes().optional(optional).compositeKeys(
+                List.of(new SchemaAttributesCompositeKey().attributeKeys(otherSiteKeys))))
+            .isEmpty());
+
+    // when
+    SchemaCompositeKeyRecord record = service.getCompositeKeyBestMatch(siteId,
+        equalityCriteria(List.of("region", "docType", "category")));
+    SchemaCompositeKeyRecord classification =
+        service.getCompositeKeyBestMatch(siteId, equalityCriteria(classificationKeys));
+
+    // then
+    assertNotNull(record);
+    assertEquals(siteKeys, record.getKeys());
+    assertNotNull(classification);
+    assertEquals(classificationKeys, classification.getKeys());
+
+    // when
+    SchemaCompositeKeyRecord other =
+        service.getCompositeKeyBestMatch(otherSiteId, equalityCriteria(siteKeys));
+
+    // then
+    assertNotNull(other);
+    assertEquals(otherSiteKeys, other.getKeys());
+
+    // when
+    SchemaCompositeKeyRecord missing =
+        service.getCompositeKeyBestMatch(ID.uuid(), equalityCriteria(siteKeys));
+    SchemaCompositeKeyRecord noMatch =
+        service.getCompositeKeyBestMatch(otherSiteId, equalityCriteria(classificationKeys));
+
+    // then
+    assertNull(missing);
+    assertNull(noMatch);
+  }
+
+  /** Skip composites with unsupported leading operators and return null when none are usable. */
+  @Test
+  public void testGetCompositeKeyBestMatchOperators() {
+    // given
+    String siteId = ID.uuid();
+    List<String> pair = List.of("customer", "status");
+    List<String> triple = List.of("customer", "status", "region");
+    db.putItems(List.of(new SchemaCompositeKeyRecord().keys(pair).getAttributes(siteId),
+        new SchemaCompositeKeyRecord().keys(triple).getAttributes(siteId)));
+    SearchAttributeCriteria customer =
+        new SearchAttributeCriteria("customer", null, "123", null, null);
+    SearchAttributeCriteria status =
+        new SearchAttributeCriteria("status", "approv", null, null, null);
+    SearchAttributeCriteria region = new SearchAttributeCriteria("region", null, "us", null, null);
+
+    // when
+    SchemaCompositeKeyRecord record =
+        service.getCompositeKeyBestMatch(siteId, List.of(region, status, customer));
+
+    // then
+    assertNotNull(record);
+    assertEquals(pair, record.getKeys());
+
+    // when
+    SchemaCompositeKeyRecord noMatch = service.getCompositeKeyBestMatch(siteId,
+        List.of(region, status, new SearchAttributeCriteria("customer", "12", null, null, null)));
+    SchemaCompositeKeyRecord existenceOnly = service.getCompositeKeyBestMatch(siteId,
+        List.of(region, customer, new SearchAttributeCriteria("status", null, null, null, null)));
+
+    // then
+    assertNull(noMatch);
+    assertNull(existenceOnly);
+  }
+
+  /** Find the largest matching composite even when it is on a later index page. */
+  @Test
+  public void testGetCompositeKeyBestMatchPagination() {
+    // given
+    String siteId = ID.uuid();
+    List<List<String>> smaller =
+        IntStream.range(0, LIMIT).mapToObj(i -> List.of("customer", "attribute" + i)).toList();
+    db.putItems(smaller.stream()
+        .map(keys -> new SchemaCompositeKeyRecord().keys(keys).getAttributes(siteId)).toList());
+    List<String> expected = List.of("zzCustomer", "zzStatus", "zzRegion");
+    db.putItems(List.of(new SchemaCompositeKeyRecord().keys(expected).getAttributes(siteId)));
+    List<String> keys = Stream.concat(smaller.stream().flatMap(List::stream), expected.stream())
+        .distinct().toList();
+
+    // when
+    SchemaCompositeKeyRecord record =
+        service.getCompositeKeyBestMatch(siteId, equalityCriteria(keys));
+
+    // then
+    assertNotNull(record);
+    assertEquals(expected, record.getKeys());
+  }
+
+  /** Prefer a three-attribute composite over a matching two-attribute composite. */
+  @Test
+  public void testGetCompositeKeyBestMatchPrefersMoreAttributes() {
+    // given
+    String siteId = ID.uuid();
+    List<String> pair = List.of("customer", "status");
+    List<String> triple = List.of("customer", "status", "region");
+    db.putItems(List.of(new SchemaCompositeKeyRecord().keys(pair).getAttributes(siteId),
+        new SchemaCompositeKeyRecord().keys(triple).getAttributes(siteId)));
+
+    // when
+    SchemaCompositeKeyRecord record = service.getCompositeKeyBestMatch(siteId,
+        equalityCriteria(List.of("region", "status", "customer")));
+
+    // then
+    assertNotNull(record);
+    assertEquals(triple, record.getKeys());
+  }
+
   /**
    * Set Classification.
    */
@@ -168,9 +312,9 @@ public class SchemaServiceDynamodbTest {
       assertNotNull(sitesSchema);
 
       SchemaCompositeKeyRecord compositeKeyRecord =
-          service.getCompositeKey(siteId, List.of("docType", "category"));
+          service.getCompositeKeyExactMatch(siteId, List.of("docType", "category"));
       assertNotNull(compositeKeyRecord);
-      assertNull(service.getCompositeKey(siteId, List.of("docType", "category123")));
+      assertNull(service.getCompositeKeyExactMatch(siteId, List.of("docType", "category123")));
 
       List<String> allowedValues =
           service.getClassificationAttributeAllowedValues(siteId, classificationId, "category");
@@ -252,9 +396,9 @@ public class SchemaServiceDynamodbTest {
       assertNotNull(sitesSchema);
 
       SchemaCompositeKeyRecord compositeKeyRecord =
-          service.getCompositeKey(siteId, List.of("docType", "category"));
+          service.getCompositeKeyExactMatch(siteId, List.of("docType", "category"));
       assertNotNull(compositeKeyRecord);
-      assertNull(service.getCompositeKey(siteId, List.of("docType", "category123")));
+      assertNull(service.getCompositeKeyExactMatch(siteId, List.of("docType", "category123")));
 
       List<String> allowedValues = service.getSitesSchemaAttributeAllowedValues(siteId, "category");
       assertEquals(2, allowedValues.size());

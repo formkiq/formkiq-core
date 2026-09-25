@@ -25,7 +25,7 @@ package com.formkiq.stacks.dynamodb.folders;
 
 import java.util.concurrent.TimeUnit;
 
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 
@@ -53,15 +53,13 @@ public class FolderIndexProcessorExtension implements AwsServiceExtension<Folder
   public FolderIndexProcessor loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
-      DynamoDbConnectionBuilder connection =
-          awsServiceCache.getExtension(DynamoDbConnectionBuilder.class);
+      DynamoDbService database = awsServiceCache.getExtension(DynamoDbService.class);
 
       String lastModifiedInterval =
           awsServiceCache.environment("PARENT_LAST_MODIFIED_UPDATE_INTERVAL");
-      this.service =
-          new FolderIndexProcessorImpl(connection, awsServiceCache.environment("DOCUMENTS_TABLE"),
-              lastModifiedInterval != null ? Long.parseLong(lastModifiedInterval)
-                  : DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
+      this.service = new FolderIndexProcessorImpl(database,
+          lastModifiedInterval != null ? Long.parseLong(lastModifiedInterval)
+              : DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     }
 
     return this.service;
