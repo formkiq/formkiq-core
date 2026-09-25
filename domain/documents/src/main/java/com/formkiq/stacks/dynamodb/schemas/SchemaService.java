@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
@@ -101,13 +102,25 @@ public interface SchemaService {
       String attributeKey);
 
   /**
-   * Get Composite Key.
-   * 
+   * Get the largest usable composite key across the site schema and its classifications. Keys must
+   * be covered by the supplied criteria, with equality on all but the last key. Ties are resolved
+   * by composite key order for consistent pagination.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized search criteria
+   * @return best matching composite key, or null if none is usable
+   */
+  SchemaCompositeKeyRecord getCompositeKeyBestMatch(String siteId,
+      List<SearchAttributeCriteria> attributes);
+
+  /**
+   * Get a composite key covering exactly the supplied attribute keys, regardless of their order.
+   *
    * @param siteId {@link String}
    * @param attributeKeys {@link List} {@link String}
-   * @return {@link SchemaCompositeKeyRecord}
+   * @return matching composite key, or null if none exists
    */
-  SchemaCompositeKeyRecord getCompositeKey(String siteId, List<String> attributeKeys);
+  SchemaCompositeKeyRecord getCompositeKeyExactMatch(String siteId, List<String> attributeKeys);
 
   /**
    * Get Schema.

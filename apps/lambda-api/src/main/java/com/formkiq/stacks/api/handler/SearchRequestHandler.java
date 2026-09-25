@@ -70,6 +70,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.DocumentSearchService.MAX_DOCUMENT_SEARCH;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 /** {@link ApiGatewayRequestHandler} for "/search". */
@@ -85,8 +86,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   /** Maximum number of Document Ids that can be sent. */
   private static final int MAX_DOCUMENT_IDS = 100;
-  /** Maximum number of Documents that can be counted. */
-  private static final int MAX_DOCUMENT_COUNT = 10_000;
 
   /**
    * constructor.
@@ -199,22 +198,24 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
         awsservice.getExtension(DocumentSearchService.class);
 
     if (projection == DocumentSearchProjection.COUNT) {
-      SearchCountResult result = documentSearchService.count(siteId, q.query(), MAX_DOCUMENT_COUNT);
+      SearchCountResult result =
+          documentSearchService.count(siteId, q.query(), MAX_DOCUMENT_SEARCH);
       return ApiRequestHandlerResponse.builder().ok()
           .body(Map.of("count", result.count(), "truncated", result.truncated())).build();
     }
 
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
     CacheService cacheService = awsservice.getExtension(CacheService.class);
-    ApiPagination pagination = getPagination(cacheService, event);
-    String nextToken = pagination != null ? pagination.getNextToken() : null;
-    int limit =
-        pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
+    ApiPagination pagination = null;
+    String nextToken = null;
+    int limit;
 
     if (!Objects.isEmpty(documentIds)) {
-      if (!getQueryParameterMap(event).containsKey("limit")) {
-        limit = documentIds.size();
-      }
+      limit = documentIds.size();
+    } else {
+      pagination = getPagination(cacheService, event);
+      nextToken = pagination != null ? pagination.getNextToken() : null;
+      limit = pagination != null ? pagination.getLimit() : getLimit(awsservice.getLogger(), event);
     }
 
     Pagination<DocumentSearchResult> results =
@@ -235,6 +236,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     map.put("documents", documents);
     map.put("previous", current.getPrevious());
     map.put("next", current.hasNext() ? current.getNext() : null);
+    map.put("truncated", results.isTruncated());
 
     return ApiRequestHandlerResponse.builder().ok().body(map).build();
   }
@@ -303,7 +305,7 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     if (q.query() != null && q.query().tags() != null && q.query().tags().size() == 1) {
-      SearchTagCriteria tag = q.query().tags().get(0);
+      SearchTagCriteria tag = q.query().tags().getFirst();
       return new QueryRequest()
           .query(new SearchQuery(null, null, null, null, tag, null, null, null, null))
           .responseFields(q.responseFields());

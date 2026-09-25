@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocumentTag;
+import static com.formkiq.testutils.api.ApiAsserts.assertNotTruncated;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -349,7 +350,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
 
       // then
       assertEquals(2, results.getCount());
-      assertFalse(results.getTruncated());
+      assertNotTruncated(results);
       assertTrue(notNull(results.getDocuments()).isEmpty());
       assertNull(results.getNext());
       assertNull(results.getPrevious());
