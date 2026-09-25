@@ -21,37 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
+package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.DocumentSearchResponse;
+/** Signals an incomplete search operation that must not advance its continuation cursor. */
+final class SearchTimeBudgetExceededException extends RuntimeException {
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+  /** Serial version. */
+  private static final long serialVersionUID = 1L;
 
-/**
- * Api Asserts Helper.
- */
-public interface ApiAsserts {
-
-  /**
-   * Assert that a search response explicitly reports an untruncated count.
-   *
-   * @param response {@link DocumentSearchResponse}
-   */
-  static void assertNotTruncated(final DocumentSearchResponse response) {
-    assertEquals(Boolean.FALSE, response.getTruncated(), "Expected truncated to be false");
-  }
-
-  /**
-   * Assert {@link ApiException}.
-   * 
-   * @param ex {@link ApiException}
-   * @param status int
-   * @param errorMessage {@link String}
-   */
-  default void assertApiException(final ApiException ex, final int status,
-      final String errorMessage) {
-    assertEquals(status, ex.getCode());
-    assertEquals(errorMessage, ex.getResponseBody());
+  /** Constructor. */
+  SearchTimeBudgetExceededException() {
+    super("Search time budget exhausted");
   }
 }

@@ -24,8 +24,9 @@
 - Every new or modified test must clearly separate setup, execution, and assertions with the literal comments `// given`, `// when`, and `// then`, in that order. Follow nearby tests for naming and fixture conventions. For multi-step scenarios, repeat the execution/assertion sections as needed.
 - Keep the operation under test in the `// when` section and assertions in `// then`. For exception tests, define an `Executable` in `// when` and use `assertThrows` in `// then`, or follow an established nearby exception-test pattern that preserves these sections.
 - Test observable behavior and meaningful failure paths. For concurrency and streaming, use bounded synchronization to prove overlap or incremental progress rather than relying on elapsed-time speed assertions.
-- Prefer the existing local test infrastructure for AWS-dependent flows; tests using LocalStack or DynamoDB containers require Docker. Supply Gradle properties (`-Ptestregion`, etc.) when the selected tests require AWS context.
-- Run a focused test with `--tests 'fully.qualified.TestClass'`, then the affected module’s suite. Use tag filters only when the selected Gradle test task explicitly configures them; do not assume `-DexcludeTags=integration` is supported.
+- API and integration tests must use the request builders in `testing/test-utils/src/main/java/com/formkiq/testutils/api/` for request setup and execution, including fixture creation, instead of calling API clients directly. Use `submitOk(client, siteId)` for expected success and the builder's response helpers for expected errors. Extend an existing builder or add one in test-utils when the required operation is not supported.
+- Prefer the existing local test infrastructure for AWS-dependent flows; tests using LocalStack or DynamoDB containers require Docker. When selected tests require AWS context, supply Gradle properties (`-Ptestregion`, `-Ptestprofile`, etc.) pointing to sandbox credentials/profiles.
+- Run a focused test with `--tests 'fully.qualified.TestClass'`, then the affected module’s suite. Mark slow/integration tests with JUnit tags when appropriate, and use tag filters only when the selected Gradle test task explicitly configures them; do not assume `-DexcludeTags=integration` is supported.
 - Add fixtures in `src/test/resources`; avoid hardcoding secrets.
 
 ## Commit & Pull Request Guidelines

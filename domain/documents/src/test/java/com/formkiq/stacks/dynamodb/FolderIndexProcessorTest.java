@@ -26,7 +26,6 @@ package com.formkiq.stacks.dynamodb;
 import static com.formkiq.aws.dynamodb.objects.Objects.last;
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
-import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static com.formkiq.testutils.aws.TestServices.clearSqsQueue;
 import static com.formkiq.testutils.aws.TestServices.createSnsTopic;
 import static com.formkiq.testutils.aws.TestServices.createSqsSubscriptionToSnsTopic;
@@ -79,13 +78,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.DynamoDbTestServices;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 
@@ -201,9 +198,7 @@ class FolderIndexProcessorTest implements DbKeys {
   @Test
   void testAddFileToFolderUpdatesParentLastModifiedDateByAge() throws Exception {
     // given
-    DynamoDbConnectionBuilder dynamoDbConnection = DynamoDbTestServices.getDynamoDbConnection();
-    FolderIndexProcessor processor =
-        new FolderIndexProcessorImpl(dynamoDbConnection, DOCUMENTS_TABLE, 1000);
+    FolderIndexProcessor processor = new FolderIndexProcessorImpl(dbService, 1000);
     String siteId = ID.uuid();
     String folder = "folder-" + ID.uuid();
     List<FolderIndexRecord> indexes = processor.createFolders(siteId, folder + "/test0.txt");

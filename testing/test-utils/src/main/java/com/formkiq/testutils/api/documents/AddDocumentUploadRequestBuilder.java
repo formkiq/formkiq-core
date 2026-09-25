@@ -25,18 +25,21 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.model.AddDocumentAttributesRequest;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
+import java.util.List;
+
 /**
- * Builder for {@link AddDocumentAttributesRequest}.
+ * Builder for {@link AddDocumentUploadRequest}.
  */
 public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
-  /** {@link AddDocumentAttributesRequest}. */
+  /** {@link AddDocumentUploadRequest}. */
   private final AddDocumentUploadRequest request;
 
   /**
@@ -44,6 +47,28 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    */
   public AddDocumentUploadRequestBuilder() {
     this.request = new AddDocumentUploadRequest();
+  }
+
+  /**
+   * Add a document attribute.
+   *
+   * @param attribute value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder addAttribute(final AddDocumentAttribute attribute) {
+    this.request.addAttributesItem(attribute);
+    return this;
+  }
+
+  /**
+   * Add a document tag.
+   *
+   * @param tag value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder addTag(final AddDocumentTag tag) {
+    this.request.addTagsItem(tag);
+    return this;
   }
 
   /**
@@ -61,10 +86,43 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * Set Document content type.
    * 
    * @param contentType {@link String}
-   * @return AddDocumentAttributesRequestBuilder
+   * @return this builder
    */
   public AddDocumentUploadRequestBuilder contentType(final String contentType) {
     this.request.contentType(contentType);
+    return this;
+  }
+
+  /**
+   * Set the deep link path.
+   *
+   * @param deepLinkPath value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder deepLinkPath(final String deepLinkPath) {
+    this.request.deepLinkPath(deepLinkPath);
+    return this;
+  }
+
+  /**
+   * Set the document height.
+   *
+   * @param height value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder height(final String height) {
+    this.request.height(height);
+    return this;
+  }
+
+  /**
+   * Set the document path.
+   *
+   * @param path value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder path(final String path) {
+    this.request.path(path);
     return this;
   }
 
@@ -73,11 +131,33 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    *
    * @param apiClient ApiClient
    * @param siteId Site ID
-   * @return AddDocumentResponse
+   * @return upload URL response
    */
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
         () -> new DocumentsApi(apiClient).addDocumentUpload(request, siteId, null, null, null));
+  }
+
+  /**
+   * Set document tags.
+   *
+   * @param tags value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder tags(final List<AddDocumentTag> tags) {
+    this.request.tags(tags);
+    return this;
+  }
+
+  /**
+   * Set the document width.
+   *
+   * @param width value to set
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder width(final String width) {
+    this.request.width(width);
+    return this;
   }
 }

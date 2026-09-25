@@ -21,37 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
+package com.formkiq.stacks.dynamodb;
 
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.DocumentSearchResponse;
+import java.time.Duration;
+import java.util.function.LongSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+/** Monotonic deadline for one multi-attribute fallback search. */
+final class SearchTimeBudget {
 
-/**
- * Api Asserts Helper.
- */
-public interface ApiAsserts {
+  /** Search time reserved before returning through API Gateway. */
+  private static final Duration MAX_DURATION = Duration.ofSeconds(25);
+
+  /** Monotonic clock. */
+  private final LongSupplier clock;
+
+  /** Start time in nanoseconds. */
+  private final long started;
 
   /**
-   * Assert that a search response explicitly reports an untruncated count.
+   * Start a budget using an injectable monotonic clock.
    *
-   * @param response {@link DocumentSearchResponse}
+   * @param nanoTime monotonic time source
    */
-  static void assertNotTruncated(final DocumentSearchResponse response) {
-    assertEquals(Boolean.FALSE, response.getTruncated(), "Expected truncated to be false");
+  SearchTimeBudget(final LongSupplier nanoTime) {
+    this.clock = nanoTime;
+    this.started = nanoTime.getAsLong();
   }
 
   /**
-   * Assert {@link ApiException}.
-   * 
-   * @param ex {@link ApiException}
-   * @param status int
-   * @param errorMessage {@link String}
+   * Reject new work once the elapsed-time budget is exhausted.
    */
-  default void assertApiException(final ApiException ex, final int status,
-      final String errorMessage) {
-    assertEquals(status, ex.getCode());
-    assertEquals(errorMessage, ex.getResponseBody());
+  void check() {
+    long nanos = MAX_DURATION.toNanos() - (this.clock.getAsLong() - this.started);
+    if (nanos <= 0) {
+      throw new SearchTimeBudgetExceededException();
+    }
   }
 }

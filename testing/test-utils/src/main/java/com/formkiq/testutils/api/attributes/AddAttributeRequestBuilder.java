@@ -30,6 +30,7 @@ import com.formkiq.client.model.AddAttributeRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.AttributeType;
+import com.formkiq.client.model.Watermark;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -132,6 +133,20 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
     this.request
         .setAttribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.STRING)
             .type(AttributeType.STANDARD).validationRegex(validationRegex));
+    return this;
+  }
+
+  /**
+   * Set Watermark Attribute Key.
+   *
+   * @param attributeKey {@link String}
+   * @param watermark {@link Watermark}
+   * @return AddAttributeRequestBuilder
+   */
+  public AddAttributeRequestBuilder keyAsWatermark(final String attributeKey,
+      final Watermark watermark) {
+    this.request.setAttribute(new AddAttribute().key(attributeKey)
+        .dataType(AttributeDataType.WATERMARK).watermark(watermark));
     return this;
   }
 

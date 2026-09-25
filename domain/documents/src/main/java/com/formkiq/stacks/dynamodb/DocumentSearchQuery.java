@@ -41,45 +41,6 @@ import java.util.function.Function;
 public interface DocumentSearchQuery {
 
   /**
-   * Count distinct query results, following each query until exhausted or capped.
-   *
-   * @param queryFunction executes a DynamoDB query
-   * @param requests queries to execute
-   * @param attributeName attribute containing the distinct value
-   * @param maxResults maximum number of distinct results to count
-   * @return {@link SearchCountResult}
-   */
-  static SearchCountResult countDistinctQueries(
-      final Function<QueryRequest, QueryResponse> queryFunction, final List<QueryRequest> requests,
-      final String attributeName, final int maxResults) {
-
-    Set<String> values = new HashSet<>();
-    int queryLimit = maxResults + 1;
-
-    for (QueryRequest queryRequest : requests) {
-      Map<String, AttributeValue> startKey = null;
-
-      do {
-        QueryRequest request =
-            queryRequest.toBuilder().limit(queryLimit).exclusiveStartKey(startKey)
-                .projectionExpression(attributeName).select(Select.SPECIFIC_ATTRIBUTES).build();
-        QueryResponse response = queryFunction.apply(request);
-        response.items().stream().map(item -> item.get(attributeName))
-            .filter(java.util.Objects::nonNull).map(AttributeValue::s)
-            .filter(java.util.Objects::nonNull).forEach(values::add);
-
-        if (values.size() > maxResults) {
-          return new SearchCountResult(maxResults, true);
-        }
-
-        startKey = response.lastEvaluatedKey();
-      } while (startKey != null && !startKey.isEmpty());
-    }
-
-    return new SearchCountResult(values.size(), false);
-  }
-
-  /**
    * Count query results, following each query's continuation key until exhausted or capped.
    *
    * @param queryFunction executes a DynamoDB query
@@ -125,6 +86,45 @@ public interface DocumentSearchQuery {
    */
   SearchCountResult count(String siteId, SearchQuery query, int maxResults)
       throws ValidationException;
+
+  /**
+   * Count distinct query results, following each query until exhausted or capped.
+   *
+   * @param queryFunction executes a DynamoDB query
+   * @param requests queries to execute
+   * @param attributeName attribute containing the distinct value
+   * @param maxResults maximum number of distinct results to count
+   * @return {@link SearchCountResult}
+   */
+  default SearchCountResult countDistinctQueries(
+      final Function<QueryRequest, QueryResponse> queryFunction, final List<QueryRequest> requests,
+      final String attributeName, final int maxResults) {
+
+    Set<String> values = new HashSet<>();
+    int queryLimit = maxResults + 1;
+
+    for (QueryRequest queryRequest : requests) {
+      Map<String, AttributeValue> startKey = null;
+
+      do {
+        QueryRequest request =
+            queryRequest.toBuilder().limit(queryLimit).exclusiveStartKey(startKey)
+                .projectionExpression(attributeName).select(Select.SPECIFIC_ATTRIBUTES).build();
+        QueryResponse response = queryFunction.apply(request);
+        response.items().stream().map(item -> item.get(attributeName))
+            .filter(java.util.Objects::nonNull).map(AttributeValue::s)
+            .filter(java.util.Objects::nonNull).forEach(values::add);
+
+        if (values.size() > maxResults) {
+          return new SearchCountResult(maxResults, true);
+        }
+
+        startKey = response.lastEvaluatedKey();
+      } while (startKey != null && !startKey.isEmpty());
+    }
+
+    return new SearchCountResult(values.size(), false);
+  }
 
   /**
    * Search for matching documents.
