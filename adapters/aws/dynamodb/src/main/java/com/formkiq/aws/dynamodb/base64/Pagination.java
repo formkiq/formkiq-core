@@ -41,6 +41,8 @@ public class Pagination<T> {
   private final List<T> results;
   /** Next Token. */
   private final String nextToken;
+  /** Whether a processing budget stopped the page before its requested size was reached. */
+  private final boolean truncated;
 
   /**
    * constructor.
@@ -58,7 +60,20 @@ public class Pagination<T> {
    * @param lastEvaluatedKey {@link Map}
    */
   public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey) {
+    this(list, lastEvaluatedKey, false);
+  }
+
+  /**
+   * Construct a page with processing-budget metadata.
+   *
+   * @param list results
+   * @param lastEvaluatedKey continuation key
+   * @param resultsTruncated whether the page stopped early because of a processing budget
+   */
+  public Pagination(final List<T> list, final Map<String, AttributeValue> lastEvaluatedKey,
+      final boolean resultsTruncated) {
     this.results = list;
+    this.truncated = resultsTruncated;
 
     if (lastEvaluatedKey != null) {
       Map<String, String> map = lastEvaluatedKey.entrySet().stream()
@@ -78,8 +93,20 @@ public class Pagination<T> {
    * @param token {@link String}
    */
   public Pagination(final List<T> list, final String token) {
+    this(list, token, false);
+  }
+
+  /**
+   * Construct a page with processing-budget metadata.
+   *
+   * @param list results
+   * @param token continuation token
+   * @param resultsTruncated whether the page stopped early because of a processing budget
+   */
+  public Pagination(final List<T> list, final String token, final boolean resultsTruncated) {
     this.results = list;
     this.nextToken = !isEmpty(token) ? token : null;
+    this.truncated = resultsTruncated;
   }
 
   /**
@@ -98,5 +125,14 @@ public class Pagination<T> {
    */
   public List<T> getResults() {
     return this.results;
+  }
+
+  /**
+   * Whether a processing budget stopped the page early.
+   *
+   * @return true if the page was truncated
+   */
+  public boolean isTruncated() {
+    return this.truncated;
   }
 }

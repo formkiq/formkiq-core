@@ -21,37 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.api;
+package com.formkiq.testutils.api.documents;
 
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.DocumentSearchResponse;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetDocumentSyncResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Api Asserts Helper.
+ * Builder for retrieving document syncs.
  */
-public interface ApiAsserts {
+public class GetDocumentSyncsRequestBuilder implements HttpRequestBuilder<GetDocumentSyncResponse> {
+
+  /** Document Id. */
+  private final String id;
 
   /**
-   * Assert that a search response explicitly reports an untruncated count.
-   *
-   * @param response {@link DocumentSearchResponse}
+   * constructor.
+   * 
+   * @param documentId {@link String}
    */
-  static void assertNotTruncated(final DocumentSearchResponse response) {
-    assertEquals(Boolean.FALSE, response.getTruncated(), "Expected truncated to be false");
+  public GetDocumentSyncsRequestBuilder(final String documentId) {
+    this.id = documentId;
   }
 
   /**
-   * Assert {@link ApiException}.
-   * 
-   * @param ex {@link ApiException}
-   * @param status int
-   * @param errorMessage {@link String}
+   * Optionally run the request using the FormKiQ API.
+   *
+   * @param apiClient ApiClient
+   * @param siteId Site ID
+   * @return GetDocumentSyncResponse
    */
-  default void assertApiException(final ApiException ex, final int status,
-      final String errorMessage) {
-    assertEquals(status, ex.getCode());
-    assertEquals(errorMessage, ex.getResponseBody());
+  public ApiHttpResponse<GetDocumentSyncResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocumentSyncs(this.id, siteId, null, null));
   }
 }

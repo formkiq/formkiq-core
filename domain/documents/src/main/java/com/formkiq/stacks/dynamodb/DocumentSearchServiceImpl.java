@@ -86,6 +86,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   private final FolderIndexProcessor folderIndexProcesor;
   /** {@link DocumentSearchAttributeQuery}. */
   private final DocumentSearchAttributeQuery documentSearchAttributeQuery;
+  /** {@link DocumentSearchMultiAttributeQuery}. */
+  private final DocumentSearchMultiAttributeQuery documentSearchMultiAttributeQuery;
 
   /**
    * constructor.
@@ -105,7 +107,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
-    this.folderIndexProcesor = new FolderIndexProcessorImpl(connection, documentsTable,
+    this.folderIndexProcesor = new FolderIndexProcessorImpl(this.db,
         FolderIndexProcessorExtension.DEFAULT_PARENT_LAST_MODIFIED_UPDATE_INTERVAL_IN_MS);
     this.documentSearchFilenameQuery =
         new DocumentSearchFilenameQuery(this.db, dbClient, this.docService);
@@ -115,8 +117,10 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     this.documentSearchTagQuery = new DocumentSearchTagQuery(this.db, dbClient, this.docService);
     AttributeService attributeService = new AttributeServiceDynamodb(this.db);
     SchemaService schemaService = new SchemaServiceDynamodb(this.db);
-    this.documentSearchAttributeQuery = new DocumentSearchAttributeQuery(this.db, dbClient,
-        this.docService, attributeService, schemaService);
+    this.documentSearchAttributeQuery =
+        new DocumentSearchAttributeQuery(this.db, dbClient, this.docService, attributeService);
+    this.documentSearchMultiAttributeQuery = new DocumentSearchMultiAttributeQuery(this.db,
+        dbClient, this.docService, attributeService, schemaService);
   }
 
   private SearchCountResult countExistingDocuments(final String siteId,
@@ -148,6 +152,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       documentSearchQuery = this.documentSearchFilenameQuery;
     } else if (query.folder() != null) {
       documentSearchQuery = this.documentSearchFolderQuery;
+    } else if (notNull(query.attributes()).size() > 1) {
+      documentSearchQuery = this.documentSearchMultiAttributeQuery;
     } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
       documentSearchQuery = this.documentSearchAttributeQuery;
     } else if (query.tag() != null) {
@@ -268,7 +274,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     var searchResultsWithFields =
         addResponseFields(siteId, results.getResults(), searchResponseFields);
-    return new Pagination<>(searchResultsWithFields, results.getNextToken());
+    return new Pagination<>(searchResultsWithFields, results.getNextToken(), results.isTruncated());
   }
 
   private Pagination<DocumentSearchResult> searchByDocumentIds(final String siteId,

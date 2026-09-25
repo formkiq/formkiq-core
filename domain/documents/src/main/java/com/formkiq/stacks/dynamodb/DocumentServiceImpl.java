@@ -237,9 +237,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     this.versionsService = documentVersionsService;
     this.dbClient = connection.build();
     this.documentTableName = documentsTable;
-    this.folderIndexProcessor = new FolderIndexProcessorImpl(connection, documentsTable,
-        parentLastModifiedUpdateIntervalMs);
     this.dbService = new DynamoDbServiceImpl(connection, documentsTable);
+    this.folderIndexProcessor =
+        new FolderIndexProcessorImpl(this.dbService, parentLastModifiedUpdateIntervalMs);
     this.attributeValidator = new AttributeValidatorImpl(this.dbService);
     this.attributeService = new AttributeServiceDynamodb(this.dbService);
     this.yyyymmddFormat = new SimpleDateFormat("yyyy-MM-dd");

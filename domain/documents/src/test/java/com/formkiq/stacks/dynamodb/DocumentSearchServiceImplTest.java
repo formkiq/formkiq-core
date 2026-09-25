@@ -107,6 +107,21 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   /** {@link DocumentService}. */
   private DocumentService service;
 
+  private List<DocumentSearchResult> allPages(final String siteId, final SearchQuery query) {
+    List<DocumentSearchResult> results = new ArrayList<>();
+    String token = null;
+    int pages = 0;
+    do {
+      Pagination<DocumentSearchResult> page =
+          this.searchService.search(siteId, query, null, token, 1);
+      assertTrue(page.getResults().size() <= 1);
+      results.addAll(page.getResults());
+      token = page.getNextToken();
+      assertTrue(++pages < 20, "Pagination did not terminate");
+    } while (token != null);
+    return results;
+  }
+
   /**
    * Before Test.
    *
@@ -131,6 +146,25 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     this.service = awsServiceCache.getExtension(DocumentService.class);
     this.searchService = awsServiceCache.getExtension(DocumentSearchService.class);
     this.attributeService = awsServiceCache.getExtension(AttributeService.class);
+  }
+
+  private String createAttributeDocument(final String siteId, final String id,
+      final Map<String, List<String>> values) {
+    values.keySet().forEach(key -> {
+      if (this.attributeService.getAttribute(siteId, key) == null) {
+        this.attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, key,
+            AttributeDataType.STRING, AttributeType.STANDARD);
+      }
+    });
+    DocumentItem document = createDocument(id, ZonedDateTime.now());
+    List<DocumentAttributeRecord> attributes = new ArrayList<>();
+    values.forEach((key,
+        strings) -> strings.forEach(value -> attributes
+            .add(new DocumentAttributeRecord().setDocument(DocumentArtifact.of(id, null))
+                .setKey(key).setValueType(DocumentAttributeValueType.STRING).setStringValue(value)
+                .setUserId("jsmith"))));
+    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
+    return id;
   }
 
   /**
@@ -246,6 +280,10 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     }
 
     return new DocumentRecordSet(documentRecord, null, addTags, null);
+  }
+
+  private SearchAttributeCriteria eq(final String key, final String value) {
+    return new SearchAttributeCriteria(key, null, value, null, null);
   }
 
   private String path(final DocumentSearchResult result) {
@@ -1180,31 +1218,6 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   }
 
   /**
-   * Composite attribute EQ OR validation uses the correct field key.
-   */
-  @Test
-  public void testSearchCompositeEqOrValidationKey01() {
-    // given
-    String siteId = ID.uuid();
-    SearchAttributeCriteria attribute0 =
-        new SearchAttributeCriteria("category", null, null, List.of("person", "company"), null);
-    SearchAttributeCriteria attribute1 =
-        new SearchAttributeCriteria("status", null, "active", null, null);
-    SearchQuery query =
-        new SearchQueryBuilder().attributes(List.of(attribute0, attribute1)).build();
-
-    // when
-    try {
-      this.searchService.search(siteId, query, null, null, MAX_RESULTS);
-      fail();
-    } catch (ValidationException e) {
-      // then
-      assertTrue(e.errors().stream().anyMatch(error -> "eqOr".equals(error.key())
-          && "'eqOr' is not supported with composite keys".equals(error.error())));
-    }
-  }
-
-  /**
    * Count matching documents and report when the result is capped.
    *
    * @throws ValidationException ValidationException
@@ -1308,5 +1321,224 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertTrue(results.getResults().contains(documentId0));
       assertTrue(results.getResults().contains(documentId1));
     }
+  }
+
+  /** Attribute checks stay within an artifact and counts deduplicate the parent document ID. */
+  @Test
+  public void testSearchMultipleAttributesArtifactIsolation() throws Exception {
+    String siteId = ID.uuid();
+    var connection = com.formkiq.testutils.aws.DynamoDbTestServices.getDynamoDbConnection();
+    DynamoDbService db = new com.formkiq.aws.dynamodb.DynamoDbServiceImpl(connection,
+        com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE);
+    List<Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue>> records =
+        new ArrayList<>();
+    for (DocumentArtifact artifact : List.of(DocumentArtifact.of("one", null),
+        DocumentArtifact.of("one", "a"), DocumentArtifact.of("one", "b"),
+        DocumentArtifact.of("two", "a"), DocumentArtifact.of("two", "b"))) {
+      records.add(new DocumentRecordBuilder().document(artifact).path("test.txt").userId("joe")
+          .build(siteId).getAttributes());
+      boolean customer = !"two".equals(artifact.documentId()) || "a".equals(artifact.artifactId());
+      boolean status = artifact.artifactId() != null
+          && (!"two".equals(artifact.documentId()) || "b".equals(artifact.artifactId()));
+      if (customer) {
+        records.add(new DocumentAttributeRecord().setUserId("joe").setDocument(artifact)
+            .setKey("customer").setValueType(DocumentAttributeValueType.STRING)
+            .setStringValue("123").getAttributes(siteId));
+      }
+      if (status) {
+        records.add(new DocumentAttributeRecord().setUserId("joe").setDocument(artifact)
+            .setKey("status").setValueType(DocumentAttributeValueType.STRING)
+            .setStringValue("approved").getAttributes(siteId));
+      }
+    }
+    db.putItems(records);
+    for (SearchAttributeCriteria status : List.of(eq("status", "approved"),
+        new SearchAttributeCriteria("status", "app", null, null, null))) {
+      SearchQuery query =
+          new SearchQueryBuilder().attributes(List.of(eq("customer", "123"), status)).build();
+      List<DocumentArtifact> actual =
+          allPages(siteId, query).stream().map(r -> r.documentRecord().document())
+              .sorted(java.util.Comparator.comparing(DocumentArtifact::artifactId)).toList();
+      assertEquals(List.of(DocumentArtifact.of("one", "a"), DocumentArtifact.of("one", "b")),
+          actual);
+      assertEquals(new SearchCountResult(1, false), this.searchService.count(siteId, query, 10000));
+    }
+  }
+
+  /** Explicit document IDs are filtered with AND and return all matches regardless of the limit. */
+  @Test
+  public void testSearchMultipleAttributesDocumentIds() {
+    // given
+    String siteId = ID.uuid();
+    createAttributeDocument(siteId, "one",
+        Map.of("customer", List.of("123"), "status", List.of("approved")));
+    createAttributeDocument(siteId, "two",
+        Map.of("customer", List.of("123"), "status", List.of("approved")));
+    createAttributeDocument(siteId, "three",
+        Map.of("customer", List.of("123"), "status", List.of("pending")));
+    SearchQuery query = new SearchQueryBuilder()
+        .attributes(List.of(eq("customer", "123"), eq("status", "approved")))
+        .documentIds(List.of("missing", "two", "three", "one", "two")).build();
+
+    // when
+    Pagination<DocumentSearchResult> page = this.searchService.search(siteId, query, null, null, 1);
+    List<DocumentSearchResult> results = page.getResults();
+    SearchCountResult count = this.searchService.count(siteId, query, 10000);
+
+    // then
+    assertNull(page.getNextToken());
+    assertEquals(List.of("two", "one"),
+        results.stream().map(r -> r.documentRecord().documentId()).toList());
+    assertEquals(new SearchCountResult(2, false), count);
+
+    // when
+    count = this.searchService.count(siteId, query, 1);
+
+    // then
+    assertEquals(new SearchCountResult(1, true), count);
+  }
+
+  /** All pages of a requested multivalued attribute are checked before rejecting a document. */
+  @Test
+  public void testSearchMultipleAttributesDocumentIdsAttributePages() {
+    // given
+    String siteId = ID.uuid();
+    List<String> codes = java.util.stream.IntStream.rangeClosed(0, 100)
+        .mapToObj(i -> String.format("%03d", i)).toList();
+    createAttributeDocument(siteId, "one",
+        Map.of("code", codes, "status", List.of("approved"), "unrelated", List.of("ignored")));
+    SearchQuery query =
+        new SearchQueryBuilder().attributes(List.of(eq("code", "100"), eq("status", "approved")))
+            .documentIds(List.of("one")).build();
+
+    // when
+    List<DocumentSearchResult> results = allPages(siteId, query);
+    SearchCountResult count = this.searchService.count(siteId, query, 10000);
+
+    // then
+    assertEquals(List.of("one"),
+        results.stream().map(r -> r.documentRecord().documentId()).toList());
+    assertEquals("100", results.getFirst().matchedAttribute().getStringValue());
+    assertEquals(new SearchCountResult(1, false), count);
+  }
+
+  /** Supplied IDs support all attribute operators regardless of criterion order. */
+  @Test
+  public void testSearchMultipleAttributesDocumentIdsOperators() {
+    // given
+    String siteId = ID.uuid();
+    createAttributeDocument(siteId, "one", Map.of("customer", List.of("123"), "code",
+        List.of("a", "m", "z"), "present", List.of("yes")));
+    createAttributeDocument(siteId, "two",
+        Map.of("customer", List.of("123"), "code", List.of("z"), "present", List.of("yes")));
+    createAttributeDocument(siteId, "missing-attribute",
+        Map.of("customer", List.of("123"), "code", List.of("m")));
+    List<SearchAttributeCriteria> criteria = List.of(eq("code", "m"),
+        new SearchAttributeCriteria("code", null, null, List.of("other", "m"), null),
+        new SearchAttributeCriteria("code", "m", null, null, null), new SearchAttributeCriteria(
+            "code", null, null, null, new SearchTagCriteriaRange("b", "n", "string")));
+    for (SearchAttributeCriteria criterion : criteria) {
+      for (List<SearchAttributeCriteria> attributes : List.of(
+          List.of(eq("customer", "123"), criterion,
+              new SearchAttributeCriteria("present", null, null, null, null)),
+          List.of(criterion, new SearchAttributeCriteria("present", null, null, null, null),
+              eq("customer", "123")))) {
+        SearchQuery query = new SearchQueryBuilder().attributes(attributes)
+            .documentIds(List.of("two", "missing-attribute", "one")).build();
+
+        // when
+        List<DocumentSearchResult> results = allPages(siteId, query);
+
+        // then
+        assertEquals(List.of("one"),
+            results.stream().map(r -> r.documentRecord().documentId()).toList());
+        assertEquals(attributes.getFirst().key(), results.getFirst().matchedAttribute().getKey());
+      }
+    }
+  }
+
+  /** Multiple matching driving values never duplicate documents across pages or EQ OR branches. */
+  @Test
+  public void testSearchMultipleAttributesMultivaluedDriver() {
+    String siteId = ID.uuid();
+    createAttributeDocument(siteId, "one",
+        Map.of("category", List.of("apple", "banana"), "status", List.of("approved")));
+    createAttributeDocument(siteId, "two",
+        Map.of("category", List.of("banana", "cherry"), "status", List.of("approved")));
+    createAttributeDocument(siteId, "three",
+        Map.of("category", List.of("apple", "cherry"), "status", List.of("pending")));
+    List<SearchAttributeCriteria> drivers = List.of(
+        new SearchAttributeCriteria("category", null, null,
+            List.of("banana", "apple", "banana", "cherry"), null),
+        new SearchAttributeCriteria("category", null, null, null,
+            new SearchTagCriteriaRange("a", "z", "string")),
+        new SearchAttributeCriteria("category", "b", null, null, null),
+        new SearchAttributeCriteria("category", null, null, null, null));
+    for (SearchAttributeCriteria driver : drivers) {
+      SearchQuery query =
+          new SearchQueryBuilder().attributes(List.of(driver, eq("status", "approved"))).build();
+      assertEquals(List.of("one", "two"), allPages(siteId, query).stream()
+          .map(r -> r.documentRecord().documentId()).sorted().toList());
+      assertEquals(new SearchCountResult(2, false), this.searchService.count(siteId, query, 10000));
+    }
+  }
+
+  /** Residual range, prefix, existence and OR checks can follow any driving attribute. */
+  @Test
+  public void testSearchMultipleAttributesOperators() {
+    String siteId = ID.uuid();
+    createAttributeDocument(siteId, "one", Map.of("customer", List.of("123"), "status",
+        List.of("approved"), "code", List.of("a", "m", "z"), "exists", List.of("yes")));
+    createAttributeDocument(siteId, "two", Map.of("customer", List.of("123"), "status",
+        List.of("pending"), "code", List.of("z"), "exists", List.of("yes")));
+    List<SearchAttributeCriteria> filters = List.of(
+        new SearchAttributeCriteria("code", null, null, null,
+            new SearchTagCriteriaRange("b", "n", "string")),
+        new SearchAttributeCriteria("code", "m", null, null, null),
+        new SearchAttributeCriteria("status", null, null, List.of("approved", "other"), null));
+    for (SearchAttributeCriteria filter : filters) {
+      SearchQuery query = new SearchQueryBuilder().attributes(List.of(eq("customer", "123"), filter,
+          new SearchAttributeCriteria("exists", null, null, null, null))).build();
+      assertEquals(List.of("one"),
+          allPages(siteId, query).stream().map(r -> r.documentRecord().documentId()).toList());
+    }
+  }
+
+  /** Fallback criteria still reject invalid ranges and duplicate attribute keys. */
+  @Test
+  public void testSearchMultipleAttributesValidation() {
+    SearchAttributeCriteria range = new SearchAttributeCriteria("date", null, null, null,
+        new SearchTagCriteriaRange("2026-01-01", null, null));
+    SearchQuery query =
+        new SearchQueryBuilder().attributes(List.of(eq("customer", "123"), range)).build();
+    ValidationException error = org.junit.jupiter.api.Assertions.assertThrows(
+        ValidationException.class, () -> this.searchService.count(ID.uuid(), query, 10000));
+    assertTrue(error.errors().stream().anyMatch(e -> "end".equals(e.key())));
+  }
+
+  /** AND search without a composite key, including filtering, pagination and site isolation. */
+  @Test
+  public void testSearchMultipleAttributesWithoutCompositeKey() {
+    String siteId = ID.uuid();
+    createAttributeDocument(siteId, "a-rejected",
+        Map.of("customer", List.of("123"), "status", List.of("pending")));
+    createAttributeDocument(siteId, "b-approved",
+        Map.of("customer", List.of("123"), "status", List.of("approved")));
+    createAttributeDocument(siteId, "c-missing", Map.of("customer", List.of("123")));
+    createAttributeDocument(siteId, "d-approved",
+        Map.of("customer", List.of("123"), "status", List.of("pending", "approved")));
+    createAttributeDocument(siteId, "e-other",
+        Map.of("customer", List.of("456"), "status", List.of("approved")));
+    createAttributeDocument(ID.uuid(), "f-other-site",
+        Map.of("customer", List.of("123"), "status", List.of("approved")));
+    SearchQuery query = new SearchQueryBuilder()
+        .attributes(List.of(eq("customer", "123"), eq("status", "approved"))).build();
+
+    List<DocumentSearchResult> results = allPages(siteId, query);
+    assertEquals(List.of("b-approved", "d-approved"),
+        results.stream().map(r -> r.documentRecord().documentId()).sorted().toList());
+    assertEquals("customer", results.getFirst().matchedAttribute().getKey());
+    assertEquals(new SearchCountResult(2, false), this.searchService.count(siteId, query, 10000));
+    assertEquals(new SearchCountResult(1, true), this.searchService.count(siteId, query, 1));
   }
 }
