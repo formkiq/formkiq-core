@@ -2547,30 +2547,29 @@ public class DocumentServiceImplTest implements DbKeys {
       String documentId0 = ID.uuid();
       DocumentItem item0 = new DocumentItemDynamoDb(documentId0, null, userId0);
       item0.setPath(path);
-
-      // when
       service.saveDocument(siteId, item0, null);
-      final Date item0Date =
-          service.findDocument(siteId, DocumentArtifact.of(item0.getDocumentId(), null))
-              .lastModifiedDate();
+
+      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
+      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
+      final Date parentFolderDate = searchService.search(siteId, q, null, null, MAX_RESULTS)
+          .getResults().getFirst().documentRecord().lastModifiedDate();
 
       final Date staleDate = makeFolderStale(siteId, "a/b/");
 
       String documentId1 = ID.uuid();
       DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
       item1.setPath(path);
+
+      // when
       service.saveDocument(siteId, item1, null);
 
       // then
-      SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
-      SearchQuery q = new SearchQueryBuilder().meta(smc).build();
-
       Pagination<DocumentSearchResult> items =
           searchService.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, items.getResults().size());
       DocumentSearchResult result = items.getResults().getFirst();
       assertEquals("a", result.documentRecord().path());
-      assertEquals(item0Date, result.documentRecord().lastModifiedDate());
+      assertEquals(parentFolderDate, result.documentRecord().lastModifiedDate());
 
       smc = new SearchMetaCriteria(null, "a", null, null, null);
       q = new SearchQueryBuilder().meta(smc).build();

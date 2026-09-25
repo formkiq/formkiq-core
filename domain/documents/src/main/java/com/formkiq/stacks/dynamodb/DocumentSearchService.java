@@ -36,6 +36,9 @@ import com.formkiq.validation.ValidationException;
  */
 public interface DocumentSearchService {
 
+  /** Maximum count results and candidate records examined by a fallback search request. */
+  int MAX_DOCUMENT_SEARCH = 10_000;
+
   /**
    * Count Documents matching a search.
    *

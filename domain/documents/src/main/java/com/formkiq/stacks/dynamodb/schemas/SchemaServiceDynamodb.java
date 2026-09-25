@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DeleteResults;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamodbRecordToKeys;
 import com.formkiq.aws.dynamodb.ID;
@@ -38,6 +39,7 @@ import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.base64.StringToMapAttributeValue;
 import com.formkiq.aws.dynamodb.objects.Objects;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
@@ -54,11 +56,13 @@ import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -306,16 +310,13 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public SchemaCompositeKeyRecord getCompositeKey(final String siteId,
+  public SchemaCompositeKeyRecord getCompositeKeyExactMatch(final String siteId,
       final List<String> attributeKeys) {
 
-    QueryConfig config = new QueryConfig().indexName(GSI1).scanIndexForward(Boolean.TRUE);
     SchemaCompositeKeyRecord r = new SchemaCompositeKeyRecord().keys(attributeKeys);
-
-    AttributeValue pk = r.fromS(r.pkGsi1(siteId));
-    AttributeValue sk = r.fromS(r.skGsi1());
-
-    QueryResponse response = this.db.queryBeginsWith(config, pk, sk, null, 1);
+    QueryRequest request = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(r.pkGsi1(siteId))
+        .beginsWith(r.skGsi1()).scanIndexForward(true).limit(1).build(this.db.getTableName());
+    QueryResponse response = this.db.query(request, false);
     List<Map<String, AttributeValue>> items = response.items();
 
     if (!items.isEmpty()) {
@@ -327,6 +328,60 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     }
 
     return r;
+  }
+
+  @Override
+  public SchemaCompositeKeyRecord getCompositeKeyBestMatch(final String siteId,
+      final List<SearchAttributeCriteria> attributes) {
+
+    final int pageSize = 100;
+    Map<String, AttributeValue> startKey = null;
+    SchemaCompositeKeyRecord record = new SchemaCompositeKeyRecord();
+    List<SchemaCompositeKeyRecord> records = new ArrayList<>();
+
+    do {
+      QueryRequest request = DynamoDbQueryBuilder.builder().indexName(GSI1)
+          .pk(record.pkGsi1(siteId)).beginsWith(SchemaCompositeKeyRecord.GSI_SK)
+          .scanIndexForward(true).nextToken(startKey).limit(pageSize).build(this.db.getTableName());
+
+      QueryResponse response = this.db.query(request, false);
+      List<DynamoDbKey> keys = response.items().stream()
+          .map(item -> new DynamoDbKey(item.get(PK), item.get(SK))).toList();
+      if (!keys.isEmpty()) {
+        records.addAll(this.db.getBatchByKey(new BatchGetConfig(), keys).stream()
+            .map(item -> new SchemaCompositeKeyRecord().getFromAttributes(siteId, item)).toList());
+      }
+      startKey = response.lastEvaluatedKey();
+    } while (!startKey.isEmpty());
+    Map<String, SearchAttributeCriteria> byKey = attributes.stream()
+        .collect(Collectors.toMap(SearchAttributeCriteria::key, Function.identity()));
+    return records.stream().filter(composite -> canUseCompositeKey(composite.getKeys(), byKey))
+        .min(Comparator
+            .<SchemaCompositeKeyRecord>comparingInt(composite -> composite.getKeys().size())
+            .reversed()
+            .thenComparing(composite -> String.join(COMPOSITE_KEY_DELIM, composite.getKeys())))
+        .orElse(null);
+  }
+
+  private boolean canUseCompositeKey(final List<String> keys,
+      final Map<String, SearchAttributeCriteria> attributes) {
+    if (keys.size() < 2 || !attributes.keySet().containsAll(keys)) {
+      return false;
+    }
+    for (String key : keys.subList(0, keys.size() - 1)) {
+      SearchAttributeCriteria search = attributes.get(key);
+      if (!isEqualityCriteria(search)) {
+        return false;
+      }
+    }
+    SearchAttributeCriteria last = attributes.get(keys.getLast());
+    return !isEmpty(last.eq()) || !isEmpty(last.beginsWith()) || last.range() != null
+        || !notNull(last.eqOr()).isEmpty();
+  }
+
+  private boolean isEqualityCriteria(final SearchAttributeCriteria search) {
+    return !isEmpty(search.eq()) && isEmpty(search.beginsWith()) && search.range() == null
+        && notNull(search.eqOr()).isEmpty();
   }
 
   private Map<String, SchemaAttributesOptional> getOptionalAttributeMap(

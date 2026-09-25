@@ -2335,20 +2335,15 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       assertEquals("person::2024-01-10",
           requireNonNull(documents.get(i).getMatchedAttribute()).getStringValue());
 
-      // when - invalid search
+      // when - search without a matching composite key
       DocumentSearchRequest sreq1 = new DocumentSearchRequest().query(new DocumentSearch()
           .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
           .addAttributesItem(new DocumentSearchAttribute().key("category")
               .range(new DocumentSearchRange().start("2024-02-04").end("2024-03-05"))));
 
-      try {
-        this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals("{\"errors\":[{\"error\":\"no composite key"
-            + " found for attributes 'strings,category'\"}]}", e.getResponseBody());
-      }
+      DocumentSearchResponse fallback =
+          this.searchApi.documentSearch(sreq1, siteId, null, null, null, null);
+      assertTrue(notNull(fallback.getDocuments()).isEmpty());
     }
   }
 
@@ -2599,14 +2594,9 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(new DocumentSearchAttribute().key("strings").eq("222"))
           .addAttributesItem(new DocumentSearchAttribute().key("category").eq("person")));
 
-      try {
-        this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals("{\"errors\":[{\"error\":\"no composite key found "
-            + "for attributes 'strings,category'\"}]}", e.getResponseBody());
-      }
+      DocumentSearchResponse fallback =
+          this.searchApi.documentSearch(sreq0, siteId, null, null, null, null);
+      assertTrue(notNull(fallback.getDocuments()).isEmpty());
     }
   }
 

@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.model.SearchQuery;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -40,6 +42,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit tests for {@link DocumentSearchQuery} count helpers. */
 public class DocumentSearchQueryTest {
+
+  /** Implementation inheriting the default count helper. */
+  private final DocumentSearchQuery searchQuery = new DocumentSearchQuery() {
+    @Override
+    public SearchCountResult count(final String siteId, final SearchQuery query,
+        final int maxResults) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Pagination<DocumentSearchResult> query(final String siteId, final SearchQuery query,
+        final String nextToken, final int limit) {
+      throw new UnsupportedOperationException();
+    }
+  };
 
   private Map<String, AttributeValue> item(final String documentId) {
     return Map.of("documentId", AttributeValue.fromS(documentId));
@@ -147,7 +164,7 @@ public class DocumentSearchQueryTest {
         QueryRequest.builder().tableName("documents").build());
 
     // when
-    SearchCountResult result = DocumentSearchQuery.countDistinctQueries(query -> {
+    SearchCountResult result = this.searchQuery.countDistinctQueries(query -> {
       executed.add(query);
       return responses.next();
     }, requests, "documentId", 10);
@@ -170,8 +187,8 @@ public class DocumentSearchQueryTest {
     QueryRequest request = QueryRequest.builder().tableName("documents").build();
 
     // when
-    SearchCountResult result = DocumentSearchQuery.countDistinctQueries(query -> response,
-        List.of(request), "documentId", 1);
+    SearchCountResult result =
+        this.searchQuery.countDistinctQueries(query -> response, List.of(request), "documentId", 1);
 
     // then
     assertEquals(1, result.count());
