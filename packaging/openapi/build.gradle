@@ -106,19 +106,19 @@ tasks.register('copyDocsOpenApi', Copy) {
 
 tasks.register("validateOpenApiJwtSpec", ValidateTask) {
   dependsOn("copyDocsOpenApi")
-  inputSpec = rootProject.file("docs/openapi/openapi-jwt.yaml").absolutePath
+  inputSpec.set(rootProject.layout.projectDirectory.file("docs/openapi/openapi-jwt.yaml"))
   recommend = true
 }
 
 tasks.register("validateOpenApiIamSpec", ValidateTask) {
   dependsOn("copyDocsOpenApi")
-  inputSpec = rootProject.file("docs/openapi/openapi-iam.yaml").absolutePath
+  inputSpec.set(rootProject.layout.projectDirectory.file("docs/openapi/openapi-iam.yaml"))
   recommend = true
 }
 
 tasks.register("validateOpenApiKeySpec", ValidateTask) {
   dependsOn("copyDocsOpenApi")
-  inputSpec = rootProject.file("docs/openapi/openapi-key.yaml").absolutePath
+  inputSpec.set(rootProject.layout.projectDirectory.file("docs/openapi/openapi-key.yaml"))
   recommend = true
 }
 
