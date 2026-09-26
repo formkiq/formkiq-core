@@ -1,7 +1,6 @@
 name: No Snapshot Dependencies
 
 on:
-  pull_request:
   push:
     branches:
       - main
