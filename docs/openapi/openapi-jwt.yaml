@@ -5374,8 +5374,6 @@ paths:
                 Documents:
                   value:
                     documents: []
-                    next: null
-                    previous: null
                 Count:
                   value:
                     count: 10000
