@@ -3694,6 +3694,88 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}:
+    get:
+      operationId: GetDocusignEnvelope
+      summary: Get Docusign envelope and recipient status
+      description: Retrieves the DocuSign envelope using include=recipients and returns the DocuSign response directly, including envelope status and recipient routing information. No FormKiQ fields or wrapper are added. The envelope must be associated with the selected document or artifact. This read-only operation does not update document attributes or download the signed document. Available as an Add-On Module. Repeated status polling must be at least 15 minutes apart.
+      tags:
+      - E-Signature
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+      - name: environment
+        in: query
+        required: false
+        description: DocuSign environment. Defaults to the site's docusignEnvironment; required when the site has no default. Use the environment in which the envelope was created.
+        schema:
+          $ref: '#/components/schemas/DocusignEnvironment'
+      responses:
+        "200":
+          description: DocuSign envelope with recipients
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocusignEnvelopeResponse'
+              example:
+                envelopeId: a1111111-b222-c333-d444-e55555555555
+                status: sent
+                recipients:
+                  recipientCount: "3"
+                  currentRoutingOrder: "2"
+                  signers:
+                  - recipientId: "1"
+                    name: Alice
+                    email: alice@example.com
+                    routingOrder: "1"
+                    status: completed
+                  - recipientId: "2"
+                    name: Bob
+                    email: bob@example.com
+                    routingOrder: "2"
+                    status: delivered
+                  - recipientId: "3"
+                    name: Carol
+                    email: carol@example.com
+                    routingOrder: "3"
+                    status: created
+        "400":
+          description: Invalid parameters or missing DocuSign configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        "401":
+          description: Authentication required
+        "403":
+          description: Access to the selected document or artifact is denied
+        "404":
+          description: Document, artifact, or associated DocuSign envelope not found
+        "429":
+          description: Envelope polling or DocuSign rate limit exceeded
+          headers:
+            Retry-After:
+              description: Seconds to wait before another lookup
+              schema:
+                type: integer
+                minimum: 0
+        "502":
+          description: DocuSign authentication failure, upstream error, or invalid response
+        "504":
+          description: DocuSign request timed out
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
   /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
     post:
       operationId: AddDocusignRecipientView
@@ -11924,6 +12006,129 @@ components:
           description: When true, email notifications are suppressed for the recipient, and they must access envelopes and documents from their Docusign inbox.
         tabs:
           $ref: '#/components/schemas/DocusignSigningTabs'
+    GetDocusignEnvelopeResponse:
+      type: object
+      additionalProperties: true
+      description: The DocuSign Get Envelope response with include=recipients, returned without enrichment. Additional DocuSign fields are preserved. Optional fields are returned only when supplied by DocuSign. A completed envelope does not confirm that FormKiQ has stored the signed PDF.
+      properties:
+        envelopeId:
+          type: string
+          description: DocuSign envelope identifier
+        status:
+          type: string
+          description: Envelope status reported by DocuSign, such as created, sent, delivered, signed, completed, declined, or voided.
+        statusChangedDateTime:
+          type: string
+          format: date-time
+          description: Time DocuSign reports the envelope status changed
+        sentDateTime:
+          type: string
+          format: date-time
+        deliveredDateTime:
+          type: string
+          format: date-time
+        completedDateTime:
+          type: string
+          format: date-time
+        declinedDateTime:
+          type: string
+          format: date-time
+        voidedDateTime:
+          type: string
+          format: date-time
+        recipients:
+          $ref: '#/components/schemas/DocusignEnvelopeRecipients'
+    DocusignEnvelopeRecipients:
+      type: object
+      additionalProperties: true
+      description: Recipient information returned by DocuSign
+      properties:
+        recipientCount:
+          type: string
+          description: Number of recipients, represented as a DocuSign string
+        currentRoutingOrder:
+          type: string
+          description: Current routing step. Match this to recipient routingOrder and inspect recipient status to identify outstanding actions. Multiple recipients can share a routing order. Also check envelope status before treating a recipient as awaiting action.
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        inPersonSigners:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        editors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        intermediaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        carbonCopies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        certifiedDeliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        witnesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        seals:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+        notaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeRecipient'
+    DocusignEnvelopeRecipient:
+      type: object
+      additionalProperties: true
+      description: Recipient fields returned by DocuSign. Fields depend on the recipient type; additional type-specific fields are preserved. This response schema is separate from FormKiQ's envelope creation request schemas.
+      properties:
+        recipientId:
+          type: string
+        recipientIdGuid:
+          type: string
+        recipientType:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        signerName:
+          type: string
+        signerEmail:
+          type: string
+        hostName:
+          type: string
+        hostEmail:
+          type: string
+        routingOrder:
+          type: string
+        status:
+          type: string
+          description: Recipient status reported by DocuSign
+        sentDateTime:
+          type: string
+          format: date-time
+        deliveredDateTime:
+          type: string
+          format: date-time
+        signedDateTime:
+          type: string
+          format: date-time
+        declinedDateTime:
+          type: string
+          format: date-time
     AddDocusignEnvelopesResponse:
       type: object
       properties:
