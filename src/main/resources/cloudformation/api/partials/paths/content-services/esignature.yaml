@@ -57,7 +57,10 @@ paths:
         associated with the selected document or artifact. This read-only operation
         does not update document attributes or download the signed document.
         Available as an Add-On Module. Repeated status polling must be at least
-        15 minutes apart.
+        15 minutes apart. Use recipients.signers[].recipientId from this
+        response as entries in the optional recipientIds array in
+        POST /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders
+        to request reminders for selected signers.
       tags:
         - E-Signature
       parameters:
@@ -134,6 +137,126 @@ paths:
           description: DocuSign authentication failure, upstream error, or invalid response
         '504':
           description: DocuSign request timed out
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
+
+  #@overlay/match missing_ok=True
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders:
+    post:
+      operationId: AddDocusignEnvelopeReminders
+      summary: Request DocuSign signing reminders
+      description: >-
+        Resends signing notifications for an in-progress DocuSign envelope;
+        available as an Add-On Module. With no request body or an empty object,
+        DocuSign reminds all eligible recipients at the current routing step.
+        Supply recipientIds to remind only the selected eligible signers. Obtain IDs
+        from recipients.signers[].recipientId in
+        GET /esignature/docusign/{documentId}/envelopes/{envelopeId}.
+        Every selected signer must still be awaiting action at the current routing
+        step when this request is processed. Validate the entire selection before
+        issuing a resend. Completed and future-step signers
+        cannot be targeted. Invalid targeted requests never fall back to reminding
+        all recipients. Recipient notification settings are respected; this
+        operation does not send FormKiQ notifications to embedded-only or
+        email-suppressed signers. Requires write access to the selected document
+        or artifact and a matching stored envelope ID. The operation resends the
+        existing invitation without changing recipients, documents, routing,
+        or automatic reminder settings. Targeted responses report each
+        selected recipient's acceptance or failure, with no overall status.
+        Acceptance does not confirm notification delivery. Do not automatically
+        retry after a timeout
+        because the reminder may already have been requested.
+      tags:
+        - E-Signature
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - name: environment
+          in: query
+          required: false
+          description: >-
+            DocuSign environment. Defaults to the site's docusignEnvironment;
+            required when the site has no default. Use the environment in which
+            the envelope was created.
+          schema:
+            $ref: '#/components/schemas/DocusignEnvironment'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDocusignEnvelopeRemindersRequest'
+            examples:
+              allCurrentRecipients:
+                summary: Remind all eligible current recipients
+                value: {}
+              selectedSigner:
+                summary: Remind one signer identified by the GET envelope response
+                value:
+                  recipientIds: ['2']
+              selectedSigners:
+                summary: Remind multiple signers sharing the current routing step
+                value:
+                  recipientIds: ['2', '3']
+      responses:
+        '200':
+          description: >-
+            Reminder request processed. For targeted requests, inspect each entry
+            in recipients for acceptance or failure; HTTP 200 does not mean all
+            selected recipients succeeded. An envelope-wide request returns an
+            empty object when DocuSign accepts it, because individual recipient
+            outcomes are not returned. Acceptance does not confirm delivery.
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddDocusignEnvelopeRemindersResponse'
+              examples:
+                selectedRecipients:
+                  summary: One reminder accepted and one failed after validation
+                  value:
+                    recipients:
+                      - recipientId: '1'
+                        status: accepted
+                      - recipientId: '2'
+                        status: failed
+                        message: Recipient is no longer eligible for a reminder.
+                envelopeWide:
+                  summary: Envelope-wide reminder accepted without individual outcomes
+                  value: {}
+        '400':
+          description: >-
+            Invalid parameters, missing DocuSign configuration, ineligible envelope
+            state, or unknown or ineligible signers. Null or empty recipientIds arrays,
+            duplicate IDs, and null, blank, or non-string entries are rejected.
+            The singular recipientId field is not accepted. Draft and terminal
+            envelopes cannot be reminded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        '401':
+          description: Authentication required
+        '403':
+          description: Write access to the selected document or artifact is denied
+        '404':
+          description: Document, artifact, or associated DocuSign envelope not found
+        '429':
+          description: DocuSign rate limit exceeded
+        '502':
+          description: DocuSign authentication failure, upstream error, or invalid response
+        '504':
+          description: DocuSign request timed out; reminder delivery outcome is unknown
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -649,6 +772,81 @@ components:
         declinedDateTime:
           type: string
           format: date-time
+
+    #@overlay/match missing_ok=True
+    AddDocusignEnvelopeRemindersRequest:
+      type: object
+      additionalProperties: false
+      description: >-
+        Optional selection of one or more signers. Omit the body or send an empty
+        object to remind all eligible recipients at the current routing step.
+        The singular recipientId field, signer names, and email addresses are
+        not accepted. Invalid selections never trigger an envelope-level reminder.
+      properties:
+        recipientIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: >-
+            Existing DocuSign signer IDs from recipients.signers[].recipientId in
+            GET /esignature/docusign/{documentId}/envelopes/{envelopeId} for this
+            same envelope. Every selected signer must be notification-eligible
+            and awaiting action at the current routing step. Validate the entire
+            selection before issuing a resend. Null or empty arrays, duplicate
+            IDs, and null, empty, whitespace-only, or non-string entries are
+            invalid. Omit this property for an envelope-level reminder.
+          items:
+            type: string
+            minLength: 1
+            pattern: '\S'
+          example: ['2', '3']
+
+    #@overlay/match missing_ok=True
+    AddDocusignEnvelopeRemindersResponse:
+      type: object
+      additionalProperties: false
+      description: >-
+        For targeted reminders, recipients contains exactly one outcome for each
+        requested recipient ID. HTTP 200 can include accepted and failed outcomes,
+        including when every recipient failed at the provider after validation.
+        Invalid selections detected before the resend return 400 instead.
+        Envelope-wide acceptance returns an empty object; do not infer individual
+        outcomes. There is no overall status field. Authentication, validation,
+        rate-limit, upstream, and timeout errors use the documented 4xx/5xx responses.
+      properties:
+        recipients:
+          type: array
+          minItems: 1
+          description: >-
+            Outcomes for the selected recipients, present for targeted requests
+            and omitted for envelope-wide reminders. A timeout or missing provider
+            outcome must not be represented as confirmed acceptance or failure.
+          items:
+            $ref: '#/components/schemas/DocusignReminderRecipient'
+
+    #@overlay/match missing_ok=True
+    DocusignReminderRecipient:
+      type: object
+      additionalProperties: false
+      required:
+        - recipientId
+        - status
+      properties:
+        recipientId:
+          type: string
+          description: Selected DocuSign signer ID from the request
+          example: '1'
+        status:
+          type: string
+          description: >-
+            accepted means DocuSign accepted the reminder request for this
+            recipient, not confirmed delivery. failed means DocuSign returned
+            a definitive recipient-level failure.
+          example: accepted
+        message:
+          type: string
+          description: Explanation of a recipient-level failure, when available
+          example: Recipient is no longer eligible for a reminder.
 
     #@overlay/match missing_ok=True
     AddDocusignEnvelopesResponse:
