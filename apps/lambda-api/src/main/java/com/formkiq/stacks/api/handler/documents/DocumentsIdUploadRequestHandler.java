@@ -80,9 +80,10 @@ public class DocumentsIdUploadRequestHandler
     DocumentRecord ditem = service.findDocument(siteId, document);
     throwIfNull(ditem, new DocumentNotFoundException(documentId));
 
+    boolean accelerate = event.getQueryBooleanParameter("accelerate");
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
-            Optional.empty());
+            Optional.empty(), accelerate);
 
     DynamicDocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(ditem);
     final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, artifactId);

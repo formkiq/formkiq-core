@@ -39,8 +39,15 @@ import static com.formkiq.strings.Strings.isEmpty;
 public class GetDocumentContentRequestBuilder
     implements HttpRequestBuilder<GetDocumentContentResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
+
   /** Version Key. */
   private String versionKey;
 
@@ -62,16 +69,39 @@ public class GetDocumentContentRequestBuilder
     this(DocumentArtifact.of(documentId, null));
   }
 
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public GetDocumentContentRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
+  }
+
   public String getContent(final ApiClient client, final String siteId) throws ApiException {
     var resp = submitOk(client, siteId).response();
     return !isEmpty(resp.getContent()) ? resp.getContent() : resp.getContentUrl();
   }
 
+  /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentContentRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentContentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentContent(
-        this.document.documentId(), siteId, this.document.artifactId(), this.versionKey, null));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocumentContent(this.document.documentId(), siteId,
+            this.document.artifactId(), this.versionKey, this.shareKey, this.accelerate));
   }
 
   /**

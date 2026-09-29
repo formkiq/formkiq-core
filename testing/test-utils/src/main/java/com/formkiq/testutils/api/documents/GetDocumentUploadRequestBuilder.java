@@ -34,6 +34,12 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** Document checksum. */
   private String checksum;
 
@@ -54,6 +60,17 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    *
    */
   public GetDocumentUploadRequestBuilder() {}
+
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public GetDocumentUploadRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
+  }
 
   /**
    * Set checksum.
@@ -110,10 +127,22 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
     return this;
   }
 
+  /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUploadRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentUpload(this.path, siteId,
-        this.checksumType, this.checksum, this.contentLength, this.duration, null));
+    return executeApiCall(
+        () -> new DocumentsApi(apiClient).getDocumentUpload(this.path, siteId, this.checksumType,
+            this.checksum, this.contentLength, this.duration, this.shareKey, this.accelerate));
   }
 }

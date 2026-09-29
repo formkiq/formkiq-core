@@ -23,6 +23,11 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
@@ -89,7 +94,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         AddDocumentResponse response =
-            api.updateDocument(documentId, updateReq, siteId, null, null);
+            new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+                .submitOk(api.getApiClient(), siteId).response();
 
         // then
         String newContent = "new content";
@@ -120,7 +126,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         AddDocumentRequest req = new AddDocumentRequest()
             .content(Base64.getEncoder().encodeToString(content)).contentType(contentType)
             .isBase64(Boolean.TRUE).checksum(content0Hash).checksumType(ChecksumType.SHA256);
-        AddDocumentResponse response = api.addDocument(req, siteId, null);
+        AddDocumentResponse response =
+            new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
         String documentId = response.getDocumentId();
 
         String newContentHash = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
@@ -128,7 +135,9 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
             new UpdateDocumentRequest().checksum(newContentHash).checksumType(ChecksumType.SHA256);
 
         // when
-        response = api.updateDocument(documentId, updateReq, siteId, null, null);
+        response =
+            new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+                .submitOk(api.getApiClient(), siteId).response();
 
         // then
         assertNotNull(response.getUploadUrl());
@@ -161,7 +170,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
         String deepLink = "https://www.google.com/sample.pdf";
         AddDocumentRequest req =
             new AddDocumentRequest().deepLinkPath(deepLink).contentType("application/pdf");
-        String documentId = api.addDocument(req, siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId)
+            .response().getDocumentId();
 
         // when
         GetDocumentResponse document = waitForDocument(client, siteId, documentId);
@@ -193,7 +203,8 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       AdvancedDocumentSearchApi sapi = new AdvancedDocumentSearchApi(client);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().path("test.txt");
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+      GetDocumentUrlResponse response =
+          new AddDocumentUploadRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
       String documentId = response.getDocumentId();
 

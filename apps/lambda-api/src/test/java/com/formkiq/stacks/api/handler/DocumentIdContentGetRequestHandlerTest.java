@@ -23,6 +23,11 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
 import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,13 +69,14 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      String documentId =
-          this.documentsApi.addDocumentUpload(req, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -96,12 +102,14 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("test");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+          new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNull(response.getContent());
@@ -139,7 +147,8 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -189,7 +198,8 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("test").contentType("text/plain");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       S3Service s3 = getAwsServices().getExtension(S3Service.class);
@@ -197,9 +207,11 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
+        // then
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
             e.getResponseBody());
@@ -225,12 +237,14 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       String content = Base64.getEncoder().encodeToString(bytes);
       AddDocumentRequest req = new AddDocumentRequest().content(content).isBase64(Boolean.TRUE)
           .contentType("text/plain");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+          new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNull(response.getContent());
@@ -256,12 +270,14 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       final int sixMb = 6 * 1024 * 1024; // 6 MB in bytes
       String content = "a".repeat(sixMb);
       AddDocumentRequest req = new AddDocumentRequest().content(content).contentType("text/plain");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       try {
-        this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -285,12 +301,14 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
 
       String content = "this is a test";
       AddDocumentRequest req = new AddDocumentRequest().content(content).contentType(contentType);
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       GetDocumentContentResponse response =
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null);
+          new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertEquals(content, response.getContent());

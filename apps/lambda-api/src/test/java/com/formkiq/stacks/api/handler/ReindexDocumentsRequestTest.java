@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.invoker.ApiException;
@@ -68,7 +70,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
       throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+    return new AddDocumentRequestBuilder(areq).submitOk(this.documentsApi.getApiClient(), siteId)
+        .response().getDocumentId();
   }
 
   private void assertDocumentAttributes(final DocumentAttribute da,
@@ -334,6 +337,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testAddReindexDocumentsAttributes06() throws ApiException {
+    // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
@@ -346,8 +350,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest artifactRequest = new AddDocumentRequest().documentId(documentId)
           .artifacts(Boolean.TRUE).content("artifact-content").contentType("text/plain").attributes(
               List.of(createAttribute("invoice", "INV0001"), createAttribute("date", "20240101")));
-      String artifactId =
-          this.documentsApi.addDocument(artifactRequest, siteId, null).getArtifactId();
+      String artifactId = new AddDocumentRequestBuilder(artifactRequest)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getArtifactId();
 
       List<DocumentAttribute> documentAttributes =
           getDocumentAttributes(siteId, documentId, artifactId);

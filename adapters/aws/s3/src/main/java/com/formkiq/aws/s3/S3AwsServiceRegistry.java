@@ -50,6 +50,10 @@ public class S3AwsServiceRegistry implements AwsServiceRegistry {
         .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
         .setEndpointOverride(awsServiceEndpoints.get("s3presigner"));
 
+    if ("true".equals(serviceCache.environment("S3_TRANSFER_ACCELERATION_ENABLED"))) {
+      s3Presigner.acceleratedBucket(serviceCache.environment("DOCUMENTS_S3_BUCKET"));
+    }
+
     if ("true".equals(serviceCache.environment("PATH_STYLE_ACCESS_ENABLED"))) {
       s3Presigner = s3Presigner.pathStyleAccessEnabled(Boolean.TRUE);
     }

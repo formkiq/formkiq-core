@@ -40,6 +40,7 @@ import com.formkiq.aws.dynamodb.entity.RetentionMode;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.s3.S3PresignerService;
+import com.formkiq.aws.s3.PresignPutUrlConfig;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.plugins.useractivity.UserActivityContext;
 import com.formkiq.plugins.useractivity.UserActivityContextData;
@@ -74,6 +75,8 @@ public class AddDocumentRequestToPresignedUrls
   static final String OBJECT_LOCK_RETAIN_UNTIL_DATE = "objectLockRetainUntilDate";
   /** {@link S3PresignerService}. */
   private final S3PresignerService s3PresignerService;
+  /** Whether client upload URLs use acceleration. */
+  private final boolean accelerate;
   /** S3 Bucket. */
   private final String s3Bucket;
   /** {@link Duration}. */
@@ -103,6 +106,23 @@ public class AddDocumentRequestToPresignedUrls
   public AddDocumentRequestToPresignedUrls(final AwsServiceCache awsservice,
       final ApiAuthorization authorization, final String documentSiteId, final Duration urlDuration,
       final Optional<Long> documentContentLength) {
+    this(awsservice, authorization, documentSiteId, urlDuration, documentContentLength, false);
+  }
+
+  /**
+   * Construct a URL generator with a request-specific endpoint selection.
+   * 
+   * @param awsservice Services
+   * @param authorization Authorization
+   * @param documentSiteId Site ID
+   * @param urlDuration URL lifetime
+   * @param documentContentLength Content length
+   * @param accelerateTransfers Whether client uploads use acceleration
+   */
+  public AddDocumentRequestToPresignedUrls(final AwsServiceCache awsservice,
+      final ApiAuthorization authorization, final String documentSiteId, final Duration urlDuration,
+      final Optional<Long> documentContentLength, final boolean accelerateTransfers) {
+    this.accelerate = accelerateTransfers;
     this.siteId = documentSiteId;
     this.s3PresignerService = awsservice.getExtension(S3PresignerService.class);
     this.cacheService = awsservice.getExtension(CacheService.class);
@@ -226,8 +246,10 @@ public class AddDocumentRequestToPresignedUrls
     ChecksumAlgorithm checksumAlgorithm =
         this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());
 
-    return this.s3PresignerService.presignPutUrl(this.s3Bucket, key, this.duration,
-        checksumAlgorithm, o.getChecksum(), this.contentLength, null).toString();
+    return this.s3PresignerService
+        .presignPutUrl(this.s3Bucket, key, this.duration, new PresignPutUrlConfig(checksumAlgorithm,
+            o.getChecksum(), this.contentLength, null, this.accelerate))
+        .toString();
   }
 
   private String getOldPath() {

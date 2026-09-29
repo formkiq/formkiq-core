@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.DocumentsApi;
@@ -59,8 +61,8 @@ public class DocumentsIdPurgeRequestTest extends AbstractAwsIntegrationTest {
       String path = ID.uuid() + ".txt";
       DocumentsApi api = new DocumentsApi(client);
 
-      GetDocumentUrlResponse response =
-          api.getDocumentUpload(path, siteId, null, null, null, null, null);
+      GetDocumentUrlResponse response = new GetDocumentUploadRequestBuilder().path(path)
+          .submitOk(api.getApiClient(), siteId).response();
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 

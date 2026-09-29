@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -192,7 +194,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       AddDocumentRequest docReq = new AddDocumentRequest().content("test");
 
       try {
-        this.keyDocumentsApi.addDocument(docReq, siteId, null);
+        new AddDocumentRequestBuilder(docReq).submitOk(this.keyDocumentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
@@ -205,7 +207,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);
-      AddDocumentResponse response = this.keyDocumentsApi.addDocument(docReq, siteId, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(docReq)
+          .submitOk(this.keyDocumentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());

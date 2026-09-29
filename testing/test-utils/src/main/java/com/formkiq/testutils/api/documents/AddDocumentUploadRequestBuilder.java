@@ -39,6 +39,18 @@ import java.util.List;
  */
 public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional contentLength query parameter. */
+  private Integer contentLength;
+
+  /** Optional duration query parameter. */
+  private Integer duration;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** {@link AddDocumentUploadRequest}. */
   private final AddDocumentUploadRequest request;
 
@@ -46,7 +58,27 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * constructor.
    */
   public AddDocumentUploadRequestBuilder() {
-    this.request = new AddDocumentUploadRequest();
+    this(new AddDocumentUploadRequest());
+  }
+
+  /**
+   * Construct from a request payload.
+   * 
+   * @param payload Request body
+   */
+  public AddDocumentUploadRequestBuilder(final AddDocumentUploadRequest payload) {
+    this.request = payload;
+  }
+
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
   }
 
   /**
@@ -83,6 +115,17 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
   }
 
   /**
+   * Set contentLength.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder contentLength(final Integer value) {
+    this.contentLength = value;
+    return this;
+  }
+
+  /**
    * Set Document content type.
    * 
    * @param contentType {@link String}
@@ -101,6 +144,17 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    */
   public AddDocumentUploadRequestBuilder deepLinkPath(final String deepLinkPath) {
     this.request.deepLinkPath(deepLinkPath);
+    return this;
+  }
+
+  /**
+   * Set duration.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder duration(final Integer value) {
+    this.duration = value;
     return this;
   }
 
@@ -127,6 +181,17 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
   }
 
   /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient
@@ -135,8 +200,8 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    */
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).addDocumentUpload(request, siteId, null, null, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).addDocumentUpload(request, siteId,
+        this.contentLength, this.duration, this.shareKey, this.accelerate));
   }
 
   /**

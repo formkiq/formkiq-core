@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -82,10 +84,12 @@ public class NumberingSequencesRequestTest extends AbstractApiClientRequestTest 
           .stream().anyMatch(sequence -> attributeKey.equals(sequence.getAttributeKey())));
 
       // given
-      String firstDocumentId = this.documentsApi
-          .addDocument(new AddDocumentRequest().content("first"), siteId, null).getDocumentId();
-      String secondDocumentId = this.documentsApi
-          .addDocument(new AddDocumentRequest().content("second"), siteId, null).getDocumentId();
+      String firstDocumentId =
+          new AddDocumentRequestBuilder(new AddDocumentRequest().content("first"))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String secondDocumentId =
+          new AddDocumentRequestBuilder(new AddDocumentRequest().content("second"))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // when
       GenerateDocumentAttributeValueResponse first = this.documentAttributesApi

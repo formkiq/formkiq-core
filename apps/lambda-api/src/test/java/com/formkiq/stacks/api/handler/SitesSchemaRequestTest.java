@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -144,8 +147,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
   private String addDocumentUpload(final String siteId, final AddDocumentUploadRequest request)
       throws ApiException {
-    String documentId =
-        this.documentsApi.addDocumentUpload(request, siteId, null, null, null).getDocumentId();
+    String documentId = new AddDocumentUploadRequestBuilder(request)
+        .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
     assertNotNull(documentId);
     return documentId;
   }
@@ -220,7 +223,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         .addAttributesItem(new AddDocumentAttribute(
             new AddDocumentAttributeStandard().key("date").numberValue(new BigDecimal(value))));
 
-    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+    new AddDocumentUploadRequestBuilder(ureq0).submitOk(this.documentsApi.getApiClient(), siteId);
   }
 
   private void createRangeAttributeString(final String siteId, final String value)
@@ -231,7 +234,7 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
         .addAttributesItem(new AddDocumentAttribute(
             new AddDocumentAttributeStandard().key("date").stringValue(value)));
 
-    this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+    new AddDocumentUploadRequestBuilder(ureq0).submitOk(this.documentsApi.getApiClient(), siteId);
   }
 
   private AddAttributeSchemaRequired createRequired(final String attributeKey) {
@@ -1227,7 +1230,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(ureq).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1273,13 +1277,14 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().path("sample.txt").contentType("text/plain");
 
       // when
-      GetDocumentUrlResponse response0 =
-          this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+      GetDocumentUrlResponse response0 = new AddDocumentUploadRequestBuilder(ureq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       AddDocumentRequest areq = new AddDocumentRequest().path("sample.txt").content("test sample")
           .contentType("text/plain");
 
-      AddDocumentResponse response1 = this.documentsApi.addDocument(areq, siteId, null);
+      AddDocumentResponse response1 = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       for (String documentId : Arrays.asList(response0.getDocumentId(),
@@ -1345,8 +1350,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .numberValues(Arrays.asList(new BigDecimal("111.11"), new BigDecimal("222.22")))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1407,8 +1412,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .numberValues(Arrays.asList(new BigDecimal("111.11"), new BigDecimal("222.22")))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1427,7 +1432,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(ureq1, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(ureq1).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1468,8 +1474,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").stringValues(List.of("123"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -1481,7 +1487,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(ureq1, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(ureq1).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1519,8 +1526,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("category").stringValues(List.of("123"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -1585,7 +1592,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(ureq0).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1621,8 +1629,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .addAttributesItem(createStringAttribute("strings", "111"));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1637,7 +1645,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1673,8 +1682,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1690,7 +1699,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(ureq0).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -2173,8 +2183,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("strings").stringValues(Arrays.asList("111", "222"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2237,8 +2247,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("strings").stringValues(Arrays.asList("111", "222"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2478,8 +2488,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("strings").stringValues(Arrays.asList("111", "222", "333"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2530,8 +2540,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("strings").stringValues(Arrays.asList("111", "222"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2583,8 +2593,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               .key("other").stringValues(Arrays.asList("111", "222"))));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2772,8 +2782,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").booleanValue(true)));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(ureq0, siteId, null, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(ureq0)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -2813,7 +2823,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "strings", null);
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
@@ -2853,7 +2864,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, "other", null);
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd");
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
@@ -2900,7 +2912,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
           .addAttributesItem(createStringAttribute("documentType", "invoice"));
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       int i = 0;
@@ -2962,7 +2975,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringsAttribute("strings", List.of("category", "1234")))
           .addAttributesItem(createStringAttribute("documentType", "invoice"));
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       int i = 0;
@@ -3020,7 +3034,10 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringsAttribute("category", List.of("other")));
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      // when
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      // then
       assertNotNull(documentId);
 
       int i = 0;
@@ -3063,7 +3080,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest areq = new AddDocumentRequest().content("adasd")
           .addAttributesItem(createStringAttribute("code", "1"));
-      String documentId = this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(areq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       SetDocumentAttributesRequest setAttr =
@@ -3545,7 +3563,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -3584,7 +3603,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
       } catch (ApiException e) {
         // then
         assertEquals("{\"errors\":[{\"key\":\"strings\","
@@ -3619,7 +3639,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("strings").stringValue("test")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // then
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
@@ -3658,7 +3679,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("user").stringValue("1234")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // then
       GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
@@ -3691,7 +3713,8 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then

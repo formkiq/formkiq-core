@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentByContentType;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentType;
@@ -96,7 +99,8 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
 
     // when
     try {
-      api.getDocumentContent(documentId, null, null, null, null);
+      new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+          .submitOk(api.getApiClient(), null);
       fail();
     } catch (ApiException e) {
       // then
@@ -126,7 +130,8 @@ public class DocumentsDocumentIdUrlRequestTest extends AbstractAwsIntegrationTes
 
     // when
     GetDocumentContentResponse response =
-        api.getDocumentContent(documentId, null, null, null, null);
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(api.getApiClient(), null).response();
 
     // then
     assertNotNull(response.getContent());

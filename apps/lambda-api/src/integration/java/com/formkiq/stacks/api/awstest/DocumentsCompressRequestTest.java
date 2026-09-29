@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -128,7 +131,8 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
         String path = UUID.randomUUID() + ".txt";
         AddDocumentRequest req =
             new AddDocumentRequest().content(content).contentType("text/plain").path(path);
-        String documentId = documentsApi.addDocument(req, siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(req)
+            .submitOk(documentsApi.getApiClient(), siteId).response().getDocumentId();
         documentIds.put(path, documentId);
       }
 
@@ -180,10 +184,10 @@ public class DocumentsCompressRequestTest extends AbstractAwsIntegrationTest {
     ApiClient apiClient = getApiClients(null).getFirst();
 
     DocumentsApi documentsApi = new DocumentsApi(apiClient);
-    GetDocumentUrlResponse upload1 =
-        documentsApi.getDocumentUpload(null, null, null, null, null, null, null);
-    GetDocumentUrlResponse upload2 =
-        documentsApi.getDocumentUpload(null, null, null, null, null, null, null);
+    GetDocumentUrlResponse upload1 = new GetDocumentUploadRequestBuilder()
+        .submitOk(documentsApi.getApiClient(), null).response();
+    GetDocumentUrlResponse upload2 = new GetDocumentUploadRequestBuilder()
+        .submitOk(documentsApi.getApiClient(), null).response();
 
     // when
     HttpResponse<String> response1 =

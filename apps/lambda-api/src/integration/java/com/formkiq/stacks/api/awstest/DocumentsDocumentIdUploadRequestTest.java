@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.GetDocumentIdUploadRequestBuilder;
+
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,8 +68,8 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
 
       // when
       try {
-        api.getDocumentIdUpload(documentId, siteId, null, null, null, Integer.valueOf(1), null,
-            null);
+        new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+            .contentLength(Integer.valueOf(1)).submitOk(api.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -91,7 +94,8 @@ public class DocumentsDocumentIdUploadRequestTest extends AbstractAwsIntegration
 
       // when
       GetDocumentUrlResponse response =
-          api.getDocumentIdUpload(documentId, siteId, null, null, null, 1, null, null);
+          new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+              .contentLength(1).submitOk(api.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());

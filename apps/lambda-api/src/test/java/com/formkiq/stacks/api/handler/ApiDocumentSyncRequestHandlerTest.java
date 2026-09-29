@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.TestWait.untilNextMillisecond;
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
@@ -214,8 +216,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       for (AddDocumentSyncService service : services) {
 
         setBearerToken(siteId);
-        String documentId = this.documentsApi
-            .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
+            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         // when
@@ -280,7 +282,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
                 new AddDocumentAttributeStandard().key(attributeKey).stringValue("555")))
             .addTagsItem(new AddDocumentTag().key("mytag").value("123"));
 
-        String documentId = this.documentsApi.addDocument(addReq, siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(addReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         // when
@@ -311,8 +314,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       for (AddDocumentSyncService service : getAddDocumentSyncServices()) {
 
         setBearerToken(siteId);
-        String documentId = this.documentsApi
-            .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
+            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         // when
@@ -341,8 +344,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       for (AddDocumentSyncService service : services) {
 
         setBearerToken(siteId);
-        String documentId = this.documentsApi
-            .addDocument(new AddDocumentRequest().content("asd"), siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
+            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -353,6 +356,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
           this.documentsApi.addDocumentSync(documentId, siteId, req);
           fail();
         } catch (ApiException e) {
+          // then
           assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
           assertEquals(
               "{\"errors\":[{\"key\":\"type\","
@@ -378,8 +382,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
     setBearerToken((String) null);
 
-    String documentId = this.documentsApi
-        .addDocument(new AddDocumentRequest().content("test"), null, null).getDocumentId();
+    String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("test"))
+        .submitOk(this.documentsApi.getApiClient(), null).response().getDocumentId();
     assertNotNull(documentId);
 
     createSyncRecords(db, documentId);
