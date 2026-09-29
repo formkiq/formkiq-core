@@ -263,6 +263,93 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
 
   #@overlay/match missing_ok=True
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}/void:
+    post:
+      operationId: VoidDocusignEnvelope
+      summary: Void a DocuSign envelope
+      description: >-
+        Cancels an in-progress DocuSign envelope; available as an Add-On Module.
+        Requires write access to the selected document or artifact and a matching
+        stored envelope ID. Calls DocuSign's envelope update API,
+        PUT /restapi/v2.1/accounts/{accountId}/envelopes/{envelopeId}, with
+        status set to voided and the supplied voidedReason. DocuSign notifies
+        recipients that the envelope was voided, including the supplied reason.
+        Only sent or delivered envelopes can be voided. If the envelope is already
+        voided, returns its current state without another update or changing its
+        original reason. Voiding cannot be undone. The existing envelope-voided
+        callback updates the stored FormKiQ status. After a timeout, the
+        outcome is unknown; check the existing GET envelope status endpoint
+        before attempting the operation again.
+      externalDocs:
+        description: DocuSign Envelopes update API
+        url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/update/
+      tags:
+        - E-Signature
+      parameters:
+        - $ref: '#/components/parameters/siteIdParam'
+        - $ref: '#/components/parameters/documentIdParam'
+        - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - name: environment
+          in: query
+          required: false
+          description: >-
+            DocuSign environment. Defaults to the site's docusignEnvironment;
+            required when the site has no default. Use the environment in which
+            the envelope was created.
+          schema:
+            $ref: '#/components/schemas/DocusignEnvironment'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidDocusignEnvelopeRequest'
+            example:
+              voidedReason: Document has been replaced.
+      responses:
+        '200':
+          description: DocuSign envelope voided successfully
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoidDocusignEnvelopeResponse'
+              example:
+                envelopeId: a1111111-b222-c333-d444-e55555555555
+                status: voided
+        '400':
+          description: >-
+            Invalid parameters, missing, blank, or overlong voidedReason, missing DocuSign
+            configuration, or an envelope that is not eligible to be voided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        '401':
+          description: Authentication required
+        '403':
+          description: Write access to the selected document or artifact is denied
+        '404':
+          description: Document, artifact, or associated DocuSign envelope not found
+        '429':
+          description: DocuSign rate limit exceeded
+        '502':
+          description: DocuSign authentication failure, upstream error, or invalid response
+        '504':
+          description: DocuSign request timed out; the void operation outcome is unknown
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: "#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200"
+
+  #@overlay/match missing_ok=True
   /esignature/docusign/{documentId}/envelopes/{envelopeId}/views/recipient:
     post:
       operationId: AddDocusignRecipientView
@@ -847,6 +934,39 @@ components:
           type: string
           description: Explanation of a recipient-level failure, when available
           example: Recipient is no longer eligible for a reminder.
+
+    #@overlay/match missing_ok=True
+    VoidDocusignEnvelopeRequest:
+      type: object
+      required:
+        - voidedReason
+      properties:
+        voidedReason:
+          type: string
+          minLength: 1
+          pattern: '\S'
+          maxLength: 200
+          description: >-
+            Non-blank, recipient-facing explanation for voiding the DocuSign
+            envelope. At most 200 characters, including spaces and line breaks;
+            longer reasons are rejected without truncation.
+          example: Document has been replaced.
+
+    #@overlay/match missing_ok=True
+    VoidDocusignEnvelopeResponse:
+      type: object
+      required:
+        - envelopeId
+        - status
+      properties:
+        envelopeId:
+          type: string
+          description: Identifier of the DocuSign envelope that was voided
+          example: a1111111-b222-c333-d444-e55555555555
+        status:
+          type: string
+          description: Envelope status after the successful operation, voided
+          example: voided
 
     #@overlay/match missing_ok=True
     AddDocusignEnvelopesResponse:
