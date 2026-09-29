@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.stacks.dynamodb.DocumentService.MAX_RESULTS;
@@ -320,7 +322,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().content("test").path(path);
 
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
       } catch (IllegalArgumentException e) {
         // bug in API AddDocumentResponse doesn't support messages for created folders
         // safe to ignore
@@ -407,7 +409,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("test").path(path).content("data");
 
-      this.documentsApi.addDocument(req, siteId, null);
+      new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
 
       DocumentSearchMeta meta = new DocumentSearchMeta().folder("");
       DocumentSearchRequest sreq =

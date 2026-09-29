@@ -51,6 +51,6 @@ public class DocumentsRequestBuilder {
     DocumentsApi api = new DocumentsApi(client);
     AddDocumentRequest req = new AddDocumentRequest().content(ID.uuid()).addAttributesItem(
         new AddDocumentAttribute(new AddDocumentAttributeStandard().key(attributeKey)));
-    return api.addDocument(req, siteId, null).getDocumentId();
+    return api.addDocument(req, siteId, null, null).getDocumentId();
   }
 }

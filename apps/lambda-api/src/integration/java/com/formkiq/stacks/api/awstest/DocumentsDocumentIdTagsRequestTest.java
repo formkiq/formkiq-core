@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
@@ -401,7 +403,8 @@ public class DocumentsDocumentIdTagsRequestTest extends AbstractAwsIntegrationTe
 
       AddDocumentRequest addReq = new AddDocumentRequest().content(content).tags(tags);
       // when
-      AddDocumentResponse addDocument = documentsApi.addDocument(addReq, siteId, null);
+      AddDocumentResponse addDocument = new AddDocumentRequestBuilder(addReq)
+          .submitOk(documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = addDocument.getDocumentId();

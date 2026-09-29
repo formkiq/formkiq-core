@@ -36,6 +36,7 @@ paths:
             type: string
             enum:
               - short
+        - $ref: '#/components/parameters/accelerateParam'
       responses:
         '200':
           description: 200 OK

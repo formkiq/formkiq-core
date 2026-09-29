@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.testutils.aws.TestServices.AWS_REGION;
@@ -97,7 +98,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm1")))
         .addAttributesItem(new AddDocumentAttribute(new AddDocumentAttributeStandard().key("wm2")));
 
-    return this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+    return new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId)
+        .response().getDocumentId();
   }
 
   private void addS3File(final String siteId, final String documentId, final String contentType) {
@@ -188,8 +190,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null, null,
-            null);
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -282,8 +284,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         addS3File(siteId, documentId, contentType);
 
         // when
-        GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null,
-            null, null, null, null, null, null);
+        GetDocumentUrlResponse resp =
+            new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+                .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
         // then
         assertNotNull(resp);
@@ -321,8 +324,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       addS3File(siteId, documentId, null);
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          duration, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).duration(duration)
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -350,8 +354,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null, null,
-            null);
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -388,8 +392,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       this.documentService.saveDocument(siteId, doc, new ArrayList<>());
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          duration, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).duration(duration)
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -434,8 +439,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       this.documentService.saveDocument(siteId, doc, new ArrayList<>());
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -463,8 +469,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
           "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -483,8 +490,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         "ASD".getBytes(StandardCharsets.UTF_8), null);
 
     // when
-    GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-        null, null, null, null, null);
+    GetDocumentUrlResponse resp =
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
     // then
     assertNotNull(resp);
@@ -510,8 +518,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       String documentId = addDocumentWithWatermarks(siteId);
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -526,8 +535,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     String documentId = addDocumentWithWatermarks(siteId);
 
     // when
-    GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-        null, null, null, null, null);
+    GetDocumentUrlResponse resp =
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
     // then
     assertNotNull(resp);
@@ -552,8 +562,10 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         setBearerToken(groups);
 
         // when
-        GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null,
-            null, null, null, null, Boolean.TRUE, null);
+        GetDocumentUrlResponse resp =
+            new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+                .bypassWatermark(Boolean.TRUE).submitOk(this.documentsApi.getApiClient(), siteId)
+                .response();
 
         // then
         assertNotNull(resp);
@@ -578,8 +590,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null,
-            Boolean.TRUE, null);
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+            .bypassWatermark(Boolean.TRUE).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -613,8 +625,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       getS3().putObject(bucketName, filename, "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -648,8 +661,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       this.documentService.saveDocument(siteId, item, new ArrayList<>());
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, null, null,
-          null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -677,8 +691,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
           .artifacts(true).submit(client, siteId).throwIfError().response().getArtifactId();
 
       // when
-      GetDocumentUrlResponse resp = this.documentsApi.getDocumentUrl(documentId, siteId, artifactId,
-          null, null, null, null, null, null);
+      GetDocumentUrlResponse resp =
+          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, artifactId))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -703,8 +718,8 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentsApi.getDocumentUrl(documentId, siteId, null, null, null, null, null, null,
-            "short");
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).setFormat("short")
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then

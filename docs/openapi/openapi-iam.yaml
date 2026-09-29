@@ -574,6 +574,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       requestBody:
         required: true
         content:
@@ -799,6 +800,7 @@ paths:
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       requestBody:
         required: true
         content:
@@ -1422,6 +1424,7 @@ paths:
       - $ref: '#/components/parameters/artifactIdParam'
       - $ref: '#/components/parameters/versionKeyParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       responses:
         "200":
           description: 200 OK
@@ -2846,6 +2849,7 @@ paths:
       - $ref: '#/components/parameters/contentLengthParam'
       - $ref: '#/components/parameters/durationParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       responses:
         "200":
           description: 200 OK
@@ -2883,6 +2887,7 @@ paths:
       - $ref: '#/components/parameters/contentLengthParam'
       - $ref: '#/components/parameters/durationParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       requestBody:
         required: true
         content:
@@ -2935,6 +2940,7 @@ paths:
       - $ref: '#/components/parameters/contentLengthParam'
       - $ref: '#/components/parameters/durationParam'
       - $ref: '#/components/parameters/shareKeyParam'
+      - $ref: '#/components/parameters/accelerateParam'
       description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
       tags:
       - Documents
@@ -2989,6 +2995,7 @@ paths:
           type: string
           enum:
           - short
+      - $ref: '#/components/parameters/accelerateParam'
       responses:
         "200":
           description: 200 OK
@@ -8994,6 +9001,14 @@ components:
       required: false
       schema:
         type: integer
+    accelerateParam:
+      name: accelerate
+      in: query
+      required: false
+      description: Use S3 Transfer Acceleration for presigned transfer URLs targeting the FormKiQ documents bucket, including internal uploads of inline content. Requires EnableS3TransferAcceleration=true on the deployment; additional transfer charges apply. Defaults to false. Has no effect on inline content returned by the API. Unavailable acceleration, external download URLs, and watermarked downloads return HTTP 400.
+      schema:
+        type: boolean
+        default: false
     durationParam:
       name: duration
       in: query

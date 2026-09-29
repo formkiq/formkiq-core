@@ -105,6 +105,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/accelerateParam'
       requestBody:
         required: true
         content:

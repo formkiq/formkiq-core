@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
@@ -729,8 +730,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
       // when
-      AddDocumentResponse responseNoSiteId = this.documentsApi.addDocument(req, null, null);
-      AddDocumentResponse responseSiteId = this.documentsApi.addDocument(req, siteId, null);
+      AddDocumentResponse responseNoSiteId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), null).response();
+      AddDocumentResponse responseSiteId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(responseNoSiteId.getDocumentId());
@@ -766,7 +769,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, null, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -791,7 +794,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://google.com");
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), null).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -953,7 +957,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       }
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(request, siteId, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(request)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -989,7 +994,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
           // when
           try {
-            this.documentsApi.addDocument(request, siteId, null);
+            new AddDocumentRequestBuilder(request).submitOk(this.documentsApi.getApiClient(),
+                siteId);
             fail();
           } catch (ApiException e) {
             // then
@@ -1030,7 +1036,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               .addTagsItem(new AddDocumentTag().key("formData").value("myvalue")));
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUploadUrl());
@@ -1096,7 +1103,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentMetadata().key("playerId").values(Arrays.asList("11", "22")));
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1112,7 +1120,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       assertEquals("category", metadata.get(1).getValue());
 
       assertEquals(content,
-          this.documentsApi.getDocumentContent(documentId, siteId, null, null, null).getContent());
+          new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+              .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
     }
   }
 
@@ -1148,7 +1157,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key(attributeKey1).stringValue("privacy")));
 
       // when
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       assertNotNull(documentId);
@@ -1195,7 +1205,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1225,7 +1235,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
         // when
         try {
-          this.documentsApi.addDocument(req, null, null);
+          new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
           fail();
         } catch (ApiException e) {
           // then
@@ -1254,7 +1264,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .contentType("application/pdf");
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertEquals(documentId, response.getDocumentId());
@@ -1263,7 +1274,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when - duplicate send
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1291,7 +1302,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1325,7 +1336,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
 
         // when
-        AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+        AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+            .submitOk(this.documentsApi.getApiClient(), null).response();
 
         // then
         assertNull(response.getUploadUrl());
@@ -1340,7 +1352,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         req.setContentType("application/pdf");
 
         // when
-        documentId = this.documentsApi.addDocument(req, null, null).getDocumentId();
+        documentId = new AddDocumentRequestBuilder(req)
+            .submitOk(this.documentsApi.getApiClient(), null).response().getDocumentId();
 
         // then
         assertNotNull(documentId);
@@ -1371,7 +1384,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().url("https://localhost")));
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), null).response();
 
       // then
       assertNull(response.getUploadUrl());
@@ -1402,7 +1416,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath(deepLink);
 
       // when
-      AddDocumentResponse response = this.documentsApi.addDocument(req, null, null);
+      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), null).response();
 
       // then
       assertNull(response.getUploadUrl());
@@ -1435,7 +1450,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, null, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1468,7 +1483,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             .checksum(checksum).checksumType(ChecksumType.SHA1);
 
         // when
-        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+        AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+            .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
         // then
         assertNotNull(response.getDocumentId());
@@ -1482,8 +1498,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(reqChecksum, site.getChecksum());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
-        assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
+        assertEquals(content,
+            new GetDocumentContentRequestBuilder(
+                DocumentArtifact.of(response.getDocumentId(), null))
+                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
       }
     }
   }
@@ -1507,7 +1525,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1543,7 +1561,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key(attributeKey).stringValue(value)));
 
       // when
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       assertNotNull(documentId);
@@ -1574,7 +1593,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, null, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1603,7 +1622,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, null, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1629,7 +1648,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, null, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), null);
         fail();
       } catch (ApiException e) {
         // then
@@ -1779,6 +1798,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testPostArtifactsWithDocumentIdAndChildDocuments() throws ApiException {
+    // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
@@ -1790,10 +1810,12 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .content("artifact content").addDocumentsItem(
               new AddChildDocument().content("{\"child\":true}").contentType("application/json"));
 
+      // when
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
+        // then
         assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals(
             "{\"errors\":[{\"key\":\"documents\","
@@ -1903,7 +1925,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
             .checksum(checksum).checksumType(ChecksumType.SHA256);
 
         // when
-        AddDocumentResponse response = this.documentsApi.addDocument(req, siteId, null);
+        AddDocumentResponse response = new AddDocumentRequestBuilder(req)
+            .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
         // then
         assertNotNull(response.getDocumentId());
@@ -1916,8 +1939,10 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
         assertEquals(reqChecksum, site.getChecksum());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
-        assertEquals(content, this.documentsApi
-            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
+        assertEquals(content,
+            new GetDocumentContentRequestBuilder(
+                DocumentArtifact.of(response.getDocumentId(), null))
+                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
       }
     }
   }
@@ -1942,7 +1967,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(req, siteId, null);
+        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -2198,7 +2223,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
@@ -2231,7 +2257,8 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req =
           new AddDocumentRequest().path(path).content(content0).contentType("text/plain");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       AwsServiceCache awsServices = getAwsServices();

@@ -23,6 +23,10 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentIdUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
@@ -101,11 +105,13 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       this.systemApi.updateConfiguration(siteId, config);
 
       setBearerToken(siteId);
-      this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
+      new GetDocumentUploadRequestBuilder().contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // when
       try {
-        this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
+        new GetDocumentUploadRequestBuilder().contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -129,8 +135,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, null, null, 1, null, null);
+      GetDocumentUrlResponse response = new GetDocumentUploadRequestBuilder().contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -155,7 +161,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.getDocumentUpload(null, siteId, "sha256", null, 1, null, null);
+        new GetDocumentUploadRequestBuilder().checksumType("sha256").contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -183,7 +190,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, "sha256", reqChecksum, 1, null, null);
+          new GetDocumentUploadRequestBuilder().checksumType("sha256").checksum(reqChecksum)
+              .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -219,7 +227,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, "sha1", reqChecksum, 1, null, null);
+          new GetDocumentUploadRequestBuilder().checksumType("sha1").checksum(reqChecksum)
+              .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -255,7 +264,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       GetDocumentUrlResponse response =
-          this.documentsApi.getDocumentUpload(null, siteId, "sha512", reqChecksum, 1, null, null);
+          new GetDocumentUploadRequestBuilder().checksumType("sha512").checksum(reqChecksum)
+              .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -293,7 +303,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.getDocumentIdUpload(documentId, siteId, null, null, null, 1, null, null);
+        new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+            .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -317,12 +328,14 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
-      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
-          null, null, null, 1, null, null);
+      GetDocumentUrlResponse response =
+          new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+              .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -344,13 +357,15 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
       try {
-        this.documentsApi.getDocumentIdUpload(documentId, siteId, null, "sha256", null, 1, null,
-            null);
+        new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+            .checksumType("sha256").contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -377,12 +392,15 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
-      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
-          null, "sha256", reqChecksum, 1, null, null);
+      GetDocumentUrlResponse response =
+          new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+              .checksumType("sha256").checksum(reqChecksum).contentLength(1)
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -415,12 +433,15 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content("akldajds");
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when
-      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
-          null, "sha1", reqChecksum, 1, null, null);
+      GetDocumentUrlResponse response =
+          new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+              .checksumType("sha1").checksum(reqChecksum).contentLength(1)
+              .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -444,6 +465,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testGetUploadArtifact01() throws Exception {
+    // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
 
       setBearerToken(siteId);
@@ -460,8 +482,9 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(artifactId);
 
       // when
-      GetDocumentUrlResponse response = this.documentsApi.getDocumentIdUpload(documentId, siteId,
-          artifactId, null, null, 1, null, null);
+      GetDocumentUrlResponse response =
+          new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, artifactId))
+              .contentLength(1).submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -487,11 +510,13 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+        new AddDocumentUploadRequestBuilder(req).contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -514,11 +539,12 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -544,11 +570,12 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest()
           .addTagsItem(new AddDocumentTag().key("category").value("person"));
-      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -584,8 +611,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
           .addTagsItem(new AddDocumentTag().key("category").value("person"));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -620,8 +647,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().checksumType(ChecksumType.SHA256).checksum(reqChecksum);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -655,7 +682,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+        new AddDocumentUploadRequestBuilder(req).contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -684,8 +712,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().checksumType(ChecksumType.SHA256).checksum(reqChecksum);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -722,8 +750,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().checksumType(ChecksumType.SHA1).checksum(reqChecksum);
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -758,8 +786,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
               .addActionsItem(new AddAction().type(DocumentActionType.OCR));
 
       // when
-      GetDocumentUrlResponse response =
-          this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String url = response.getUrl();
@@ -798,7 +826,8 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+        new AddDocumentUploadRequestBuilder(req).contentLength(1)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -827,11 +856,13 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       setBearerToken(siteId);
       AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-      this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, TEN, null, null);
+        new AddDocumentUploadRequestBuilder(req).contentLength(TEN)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -863,7 +894,7 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(req, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -879,13 +910,15 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
    */
   @Test
   public void testPostArtifacts() throws ApiException {
+    // given
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       setBearerToken(siteId);
 
       AddDocumentUploadRequest req = new AddDocumentUploadRequest().artifacts(Boolean.TRUE);
 
       // when
-      var resp = this.documentsApi.addDocumentUpload(req, siteId, 1, null, null);
+      var resp = new AddDocumentUploadRequestBuilder(req).contentLength(1)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       String documentId = resp.getDocumentId();

@@ -344,7 +344,7 @@ public class DocumentsRequestHandler
 
     String siteId = authorization.getSiteId();
     AddDocumentRequest request = JsonToObject.fromJson(awsservice, event, AddDocumentRequest.class);
-
+    
     validatePost(request);
 
     if (isFolder(request)) {

@@ -142,7 +142,7 @@ public class FkqDocumentService {
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
             .path(path).actions(actions);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    AddDocumentResponse response = api.addDocument(req, siteId, null, null);
     return response.getDocumentId();
   }
 
@@ -168,7 +168,7 @@ public class FkqDocumentService {
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
             .isBase64(Boolean.TRUE).path(path).actions(actions).tags(tags);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    AddDocumentResponse response = api.addDocument(req, siteId, null, null);
     return response.getDocumentId();
   }
 
@@ -193,7 +193,7 @@ public class FkqDocumentService {
 
     DocumentsApi api = new DocumentsApi(apiClient);
     GetDocumentUrlResponse response =
-        api.getDocumentUpload(path, siteId, null, null, content.length, null, shareKey);
+        api.getDocumentUpload(path, siteId, null, null, content.length, null, shareKey, null);
     String s3url = response.getUrl();
 
     if (content.length > 0) {
@@ -261,7 +261,7 @@ public class FkqDocumentService {
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
             .isBase64(Boolean.TRUE).path(path).actions(actions).attributes(attributes);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    AddDocumentResponse response = api.addDocument(req, siteId, null, null);
     return response.getDocumentId();
   }
 
@@ -285,7 +285,7 @@ public class FkqDocumentService {
     com.formkiq.client.model.AddDocumentRequest req =
         new com.formkiq.client.model.AddDocumentRequest().content(content).contentType(contentType)
             .path(path).tags(tags);
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    AddDocumentResponse response = api.addDocument(req, siteId, null, null);
     return response.getDocumentId();
   }
 
@@ -644,7 +644,7 @@ public class FkqDocumentService {
 
       try {
         GetDocumentContentResponse response =
-            api.getDocumentContent(documentId, siteId, null, null, null);
+            api.getDocumentContent(documentId, siteId, null, null, null, null);
         if ((contentType.equals(response.getContentType()))) {
           return response;
         }
