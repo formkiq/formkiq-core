@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -177,7 +180,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
   private String addDocument(final String siteId) throws ApiException {
     AddDocumentRequest docReq = new AddDocumentRequest().content("test");
-    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+    return new AddDocumentRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(), siteId)
+        .response().getDocumentId();
   }
 
   private String addDocument(final String siteId, final String key, final String stringValue,
@@ -194,7 +198,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
     docReq.addAttributesItem(new AddDocumentAttribute(o));
 
-    return this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+    return new AddDocumentRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(), siteId)
+        .response().getDocumentId();
   }
 
   private void addDocumentAttribute(final String siteId, final DocumentArtifact document,
@@ -225,7 +230,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       docReq.addAttributesItem(attr);
     }
 
-    return this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+    return new AddDocumentUploadRequestBuilder(docReq)
+        .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
   }
 
   private void addRelationship(final String siteId, final String d0,
@@ -1070,7 +1076,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o));
 
       // when
-      String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       assertNotNull(
@@ -1108,7 +1115,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().content("test").addAttributesItem(new AddDocumentAttribute(o));
 
       // when
-      String documentId = this.documentsApi.addDocument(docReq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       assertNotNull(
@@ -1238,7 +1246,7 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocument(docReq, siteId, null);
+        new AddDocumentRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1500,8 +1508,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute(o));
 
       // when
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
@@ -1551,8 +1559,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().addAttributesItem(new AddDocumentAttribute(o));
 
       // when
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key);
@@ -1770,7 +1778,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringAttribute("playerId", "1234"))
           .addAttributesItem(createStringsAttribute("category", Arrays.asList("person", "house")));
 
-      this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null);
+      new AddDocumentUploadRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(),
+          siteId);
 
       DocumentSearchAttribute attribute = new DocumentSearchAttribute().key(key).eq("confidential");
       DocumentSearch query = new DocumentSearch().attribute(attribute);
@@ -1813,7 +1822,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null);
+        new AddDocumentUploadRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(),
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1846,8 +1856,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentUploadRequest().addAttributesItem(createStringAttribute(key, "public"));
 
       // when add document
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       // then
       assertNotNull(documentId);
@@ -1864,7 +1874,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new UpdateDocumentRequest().addAttributesItem(createStringAttribute(key, "confidential"));
 
       // when patch document
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // then
       response = this.searchApi.documentSearch(searchRequest, siteId, null, null, null, null);
@@ -1962,7 +1973,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
       AddDocumentUploadRequest docReq =
           new AddDocumentUploadRequest().addAttributesItem(createStringAttribute(key, "public"));
 
-      this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null);
+      new AddDocumentUploadRequestBuilder(docReq).submitOk(this.documentsApi.getApiClient(),
+          siteId);
 
       // when
       try {
@@ -2801,8 +2813,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentAttribute(new AddDocumentAttributeStandard().key("c1").stringValue("222"));
       docReq.addAttributesItem(attr1);
 
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       SetDocumentAttributeRequest req = new SetDocumentAttributeRequest()
@@ -2847,8 +2859,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           .key("c0").addStringValuesItem("111").addStringValuesItem("222"));
       docReq.addAttributesItem(attr0);
 
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       SetDocumentAttributeRequest req = new SetDocumentAttributeRequest().attribute(
@@ -3281,7 +3293,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -3324,7 +3337,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentAttributeStandard().key("security").stringValue("other")));
 
       // when
-      this.documentsApi.updateDocument(documentId, updateReq, siteId, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // then
       List<DocumentAttribute> documentAttributes = notNull(this.documentAttributesApi
@@ -3356,15 +3370,15 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringAttribute(key, "confidental"));
 
       // add document
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
       assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
 
       // when - update document with Attribute Type = STANDARD
-      this.documentsApi.updateDocument(documentId,
-          new UpdateDocumentRequest().addAttributesItem(createStringAttribute(key, "public")),
-          siteId, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null),
+          new UpdateDocumentRequest().addAttributesItem(createStringAttribute(key, "public")))
+          .submitOk(this.documentsApi.getApiClient(), siteId);
 
       // then
       assertEquals("public", getDocumentAttribute(siteId, documentId, key).getStringValue());
@@ -3417,8 +3431,8 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
           .addAttributesItem(createStringAttribute(key, "confidental"));
 
       // add document
-      String documentId =
-          this.documentsApi.addDocumentUpload(docReq, siteId, null, null, null).getDocumentId();
+      String documentId = new AddDocumentUploadRequestBuilder(docReq)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
       assertEquals("confidental", getDocumentAttribute(siteId, documentId, key).getStringValue());
 
@@ -3426,9 +3440,9 @@ public class AttributesRequestTest extends AbstractApiClientRequestTest {
 
       // when - update document with Attribute Type = OPA
       try {
-        this.documentsApi.updateDocument(documentId,
-            new UpdateDocumentRequest().addAttributesItem(createStringAttribute(key, "public")),
-            siteId, null, null);
+        new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null),
+            new UpdateDocumentRequest().addAttributesItem(createStringAttribute(key, "public")))
+            .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then

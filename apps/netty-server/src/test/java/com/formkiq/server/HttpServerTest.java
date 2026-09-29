@@ -23,6 +23,10 @@
  */
 package com.formkiq.server;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentActionsApi;
 import com.formkiq.client.api.DocumentSearchApi;
@@ -147,7 +151,8 @@ public class HttpServerTest {
         new AddDocumentRequest().path(path).content(content).contentType("text/plain");
 
     // when
-    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, null, null);
+    AddDocumentResponse addDocument = new AddDocumentRequestBuilder(req)
+        .submitOk(this.documentsApi.getApiClient(), null).response();
 
     // then
     String documentId = addDocument.getDocumentId();
@@ -155,7 +160,8 @@ public class HttpServerTest {
     waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, null, null, null).getContent());
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), null).response().getContent());
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), response.getContentLength().intValue());

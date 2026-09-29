@@ -38,15 +38,34 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner.Builder;
  */
 public class S3PresignerConnectionBuilder {
 
-  /** Builder. */
-  private Builder presignerBuilder;
+  /** Credentials used by both endpoint modes. */
+  private AwsCredentialsProvider credentials;
+  /** Signing region. */
+  private Region region;
+  /** Custom endpoint, used for local deployments. */
+  private URI endpoint;
+  /** Whether path-style access is forced. */
+  private Boolean pathStyle;
+  /** Bucket eligible for acceleration; null disables acceleration. */
+  private String acceleratedBucket;
 
   /**
    * constructor.
    * 
    */
   public S3PresignerConnectionBuilder() {
-    this.presignerBuilder = S3Presigner.builder();
+
+  }
+
+  /**
+   * Configure the sole bucket eligible for acceleration.
+   * 
+   * @param bucket Bucket name, or null to disable
+   * @return this builder
+   */
+  public S3PresignerConnectionBuilder acceleratedBucket(final String bucket) {
+    this.acceleratedBucket = bucket;
+    return this;
   }
 
   /**
@@ -55,7 +74,32 @@ public class S3PresignerConnectionBuilder {
    * @return {@link S3Presigner}s
    */
   public S3Presigner build() {
-    return this.presignerBuilder.build();
+    return build(false);
+  }
+
+  /**
+   * Build an independent signer for a request.
+   * 
+   * @param accelerate Whether to use the accelerated endpoint
+   * @return S3Presigner
+   */
+  public S3Presigner build(final boolean accelerate) {
+    if (accelerate) {
+      validateAcceleration(this.acceleratedBucket);
+    }
+    S3Configuration configuration = S3Configuration.builder().pathStyleAccessEnabled(this.pathStyle)
+        .accelerateModeEnabled(accelerate).checksumValidationEnabled(false).build();
+    Builder builder = S3Presigner.builder().serviceConfiguration(configuration);
+    if (this.credentials != null) {
+      builder.credentialsProvider(this.credentials);
+    }
+    if (this.region != null) {
+      builder.region(this.region);
+    }
+    if (this.endpoint != null) {
+      builder.endpointOverride(this.endpoint);
+    }
+    return builder.build();
   }
 
   /**
@@ -65,8 +109,7 @@ public class S3PresignerConnectionBuilder {
    * @return {@link S3PresignerConnectionBuilder}
    */
   public S3PresignerConnectionBuilder pathStyleAccessEnabled(final Boolean enabled) {
-    S3Configuration conf = S3Configuration.builder().pathStyleAccessEnabled(Boolean.TRUE).build();
-    this.presignerBuilder = this.presignerBuilder.serviceConfiguration(conf);
+    this.pathStyle = enabled;
     return this;
   }
 
@@ -77,7 +120,7 @@ public class S3PresignerConnectionBuilder {
    * @return {@link S3PresignerConnectionBuilder}
    */
   public S3PresignerConnectionBuilder setCredentials(final AwsCredentialsProvider cred) {
-    this.presignerBuilder = this.presignerBuilder.credentialsProvider(cred);
+    this.credentials = cred;
     return this;
   }
 
@@ -97,22 +140,41 @@ public class S3PresignerConnectionBuilder {
   /**
    * Set Endpoint Override.
    * 
-   * @param endpoint {@link URI}
+   * @param endpointOverride {@link URI}
    * @return {@link S3PresignerConnectionBuilder}
    */
-  public S3PresignerConnectionBuilder setEndpointOverride(final URI endpoint) {
-    this.presignerBuilder = this.presignerBuilder.endpointOverride(endpoint);
+  public S3PresignerConnectionBuilder setEndpointOverride(final URI endpointOverride) {
+    this.endpoint = endpointOverride;
     return this;
   }
 
   /**
    * Set Region.
    * 
-   * @param region {@link Region}
+   * @param signingRegion {@link Region}
    * @return {@link S3PresignerConnectionBuilder}
    */
-  public S3PresignerConnectionBuilder setRegion(final Region region) {
-    this.presignerBuilder = this.presignerBuilder.region(region);
+  public S3PresignerConnectionBuilder setRegion(final Region signingRegion) {
+    this.region = signingRegion;
     return this;
+  }
+
+  /**
+   * Validate acceleration before any document mutation.
+   * 
+   * @param bucket Target bucket
+   */
+  public void validateAcceleration(final String bucket) {
+    if (bucket == null || !bucket.equals(this.acceleratedBucket)) {
+      throw new IllegalArgumentException("S3 transfer acceleration is not enabled for this bucket");
+    }
+    if (bucket.contains(".") || !bucket.matches("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")) {
+      throw new IllegalArgumentException(
+          "S3 transfer acceleration requires a DNS bucket name without periods");
+    }
+    if (this.endpoint != null || Boolean.TRUE.equals(this.pathStyle)) {
+      throw new IllegalArgumentException(
+          "S3 transfer acceleration cannot use a custom endpoint or path-style access");
+    }
   }
 }

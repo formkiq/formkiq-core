@@ -24,15 +24,17 @@
 package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
- * Builder for Get /documents/upload URL Request.
+ * Builder for GET /documents/{documentId}/upload requests.
  */
-public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
+public class GetDocumentIdUploadRequestBuilder
+    implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
   /** Optional shareKey query parameter. */
   private String shareKey;
@@ -52,14 +54,18 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
   /** URL duration in hours. */
   private Integer duration;
 
-  /** Document path. */
-  private String path;
+  /** Target document or artifact. */
+  private final DocumentArtifact document;
 
   /**
    * constructor.
+   * 
+   * @param documentArtifact Target document
    *
    */
-  public GetDocumentUploadRequestBuilder() {}
+  public GetDocumentIdUploadRequestBuilder(final DocumentArtifact documentArtifact) {
+    this.document = documentArtifact;
+  }
 
   /**
    * Select S3 Transfer Acceleration for returned URLs.
@@ -67,7 +73,7 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * @param enabled Whether to accelerate the transfer
    * @return this builder
    */
-  public GetDocumentUploadRequestBuilder accelerate(final Boolean enabled) {
+  public GetDocumentIdUploadRequestBuilder accelerate(final Boolean enabled) {
     this.accelerate = enabled;
     return this;
   }
@@ -76,9 +82,9 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * Set checksum.
    *
    * @param documentChecksum {@link String}
-   * @return GetDocumentUploadRequestBuilder
+   * @return GetDocumentIdUploadRequestBuilder
    */
-  public GetDocumentUploadRequestBuilder checksum(final String documentChecksum) {
+  public GetDocumentIdUploadRequestBuilder checksum(final String documentChecksum) {
     this.checksum = documentChecksum;
     return this;
   }
@@ -87,9 +93,9 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * Set checksum type.
    *
    * @param type {@link String}
-   * @return GetDocumentUploadRequestBuilder
+   * @return GetDocumentIdUploadRequestBuilder
    */
-  public GetDocumentUploadRequestBuilder checksumType(final String type) {
+  public GetDocumentIdUploadRequestBuilder checksumType(final String type) {
     this.checksumType = type;
     return this;
   }
@@ -98,9 +104,9 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * Set content length.
    *
    * @param length {@link Integer}
-   * @return GetDocumentUploadRequestBuilder
+   * @return GetDocumentIdUploadRequestBuilder
    */
-  public GetDocumentUploadRequestBuilder contentLength(final Integer length) {
+  public GetDocumentIdUploadRequestBuilder contentLength(final Integer length) {
     this.contentLength = length;
     return this;
   }
@@ -109,21 +115,10 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * Set duration.
    *
    * @param hours {@link Integer}
-   * @return GetDocumentUploadRequestBuilder
+   * @return GetDocumentIdUploadRequestBuilder
    */
-  public GetDocumentUploadRequestBuilder duration(final Integer hours) {
+  public GetDocumentIdUploadRequestBuilder duration(final Integer hours) {
     this.duration = hours;
-    return this;
-  }
-
-  /**
-   * Set path.
-   *
-   * @param documentPath {@link String}
-   * @return GetDocumentUploadRequestBuilder
-   */
-  public GetDocumentUploadRequestBuilder path(final String documentPath) {
-    this.path = documentPath;
     return this;
   }
 
@@ -133,16 +128,18 @@ public class GetDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
    * @param value Parameter value
    * @return this builder
    */
-  public GetDocumentUploadRequestBuilder shareKey(final String value) {
+  public GetDocumentIdUploadRequestBuilder shareKey(final String value) {
     this.shareKey = value;
     return this;
   }
 
+
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).getDocumentUpload(this.path, siteId, this.checksumType,
-            this.checksum, this.contentLength, this.duration, this.shareKey, this.accelerate));
+    return executeApiCall(() -> new DocumentsApi(apiClient).getDocumentIdUpload(
+        this.document.documentId(), siteId, this.document.artifactId(), this.checksumType,
+        this.checksum, this.contentLength, this.duration, this.shareKey, this.accelerate));
   }
 }

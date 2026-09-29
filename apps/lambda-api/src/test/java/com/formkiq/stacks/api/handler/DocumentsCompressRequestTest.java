@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.testutils.aws.TestServices.STAGE_BUCKET_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,7 +88,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
    */
   private String createDocument(final String siteId) throws ApiException {
     AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-    return this.documentsApi.addDocumentUpload(req, siteId, null, null, null).getDocumentId();
+    return new AddDocumentUploadRequestBuilder(req)
+        .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
   }
 
   private DocumentArtifact createDocumentAndArtifact(final String siteId) throws ApiException {

@@ -25,6 +25,7 @@ paths:
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/versionKeyParam'
         - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/accelerateParam'
       responses:
         '200':
           description: 200 OK

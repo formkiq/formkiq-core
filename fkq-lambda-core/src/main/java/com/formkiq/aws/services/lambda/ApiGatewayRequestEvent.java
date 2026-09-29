@@ -218,6 +218,21 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Get a boolean query parameter, defaulting to false when absent.
+   *
+   * @param key Query parameter name
+   * @return Whether the value is true
+   * @throws BadException If the value is neither true nor false
+   */
+  public boolean getQueryBooleanParameter(final String key) throws BadException {
+    String value = getQueryStringParameter(key);
+    if (value != null && !"true".equals(value) && !"false".equals(value)) {
+      throw new BadException(key + " must be true or false");
+    }
+    return "true".equals(value);
+  }
+
+  /**
    * Get Query Parameter.
    *
    * @param key {@link String}

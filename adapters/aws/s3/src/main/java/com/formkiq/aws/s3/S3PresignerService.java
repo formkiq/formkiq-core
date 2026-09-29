@@ -64,6 +64,15 @@ public class S3PresignerService {
   }
 
   /**
+   * Validate a target bucket for accelerated signing.
+   * 
+   * @param bucket Target bucket
+   */
+  public void validateAcceleration(final String bucket) {
+    this.builder.validateAcceleration(bucket);
+  }
+
+  /**
    * Generate a S3 Signed Url for getting an object.
    *
    * @param bucket {@link String}
@@ -76,7 +85,10 @@ public class S3PresignerService {
   public URL presignGetUrl(final String bucket, final String key, final Duration duration,
       final String versionId, final PresignGetUrlConfig config) {
 
-    try (S3Presigner signer = this.builder.build()) {
+    if (config.accelerate()) {
+      validateAcceleration(bucket);
+    }
+    try (S3Presigner signer = this.builder.build(config.accelerate())) {
 
       GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key)
           .versionId(versionId).responseContentType(config.contentType())
@@ -133,8 +145,29 @@ public class S3PresignerService {
   public URL presignPutUrl(final String bucket, final String key, final Duration duration,
       final ChecksumAlgorithm checksumAlgorithm, final String checksum,
       final Optional<Long> contentLength, final Map<String, String> metadata) {
+    return presignPutUrl(bucket, key, duration,
+        new PresignPutUrlConfig(checksumAlgorithm, checksum, contentLength, metadata, false));
+  }
 
-    try (S3Presigner signer = this.builder.build()) {
+  /**
+   * Generate a PUT URL with an explicit transfer endpoint selection.
+   * 
+   * @param bucket Target bucket
+   * @param key Object key
+   * @param duration Signature lifetime
+   * @param config PUT options, including the transfer endpoint selection
+   * @return Signed URL
+   */
+  public URL presignPutUrl(final String bucket, final String key, final Duration duration,
+      final PresignPutUrlConfig config) {
+    if (config.accelerate()) {
+      validateAcceleration(bucket);
+    }
+    ChecksumAlgorithm checksumAlgorithm = config.checksumAlgorithm();
+    String checksum = config.checksum();
+    Optional<Long> contentLength = config.contentLength();
+    Map<String, String> metadata = config.metadata();
+    try (S3Presigner signer = this.builder.build(config.accelerate())) {
 
       PutObjectRequest.Builder putObjectRequest =
           PutObjectRequest.builder().bucket(bucket).key(key).checksumAlgorithm(checksumAlgorithm);

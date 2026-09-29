@@ -88,6 +88,7 @@ public class DocumentIdContentRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
+    boolean accelerate = event.getQueryBooleanParameter("accelerate");
     String siteId = authorization.getSiteId();
     String documentId = event.getPathParameter("documentId");
     String artifactId = event.getQueryStringParameter("artifactId");
@@ -122,11 +123,11 @@ public class DocumentIdContentRequestHandler
       } catch (DocumentNotFoundException e) {
         throw e;
       } catch (RuntimeException e) {
-        response = getApiResponse(awsservice, item, s3key, versionId);
+        response = getApiResponse(awsservice, item, s3key, versionId, accelerate);
       }
 
     } else {
-      response = getApiResponse(awsservice, item, s3key, versionId);
+      response = getApiResponse(awsservice, item, s3key, versionId, accelerate);
     }
 
     if (awsservice.containsExtension(UserActivityPlugin.class)) {
@@ -139,19 +140,24 @@ public class DocumentIdContentRequestHandler
   }
 
   private ApiRequestHandlerResponse.Builder getApiResponse(final AwsServiceCache awsservice,
-      final DocumentItem item, final String s3key, final String versionId) {
-
+      final DocumentItem item, final String s3key, final String versionId, final boolean accelerate)
+      throws BadException {
     String contentType =
         item.getContentType() != null ? item.getContentType() : "application/octet-stream";
 
     PresignGetUrlConfig config =
         new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false).contentType(s3key)
-            .contentType(contentType);
+            .contentType(contentType).accelerate(accelerate);
 
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
     Duration duration = Duration.ofHours(1);
-    URL url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key,
-        duration, versionId, config);
+    URL url;
+    try {
+      url = s3Service.presignGetUrl(awsservice.environment("DOCUMENTS_S3_BUCKET"), s3key, duration,
+          versionId, config);
+    } catch (IllegalArgumentException e) {
+      throw new BadException(e.getMessage());
+    }
 
     return ApiRequestHandlerResponse.builder()
         .body(Map.of("contentUrl", url.toString(), "contentType", contentType));

@@ -23,6 +23,10 @@
  */
 package com.formkiq.server;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContentLength;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -112,7 +116,8 @@ class IntegrationTest {
     setBearerToken(accessToken);
 
     // when
-    AddDocumentResponse addDocument = this.documentsApi.addDocument(req, null, null);
+    AddDocumentResponse addDocument = new AddDocumentRequestBuilder(req)
+        .submitOk(this.documentsApi.getApiClient(), null).response();
 
     // then
     String documentId = addDocument.getDocumentId();
@@ -120,7 +125,8 @@ class IntegrationTest {
     waitForDocumentContent(this.apiClient, null, documentId);
 
     assertEquals(content,
-        this.documentsApi.getDocumentContent(documentId, null, null, null, null).getContent());
+        new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
+            .submitOk(this.documentsApi.getApiClient(), null).response().getContent());
 
     GetDocumentResponse response = waitForDocumentContentLength(this.apiClient, null, documentId);
     assertEquals(content.length(), Objects.requireNonNull(response.getContentLength()).intValue());

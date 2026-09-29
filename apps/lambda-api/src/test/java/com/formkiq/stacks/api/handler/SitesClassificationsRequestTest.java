@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -120,7 +121,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
   private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
       throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return this.documentsApi.addDocument(areq, siteId, null).getDocumentId();
+    return new AddDocumentRequestBuilder(areq).submitOk(this.documentsApi.getApiClient(), siteId)
+        .response().getDocumentId();
   }
 
   private void addDocumentAttributes(final String siteId, final String documentId,
@@ -1286,7 +1288,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           .addAttributesItem(createAttribute("test1", "222"))
           .addAttributesItem(createAttribute("test2", "333"));
 
-      String documentId = this.documentsApi.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
       assertNotNull(documentId);
 
       // when

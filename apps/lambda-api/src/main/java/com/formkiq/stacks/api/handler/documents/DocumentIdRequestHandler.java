@@ -245,11 +245,12 @@ public class DocumentIdRequestHandler
         getAttributeValidationAccess(authorization, siteId);
     SaveDocumentOptions options = new SaveDocumentOptions()
         .accessApproval(authorization.getAttributeAccessApproval(validationAccess));
+    boolean accelerate = event.getQueryBooleanParameter("accelerate");
     service.saveDocument(siteId, documentRecordSet, options);
 
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
-            Optional.empty());
+            Optional.empty(), accelerate);
 
     Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(request, artifactId);
     new PresignedUrlsToS3Bucket(request).apply(uploadUrls);

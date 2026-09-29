@@ -23,6 +23,11 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentIdUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.client.api.DocumentTagsApi;
@@ -143,8 +148,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       String content = "<html><body>test content</body></html>";
 
       // when
-      GetDocumentUrlResponse response =
-          api.getDocumentUpload(null, null, null, null, content.length(), null, null);
+      GetDocumentUrlResponse response = new GetDocumentUploadRequestBuilder()
+          .contentLength(content.length()).submitOk(api.getApiClient(), null).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -185,9 +190,10 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, siteId, null, null, null, null, null);
+        new GetDocumentUploadRequestBuilder().submitOk(api.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
+        // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
         assertEquals("{\"message\":\"'contentLength' is required when "
             + "MaxContentLengthBytes is configured\"}", e.getResponseBody());
@@ -215,8 +221,10 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.getDocumentUpload(null, SITEID0, null, null, contentLength, null, null);
+        new GetDocumentUploadRequestBuilder().contentLength(contentLength)
+            .submitOk(api.getApiClient(), SITEID0);
       } catch (ApiException e) {
+        // then
         assertEquals(STATUS_BAD_REQUEST, e.getCode());
         assertEquals("{\"message\":\"'contentLength' cannot exceed 5 bytes\"}",
             e.getResponseBody());
@@ -243,8 +251,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       DocumentsApi api = new DocumentsApi(client);
 
       // when
-      GetDocumentUrlResponse response =
-          api.getDocumentUpload(null, SITEID0, null, null, contentLength, null, null);
+      GetDocumentUrlResponse response = new GetDocumentUploadRequestBuilder()
+          .contentLength(contentLength).submitOk(api.getApiClient(), SITEID0).response();
 
       // then
       assertNotNull(response.getUrl());
@@ -267,7 +275,7 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
 
     DocumentsApi api = new DocumentsApi(getApiClients(siteId).get(0));
 
-    api.getDocumentUpload(null, siteId, null, null, 1, null, null);
+    new GetDocumentUploadRequestBuilder().contentLength(1).submitOk(api.getApiClient(), siteId);
 
     for (ApiClient client : getApiClients(siteId)) {
 
@@ -276,7 +284,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       // when
       try {
         while (true) {
-          api.getDocumentUpload(null, siteId, null, null, 1, null, null);
+          new GetDocumentUploadRequestBuilder().contentLength(1).submitOk(api.getApiClient(),
+              siteId);
           TimeUnit.SECONDS.sleep(1);
         }
       } catch (ApiException e) {
@@ -305,7 +314,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
           .addTagsItem(new AddDocumentTag().key("test").value("this"));
 
       // when
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, null, null, null, null);
+      GetDocumentUrlResponse response =
+          new AddDocumentUploadRequestBuilder(req).submitOk(api.getApiClient(), null).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -350,7 +360,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
           new AddDocumentUploadRequest().checksum(checksum).checksumType(ChecksumType.SHA256);
 
       // when
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, null, null, null, null);
+      GetDocumentUrlResponse response =
+          new AddDocumentUploadRequestBuilder(req).submitOk(api.getApiClient(), null).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -399,7 +410,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+      GetDocumentUrlResponse response =
+          new AddDocumentUploadRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -420,8 +432,8 @@ public class DocumentsUploadRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("text/html", api.getDocument(documentId, siteId, null, null).getContentType());
 
       // given
-      url =
-          api.getDocumentIdUpload(documentId, siteId, null, null, null, null, null, null).getUrl();
+      url = new GetDocumentIdUploadRequestBuilder(DocumentArtifact.of(documentId, null))
+          .submitOk(api.getApiClient(), siteId).response().getUrl();
       content = "some test data";
 
       // when
