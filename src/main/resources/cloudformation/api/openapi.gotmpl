@@ -710,6 +710,19 @@ components:
       required: false
       schema:
         type: integer
+    accelerateParam:
+      name: accelerate
+      in: query
+      required: false
+      description: >-
+        Use S3 Transfer Acceleration for presigned transfer URLs targeting the FormKiQ documents bucket,
+        including internal uploads of inline content.
+        Requires EnableS3TransferAcceleration=true on the deployment; additional transfer charges apply.
+        Defaults to false. Has no effect on inline content returned by the API.
+        Unavailable acceleration, external download URLs, and watermarked downloads return HTTP 400.
+      schema:
+        type: boolean
+        default: false
     durationParam:
       name: duration
       in: query

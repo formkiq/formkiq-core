@@ -23,6 +23,11 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
@@ -484,7 +489,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content);
 
     // when
-    AddDocumentResponse response = api.addDocument(req, siteId, null);
+    AddDocumentResponse response =
+        new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
     // then
     String documentId = response.getDocumentId();
@@ -497,7 +503,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new UpdateDocumentRequest().addTagsItem(new AddDocumentTag().key(tagKey).value("myvalue"));
 
     // when - patch document
-    api.updateDocument(documentId, updateReq, siteId, null, null);
+    new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+        .submitOk(api.getApiClient(), siteId);
 
     // then
     waitForDocumentTag(client, siteId, documentId, tagKey);
@@ -546,7 +553,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           new AddDocumentRequest().content("test data").contentType("text/plain");
 
       // when
-      AddDocumentResponse response = api.addDocument(addReq, null, null);
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(addReq).submitOk(api.getApiClient(), null).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -561,7 +569,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           new UpdateDocumentRequest().content("dummy data").contentType("application/pdf");
 
       // when - patch document
-      api.updateDocument(documentId, updateReq, null, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
+          .submitOk(api.getApiClient(), null);
 
       // then - check content type changed
       while (true) {
@@ -611,7 +620,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.addDocument(req, null, null);
+      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
     } catch (ApiException e) {
       // then
       assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
@@ -620,7 +629,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
     // when
     try {
-      api.addDocument(req, siteId, null);
+      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
     } catch (ApiException e) {
       // then
       assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
@@ -644,14 +653,15 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
     // when
-    AddDocumentResponse responseNoSiteId = api.addDocument(req, null, null);
+    AddDocumentResponse responseNoSiteId =
+        new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
 
     // then
     assertNotNull(responseNoSiteId.getDocumentId());
 
     // when
     try {
-      api.addDocument(req, siteId, null);
+      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
     } catch (ApiException e) {
       // then
       assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
@@ -676,8 +686,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
     // when
-    AddDocumentResponse responseNoSiteId = api.addDocument(req, null, null);
-    AddDocumentResponse responseSiteId = api.addDocument(req, siteId, null);
+    AddDocumentResponse responseNoSiteId =
+        new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
+    AddDocumentResponse responseSiteId =
+        new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
     // then
     assertNotNull(responseNoSiteId.getDocumentId());
@@ -706,8 +718,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
     // when
-    AddDocumentResponse responseNoSiteId = uapi.addDocument(req, null, null);
-    AddDocumentResponse responseSiteId = fapi.addDocument(req, siteId, null);
+    AddDocumentResponse responseNoSiteId =
+        new AddDocumentRequestBuilder(req).submitOk(uapi.getApiClient(), null).response();
+    AddDocumentResponse responseSiteId =
+        new AddDocumentRequestBuilder(req).submitOk(fapi.getApiClient(), siteId).response();
 
     // then
     assertNotNull(responseNoSiteId.getDocumentId());
@@ -733,14 +747,14 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     AddDocumentRequest req =
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
-    api.addDocument(req, SITEID1, null);
+    new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), SITEID1);
 
     for (ApiClient client : getApiClients(SITEID1)) {
       api = new DocumentsApi(client);
 
       // when
       try {
-        api.addDocument(req, SITEID1, null);
+        new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), SITEID1);
         fail();
       } catch (ApiException e) {
 
@@ -775,7 +789,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
         // when
         AddDocumentResponse response = enableEndpoint ? publicApi.publicAddDocument(req, null)
-            : api.addDocument(req, null, null);
+            : new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
 
         // then
         assertNotNull(response.getDocumentId());
@@ -901,7 +915,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
               .content("test data").addTagsItem(new AddDocumentTag().key("person").value("123"));
 
       // when
-      AddDocumentResponse response = api.addDocument(req, null, null);
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
 
       // then
       assertNotNull(response.getDocumentId());
@@ -930,7 +945,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           .addTagsItem(new AddDocumentTag().key("person").value("555"));
 
       // when - patch document
-      api.updateDocument(documentId, updateDoc, null, null, null);
+      new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateDoc)
+          .submitOk(api.getApiClient(), null);
 
       // then - check path changed
       while (true) {
@@ -974,7 +990,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
                 new AddDocumentMetadata().key("playerId").values(Arrays.asList("11", "22")));
 
         // when
-        AddDocumentResponse response = api.addDocument(req, siteId, null);
+        AddDocumentResponse response =
+            new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
         // given
         String documentId = response.getDocumentId();
@@ -1021,7 +1038,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
             .checksum(checksum).checksumType(ChecksumType.SHA256);
 
         // when
-        AddDocumentResponse response = api.addDocument(req, siteId, null);
+        AddDocumentResponse response =
+            new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
 
         // then
         assertNotNull(response.getDocumentId());
@@ -1031,8 +1049,10 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         assertEquals("text/plain", site.getContentType());
         assertNotNull(site.getPath());
         assertNotNull(site.getDocumentId());
-        assertEquals(content, api
-            .getDocumentContent(response.getDocumentId(), siteId, null, null, null).getContent());
+        assertEquals(content,
+            new GetDocumentContentRequestBuilder(
+                DocumentArtifact.of(response.getDocumentId(), null))
+                .submitOk(api.getApiClient(), siteId).response().getContent());
       }
     }
   }
@@ -1065,7 +1085,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
                 new AddDocumentAttributeStandard().key(attributeKey).stringValue(value)));
 
         // when
-        String documentId = api.addDocument(req, siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId)
+            .response().getDocumentId();
         assertNotNull(documentId);
 
         // then
@@ -1099,7 +1120,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       try {
-        api.addDocument(addReq, siteId, null);
+        new AddDocumentRequestBuilder(addReq).submitOk(api.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1110,7 +1131,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     }
 
     // when
-    AddDocumentResponse response = api.addDocument(addReq, null, null);
+    AddDocumentResponse response =
+        new AddDocumentRequestBuilder(addReq).submitOk(api.getApiClient(), null).response();
 
     // then
     String documentId = response.getDocumentId();
@@ -1142,7 +1164,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
             new AddDocumentUploadRequest().checksum(checksum).checksumType(ChecksumType.SHA256);
 
         // when
-        GetDocumentUrlResponse response = api.addDocumentUpload(req, siteId, null, null, null);
+        GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req)
+            .submitOk(api.getApiClient(), siteId).response();
 
         // then
         String documentId = response.getDocumentId();
@@ -1182,7 +1205,8 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       // when
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").path(path)
           .content(content).addActionsItem(new AddAction().type(DocumentActionType.PUBLISH));
-      String documentId = api.addDocument(req, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       // then

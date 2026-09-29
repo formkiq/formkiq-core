@@ -21,36 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.testutils.aws;
+package com.formkiq.aws.s3;
 
-import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.invoker.ApiClient;
-import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.AddDocumentAttribute;
-import com.formkiq.client.model.AddDocumentAttributeStandard;
-import com.formkiq.client.model.AddDocumentRequest;
+import java.util.Map;
+import java.util.Optional;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 /**
- * Documents Request Builder.
+ * PUT signing options.
+ * 
+ * @param checksumAlgorithm Checksum algorithm
+ * @param checksum Checksum value
+ * @param contentLength Optional content length
+ * @param metadata Metadata query parameters
+ * @param accelerate Whether acceleration is requested
  */
-public class DocumentsRequestBuilder {
-
-  /**
-   * Add Document with Watermark.
-   *
-   * @param client {@link ApiClient}
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @return {@link String}
-   * @throws ApiException ApiException
-   */
-  public static String addDocumentWithWatermark(final ApiClient client, final String siteId,
-      final String attributeKey) throws ApiException {
-
-    DocumentsApi api = new DocumentsApi(client);
-    AddDocumentRequest req = new AddDocumentRequest().content(ID.uuid()).addAttributesItem(
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key(attributeKey)));
-    return api.addDocument(req, siteId, null, null).getDocumentId();
-  }
+public record PresignPutUrlConfig(ChecksumAlgorithm checksumAlgorithm, String checksum,
+    Optional<Long> contentLength, Map<String, String> metadata, boolean accelerate) {
 }

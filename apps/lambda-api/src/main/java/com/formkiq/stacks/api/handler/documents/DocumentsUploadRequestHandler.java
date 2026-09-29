@@ -137,12 +137,13 @@ public class DocumentsUploadRequestHandler
         calculateContentLength(awsservice, event.getQueryStringParameters(), siteId, config);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
+    boolean accelerate = event.getQueryBooleanParameter("accelerate");
     service.saveDocument(siteId, documentRecordSet, options);
 
     Duration urlDuration = caculateDuration(event.getQueryStringParameters());
     AddDocumentRequestToPresignedUrls addDocumentRequestToPresignedUrls =
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, urlDuration,
-            documentContentLength);
+            documentContentLength, accelerate);
     final Map<String, Object> map = addDocumentRequestToPresignedUrls.apply(request, artifactId);
 
     ActionsService actionsService = awsservice.getExtension(ActionsService.class);

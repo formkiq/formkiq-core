@@ -6,6 +6,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Storage
     
 Parameters:
+  EnableS3TransferAcceleration:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: "Enable opt-in S3 Transfer Acceleration for documents bucket URLs (additional transfer charges apply)"
+
     
   AppEnvironment:
     Type: String
@@ -78,6 +84,30 @@ Parameters:
       Controls the runtime operational behavior of the FormKiQ environment.
 
 Conditions:
+
+  UseS3TransferAcceleration:
+    Fn::Equals: [{Ref: EnableS3TransferAcceleration}, "true"]
+
+  SupportsS3TransferAcceleration:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals: [{Ref: "AWS::Region"}, "us-east-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "us-east-2"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "us-west-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "us-west-2"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ca-central-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "sa-east-1"]
+      - Fn::Or:
+          - Fn::Equals: [{Ref: "AWS::Region"}, "eu-west-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "eu-west-2"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "eu-west-3"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "eu-central-1"]
+      - Fn::Or:
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ap-northeast-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ap-northeast-2"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ap-south-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ap-southeast-1"]
+          - Fn::Equals: [{Ref: "AWS::Region"}, "ap-southeast-2"]
 
   IsOperationalModeActive:
     Fn::Equals:
@@ -272,6 +302,14 @@ Resources:
     DependsOn:
     - DocumentsUpdateObjectPermission
     Properties:
+      AccelerateConfiguration:
+        Fn::If:
+          - UseS3TransferAcceleration
+          - AccelerationStatus: Enabled
+          - Fn::If:
+              - SupportsS3TransferAcceleration
+              - AccelerationStatus: Suspended
+              - Ref: AWS::NoValue
       BucketName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
       BucketEncryption:

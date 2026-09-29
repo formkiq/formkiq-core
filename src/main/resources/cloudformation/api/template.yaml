@@ -6,6 +6,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - API
     
 Parameters:
+  EnableS3TransferAcceleration:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: "Enable opt-in S3 Transfer Acceleration for documents bucket URLs (additional transfer charges apply)"
+
               
   AppEnvironment:
     Type: String
@@ -259,6 +265,8 @@ Resources:
     Properties:
       Location: ./api-lambda.yaml
       Parameters:
+        EnableS3TransferAcceleration:
+          Ref: EnableS3TransferAcceleration
         HttpsSecurityGroup:
           Ref: HttpsSecurityGroup
         OperationalMode:

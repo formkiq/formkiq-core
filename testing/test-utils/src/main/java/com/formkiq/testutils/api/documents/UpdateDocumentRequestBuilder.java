@@ -46,8 +46,15 @@ import java.util.Objects;
  */
 public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocumentResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** {@link UpdateDocumentRequest}. */
   private final UpdateDocumentRequest request;
+
   /** Document Id. */
   private final DocumentArtifact document;
 
@@ -57,8 +64,19 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
    * @param documentArtifact {@link DocumentArtifact}
    */
   public UpdateDocumentRequestBuilder(final DocumentArtifact documentArtifact) {
+    this(documentArtifact, new UpdateDocumentRequest());
+  }
+
+  /**
+   * Construct from a request payload.
+   * 
+   * @param documentArtifact Target document
+   * @param payload Request body
+   */
+  public UpdateDocumentRequestBuilder(final DocumentArtifact documentArtifact,
+      final UpdateDocumentRequest payload) {
     this.document = documentArtifact;
-    this.request = new UpdateDocumentRequest();
+    this.request = payload;
   }
 
   /**
@@ -68,6 +86,17 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
    */
   public UpdateDocumentRequestBuilder(final String documentId) {
     this(DocumentArtifact.of(documentId, null));
+  }
+
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public UpdateDocumentRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
   }
 
   /**
@@ -204,6 +233,17 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
   }
 
   /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public UpdateDocumentRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient
@@ -214,6 +254,6 @@ public class UpdateDocumentRequestBuilder implements HttpRequestBuilder<AddDocum
       final String siteId) {
     Objects.requireNonNull(document.documentId(), "documentId must not be null");
     return executeApiCall(() -> new DocumentsApi(apiClient).updateDocument(document.documentId(),
-        this.request, siteId, document.artifactId(), null));
+        this.request, siteId, document.artifactId(), this.shareKey, this.accelerate));
   }
 }
