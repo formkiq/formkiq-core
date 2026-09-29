@@ -211,7 +211,7 @@ public class DocumentIdUrlRequestHandler
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
       final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
       final boolean inline, final boolean bypassWatermark)
-      throws MalformedURLException, UnauthorizedException {
+      throws MalformedURLException, UnauthorizedException, BadException {
 
     String siteId = authorization.getSiteId();
     String documentId = item.getDocumentId();
@@ -219,15 +219,19 @@ public class DocumentIdUrlRequestHandler
     awsservice.getLogger().trace(
         "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
 
+    boolean accelerate = event.getQueryBooleanParameter("accelerate");
     URL url;
 
     String deepLinkPath = item.getDeepLinkPath() != null ? item.getDeepLinkPath() : "";
 
     if (isDeepLink(deepLinkPath)) {
+      if (accelerate) {
+        throw new BadException("S3 transfer acceleration is not supported for external URLs");
+      }
       url = URI.create(item.getDeepLinkPath()).toURL();
     } else {
 
-      String filename = getFilename(item);
+      final String filename = getFilename(item);
       String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
       String s3Key = createS3Key(siteId, documentId, item.getArtifactId());
       final DocumentArtifact document = new DocumentArtifact(documentId, item.getArtifactId());
@@ -238,7 +242,15 @@ public class DocumentIdUrlRequestHandler
         s3Key = matcher.group(2);
       }
 
-      PresignGetUrlConfig config = new PresignGetUrlConfig();
+      boolean hasWatermark = hasWatermark(awsservice, siteId, document, bypassWatermark);
+      if (accelerate) {
+        if (hasWatermark) {
+          throw new BadException(
+              "S3 transfer acceleration is not supported for watermarked downloads");
+        }
+      }
+
+      PresignGetUrlConfig config = new PresignGetUrlConfig().accelerate(accelerate);
       config.contentType(findContentType(item));
       config.contentDispositionByPath(filename, inline);
 
@@ -246,7 +258,6 @@ public class DocumentIdUrlRequestHandler
       Duration duration = Duration.ofHours(hours);
       url = getUrl(awsservice, item, versionId, s3Bucket, s3Key, duration, config);
 
-      boolean hasWatermark = hasWatermark(awsservice, siteId, document, bypassWatermark);
       if (hasWatermark) {
 
         String base64 = new StringToBase64Encoder().apply(url.toString());

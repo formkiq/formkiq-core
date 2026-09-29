@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_UNAUTHORIZED;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
@@ -272,7 +273,8 @@ public class FoldersRequestTest extends AbstractAwsIntegrationTest {
         DocumentsApi documentsApi = new DocumentsApi(apiClient);
         AddDocumentRequest addDoc =
             new AddDocumentRequest().content("some content").path(folder + "/test.txt");
-        String documentId = documentsApi.addDocument(addDoc, siteId, null).getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(addDoc)
+            .submitOk(documentsApi.getApiClient(), siteId).response().getDocumentId();
         waitForDocumentContent(apiClient, siteId, documentId);
 
         // when

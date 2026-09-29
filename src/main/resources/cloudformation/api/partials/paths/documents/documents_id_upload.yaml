@@ -22,6 +22,7 @@ paths:
         - $ref: '#/components/parameters/contentLengthParam'
         - $ref: '#/components/parameters/durationParam'
         - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/accelerateParam'
       responses:
         '200':
           description: 200 OK
@@ -59,6 +60,7 @@ paths:
         - $ref: '#/components/parameters/contentLengthParam'
         - $ref: '#/components/parameters/durationParam'
         - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/accelerateParam'
       requestBody:
         required: true
         content:
@@ -111,6 +113,7 @@ paths:
         - $ref: '#/components/parameters/contentLengthParam'
         - $ref: '#/components/parameters/durationParam'
         - $ref: '#/components/parameters/shareKeyParam'
+        - $ref: '#/components/parameters/accelerateParam'
       description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
       tags:
         - Documents

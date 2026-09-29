@@ -33,10 +33,15 @@ import java.nio.charset.StandardCharsets;
  */
 public class PresignGetUrlConfig {
 
+  /** Whether to use S3 Transfer Acceleration. */
+  private boolean accelerate;
+
   /** Sets the <code>Content-Disposition</code> header of the response. */
   private String contentDisposition;
+
   /** Sets the <code>Content-Type</code> header of the response. */
   private String contentType;
+
   /** Path used for the download filename. */
   private String downloadPath;
   /** Whether inline delivery was requested. */
@@ -47,6 +52,26 @@ public class PresignGetUrlConfig {
    */
   public PresignGetUrlConfig() {
 
+  }
+
+  /**
+   * Get acceleration selection.
+   * 
+   * @return Whether acceleration is requested
+   */
+  public boolean accelerate() {
+    return this.accelerate;
+  }
+
+  /**
+   * Select acceleration for this URL.
+   * 
+   * @param enabled Whether acceleration is requested
+   * @return this configuration
+   */
+  public PresignGetUrlConfig accelerate(final boolean enabled) {
+    this.accelerate = enabled;
+    return this;
   }
 
   /**

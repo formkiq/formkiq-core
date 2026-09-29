@@ -40,10 +40,27 @@ import java.util.Optional;
  */
 public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocumentUrlResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional versionKey query parameter. */
+  private String versionKey;
+
+  /** Optional duration query parameter. */
+  private Integer duration;
+
+  /** Optional bypassWatermark query parameter. */
+  private Boolean bypassWatermark;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** {@link DocumentArtifact}. */
   private final DocumentArtifact document;
+
   /** Url Format. */
   private String urlFormat;
+
   /** Inline delivery. */
   private Boolean inline;
 
@@ -54,6 +71,39 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
    */
   public GetDocumentUrlRequestBuilder(final DocumentArtifact documentArtifact) {
     this.document = documentArtifact;
+  }
+
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
+  }
+
+  /**
+   * Set bypassWatermark.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder bypassWatermark(final Boolean value) {
+    this.bypassWatermark = value;
+    return this;
+  }
+
+  /**
+   * Set duration.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder duration(final Integer value) {
+    this.duration = value;
+    return this;
   }
 
   public String getContent(final ApiClient client, final String siteId) throws ApiException {
@@ -75,11 +125,34 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
     return this;
   }
 
+  /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<GetDocumentUrlResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
         () -> new DocumentsApi(apiClient).getDocumentUrl(this.document.documentId(), siteId,
-            this.document.artifactId(), null, null, null, this.inline, null, urlFormat));
+            this.document.artifactId(), this.versionKey, this.duration, this.shareKey, this.inline,
+            this.bypassWatermark, urlFormat, this.accelerate));
+  }
+
+  /**
+   * Set versionKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder versionKey(final String value) {
+    this.versionKey = value;
+    return this;
   }
 }

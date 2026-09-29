@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentContent;
 import static com.formkiq.testutils.aws.FkqDocumentService.waitForDocumentTag;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +80,8 @@ public class DocumentsTagsRequestTest extends AbstractAwsIntegrationTest {
       DocumentsApi documentsApi = new DocumentsApi(clients.get(0));
       AddDocumentRequest addReq = new AddDocumentRequest().content("somecontent")
           .tags(Arrays.asList(new AddDocumentTag().key(tagKey).value(tagValue)));
-      String documentId = documentsApi.addDocument(addReq, siteId, null).getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(addReq)
+          .submitOk(documentsApi.getApiClient(), siteId).response().getDocumentId();
 
       for (ApiClient apiClient : clients) {
 

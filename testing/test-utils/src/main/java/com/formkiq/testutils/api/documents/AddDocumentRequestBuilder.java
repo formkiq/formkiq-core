@@ -54,6 +54,12 @@ import java.util.List;
  */
 public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocumentResponse> {
 
+  /** Optional shareKey query parameter. */
+  private String shareKey;
+
+  /** Optional S3 transfer acceleration selection. */
+  private Boolean accelerate;
+
   /** {@link AddDocumentRequest}. */
   private final AddDocumentRequest request;
 
@@ -61,7 +67,27 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    * constructor.
    */
   public AddDocumentRequestBuilder() {
-    this.request = new AddDocumentRequest();
+    this(new AddDocumentRequest());
+  }
+
+  /**
+   * Construct from a request payload.
+   * 
+   * @param payload Request body
+   */
+  public AddDocumentRequestBuilder(final AddDocumentRequest payload) {
+    this.request = payload;
+  }
+
+  /**
+   * Select S3 Transfer Acceleration for returned URLs.
+   * 
+   * @param enabled Whether to accelerate the transfer
+   * @return this builder
+   */
+  public AddDocumentRequestBuilder accelerate(final Boolean enabled) {
+    this.accelerate = enabled;
+    return this;
   }
 
   /**
@@ -397,6 +423,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   }
 
   /**
+   * Set shareKey.
+   * 
+   * @param value Parameter value
+   * @return this builder
+   */
+  public AddDocumentRequestBuilder shareKey(final String value) {
+    this.shareKey = value;
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient
@@ -405,7 +442,7 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
    */
   public ApiHttpResponse<AddDocumentResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new DocumentsApi(apiClient).addDocument(this.request, siteId, null));
+    return executeApiCall(() -> new DocumentsApi(apiClient).addDocument(this.request, siteId,
+        this.shareKey, this.accelerate));
   }
 }
