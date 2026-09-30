@@ -57,6 +57,17 @@ public class GetEntitiesRequestBuilder implements HttpRequestBuilder<GetEntities
   /**
    * Set Limit.
    *
+   * @param entityLimit {@link String}
+   * @return {@link GetEntitiesRequestBuilder}
+   */
+  public GetEntitiesRequestBuilder limit(final String entityLimit) {
+    this.limit = entityLimit;
+    return this;
+  }
+
+  /**
+   * Set Limit.
+   *
    * @param entityLimit int
    * @return {@link GetEntitiesRequestBuilder}
    */

@@ -147,6 +147,18 @@ public class AddDocumentAttributeRequestBuilder implements HttpRequestBuilder<Ad
   }
 
   /**
+   * Set the complete document attributes request.
+   *
+   * @param attributesRequest {@link AddDocumentAttributesRequest}
+   * @return this builder
+   */
+  public AddDocumentAttributeRequestBuilder request(
+      final AddDocumentAttributesRequest attributesRequest) {
+    this.request.setAttributes(attributesRequest.getAttributes());
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient

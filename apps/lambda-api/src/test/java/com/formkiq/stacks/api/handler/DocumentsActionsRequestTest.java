@@ -63,6 +63,11 @@ import com.formkiq.client.model.OcrOutputType;
 import com.formkiq.client.model.TextractQuery;
 import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.mappings.AddMappingRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentActionsRetryRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
@@ -294,7 +299,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -327,7 +334,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -356,7 +365,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -372,7 +383,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -413,7 +426,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertDocumentAction(actions.getFirst(), DocumentActionType.OCR, FAILED, "some message");
 
       // when
-      AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+      AddResponse retry = new AddDocumentActionsRetryRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions retrying", retry.getMessage());
@@ -426,7 +441,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when - 2nd time
       try {
-        this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+        new AddDocumentActionsRetryRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -462,7 +479,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .type(ActionType.FULLTEXT).build(siteId)));
 
       // when
-      AddResponse retry = this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+      AddResponse retry = new AddDocumentActionsRetryRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions retrying", retry.getMessage());
@@ -478,7 +497,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertDocumentAction(actions.get(i), DocumentActionType.FULLTEXT, PENDING, null);
 
       // when - 2nd time
-      this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+      new AddDocumentActionsRetryRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId);
 
       // then
       actions = getDocumentActions(siteId, documentId);
@@ -491,8 +512,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       assertDocumentAction(actions.get(i), DocumentActionType.FULLTEXT, PENDING, null);
 
       // then - limits
-      GetDocumentActionsResponse response =
-          this.documentActionsApi.getDocumentActions(documentId, siteId, null, "1", null, null);
+      GetDocumentActionsResponse response = new GetDocumentActionsRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit("1")
+          .next(null).submitOk(this.client, siteId).response();
       actions = notNull(response.getActions());
       assertEquals(1, actions.size());
       assertEquals(DocumentActionType.OCR, actions.getFirst().getType());
@@ -523,8 +545,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           createAction(document).userId("joe").status(ActionStatus.FAILED).build(siteId)));
 
       // when
-      AddResponse retry = this.documentActionsApi.addDocumentRetryAction(document.documentId(),
-          siteId, document.artifactId());
+      AddResponse retry = new AddDocumentActionsRetryRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(document.documentId(),
+              document.artifactId()))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions retrying", retry.getMessage());
@@ -561,7 +585,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+        new AddDocumentActionsRetryRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -604,8 +630,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
         // when
         this.service.saveNewActions(addActions);
 
-        AddResponse retry =
-            this.documentActionsApi.addDocumentRetryAction(documentId, siteId, null);
+        AddResponse retry = new AddDocumentActionsRetryRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Actions retrying", retry.getMessage());
@@ -707,8 +734,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().url("https://localhost"))));
 
       // when
-      AddResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+      AddResponse response = new AddDocumentActionsRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -754,7 +782,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
 
@@ -792,7 +822,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
 
@@ -823,8 +855,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().engine(EngineEnum.CHATGPT).tags("something"))));
 
       // when - correct parameters
-      AddResponse response = this.documentActionsApi.addDocumentActions(document.documentId(),
-          siteId, document.artifactId(), req);
+      AddResponse response =
+          new AddDocumentActionsRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document.documentId(), document.artifactId())).request(req)
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -854,7 +888,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
 
@@ -898,8 +934,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddResponse response = this.documentActionsApi.addDocumentActions(document.documentId(),
-          siteId, document.artifactId(), req);
+      AddResponse response =
+          new AddDocumentActionsRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document.documentId(), document.artifactId())).request(req)
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -928,7 +966,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -957,7 +997,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -993,7 +1035,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1025,7 +1069,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1040,7 +1086,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1066,8 +1114,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       String attributeKey = "tag";
 
-      this.attributesApi.addAttribute(
-          new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+      new AddAttributeRequestBuilder()
+          .request(new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)))
+          .submitOk(this.client, siteId);
 
       String documentId = saveDocument(siteId);
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
@@ -1078,16 +1127,18 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .labelMatchingType(MappingAttributeLabelMatchingType.CONTAINS)
               .labelTexts(List.of("invoice", "invoice no"))));
 
-      String mappingId = this.mappingsApi
-          .addMapping(new AddMappingRequest().mapping(addMapping), siteId).getMappingId();
+      String mappingId =
+          new AddMappingRequestBuilder().request(new AddMappingRequest().mapping(addMapping))
+              .submitOk(this.client, siteId).response().getMappingId();
 
       AddDocumentActionsRequest req = new AddDocumentActionsRequest()
           .actions(List.of(new AddAction().type(DocumentActionType.IDP)
               .parameters(new AddActionParameters().mappingId(mappingId))));
 
       // when
-      AddResponse response =
-          this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+      AddResponse response = new AddDocumentActionsRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -1117,8 +1168,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
               .parameters(new AddActionParameters().ocrParseTypes("text"))));
 
       // when
-      AddResponse response = this.documentActionsApi.addDocumentActions(document.documentId(),
-          siteId, document.artifactId(), req);
+      AddResponse response =
+          new AddDocumentActionsRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document.documentId(), document.artifactId())).request(req)
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
@@ -1152,7 +1205,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1181,7 +1236,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1211,7 +1268,9 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
       // when
       try {
-        this.documentActionsApi.addDocumentActions(documentId, siteId, null, req);
+        new AddDocumentActionsRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1255,15 +1314,19 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
       // then
       String expectedRenamedPath =
           destinationFolder + filename.replace(".md", " (" + document1.documentId() + ").md");
-      assertEquals(expectedPath, this.documentsApi
-          .getDocument(document0.documentId(), siteId, document0.artifactId(), null).getPath());
-      assertEquals(expectedRenamedPath, this.documentsApi
-          .getDocument(document1.documentId(), siteId, document1.artifactId(), null).getPath());
+      assertEquals(expectedPath,
+          new GetDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document0.documentId(), document0.artifactId())).submitOk(this.client, siteId)
+              .response().getPath());
+      assertEquals(expectedRenamedPath,
+          new GetDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document1.documentId(), document1.artifactId())).submitOk(this.client, siteId)
+              .response().getPath());
 
       DocumentSearchRequest dsq = new DocumentSearchRequest().query(new DocumentSearch()
           .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(destinationFolder)));
-      DocumentSearchResponse response =
-          this.searchApi.documentSearch(dsq, siteId, null, null, null, null);
+      DocumentSearchResponse response = new SearchDocumentRequestBuilder().query(dsq).limit(null)
+          .next(null).previous(null).projection(null).submitOk(this.client, siteId).response();
       List<SearchResultDocument> documents = notNull(response.getDocuments());
 
       assertEquals(2, documents.size());
@@ -1298,15 +1361,18 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
           .singletonList(new AddAction().type(DocumentActionType.OCR).parameters(param)));
 
       // when
-      AddResponse response = this.documentActionsApi.addDocumentActions(document.documentId(),
-          siteId, document.artifactId(), req);
+      AddResponse response =
+          new AddDocumentActionsRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document.documentId(), document.artifactId())).request(req)
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Actions saved", response.getMessage());
 
-      List<DocumentAction> actions =
-          notNull(this.documentActionsApi.getDocumentActions(document.documentId(), siteId,
-              document.artifactId(), null, null, null).getActions());
+      List<DocumentAction> actions = notNull(
+          new GetDocumentActionsRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(document.documentId(), document.artifactId())).limit(null).next(null)
+              .submitOk(this.client, siteId).response().getActions());
       assertEquals(1, actions.size());
       DocumentAction action = actions.getFirst();
       Map<String, Object> params = notNull(action.getParameters());

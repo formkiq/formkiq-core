@@ -44,6 +44,9 @@ import com.formkiq.client.model.DeleteApiKeyResponse;
 import com.formkiq.client.model.GetApiKeysResponse;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
+import com.formkiq.testutils.api.systemmanagement.AddApiKeyRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.DeleteApiKeyRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetApiKeysRequestBuilder;
 
 /** Unit Tests for request /sites/{siteId}/apiKeys. */
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
@@ -62,12 +65,14 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
           .groups(List.of("test1", "test2")).permissions(List.of(ApiKeyPermission.READ));
 
       // when
-      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+      AddApiKeyResponse response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getApiKey());
 
-      GetApiKeysResponse keys = this.systemApi.getApiKeys(siteId, null, null);
+      GetApiKeysResponse keys = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+          .submitOk(this.client, siteId).response();
       List<ApiKey> apiKeys = notNull(keys.getApiKeys());
       assertEquals(1, apiKeys.size());
       assertEquals("test key", apiKeys.get(0).getName());
@@ -90,7 +95,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       try {
         // when
-        this.systemApi.deleteApiKey("ABC", siteId);
+        new DeleteApiKeyRequestBuilder().withApiKey(siteId).submitOk(this.client, "ABC");
         fail();
       } catch (ApiException e) {
         // then
@@ -117,13 +122,15 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       // when
       setBearerToken(group);
-      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+      AddApiKeyResponse response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse apiKeysResponse = this.systemApi.getApiKeys(siteId, null, null);
+      GetApiKeysResponse apiKeysResponse = new GetApiKeysRequestBuilder().withNext(null)
+          .withLimit(null).submitOk(this.client, siteId).response();
 
       // then
       List<ApiKey> apiKeys = notNull(apiKeysResponse.getApiKeys());
@@ -141,11 +148,13 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertNotNull(apiKey);
 
       // when
-      DeleteApiKeyResponse delResponse = this.systemApi.deleteApiKey(siteId, apiKey);
+      DeleteApiKeyResponse delResponse = new DeleteApiKeyRequestBuilder().withApiKey(apiKey)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("ApiKey deleted", delResponse.getMessage());
-      apiKeysResponse = this.systemApi.getApiKeys(siteId, null, null);
+      apiKeysResponse = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+          .submitOk(this.client, siteId).response();
       assertEquals(0, notNull(apiKeysResponse.getApiKeys()).size());
     }
   }
@@ -161,7 +170,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
     // when
     try {
-      this.systemApi.getApiKeys(DEFAULT_SITE_ID, null, null);
+      new GetApiKeysRequestBuilder().withNext(null).withLimit(null).submitOk(this.client,
+          DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
@@ -181,7 +191,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     setBearerToken("Admins opa " + DEFAULT_SITE_ID);
 
     // when
-    GetApiKeysResponse response = this.systemApi.getApiKeys(DEFAULT_SITE_ID, null, null);
+    GetApiKeysResponse response = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals(0, notNull(response.getApiKeys()).size());
@@ -206,13 +217,15 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
           new AddApiKeyRequest().name(apiKeyName).addPermissionsItem(ApiKeyPermission.GOVERN);
 
       // when
-      AddApiKeyResponse response = this.systemApi.addApiKey(siteId, req);
+      AddApiKeyResponse response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse getApiKeys = this.systemApi.getApiKeys(siteId, null, null);
+      GetApiKeysResponse getApiKeys = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+          .submitOk(this.client, siteId).response();
 
       // then
       List<ApiKey> apiKeys = notNull(getApiKeys.getApiKeys());
@@ -240,11 +253,13 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     setBearerToken("Admins");
 
     for (int i = 0; i < count; i++) {
-      this.systemApi.addApiKey(siteId, new AddApiKeyRequest().name("test_" + i));
+      new AddApiKeyRequestBuilder().withAddApiKeyRequest(new AddApiKeyRequest().name("test_" + i))
+          .submitOk(this.client, siteId);
     }
 
     // when
-    GetApiKeysResponse response = this.systemApi.getApiKeys(siteId, null, "2");
+    GetApiKeysResponse response = new GetApiKeysRequestBuilder().withNext(null).withLimit("2")
+        .submitOk(this.client, siteId).response();
 
     // then
     assertNotNull(response.getNext());
@@ -253,7 +268,8 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
     assertEquals("test_0", apiKeys.get(0).getName());
     assertEquals("test_1", apiKeys.get(1).getName());
 
-    response = this.systemApi.getApiKeys(siteId, response.getNext(), "2");
+    response = new GetApiKeysRequestBuilder().withNext(response.getNext()).withLimit("2")
+        .submitOk(this.client, siteId).response();
     apiKeys = notNull(response.getApiKeys());
     assertEquals(2, apiKeys.size());
     assertEquals("test_2", apiKeys.get(0).getName());
@@ -275,7 +291,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       setBearerToken(siteId);
 
       try {
-        this.systemApi.addApiKey(siteId, req);
+        new AddApiKeyRequestBuilder().withAddApiKeyRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

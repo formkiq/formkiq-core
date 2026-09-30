@@ -82,6 +82,17 @@ public class AddEntityTypeRequestBuilder implements HttpRequestBuilder<AddEntity
   }
 
   /**
+   * Set the complete entity type request.
+   *
+   * @param entityTypeRequest {@link AddEntityTypeRequest}
+   * @return this builder
+   */
+  public AddEntityTypeRequestBuilder request(final AddEntityTypeRequest entityTypeRequest) {
+    this.request.setEntityType(entityTypeRequest.getEntityType());
+    return this;
+  }
+
+  /**
    * Set Attribute Key.
    *
    * @param name {@link String}

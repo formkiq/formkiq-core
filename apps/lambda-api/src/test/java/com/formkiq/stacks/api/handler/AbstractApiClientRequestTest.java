@@ -37,12 +37,6 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.aws.sns.SnsAwsServiceRegistry;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.ssm.SsmServiceExtension;
-import com.formkiq.client.api.CustomIndexApi;
-import com.formkiq.client.api.EntityApi;
-import com.formkiq.client.api.MappingsApi;
-import com.formkiq.client.api.ReindexApi;
-import com.formkiq.client.api.UserManagementApi;
-import com.formkiq.client.api.WebhooksApi;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.WebhooksService;
@@ -56,16 +50,6 @@ import com.formkiq.aws.sqs.SqsAwsServiceRegistry;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.sqs.SqsServiceExtension;
 import com.formkiq.aws.ssm.SsmAwsServiceRegistry;
-import com.formkiq.client.api.AdvancedDocumentSearchApi;
-import com.formkiq.client.api.AttributesApi;
-import com.formkiq.client.api.DocumentActionsApi;
-import com.formkiq.client.api.DocumentAttributesApi;
-import com.formkiq.client.api.DocumentFoldersApi;
-import com.formkiq.client.api.DocumentSearchApi;
-import com.formkiq.client.api.DocumentTagsApi;
-import com.formkiq.client.api.DocumentsApi;
-import com.formkiq.client.api.SchemasApi;
-import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.invoker.Configuration;
@@ -126,41 +110,6 @@ public abstract class AbstractApiClientRequestTest {
   /** {@link ApiClient}. */
   protected ApiClient client =
       Configuration.getDefaultApiClient().setReadTimeout(TIMEOUT).setBasePath(server.getBasePath());
-  /** {@link DocumentActionsApi}. */
-  protected DocumentActionsApi documentActionsApi = new DocumentActionsApi(this.client);
-  /** {@link DocumentsApi}. */
-  protected DocumentsApi documentsApi = new DocumentsApi(this.client);
-  /** {@link DocumentFoldersApi}. */
-  protected DocumentFoldersApi foldersApi = new DocumentFoldersApi(this.client);
-  /** {@link SystemManagementApi}. */
-  protected SystemManagementApi systemApi = new SystemManagementApi(this.client);
-  /** {@link DocumentTagsApi}. */
-  protected DocumentTagsApi tagsApi = new DocumentTagsApi(this.client);
-  /** {@link DocumentSearchApi}. */
-  protected DocumentSearchApi searchApi = new DocumentSearchApi(this.client);
-  /** {@link AttributesApi}. */
-  protected AttributesApi attributesApi = new AttributesApi(this.client);
-  /** {@link DocumentAttributesApi}. */
-  protected DocumentAttributesApi documentAttributesApi = new DocumentAttributesApi(this.client);
-  /** {@link SchemasApi}. */
-  protected SchemasApi schemasApi = new SchemasApi(this.client);
-  /** {@link AdvancedDocumentSearchApi}. */
-  protected AdvancedDocumentSearchApi advancedSearchApi =
-      new AdvancedDocumentSearchApi(this.client);
-  /** {@link MappingsApi}. */
-  protected MappingsApi mappingsApi = new MappingsApi(this.client);
-  /** {@link ReindexApi}. */
-  protected ReindexApi reindexApi = new ReindexApi(this.client);
-  /** {@link UserManagementApi}. */
-  protected UserManagementApi userManagementApi = new UserManagementApi(this.client);
-  /** {@link CustomIndexApi}. */
-  protected CustomIndexApi indexApi = new CustomIndexApi(this.client);
-  /** {@link WebhooksApi}. */
-  protected WebhooksApi webhooksApi = new WebhooksApi(this.client);
-
-  /** {@link EntityApi}. */
-  protected EntityApi entityApi = new EntityApi(this.client);
-
   /** Sqs Messages. */
   private final List<Map<String, Object>> sqsMessages = new ArrayList<>();
 

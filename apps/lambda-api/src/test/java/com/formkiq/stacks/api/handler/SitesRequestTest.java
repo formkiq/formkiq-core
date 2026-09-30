@@ -49,6 +49,8 @@ import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
+import com.formkiq.testutils.api.VersionRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetSitesRequestBuilder;
 import com.formkiq.testutils.api.JwtTokenBuilder;
 import com.formkiq.testutils.api.SetBearerPermissionMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +97,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     new SetBearerPermissionMap().apply(this.client, List.of("default", "qa"), Map.of(), Map.of());
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     assertNotNull(response);
@@ -135,7 +137,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     new JwtTokenBuilder("bill").group("test").samlGroups(List.of("asd")).build(this.client);
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     List<Site> sites = notNull(response.getSites());
@@ -161,7 +163,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     ssm.putParameter("/formkiq/" + FORMKIQ_APP_ENVIRONMENT + "/maildomain", "tryformkiq.com");
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     assertEquals("default,Admins,finance", String.join(",", notNull(response.getRoles())));
@@ -215,7 +217,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     List<Site> sites = notNull(response.getSites());
@@ -244,7 +246,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {"default_read", "finance"});
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     List<Site> sites = notNull(response.getSites());
@@ -291,7 +293,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     configService.increment(siteId, DocumentOcrService.CONFIG_OCR_COUNT);
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     List<Site> sites = notNull(response.getSites());
@@ -326,7 +328,7 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     // when
-    GetSitesResponse response = this.systemApi.getSites(null);
+    GetSitesResponse response = new GetSitesRequestBuilder().submitOk(this.client, null).response();
 
     // then
     assertNotNull(response);
@@ -349,7 +351,8 @@ public class SitesRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(new String[] {DEFAULT_SITE_ID, "Admins", "finance"});
 
     // when
-    GetVersionResponse response = this.systemApi.getVersion();
+    GetVersionResponse response =
+        new VersionRequestBuilder().submitOk(this.client, null).response();
 
     // then
     assertNotNull(response.getVersion());
