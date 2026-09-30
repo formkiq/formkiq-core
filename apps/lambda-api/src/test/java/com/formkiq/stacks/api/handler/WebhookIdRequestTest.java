@@ -46,6 +46,11 @@ import com.formkiq.client.model.GetWebhookTagsResponse;
 import com.formkiq.client.model.UpdateResponse;
 import org.junit.jupiter.api.Test;
 import com.formkiq.stacks.dynamodb.WebhooksService;
+import com.formkiq.testutils.api.webhooks.AddWebhookRequestBuilder;
+import com.formkiq.testutils.api.webhooks.DeleteWebhookRequestBuilder;
+import com.formkiq.testutils.api.webhooks.GetWebhookRequestBuilder;
+import com.formkiq.testutils.api.webhooks.GetWebhookTagsRequestBuilder;
+import com.formkiq.testutils.api.webhooks.UpdateWebhookRequestBuilder;
 
 /** Unit Tests for request /webhooks/{webhookId}. */
 public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
@@ -66,7 +71,8 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(DEFAULT_SITE_ID);
 
     AddWebhookResponse response =
-        this.webhooksApi.addWebhook(new AddWebhookRequest().name("test"), null);
+        new AddWebhookRequestBuilder().withAddWebhookRequest(new AddWebhookRequest().name("test"))
+            .submitOk(this.client, null).response();
 
     assertEquals(DEFAULT_SITE_ID, response.getSiteId());
     assertNotNull(response.getWebhookId());
@@ -74,7 +80,8 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     String webhookId = response.getWebhookId();
 
     // when
-    DeleteResponse deleteResponse = this.webhooksApi.deleteWebhook(webhookId, null);
+    DeleteResponse deleteResponse = new DeleteWebhookRequestBuilder().withWebhookId(webhookId)
+        .submitOk(this.client, null).response();
 
     // then
     assertEquals("'" + webhookId + "' object deleted", deleteResponse.getMessage());
@@ -92,7 +99,7 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.webhooksApi.deleteWebhook(id, null);
+      new DeleteWebhookRequestBuilder().withWebhookId(id).submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -111,18 +118,22 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     // given
     setBearerToken(DEFAULT_SITE_ID);
 
-    AddWebhookResponse response = this.webhooksApi.addWebhook(new AddWebhookRequest()
-        .name("john smith").addTagsItem(new AddDocumentTag().key("dynamodb")), null);
+    AddWebhookResponse response = new AddWebhookRequestBuilder()
+        .withAddWebhookRequest(new AddWebhookRequest().name("john smith")
+            .addTagsItem(new AddDocumentTag().key("dynamodb")))
+        .submitOk(this.client, null).response();
 
     String webhookId = response.getWebhookId();
 
     // when
-    DeleteResponse deleteResponse = this.webhooksApi.deleteWebhook(webhookId, null);
+    DeleteResponse deleteResponse = new DeleteWebhookRequestBuilder().withWebhookId(webhookId)
+        .submitOk(this.client, null).response();
 
     // then
     assertEquals("'" + webhookId + "' object deleted", deleteResponse.getMessage());
 
-    GetWebhookTagsResponse webhookTags = this.webhooksApi.getWebhookTags(webhookId, null);
+    GetWebhookTagsResponse webhookTags = new GetWebhookTagsRequestBuilder().withWebhookId(webhookId)
+        .submitOk(this.client, null).response();
     assertEquals(0, notNull(webhookTags.getTags()).size());
   }
 
@@ -138,13 +149,15 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      AddWebhookResponse response =
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), null);
+      AddWebhookResponse response = new AddWebhookRequestBuilder()
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+          .submitOk(this.client, null).response();
 
       String webhookId = response.getWebhookId();
 
       // when
-      GetWebhookResponse webhook = this.webhooksApi.getWebhook(webhookId, null);
+      GetWebhookResponse webhook = new GetWebhookRequestBuilder().withWebhookId(webhookId)
+          .submitOk(this.client, null).response();
 
       // then
       if (siteId == null) {
@@ -176,14 +189,16 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      AddWebhookResponse result = this.webhooksApi
-          .addWebhook(new AddWebhookRequest().name("john smith").enabled("private"), siteId);
+      AddWebhookResponse result = new AddWebhookRequestBuilder()
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith").enabled("private"))
+          .submitOk(this.client, siteId).response();
 
       assertNotNull(result.getWebhookId());
       String webhookId = result.getWebhookId();
 
       // when
-      GetWebhookResponse webhook = this.webhooksApi.getWebhook(webhookId, null);
+      GetWebhookResponse webhook = new GetWebhookRequestBuilder().withWebhookId(webhookId)
+          .submitOk(this.client, null).response();
 
       // then
       if (siteId == null) {
@@ -221,13 +236,15 @@ public class WebhookIdRequestTest extends AbstractApiClientRequestTest {
           "joe", date, "true");
 
       // when
-      UpdateResponse updateResponse = this.webhooksApi.updateWebhook(id,
-          new AddWebhookRequest().name("john smith2").enabled("false"), siteId);
+      UpdateResponse updateResponse = new UpdateWebhookRequestBuilder().withWebhookId(id)
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith2").enabled("false"))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("'" + id + "' object updated", updateResponse.getMessage());
 
-      GetWebhookResponse webhook = this.webhooksApi.getWebhook(id, siteId);
+      GetWebhookResponse webhook =
+          new GetWebhookRequestBuilder().withWebhookId(id).submitOk(this.client, siteId).response();
 
       if (siteId == null) {
         assertEquals(DEFAULT_SITE_ID, webhook.getSiteId());

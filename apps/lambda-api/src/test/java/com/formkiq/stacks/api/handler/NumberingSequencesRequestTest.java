@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.GenerateDocumentAttributeValueRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -44,6 +45,9 @@ import com.formkiq.client.model.SetNumberingSequenceRequest;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.api.systemmanagement.GetNumberingSequenceRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetNumberingSequencesRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.SetNumberingSequenceRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -72,30 +76,35 @@ public class NumberingSequencesRequestTest extends AbstractApiClientRequestTest 
               .padding(5).reset(NumberingSequenceReset.YEARLY).timezone("UTC");
 
       // when
-      NumberingSequence saved =
-          this.systemApi.setNumberingSequence(siteId, attributeKey, request).getNumberingSequence();
+      NumberingSequence saved = new SetNumberingSequenceRequestBuilder()
+          .withAttributeKey(attributeKey).withSetNumberingSequenceRequest(request)
+          .submitOk(this.client, siteId).response().getNumberingSequence();
 
       // then
       assertEquals(5L, saved.getStartAt());
       assertNull(saved.getCurrentSequence());
-      assertEquals(attributeKey, this.systemApi.getNumberingSequence(siteId, attributeKey)
-          .getNumberingSequence().getAttributeKey());
-      assertTrue(this.systemApi.getNumberingSequences(siteId, null, null).getNumberingSequences()
-          .stream().anyMatch(sequence -> attributeKey.equals(sequence.getAttributeKey())));
+      assertEquals(attributeKey,
+          new GetNumberingSequenceRequestBuilder().withAttributeKey(attributeKey)
+              .submitOk(this.client, siteId).response().getNumberingSequence().getAttributeKey());
+      assertTrue(new GetNumberingSequencesRequestBuilder().withLimit(null).withNext(null)
+          .submitOk(this.client, siteId).response().getNumberingSequences().stream()
+          .anyMatch(sequence -> attributeKey.equals(sequence.getAttributeKey())));
 
       // given
       String firstDocumentId =
           new AddDocumentRequestBuilder(new AddDocumentRequest().content("first"))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+              .submitOk(this.client, siteId).response().getDocumentId();
       String secondDocumentId =
           new AddDocumentRequestBuilder(new AddDocumentRequest().content("second"))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+              .submitOk(this.client, siteId).response().getDocumentId();
 
       // when
-      GenerateDocumentAttributeValueResponse first = this.documentAttributesApi
-          .generateDocumentAttributeValue(firstDocumentId, attributeKey, siteId);
-      GenerateDocumentAttributeValueResponse second = this.documentAttributesApi
-          .generateDocumentAttributeValue(secondDocumentId, attributeKey, siteId);
+      GenerateDocumentAttributeValueResponse first =
+          new GenerateDocumentAttributeValueRequestBuilder().withDocumentId(firstDocumentId)
+              .withAttributeKey(attributeKey).submitOk(this.client, siteId).response();
+      GenerateDocumentAttributeValueResponse second =
+          new GenerateDocumentAttributeValueRequestBuilder().withDocumentId(secondDocumentId)
+              .withAttributeKey(attributeKey).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("CONTRACT-" + year + "-00005", first.getAttribute().getStringValue());
@@ -104,8 +113,9 @@ public class NumberingSequencesRequestTest extends AbstractApiClientRequestTest 
       assertEquals(6L, second.getSequence());
 
       // when
-      GenerateDocumentAttributeValueResponse repeated = this.documentAttributesApi
-          .generateDocumentAttributeValue(firstDocumentId, attributeKey, siteId);
+      GenerateDocumentAttributeValueResponse repeated =
+          new GenerateDocumentAttributeValueRequestBuilder().withDocumentId(firstDocumentId)
+              .withAttributeKey(attributeKey).submitOk(this.client, siteId).response();
 
       // then
       assertEquals(5L, repeated.getSequence());

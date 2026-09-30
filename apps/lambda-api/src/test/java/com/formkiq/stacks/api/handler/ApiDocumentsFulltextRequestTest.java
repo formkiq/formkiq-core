@@ -39,6 +39,10 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.SetDocumentFulltextRequest;
 import com.formkiq.client.model.SetDocumentFulltextResponse;
 import com.formkiq.client.model.UpdateDocumentFulltextRequest;
+import com.formkiq.testutils.api.opensearch.GetFulltextDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentFulltextRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentFulltextRequestBuilder;
+import com.formkiq.testutils.api.documents.UpdateDocumentFulltextRequestBuilder;
 
 /** Unit Tests for request /documents/{documentId}/fulltext. */
 public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTest {
@@ -59,11 +63,12 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
 
       SetDocumentFulltextRequest req =
           new SetDocumentFulltextRequest().content(content).contentType("text/plain");
-      this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+      new SetDocumentFulltextRequestBuilder().withDocumentId(documentId)
+          .withSetDocumentFulltextRequest(req).submitOk(this.client, siteId);
 
       // when
-      DeleteFulltextResponse response =
-          this.advancedSearchApi.deleteDocumentFulltext(documentId, siteId);
+      DeleteFulltextResponse response = new DeleteDocumentFulltextRequestBuilder()
+          .withDocumentId(documentId).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Deleted document '" + documentId + "'", response.getMessage());
@@ -85,7 +90,7 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
+        new GetFulltextDocumentRequestBuilder(documentId).submitOk(this.client, siteId);
       } catch (ApiException e) {
         // then
         assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
@@ -116,13 +121,14 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
 
       // when
       SetDocumentFulltextResponse putResponse =
-          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+          new SetDocumentFulltextRequestBuilder().withDocumentId(documentId)
+              .withSetDocumentFulltextRequest(req).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Add document to Typesense", putResponse.getMessage());
 
-      GetDocumentFulltextResponse response =
-          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
+      GetDocumentFulltextResponse response = new GetFulltextDocumentRequestBuilder(documentId)
+          .submitOk(this.client, siteId).response();
       assertEquals("text/plain", response.getContentType());
       assertEquals(content, response.getContent());
       Map<String, Object> metadata = response.getMetadata();
@@ -151,17 +157,20 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
           new SetDocumentFulltextRequest().content(content).contentType("text/plain");
 
       SetDocumentFulltextResponse putResponse =
-          this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+          new SetDocumentFulltextRequestBuilder().withDocumentId(documentId)
+              .withSetDocumentFulltextRequest(req).submitOk(this.client, siteId).response();
 
       UpdateDocumentFulltextRequest updateReq =
           new UpdateDocumentFulltextRequest().content(content2).contentType("text/plain");
 
       // when
-      this.advancedSearchApi.updateDocumentFulltext(documentId, siteId, updateReq);
+      new UpdateDocumentFulltextRequestBuilder().withDocumentId(documentId)
+          .withUpdateDocumentFulltextRequest(updateReq).submitOk(this.client, siteId);
 
       // then
       GetDocumentFulltextResponse documentFulltext =
-          this.advancedSearchApi.getDocumentFulltext(documentId, siteId, null);
+          new GetFulltextDocumentRequestBuilder(documentId).submitOk(this.client, siteId)
+              .response();
       assertEquals(content2, documentFulltext.getContent());
       assertEquals("Add document to Typesense", putResponse.getMessage());
     }
@@ -186,7 +195,8 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
 
       try {
         // when
-        this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+        new SetDocumentFulltextRequestBuilder().withDocumentId(documentId)
+            .withSetDocumentFulltextRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -215,7 +225,8 @@ public class ApiDocumentsFulltextRequestTest extends AbstractApiClientRequestTes
 
       try {
         // when
-        this.advancedSearchApi.setDocumentFulltext(documentId, siteId, req);
+        new SetDocumentFulltextRequestBuilder().withDocumentId(documentId)
+            .withSetDocumentFulltextRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

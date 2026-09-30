@@ -90,6 +90,17 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
     return this;
   }
 
+  /**
+   * Set the complete mapping request.
+   *
+   * @param mappingRequest {@link AddMappingRequest}
+   * @return this builder
+   */
+  public AddMappingRequestBuilder request(final AddMappingRequest mappingRequest) {
+    this.req.setMapping(mappingRequest.getMapping());
+    return this;
+  }
+
   private MappingAttribute createMappingAttribute(final String attributeKey,
       final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {

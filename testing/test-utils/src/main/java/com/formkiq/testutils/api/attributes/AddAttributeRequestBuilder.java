@@ -150,6 +150,17 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
     return this;
   }
 
+  /**
+   * Set the complete attribute request.
+   *
+   * @param attributeRequest {@link AddAttributeRequest}
+   * @return this builder
+   */
+  public AddAttributeRequestBuilder request(final AddAttributeRequest attributeRequest) {
+    this.request.setAttribute(attributeRequest.getAttribute());
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<AddResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new AttributesApi(apiClient).addAttribute(this.request, siteId));

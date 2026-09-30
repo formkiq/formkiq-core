@@ -79,6 +79,18 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
   }
 
   /**
+   * Set the complete document attribute value request.
+   *
+   * @param attributeRequest {@link SetDocumentAttributeRequest}
+   * @return this builder
+   */
+  public SetDocumentAttributeValueRequestBuilder request(
+      final SetDocumentAttributeRequest attributeRequest) {
+    this.request.setAttribute(attributeRequest.getAttribute());
+    return this;
+  }
+
+  /**
    * Set Attribute Key.
    *
    * @param attributeKey {@link String}
