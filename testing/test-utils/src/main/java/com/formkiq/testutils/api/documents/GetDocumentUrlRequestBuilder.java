@@ -49,6 +49,9 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
   /** Optional duration query parameter. */
   private Integer duration;
 
+  /** Optional maximum number of short-link redemptions. */
+  private Integer maxUses;
+
   /** Optional bypassWatermark query parameter. */
   private Boolean bypassWatermark;
 
@@ -115,6 +118,17 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
     }
   }
 
+  /**
+   * Set the maximum number of short-link redemptions.
+   *
+   * @param value Parameter value
+   * @return this builder
+   */
+  public GetDocumentUrlRequestBuilder maxUses(final Integer value) {
+    this.maxUses = value;
+    return this;
+  }
+
   public GetDocumentUrlRequestBuilder setFormat(final String format) {
     this.urlFormat = format;
     return this;
@@ -142,7 +156,7 @@ public class GetDocumentUrlRequestBuilder implements HttpRequestBuilder<GetDocum
     return executeApiCall(
         () -> new DocumentsApi(apiClient).getDocumentUrl(this.document.documentId(), siteId,
             this.document.artifactId(), this.versionKey, this.duration, this.shareKey, this.inline,
-            this.bypassWatermark, urlFormat, this.accelerate));
+            this.bypassWatermark, urlFormat, this.maxUses, this.accelerate));
   }
 
   /**
