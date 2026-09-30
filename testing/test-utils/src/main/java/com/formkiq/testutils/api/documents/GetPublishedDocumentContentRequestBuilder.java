@@ -25,23 +25,23 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 /**
  * Builder for the GetPublishedDocumentContent API operation.
  */
-public class GetPublishedDocumentContentRequestBuilder implements HttpRequestBuilder<Void> {
+public class GetPublishedDocumentContentRequestBuilder
+    implements HttpRequestBuilder<ApiResponse<Void>> {
 
   /** Request parameter. */
   private String documentId;
 
   @Override
-  public ApiHttpResponse<Void> submit(final ApiClient apiClient, final String siteId) {
-    return executeApiCall(() -> {
-      new DocumentsApi(apiClient).getPublishedDocumentContent(this.documentId, siteId);
-      return null;
-    });
+  public ApiHttpResponse<ApiResponse<Void>> submit(final ApiClient apiClient, final String siteId) {
+    return executeApiCall(() -> new DocumentsApi(apiClient)
+        .getPublishedDocumentContentWithHttpInfo(this.documentId, siteId));
   }
 
   /**

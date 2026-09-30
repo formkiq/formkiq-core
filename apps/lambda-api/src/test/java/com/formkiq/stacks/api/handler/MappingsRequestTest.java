@@ -57,6 +57,10 @@ import com.formkiq.client.model.MappingClassificationConditionMetadataExtraction
 import com.formkiq.client.model.MappingClassificationConditionSourceType;
 import com.formkiq.client.model.SetMappingRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.testutils.api.mappings.GetMappingsRequestBuilder;
+import com.formkiq.testutils.api.mappings.SetMappingRequestBuilder;
+import com.formkiq.testutils.api.mappings.DeleteMappingRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.mappings.AddMappingRequestBuilder;
 import com.formkiq.testutils.api.mappings.GetMappingRequestBuilder;
 import org.junit.jupiter.api.Test;
@@ -130,13 +134,16 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
   }
 
   private void addAttributeKeyOnly(final String siteId) throws ApiException {
-    this.attributesApi.addAttribute(new AddAttributeRequest()
-        .attribute(new AddAttribute().key("invoice").dataType(AttributeDataType.KEY_ONLY)), siteId);
+    new AddAttributeRequestBuilder()
+        .request(new AddAttributeRequest()
+            .attribute(new AddAttribute().key("invoice").dataType(AttributeDataType.KEY_ONLY)))
+        .submitOk(this.client, siteId);
   }
 
   private void addAttributeString(final String siteId, final String key) throws ApiException {
-    this.attributesApi
-        .addAttribute(new AddAttributeRequest().attribute(new AddAttribute().key(key)), siteId);
+    new AddAttributeRequestBuilder()
+        .request(new AddAttributeRequest().attribute(new AddAttribute().key(key)))
+        .submitOk(this.client, siteId);
   }
 
   private MappingAttribute aiPromptResult() {
@@ -150,7 +157,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
         .mapping(new AddMapping().name("asd").addAttributesItem(mappingAttribute));
 
     try {
-      this.mappingsApi.addMapping(req, siteId);
+      new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId);
       fail();
     } catch (ApiException e) {
       assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -259,12 +266,14 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       AddMappingRequest req = new AddMappingRequest().mapping(mapping);
 
       // when
-      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+      AddMappingResponse addResponse =
+          new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(addResponse.getMappingId());
 
-      GetMappingsResponse response = this.mappingsApi.getMappings(siteId, null, null);
+      GetMappingsResponse response = new GetMappingsRequestBuilder().limit(null).next(null)
+          .submitOk(this.client, siteId).response();
       assertMapping(response, "test", "");
       assertMappingAttributeContent(response);
 
@@ -274,17 +283,20 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       SetMappingRequest setReq = new SetMappingRequest().mapping(mapping);
 
       // when
-      SetResponse setResponse =
-          this.mappingsApi.setMapping(addResponse.getMappingId(), setReq, siteId, false);
+      SetResponse setResponse = new SetMappingRequestBuilder(addResponse.getMappingId(),
+          setReq.getMapping().getName(), setReq.getMapping().getDescription()).request(setReq)
+          .createIfMissing(false).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Mapping set", setResponse.getMessage());
 
-      response = this.mappingsApi.getMappings(siteId, null, null);
+      response = new GetMappingsRequestBuilder().limit(null).next(null)
+          .submitOk(this.client, siteId).response();
       assertMapping(response, "another", "test desc");
       assertMappingAttributeContent(response);
 
-      Mapping m = this.mappingsApi.getMapping(addResponse.getMappingId(), siteId).getMapping();
+      Mapping m = new GetMappingRequestBuilder(addResponse.getMappingId())
+          .submitOk(this.client, siteId).response().getMapping();
       assertMapping(m, "another", "test desc");
 
       assertMappingAttributeContent(m);
@@ -321,14 +333,15 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       AddMappingRequest req = new AddMappingRequest().mapping(mapping);
 
       // when
-      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+      AddMappingResponse addResponse =
+          new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(addResponse.getMappingId());
 
       // when
-      Mapping responseMapping =
-          this.mappingsApi.getMapping(addResponse.getMappingId(), siteId).getMapping();
+      Mapping responseMapping = new GetMappingRequestBuilder(addResponse.getMappingId())
+          .submitOk(this.client, siteId).response().getMapping();
 
       // then
       assertNotNull(responseMapping);
@@ -371,7 +384,8 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.mappingsApi.addMapping(new AddMappingRequest().mapping(mapping), siteId);
+        new AddMappingRequestBuilder().request(new AddMappingRequest().mapping(mapping))
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -553,7 +567,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.mappingsApi.addMapping(req, siteId);
+        new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -578,7 +592,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.mappingsApi.addMapping(req, siteId);
+        new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -607,7 +621,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.mappingsApi.addMapping(req, siteId);
+        new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -635,12 +649,14 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
           new AddMapping().name("asd").addAttributesItem(manualMappingAttribute("invoice")));
 
       // when
-      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
+      AddMappingResponse response =
+          new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getMappingId());
 
-      Mapping m = this.mappingsApi.getMapping(response.getMappingId(), siteId).getMapping();
+      Mapping m = new GetMappingRequestBuilder(response.getMappingId())
+          .submitOk(this.client, siteId).response().getMapping();
       assertMapping(m, "asd", "");
       assertMappingManual(m, "23");
     }
@@ -662,12 +678,14 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
           .mapping(new AddMapping().name("asd").addAttributesItem(manualMappingAttribute()));
 
       // when
-      AddMappingResponse response = this.mappingsApi.addMapping(req, siteId);
+      AddMappingResponse response =
+          new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getMappingId());
 
-      Mapping m = this.mappingsApi.getMapping(response.getMappingId(), siteId).getMapping();
+      Mapping m = new GetMappingRequestBuilder(response.getMappingId())
+          .submitOk(this.client, siteId).response().getMapping();
       assertMapping(m, "asd", "");
       assertMappingManual(m, null);
     }
@@ -810,22 +828,24 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       AddMappingRequest req = new AddMappingRequest().mapping(mapping);
 
       // when
-      AddMappingResponse addResponse = this.mappingsApi.addMapping(req, siteId);
+      AddMappingResponse addResponse =
+          new AddMappingRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(addResponse.getMappingId());
-      assertNotNull(this.mappingsApi.getMapping(addResponse.getMappingId(), siteId));
+      assertNotNull(new GetMappingRequestBuilder(addResponse.getMappingId())
+          .submitOk(this.client, siteId).response());
 
       // when
-      DeleteResponse deleteResponse =
-          this.mappingsApi.deleteMapping(addResponse.getMappingId(), siteId);
+      DeleteResponse deleteResponse = new DeleteMappingRequestBuilder(addResponse.getMappingId())
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Mapping '" + addResponse.getMappingId() + "' deleted",
           deleteResponse.getMessage());
 
       try {
-        this.mappingsApi.getMapping(addResponse.getMappingId(), siteId);
+        new GetMappingRequestBuilder(addResponse.getMappingId()).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -834,7 +854,7 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       }
 
       try {
-        this.mappingsApi.deleteMapping(addResponse.getMappingId(), siteId);
+        new DeleteMappingRequestBuilder(addResponse.getMappingId()).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -867,7 +887,9 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.mappingsApi.setMapping(mappingId, setReq, siteId, false);
+        new SetMappingRequestBuilder(mappingId, setReq.getMapping().getName(),
+            setReq.getMapping().getDescription()).request(setReq).createIfMissing(false)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -877,12 +899,15 @@ public class MappingsRequestTest extends AbstractApiClientRequestTest {
       }
 
       // when
-      SetResponse setResponse = this.mappingsApi.setMapping(mappingId, setReq, siteId, true);
+      SetResponse setResponse = new SetMappingRequestBuilder(mappingId,
+          setReq.getMapping().getName(), setReq.getMapping().getDescription()).request(setReq)
+          .createIfMissing(true).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Mapping set", setResponse.getMessage());
 
-      Mapping m = this.mappingsApi.getMapping(mappingId, siteId).getMapping();
+      Mapping m = new GetMappingRequestBuilder(mappingId).submitOk(this.client, siteId).response()
+          .getMapping();
       assertMapping(m, "test", "");
       assertMappingAttributeContent(m);
     }

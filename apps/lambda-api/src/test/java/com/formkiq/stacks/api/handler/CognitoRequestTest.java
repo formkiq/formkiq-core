@@ -29,6 +29,17 @@ import com.formkiq.client.model.AddGroup;
 import com.formkiq.client.model.AddGroupRequest;
 import com.formkiq.client.model.AddUser;
 import com.formkiq.client.model.AddUserRequest;
+import com.formkiq.testutils.api.users.AddGroupsRequestBuilder;
+import com.formkiq.testutils.api.users.GetGroupUsersRequestBuilder;
+import com.formkiq.testutils.api.users.GetUserRequestBuilder;
+import com.formkiq.testutils.api.users.GetUsersRequestBuilder;
+import com.formkiq.testutils.api.users.AddUserRequestBuilder;
+import com.formkiq.testutils.api.users.AddUserToGroupRequestBuilder;
+import com.formkiq.testutils.api.users.DeleteGroupRequestBuilder;
+import com.formkiq.testutils.api.users.DeleteUsernameRequestBuilder;
+import com.formkiq.testutils.api.users.GetListOfUserGroupsRequestBuilder;
+import com.formkiq.testutils.api.users.RemoveUsernameFromGroupRequestBuilder;
+import com.formkiq.testutils.api.users.SetUserOperationRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,7 +60,8 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.addUserToGroup("test", req);
+      new AddUserToGroupRequestBuilder().withGroupName("test").withAddUserRequest(req)
+          .submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -73,7 +85,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.addGroup(req);
+      new AddGroupsRequestBuilder(req.getGroup().getName()).submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -97,7 +109,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.addUser(req);
+      new AddUserRequestBuilder().withAddUserRequest(req).submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -119,7 +131,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.deleteGroup("test");
+      new DeleteGroupRequestBuilder().withGroupName("test").submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -141,7 +153,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.deleteUsername("test");
+      new DeleteUsernameRequestBuilder().withUsername("test").submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -163,7 +175,8 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.removeUsernameFromGroup("group", "test");
+      new RemoveUsernameFromGroupRequestBuilder().withGroupName("group").withUsername("test")
+          .submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -185,7 +198,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.getUsersInGroup("test", null, null);
+      new GetGroupUsersRequestBuilder("test").limit(null).next(null).submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -207,7 +220,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.getUser("test");
+      new GetUserRequestBuilder("test").submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -229,7 +242,7 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.getUsers(null, null);
+      new GetUsersRequestBuilder().limit(null).next(null).submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -251,7 +264,8 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.setUserOperation("test", "fsdf");
+      new SetUserOperationRequestBuilder().withUsername("test").withUserOperation("fsdf")
+          .submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then
@@ -273,7 +287,8 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.userManagementApi.getListOfUserGroups("test", null, null);
+      new GetListOfUserGroupsRequestBuilder().withUsername("test").withLimit(null).withNext(null)
+          .submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then

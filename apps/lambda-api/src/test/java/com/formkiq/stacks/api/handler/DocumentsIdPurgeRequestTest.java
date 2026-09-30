@@ -32,6 +32,7 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.Document;
 import com.formkiq.client.model.GetDocumentUrlResponse;
+import com.formkiq.testutils.api.documents.PurgeDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.module.http.HttpHeaders;
@@ -75,8 +76,6 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
   private List<Document> getDocuments(final String siteId) throws ApiException {
     return notNull(new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response()
         .getDocuments());
-    // return notNull(this.documentsApi
-    // .getDocuments(siteId, null, null, null, null, null, null, null, null, null).getDocuments());
   }
 
   private List<S3Object> getS3Files(final String siteId, final String documentId) {
@@ -119,7 +118,8 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(1, s3Files.size());
 
         // when
-        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
+        DeleteResponse deleteResponse = new PurgeDocumentRequestBuilder(documentId)
+            .setArtifactId(null).submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Deleted document '" + documentId + "' permanently",
@@ -147,7 +147,8 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.purgeDocument(documentId, siteId, null);
+        new PurgeDocumentRequestBuilder(documentId).setArtifactId(null).submitOk(this.client,
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -180,7 +181,8 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
         assertEquals(0, s3Files.size());
 
         // when
-        DeleteResponse deleteResponse = this.documentsApi.purgeDocument(documentId, siteId, null);
+        DeleteResponse deleteResponse = new PurgeDocumentRequestBuilder(documentId)
+            .setArtifactId(null).submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Deleted document '" + documentId + "' permanently",
@@ -229,8 +231,8 @@ public class DocumentsIdPurgeRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId + "_govern");
 
       // when
-      DeleteResponse deleteResponse =
-          this.documentsApi.purgeDocument(documentId, siteId, artifactId);
+      DeleteResponse deleteResponse = new PurgeDocumentRequestBuilder(documentId)
+          .setArtifactId(artifactId).submitOk(this.client, siteId).response();
 
       // then
       assertEquals(

@@ -44,6 +44,7 @@ import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestMatch;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsRequestUpdate;
 import com.formkiq.client.model.UpdateMatchingDocumentTagsResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import com.formkiq.testutils.api.documents.UpdateMatchingDocumentTagsRequestBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -86,7 +87,8 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
 
       // when
       try {
-        this.tagsApi.updateMatchingDocumentTags(request, siteId);
+        new UpdateMatchingDocumentTagsRequestBuilder()
+            .withUpdateMatchingDocumentTagsRequest(request).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -100,7 +102,8 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
 
       // when
       try {
-        this.tagsApi.updateMatchingDocumentTags(request, siteId);
+        new UpdateMatchingDocumentTagsRequestBuilder()
+            .withUpdateMatchingDocumentTagsRequest(request).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -129,8 +132,8 @@ public class UpdateDocumentMatchingRequestHandlerTest extends AbstractApiClientR
           .addTagsItem(new AddDocumentTag().key("user").value("111")));
 
       // when
-      UpdateMatchingDocumentTagsResponse response =
-          this.tagsApi.updateMatchingDocumentTags(request, siteId);
+      UpdateMatchingDocumentTagsResponse response = new UpdateMatchingDocumentTagsRequestBuilder()
+          .withUpdateMatchingDocumentTagsRequest(request).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("received update tags request", response.getMessage());

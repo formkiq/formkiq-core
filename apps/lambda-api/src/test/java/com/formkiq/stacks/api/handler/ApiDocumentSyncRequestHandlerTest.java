@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.GetDocumentSyncsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -86,6 +89,7 @@ import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.api.documents.AddDocumentSyncRequestBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
@@ -141,15 +145,16 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
   private List<DocumentAction> getDocumentActions(final String siteId, final String documentId)
       throws ApiException {
-    GetDocumentActionsResponse response =
-        this.documentActionsApi.getDocumentActions(documentId, siteId, null, null, null, null);
+    GetDocumentActionsResponse response = new GetDocumentActionsRequestBuilder(
+        com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+        .next(null).submitOk(this.client, siteId).response();
     return notNull(response.getActions());
   }
 
   private List<DocumentSync> getDocumentSyncs(final String siteId, final String documentId)
       throws ApiException {
     GetDocumentSyncResponse response =
-        this.documentsApi.getDocumentSyncs(documentId, siteId, null, null);
+        new GetDocumentSyncsRequestBuilder(documentId).submitOk(this.client, siteId).response();
     return notNull(response.getSyncs());
   }
 
@@ -168,7 +173,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       AddDocumentSyncRequest req = new AddDocumentSyncRequest();
 
       try {
-        this.documentsApi.addDocumentSync(documentId, siteId, req);
+        new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -194,7 +200,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
       // when
       try {
-        this.documentsApi.addDocumentSync(documentId, siteId, req);
+        new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -217,13 +224,14 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
         setBearerToken(siteId);
         String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
-            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+            .submitOk(this.client, siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
             .sync(new AddDocumentSync().service(service).type(DocumentSyncType.CONTENT));
-        AddResponse addResponse = this.documentsApi.addDocumentSync(documentId, siteId, req);
+        AddResponse addResponse = new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Added Document sync", addResponse.getMessage());
@@ -251,7 +259,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
       // when
       try {
-        this.documentsApi.addDocumentSync(documentId, siteId, req);
+        new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -274,22 +283,24 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
         setBearerToken(siteId);
         String attributeKey = "myattr_" + ID.uuid();
-        this.attributesApi.addAttribute(
-            new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+        new AddAttributeRequestBuilder()
+            .request(new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)))
+            .submitOk(this.client, siteId);
 
         AddDocumentRequest addReq = new AddDocumentRequest().content("asd")
             .addAttributesItem(new AddDocumentAttribute(
                 new AddDocumentAttributeStandard().key(attributeKey).stringValue("555")))
             .addTagsItem(new AddDocumentTag().key("mytag").value("123"));
 
-        String documentId = new AddDocumentRequestBuilder(addReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+        String documentId = new AddDocumentRequestBuilder(addReq).submitOk(this.client, siteId)
+            .response().getDocumentId();
         assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
             .sync(new AddDocumentSync().service(service).type(DocumentSyncType.METADATA));
-        AddResponse addResponse = this.documentsApi.addDocumentSync(documentId, siteId, req);
+        AddResponse addResponse = new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Added Document sync", addResponse.getMessage());
@@ -315,13 +326,14 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
         setBearerToken(siteId);
         String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
-            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+            .submitOk(this.client, siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         // when
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
             .sync(new AddDocumentSync().service(service).type(DocumentSyncType.METADATA));
-        AddResponse addResponse = this.documentsApi.addDocumentSync(documentId, siteId, req);
+        AddResponse addResponse = new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+            .withAddDocumentSyncRequest(req).submitOk(this.client, siteId).response();
 
         // then
         assertEquals("Added Document sync", addResponse.getMessage());
@@ -345,7 +357,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
         setBearerToken(siteId);
         String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("asd"))
-            .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+            .submitOk(this.client, siteId).response().getDocumentId();
         assertNotNull(documentId);
 
         AddDocumentSyncRequest req = new AddDocumentSyncRequest()
@@ -353,7 +365,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
         try {
           // when
-          this.documentsApi.addDocumentSync(documentId, siteId, req);
+          new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+              .withAddDocumentSyncRequest(req).submitOk(this.client, siteId);
           fail();
         } catch (ApiException e) {
           // then
@@ -383,14 +396,14 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     setBearerToken((String) null);
 
     String documentId = new AddDocumentRequestBuilder(new AddDocumentRequest().content("test"))
-        .submitOk(this.documentsApi.getApiClient(), null).response().getDocumentId();
+        .submitOk(this.client, null).response().getDocumentId();
     assertNotNull(documentId);
 
     createSyncRecords(db, documentId);
 
     // when
-    List<DocumentSync> syncs =
-        notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
+    List<DocumentSync> syncs = notNull(new GetDocumentSyncsRequestBuilder(documentId)
+        .submitOk(this.client, null).response().getSyncs());
 
     // then
     assertEquals(2, syncs.size());
@@ -400,20 +413,20 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
     List<Document> docs =
         notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
             .submit(client, null).throwIfError().response().getDocuments());
-    // this.documentsApi.getDocuments(null, null,
-    // "FULLTEXT_METADATA_FAILED", null, null, null, null, null, null, null).getDocuments());
     assertEquals(1, docs.size());
     assertEquals(documentId, docs.get(0).getDocumentId());
 
     // when
-    AddResponse addResponse = this.documentsApi.addDocumentSync(documentId, null,
-        new AddDocumentSyncRequest().sync(new AddDocumentSync().type(DocumentSyncType.METADATA)
-            .service(AddDocumentSyncService.FULLTEXT)));
+    AddResponse addResponse = new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
+        .withAddDocumentSyncRequest(new AddDocumentSyncRequest().sync(new AddDocumentSync()
+            .type(DocumentSyncType.METADATA).service(AddDocumentSyncService.FULLTEXT)))
+        .submitOk(this.client, null).response();
 
     // then
     assertEquals("Added Document sync", addResponse.getMessage());
 
-    syncs = notNull(this.documentsApi.getDocumentSyncs(documentId, null, null, null).getSyncs());
+    syncs = notNull(new GetDocumentSyncsRequestBuilder(documentId).submitOk(this.client, null)
+        .response().getSyncs());
     assertEquals(2, syncs.size());
 
     assertDocumentSync(syncs.get(0), DocumentSyncService.TYPESENSE,
@@ -422,8 +435,6 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
 
     docs = notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
         .submit(client, null).throwIfError().response().getDocuments());
-    // notNull(this.documentsApi.getDocuments(null, null, "FULLTEXT_METADATA_FAILED", null,
-    // null, null, null, null, null, null).getDocuments());
     assertEquals(0, docs.size());
   }
 

@@ -69,6 +69,7 @@ import com.formkiq.client.model.FolderPermission;
 import com.formkiq.client.model.FolderPermissionType;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.stacks.lambda.s3.DocumentsS3Update;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.ApiHttpClient;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -85,6 +86,8 @@ import com.formkiq.testutils.api.folders.GetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.api.folders.GetFoldersRequestBuilder;
 import com.formkiq.testutils.api.folders.SetFolderPermissionsRequestBuilder;
 import com.formkiq.testutils.aws.s3.S3EventJsonBuilder;
+import com.formkiq.testutils.api.folders.DeleteFolderRequestBuilder;
+import com.formkiq.testutils.api.folders.MoveFolderRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import com.formkiq.client.invoker.ApiException;
@@ -116,7 +119,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   private AddFolderResponse addFolder(final String siteId, final String path) throws ApiException {
-    return this.foldersApi.addFolder(new AddFolderRequest().path(path), siteId, null);
+    return new AddFolderRequestBuilder().path(new AddFolderRequest().path(path).getPath())
+        .submitOk(this.client, siteId).response();
   }
 
   /**
@@ -153,8 +157,9 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       String indexKey = createFolder(siteId, sourcePath);
 
       // when
-      MoveFolderResponse response =
-          this.foldersApi.moveFolder(indexKey, new MoveFolderRequest().path(targetPath), siteId);
+      MoveFolderResponse response = new MoveFolderRequestBuilder().withIndexKey(indexKey)
+          .withMoveFolderRequest(new MoveFolderRequest().path(targetPath))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("folder move request created", response.getMessage());
@@ -231,16 +236,16 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       throws ApiException {
     DocumentSearchRequest req = new DocumentSearchRequest()
         .query(new DocumentSearch().meta(new DocumentSearchMeta().folder(path + "/")));
-    return notNull(
-        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
+    return notNull(new SearchDocumentRequestBuilder().query(req).limit(null).next(null)
+        .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
   }
 
   private List<SearchResultDocument> searchMetaFolderEq(final String siteId, final String path)
       throws ApiException {
     DocumentSearchRequest req = new DocumentSearchRequest().query(new DocumentSearch()
         .meta(new DocumentSearchMeta().indexType(IndexTypeEnum.FOLDER).eq(path)));
-    return notNull(
-        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
+    return notNull(new SearchDocumentRequestBuilder().query(req).limit(null).next(null)
+        .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
   }
 
   private void setPathPermissions(final String siteId, final String path,
@@ -409,7 +414,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals("path1", folders.getFirst().getPath());
 
       // when - get permissions before set
-      var permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+      var permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
 
       // then
       assertEquals(0, permissions.size());
@@ -421,7 +427,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Folder permissions set", setResponse.response().getMessage());
 
-      permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
       assertEquals(1, permissions.size());
       assertEquals("myrole", permissions.getFirst().getRoleName());
       assertEquals("READ", notNull(permissions.getFirst().getPermissions()).stream()
@@ -434,7 +441,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertNull(setResponse.exception());
       assertEquals("Folder permissions set", setResponse.response().getMessage());
 
-      permissions = notNull(this.foldersApi.getFolderPermissions(indexKey, siteId).getRoles());
+      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
       assertEquals(0, permissions.size());
     }
   }
@@ -484,7 +492,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals(indexKey, folders.getDocuments().getFirst().getIndexKey());
 
       // when
-      DeleteFolderResponse deleteResponse = this.foldersApi.deleteFolder(indexKey, siteId, null);
+      DeleteFolderResponse deleteResponse = new DeleteFolderRequestBuilder().withIndexKey(indexKey)
+          .withShareKey(null).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("deleted folder", deleteResponse.getMessage());
@@ -508,7 +517,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.foldersApi.addFolder(new AddFolderRequest(), siteId, null);
+        new AddFolderRequestBuilder().path(new AddFolderRequest().getPath()).submitOk(this.client,
+            siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -532,7 +542,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.foldersApi.deleteFolder(indexKey, siteId, null);
+        new DeleteFolderRequestBuilder().withIndexKey(indexKey).withShareKey(null)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -556,7 +567,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
           .path("e0647979-13f3-4c46-9f29-4b3984ef6bca/Order_Document_1123.pdf");
 
       // when
-      AddFolderResponse addFolderResponse = this.foldersApi.addFolder(req, siteId, null);
+      AddFolderResponse addFolderResponse = new AddFolderRequestBuilder().path(req.getPath())
+          .submitOk(this.client, siteId).response();
 
       // then
       List<SearchResultDocument> docs0 = getSearchResultDocuments(siteId, null);
@@ -573,7 +585,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       assertEquals(indexKey, docs1.getFirst().getIndexKey());
 
       // when
-      DeleteFolderResponse response = this.foldersApi.deleteFolder(indexKey, siteId, null);
+      DeleteFolderResponse response = new DeleteFolderRequestBuilder().withIndexKey(indexKey)
+          .withShareKey(null).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("deleted folder", response.getMessage());
@@ -602,7 +615,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       AddFolderRequest req = new AddFolderRequest().path(folder);
 
       // when
-      final AddFolderResponse addFolderResponse = this.foldersApi.addFolder(req, siteId, null);
+      final AddFolderResponse addFolderResponse = new AddFolderRequestBuilder().path(req.getPath())
+          .submitOk(this.client, siteId).response();
       addDocument(this.client, siteId, folder + "/test.pdf",
           content.getBytes(StandardCharsets.UTF_8), "text/plain", null);
 
@@ -622,7 +636,8 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.foldersApi.deleteFolder(indexKey, siteId, null);
+        new DeleteFolderRequestBuilder().withIndexKey(indexKey).withShareKey(null)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -902,7 +917,7 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.foldersApi.getFolderPermissions(indexKey, siteId);
+        new GetFolderPermissionsRequestBuilder().indexKey(indexKey).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1146,13 +1161,15 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
       DocumentSearchRequest request = new DocumentSearchRequest()
           .query(new DocumentSearch().meta(new DocumentSearchMeta().path(path)));
 
-      var authorizedCountResponse =
-          this.searchApi.documentSearch(request, siteId, null, null, null, "COUNT");
+      var authorizedCountResponse = new SearchDocumentRequestBuilder().query(request).limit(null)
+          .next(null).previous(null).projection("COUNT").submitOk(this.client, siteId).response();
 
       // when
       new SetBearers().apply(client, new String[] {siteId, restrictedRole});
-      var documentResponse = this.searchApi.documentSearch(request, siteId, null, null, null, null);
-      var countResponse = this.searchApi.documentSearch(request, siteId, null, null, null, "COUNT");
+      var documentResponse = new SearchDocumentRequestBuilder().query(request).limit(null)
+          .next(null).previous(null).projection(null).submitOk(this.client, siteId).response();
+      var countResponse = new SearchDocumentRequestBuilder().query(request).limit(null).next(null)
+          .previous(null).projection("COUNT").submitOk(this.client, siteId).response();
 
       // then
       assertAll(() -> assertEquals(1, authorizedCountResponse.getCount()),

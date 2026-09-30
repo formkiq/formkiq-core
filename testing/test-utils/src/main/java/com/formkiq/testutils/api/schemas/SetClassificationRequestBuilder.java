@@ -113,6 +113,18 @@ public class SetClassificationRequestBuilder implements HttpRequestBuilder<SetRe
   }
 
   /**
+   * Set the complete classification request.
+   *
+   * @param classificationRequest {@link SetClassificationRequest}
+   * @return this builder
+   */
+  public SetClassificationRequestBuilder request(
+      final SetClassificationRequest classificationRequest) {
+    this.request.setClassification(classificationRequest.getClassification());
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient

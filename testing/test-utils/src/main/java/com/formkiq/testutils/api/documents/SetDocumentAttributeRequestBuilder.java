@@ -84,6 +84,18 @@ public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<Se
   }
 
   /**
+   * Set the complete document attributes request.
+   *
+   * @param attributesRequest {@link SetDocumentAttributesRequest}
+   * @return this builder
+   */
+  public SetDocumentAttributeRequestBuilder request(
+      final SetDocumentAttributesRequest attributesRequest) {
+    this.request.setAttributes(attributesRequest.getAttributes());
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient

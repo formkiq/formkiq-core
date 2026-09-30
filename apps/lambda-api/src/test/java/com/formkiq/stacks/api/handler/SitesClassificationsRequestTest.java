@@ -61,6 +61,15 @@ import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
+import com.formkiq.testutils.api.schemas.GetClassificationAttributeAllowedValuesRequestBuilder;
+import com.formkiq.testutils.api.schemas.GetSitesSchemaAttributeAllowedValuesRequestBuilder;
+import com.formkiq.testutils.api.entity.DeleteEntityRequestBuilder;
+import com.formkiq.testutils.api.schemas.DeleteClassificationRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetClassificationRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.SetDocumentAttributeValueRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
@@ -70,6 +79,10 @@ import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.schemas.AddClassificationRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.api.attributes.GetAttributeAllowedValuesRequestBuilder;
+import com.formkiq.testutils.api.schemas.GetClassificationRequestBuilder;
+import com.formkiq.testutils.api.schemas.GetSitesClassificationsRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,7 +116,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       throws ApiException {
     AddAttributeRequest req =
         new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(dataType));
-    this.attributesApi.addAttribute(req, siteId);
+    new AddAttributeRequestBuilder().request(req).submitOk(this.client, siteId);
   }
 
   private String addClassification(final String siteId, final SetSchemaAttributes attr0)
@@ -115,26 +128,32 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       final SetSchemaAttributes attr0) throws ApiException {
     AddClassificationRequest req = new AddClassificationRequest()
         .classification(new AddClassification().name(name).attributes(attr0));
-    return this.schemasApi.addClassification(siteId, req).getClassificationId();
+    return new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId)
+        .response().getClassificationId();
   }
 
   private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
       throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return new AddDocumentRequestBuilder(areq).submitOk(this.documentsApi.getApiClient(), siteId)
-        .response().getDocumentId();
+    return new AddDocumentRequestBuilder(areq).submitOk(this.client, siteId).response()
+        .getDocumentId();
   }
 
   private void addDocumentAttributes(final String siteId, final String documentId,
       final List<AddDocumentAttribute> attributes) throws ApiException {
     AddDocumentAttributesRequest req = new AddDocumentAttributesRequest().attributes(attributes);
-    this.documentAttributesApi.addDocumentAttributes(documentId, req, siteId, null);
+    new AddDocumentAttributeRequestBuilder(
+        com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).request(req)
+        .submitOk(this.client, siteId);
   }
 
   private void addDocumentClassification(final String siteId, final String documentId,
       final AddDocumentAttributeClassification classification) throws ApiException {
-    this.documentAttributesApi.addDocumentAttributes(documentId, new AddDocumentAttributesRequest()
-        .addAttributesItem(new AddDocumentAttribute(classification)), siteId, null);
+    new AddDocumentAttributeRequestBuilder(
+        com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+        .request(new AddDocumentAttributesRequest()
+            .addAttributesItem(new AddDocumentAttribute(classification)))
+        .submitOk(this.client, siteId);
   }
 
   private String addEntityType(final String siteId, final String name) throws ApiException {
@@ -168,8 +187,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId) throws ApiException {
-    return notNull(this.documentAttributesApi
-        .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+    return notNull(new GetDocumentAttributesRequestBuilder(
+        com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+        .next(null).submitOk(this.client, siteId).response().getAttributes());
   }
 
   private List<SearchResultDocument> search(final String siteId,
@@ -180,21 +200,23 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
     }
 
     DocumentSearchRequest req = new DocumentSearchRequest().query(ds);
-    return notNull(
-        this.searchApi.documentSearch(req, siteId, null, null, null, null).getDocuments());
+    return notNull(new SearchDocumentRequestBuilder().query(req).limit(null).next(null)
+        .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
   }
 
   private void setClassification(final String siteId, final String classificationId,
       final SetSchemaAttributes attr0) throws ApiException {
     SetClassificationRequest req = new SetClassificationRequest()
         .classification(new AddClassification().name("setDoc").attributes(attr0));
-    this.schemasApi.setClassification(siteId, classificationId, req);
+    new SetClassificationRequestBuilder(classificationId, req.getClassification().getName())
+        .request(req).submitOk(this.client, siteId);
   }
 
   private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
       throws ApiException {
     SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
-    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
+    new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(setSiteSchema)
+        .submitOk(this.client, siteId);
   }
 
   /**
@@ -214,7 +236,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -244,11 +266,11 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       AddClassificationRequest req = new AddClassificationRequest()
           .classification(new AddClassification().name("test").attributes(attr0));
 
-      this.schemasApi.addClassification(siteId, req);
+      new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -263,7 +285,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.setClassification(siteId, ID.uuid(), sreq);
+        new SetClassificationRequestBuilder(ID.uuid(), sreq.getClassification().getName())
+            .request(sreq).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -289,7 +312,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -302,7 +325,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -334,7 +357,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -368,12 +391,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           .classification(new AddClassification().name("test").attributes(attr1));
 
       // when
-      String classificationId =
-          this.schemasApi.addClassification(siteId, req).getClassificationId();
+      String classificationId = new AddClassificationRequestBuilder().request(req)
+          .submitOk(this.client, siteId).response().getClassificationId();
 
       // then
       assertNotNull(classificationId);
-      assertNotNull(this.schemasApi.getClassification(siteId, classificationId, null));
+      assertNotNull(new GetClassificationRequestBuilder().withClassificationId(classificationId)
+          .withLocale(null).submitOk(this.client, siteId).response());
     }
   }
 
@@ -399,7 +423,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.addClassification(siteId, req);
+        new AddClassificationRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -858,8 +882,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addDocumentClassification(siteId, documentId, classification);
 
       // then
-      documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      documentAttributes = notNull(new GetDocumentAttributesRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getAttributes());
 
       final int expected = 2;
       assertEquals(expected, documentAttributes.size());
@@ -916,8 +941,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addDocumentClassification(siteId, documentId, classification);
 
       // then
-      documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      documentAttributes = notNull(new GetDocumentAttributesRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getAttributes());
 
       int i = 0;
       assertEquals(expected + 1, documentAttributes.size());
@@ -1009,7 +1035,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
     // when - delete the default entity
     try {
-      this.entityApi.deleteEntity(entityTypeId, entityId, siteId);
+      new DeleteEntityRequestBuilder(entityTypeId, entityId).submitOk(this.client, siteId);
       fail();
     } catch (ApiException e) {
       // then
@@ -1098,12 +1124,13 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr0.getRequired()).getFirst().setAllowedValues(List.of("123", "A", "B"));
 
-      this.schemasApi.setSitesSchema(siteId,
-          new SetSitesSchemaRequest().name("test").attributes(attr0));
+      new SetSitesSchemaRequestBuilder()
+          .withSetSitesSchemaRequest(new SetSitesSchemaRequest().name("test").attributes(attr0))
+          .submitOk(this.client, siteId);
 
       // when
-      List<String> allowedValues = notNull(
-          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+      List<String> allowedValues = notNull(new GetAttributeAllowedValuesRequestBuilder()
+          .withKey(attributeKey).submitOk(this.client, siteId).response().getAllowedValues());
 
       // then
       final int expected = 3;
@@ -1125,7 +1152,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.attributesApi.getAttributeAllowedValues("test", siteId);
+        new GetAttributeAllowedValuesRequestBuilder().withKey("test").submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1152,8 +1179,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       SetSchemaAttributes attr0 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr0.getRequired()).getFirst().setAllowedValues(List.of("123", "A", "B"));
-      this.schemasApi.setSitesSchema(siteId,
-          new SetSitesSchemaRequest().name("test").attributes(attr0));
+      new SetSitesSchemaRequestBuilder()
+          .withSetSitesSchemaRequest(new SetSitesSchemaRequest().name("test").attributes(attr0))
+          .submitOk(this.client, siteId);
 
       SetSchemaAttributes attr1 = createSchemaAttributes(List.of(attributeKey), null);
       notNull(attr1.getRequired()).getFirst().addAllowedValuesItem("INV-001");
@@ -1164,15 +1192,17 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       addClassification(siteId, "doc2", attr2);
 
       // when
-      final List<String> allowedValues0 = notNull(
-          this.attributesApi.getAttributeAllowedValues(attributeKey, siteId).getAllowedValues());
+      final List<String> allowedValues0 = notNull(new GetAttributeAllowedValuesRequestBuilder()
+          .withKey(attributeKey).submitOk(this.client, siteId).response().getAllowedValues());
 
-      final List<String> allowedValues1 = notNull(this.schemasApi
-          .getSitesSchemaAttributeAllowedValues(siteId, attributeKey, null).getAllowedValues());
+      final List<String> allowedValues1 =
+          notNull(new GetSitesSchemaAttributeAllowedValuesRequestBuilder().withKey(attributeKey)
+              .withLocale(null).submitOk(this.client, siteId).response().getAllowedValues());
 
-      final List<String> allowedValues2 = notNull(this.schemasApi
-          .getClassificationAttributeAllowedValues(siteId, classificationId, attributeKey, null)
-          .getAllowedValues());
+      final List<String> allowedValues2 =
+          notNull(new GetClassificationAttributeAllowedValuesRequestBuilder()
+              .withClassificationId(classificationId).withKey(attributeKey).withLocale(null)
+              .submitOk(this.client, siteId).response().getAllowedValues());
 
       // then
       final int expected0 = 5;
@@ -1207,19 +1237,20 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       String classificationId = addClassification(siteId, "doc", attr0);
 
-      assertNotNull(
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification());
+      assertNotNull(new GetClassificationRequestBuilder().withClassificationId(classificationId)
+          .withLocale(null).submitOk(this.client, siteId).response().getClassification());
 
       // when
-      DeleteResponse deleteResponse =
-          this.schemasApi.deleteClassification(siteId, classificationId);
+      DeleteResponse deleteResponse = new DeleteClassificationRequestBuilder(classificationId)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Classification '" + classificationId + "' deleted",
           deleteResponse.getMessage());
 
       try {
-        this.schemasApi.getClassification(siteId, classificationId, null);
+        new GetClassificationRequestBuilder().withClassificationId(classificationId)
+            .withLocale(null).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
@@ -1255,7 +1286,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.schemasApi.deleteClassification(siteId, classificationId);
+        new DeleteClassificationRequestBuilder(classificationId).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -1281,15 +1312,17 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       SetSchemaAttributes schemaAttributes =
           new SetSchemaAttributes().required(null).optional(null).addCompositeKeysItem(
               new AttributeSchemaCompositeKey().attributeKeys(List.of("test1", "test2")));
-      schemasApi.setSitesSchema(siteId,
-          new SetSitesSchemaRequest().name("test").attributes(schemaAttributes));
+      new SetSitesSchemaRequestBuilder()
+          .withSetSitesSchemaRequest(
+              new SetSitesSchemaRequest().name("test").attributes(schemaAttributes))
+          .submitOk(this.client, siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com")
           .addAttributesItem(createAttribute("test1", "222"))
           .addAttributesItem(createAttribute("test2", "333"));
 
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       // when
@@ -1303,15 +1336,17 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertDocumentAttributes(documentAttributes.get(i), "test2", "333");
 
       // when
-      DeleteResponse deleteResponse =
-          this.documentAttributesApi.deleteDocumentAttribute(documentId, "test1", siteId, null);
+      DeleteResponse deleteResponse = new DeleteDocumentAttributeRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "test1")
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("attribute 'test1' removed from document '" + documentId + "'",
           deleteResponse.getMessage());
 
-      documentAttributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      documentAttributes = notNull(new GetDocumentAttributesRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getAttributes());
       assertEquals(1, documentAttributes.size());
       assertDocumentAttributes(documentAttributes.getFirst(), "test2", "333");
     }
@@ -1340,14 +1375,14 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       for (int i = 0; i < count; i++) {
         AddClassificationRequest req = new AddClassificationRequest()
             .classification(new AddClassification().name("test_" + i).attributes(attr0));
-        String classificationId =
-            this.schemasApi.addClassification(siteId, req).getClassificationId();
+        String classificationId = new AddClassificationRequestBuilder().request(req)
+            .submitOk(this.client, siteId).response().getClassificationId();
         ids.add(classificationId);
       }
 
       // when
-      GetClassificationsResponse response =
-          this.schemasApi.getSitesClassifications(siteId, "" + limit, null);
+      GetClassificationsResponse response = new GetSitesClassificationsRequestBuilder()
+          .withLimit("" + limit).withNext(null).submitOk(this.client, siteId).response();
       List<ClassificationSummary> attributes = notNull(response.getClassifications());
 
       // then
@@ -1361,8 +1396,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       assertEquals("test_2", attributes.get(i++).getName());
       assertEquals("test_3", attributes.get(i).getName());
 
-      attributes = notNull(this.schemasApi
-          .getSitesClassifications(siteId, "" + limit, response.getNext()).getClassifications());
+      attributes = notNull(new GetSitesClassificationsRequestBuilder().withLimit("" + limit)
+          .withNext(response.getNext()).submitOk(this.client, siteId).response()
+          .getClassifications());
       assertEquals(1, attributes.size());
       assertEquals("test_4", attributes.getFirst().getName());
     }
@@ -1388,7 +1424,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+          new GetClassificationRequestBuilder().withClassificationId(classificationId)
+              .withLocale(null).submitOk(this.client, siteId).response().getClassification();
 
       // then
       assertNotNull(classification);
@@ -1409,11 +1446,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           .classification(new AddClassification().name("doc").attributes(attr0));
 
       // when
-      this.schemasApi.setClassification(siteId, classificationId, setReq);
+      new SetClassificationRequestBuilder(classificationId, setReq.getClassification().getName())
+          .request(setReq).submitOk(this.client, siteId);
 
       // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+      classification = new GetClassificationRequestBuilder().withClassificationId(classificationId)
+          .withLocale(null).submitOk(this.client, siteId).response().getClassification();
 
       assertNotNull(classification);
       assertNotNull(classification.getAttributes());
@@ -1447,7 +1485,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       Classification classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+          new GetClassificationRequestBuilder().withClassificationId(classificationId)
+              .withLocale(null).submitOk(this.client, siteId).response().getClassification();
 
       // then
       assertNotNull(classification);
@@ -1458,11 +1497,12 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
           .classification(new AddClassification().name("doc123").attributes(attr0));
 
       // when
-      this.schemasApi.setClassification(siteId, classificationId, setReq);
+      new SetClassificationRequestBuilder(classificationId, setReq.getClassification().getName())
+          .request(setReq).submitOk(this.client, siteId);
 
       // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+      classification = new GetClassificationRequestBuilder().withClassificationId(classificationId)
+          .withLocale(null).submitOk(this.client, siteId).response().getClassification();
 
       assertNotNull(classification);
       assertEquals("doc123", classification.getName());
@@ -1472,8 +1512,8 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       classificationId = addClassification(siteId, "d", attr0);
 
       // then
-      classification =
-          this.schemasApi.getClassification(siteId, classificationId, null).getClassification();
+      classification = new GetClassificationRequestBuilder().withClassificationId(classificationId)
+          .withLocale(null).submitOk(this.client, siteId).response().getClassification();
 
       assertNotNull(classification);
       assertEquals("d", classification.getName());
@@ -1512,7 +1552,9 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       for (SetDocumentAttributesRequest setReq : List.of(setReq0, setReq1)) {
         // when
         try {
-          this.documentAttributesApi.setDocumentAttributes(documentId, setReq, siteId, null);
+          new SetDocumentAttributeRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+              .request(setReq).submitOk(this.client, siteId);
           fail();
         } catch (ApiException e) {
           // then
@@ -1533,8 +1575,10 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
 
       // when
       try {
-        this.documentAttributesApi.setDocumentAttributeValue(documentId,
-            AttributeKeyReserved.CLASSIFICATION.getKey(), setReqValue, siteId, null);
+        new SetDocumentAttributeValueRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .setKey(AttributeKeyReserved.CLASSIFICATION.getKey()).request(setReqValue)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

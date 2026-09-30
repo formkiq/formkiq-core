@@ -118,6 +118,17 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     return this;
   }
 
+  /**
+   * Set the complete entity request.
+   *
+   * @param entityRequest {@link AddEntityRequest}
+   * @return this builder
+   */
+  public AddEntityRequestBuilder request(final AddEntityRequest entityRequest) {
+    this.request.setEntity(entityRequest.getEntity());
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<AddEntityResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(

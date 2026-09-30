@@ -92,6 +92,17 @@ public class AddDocumentActionsRequestBuilder implements HttpRequestBuilder<AddR
   }
 
   /**
+   * Set the complete actions request.
+   *
+   * @param actionsRequest {@link AddDocumentActionsRequest}
+   * @return this builder
+   */
+  public AddDocumentActionsRequestBuilder request(final AddDocumentActionsRequest actionsRequest) {
+    this.request = actionsRequest;
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient

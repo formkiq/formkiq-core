@@ -54,6 +54,7 @@ import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.api.documents.CompressDocumentsRequestBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
@@ -88,8 +89,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
    */
   private String createDocument(final String siteId) throws ApiException {
     AddDocumentUploadRequest req = new AddDocumentUploadRequest();
-    return new AddDocumentUploadRequestBuilder(req)
-        .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+    return new AddDocumentUploadRequestBuilder(req).submitOk(this.client, siteId).response()
+        .getDocumentId();
   }
 
   private DocumentArtifact createDocumentAndArtifact(final String siteId) throws ApiException {
@@ -121,7 +122,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
         // when
         try {
-          this.documentsApi.compressDocuments(req, siteId);
+          new CompressDocumentsRequestBuilder().withDocumentsCompressRequest(req)
+              .submitOk(this.client, siteId);
           fail();
         } catch (ApiException e) {
           assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -147,7 +149,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.compressDocuments(req, siteId);
+        new CompressDocumentsRequestBuilder().withDocumentsCompressRequest(req)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals("{\"errors\":[{\"key\":\"documentIds\",\"error\":\"is required\"}]}",
@@ -175,7 +178,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
       DocumentsCompressRequest req = new DocumentsCompressRequest().documentIds(documentIds);
 
       // when
-      DocumentsCompressResponse response = this.documentsApi.compressDocuments(req, siteId);
+      DocumentsCompressResponse response = new CompressDocumentsRequestBuilder()
+          .withDocumentsCompressRequest(req).submitOk(this.client, siteId).response();
 
       // then
       String url = response.getDownloadUrl();
@@ -222,7 +226,8 @@ public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
       DocumentsCompressRequest req = new DocumentsCompressRequest().documents(List.of(document));
 
       // when
-      this.documentsApi.compressDocuments(req, siteId);
+      new CompressDocumentsRequestBuilder().withDocumentsCompressRequest(req).submitOk(this.client,
+          siteId);
 
       // then
       ListObjectsResponse listObjects = s3.listObjects(STAGE_BUCKET_NAME, "tempfiles/");

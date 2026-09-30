@@ -37,6 +37,11 @@ import com.formkiq.client.model.GetEntityTypeResponse;
 import com.formkiq.client.model.GetEntityTypesResponse;
 import com.formkiq.client.model.SetEntityTypeRequest;
 import com.formkiq.client.model.SetResponse;
+import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.entity.DeleteEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.entity.GetEntityTypeRequestBuilder;
+import com.formkiq.testutils.api.entity.GetEntityTypesRequestBuilder;
+import com.formkiq.testutils.api.entity.SetEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -74,7 +79,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -99,7 +104,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -125,7 +130,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -151,7 +156,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
           .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
 
       // when
-      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+      AddEntityTypeResponse response =
+          new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId).response();
 
       // then
       String entityTypeId0 = response.getEntityTypeId();
@@ -159,14 +165,15 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       for (String entityTypeId : Arrays.asList(entityTypeId0, "Myentity")) {
         GetEntityTypeResponse resp =
-            this.entityApi.getEntityType(entityTypeId, siteId, EntityTypeNamespace.CUSTOM.name());
+            new GetEntityTypeRequestBuilder(entityTypeId, EntityTypeNamespace.CUSTOM.name())
+                .submitOk(this.client, siteId).response();
         assertNotNull(resp.getEntityType());
         assertEntityTypeEquals(resp.getEntityType(), "Myentity");
       }
 
       // when - add same entity
       try {
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
@@ -191,7 +198,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -215,12 +222,13 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       AddEntityTypeRequest req = new AddEntityTypeRequest()
           .entityType(new AddEntityType().name("Myentity").namespace(EntityTypeNamespace.CUSTOM));
-      AddEntityTypeResponse response = this.entityApi.addEntityType(req, siteId);
+      AddEntityTypeResponse response =
+          new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId).response();
       assertNotNull(response.getEntityTypeId());
 
       // when
-      DeleteResponse deleteResponse =
-          this.entityApi.deleteEntityType(response.getEntityTypeId(), siteId);
+      DeleteResponse deleteResponse = new DeleteEntityTypeRequestBuilder(response.getEntityTypeId())
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("EntityType deleted", deleteResponse.getMessage());
@@ -240,7 +248,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.deleteEntityType(id, siteId);
+        new DeleteEntityTypeRequestBuilder(id).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -267,14 +275,14 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       for (int i = 0; i < count; i++) {
         AddEntityTypeRequest req = new AddEntityTypeRequest().entityType(
             new AddEntityType().name("Myentity" + i).namespace(EntityTypeNamespace.CUSTOM));
-        this.entityApi.addEntityType(req, siteId);
+        new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, siteId);
       }
 
       String limit = "2";
 
       // when
-      GetEntityTypesResponse response =
-          this.entityApi.getEntityTypes(siteId, "CUSTOM", null, limit);
+      GetEntityTypesResponse response = new GetEntityTypesRequestBuilder().withNamespace("CUSTOM")
+          .withNext(null).withLimit(limit).submitOk(this.client, siteId).response();
 
       // then
       assertNotNull(response.getNext());
@@ -285,7 +293,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertEntityTypeEquals(entityTypes.get(1), "Myentity1");
 
       // when
-      response = this.entityApi.getEntityTypes(siteId, "CUSTOM", response.getNext(), limit);
+      response = new GetEntityTypesRequestBuilder().withNamespace("CUSTOM")
+          .withNext(response.getNext()).withLimit(limit).submitOk(this.client, siteId).response();
 
       // then
       entityTypes = notNull(response.getEntityTypes());
@@ -295,14 +304,16 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // invalid NEXT token
       try {
-        this.entityApi.getEntityTypes(siteId, "PRESET", response.getNext(), limit);
+        new GetEntityTypesRequestBuilder().withNamespace("PRESET").withNext(response.getNext())
+            .withLimit(limit).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), e.getCode());
         assertEquals("{\"message\":\"Invalid Next token\"}", e.getResponseBody());
       }
 
-      response = this.entityApi.getEntityTypes(siteId, "PRESET", null, limit);
+      response = new GetEntityTypesRequestBuilder().withNamespace("PRESET").withNext(null)
+          .withLimit(limit).submitOk(this.client, siteId).response();
       assertEquals(0, notNull(response.getEntityTypes()).size());
     }
   }
@@ -319,7 +330,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.getEntityTypes(siteId, "nothing", null, null);
+        new GetEntityTypesRequestBuilder().withNamespace("nothing").withNext(null).withLimit(null)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -344,7 +356,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.entityApi.getEntityType(id, DEFAULT_SITE_ID, EntityTypeNamespace.CUSTOM.name());
+      new GetEntityTypeRequestBuilder(id, EntityTypeNamespace.CUSTOM.name()).submitOk(this.client,
+          DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -365,11 +378,12 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
     AddEntityTypeRequest req = new AddEntityTypeRequest()
         .entityType(new AddEntityType().name("Company").namespace(EntityTypeNamespace.CUSTOM));
-    this.entityApi.addEntityType(req, null);
+    new AddEntityTypeRequestBuilder().request(req).submitOk(this.client, null);
 
     // when
     GetEntityTypeResponse entityType =
-        this.entityApi.getEntityType("Company", DEFAULT_SITE_ID, EntityTypeNamespace.CUSTOM.name());
+        new GetEntityTypeRequestBuilder("Company", EntityTypeNamespace.CUSTOM.name())
+            .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertNotNull(entityType.getEntityType());
@@ -388,7 +402,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.entityApi.getEntityType(id, DEFAULT_SITE_ID, null);
+      new GetEntityTypeRequestBuilder(id, (String) null).submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -399,7 +413,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.entityApi.getEntityType(id, DEFAULT_SITE_ID, "adsaf");
+      new GetEntityTypeRequestBuilder(id, "adsaf").submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -428,7 +442,8 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.entityApi.setEntityType(entityTypeId, req, siteId, false);
+        new SetEntityTypeRequestBuilder().withEntityTypeId(entityTypeId)
+            .withSetEntityTypeRequest(req).withCreateIfMissing(false).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -438,13 +453,16 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       }
 
       // when
-      SetResponse response = this.entityApi.setEntityType(entityTypeId, req, siteId, true);
+      SetResponse response = new SetEntityTypeRequestBuilder().withEntityTypeId(entityTypeId)
+          .withSetEntityTypeRequest(req).withCreateIfMissing(true).submitOk(this.client, siteId)
+          .response();
 
       // then
       assertEquals("EntityType set", response.getMessage());
 
       GetEntityTypeResponse getResponse =
-          this.entityApi.getEntityType(entityTypeId, siteId, EntityTypeNamespace.CUSTOM.name());
+          new GetEntityTypeRequestBuilder(entityTypeId, EntityTypeNamespace.CUSTOM.name())
+              .submitOk(this.client, siteId).response();
       assertNotNull(getResponse.getEntityType());
       assertEntityTypeEquals(getResponse.getEntityType(), name);
       assertEquals(entityTypeId, getResponse.getEntityType().getEntityTypeId());

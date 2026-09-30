@@ -153,6 +153,18 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   }
 
   /**
+   * Set the complete document search request.
+   *
+   * @param searchRequest {@link DocumentSearchRequest}
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder query(final DocumentSearchRequest searchRequest) {
+    this.request.query(searchRequest.getQuery());
+    this.request.responseFields(searchRequest.getResponseFields());
+    return this;
+  }
+
+  /**
    * Set the document search query using multiple attributes.
    *
    * @param attributes search attributes

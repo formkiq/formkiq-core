@@ -47,6 +47,11 @@ public class AddClassificationRequestBuilder
 
   /**
    * constructor.
+   */
+  public AddClassificationRequestBuilder() {}
+
+  /**
+   * constructor.
    * 
    * @param name {@link String}
    */
@@ -112,6 +117,18 @@ public class AddClassificationRequestBuilder
   public String getClassificationId(final ApiClient client, final String siteId)
       throws ApiException {
     return submitOk(client, siteId).response().getClassificationId();
+  }
+
+  /**
+   * Set the complete classification request.
+   *
+   * @param classificationRequest {@link AddClassificationRequest}
+   * @return this builder
+   */
+  public AddClassificationRequestBuilder request(
+      final AddClassificationRequest classificationRequest) {
+    this.request.setClassification(classificationRequest.getClassification());
+    return this;
   }
 
   /**
