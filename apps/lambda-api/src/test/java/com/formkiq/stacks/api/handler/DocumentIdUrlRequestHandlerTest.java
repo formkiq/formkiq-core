@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Decoder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.S3Service;
@@ -58,21 +58,14 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AttributeDataType;
 import com.formkiq.client.model.GetDocumentUrlResponse;
 import com.formkiq.client.model.Watermark;
-import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentService;
-import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentVersionService;
-import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.urls.UrlParser;
 import com.formkiq.urls.UrlParts;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.bootstrap.HttpServer;
 
 /** Unit Tests for request /documents/{documentId}/url. */
@@ -80,8 +73,6 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
   /** {@link HttpServer}. */
   private final HttpService http = new HttpServiceJdk11();
-  /** {@link DocumentService}. */
-  private DocumentService documentService;
 
   private String addDocumentWithWatermarks(final String siteId) throws ApiException {
     Watermark watermark1 = new Watermark().text("watermark1");
@@ -119,7 +110,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
   private void assertS3Url(final String url, final String siteId, final String documentId) {
     assertNotNull(url);
-    assertTrue(url.contains(com.formkiq.testutils.aws.TestServices.BUCKET_NAME));
+    assertTrue(url.contains(BUCKET_NAME));
     if (siteId != null) {
       assertTrue(url.contains("/" + siteId + "/" + documentId));
     } else {
@@ -130,7 +121,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   private void assertS3Url(final String url, final String siteId, final String documentId,
       final String artifactId) {
     assertNotNull(url);
-    assertTrue(url.contains(com.formkiq.testutils.aws.TestServices.BUCKET_NAME));
+    assertTrue(url.contains(BUCKET_NAME));
     if (siteId != null) {
       assertTrue(url.contains("/" + siteId + "/" + documentId + "/artifacts/" + artifactId));
     } else {
@@ -139,28 +130,14 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   }
 
   private void assertS3Url(final UrlParts parts, final String siteId, final String documentId) {
-    String base64 = parts.queryParameters().get("url").get(0);
+    String base64 = parts.queryParameters().get("url").getFirst();
     String s = new StringToBase64Decoder().apply(base64);
     assertS3Url(s, siteId, documentId);
 
-    assertNotNull(parts.queryParameters().get("X-Amz-Signature").get(0));
-    assertNotNull(parts.queryParameters().get("X-Amz-Algorithm").get(0));
-    assertNotNull(parts.queryParameters().get("X-Amz-Date").get(0));
-    assertNotNull(parts.queryParameters().get("X-Amz-SignedHeaders").get(0));
-  }
-
-  /**
-   * Before.
-   *
-   */
-  @BeforeEach
-  public void before() {
-
-    AwsServiceCache awsServices = getAwsServices();
-    awsServices.register(DocumentVersionService.class, new DocumentVersionServiceExtension());
-    awsServices.register(DocumentService.class, new DocumentServiceExtension());
-
-    this.documentService = awsServices.getExtension(DocumentService.class);
+    assertNotNull(parts.queryParameters().get("X-Amz-Signature").getFirst());
+    assertNotNull(parts.queryParameters().get("X-Amz-Algorithm").getFirst());
+    assertNotNull(parts.queryParameters().get("X-Amz-Date").getFirst());
+    assertNotNull(parts.queryParameters().get("X-Amz-SignedHeaders").getFirst());
   }
 
   private void createBucket(final String bucket) {
@@ -178,27 +155,23 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
    *
    */
   @Test
-  public void testGetDocumentMissingS3File() {
+  public void testGetDocumentMissingS3File() throws ApiException {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
+      getS3().deleteObject(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, document), null);
 
       // when
-      try {
-        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
-            .submitOk(this.documentsApi.getApiClient(), siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), e.getCode());
-        assertEquals("{\"message\":\"Document " + documentId + " not found.\"}",
-            e.getResponseBody());
-      }
+      var response = new GetDocumentUrlRequestBuilder(document)
+          .submitError(this.documentsApi.getApiClient(), siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_NOT_FOUND.getStatusCode(), response.exception().getCode());
+      assertEquals("{\"message\":\"Document " + document.documentId() + " not found.\"}",
+          response.exception().getResponseBody());
     }
   }
 
@@ -237,7 +210,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     UrlParts parts = new UrlParser().apply(response.getUrl());
     assertAll(
         () -> assertEquals(expectedDisposition,
-            parts.queryParameters().get("response-content-disposition").get(0),
+            parts.queryParameters().get("response-content-disposition").getFirst(),
             "The signed URL must force attachment delivery for SVG"),
         () -> assertEquals(expectedDisposition,
             download.headers().firstValue("Content-Disposition").orElseThrow(),
@@ -261,32 +234,28 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         // given
         setBearerToken(siteId);
 
-        String documentId = ID.uuid();
+        // String documentId = ID.uuid();
         String userId = "jsmith";
 
         if (contentType != null) {
           DocumentFormat format = new DocumentFormat();
           format.setContentType(contentType);
-          format.setDocumentId(documentId);
+          // format.setDocumentId(documentId);
           format.setInsertedDate(new Date());
           format.setUserId(userId);
-          this.documentService.saveDocumentFormat(siteId, format);
+          // this.documentService.saveDocumentFormat(siteId, format);
         }
 
         String filename = "file " + UUID.randomUUID() + ".pdf";
-        DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-        item.setPath("/somepath/" + filename);
-        if ("text/plain".equals(contentType)) {
-          item.setContentType(contentType);
-        }
 
-        this.documentService.saveDocument(siteId, item, new ArrayList<>());
-        addS3File(siteId, documentId, contentType);
+        var document = new AddDocumentRequestBuilder().path("/somepath/" + filename).content()
+            .contentType("text/plain".equals(contentType) ? contentType : null)
+            .getDocument(client, siteId);
+        addS3File(siteId, document.documentId(), contentType);
 
         // when
-        GetDocumentUrlResponse resp =
-            new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
-                .submitOk(this.documentsApi.getApiClient(), siteId).response();
+        GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document)
+            .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
         // then
         assertNotNull(resp);
@@ -299,7 +268,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         assertTrue(resp.getUrl().contains("X-Amz-Expires=172800"));
         assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
 
-        assertS3Url(resp, siteId, documentId);
+        assertS3Url(resp, siteId, document.documentId());
       }
     }
   }
@@ -315,18 +284,12 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // given
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-
-      String userId = "jsmith";
       final int duration = 8;
-      this.documentService.saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
-      addS3File(siteId, documentId, null);
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
 
       // when
-      GetDocumentUrlResponse resp =
-          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).duration(duration)
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document).duration(duration)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -336,7 +299,7 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertTrue(resp.getUrl().contains("X-Amz-Expires=28800"));
       assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
 
-      assertS3Url(resp, siteId, documentId);
+      assertS3Url(resp, siteId, document.documentId());
     }
   }
 
@@ -383,18 +346,13 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // given
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-
       final int duration = 8;
-      String userId = "jsmith";
-      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setDeepLinkPath("s3://anotherbucket/somefile.txt");
-      this.documentService.saveDocument(siteId, doc, new ArrayList<>());
+      var document = new AddDocumentRequestBuilder().deepLink("s3://anotherbucket/somefile.txt")
+          .getDocument(client, siteId);
 
       // when
-      GetDocumentUrlResponse resp =
-          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).duration(duration)
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document).duration(duration)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -406,9 +364,9 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       assertTrue(resp.getUrl().contains(AWS_REGION.toString()));
 
       if (siteId != null) {
-        assertFalse(resp.getUrl().contains("/" + siteId + "/" + documentId));
+        assertFalse(resp.getUrl().contains("/" + siteId + "/" + document.documentId()));
       } else {
-        assertFalse(resp.getUrl().contains("/" + documentId));
+        assertFalse(resp.getUrl().contains("/" + document.documentId()));
       }
 
       assertTrue(resp.getUrl().contains("somefile.txt"));
@@ -431,17 +389,12 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
       // given
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-
-      String userId = "jsmith";
-      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setDeepLinkPath("https://www.google.com/something/else.pdf");
-      this.documentService.saveDocument(siteId, doc, new ArrayList<>());
+      var document = new AddDocumentRequestBuilder()
+          .deepLink("https://www.google.com/something/else.pdf").getDocument(client, siteId);
 
       // when
-      GetDocumentUrlResponse resp =
-          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -613,21 +566,16 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-      String userId = "jsmith";
-
       String bucketName = "somebucket";
       createBucket(bucketName);
       String filename = UUID.randomUUID() + " .pdf";
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      item.setDeepLinkPath("s3://" + bucketName + "/" + filename);
-      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+      var document = new AddDocumentRequestBuilder().deepLink("s3://" + bucketName + "/" + filename)
+          .getDocument(client, siteId);
       getS3().putObject(bucketName, filename, "ASD".getBytes(StandardCharsets.UTF_8), null);
 
       // when
-      GetDocumentUrlResponse resp =
-          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -654,16 +602,12 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-      String userId = "jsmith";
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      item.setDeepLinkPath("https://www.google.com");
-      this.documentService.saveDocument(siteId, item, new ArrayList<>());
+      var document = new AddDocumentRequestBuilder().deepLink("https://www.google.com")
+          .getDocument(client, siteId);
 
       // when
-      GetDocumentUrlResponse resp =
-          new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      GetDocumentUrlResponse resp = new GetDocumentUrlRequestBuilder(document)
+          .submitOk(this.documentsApi.getApiClient(), siteId).response();
 
       // then
       assertNotNull(resp);
@@ -704,21 +648,46 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
   }
 
   /**
+   * Get /documents/{documentId}/url rejects maxUses without short format.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testHandleGetDocumentMaxUsesWithoutShortFormat() throws ApiException {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      var createdDocument =
+          new AddDocumentRequestBuilder().content().submitOk(client, siteId).response();
+      var document = DocumentArtifact.of(createdDocument.getDocumentId(), null);
+
+      // when
+      var response =
+          new GetDocumentUrlRequestBuilder(document).maxUses(1).submitError(client, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
+          response.exception().getCode());
+      assertEquals(
+          "{\"errors\":[{\"key\":\"maxUses\",\"error\":\"maxUses requires format=short\"}]}",
+          response.exception().getResponseBody());
+    }
+  }
+
+  /**
    * Get /documents/{documentId}/url request using short format.
    */
   @Test
-  public void testHandleGetDocumentShortFormat01() {
+  public void testHandleGetDocumentShortFormat01() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       setBearerToken(siteId);
 
-      String documentId = ID.uuid();
-      this.documentService.saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), "jsmith"), new ArrayList<>());
+      var document = new AddDocumentRequestBuilder().content().getDocument(client, siteId);
 
       // when
       try {
-        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).setFormat("short")
+        new GetDocumentUrlRequestBuilder(document).setFormat("short")
             .submitOk(this.documentsApi.getApiClient(), siteId);
         fail();
       } catch (ApiException e) {

@@ -2966,7 +2966,17 @@ paths:
     get:
       operationId: GetDocumentUrl
       summary: Get document content url
-      description: Returns a URL for the document's contents; this URL will expire (the default is 48 hours)
+      description: |-
+        Returns a URL for the document's contents. Direct S3 presigned URLs expire after 48 hours by default.
+
+        With the Shortlinks Add-On Module, use `format=short&maxUses=1` for a single-redemption short link,
+        or set `maxUses` to a larger positive integer to allow that many redemptions. Omitting `maxUses`
+        permits unlimited redemptions during the short link's validity period.
+
+        For usage-limited short links, `duration` controls the short link's validity in hours.
+        Each successful redemption generates a fresh S3 presigned URL valid for 20 seconds.
+        The S3 request must start before expiry; a download already in progress can continue afterward.
+        The S3 URL itself can be reused during those 20 seconds.
       tags:
       - Documents
       parameters:
@@ -2995,6 +3005,14 @@ paths:
           type: string
           enum:
           - short
+      - name: maxUses
+        in: query
+        required: false
+        description: Maximum number of successful short-link redemptions. Requires `format=short` and the Shortlinks Add-On Module. Set to `1` for a single redemption; omit for unlimited redemptions during the short link's validity period.
+        schema:
+          type: integer
+          minimum: 1
+        example: 1
       - $ref: '#/components/parameters/accelerateParam'
       responses:
         "200":
