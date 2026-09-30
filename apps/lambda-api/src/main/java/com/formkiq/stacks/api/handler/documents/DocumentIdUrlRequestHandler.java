@@ -63,6 +63,7 @@ import com.formkiq.plugins.useractivity.UserActivityPlugin;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -110,7 +111,7 @@ public class DocumentIdUrlRequestHandler
     String versionKey = getVersionKey(event);
     boolean shortFormat = isShortFormat(event);
 
-    validateShortFormat(awsservice, shortFormat);
+    validateShortFormat(event, awsservice, shortFormat);
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, document, versionKey);
@@ -363,12 +364,19 @@ public class DocumentIdUrlRequestHandler
     return URL_FORMAT_SHORT.equals(getParameter(event, "format"));
   }
 
-  private void validateShortFormat(final AwsServiceCache awsservice, final boolean shortFormat)
-      throws ValidationException {
+  private void validateShortFormat(final ApiGatewayRequestEvent event,
+      final AwsServiceCache awsservice, final boolean shortFormat) throws ValidationException {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    if (!shortFormat && event.getQueryStringParameter("maxUses") != null) {
+      vb.addError("maxUses", "maxUses requires format=short");
+    }
 
     if (shortFormat && !"true".equalsIgnoreCase(awsservice.environment("MODULE_shortlinks"))) {
-      throw new ValidationException(
-          List.of(new ValidationErrorImpl().key("format").error("format=short is not supported")));
+      vb.addError("format", "format=short is not supported");
     }
+
+    vb.check();
   }
 }
