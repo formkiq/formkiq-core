@@ -59,6 +59,9 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
+import com.formkiq.testutils.api.webhooks.AddWebhookRequestBuilder;
+import com.formkiq.testutils.api.webhooks.GetWebhooksRequestBuilder;
+import com.formkiq.testutils.api.webhooks.UpdateWebhookRequestBuilder;
 
 /** Unit Tests for request /webhooks. */
 public class WebhooksRequestTest extends AbstractApiClientRequestTest {
@@ -84,7 +87,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      GetWebhooksResponse response = this.webhooksApi.getWebhooks(siteId, null, null);
+      GetWebhooksResponse response = new GetWebhooksRequestBuilder().withNext(null).withLimit(null)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertTrue(notNull(response.getWebhooks()).isEmpty());
@@ -106,8 +110,9 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddWebhookResponse response =
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
+      AddWebhookResponse response = new AddWebhookRequestBuilder()
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+          .submitOk(this.client, siteId).response();
 
       // then
       if (siteId == null) {
@@ -121,7 +126,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       String webhookId = response.getWebhookId();
 
       // when
-      GetWebhooksResponse getResponse = this.webhooksApi.getWebhooks(siteId, null, null);
+      GetWebhooksResponse getResponse = new GetWebhooksRequestBuilder().withNext(null)
+          .withLimit(null).submitOk(this.client, siteId).response();
 
       // then
       List<GetWebhookResponse> webhooks = notNull(getResponse.getWebhooks());
@@ -154,17 +160,21 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       for (int i = 0; i < count; i++) {
-        this.webhooksApi.addWebhook(new AddWebhookRequest().name("test_" + i), siteId);
+        new AddWebhookRequestBuilder()
+            .withAddWebhookRequest(new AddWebhookRequest().name("test_" + i))
+            .submitOk(this.client, siteId);
       }
 
       // when
-      GetWebhooksResponse response = this.webhooksApi.getWebhooks(siteId, null, null);
+      GetWebhooksResponse response = new GetWebhooksRequestBuilder().withNext(null).withLimit(null)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals(count, notNull(response.getWebhooks()).size());
 
       // when
-      response = this.webhooksApi.getWebhooks(siteId, null, "2");
+      response = new GetWebhooksRequestBuilder().withNext(null).withLimit("2")
+          .submitOk(this.client, siteId).response();
 
       // then
       List<GetWebhookResponse> webhooks = notNull(response.getWebhooks());
@@ -174,7 +184,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       assertEquals("test_1", webhooks.get(1).getName());
 
       // when
-      response = this.webhooksApi.getWebhooks(siteId, response.getNext(), "3");
+      response = new GetWebhooksRequestBuilder().withNext(response.getNext()).withLimit("3")
+          .submitOk(this.client, siteId).response();
 
       // then
       final int expected = 3;
@@ -203,8 +214,9 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       // when
-      AddWebhookResponse result =
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith").ttl(ttl), siteId);
+      AddWebhookResponse result = new AddWebhookRequestBuilder()
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith").ttl(ttl))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals(result.getSiteId(), siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -234,8 +246,9 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
       ttl = "180000";
 
       // when
-      UpdateResponse response = this.webhooksApi.updateWebhook(webhookId,
-          new AddWebhookRequest().name("john smith2").ttl(ttl), siteId);
+      UpdateResponse response = new UpdateWebhookRequestBuilder().withWebhookId(webhookId)
+          .withAddWebhookRequest(new AddWebhookRequest().name("john smith2").ttl(ttl))
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("'" + webhookId + "' object updated", response.getMessage());
@@ -276,7 +289,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
               new AddDocumentTag().key("day").value("today")));
 
       // when
-      AddWebhookResponse result = this.webhooksApi.addWebhook(req, siteId);
+      AddWebhookResponse result = new AddWebhookRequestBuilder().withAddWebhookRequest(req)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals(result.getSiteId(), siteId != null ? siteId : DEFAULT_SITE_ID);
@@ -325,8 +339,9 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(siteId);
 
     // when
-    AddWebhookResponse result =
-        this.webhooksApi.addWebhook(new AddWebhookRequest().name("joe smith"), siteId);
+    AddWebhookResponse result = new AddWebhookRequestBuilder()
+        .withAddWebhookRequest(new AddWebhookRequest().name("joe smith"))
+        .submitOk(this.client, siteId).response();
 
     // then
     assertEquals(siteId, result.getSiteId());
@@ -360,15 +375,21 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
         if (!"0".equals(maxWebHooks)) {
           configService.save(siteId, config);
 
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
+          new AddWebhookRequestBuilder()
+              .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+              .submitOk(this.client, siteId);
+          new AddWebhookRequestBuilder()
+              .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+              .submitOk(this.client, siteId);
 
         } else {
           configService.save(siteId, config);
         }
 
         try {
-          this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), siteId);
+          new AddWebhookRequestBuilder()
+              .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+              .submitOk(this.client, siteId);
           fail();
         } catch (ApiException e) {
           assertEquals(ApiResponseStatus.SC_TOO_MANY_REQUESTS.getStatusCode(), e.getCode());
@@ -398,11 +419,13 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     configService.save(null, config);
 
     // when
-    AddWebhookResponse result =
-        this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), null);
+    AddWebhookResponse result = new AddWebhookRequestBuilder()
+        .withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+        .submitOk(this.client, null).response();
 
     // then
-    GetWebhooksResponse webhooks = this.webhooksApi.getWebhooks(null, null, null);
+    GetWebhooksResponse webhooks = new GetWebhooksRequestBuilder().withNext(null).withLimit(null)
+        .submitOk(this.client, null).response();
 
     assertEquals(DEFAULT_SITE_ID, result.getSiteId());
     assertNotNull(result.getWebhookId());
@@ -428,7 +451,8 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     configService.save(null, config);
 
     // when
-    this.webhooksApi.addWebhook(new AddWebhookRequest().name("john smith"), null);
+    new AddWebhookRequestBuilder().withAddWebhookRequest(new AddWebhookRequest().name("john smith"))
+        .submitOk(this.client, null);
   }
 
   /**
@@ -442,8 +466,9 @@ public class WebhooksRequestTest extends AbstractApiClientRequestTest {
     putSsmParameter();
 
     // when
-    AddWebhookResponse response = this.webhooksApi
-        .addWebhook(new AddWebhookRequest().name("john smith").enabled("private"), null);
+    AddWebhookResponse response = new AddWebhookRequestBuilder()
+        .withAddWebhookRequest(new AddWebhookRequest().name("john smith").enabled("private"))
+        .submitOk(this.client, null).response();
 
     // then
     assertEquals(DEFAULT_SITE_ID, response.getSiteId());

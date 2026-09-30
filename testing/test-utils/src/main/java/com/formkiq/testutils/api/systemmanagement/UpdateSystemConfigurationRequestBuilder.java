@@ -38,12 +38,24 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
  */
 public class UpdateSystemConfigurationRequestBuilder implements HttpRequestBuilder<UpdateResponse> {
   /** {@link SetSchemaAttributes}. */
-  private final UpdateSystemConfigurationRequest request = new UpdateSystemConfigurationRequest();
+  private UpdateSystemConfigurationRequest request = new UpdateSystemConfigurationRequest();
 
   /**
    * constructor.
    */
   public UpdateSystemConfigurationRequestBuilder() {}
+
+  /**
+   * Set the complete system configuration request.
+   *
+   * @param configurationRequest {@link UpdateSystemConfigurationRequest}
+   * @return this builder
+   */
+  public UpdateSystemConfigurationRequestBuilder request(
+      final UpdateSystemConfigurationRequest configurationRequest) {
+    this.request = configurationRequest;
+    return this;
+  }
 
 
   /**

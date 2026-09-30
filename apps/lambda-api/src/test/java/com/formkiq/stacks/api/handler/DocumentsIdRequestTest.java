@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -100,6 +102,8 @@ import com.formkiq.testutils.api.documents.RestoreDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.SetDocumentAttributeValueRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
+import com.formkiq.testutils.api.documents.SetDocumentRestoreRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -127,14 +131,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
   private static final int TEST_TIMEOUT = 20;
 
   private void addAttribute(final String siteId, final String attributeKey) throws ApiException {
-    this.attributesApi.addAttribute(
-        new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)), siteId);
+    new AddAttributeRequestBuilder()
+        .request(new AddAttributeRequest().attribute(new AddAttribute().key(attributeKey)))
+        .submitOk(this.client, siteId);
   }
 
   private DocumentArtifact addDocumentUpload(final String siteId,
       final AddDocumentUploadRequest req) throws ApiException {
-    GetDocumentUrlResponse response = new AddDocumentUploadRequestBuilder(req)
-        .submitOk(this.documentsApi.getApiClient(), siteId).response();
+    GetDocumentUrlResponse response =
+        new AddDocumentUploadRequestBuilder(req).submitOk(this.client, siteId).response();
     assertNotNull(response.getDocumentId());
     return DocumentArtifact.of(response.getDocumentId(), response.getArtifactId());
   }
@@ -230,7 +235,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
     SetSitesSchemaRequest sitesSchema =
         new SetSitesSchemaRequest().name("test").attributes(new SetSchemaAttributes()
             .compositeKeys(List.of(compositeKey0, compositeKey1, compositeKey2, compositeKey3)));
-    this.schemasApi.setSitesSchema(siteId, sitesSchema);
+    new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(sitesSchema).submitOk(this.client,
+        siteId);
   }
 
   private String getAttributeValue(final String siteId, final DocumentArtifact artifact) {
@@ -289,7 +295,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
   private List<SearchResultDocument> search(final String siteId, final DocumentSearchRequest sreq)
       throws ApiException {
-    return notNull(searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+    return notNull(new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null)
+        .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
   }
 
 
@@ -297,8 +304,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       final String attributeKey, final String limit) throws ApiException {
     DocumentSearchRequest sreq = new DocumentSearchRequest().query(
         new DocumentSearch().addAttributesItem(new DocumentSearchAttribute().key(attributeKey)));
-    return notNull(
-        this.searchApi.documentSearch(sreq, siteId, limit, null, null, null).getDocuments());
+    return notNull(new SearchDocumentRequestBuilder().query(sreq).limit(limit).next(null)
+        .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
   }
 
   /**
@@ -345,8 +352,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
-          Boolean.FALSE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document.documentId(), document.artifactId())).softDelete(Boolean.FALSE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -374,8 +382,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
-          Boolean.FALSE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document.documentId(), document.artifactId())).softDelete(Boolean.FALSE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -403,7 +412,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact document = addDocumentUpload(siteId, req);
 
       // when
-      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(), TRUE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document.documentId(), document.artifactId())).softDelete(TRUE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -414,8 +425,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, documents.size());
 
       // when
-      this.documentsApi.deleteDocument(document.documentId(), siteId, document.artifactId(),
-          Boolean.FALSE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document.documentId(), document.artifactId())).softDelete(Boolean.FALSE)
+          .submitOk(this.client, siteId);
 
       // then
       softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -440,7 +452,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.deleteDocument(documentId, siteId, null, Boolean.FALSE);
+        new DeleteDocumentRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .softDelete(Boolean.FALSE).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -465,8 +479,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       String attributeKey = "category";
 
-      this.attributesApi.addAttribute(new AddAttributeRequest().attribute(
-          new AddAttribute().key(attributeKey).dataType(AttributeDataType.STRING)), siteId);
+      new AddAttributeRequestBuilder()
+          .request(new AddAttributeRequest()
+              .attribute(new AddAttribute().key(attributeKey).dataType(AttributeDataType.STRING)))
+          .submitOk(this.client, siteId);
       AddDocumentUploadRequest req0 = new AddDocumentUploadRequest().path("test.txt")
           .addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key(attributeKey).stringValue("111")));
@@ -483,8 +499,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(docs.get(1).getDocumentId());
 
       // when
-      this.documentsApi.deleteDocument(document0.documentId(), siteId, document0.artifactId(),
-          TRUE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document0.documentId(), document0.artifactId())).softDelete(TRUE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -498,7 +515,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(document1.documentId(), docs.getFirst().getDocumentId());
 
       // when - restore document
-      this.documentsApi.setDocumentRestore(document0.documentId(), siteId, document0.artifactId());
+      new SetDocumentRestoreRequestBuilder().withDocumentId(document0.documentId())
+          .withArtifactId(document0.artifactId()).submitOk(this.client, siteId);
 
       // then
       docs = searchDocumentAttribute(siteId, attributeKey, "2");
@@ -546,8 +564,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(Boolean.FALSE, artifactDocument.getHasArtifacts());
 
       // when
-      this.documentsApi.deleteDocument(document.getDocumentId(), siteId, artifact.artifactId(),
-          Boolean.FALSE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(document.getDocumentId(), artifact.artifactId())).softDelete(Boolean.FALSE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -914,14 +933,16 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().deepLinkPath(deepLinkPath).contentType("application/pdf");
 
       // when
-      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
       // then
       assertNull(response.getUploadUrl());
       assertNotNull(response.getDocumentId());
       String documentId = response.getDocumentId();
-      GetDocumentResponse document = this.documentsApi.getDocument(documentId, siteId, null, null);
+      GetDocumentResponse document = new GetDocumentRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId).response();
       assertEquals("sample.pdf", document.getPath());
       assertEquals("https://google.com/test/sample.pdf", document.getDeepLinkPath());
       assertEquals("application/pdf", document.getContentType());
@@ -944,7 +965,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
+        new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -969,7 +990,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
+        new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -996,7 +1017,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
+        new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1023,8 +1044,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
-          siteId, documentArtifact.artifactId(), null);
+      GetDocumentResponse document =
+          new GetDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(documentArtifact.documentId(), documentArtifact.artifactId()))
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("s3://test.txt", document.getDeepLinkPath());
@@ -1048,8 +1071,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
-          siteId, documentArtifact.artifactId(), null);
+      GetDocumentResponse document =
+          new GetDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(documentArtifact.documentId(), documentArtifact.artifactId()))
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -1074,8 +1099,10 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       DocumentArtifact documentArtifact = addDocumentUpload(siteId, req);
 
       // when
-      GetDocumentResponse document = this.documentsApi.getDocument(documentArtifact.documentId(),
-          siteId, documentArtifact.artifactId(), null);
+      GetDocumentResponse document =
+          new GetDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+              .of(documentArtifact.documentId(), documentArtifact.artifactId()))
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals(deepLink, document.getDeepLinkPath());
@@ -1108,8 +1135,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       as.saveNewActions(List.of(action));
 
       // when
-      this.documentsApi.deleteDocument(documentArtifact.documentId(), siteId,
-          documentArtifact.artifactId(), TRUE);
+      new DeleteDocumentRequestBuilder(com.formkiq.aws.dynamodb.documents.DocumentArtifact
+          .of(documentArtifact.documentId(), documentArtifact.artifactId())).softDelete(TRUE)
+          .submitOk(this.client, siteId);
 
       // then
       List<Document> softDeletedDocuments = getSoftDeletedDocuments(siteId);
@@ -1121,8 +1149,9 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       assertEquals(0, documents.size());
 
       // when
-      SetDocumentRestoreResponse restore = this.documentsApi
-          .setDocumentRestore(documentArtifact.documentId(), siteId, documentArtifact.artifactId());
+      SetDocumentRestoreResponse restore = new SetDocumentRestoreRequestBuilder()
+          .withDocumentId(documentArtifact.documentId())
+          .withArtifactId(documentArtifact.artifactId()).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("document restored", restore.getMessage());
@@ -1150,7 +1179,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.documentsApi.setDocumentRestore(documentId, siteId, null);
+        new SetDocumentRestoreRequestBuilder().withDocumentId(documentId).withArtifactId(null)
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1180,17 +1210,19 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           .width("100").height("200");
 
       // when
-      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
       // then
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
       assertEquals(content0,
           new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+              .submitOk(this.client, siteId).response().getContent());
 
-      GetDocumentResponse doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+      GetDocumentResponse doc = new GetDocumentRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId).response();
       assertEquals("100", doc.getWidth());
       assertEquals("200", doc.getHeight());
 
@@ -1200,14 +1232,16 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
       assertEquals(content1,
           new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+              .submitOk(this.client, siteId).response().getContent());
 
-      doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+      doc = new GetDocumentRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+          .submitOk(this.client, siteId).response();
       assertEquals("300", doc.getWidth());
       assertEquals("400", doc.getHeight());
     }
@@ -1229,15 +1263,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
 
       // when
-      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
       // then
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
       assertEquals(content0,
           new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-              .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+              .submitOk(this.client, siteId).response().getContent());
 
       // given
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
@@ -1245,11 +1279,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
-      List<DocumentAction> actions = notNull(this.documentActionsApi
-          .getDocumentActions(documentId, siteId, null, null, null, null).getActions());
+      List<DocumentAction> actions = notNull(new GetDocumentActionsRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getActions());
       assertEquals(1, actions.size());
       assertEquals(DocumentActionType.FULLTEXT, actions.getFirst().getType());
     }
@@ -1271,8 +1306,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
 
       // when
-      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
       // then
       String documentId = response.getDocumentId();
@@ -1284,7 +1319,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1311,8 +1346,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       addAttribute(siteId, attributeKey);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest().addAttributesItem(
@@ -1321,7 +1356,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1350,11 +1385,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       SetSitesSchemaRequest sitesSchema = new SetSitesSchemaRequest().name("test")
           .attributes(new SetSchemaAttributes().addOptionalItem(new AddAttributeSchemaOptional()
               .attributeKey(attributeKey).addAllowedValuesItem("abc")));
-      this.schemasApi.setSitesSchema(siteId, sitesSchema);
+      new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(sitesSchema)
+          .submitOk(this.client, siteId);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq =
@@ -1364,7 +1400,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1395,8 +1431,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       createSiteSchema(siteId, attributeKey0, attributeKey1);
 
       AddDocumentRequest req = new AddDocumentRequest().content(content0);
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
@@ -1407,11 +1443,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      List<DocumentAttribute> attributes = notNull(new GetDocumentAttributesRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getAttributes());
 
       final int expected = 3;
       assertEquals(expected, attributes.size());
@@ -1446,8 +1483,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req =
           new AddDocumentRequest().content(content0).addAttributesItem(new AddDocumentAttribute(
               new AddDocumentAttributeStandard().key(attributeKey0).stringValue("person")));
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       UpdateDocumentRequest updateReq = new UpdateDocumentRequest()
@@ -1458,11 +1495,12 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
-      List<DocumentAttribute> attributes = notNull(this.documentAttributesApi
-          .getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
+      List<DocumentAttribute> attributes = notNull(new GetDocumentAttributesRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null)).limit(null)
+          .next(null).submitOk(this.client, siteId).response().getAttributes());
 
       final int expected = 5;
       int i = 0;
@@ -1500,8 +1538,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
 
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       // when
@@ -1513,7 +1551,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       AddDocumentResponse updateResponse =
           new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-              .submitOk(this.documentsApi.getApiClient(), siteId).response();
+              .submitOk(this.client, siteId).response();
 
       // then
       assertNull(updateResponse.getUploadUrl());
@@ -1538,8 +1576,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().deepLinkPath("https://www.google.com");
 
-      String documentId = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String documentId = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId)
+          .response().getDocumentId();
       assertNotNull(documentId);
 
       // when
@@ -1549,7 +1587,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -1581,16 +1619,17 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
             .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
 
         // when
-        AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-            .submitOk(this.documentsApi.getApiClient(), siteId).response();
+        AddDocumentResponse response =
+            new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
         // then
         String documentId = response.getDocumentId();
         assertNotNull(documentId);
         assertEquals(siteId, response.getSiteId());
 
-        GetDocumentResponse doc =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
+        GetDocumentResponse doc = new GetDocumentRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(response.getDocumentId(), null))
+            .submitOk(this.client, siteId).response();
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum0, doc.getChecksum());
@@ -1598,7 +1637,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(doc.getDocumentId());
         assertEquals(content0,
             new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+                .submitOk(this.client, siteId).response().getContent());
 
         // given
         String content1 = "new content";
@@ -1608,16 +1647,18 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
         // when
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
 
         // then
-        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+        doc = new GetDocumentRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .submitOk(this.client, siteId).response();
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum1, doc.getChecksum());
         assertEquals(content1,
             new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+                .submitOk(this.client, siteId).response().getContent());
       }
     }
   }
@@ -1642,16 +1683,17 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
             .contentType("text/plain").checksum(checksum).checksumType(ChecksumType.SHA256);
 
         // when
-        AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-            .submitOk(this.documentsApi.getApiClient(), siteId).response();
+        AddDocumentResponse response =
+            new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
 
         // then
         String documentId = response.getDocumentId();
         assertNotNull(documentId);
         assertEquals(siteId, response.getSiteId());
 
-        GetDocumentResponse doc =
-            this.documentsApi.getDocument(response.getDocumentId(), siteId, null, null);
+        GetDocumentResponse doc = new GetDocumentRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(response.getDocumentId(), null))
+            .submitOk(this.client, siteId).response();
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum0, doc.getChecksum());
@@ -1659,7 +1701,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         assertNotNull(doc.getDocumentId());
         assertEquals(content0,
             new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+                .submitOk(this.client, siteId).response().getContent());
 
         // given
         String checksum1 = "fe32608c9ef5b6cf7e3f946480253ff76f24f4ec0678f3d0f07f9844cbff9601";
@@ -1669,7 +1711,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         // when
         response =
             new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, null), updateReq)
-                .submitOk(this.documentsApi.getApiClient(), siteId).response();
+                .submitOk(this.client, siteId).response();
 
         // then
         assertNotNull(response);
@@ -1683,13 +1725,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
         putS3Request(response.getUploadUrl(), response.getHeaders(), content1);
 
         // then
-        doc = this.documentsApi.getDocument(documentId, siteId, null, null);
+        doc = new GetDocumentRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null))
+            .submitOk(this.client, siteId).response();
         assertEquals("text/plain", doc.getContentType());
         assertEquals(ChecksumType.SHA256, doc.getChecksumType());
         assertEquals(checksum1, doc.getChecksum());
         assertEquals(content1,
             new GetDocumentContentRequestBuilder(DocumentArtifact.of(documentId, null))
-                .submitOk(this.documentsApi.getApiClient(), siteId).response().getContent());
+                .submitOk(this.client, siteId).response().getContent());
       }
     }
   }
@@ -1716,17 +1760,23 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().path(path).contentType("text/plain").content(content);
 
       // when
-      String doc0 = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
-      String doc1 = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String doc0 = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response()
+          .getDocumentId();
+      String doc1 = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response()
+          .getDocumentId();
 
       // then
       assertNotNull(doc0);
       assertNotNull(doc1);
       assertNotEquals(doc0, doc1);
-      assertEquals(path, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
-      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null, null).getPath());
+      assertEquals(path,
+          new GetDocumentRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(doc0, null))
+              .submitOk(this.client, siteId).response().getPath());
+      assertNotEquals(path,
+          new GetDocumentRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(doc1, null))
+              .submitOk(this.client, siteId).response().getPath());
 
       List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(2, docs.size());
@@ -1736,10 +1786,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(doc1, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
-      assertNotEquals(path, this.documentsApi.getDocument(doc1, siteId, null, null).getPath());
+      assertNotEquals(path,
+          new GetDocumentRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(doc1, null))
+              .submitOk(this.client, siteId).response().getPath());
 
       docs = search(siteId, sreq);
       assertEquals(2, docs.size());
@@ -1770,12 +1823,15 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
           new AddDocumentRequest().path(path0).contentType("text/plain").content(content);
 
       // when
-      String doc0 = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getDocumentId();
+      String doc0 = new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response()
+          .getDocumentId();
 
       // then
       assertNotNull(doc0);
-      assertEquals(path0, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
+      assertEquals(path0,
+          new GetDocumentRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(doc0, null))
+              .submitOk(this.client, siteId).response().getPath());
 
       List<SearchResultDocument> docs = search(siteId, sreq);
       assertEquals(1, docs.size());
@@ -1786,10 +1842,13 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       // when
       new UpdateDocumentRequestBuilder(DocumentArtifact.of(doc0, null), updateReq)
-          .submitOk(this.documentsApi.getApiClient(), siteId);
+          .submitOk(this.client, siteId);
 
       // then
-      assertEquals(path1, this.documentsApi.getDocument(doc0, siteId, null, null).getPath());
+      assertEquals(path1,
+          new GetDocumentRequestBuilder(
+              com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(doc0, null))
+              .submitOk(this.client, siteId).response().getPath());
 
       docs = search(siteId, sreq);
       assertEquals(1, docs.size());
@@ -1932,8 +1991,8 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().contentType("text/plain").content(content0);
 
-      AddDocumentResponse response = new AddDocumentRequestBuilder(req)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response();
+      AddDocumentResponse response =
+          new AddDocumentRequestBuilder(req).submitOk(this.client, siteId).response();
       String documentId = response.getDocumentId();
       assertNotNull(documentId);
 
@@ -1942,7 +2001,7 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       // when
       try {
         new UpdateDocumentRequestBuilder(DocumentArtifact.of(documentId, ID.ulid()), updateReq)
-            .submitOk(this.documentsApi.getApiClient(), siteId);
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

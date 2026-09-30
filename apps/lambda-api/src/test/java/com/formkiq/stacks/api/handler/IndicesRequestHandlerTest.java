@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -75,6 +76,8 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.api.opensearch.DeleteIndexRequestBuilder;
+import com.formkiq.testutils.api.opensearch.IndexSearchRequestBuilder;
 
 /** Unit Tests for request /indices/{type}/{indexKey}. */
 @ExtendWith(DynamoDbExtension.class)
@@ -136,7 +139,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       String indexKey = folder.folderIndex().indexKey();
 
       // when
-      DeleteIndicesResponse response = this.indexApi.deleteIndex(indexKey, "folder", siteId);
+      DeleteIndicesResponse response = new DeleteIndexRequestBuilder().withIndexKey(indexKey)
+          .withIndexType("folder").submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Folder deleted", response.getMessage());
@@ -171,7 +175,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.deleteIndex(indexKey, "folder", siteId);
+        new DeleteIndexRequestBuilder().withIndexKey(indexKey).withIndexType("folder")
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -197,7 +202,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.deleteIndex(indexKey, "folder", siteId);
+        new DeleteIndexRequestBuilder().withIndexKey(indexKey).withIndexType("folder")
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -233,7 +239,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       String indexKey = "category";
 
       // when
-      DeleteIndicesResponse deleteIndex = this.indexApi.deleteIndex(indexKey, indexType, siteId);
+      DeleteIndicesResponse deleteIndex = new DeleteIndexRequestBuilder().withIndexKey(indexKey)
+          .withIndexType(indexType).submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Folder deleted", deleteIndex.getMessage());
@@ -257,7 +264,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.deleteIndex(indexKey, "asd", siteId);
+        new DeleteIndexRequestBuilder().withIndexKey(indexKey).withIndexType("asd")
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -294,7 +302,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.deleteIndex(indexKey, "folder", "finance");
+        new DeleteIndexRequestBuilder().withIndexKey(indexKey).withIndexType("folder")
+            .submitOk(this.client, "finance");
         fail();
       } catch (ApiException e) {
         // then
@@ -322,7 +331,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       AddDocumentRequest req = new AddDocumentRequest().content("test").path(path);
 
       try {
-        new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
+        new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
       } catch (IllegalArgumentException e) {
         // bug in API AddDocumentResponse doesn't support messages for created folders
         // safe to ignore
@@ -334,7 +343,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       List<SearchResultDocument> docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+          new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null).previous(null)
+              .projection(null).submitOk(this.client, siteId).response().getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -348,8 +358,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       meta.folder("test");
 
       // when
-      docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+      docs = notNull(new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null)
+          .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -360,12 +370,13 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       DeleteIndicesResponse response =
-          this.indexApi.deleteIndex(doc.getIndexKey(), "folder", siteId);
+          new DeleteIndexRequestBuilder().withIndexKey(doc.getIndexKey()).withIndexType("folder")
+              .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Folder deleted", response.getMessage());
-      docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+      docs = notNull(new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null)
+          .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
       assertEquals(0, docs.size());
     }
   }
@@ -384,7 +395,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.deleteIndex(indexKey, "folder", siteId);
+        new DeleteIndexRequestBuilder().withIndexKey(indexKey).withIndexType("folder")
+            .submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -409,7 +421,7 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       AddDocumentRequest req = new AddDocumentRequest().content("test").path(path).content("data");
 
-      new AddDocumentRequestBuilder(req).submitOk(this.documentsApi.getApiClient(), siteId);
+      new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
 
       DocumentSearchMeta meta = new DocumentSearchMeta().folder("");
       DocumentSearchRequest sreq =
@@ -417,7 +429,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       List<SearchResultDocument> docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+          new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null).previous(null)
+              .projection(null).submitOk(this.client, siteId).response().getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -430,8 +443,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       meta.folder("test");
 
       // when
-      docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+      docs = notNull(new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null)
+          .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
 
       // then
       assertEquals(1, docs.size());
@@ -440,12 +453,13 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       assertNull(docs.getFirst().getIndexKey());
 
       // when
-      DeleteIndicesResponse response = this.indexApi.deleteIndex(path, "folder", siteId);
+      DeleteIndicesResponse response = new DeleteIndexRequestBuilder().withIndexKey(path)
+          .withIndexType("folder").submitOk(this.client, siteId).response();
 
       // then
       assertEquals("File deleted", response.getMessage());
-      docs = notNull(
-          this.searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+      docs = notNull(new SearchDocumentRequestBuilder().query(sreq).limit(null).next(null)
+          .previous(null).projection(null).submitOk(this.client, siteId).response().getDocuments());
       assertEquals(0, docs.size());
     }
   }
@@ -464,7 +478,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.indexSearch(req, siteId, null, null, "invalid");
+        new IndexSearchRequestBuilder().withIndexSearchRequest(req).withLimit(null).withNext(null)
+            .withPrevious("invalid").submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -474,7 +489,8 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        this.indexApi.indexSearch(req, siteId, null, "invalid", null);
+        new IndexSearchRequestBuilder().withIndexSearchRequest(req).withLimit(null)
+            .withNext("invalid").withPrevious(null).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

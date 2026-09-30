@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 
 import com.formkiq.aws.dynamodb.ID;
@@ -43,6 +45,8 @@ import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.api.documents.AddReindexDocumentRequestBuilder;
+import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -64,14 +68,14 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
   private void addAttribute(final String siteId, final String key) throws ApiException {
     AddAttributeRequest req =
         new AddAttributeRequest().attribute(new AddAttribute().key(key).dataType(null));
-    this.attributesApi.addAttribute(req, siteId);
+    new AddAttributeRequestBuilder().request(req).submitOk(this.client, siteId);
   }
 
   private String addDocument(final String siteId, final List<AddDocumentAttribute> attributes)
       throws ApiException {
     AddDocumentRequest areq = new AddDocumentRequest().content("adasd").attributes(attributes);
-    return new AddDocumentRequestBuilder(areq).submitOk(this.documentsApi.getApiClient(), siteId)
-        .response().getDocumentId();
+    return new AddDocumentRequestBuilder(areq).submitOk(this.client, siteId).response()
+        .getDocumentId();
   }
 
   private void assertDocumentAttributes(final DocumentAttribute da,
@@ -105,14 +109,16 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
   private List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final String documentId, final String artifactId) throws ApiException {
-    return notNull(this.documentAttributesApi
-        .getDocumentAttributes(documentId, siteId, artifactId, "100", null).getAttributes());
+    return notNull(new GetDocumentAttributesRequestBuilder(
+        com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, artifactId)).limit("100")
+        .next(null).submitOk(this.client, siteId).response().getAttributes());
   }
 
   private void setSiteSchema(final String siteId, final SetSchemaAttributes attr)
       throws ApiException {
     SetSitesSchemaRequest setSiteSchema = new SetSitesSchemaRequest().name("test").attributes(attr);
-    this.schemasApi.setSitesSchema(siteId, setSiteSchema);
+    new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(setSiteSchema)
+        .submitOk(this.client, siteId);
   }
 
   /**
@@ -131,7 +137,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        reindexApi.addReindexDocument(documentId, req, siteId, null);
+        new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+            .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then
@@ -167,7 +174,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
+      AddResponse addResponse = new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+          .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId)
+          .response();
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -225,7 +234,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
+      AddResponse addResponse = new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+          .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId)
+          .response();
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -273,7 +284,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
+      AddResponse addResponse = new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+          .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId)
+          .response();
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -318,7 +331,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, null);
+      AddResponse addResponse = new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+          .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId)
+          .response();
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -351,7 +366,7 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           .artifacts(Boolean.TRUE).content("artifact-content").contentType("text/plain").attributes(
               List.of(createAttribute("invoice", "INV0001"), createAttribute("date", "20240101")));
       String artifactId = new AddDocumentRequestBuilder(artifactRequest)
-          .submitOk(this.documentsApi.getApiClient(), siteId).response().getArtifactId();
+          .submitOk(this.client, siteId).response().getArtifactId();
 
       List<DocumentAttribute> documentAttributes =
           getDocumentAttributes(siteId, documentId, artifactId);
@@ -363,7 +378,9 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
           new AddReindexDocumentRequest().target(ReindexTarget.ATTRIBUTES);
 
       // when
-      AddResponse addResponse = reindexApi.addReindexDocument(documentId, req, siteId, artifactId);
+      AddResponse addResponse = new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+          .withAddReindexDocumentRequest(req).withArtifactId(artifactId)
+          .submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Reindex started for documentId '" + documentId + "' on target 'ATTRIBUTES'",
@@ -398,7 +415,8 @@ public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
       // when
       try {
-        reindexApi.addReindexDocument(documentId, req, siteId, null);
+        new AddReindexDocumentRequestBuilder().withDocumentId(documentId)
+            .withAddReindexDocumentRequest(req).withArtifactId(null).submitOk(this.client, siteId);
         fail();
       } catch (ApiException e) {
         // then

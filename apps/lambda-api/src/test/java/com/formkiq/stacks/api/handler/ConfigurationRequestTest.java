@@ -60,9 +60,12 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotification;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationProvider;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.SetBearers;
-import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.UpdateSystemConfigurationRequestBuilder;
 import com.formkiq.testutils.aws.TestServices;
+import com.formkiq.testutils.api.systemmanagement.AddNotificationTestRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetConfigurationRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetSystemConfigurationRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.UpdateConfigurationRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,7 +149,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       throws ApiException {
     assertEquals("Config saved", response.getMessage());
 
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    GetConfigurationResponse configuration =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
     DocumentConfig doc = configuration.getDocument();
     assertNotNull(doc);
     DocumentConfigContentTypes contentTypes = doc.getContentTypes();
@@ -197,23 +201,31 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testBrandingConfigurationIsolation() throws ApiException {
     setBearerToken("Admins");
-    this.systemApi.updateConfiguration(DEFAULT_SITE_ID, new UpdateConfigurationRequest()
-        .maxDocuments("100").branding(new BrandingConfig().theme("default-theme")));
-    this.systemApi.updateConfiguration("site1",
-        new UpdateConfigurationRequest().branding(new BrandingConfig().theme("site-theme")));
-    this.systemApi.updateSystemConfiguration(new UpdateSystemConfigurationRequest()
-        .branding(new BrandingConfig().theme("global-theme")));
+    new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(new UpdateConfigurationRequest().maxDocuments("100")
+            .branding(new BrandingConfig().theme("default-theme")))
+        .submitOk(this.client, DEFAULT_SITE_ID);
+    new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(
+            new UpdateConfigurationRequest().branding(new BrandingConfig().theme("site-theme")))
+        .submitOk(this.client, "site1");
+    new UpdateSystemConfigurationRequestBuilder().request(
+        new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme("global-theme")))
+        .submitOk(this.client, null);
 
-    this.systemApi.updateConfiguration(DEFAULT_SITE_ID,
-        new UpdateConfigurationRequest().branding(new BrandingConfig().theme("updated-theme")));
+    new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(
+            new UpdateConfigurationRequest().branding(new BrandingConfig().theme("updated-theme")))
+        .submitOk(this.client, DEFAULT_SITE_ID);
 
-    GetConfigurationResponse response = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
     assertEquals("100", response.getMaxDocuments());
     assertEquals("updated-theme", requireNonNull(response.getBranding()).getTheme());
-    assertEquals("site-theme",
-        requireNonNull(this.systemApi.getConfiguration("site1").getBranding()).getTheme());
-    assertEquals("global-theme",
-        requireNonNull(this.systemApi.getSystemConfiguration().getBranding()).getTheme());
+    assertEquals("site-theme", requireNonNull(new GetConfigurationRequestBuilder()
+        .submitOk(this.client, "site1").response().getBranding()).getTheme());
+    assertEquals("global-theme", requireNonNull(new GetSystemConfigurationRequestBuilder()
+        .submitOk(this.client, null).response().getBranding()).getTheme());
   }
 
   /**
@@ -234,9 +246,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    UpdateConfigurationResponse updateConfig = this.systemApi.updateConfiguration(siteId,
-        new UpdateConfigurationRequest().chatGptApiKey("anothervalue"));
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    UpdateConfigurationResponse updateConfig = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(
+            new UpdateConfigurationRequest().chatGptApiKey("anothervalue"))
+        .submitOk(this.client, siteId).response();
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("Config saved", updateConfig.getMessage());
@@ -265,7 +280,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("some*******alue", response.getChatGptApiKey());
@@ -293,7 +309,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     this.config.save(null, siteConfig);
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("", response.getChatGptApiKey());
@@ -324,7 +341,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     this.config.save(siteId, siteConfig1);
 
     // when
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("anot*******alue", response.getChatGptApiKey());
@@ -345,7 +363,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.getConfiguration("API_KEY");
+      new GetConfigurationRequestBuilder().submitOk(this.client, "API_KEY");
       fail();
     } catch (ApiException e) {
       // then
@@ -365,7 +383,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.getConfiguration("global");
+      new GetConfigurationRequestBuilder().submitOk(this.client, "global");
       fail();
     } catch (ApiException e) {
       // then
@@ -388,7 +406,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       final int code = 401;
@@ -412,8 +431,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         new GoogleConfig().workloadIdentityAudience("123").workloadIdentityServiceAccount("444"));
 
     // when
-    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    UpdateConfigurationResponse configResponse = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, siteId).response();
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("Config saved", configResponse.getMessage());
@@ -440,7 +461,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -467,7 +489,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -494,10 +517,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
             .rsaPrivateKey(RSA_PRIVATE_KEY).hmacSignature("222ljasdlksjakldjsadlsa")
             .connectUrl(URI.create("https://api.example.com/esignature/docusign/events")));
 
-    this.systemApi.updateConfiguration(siteId, req);
+    new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+        .submitOk(this.client, siteId);
 
     // when
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(siteId);
+    GetConfigurationResponse configuration =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertNotNull(configuration.getDocusign());
@@ -527,7 +552,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -551,12 +577,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .maxPagesPerTransaction(new BigDecimal(2)).maxTransactions(new BigDecimal(1)));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Config saved", response.getMessage());
 
-    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    GetConfigurationResponse c =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
     assertNotNull(c.getOcr());
     assertEquals("2",
         Objects.formatDouble(requireNonNull(c.getOcr().getMaxPagesPerTransaction()).doubleValue()));
@@ -578,7 +606,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -605,12 +634,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
                 + "-----END RSA PRIVATE KEY-----\""));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Config saved", response.getMessage());
 
-    GetConfigurationResponse c = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    GetConfigurationResponse c =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
     DocusignConfig docusign = c.getDocusign();
     assertNotNull(docusign);
     assertEquals("{integrationKey}", docusign.getIntegrationKey());
@@ -629,9 +660,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .docusign(new DocusignConfig().environment(DocusignEnvironment.PRODUCTION));
 
     // when
-    UpdateConfigurationResponse response =
-        this.systemApi.updateConfiguration(DEFAULT_SITE_ID, request);
-    GetConfigurationResponse configuration = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(request).submitOk(this.client, DEFAULT_SITE_ID).response();
+    GetConfigurationResponse configuration =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Config saved", response.getMessage());
@@ -653,13 +685,14 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         "{\"username\":\"user\",\"password\":\"password\"}");
 
     // when
-    UpdateConfigurationResponse response =
-        this.systemApi.updateConfiguration(DEFAULT_SITE_ID, smtpConfiguration(secretArn));
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(smtpConfiguration(secretArn))
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Config saved", response.getMessage());
-    NotificationConfig notification =
-        this.systemApi.getConfiguration(DEFAULT_SITE_ID).getNotification();
+    NotificationConfig notification = new GetConfigurationRequestBuilder()
+        .submitOk(this.client, DEFAULT_SITE_ID).response().getNotification();
     assertEquals(NotificationEmailProvider.SMTP, notification.getProvider());
     assertEquals(NotificationEmailSmtpConnectionSecurity.STARTTLS,
         notification.getSmtp().getConnectionSecurity());
@@ -675,7 +708,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, smtpConfiguration(secretArn));
+      new UpdateConfigurationRequestBuilder()
+          .withUpdateConfigurationRequest(smtpConfiguration(secretArn))
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -699,8 +734,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     saveSesNotificationConfiguration();
 
     // when
-    AddNotificationTestResponse response = this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
-        new AddNotificationTestRequest().to("recipient@example.com"));
+    AddNotificationTestResponse response = new AddNotificationTestRequestBuilder()
+        .withAddNotificationTestRequest(
+            new AddNotificationTestRequest().to("recipient@example.com"))
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Test notification queued", response.getMessage());
@@ -715,8 +752,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
-          new AddNotificationTestRequest().to("recipient@example.com"));
+      new AddNotificationTestRequestBuilder()
+          .withAddNotificationTestRequest(
+              new AddNotificationTestRequest().to("recipient@example.com"))
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -734,8 +773,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
-          new AddNotificationTestRequest().to("not-an-email"));
+      new AddNotificationTestRequestBuilder()
+          .withAddNotificationTestRequest(new AddNotificationTestRequest().to("not-an-email"))
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -756,8 +796,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.addNotificationTest(DEFAULT_SITE_ID,
-          new AddNotificationTestRequest().to("recipient@example.com"));
+      new AddNotificationTestRequestBuilder()
+          .withAddNotificationTestRequest(
+              new AddNotificationTestRequest().to("recipient@example.com"))
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -783,8 +825,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .maxContentLengthBytes("1000000").maxDocuments("1000").maxWebhooks("5");
 
     // when
-    UpdateConfigurationResponse configResponse = this.systemApi.updateConfiguration(siteId, req);
-    GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+    UpdateConfigurationResponse configResponse = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, siteId).response();
+    GetConfigurationResponse response =
+        new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
     // then
     assertEquals("Config saved", configResponse.getMessage());
@@ -815,7 +859,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "text/plain", "");
@@ -825,7 +870,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .document(new DocumentConfig().contentTypes(new DocumentConfigContentTypes()));
 
     // when
-    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    response = new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "", "");
@@ -847,7 +893,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -871,7 +918,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "text/plain", "");
@@ -892,7 +940,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
             new DocumentConfigContentTypes().denylist(List.of()).addAllowlistItem("text/plain")));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "text/plain", "");
@@ -912,7 +961,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .contentTypes(new DocumentConfigContentTypes().addDenylistItem("text/plain")));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "", "text/plain");
@@ -932,7 +982,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .contentTypes(new DocumentConfigContentTypes().addAllowlistItem("text/plain")));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertContentTypeAllowed(response, "text/plain", "");
@@ -941,7 +992,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     req = new UpdateConfigurationRequest().maxDocuments("1");
 
     // when
-    response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+    response = new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     GetConfigurationResponse configResponse = assertContentTypeAllowed(response, "text/plain", "");
@@ -959,7 +1011,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     setBearerToken(group);
 
     // when
-    GetConfigurationResponse resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    GetConfigurationResponse resp =
+        new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertRententionAndDisposition(resp, DocumentConfigDispositionAction.SOFT_DELETE);
@@ -971,8 +1024,9 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
             .softDeleteRetentionInDays(30)));
 
     // when
-    UpdateConfigurationResponse response = this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
-    resp = this.systemApi.getConfiguration(DEFAULT_SITE_ID);
+    UpdateConfigurationResponse response = new UpdateConfigurationRequestBuilder()
+        .withUpdateConfigurationRequest(req).submitOk(this.client, DEFAULT_SITE_ID).response();
+    resp = new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
 
     // then
     assertEquals("Config saved", response.getMessage());
@@ -1001,7 +1055,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     // when
     try {
-      this.systemApi.updateConfiguration(DEFAULT_SITE_ID, req);
+      new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(req)
+          .submitOk(this.client, DEFAULT_SITE_ID);
       fail();
     } catch (ApiException e) {
       // then
@@ -1026,9 +1081,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     for (String theme : List.of("light", "dark")) {
       // when
-      var update = this.systemApi.updateSystemConfiguration(
-          new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme(theme)));
-      GetSystemConfigurationResponse response = this.systemApi.getSystemConfiguration();
+      var update = new UpdateSystemConfigurationRequestBuilder()
+          .request(
+              new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme(theme)))
+          .submitOk(this.client, null).response();
+      GetSystemConfigurationResponse response =
+          new GetSystemConfigurationRequestBuilder().submitOk(this.client, null).response();
 
       // then
       assertEquals("Config saved", update.getMessage());
@@ -1051,9 +1109,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
     for (String theme : List.of("light", "dark")) {
       // when
-      UpdateConfigurationResponse update = this.systemApi.updateConfiguration(siteId,
-          new UpdateConfigurationRequest().branding(new BrandingConfig().theme(theme)));
-      GetConfigurationResponse response = this.systemApi.getConfiguration(siteId);
+      UpdateConfigurationResponse update = new UpdateConfigurationRequestBuilder()
+          .withUpdateConfigurationRequest(
+              new UpdateConfigurationRequest().branding(new BrandingConfig().theme(theme)))
+          .submitOk(this.client, siteId).response();
+      GetConfigurationResponse response =
+          new GetConfigurationRequestBuilder().submitOk(this.client, siteId).response();
 
       // then
       assertEquals("Config saved", update.getMessage());
@@ -1102,8 +1163,10 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertTrue(getSsoLoginRedirectEnabled(s3));
 
     // A branding-only update must preserve SSO in both the API and console configuration.
-    this.systemApi.updateSystemConfiguration(
-        new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme("dark")));
+    new UpdateSystemConfigurationRequestBuilder()
+        .request(
+            new UpdateSystemConfigurationRequest().branding(new BrandingConfig().theme("dark")))
+        .submitOk(this.client, null);
     resp = new GetSystemConfigurationRequestBuilder().submit(client, null);
     assertTrue(getSsoAutomaticSignIn(resp));
     assertTrue(getSsoLoginRedirectEnabled(s3));

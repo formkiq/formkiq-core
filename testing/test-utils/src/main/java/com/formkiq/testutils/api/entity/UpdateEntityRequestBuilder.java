@@ -101,6 +101,17 @@ public class UpdateEntityRequestBuilder implements HttpRequestBuilder<UpdateResp
     return this;
   }
 
+  /**
+   * Set the complete entity update request.
+   *
+   * @param entityRequest {@link UpdateEntityRequest}
+   * @return this builder
+   */
+  public UpdateEntityRequestBuilder request(final UpdateEntityRequest entityRequest) {
+    this.request.setEntity(entityRequest.getEntity());
+    return this;
+  }
+
   @Override
   public ApiHttpResponse<UpdateResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new EntityApi(apiClient).updateEntity(entityType, entity,

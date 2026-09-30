@@ -39,7 +39,7 @@ public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntity
   /** Entity Type Id. */
   private final String entityType;
   /** {@link EntityTypeNamespace}. */
-  private final EntityTypeNamespace namespace;
+  private final String namespace;
 
   /**
    * constructor.
@@ -49,6 +49,17 @@ public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntity
    */
   public GetEntityTypeRequestBuilder(final String entityTypeId,
       final EntityTypeNamespace entityTypeNamespace) {
+    this.entityType = entityTypeId;
+    this.namespace = entityTypeNamespace.name();
+  }
+
+  /**
+   * constructor.
+   *
+   * @param entityTypeId {@link String}
+   * @param entityTypeNamespace {@link String}
+   */
+  public GetEntityTypeRequestBuilder(final String entityTypeId, final String entityTypeNamespace) {
     this.entityType = entityTypeId;
     this.namespace = entityTypeNamespace;
   }
@@ -70,6 +81,6 @@ public class GetEntityTypeRequestBuilder implements HttpRequestBuilder<GetEntity
   public ApiHttpResponse<GetEntityTypeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(
-        () -> new EntityApi(apiClient).getEntityType(this.entityType, siteId, namespace.name()));
+        () -> new EntityApi(apiClient).getEntityType(this.entityType, siteId, namespace));
   }
 }

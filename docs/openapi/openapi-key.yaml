@@ -12378,511 +12378,519 @@ components:
     DocusignInitialHereTab:
       type: object
       description: A field for recipient initials. Specify either anchorString (with optional anchor settings) or pageNumber, xPosition, and yPosition. Do not combine anchor and coordinate placement. Recipient and document assignment are inherited from the containing request.
-      oneOf:
-      - required:
-        - anchorString
-        not:
-          anyOf:
-          - required:
-            - pageNumber
-          - required:
-            - xPosition
-          - required:
-            - yPosition
-      - required:
-        - pageNumber
-        - xPosition
-        - yPosition
-        not:
-          anyOf:
-          - required:
-            - anchorString
-          - required:
-            - anchorXOffset
-          - required:
-            - anchorYOffset
-          - required:
-            - anchorUnits
-          - required:
-            - anchorIgnoreIfNotPresent
-          - required:
-            - anchorCaseSensitive
-          - required:
-            - anchorMatchWholeWord
-      properties:
-        anchorString:
-          type: string
-          description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
-          minLength: 1
-        anchorXOffset:
-          type: string
-          description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorYOffset:
-          type: string
-          description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorUnits:
-          type: string
-          description: Units for anchor offsets.
-          enum:
-          - pixels
-          - inches
-          - mms
-          - cms
-        anchorIgnoreIfNotPresent:
-          type: string
-          description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorCaseSensitive:
-          type: string
-          description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorMatchWholeWord:
-          type: string
-          description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        pageNumber:
-          type: string
-          description: One-based page number for coordinate placement.
-          pattern: ^[1-9][0-9]*$
-        xPosition:
-          type: string
-          description: Horizontal position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        yPosition:
-          type: string
-          description: Vertical position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        tabLabel:
-          type: string
-          description: Field label used to identify the tab.
-          minLength: 1
-        optional:
-          type: string
-          description: Whether the recipient may leave the initials field empty.
-          enum:
-          - "true"
-          - "false"
-        scaleValue:
-          type: string
-          description: Positive scaling factor for the initials field.
-          pattern: ^(0\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$
+      allOf:
+      - oneOf:
+        - required:
+          - anchorString
+          not:
+            anyOf:
+            - required:
+              - pageNumber
+            - required:
+              - xPosition
+            - required:
+              - yPosition
+        - required:
+          - pageNumber
+          - xPosition
+          - yPosition
+          not:
+            anyOf:
+            - required:
+              - anchorString
+            - required:
+              - anchorXOffset
+            - required:
+              - anchorYOffset
+            - required:
+              - anchorUnits
+            - required:
+              - anchorIgnoreIfNotPresent
+            - required:
+              - anchorCaseSensitive
+            - required:
+              - anchorMatchWholeWord
+      - type: object
+        properties:
+          anchorString:
+            type: string
+            description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
+            minLength: 1
+          anchorXOffset:
+            type: string
+            description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorYOffset:
+            type: string
+            description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorUnits:
+            type: string
+            description: Units for anchor offsets.
+            enum:
+            - pixels
+            - inches
+            - mms
+            - cms
+          anchorIgnoreIfNotPresent:
+            type: string
+            description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorCaseSensitive:
+            type: string
+            description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorMatchWholeWord:
+            type: string
+            description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          pageNumber:
+            type: string
+            description: One-based page number for coordinate placement.
+            pattern: ^[1-9][0-9]*$
+          xPosition:
+            type: string
+            description: Horizontal position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          yPosition:
+            type: string
+            description: Vertical position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          tabLabel:
+            type: string
+            description: Field label used to identify the tab.
+            minLength: 1
+          optional:
+            type: string
+            description: Whether the recipient may leave the initials field empty.
+            enum:
+            - "true"
+            - "false"
+          scaleValue:
+            type: string
+            description: Positive scaling factor for the initials field.
+            pattern: ^(0\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$
     DocusignDateSignedTab:
       type: object
       description: An automatic signing date populated by DocuSign when the recipient signs. The caller cannot set its value. Date and time formatting follow DocuSign account settings. Specify either anchorString (with optional anchor settings) or pageNumber, xPosition, and yPosition. Do not combine anchor and coordinate placement. Recipient and document assignment are inherited from the containing request.
-      oneOf:
-      - required:
-        - anchorString
-        not:
-          anyOf:
-          - required:
-            - pageNumber
-          - required:
-            - xPosition
-          - required:
-            - yPosition
-      - required:
-        - pageNumber
-        - xPosition
-        - yPosition
-        not:
-          anyOf:
-          - required:
-            - anchorString
-          - required:
-            - anchorXOffset
-          - required:
-            - anchorYOffset
-          - required:
-            - anchorUnits
-          - required:
-            - anchorIgnoreIfNotPresent
-          - required:
-            - anchorCaseSensitive
-          - required:
-            - anchorMatchWholeWord
-      properties:
-        anchorString:
-          type: string
-          description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
-          minLength: 1
-        anchorXOffset:
-          type: string
-          description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorYOffset:
-          type: string
-          description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorUnits:
-          type: string
-          description: Units for anchor offsets.
-          enum:
-          - pixels
-          - inches
-          - mms
-          - cms
-        anchorIgnoreIfNotPresent:
-          type: string
-          description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorCaseSensitive:
-          type: string
-          description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorMatchWholeWord:
-          type: string
-          description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        pageNumber:
-          type: string
-          description: One-based page number for coordinate placement.
-          pattern: ^[1-9][0-9]*$
-        xPosition:
-          type: string
-          description: Horizontal position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        yPosition:
-          type: string
-          description: Vertical position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        tabLabel:
-          type: string
-          description: Field label used to identify the tab.
-          minLength: 1
-        font:
-          type: string
-          description: DocuSign font name.
-        fontSize:
-          type: string
-          description: DocuSign font size, for example Size12.
-        fontColor:
-          type: string
-          description: DocuSign font color name, for example Black.
-        bold:
-          type: string
-          description: Whether the field text is bold.
-          enum:
-          - "true"
-          - "false"
-        italic:
-          type: string
-          description: Whether the field text is italic.
-          enum:
-          - "true"
-          - "false"
-        underline:
-          type: string
-          description: Whether the field text is underlined.
-          enum:
-          - "true"
-          - "false"
+      allOf:
+      - oneOf:
+        - required:
+          - anchorString
+          not:
+            anyOf:
+            - required:
+              - pageNumber
+            - required:
+              - xPosition
+            - required:
+              - yPosition
+        - required:
+          - pageNumber
+          - xPosition
+          - yPosition
+          not:
+            anyOf:
+            - required:
+              - anchorString
+            - required:
+              - anchorXOffset
+            - required:
+              - anchorYOffset
+            - required:
+              - anchorUnits
+            - required:
+              - anchorIgnoreIfNotPresent
+            - required:
+              - anchorCaseSensitive
+            - required:
+              - anchorMatchWholeWord
+      - type: object
+        properties:
+          anchorString:
+            type: string
+            description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
+            minLength: 1
+          anchorXOffset:
+            type: string
+            description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorYOffset:
+            type: string
+            description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorUnits:
+            type: string
+            description: Units for anchor offsets.
+            enum:
+            - pixels
+            - inches
+            - mms
+            - cms
+          anchorIgnoreIfNotPresent:
+            type: string
+            description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorCaseSensitive:
+            type: string
+            description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorMatchWholeWord:
+            type: string
+            description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          pageNumber:
+            type: string
+            description: One-based page number for coordinate placement.
+            pattern: ^[1-9][0-9]*$
+          xPosition:
+            type: string
+            description: Horizontal position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          yPosition:
+            type: string
+            description: Vertical position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          tabLabel:
+            type: string
+            description: Field label used to identify the tab.
+            minLength: 1
+          font:
+            type: string
+            description: DocuSign font name.
+          fontSize:
+            type: string
+            description: DocuSign font size, for example Size12.
+          fontColor:
+            type: string
+            description: DocuSign font color name, for example Black.
+          bold:
+            type: string
+            description: Whether the field text is bold.
+            enum:
+            - "true"
+            - "false"
+          italic:
+            type: string
+            description: Whether the field text is italic.
+            enum:
+            - "true"
+            - "false"
+          underline:
+            type: string
+            description: Whether the field text is underlined.
+            enum:
+            - "true"
+            - "false"
     DocusignDateTab:
       type: object
       description: A single-line date entered by the recipient, distinct from the automatic signing date. Document any required date format using validationPattern and validationMessage; use a validated text tab when strict date-format enforcement is needed. Specify either anchorString (with optional anchor settings) or pageNumber, xPosition, and yPosition. Do not combine anchor and coordinate placement. Recipient and document assignment are inherited from the containing request.
-      oneOf:
-      - required:
-        - anchorString
-        not:
-          anyOf:
-          - required:
-            - pageNumber
-          - required:
-            - xPosition
-          - required:
-            - yPosition
-      - required:
-        - pageNumber
-        - xPosition
-        - yPosition
-        not:
-          anyOf:
-          - required:
-            - anchorString
-          - required:
-            - anchorXOffset
-          - required:
-            - anchorYOffset
-          - required:
-            - anchorUnits
-          - required:
-            - anchorIgnoreIfNotPresent
-          - required:
-            - anchorCaseSensitive
-          - required:
-            - anchorMatchWholeWord
-      properties:
-        anchorString:
-          type: string
-          description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
-          minLength: 1
-        anchorXOffset:
-          type: string
-          description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorYOffset:
-          type: string
-          description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorUnits:
-          type: string
-          description: Units for anchor offsets.
-          enum:
-          - pixels
-          - inches
-          - mms
-          - cms
-        anchorIgnoreIfNotPresent:
-          type: string
-          description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorCaseSensitive:
-          type: string
-          description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorMatchWholeWord:
-          type: string
-          description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        pageNumber:
-          type: string
-          description: One-based page number for coordinate placement.
-          pattern: ^[1-9][0-9]*$
-        xPosition:
-          type: string
-          description: Horizontal position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        yPosition:
-          type: string
-          description: Vertical position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        tabLabel:
-          type: string
-          description: Field label used to identify the tab.
-          minLength: 1
-        required:
-          type: string
-          description: Whether the recipient must complete the field. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        locked:
-          type: string
-          description: When true, the recipient cannot edit the field.
-          enum:
-          - "true"
-          - "false"
-        width:
-          type: string
-          description: Field width in pixels.
-          pattern: ^[1-9][0-9]*$
-        validationPattern:
-          type: string
-          description: DocuSign regular expression used to validate the entered value.
-        validationMessage:
-          type: string
-          description: Message shown when the entered value fails validation.
-        font:
-          type: string
-          description: DocuSign font name.
-        fontSize:
-          type: string
-          description: DocuSign font size, for example Size12.
-        fontColor:
-          type: string
-          description: DocuSign font color name, for example Black.
-        bold:
-          type: string
-          description: Whether the field text is bold.
-          enum:
-          - "true"
-          - "false"
-        italic:
-          type: string
-          description: Whether the field text is italic.
-          enum:
-          - "true"
-          - "false"
-        underline:
-          type: string
-          description: Whether the field text is underlined.
-          enum:
-          - "true"
-          - "false"
+      allOf:
+      - oneOf:
+        - required:
+          - anchorString
+          not:
+            anyOf:
+            - required:
+              - pageNumber
+            - required:
+              - xPosition
+            - required:
+              - yPosition
+        - required:
+          - pageNumber
+          - xPosition
+          - yPosition
+          not:
+            anyOf:
+            - required:
+              - anchorString
+            - required:
+              - anchorXOffset
+            - required:
+              - anchorYOffset
+            - required:
+              - anchorUnits
+            - required:
+              - anchorIgnoreIfNotPresent
+            - required:
+              - anchorCaseSensitive
+            - required:
+              - anchorMatchWholeWord
+      - type: object
+        properties:
+          anchorString:
+            type: string
+            description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
+            minLength: 1
+          anchorXOffset:
+            type: string
+            description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorYOffset:
+            type: string
+            description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorUnits:
+            type: string
+            description: Units for anchor offsets.
+            enum:
+            - pixels
+            - inches
+            - mms
+            - cms
+          anchorIgnoreIfNotPresent:
+            type: string
+            description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorCaseSensitive:
+            type: string
+            description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorMatchWholeWord:
+            type: string
+            description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          pageNumber:
+            type: string
+            description: One-based page number for coordinate placement.
+            pattern: ^[1-9][0-9]*$
+          xPosition:
+            type: string
+            description: Horizontal position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          yPosition:
+            type: string
+            description: Vertical position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          tabLabel:
+            type: string
+            description: Field label used to identify the tab.
+            minLength: 1
+          required:
+            type: string
+            description: Whether the recipient must complete the field. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          locked:
+            type: string
+            description: When true, the recipient cannot edit the field.
+            enum:
+            - "true"
+            - "false"
+          width:
+            type: string
+            description: Field width in pixels.
+            pattern: ^[1-9][0-9]*$
+          validationPattern:
+            type: string
+            description: DocuSign regular expression used to validate the entered value.
+          validationMessage:
+            type: string
+            description: Message shown when the entered value fails validation.
+          font:
+            type: string
+            description: DocuSign font name.
+          fontSize:
+            type: string
+            description: DocuSign font size, for example Size12.
+          fontColor:
+            type: string
+            description: DocuSign font color name, for example Black.
+          bold:
+            type: string
+            description: Whether the field text is bold.
+            enum:
+            - "true"
+            - "false"
+          italic:
+            type: string
+            description: Whether the field text is italic.
+            enum:
+            - "true"
+            - "false"
+          underline:
+            type: string
+            description: Whether the field text is underlined.
+            enum:
+            - "true"
+            - "false"
     DocusignTextTab:
       type: object
       description: A text field supporting single-line and multiline entry. Use width and height to size a multiline field and maxLength to limit input. Reserve sufficient space in the generated document; tabs do not reflow surrounding content. disableAutoSize affects single-line fields only. Specify either anchorString (with optional anchor settings) or pageNumber, xPosition, and yPosition. Do not combine anchor and coordinate placement. Recipient and document assignment are inherited from the containing request.
-      oneOf:
-      - required:
-        - anchorString
-        not:
-          anyOf:
-          - required:
-            - pageNumber
-          - required:
-            - xPosition
-          - required:
-            - yPosition
-      - required:
-        - pageNumber
-        - xPosition
-        - yPosition
-        not:
-          anyOf:
-          - required:
-            - anchorString
-          - required:
-            - anchorXOffset
-          - required:
-            - anchorYOffset
-          - required:
-            - anchorUnits
-          - required:
-            - anchorIgnoreIfNotPresent
-          - required:
-            - anchorCaseSensitive
-          - required:
-            - anchorMatchWholeWord
-      properties:
-        anchorString:
-          type: string
-          description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
-          minLength: 1
-        anchorXOffset:
-          type: string
-          description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorYOffset:
-          type: string
-          description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
-          pattern: ^-?[0-9]+(\.[0-9]+)?$
-        anchorUnits:
-          type: string
-          description: Units for anchor offsets.
-          enum:
-          - pixels
-          - inches
-          - mms
-          - cms
-        anchorIgnoreIfNotPresent:
-          type: string
-          description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorCaseSensitive:
-          type: string
-          description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        anchorMatchWholeWord:
-          type: string
-          description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        pageNumber:
-          type: string
-          description: One-based page number for coordinate placement.
-          pattern: ^[1-9][0-9]*$
-        xPosition:
-          type: string
-          description: Horizontal position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        yPosition:
-          type: string
-          description: Vertical position in pixels for coordinate placement.
-          pattern: ^[0-9]+$
-        tabLabel:
-          type: string
-          description: Field label used to identify the tab.
-          minLength: 1
-        value:
-          type: string
-          description: Initial field value. Use locked to prevent recipient edits.
-        required:
-          type: string
-          description: Whether the recipient must complete the field. When omitted, DocuSign defaults apply.
-          enum:
-          - "true"
-          - "false"
-        locked:
-          type: string
-          description: When true, the recipient cannot edit the field.
-          enum:
-          - "true"
-          - "false"
-        width:
-          type: string
-          description: Field width in pixels.
-          pattern: ^[1-9][0-9]*$
-        validationPattern:
-          type: string
-          description: DocuSign regular expression used to validate the entered value.
-        validationMessage:
-          type: string
-          description: Message shown when the entered value fails validation.
-        height:
-          type: string
-          description: Field height in pixels. Set with width to size a multiline text area.
-          pattern: ^[1-9][0-9]*$
-        maxLength:
-          type: string
-          description: Maximum number of characters accepted by the field.
-          pattern: ^[1-9][0-9]*$
-        disableAutoSize:
-          type: string
-          description: Disable automatic resizing of single-line text fields. This property does not enable multiline entry.
-          enum:
-          - "true"
-          - "false"
-        font:
-          type: string
-          description: DocuSign font name.
-        fontSize:
-          type: string
-          description: DocuSign font size, for example Size12.
-        fontColor:
-          type: string
-          description: DocuSign font color name, for example Black.
-        bold:
-          type: string
-          description: Whether the field text is bold.
-          enum:
-          - "true"
-          - "false"
-        italic:
-          type: string
-          description: Whether the field text is italic.
-          enum:
-          - "true"
-          - "false"
-        underline:
-          type: string
-          description: Whether the field text is underlined.
-          enum:
-          - "true"
-          - "false"
+      allOf:
+      - oneOf:
+        - required:
+          - anchorString
+          not:
+            anyOf:
+            - required:
+              - pageNumber
+            - required:
+              - xPosition
+            - required:
+              - yPosition
+        - required:
+          - pageNumber
+          - xPosition
+          - yPosition
+          not:
+            anyOf:
+            - required:
+              - anchorString
+            - required:
+              - anchorXOffset
+            - required:
+              - anchorYOffset
+            - required:
+              - anchorUnits
+            - required:
+              - anchorIgnoreIfNotPresent
+            - required:
+              - anchorCaseSensitive
+            - required:
+              - anchorMatchWholeWord
+      - type: object
+        properties:
+          anchorString:
+            type: string
+            description: Text used to locate the tab. Every matching occurrence creates a tab. Use distinct anchors for different recipients.
+            minLength: 1
+          anchorXOffset:
+            type: string
+            description: Horizontal offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorYOffset:
+            type: string
+            description: Vertical offset from the anchor in anchorUnits; negative offsets are allowed.
+            pattern: ^-?[0-9]+(\.[0-9]+)?$
+          anchorUnits:
+            type: string
+            description: Units for anchor offsets.
+            enum:
+            - pixels
+            - inches
+            - mms
+            - cms
+          anchorIgnoreIfNotPresent:
+            type: string
+            description: When true, omit the tab if its anchor is missing. When false, a missing anchor is an error. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorCaseSensitive:
+            type: string
+            description: Whether anchor matching is case sensitive. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          anchorMatchWholeWord:
+            type: string
+            description: Whether the anchor must match a whole word. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          pageNumber:
+            type: string
+            description: One-based page number for coordinate placement.
+            pattern: ^[1-9][0-9]*$
+          xPosition:
+            type: string
+            description: Horizontal position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          yPosition:
+            type: string
+            description: Vertical position in pixels for coordinate placement.
+            pattern: ^[0-9]+$
+          tabLabel:
+            type: string
+            description: Field label used to identify the tab.
+            minLength: 1
+          value:
+            type: string
+            description: Initial field value. Use locked to prevent recipient edits.
+          required:
+            type: string
+            description: Whether the recipient must complete the field. When omitted, DocuSign defaults apply.
+            enum:
+            - "true"
+            - "false"
+          locked:
+            type: string
+            description: When true, the recipient cannot edit the field.
+            enum:
+            - "true"
+            - "false"
+          width:
+            type: string
+            description: Field width in pixels.
+            pattern: ^[1-9][0-9]*$
+          validationPattern:
+            type: string
+            description: DocuSign regular expression used to validate the entered value.
+          validationMessage:
+            type: string
+            description: Message shown when the entered value fails validation.
+          height:
+            type: string
+            description: Field height in pixels. Set with width to size a multiline text area.
+            pattern: ^[1-9][0-9]*$
+          maxLength:
+            type: string
+            description: Maximum number of characters accepted by the field.
+            pattern: ^[1-9][0-9]*$
+          disableAutoSize:
+            type: string
+            description: Disable automatic resizing of single-line text fields. This property does not enable multiline entry.
+            enum:
+            - "true"
+            - "false"
+          font:
+            type: string
+            description: DocuSign font name.
+          fontSize:
+            type: string
+            description: DocuSign font size, for example Size12.
+          fontColor:
+            type: string
+            description: DocuSign font color name, for example Black.
+          bold:
+            type: string
+            description: Whether the field text is bold.
+            enum:
+            - "true"
+            - "false"
+          italic:
+            type: string
+            description: Whether the field text is italic.
+            enum:
+            - "true"
+            - "false"
+          underline:
+            type: string
+            description: Whether the field text is underlined.
+            enum:
+            - "true"
+            - "false"
     DocusignInpersonSigner:
       required:
       - hostEmail

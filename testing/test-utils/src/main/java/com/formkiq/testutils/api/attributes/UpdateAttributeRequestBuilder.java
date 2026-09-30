@@ -64,6 +64,17 @@ public class UpdateAttributeRequestBuilder implements HttpRequestBuilder<UpdateR
   }
 
   /**
+   * Set the complete attribute update request.
+   *
+   * @param attributeRequest {@link UpdateAttributeRequest}
+   * @return this builder
+   */
+  public UpdateAttributeRequestBuilder request(final UpdateAttributeRequest attributeRequest) {
+    this.request.setAttribute(attributeRequest.getAttribute());
+    return this;
+  }
+
+  /**
    * Set Attribute Type.
    *
    * @param attributeType {@link AttributeType}
