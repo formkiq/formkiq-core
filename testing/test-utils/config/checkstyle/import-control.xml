@@ -51,11 +51,20 @@
 			<allow pkg="com.formkiq.urls" />
 		</subpackage>
 
+        <subpackage name="shortlinks">
+            <allow pkg="com.formkiq.module.http" />
+            <allow pkg="com.formkiq.testutils.api" />
+        </subpackage>
+
         <subpackage name="mappings">
             <allow pkg="com.formkiq.testutils.api" />
         </subpackage>
 
 		<subpackage name="folders">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
+
+		<subpackage name="esignature">
 			<allow pkg="com.formkiq.testutils.api" />
 		</subpackage>
 
@@ -94,6 +103,10 @@
         <subpackage name="systemmanagement">
             <allow pkg="com.formkiq.testutils.api" />
         </subpackage>
+
+		<subpackage name="webhooks">
+			<allow pkg="com.formkiq.testutils.api" />
+		</subpackage>
 
 	</subpackage>
 
