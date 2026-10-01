@@ -27,7 +27,6 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
@@ -36,7 +35,6 @@ import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.s3.S3ObjectMetadata;
-import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
@@ -226,12 +224,12 @@ public class AwsResourceTest extends AbstractAwsTest {
     DocumentArtifact document = DocumentArtifact.of(key, null);
     DocumentRecord record =
         new DocumentRecordBuilder().document(document).userId("joe").build((String) null);
-    DocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(record);
+    // DocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(record);
 
     // new DocumentItemDynamoDb(key, new Date(), "test");
 
     // when
-    getDocumentService().saveDocument(null, item, null);
+    getDocumentService().saveDocument(null, record, null);
     key = writeToDocuments(key, contentType);
 
     // then

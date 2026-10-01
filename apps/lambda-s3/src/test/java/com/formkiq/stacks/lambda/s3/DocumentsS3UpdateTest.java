@@ -93,10 +93,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
@@ -425,31 +423,31 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Create {@link DynamicDocumentItem} with Child Documents.
+   * Create {@link DocumentRecordSet} with Child Documents.
    *
    * @param now {@link Date}
-   * @return {@link DynamicDocumentItem}
+   * @return {@link DocumentRecordSet}
    */
   private DocumentRecordSet createSubDocuments(final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
 
     DocumentRecord documentRecord = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
         .insertedDate(now).contentType("text/plain").build((String) null);
-    List<DocumentTagRecord> tags = DocumentTagRecord.builder()
-        .documentId(documentRecord.documentId()).tagKey("category").tagValue("none")
-        .userId(username).type(DocumentTagType.USERDEFINED).build((String) null);
+    List<DocumentTagRecord> tags = DocumentTagRecord.builder().document(documentRecord.document())
+        .tagKey("category").tagValue("none").userId(username).type(DocumentTagType.USERDEFINED)
+        .build((String) null);
 
     DocumentRecord documentRecord1 = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
         .insertedDate(now).contentType("text/html").build((String) null);
     List<DocumentTagRecord> tags1 =
-        DocumentTagRecord.builder().documentId(documentRecord1.documentId()).tagKey("category1")
+        DocumentTagRecord.builder().document(documentRecord1.document()).tagKey("category1")
             .userId(username).type(DocumentTagType.USERDEFINED).build((String) null);
     DocumentRecordSet doc1 = new DocumentRecordSet(documentRecord1, null, tags1, null);
 
     DocumentRecord documentRecord2 = DocumentRecord.builder().documentId(ID.uuid()).userId(username)
         .insertedDate(now).contentType("application/json").build((String) null);
     List<DocumentTagRecord> tags2 =
-        DocumentTagRecord.builder().documentId(documentRecord1.documentId()).tagKey("category2")
+        DocumentTagRecord.builder().document(documentRecord1.document()).tagKey("category2")
             .userId(username).type(DocumentTagType.USERDEFINED).build((String) null);
     DocumentRecordSet doc2 = new DocumentRecordSet(documentRecord2, null, tags2, null);
 
@@ -462,7 +460,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param map {@link Map}
-   * @return {@link DocumentItem}
+   * @return {@link DocumentRecord}
    */
   private DocumentRecord handleRequest(final String siteId, final String documentId,
       final Map<String, Object> map) {
@@ -516,8 +514,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertEquals(0, tags.getResults().size());
 
-      assertEquals(0,
-          service.findDocumentFormats(siteId, BUCKET_KEY, null, MAX_RESULTS).getResults().size());
       verifyDocumentSaved(siteId, item, "text/plain", "8");
 
       assertNotNull(service.findMostDocumentDate());
@@ -547,8 +543,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord documentRecord = new DocumentRecordBuilder().insertedDate(date)
           .documentId(documentId).userId("asd").path("test.txt").checksum("ASD").build(siteId);
 
-      Collection<DocumentTagRecord> addTags = new DocumentTagRecordBuilder().documentId(documentId)
-          .tagKey("person").tagValue("category").userId("asd").build(siteId);
+      Collection<DocumentTagRecord> addTags =
+          new DocumentTagRecordBuilder().document(documentRecord.document()).tagKey("person")
+              .tagValue("category").userId("asd").build(siteId);
       DocumentRecordSet documentRecordSet =
           new DocumentRecordSet(documentRecord, null, addTags, null);
       service.saveDocument(siteId, documentRecordSet, new SaveDocumentOptions());
@@ -576,9 +573,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i).getType());
       assertEquals("12345", tags.getResults().get(i).getValue());
 
-      assertEquals(0,
-          service.findDocumentFormats(siteId, documentId, null, MAX_RESULTS).getResults().size());
-
       verifyDocumentSaved(siteId, item, "pdf", "8");
       assertNotNull(service.findMostDocumentDate());
 
@@ -603,7 +597,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord documentRecord = DocumentRecord.builder().path("test.txt").userId("asd")
           .documentId(BUCKET_KEY).build(siteId);
 
-      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().documentId(BUCKET_KEY)
+      var document = DocumentArtifact.of(BUCKET_KEY, null);
+      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().document(document)
           .tagKey("person").tagValue("category").userId("asd").build(siteId);
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, tags, null),
           new SaveDocumentOptions());
@@ -636,8 +631,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord documentRecord = DocumentRecord.builder().path("test.txt").userId("asd")
           .documentId(documentId).build(siteId);
 
-      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().documentId(documentId)
-          .tagKey("person").tagValue("category").userId("asd").build(siteId);
+      Collection<DocumentTagRecord> tags =
+          new DocumentTagRecordBuilder().document(documentRecord.document()).tagKey("person")
+              .tagValue("category").userId("asd").build(siteId);
 
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, tags, null),
           new SaveDocumentOptions());
@@ -691,16 +687,14 @@ public class DocumentsS3UpdateTest implements DbKeys {
           service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
 
       try (DynamoDbClient client = dbBuilder.build()) {
-        Map<String, AttributeValue> m =
-            client.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-                .key(keysDocument(siteId, childDoc.documentId())).build()).item();
+        Map<String, AttributeValue> m = client.getItem(
+            GetItemRequest.builder().tableName(DOCUMENTS_TABLE).key(childDoc.key().toMap()).build())
+            .item();
         assertNotNull(m.get(GSI1_PK));
       }
 
       assertEquals(0, tags.getResults().size());
 
-      assertEquals(0, service.findDocumentFormats(siteId, childDocumentId, null, MAX_RESULTS)
-          .getResults().size());
       verifyDocumentSaved(siteId, item, "pdf", "8");
 
       tags = service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
@@ -738,13 +732,15 @@ public class DocumentsS3UpdateTest implements DbKeys {
           doc.children().iterator().next().documentRecord().documentId(), map);
 
       // then
-      Map<String, AttributeValue> m = db.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-          .key(keysDocument(siteId, documentId)).build()).item();
+      Map<String, AttributeValue> m = db
+          .getItem(
+              GetItemRequest.builder().tableName(DOCUMENTS_TABLE).key(item.key().toMap()).build())
+          .item();
       assertNotNull(m.get(GSI1_PK));
 
-      Map<String, AttributeValue> mchild =
-          db.getItem(GetItemRequest.builder().tableName(DOCUMENTS_TABLE)
-              .key(keysDocument(siteId, itemchild.documentId())).build()).item();
+      Map<String, AttributeValue> mchild = db.getItem(
+          GetItemRequest.builder().tableName(DOCUMENTS_TABLE).key(itemchild.key().toMap()).build())
+          .item();
       assertNotNull(mchild.get(GSI1_PK));
 
       assertEquals(documentId, item.documentId());
@@ -883,8 +879,8 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
-      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, item.documentId()))
-          .tableName(DOCUMENTS_TABLE).build();
+      GetItemRequest r =
+          GetItemRequest.builder().key(item.key().toMap()).tableName(DOCUMENTS_TABLE).build();
 
       Map<String, AttributeValue> result = db.getItem(r).item();
       assertEquals(ttl, result.get("TimeToLive").n());
@@ -1051,10 +1047,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Verify {@link DocumentItem}.
+   * Verify {@link DocumentRecord}.
    *
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @param contentType {@link String}
    * @param contentLength {@link String}
    */

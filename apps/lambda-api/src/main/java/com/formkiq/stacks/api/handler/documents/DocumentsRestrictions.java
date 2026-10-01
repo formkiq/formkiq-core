@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 
@@ -39,9 +38,9 @@ public interface DocumentsRestrictions {
    * @param awsservice {@link AwsServiceCache}
    * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param contentLength {@link Long}
    * @return boolean
    */
   boolean isViolated(AwsServiceCache awsservice, SiteConfiguration config, String siteId,
-      DocumentItem item);
+      Long contentLength);
 }

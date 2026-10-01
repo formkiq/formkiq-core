@@ -28,14 +28,13 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
@@ -57,14 +56,10 @@ import java.util.Map;
  * {@link DocumentAction} for RESIZE {@link ActionType}.
  */
 public class ResizeAction implements DocumentAction {
-  private static DocumentItem createDocumentItem(final Image resImage, final String username) {
-    DocumentItem item =
-        new DocumentItemDynamoDb(resImage.document().documentId(), new Date(), username);
-    item.setPath(resImage.path());
-    item.setWidth(Integer.toString(resImage.getWidth()));
-    item.setHeight(Integer.toString(resImage.getHeight()));
-
-    return item;
+  private static DocumentRecord createDocumentRecord(final Image resImage, final String username) {
+    return DocumentRecord.builder().document(resImage.document()).insertedDate(new Date())
+        .userId(username).path(resImage.path()).width(Integer.toString(resImage.getWidth()))
+        .height(Integer.toString(resImage.getHeight())).build(resImage.siteId());
   }
 
   private static String getFormat(final Image srcImage, final Map<String, Object> parameters) {
@@ -180,21 +175,22 @@ public class ResizeAction implements DocumentAction {
         "image/" + imageFormatToMimeType(resImage.format()));
   }
 
-  private void saveDocumentItem(final Image resImage, final String sourceDocumentId,
-      final DocumentItem item) throws ValidationException {
+  private void saveDocumentRecord(final Image resImage, final String sourceDocumentId,
+      final DocumentRecord record) throws ValidationException {
     Collection<DocumentAttributeRecord> documentAttributes =
         new DocumentAttributeRecordBuilder().apply(DocumentArtifact.of(sourceDocumentId, null),
             resImage.document(), DocumentRelationshipType.RENDITION, null);
     SaveDocumentOptions options =
         new SaveDocumentOptions().validationAccess(AttributeValidationAccess.ADMIN_CREATE);
-    documentService.saveDocument(resImage.siteId(), item, null, documentAttributes, options);
+    DocumentRecordSet recordSet = new DocumentRecordSet(record, documentAttributes, null, null);
+    documentService.saveDocument(resImage.siteId(), recordSet, options);
   }
 
   private void saveMetadata(final Image resImage, final String sourceDocumentId)
       throws ValidationException {
     String username = ApiAuthorization.getAuthorization().getUsername();
-    DocumentItem item = createDocumentItem(resImage, username);
-    saveDocumentItem(resImage, sourceDocumentId, item);
+    DocumentRecord record = createDocumentRecord(resImage, username);
+    saveDocumentRecord(resImage, sourceDocumentId, record);
   }
 
   private void saveResImage(final Image resImage, final String sourceDocumentId)

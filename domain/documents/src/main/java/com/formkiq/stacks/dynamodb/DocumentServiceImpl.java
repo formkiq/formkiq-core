@@ -53,7 +53,6 @@ import com.formkiq.aws.dynamodb.documents.AttributeValueToDocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DeleteDocumentQuery;
 import com.formkiq.aws.dynamodb.documents.DeleteSoftDeletedDocumentArtifactsQuery;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.documents.DocumentItemToDocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordToDocumentRecordBuilder;
@@ -72,7 +71,6 @@ import com.formkiq.aws.dynamodb.entity.RetentionDispositionCompositeAttribute;
 import com.formkiq.aws.dynamodb.entity.RetentionMode;
 import com.formkiq.aws.dynamodb.folders.GetFolderFileByDocumentIdFind;
 import com.formkiq.aws.dynamodb.folders.PathToFolderIndexRecords;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
@@ -403,30 +401,18 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     return attributes;
   }
 
-  private FolderIndexRecord createDocumentPath(final String siteId, final DocumentItem document) {
+  private FolderIndexRecord createDocumentPath(final String siteId, final String documentId,
+      final String documentPath) {
 
     FolderIndexRecord folderIndexRecord;
 
-    List<FolderIndexRecord> folders =
-        this.folderIndexProcessor.createFolders(siteId, document.getPath());
+    List<FolderIndexRecord> folders = this.folderIndexProcessor.createFolders(siteId, documentPath);
 
     FolderIndexRecord folder = last(folders);
-    folderIndexRecord = this.folderIndexProcessor.addFileToFolder(siteId, document.getDocumentId(),
-        folder, document.getPath());
-
-    String filename = Strings.getFilename(document.getPath());
-    if (!filename.contains(folderIndexRecord.path())) {
-      String path = createPath(folders, folderIndexRecord);
-      document.setPath(path);
-    }
+    folderIndexRecord =
+        this.folderIndexProcessor.addFileToFolder(siteId, documentId, folder, documentPath);
 
     return folderIndexRecord;
-  }
-
-  private String createPath(final List<FolderIndexRecord> folders,
-      final FolderIndexRecord folderIndexRecord) {
-    return String.join("/", folders.stream().map(FolderIndexRecord::path).toList()) + "/"
-        + folderIndexRecord.path();
   }
 
   /**
@@ -667,28 +653,9 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void deleteDocumentFormats(final String siteId, final String documentId) {
-
-    String nextToken = null;
-
-    do {
-      Pagination<DocumentFormat> pr =
-          findDocumentFormats(siteId, documentId, nextToken, MAX_RESULTS);
-
-      for (DocumentFormat format : pr.getResults()) {
-        deleteDocumentFormat(siteId, documentId, format.getContentType());
-      }
-
-      nextToken = pr.getNextToken();
-
-    } while (nextToken != null);
-  }
-
-  @Override
   public void deleteDocumentTag(final String siteId, final DocumentArtifact document,
       final String tagKey) {
-    var key = new DocumentTagRecordBuilder().documentId(document.documentId())
-        .artifactId(document.artifactId()).tagKey(tagKey).buildKey(siteId);
+    var key = new DocumentTagRecordBuilder().document(document).tagKey(tagKey).buildKey(siteId);
     dbService.deleteItem(key);
   }
 
@@ -982,24 +949,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public Optional<DocumentFormat> findDocumentFormat(final String siteId, final String documentId,
-      final String contentType) {
-
-    Map<String, AttributeValue> keyMap = keysDocumentFormats(siteId, documentId, contentType);
-    Optional<Map<String, AttributeValue>> result = find(keyMap.get("PK").s(), keyMap.get("SK").s());
-
-    AttributeValueToDocumentFormat format = new AttributeValueToDocumentFormat();
-    return result.map(format);
-  }
-
-  @Override
-  public Pagination<DocumentFormat> findDocumentFormats(final String siteId,
-      final String documentId, final String nextToken, final int maxresults) {
-    Map<String, AttributeValue> keys = keysDocumentFormats(siteId, documentId, null);
-    return findAndTransform(keys, nextToken, maxresults, new AttributeValueToDocumentFormat());
-  }
-
-  @Override
   public List<DocumentRecord> findDocuments(final String siteId,
       final List<DocumentArtifact> documents) {
 
@@ -1158,8 +1107,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   private QueryResponse findDocumentTagAttributes(final String siteId,
       final DocumentArtifact document, final String tagKey, final Integer maxresults) {
 
-    var key = new DocumentTagRecordBuilder().documentId(document.documentId())
-        .artifactId(document.artifactId()).tagKey(tagKey).buildKey(siteId);
+    var key = new DocumentTagRecordBuilder().document(document).tagKey(tagKey).buildKey(siteId);
 
     QueryRequest q = DynamoDbQueryBuilder.builder().pk(key.pk()).scanIndexForward(true)
         .beginsWith(key.sk()).limit(maxresults).build(this.documentTableName);
@@ -1171,8 +1119,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   public Pagination<DocumentTag> findDocumentTags(final String siteId,
       final DocumentArtifact document, final String nextToken, final int limit) {
 
-    var key = new DocumentTagRecordBuilder().documentId(document.documentId())
-        .artifactId(document.artifactId()).tagKey("").buildKey(siteId);
+    var key = new DocumentTagRecordBuilder().document(document).tagKey("").buildKey(siteId);
 
     int count = document.artifactId() != null ? 2 : 1;
     String sk = key.skSubstring(count) + "#";
@@ -1375,8 +1322,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     List<DocumentTagRecord> tagRecords = new ArrayList<>();
     notNull(tags).stream().filter(predicate).forEach(tag -> {
       DocumentTagRecordBuilder builder = new DocumentTagRecordBuilder();
-      List<DocumentTagRecord> r = builder.tag(tag).documentId(document.documentId())
-          .artifactId(document.artifactId()).build(siteId);
+      List<DocumentTagRecord> r = builder.tag(tag).document(document).build(siteId);
       tagRecords.addAll(r);
     });
 
@@ -1616,12 +1562,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       if (document.artifactId() == null) {
         String path = attr.get("path").s();
-        String userId = attr.get("userId").s();
 
-        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-        item.setPath(path);
-
-        FolderIndexRecord record = createDocumentPath(siteId, item);
+        FolderIndexRecord record = createDocumentPath(siteId, documentId, path);
 
         WriteRequestBuilder writeBuilder =
             new WriteRequestBuilder().append(this.documentTableName, record.getAttributes(siteId));
@@ -1800,19 +1742,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
   }
 
   @Override
-  public void saveDocument(final String siteId, final DocumentItem document,
-      final Collection<DocumentTag> tags) throws ValidationException {
-
-    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(document).build(siteId);
-    var taglist = notNull(tags).stream()
-        .flatMap(t -> DocumentTagRecord.builder().tag(t).build(siteId).stream()).toList();
-    var documentRecordSet = new DocumentRecordSet(documentRecord, null, taglist, null);
-
-    SaveDocumentOptions options = new SaveDocumentOptions().timeToLive(null);
-    saveDocument(siteId, documentRecordSet, options);
-  }
-
-  @Override
   public void saveDocument(final String siteId, final DocumentRecord documentRecord,
       final SaveDocumentOptions options) throws ValidationException {
     saveDocument(siteId, DocumentRecordSet.builder().documentRecord(documentRecord).build(),
@@ -1852,21 +1781,6 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
       saveDocument(siteId, childDoc, childOptions);
     }
-  }
-
-  @Override
-  public void saveDocument(final String siteId, final DocumentItem document,
-      final Collection<DocumentTag> tags,
-      final Collection<DocumentAttributeRecord> documentAttributes,
-      final SaveDocumentOptions options) throws ValidationException {
-
-    var documentRecord = new DocumentItemToDocumentRecordBuilder().apply(document).build(siteId);
-    var taglist = notNull(tags).stream()
-        .flatMap(t -> DocumentTagRecord.builder().tag(t).build(siteId).stream()).toList();
-    var documentRecordSet =
-        new DocumentRecordSet(documentRecord, documentAttributes, taglist, null);
-
-    saveDocument(siteId, documentRecordSet, options);
   }
 
   private DocumentRecordSet createRootDocumentRecordSet(final String siteId,

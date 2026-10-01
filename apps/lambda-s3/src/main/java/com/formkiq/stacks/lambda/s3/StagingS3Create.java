@@ -37,13 +37,11 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentsCompressRequest;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.useractivities.ActivityRecord;
@@ -474,7 +472,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param bucket {@link String}
    * @param siteId {@link String}
    * @param s3Key {@link String}
-   * @return {@link DynamicDocumentItem}
+   * @return {@link AddDocumentRequest}
    */
   private AddDocumentRequest loadDocument(final String bucket, final String siteId,
       final String s3Key) {
@@ -743,7 +741,7 @@ public class StagingS3Create implements RequestHandler<Map<String, Object>, Void
    * @param siteId {@link String}
    * @param documentId {@link String}
    * @param agent {@link String}
-   * @param existingDocument {@link DocumentItem}
+   * @param existingDocument {@link DocumentRecord}
    */
   private void saveDocumentSync(final String siteId, final String documentId, final String agent,
       final DocumentRecord existingDocument) {

@@ -43,6 +43,8 @@ import java.util.UUID;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
@@ -51,7 +53,6 @@ import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -114,6 +115,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     assertNull(resp.get("previous"));
   }
 
+  private DocumentRecordBuilder createDocument(final String documentId) {
+    return new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+        .userId("jsmith");
+  }
+
   /**
    * PATCH /documents/{documentId} request.
    * 
@@ -141,12 +147,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
-      String userId = "jsmith";
       String documentId = ID.uuid();
       String body = "{\"contentType\":\"application/pdf\",\"path\":\"/documents/test2.txt\"}";
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+      var item = createDocument(documentId).build(siteId);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
           siteId != null ? siteId : DEFAULT_SITE_ID, body);
@@ -197,14 +202,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
 
       // given
       String documentId = ID.uuid();
-      String userId = "jsmith";
       final long contentLength = 1000;
 
-      DocumentItemDynamoDb item =
-          new DocumentItemDynamoDb(documentId, Date.from(Instant.now().minusSeconds(1)), userId);
-      item.setPath("test.txt");
-      item.setContentLength(contentLength);
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      var item = createDocument(documentId).insertedDate(Date.from(Instant.now().minusSeconds(1)))
+          .path("test.txt").contentLength(contentLength).build(siteId);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-patch-documents-documentid02.json");
       addParameter(event, "siteId", siteId);
@@ -263,12 +265,11 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
-      String userId = "jsmith";
       String documentId = ID.uuid();
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      var item = createDocument(documentId).build(siteId);
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       String body = "{\"tags\":[{\"key\":\"author\",\"value\":\"Bacon\"}]}";
       ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,
@@ -286,9 +287,9 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
           getDocumentService().findDocumentTags(siteId, document, null, 2).getResults();
       assertEquals(1, tags.size());
 
-      assertEquals("USERDEFINED", tags.get(0).getType().name());
-      assertEquals("author", tags.get(0).getKey());
-      assertEquals("Bacon", tags.get(0).getValue());
+      assertEquals("USERDEFINED", tags.getFirst().getType().name());
+      assertEquals("author", tags.getFirst().getKey());
+      assertEquals("Bacon", tags.getFirst().getValue());
     }
   }
 
@@ -302,14 +303,14 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
-      String userId = "jsmith";
       String documentId = ID.uuid();
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something", null),
-          new DocumentMetadata("playerId", "something", null)));
-      getDocumentService().saveDocument(siteId, doc, null);
+      Collection<DocumentMetadata> metadata =
+          List.of(new DocumentMetadata("person", "something", null),
+              new DocumentMetadata("playerId", "something", null));
+      var doc = createDocument(documentId).metadata(metadata).build(siteId);
+      getDocumentService().saveDocument(siteId, doc, new SaveDocumentOptions());
 
       String body = "{\"metadata\":[{\"key\":\"person\",\"value\":\"category\"},"
           + "{\"key\":\"playerId\",\"values\":[\"111\",\"222\"]}]}";
@@ -323,7 +324,7 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
       assert200Response(siteId, response);
 
       DocumentRecord item = getDocumentService().findDocument(siteId, document);
-      Collection<DocumentMetadata> metadata = item.metadata();
+      metadata = item.metadata();
 
       assertEquals(2, metadata.size());
 
@@ -348,13 +349,12 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final int count = 30;
-      String userId = "jsmith";
       String documentId = ID.uuid();
 
-      DocumentItemDynamoDb doc = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      doc.setMetadata(Arrays.asList(new DocumentMetadata("person", "something", null),
-          new DocumentMetadata("playerId", "something", null)));
-      getDocumentService().saveDocument(siteId, doc, null);
+      var documentMetadata = List.of(new DocumentMetadata("person", "something", null),
+          new DocumentMetadata("playerId", "something", null));
+      var doc = createDocument(documentId).metadata(documentMetadata).build(siteId);
+      getDocumentService().saveDocument(siteId, doc, new SaveDocumentOptions());
 
       Map<String, Object> data = new HashMap<>();
       List<Map<String, Object>> metadata = new ArrayList<>();
@@ -388,11 +388,10 @@ public class ApiDocumentsPatchRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // given
-      String userId = "jsmith";
       String documentId = ID.uuid();
 
-      getDocumentService().saveDocument(siteId,
-          new DocumentItemDynamoDb(documentId, new Date(), userId), new ArrayList<>());
+      var doc = createDocument(documentId).build(siteId);
+      getDocumentService().saveDocument(siteId, doc, new SaveDocumentOptions());
 
       String body = "{\"tags\":[{\"key\":\"CLAMAV_SCAN_TIMESTAMP\",\"value\":\"Bacon\"}]}";
       ApiGatewayRequestEvent event = patchDocumentsRequest(siteId, documentId,

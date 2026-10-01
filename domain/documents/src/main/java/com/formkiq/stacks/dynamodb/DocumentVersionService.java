@@ -27,7 +27,7 @@ import java.util.Map;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -66,16 +66,16 @@ public interface DocumentVersionService {
   DynamoDbService getDb();
 
   /**
-   * Get {@link DocumentItem} either current or versioned.
+   * Get {@link DocumentRecord} either current or versioned.
    * 
    * @param documentService {@link DocumentService}
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
    * @param versionKey {@link String}
    * @param versionAttributes {@link Map}
-   * @return DocumentItem
+   * @return DocumentRecord
    */
-  DocumentItem getDocumentItem(DocumentService documentService, String siteId,
+  DocumentRecord getDocumentRecord(DocumentService documentService, String siteId,
       DocumentArtifact document, String versionKey, Map<String, AttributeValue> versionAttributes);
 
   /**

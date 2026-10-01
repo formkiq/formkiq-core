@@ -26,11 +26,12 @@ package com.formkiq.stacks.api;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventBuilder;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -180,7 +180,9 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       // given
       Date date = new Date();
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, "jsmith");
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId("jsmith").build(siteId);
+      // DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, "jsmith");
 
       ApiGatewayRequestEvent event =
           toRequestEvent("/request-get-documents-upload-documentid01.json");
@@ -188,7 +190,7 @@ public class ApiDocumentsUploadRequestTest extends AbstractRequestHandler {
       setPathParameter(event, "documentId", documentId);
 
       // when
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       String response = handleRequest(event);
 

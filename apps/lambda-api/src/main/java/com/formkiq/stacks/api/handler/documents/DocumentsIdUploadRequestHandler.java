@@ -26,16 +26,16 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordToDocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationErrorImpl;
 import com.formkiq.validation.ValidationException;
@@ -85,12 +85,11 @@ public class DocumentsIdUploadRequestHandler
         new AddDocumentRequestToPresignedUrls(awsservice, authorization, siteId, null,
             Optional.empty(), accelerate);
 
-    DynamicDocumentItem item = new DocumentRecordToDynamicDocumentItem().apply(ditem);
     final Map<String, Object> uploadUrls = addDocumentRequestToPresignedUrls.apply(o, artifactId);
 
-    item.setChecksum(o.getChecksum());
-    item.setChecksumType(o.getChecksumType());
-    service.saveDocument(siteId, item, null);
+    DocumentRecord item = new DocumentRecordToDocumentRecordBuilder().apply(null, ditem)
+        .checksum(o.getChecksum()).checksumType(o.getChecksumType()).build(siteId);
+    service.saveDocument(siteId, item, new SaveDocumentOptions());
 
     return ApiRequestHandlerResponse.builder().ok().body(uploadUrls).build();
   }

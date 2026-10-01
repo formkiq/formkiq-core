@@ -26,7 +26,6 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -42,7 +41,6 @@ import com.formkiq.aws.dynamodb.actions.Action;
 import com.formkiq.module.actions.services.ActionsNotificationService;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentValidator;
 import com.formkiq.stacks.dynamodb.DocumentValidatorImpl;
@@ -199,11 +197,8 @@ public class DocumentsUploadRequestHandler
         throw new BadException(
             "'contentLength' is required when MaxContentLengthBytes is configured");
       } else {
-        DocumentItem item = new DocumentItemDynamoDb();
-        item.setContentLength(contentLength);
-
         if (this.restrictionMaxContentLength.isViolated(awsservice, siteConfiguration, siteId,
-            item)) {
+            contentLength)) {
           throw new BadException("'contentLength' cannot exceed "
               + siteConfiguration.maxContentLengthBytes() + " bytes");
         }

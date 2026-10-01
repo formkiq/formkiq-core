@@ -25,15 +25,14 @@ package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.dynamodb.AttributeValueToMap;
+import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -56,7 +55,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
 /**
- * Export {@link DocumentItem} to External System.
+ * Export {@link DocumentRecord} to External System.
  */
 public class DocumentExternalSystemExport implements DocumentExternalSystem {
 
@@ -83,7 +82,7 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
   }
 
   private void addChanged(final Collection<Map<String, Object>> activities,
-      final DynamicDocumentItem item) {
+      final Map<String, Object> item) {
 
     if (!notNull(activities).isEmpty()) {
 
@@ -111,7 +110,7 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
   }
 
   private void addChangedAttributes(final Collection<Map<String, Object>> activities,
-      final DynamicDocumentItem item) {
+      final Map<String, Object> item) {
 
     if (!notNull(activities).isEmpty()) {
 
@@ -207,7 +206,7 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
   }
 
   private void addDocumentTags(final String siteId, final DocumentArtifact document,
-      final DynamicDocumentItem item) {
+      final Map<String, Object> item) {
 
     Map<String, Collection<DocumentTag>> tagMap =
         this.documentService.findDocumentsTags(siteId, List.of(document.documentId()),
@@ -235,12 +234,14 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
   public String apply(final String siteId, final DocumentArtifact document,
       final Collection<Map<String, Object>> activities) {
 
-    DynamicDocumentItem item = null;
+    Map<String, Object> item;
     DocumentRecord record = this.documentService.findDocument(siteId, document);
     if (record != null) {
-      item = new DocumentRecordToDynamicDocumentItem().apply(record);
+      AttributeValueToMapConfig config =
+          AttributeValueToMapConfig.builder().removeDbKeys(true).build();
+      item = new AttributeValueToMap(config).apply(record.getAttributes());
     } else {
-      item = new DynamicDocumentItem(Map.of("documentId", document.documentId()));
+      item = new HashMap<>(Map.of("documentId", document.documentId()));
     }
 
     String site = siteId != null ? siteId : SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -267,18 +268,18 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
    *
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @return {@link URL}
    */
   private URL getS3Url(final String siteId, final DocumentArtifact document,
-      final DocumentItem item) {
+      final Map<String, Object> item) {
 
     URL url = null;
 
-    if (item != null && !isEmpty(item.getPath())) {
+    String path = item != null ? (String) item.get("path") : null;
+    if (!isEmpty(path)) {
       Duration duration = Duration.ofDays(1);
-      PresignGetUrlConfig config =
-          new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false);
+      PresignGetUrlConfig config = new PresignGetUrlConfig().contentDispositionByPath(path, false);
       String s3key = createS3Key(siteId, document);
       url = s3Presigner.presignGetUrl(documentsBucket, s3key, duration, null, config);
     }

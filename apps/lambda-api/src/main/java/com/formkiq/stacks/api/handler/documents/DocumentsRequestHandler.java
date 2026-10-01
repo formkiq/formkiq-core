@@ -41,13 +41,11 @@ import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -65,9 +63,7 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
-import com.formkiq.stacks.dynamodb.AttributeValueToDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentRecordSetToMap;
-import com.formkiq.stacks.dynamodb.DocumentRecordToDynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncStatusQuery;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
@@ -188,8 +184,9 @@ public class DocumentsRequestHandler
     QueryResult result = new GetAllDocumentsQuery(date, !documentIdProjection).query(db,
         documentsTable, siteId, nextToken, limit);
 
-    AttributeValueToDocumentItem toDocument = new AttributeValueToDocumentItem();
-    List<DocumentItem> docs = result.items().stream().map(toDocument::apply).toList();
+    DocumentRecordSetToMap toMap = new DocumentRecordSetToMap();
+    List<Map<String, Object>> docs =
+        result.items().stream().map(DocumentRecord::fromAttributeMap).map(toMap::apply).toList();
 
     return ApiRequestHandlerResponse.builder().ok().body("documents", docs)
         .next(result.toNextToken()).build();
@@ -259,8 +256,8 @@ public class DocumentsRequestHandler
     ApiPagination current =
         createPagination(cacheService, event, pagination, results.getNextToken(), limit);
 
-    List<DynamicDocumentItem> docs = results.getResults().stream()
-        .map(l -> new DocumentRecordToDynamicDocumentItem().apply(l)).toList();
+    DocumentRecordSetToMap toMap = new DocumentRecordSetToMap();
+    List<Map<String, Object>> docs = results.getResults().stream().map(toMap::apply).toList();
     map.put("documents", docs);
     return current;
   }

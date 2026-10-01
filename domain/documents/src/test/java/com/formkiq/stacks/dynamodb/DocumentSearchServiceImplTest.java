@@ -68,12 +68,11 @@ import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
 import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
@@ -148,7 +147,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     this.attributeService = awsServiceCache.getExtension(AttributeService.class);
   }
 
-  private String createAttributeDocument(final String siteId, final String id,
+  private void createAttributeDocument(final String siteId, final String id,
       final Map<String, List<String>> values) {
     values.keySet().forEach(key -> {
       if (this.attributeService.getAttribute(siteId, key) == null) {
@@ -156,15 +155,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
             AttributeDataType.STRING, AttributeType.STANDARD);
       }
     });
-    DocumentItem document = createDocument(id, ZonedDateTime.now());
+    DocumentRecord document = createDocument(siteId, id, ZonedDateTime.now());
     List<DocumentAttributeRecord> attributes = new ArrayList<>();
     values.forEach((key,
         strings) -> strings.forEach(value -> attributes
             .add(new DocumentAttributeRecord().setDocument(DocumentArtifact.of(id, null))
                 .setKey(key).setValueType(DocumentAttributeValueType.STRING).setStringValue(value)
                 .setUserId("jsmith"))));
-    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
-    return id;
+    saveDocument(siteId, new DocumentRecordSet(document, attributes, null, null));
   }
 
   /**
@@ -179,42 +177,38 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   private String createDocument(final String siteId, final String tagKey, final String tagValue)
       throws ValidationException {
     ZonedDateTime now = ZonedDateTime.now();
-    DocumentItem doc = createDocument(ID.uuid(), now);
-    Collection<DocumentTag> tags =
-        List.of(new DocumentTag(doc.getDocumentId(), tagKey, tagValue, new Date(), "testuser"));
-    this.service.saveDocument(siteId, doc, tags);
+    DocumentRecord doc = createDocument(siteId, ID.uuid(), now);
+    List<DocumentTagRecord> tags =
+        DocumentTagRecord.builder().document(doc.document()).tagKey(tagKey).tagValue(tagValue)
+            .insertedDate(new Date()).userId("testuser").build(siteId);
+    saveDocument(siteId, new DocumentRecordSet(doc, null, tags, null));
 
-    return doc.getDocumentId();
+    return doc.documentId();
   }
 
   /**
    * Create Document.
    *
+   * @param siteId {@link String}
    * @param uuid {@link String}
    * @param date {@link ZonedDateTime}
-   * @return {@link DocumentItem}
+   * @return {@link DocumentRecord}
    */
-  private DocumentItem createDocument(final String uuid, final ZonedDateTime date) {
-
-    String userId = "jsmith";
-
-    DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
-    item.setContentType("text/plain");
-    item.setPath("test.txt");
-    item.setUserId(ID.uuid());
-    item.setChecksum(ID.uuid());
-    item.setContentLength(2L);
-    return item;
+  private DocumentRecord createDocument(final String siteId, final String uuid,
+      final ZonedDateTime date) {
+    return DocumentRecord.builder().documentId(uuid).insertedDate(Date.from(date.toInstant()))
+        .contentType("text/plain").path("test.txt").userId(ID.uuid()).checksum(ID.uuid())
+        .contentLength(2L).build(siteId);
   }
 
   /**
-   * Create Test {@link DocumentItem}.
+   * Create Test {@link DocumentRecord}.
    *
    * @param prefix DynamoDB PK Prefix
    * @param count maximum number of documents to create
-   * @return {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentRecord}
    */
-  private List<DocumentItem> createTestData(final String prefix, final int count) {
+  private List<DocumentRecord> createTestData(final String prefix, final int count) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -223,22 +217,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         "2020-01-31T08:00:00", "2020-01-31T09:00:00", "2020-01-31T10:00:00", "2020-01-31T11:00:00",
         "2020-01-31T23:00:00");
 
-    List<DocumentItem> items = new ArrayList<>();
+    List<DocumentRecord> items = new ArrayList<>();
 
     dates.stream().limit(count).forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
       String id = ID.uuid();
-      items.add(createDocument(id, zdate));
+      items.add(createDocument(prefix, id, zdate));
     });
 
     items.forEach(item -> {
-      Collection<DocumentTag> tags = List
-          .of(new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
-      try {
-        this.service.saveDocument(prefix, item, tags);
-      } catch (ValidationException e) {
-        throw new RuntimeException(e);
-      }
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(item.document()).tagKey("status").tagValue("active")
+              .insertedDate(new Date()).userId("testuser").build(prefix);
+      saveDocument(prefix, new DocumentRecordSet(item, null, tags, null));
     });
 
     return items;
@@ -268,14 +259,14 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
     for (Map.Entry<String, Object> e : tags.entrySet()) {
       if (value) {
-        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
-            .tagValue(e.getValue().toString()).type(DocumentTagType.USERDEFINED).userId(username)
-            .build((String) null));
+        addTags.addAll(DocumentTagRecord.builder().document(documentRecord.document())
+            .tagKey(e.getKey()).tagValue(e.getValue().toString()).type(DocumentTagType.USERDEFINED)
+            .userId(username).build((String) null));
       } else {
 
-        addTags.addAll(DocumentTagRecord.builder().documentId(documentId).tagKey(e.getKey())
-            .tagValues((List<String>) e.getValue()).type(DocumentTagType.USERDEFINED)
-            .userId(username).build((String) null));
+        addTags.addAll(DocumentTagRecord.builder().document(documentRecord.document())
+            .tagKey(e.getKey()).tagValues((List<String>) e.getValue())
+            .type(DocumentTagType.USERDEFINED).userId(username).build((String) null));
       }
     }
 
@@ -442,12 +433,12 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      List<DocumentItem> items = createTestData(siteId, 1);
-      DocumentItem item = items.getFirst();
-      DocumentTag tag =
-          new DocumentTag(item.getDocumentId(), "status", null, new Date(), "testuser")
-              .setValues(List.of("active", "notactive"));
-      this.service.saveDocument(siteId, item, List.of(tag));
+      List<DocumentRecord> items = createTestData(siteId, 1);
+      DocumentRecord item = items.getFirst();
+      List<DocumentTagRecord> tags = DocumentTagRecord.builder().document(item.document())
+          .tagKey("status").tagValues(List.of("active", "notactive")).insertedDate(new Date())
+          .userId("testuser").build(siteId);
+      saveDocument(siteId, new DocumentRecordSet(item, null, tags, null));
 
       String tagKey = "status";
       String tagValue = "notactive";
@@ -857,21 +848,21 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch14() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc0.setPath("test2.pdf");
-      this.service.saveDocument(siteId, doc0, null);
+      DocumentRecord doc0 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("test2.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc0, new SaveDocumentOptions());
 
-      DocumentItem doc1 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc1.setPath("test1.pdf");
-      this.service.saveDocument(siteId, doc1, null);
+      DocumentRecord doc1 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("test1.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc1, new SaveDocumentOptions());
 
-      DocumentItem doc2 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc2.setPath("sample/test3.pdf");
-      this.service.saveDocument(siteId, doc2, null);
+      DocumentRecord doc2 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("sample/test3.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc2, new SaveDocumentOptions());
 
-      DocumentItem doc3 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc3.setPath("sample/anotherone/test4.pdf");
-      this.service.saveDocument(siteId, doc3, null);
+      DocumentRecord doc3 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("sample/anotherone/test4.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc3, new SaveDocumentOptions());
 
       String folder = "";
       SearchQuery q = new SearchQueryBuilder()
@@ -890,9 +881,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       int i = 0;
       assertNotNull(list.get(i).documentRecord().documentId());
       assertEquals("sample", list.get(i++).documentRecord().path());
-      assertEquals(doc1.getDocumentId(), results.getResults().get(i).documentRecord().documentId());
+      assertEquals(doc1.documentId(), results.getResults().get(i).documentRecord().documentId());
       assertEquals("test1.pdf", list.get(i++).documentRecord().path());
-      assertEquals(doc0.getDocumentId(), results.getResults().get(i).documentRecord().documentId());
+      assertEquals(doc0.documentId(), results.getResults().get(i).documentRecord().documentId());
       assertEquals("test2.pdf", list.get(i).documentRecord().path());
 
       // given
@@ -909,7 +900,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertEquals("anotherone", path(list.get(0)));
       assertNotNull(list.get(0).documentRecord().documentId());
       assertEquals("sample/test3.pdf", path(list.get(1)));
-      assertEquals(doc2.getDocumentId(), list.get(1).documentRecord().documentId());
+      assertEquals(doc2.documentId(), list.get(1).documentRecord().documentId());
 
       // given
       folder = "sample/anotherone";
@@ -923,7 +914,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       list = results.getResults();
       assertEquals(1, list.size());
       assertEquals("sample/anotherone/test4.pdf", path(list.getFirst()));
-      assertEquals(doc3.getDocumentId(), list.getFirst().documentRecord().documentId());
+      assertEquals(doc3.documentId(), list.getFirst().documentRecord().documentId());
     }
   }
 
@@ -936,9 +927,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch15() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc0.setPath("sample/test2.pdf");
-      this.service.saveDocument(siteId, doc0, null);
+      DocumentRecord doc0 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("sample/test2.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc0, new SaveDocumentOptions());
 
       SearchQuery q0 =
           new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
@@ -968,15 +959,15 @@ public class DocumentSearchServiceImplTest implements DbKeys {
           .build();
 
       // when
-      this.service.deleteDocument(siteId, DocumentArtifact.of(doc0.getDocumentId(), null), false);
+      this.service.deleteDocument(siteId, doc0.document(), false);
+      results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
+      results1 = this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
 
       // then
-      results0 = this.searchService.search(siteId, q0, null, null, MAX_RESULTS);
       list0 = results0.getResults();
       assertEquals(1, list0.size());
       assertEquals("sample", path(list0.getFirst()));
 
-      results1 = this.searchService.search(siteId, q1, null, null, MAX_RESULTS);
       assertEquals(0, results1.getResults().size());
     }
   }
@@ -990,17 +981,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch16() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc0.setPath("Chicago/test2.pdf");
-      this.service.saveDocument(siteId, doc0, null);
+      DocumentRecord doc0 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("Chicago/test2.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc0, new SaveDocumentOptions());
 
-      DocumentItem doc1 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc1.setPath("abc.pdf");
-      this.service.saveDocument(siteId, doc1, null);
+      DocumentRecord doc1 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("abc.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc1, new SaveDocumentOptions());
 
-      DocumentItem doc2 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc2.setPath("aaaa/test3.pdf");
-      this.service.saveDocument(siteId, doc2, null);
+      DocumentRecord doc2 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("aaaa/test3.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc2, new SaveDocumentOptions());
 
       String folder = "";
       SearchQuery q = new SearchQueryBuilder()
@@ -1033,18 +1024,19 @@ public class DocumentSearchServiceImplTest implements DbKeys {
   public void testSearch17() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem doc0 = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc0.setPath("/a/b/test2.pdf");
-      this.service.saveDocument(siteId, doc0, null);
+      DocumentRecord doc0 = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("/a/b/test2.pdf").build(siteId);
+      this.service.saveDocument(siteId, doc0, new SaveDocumentOptions());
 
-      doc0.setPath("/c/b/test3.pdf");
-      this.service.saveDocument(siteId, doc0, null);
+      doc0 = DocumentRecord.builder().document(doc0.document()).setDefaultValues(doc0)
+          .path("/c/b/test3.pdf").build(siteId);
 
       String folder = "";
       SearchMetaCriteria meta = new SearchMetaCriteria(null, folder, null, null, null);
       SearchQuery q = new SearchQueryBuilder().meta(meta).build();
 
       // when
+      this.service.saveDocument(siteId, doc0, new SaveDocumentOptions());
       Pagination<DocumentSearchResult> results =
           this.searchService.search(siteId, q, null, null, MAX_RESULTS);
 
@@ -1054,15 +1046,25 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       assertEquals("a", path(list.get(0)));
       assertEquals("c", path(list.get(1)));
 
+      // given
       meta = new SearchMetaCriteria(null, "a/b", null, null, null);
       q = new SearchQueryBuilder().meta(meta).build();
+
+      // when
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
       list = results.getResults();
       assertEquals(0, list.size());
 
+      // given
       meta = new SearchMetaCriteria(null, "c/b", null, null, null);
       q = new SearchQueryBuilder().meta(meta).build();
+
+      // when
       results = this.searchService.search(siteId, q, null, null, MAX_RESULTS);
+
+      // then
       list = results.getResults();
       assertEquals(1, list.size());
       assertEquals("/c/b/test3.pdf", path(list.getFirst()));
@@ -1079,9 +1081,9 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String path = "/a/b/test2.pdf";
-      DocumentItem doc = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      doc.setPath(path);
-      this.service.saveDocument(siteId, doc, null);
+      DocumentRecord doc = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path(path).build(siteId);
+      this.service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       SearchMetaCriteria meta = new SearchMetaCriteria(null, null, null, null, path);
       SearchQuery q = new SearchQueryBuilder().meta(meta).build();
@@ -1093,7 +1095,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
       // then
       List<DocumentSearchResult> list = results.getResults();
       assertEquals(1, list.size());
-      assertEquals(doc.getDocumentId(), list.getFirst().documentRecord().documentId());
+      assertEquals(doc.documentId(), list.getFirst().documentRecord().documentId());
       assertEquals("/a/b/test2.pdf", path(list.getFirst()));
 
       // given - invalid path
@@ -1172,8 +1174,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     String attributeKey = ID.uuid();
     this.attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
         AttributeDataType.STRING, AttributeType.STANDARD);
-    DocumentItem document = createDocument(ID.uuid(), ZonedDateTime.now());
-    DocumentArtifact artifact = DocumentArtifact.of(document.getDocumentId(), null);
+    DocumentRecord document = createDocument(siteId, ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact artifact = document.document();
 
     Collection<DocumentAttributeRecord> attributes = List.of(
         new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
@@ -1183,7 +1185,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
             .setValueType(DocumentAttributeValueType.STRING).setStringValue("z-outside")
             .setUserId("jsmith"));
 
-    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
+    saveDocument(siteId, new DocumentRecordSet(document, attributes, null, null));
 
     SearchTagCriteriaRange range = new SearchTagCriteriaRange("a", "n", "string");
     SearchAttributeCriteria criteria =
@@ -1196,17 +1198,17 @@ public class DocumentSearchServiceImplTest implements DbKeys {
 
     // then
     assertEquals(1, results.getResults().size());
-    assertEquals(document.getDocumentId(),
+    assertEquals(document.documentId(),
         results.getResults().getFirst().documentRecord().documentId());
 
     // when - search the same range with the matching document ID
-    query = new SearchQueryBuilder().attribute(criteria)
-        .documentIds(List.of(document.getDocumentId())).build();
+    query = new SearchQueryBuilder().attribute(criteria).documentIds(List.of(document.documentId()))
+        .build();
     results = this.searchService.search(siteId, query, null, null, MAX_RESULTS);
 
     // then
     assertEquals(1, results.getResults().size());
-    assertEquals(document.getDocumentId(),
+    assertEquals(document.documentId(),
         results.getResults().getFirst().documentRecord().documentId());
 
     // when - count the same range with the matching document ID
@@ -1260,8 +1262,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
     String attributeKey = ID.uuid();
     this.attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
         AttributeDataType.STRING, AttributeType.STANDARD);
-    DocumentItem document = createDocument(ID.uuid(), ZonedDateTime.now());
-    DocumentArtifact artifact = DocumentArtifact.of(document.getDocumentId(), null);
+    DocumentRecord document = createDocument(siteId, ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact artifact = document.document();
     Collection<DocumentAttributeRecord> attributes = List.of(
         new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
             .setValueType(DocumentAttributeValueType.STRING).setStringValue("first")
@@ -1269,7 +1271,7 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         new DocumentAttributeRecord().setDocument(artifact).setKey(attributeKey)
             .setValueType(DocumentAttributeValueType.STRING).setStringValue("second")
             .setUserId("jsmith"));
-    this.service.saveDocument(siteId, document, null, attributes, new SaveDocumentOptions());
+    saveDocument(siteId, new DocumentRecordSet(document, attributes, null, null));
     SearchAttributeCriteria criteria =
         new SearchAttributeCriteria(attributeKey, null, null, List.of("first", "second"), null);
     SearchQuery query = new SearchQueryBuilder().attribute(criteria).build();
@@ -1511,8 +1513,8 @@ public class DocumentSearchServiceImplTest implements DbKeys {
         new SearchTagCriteriaRange("2026-01-01", null, null));
     SearchQuery query =
         new SearchQueryBuilder().attributes(List.of(eq("customer", "123"), range)).build();
-    ValidationException error = org.junit.jupiter.api.Assertions.assertThrows(
-        ValidationException.class, () -> this.searchService.count(ID.uuid(), query, 10000));
+    ValidationException error = Assertions.assertThrows(ValidationException.class,
+        () -> this.searchService.count(ID.uuid(), query, 10000));
     assertTrue(error.errors().stream().anyMatch(e -> "end".equals(e.key())));
   }
 

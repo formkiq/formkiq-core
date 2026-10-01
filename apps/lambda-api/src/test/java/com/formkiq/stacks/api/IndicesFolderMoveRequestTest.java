@@ -31,12 +31,12 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -56,14 +56,14 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("x/z/test.pdf");
-      getDocumentService().saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+          .userId("joe").path("x/z/test.pdf").build(siteId);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
       event.setPathParameters(Map.of("indexType", "folder"));
       addParameter(event, "siteId", siteId);
-      Map<String, String> body = Map.of("source", item.getPath(), "target", "a/b/c/");
+      Map<String, String> body = Map.of("source", item.path(), "target", "a/b/c/");
       event.setBody(GsonUtil.getInstance().toJson(body));
 
       // when
@@ -187,14 +187,14 @@ public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
       for (String target : List.of("/")) {
 
         String documentId = ID.uuid();
-        DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-        item.setPath("x/z/test.pdf");
-        getDocumentService().saveDocument(siteId, item, null);
+        var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+            .userId("joe").path("x/z/test.pdf").build(siteId);
+        getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
         ApiGatewayRequestEvent event = toRequestEvent("/request-post-indices-move.json");
         event.setPathParameters(Map.of("indexType", "folder"));
         addParameter(event, "siteId", siteId);
-        Map<String, String> body = Map.of("source", item.getPath(), "target", target);
+        Map<String, String> body = Map.of("source", item.path(), "target", target);
         event.setBody(GsonUtil.getInstance().toJson(body));
 
         // when

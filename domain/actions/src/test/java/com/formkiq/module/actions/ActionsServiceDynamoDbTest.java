@@ -43,6 +43,8 @@ import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
@@ -51,14 +53,13 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.validation.ValidationException;
@@ -135,15 +136,15 @@ public class ActionsServiceDynamoDbTest {
       // given
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      documentService.saveDocument(siteId, item, null);
+      DocumentRecord item = new DocumentRecordBuilder().document(document).build(siteId);
+      documentService.saveDocument(siteId, item, new SaveDocumentOptions());
 
       Action action0 =
           createAction(document, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
       service.saveNewActions(List.of(action0));
 
       // when
-      documentService.deleteDocument(siteId, DocumentArtifact.of(documentId, null), false);
+      documentService.deleteDocument(siteId, document, false);
 
       // then
       List<Action> actions = service.getActions(siteId, document);
@@ -162,8 +163,8 @@ public class ActionsServiceDynamoDbTest {
       // given
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      documentService.saveDocument(siteId, item, null);
+      DocumentRecord item = new DocumentRecordBuilder().document(document).build(siteId);
+      documentService.saveDocument(siteId, item, new SaveDocumentOptions());
 
       Action action0 =
           createAction(document, ActionType.OCR).parameters(Map.of("test", "1234")).build(siteId);
