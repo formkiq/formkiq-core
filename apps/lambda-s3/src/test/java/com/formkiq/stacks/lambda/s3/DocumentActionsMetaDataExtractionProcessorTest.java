@@ -28,7 +28,8 @@ import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
@@ -49,13 +50,13 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.GsonUtil;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.lambda.s3.actions.MalwareScanResponse;
 import com.formkiq.stacks.lambda.s3.actions.MalwareScanResult;
 import com.formkiq.stacks.lambda.s3.event.AwsEvent;
@@ -356,10 +357,9 @@ public class DocumentActionsMetaDataExtractionProcessorTest implements DbKeys {
 
   private DocumentArtifact createDocument(final String siteId, final DocumentArtifact document,
       final String contentType) {
-    DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
-    item.setArtifactId(document.artifactId());
-    item.setContentType(contentType);
-    documentService.saveDocument(siteId, item, null);
+    DocumentRecord item = new DocumentRecordBuilder().document(document).insertedDate(new Date())
+        .userId("joe").contentType(contentType).build(siteId);
+    documentService.saveDocument(siteId, item, new SaveDocumentOptions());
     return document;
   }
 

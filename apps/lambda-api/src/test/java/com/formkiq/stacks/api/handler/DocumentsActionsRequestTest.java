@@ -47,6 +47,7 @@ import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.model.AddAttribute;
 import com.formkiq.client.model.AddAttributeRequest;
@@ -62,6 +63,7 @@ import com.formkiq.client.model.MappingAttributeSourceType;
 import com.formkiq.client.model.OcrOutputType;
 import com.formkiq.client.model.TextractQuery;
 import com.formkiq.aws.dynamodb.actions.ActionBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
 import com.formkiq.testutils.api.mappings.AddMappingRequestBuilder;
@@ -105,7 +107,6 @@ import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.lambda.s3.DocumentActionsProcessor;
@@ -236,11 +237,10 @@ public class DocumentsActionsRequestTest extends AbstractApiClientRequestTest {
 
   private DocumentArtifact saveDocumentWithDocumentService(final String siteId, final String path)
       throws ValidationException {
-    String documentId = ID.uuid();
-    DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    item.setPath(path);
-    this.documentService.saveDocument(siteId, item, null);
-    return DocumentArtifact.of(documentId, null);
+    var item = new DocumentRecordBuilder().path(path).documentId(ID.uuid()).insertedDate(new Date())
+        .userId("joe").build(siteId);
+    this.documentService.saveDocument(siteId, item, new SaveDocumentOptions());
+    return item.document();
   }
 
   /**

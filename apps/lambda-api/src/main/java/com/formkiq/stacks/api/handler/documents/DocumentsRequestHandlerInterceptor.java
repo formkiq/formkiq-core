@@ -27,7 +27,7 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
@@ -60,9 +60,9 @@ public class DocumentsRequestHandlerInterceptor implements ApiRequestHandlerInte
 
     String siteId = authorization.getSiteId();
     if (!authorization.isAdmin(siteId) && isDocumentUrl(event)) {
-      DocumentItem item = authorization.getCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name());
-      if (item != null && item.getPath() != null) {
-        Strings.SplitResult r = Strings.lastIndexOf(item.getPath(), "/");
+      DocumentRecord item = authorization.getCacheObject(DocumentCacheKey.CACHE_DOCUMENT.name());
+      if (item != null && item.path() != null) {
+        Strings.SplitResult r = Strings.lastIndexOf(item.path(), "/");
         String parent = r != null ? r.before() : "";
         new FolderPermissionValidate(db, ApiPermission.READ).apply(siteId,
             new StringToFolder().apply(parent));

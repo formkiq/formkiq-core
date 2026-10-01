@@ -33,7 +33,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +40,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.module.lambdaservices.logger.LoggerRecorder;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
@@ -48,10 +48,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 
@@ -101,10 +99,12 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+      // DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
       DocumentMetadata md = new DocumentMetadata("category", "person", null);
-      item.setMetadata(List.of(md));
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      // item.setMetadata(List.of(md));
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(userId).metadata(List.of(md)).build(siteId);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid01.json");
       addParameter(event, "siteId", siteId);
@@ -196,8 +196,10 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     String documentId = "1a1d1938-451e-4e20-bf95-e0e7a749505a";
     String userId = "jsmith";
 
-    DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
-    getDocumentService().saveDocument(null, item, new ArrayList<>());
+    var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date).userId(userId)
+        .build((String) null);
+    // DocumentItem item = new DocumentItemDynamoDb(documentId, date, userId);
+    getDocumentService().saveDocument(null, item, new SaveDocumentOptions());
 
     ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents-documentid02.json");
 
@@ -237,16 +239,10 @@ public class ApiRequestHandlerTest extends AbstractRequestHandler {
     DocumentRecord documentRecord =
         DocumentRecord.builder().documentId(documentId0).userId(userId).build((String) null);
 
-    // DocumentItem item = new DocumentItemDynamoDb(documentId0, date, userId);
-    // DocumentItem citem = new DocumentItemDynamoDb(documentId1, date, userId);
     DocumentRecord cdocumentRecord = DocumentRecord.builder().belongsToDocumentId(documentId0)
         .documentId(documentId1).userId(userId).build((String) null);
     DocumentRecordSet child = new DocumentRecordSet(cdocumentRecord, null, null, null);
 
-    // DynamicDocumentItem doc = new DocumentItemToDynamicDocumentItem().apply(item);
-    // doc.put("documents", List.of(new DocumentItemToDynamicDocumentItem().apply(citem)));
-
-    // getDocumentService().saveDocumentItemWithTag(null, doc);
     getDocumentService().saveDocument(null,
         new DocumentRecordSet(documentRecord, null, null, List.of(child)),
         new SaveDocumentOptions());

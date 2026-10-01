@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Encoder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
@@ -87,11 +87,11 @@ public class DocumentIdUrlRequestHandler
    */
   public DocumentIdUrlRequestHandler() {}
 
-  private String findContentType(final DocumentItem item) {
-    String contentType = item.getContentType();
+  private String findContentType(final DocumentRecord item) {
+    String contentType = item.contentType();
     if (isEmpty(contentType)) {
 
-      String path = !isEmpty(item.getDeepLinkPath()) ? item.getDeepLinkPath() : item.getPath();
+      String path = !isEmpty(item.deepLinkPath()) ? item.deepLinkPath() : item.path();
 
       MimeType mimeType = MimeType.findByPath(path);
       contentType = mimeType.getContentType();
@@ -115,14 +115,14 @@ public class DocumentIdUrlRequestHandler
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, document, versionKey);
-    DocumentItem item =
-        getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
-    if (isPromotedArtifactRequest(document, item, versionKey)) {
-      document = new DocumentArtifact(documentId, item.getPromotedArtifactId());
-      versionAttributes = getVersionAttributes(awsservice, siteId, document, versionKey);
-      item = getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
-    }
     String versionId = getVersionId(awsservice, versionAttributes, versionKey);
+    DocumentRecord item =
+        getDocumentRecord(awsservice, siteId, document, versionKey, versionAttributes);
+    if (isPromotedArtifactRequest(document, item, versionKey)) {
+      document = new DocumentArtifact(documentId, item.promotedArtifactId());
+      versionAttributes = getVersionAttributes(awsservice, siteId, document, versionKey);
+      item = getDocumentRecord(awsservice, siteId, document, versionKey, versionAttributes);
+    }
 
     boolean inline = "true".equals(getParameter(event, "inline"));
     boolean bypassWatermark = isBypassWatermark(event, authorization, siteId);
@@ -140,14 +140,14 @@ public class DocumentIdUrlRequestHandler
         .body("url", url != null ? url.toString() : null).body("documentId", documentId).build();
   }
 
-  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
+  private DocumentRecord getDocumentRecord(final AwsServiceCache awsservice, final String siteId,
       final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) throws Exception {
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = versionService.getDocumentItem(documentService, siteId, document,
+    DocumentRecord item = versionService.getDocumentRecord(documentService, siteId, document,
         versionKey, versionAttributes);
     throwIfNull(item, new DocumentNotFoundException(document.documentId()));
     return item;
@@ -174,18 +174,18 @@ public class DocumentIdUrlRequestHandler
     }
   }
 
-  private String getFilename(final DocumentItem item) {
+  private String getFilename(final DocumentRecord item) {
 
-    MimeType mt = MimeType.fromContentType(item.getContentType());
+    MimeType mt = MimeType.fromContentType(item.contentType());
 
     String ext = mt.getExtension();
-    String filename = item.getDocumentId();
+    String filename = item.documentId();
     if (!isEmpty(ext)) {
       filename += "." + ext;
     }
 
-    if (item.getPath() != null) {
-      filename = Strings.getFilename(item.getPath());
+    if (item.path() != null) {
+      filename = Strings.getFilename(item.path());
     }
 
     return filename;
@@ -202,7 +202,7 @@ public class DocumentIdUrlRequestHandler
    * @param authorization {@link ApiAuthorization}
    * @param awsservice {@link AwsServiceCache}
    * @param event {@link ApiGatewayRequestEvent}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @param versionId {@link String}
    * @param inline boolean
    * @param bypassWatermark boolean
@@ -210,32 +210,32 @@ public class DocumentIdUrlRequestHandler
    * @throws MalformedURLException MalformedURLException
    */
   private URL getS3Url(final ApiAuthorization authorization, final AwsServiceCache awsservice,
-      final ApiGatewayRequestEvent event, final DocumentItem item, final String versionId,
+      final ApiGatewayRequestEvent event, final DocumentRecord item, final String versionId,
       final boolean inline, final boolean bypassWatermark)
       throws MalformedURLException, UnauthorizedException, BadException {
 
     String siteId = authorization.getSiteId();
-    String documentId = item.getDocumentId();
+    String documentId = item.documentId();
 
     awsservice.getLogger().trace(
-        "Finding S3 Url for document '" + item.getDocumentId() + "' version = '" + versionId + "'");
+        "Finding S3 Url for document '" + item.documentId() + "' version = '" + versionId + "'");
 
     boolean accelerate = event.getQueryBooleanParameter("accelerate");
     URL url;
 
-    String deepLinkPath = item.getDeepLinkPath() != null ? item.getDeepLinkPath() : "";
+    String deepLinkPath = item.deepLinkPath() != null ? item.deepLinkPath() : "";
 
     if (isDeepLink(deepLinkPath)) {
       if (accelerate) {
         throw new BadException("S3 transfer acceleration is not supported for external URLs");
       }
-      url = URI.create(item.getDeepLinkPath()).toURL();
+      url = URI.create(item.deepLinkPath()).toURL();
     } else {
 
       final String filename = getFilename(item);
       String s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
-      String s3Key = createS3Key(siteId, documentId, item.getArtifactId());
-      final DocumentArtifact document = new DocumentArtifact(documentId, item.getArtifactId());
+      String s3Key = createS3Key(siteId, documentId, item.artifactId());
+      final DocumentArtifact document = new DocumentArtifact(documentId, item.artifactId());
 
       Matcher matcher = S3_PATTERN.matcher(deepLinkPath);
       if (matcher.matches()) {
@@ -275,14 +275,14 @@ public class DocumentIdUrlRequestHandler
     return url;
   }
 
-  private URL getUrl(final AwsServiceCache awsservice, final DocumentItem item,
+  private URL getUrl(final AwsServiceCache awsservice, final DocumentRecord item,
       final String versionId, final String s3Bucket, final String s3key, final Duration duration,
       final PresignGetUrlConfig config) throws UnauthorizedException {
     S3Service s3 = awsservice.getExtension(S3Service.class);
 
     try {
       if (!s3.exists(s3Bucket, s3key)) {
-        throw new DocumentNotFoundException(item.getDocumentId());
+        throw new DocumentNotFoundException(item.documentId());
       }
 
       S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
@@ -355,9 +355,9 @@ public class DocumentIdUrlRequestHandler
   }
 
   private boolean isPromotedArtifactRequest(final DocumentArtifact document,
-      final DocumentItem item, final String versionKey) {
+      final DocumentRecord item, final String versionKey) {
     return versionKey == null && document.artifactId() == null
-        && !isEmpty(item.getPromotedArtifactId());
+        && !isEmpty(item.promotedArtifactId());
   }
 
   private boolean isShortFormat(final ApiGatewayRequestEvent event) {

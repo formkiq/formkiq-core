@@ -40,7 +40,6 @@ import java.util.function.Function;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -187,11 +186,11 @@ public class DocumentContentFunction {
   }
 
   /**
-   * Convert {@link DocumentItem} to list of Document Content Urls.
+   * Convert {@link DocumentRecord} to list of Document Content Urls.
    * 
    * @param logger {@link Logger}
    * @param siteId {@link String}
-   * @param item {@link DocumentItem}
+   * @param item {@link DocumentRecord}
    * @return {@link List} {@link String}
    * @throws IOException IOException
    */

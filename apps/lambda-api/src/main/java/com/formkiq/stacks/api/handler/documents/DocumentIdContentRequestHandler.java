@@ -33,7 +33,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.objects.MimeType;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
@@ -58,7 +58,7 @@ public class DocumentIdContentRequestHandler
 
   private static ApiRequestHandlerResponse.Builder getPlainTextResponse(
       final AwsServiceCache awsservice, final String s3key, final String versionId,
-      final DocumentItem item, final String documentId) throws DocumentNotFoundException {
+      final DocumentRecord item, final String documentId) throws DocumentNotFoundException {
 
     S3Service s3Service = awsservice.getExtension(S3Service.class);
 
@@ -66,8 +66,8 @@ public class DocumentIdContentRequestHandler
       String content = s3Service.getContentAsString(awsservice.environment("DOCUMENTS_S3_BUCKET"),
           s3key, versionId);
 
-      return ApiRequestHandlerResponse.builder().body(Map.of("content", content, "contentType",
-          item.getContentType(), "isBase64", Boolean.FALSE));
+      return ApiRequestHandlerResponse.builder().body(
+          Map.of("content", content, "contentType", item.contentType(), "isBase64", Boolean.FALSE));
     } catch (NoSuchKeyException e) {
       throw new DocumentNotFoundException(documentId);
     }
@@ -97,26 +97,25 @@ public class DocumentIdContentRequestHandler
 
     Map<String, AttributeValue> versionAttributes =
         getVersionAttributes(awsservice, siteId, document, versionKey);
+    String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
-    DocumentItem item =
-        getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+    DocumentRecord item =
+        getDocumentRecord(awsservice, siteId, document, versionKey, versionAttributes);
 
     if (isPromotedArtifactRequest(document, item, versionKey)) {
-      document = new DocumentArtifact(documentId, item.getPromotedArtifactId());
+      document = new DocumentArtifact(documentId, item.promotedArtifactId());
       versionAttributes = getVersionAttributes(awsservice, siteId, document, versionKey);
-      item = getDocumentItem(awsservice, siteId, document, versionKey, versionAttributes);
+      item = getDocumentRecord(awsservice, siteId, document, versionKey, versionAttributes);
     }
-
-    String versionId = getVersionId(awsservice, versionAttributes, versionKey);
 
     ApiRequestHandlerResponse.Builder response;
 
     String s3key = createS3Key(siteId, document);
     if (!exists(awsservice, s3key)) {
-      throw new DocumentNotFoundException(item.getDocumentId());
+      throw new DocumentNotFoundException(item.documentId());
     }
 
-    if (MimeType.isPlainText(item.getContentType())) {
+    if (MimeType.isPlainText(item.contentType())) {
 
       try {
         response = getPlainTextResponse(awsservice, s3key, versionId, item, documentId);
@@ -140,13 +139,13 @@ public class DocumentIdContentRequestHandler
   }
 
   private ApiRequestHandlerResponse.Builder getApiResponse(final AwsServiceCache awsservice,
-      final DocumentItem item, final String s3key, final String versionId, final boolean accelerate)
-      throws BadException {
+      final DocumentRecord item, final String s3key, final String versionId,
+      final boolean accelerate) throws BadException {
     String contentType =
-        item.getContentType() != null ? item.getContentType() : "application/octet-stream";
+        item.contentType() != null ? item.contentType() : "application/octet-stream";
 
     PresignGetUrlConfig config =
-        new PresignGetUrlConfig().contentDispositionByPath(item.getPath(), false).contentType(s3key)
+        new PresignGetUrlConfig().contentDispositionByPath(item.path(), false).contentType(s3key)
             .contentType(contentType).accelerate(accelerate);
 
     S3PresignerService s3Service = awsservice.getExtension(S3PresignerService.class);
@@ -163,14 +162,14 @@ public class DocumentIdContentRequestHandler
         .body(Map.of("contentUrl", url.toString(), "contentType", contentType));
   }
 
-  private DocumentItem getDocumentItem(final AwsServiceCache awsservice, final String siteId,
+  private DocumentRecord getDocumentRecord(final AwsServiceCache awsservice, final String siteId,
       final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) throws Exception {
 
     DocumentVersionService versionService = awsservice.getExtension(DocumentVersionService.class);
     DocumentService documentService = awsservice.getExtension(DocumentService.class);
 
-    DocumentItem item = versionService.getDocumentItem(documentService, siteId, document,
+    DocumentRecord item = versionService.getDocumentRecord(documentService, siteId, document,
         versionKey, versionAttributes);
     throwIfNull(item, new DocumentNotFoundException(document.documentId()));
     return item;
@@ -205,8 +204,8 @@ public class DocumentIdContentRequestHandler
   }
 
   private boolean isPromotedArtifactRequest(final DocumentArtifact document,
-      final DocumentItem item, final String versionKey) {
+      final DocumentRecord item, final String versionKey) {
     return versionKey == null && document.artifactId() == null
-        && !isEmpty(item.getPromotedArtifactId());
+        && !isEmpty(item.promotedArtifactId());
   }
 }
