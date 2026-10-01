@@ -32,15 +32,20 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DynamicObject;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.GlobalIndexService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
@@ -51,9 +56,6 @@ import com.formkiq.testutils.aws.LocalStackExtension;
 @ExtendWith(DynamoDbExtension.class)
 public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
-  /** {@link GlobalIndexService}. */
-  private GlobalIndexService indexWriter;
-
   /**
    * /indices/search by index Type "tags".
    *
@@ -62,7 +64,7 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
   @Test
   public void testHandleSearchRequest01() throws Exception {
 
-    this.indexWriter =
+    GlobalIndexService indexWriter =
         new GlobalIndexService(DynamoDbTestServices.getDynamoDbConnection(), DOCUMENTS_TABLE);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -70,16 +72,20 @@ public class IndicesSearchRequestTest extends AbstractRequestHandler {
       Date now = new Date();
       String username = "joe";
 
-      String documentId = ID.uuid();
+      var document = DocumentArtifact.of(ID.uuid(), null);
 
-      this.indexWriter.writeTagIndex(siteId, new ArrayList<>(List.of("categoryId")));
+      indexWriter.writeTagIndex(siteId, new ArrayList<>(List.of("categoryId")));
 
-      DocumentItemDynamoDb document = new DocumentItemDynamoDb(documentId, now, username);
-      document.setPath("something/path.txt");
-      Collection<DocumentTag> tags =
-          Arrays.asList(new DocumentTag(documentId, "personId", "111", now, username),
-              new DocumentTag(documentId, "categoryId", "555", now, username));
-      getDocumentService().saveDocument(siteId, document, tags);
+      var item = new DocumentRecordBuilder().document(document).insertedDate(now).userId(username)
+          .path("something/path.txt").build(siteId);
+
+      Collection<DocumentTagRecord> tags0 = new DocumentTagRecordBuilder().document(document)
+          .tagKey("personId").tagValue("111").insertedDate(now).userId(username).build(siteId);
+      Collection<DocumentTagRecord> tags1 = new DocumentTagRecordBuilder().document(document)
+          .tagKey("categoryId").tagValue("555").insertedDate(now).userId(username).build(siteId);
+      var drs = new DocumentRecordSet(item, null,
+          Stream.concat(tags0.stream(), tags1.stream()).toList(), null);
+      getDocumentService().saveDocument(siteId, drs, new SaveDocumentOptions());
 
       String indexType = "tags";
 

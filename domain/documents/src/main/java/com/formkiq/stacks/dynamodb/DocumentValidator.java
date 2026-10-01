@@ -25,7 +25,6 @@ package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
@@ -38,7 +37,7 @@ import com.formkiq.validation.ValidationError;
 public interface DocumentValidator {
 
   /**
-   * Validate {@link DynamicDocumentItem}.
+   * Validate document metadata.
    * 
    * @param metadata {@link Collection} {@link DocumentMetadata}
    * @return {@link Collection} {@link ValidationError}

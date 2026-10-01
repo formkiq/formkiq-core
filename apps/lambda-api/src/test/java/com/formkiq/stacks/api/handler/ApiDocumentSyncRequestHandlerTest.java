@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.api.documents.GetDocumentSyncsRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentActionsRequestBuilder;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
@@ -84,8 +86,6 @@ import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -237,7 +237,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         assertEquals("Added Document sync", addResponse.getMessage());
         List<DocumentAction> actions = getDocumentActions(siteId, documentId);
         assertEquals(1, actions.size());
-        assertEquals(DocumentActionType.FULLTEXT, actions.get(0).getType());
+        assertEquals(DocumentActionType.FULLTEXT, actions.getFirst().getType());
       }
     }
   }
@@ -414,7 +414,7 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
         notNull(new GetDocumentsRequestBuilder().syncStatus("FULLTEXT_METADATA_FAILED")
             .submit(client, null).throwIfError().response().getDocuments());
     assertEquals(1, docs.size());
-    assertEquals(documentId, docs.get(0).getDocumentId());
+    assertEquals(documentId, docs.getFirst().getDocumentId());
 
     // when
     AddResponse addResponse = new AddDocumentSyncRequestBuilder().withDocumentId(documentId)
@@ -463,8 +463,10 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
       setBearerToken(siteId);
 
       String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
-      service.saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+          .userId(userId).build(siteId);
+      // DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       syncService.saveSync(siteId, documentId, DocumentSyncServiceType.OPENSEARCH,
           com.formkiq.aws.dynamodb.model.DocumentSyncStatus.COMPLETE,
@@ -492,8 +494,8 @@ public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestT
   private void verifyStreamTriggeredDate(final String siteId, final String documentId)
       throws URISyntaxException {
     try (DynamoDbClient db = DynamoDbTestServices.getDynamoDbConnection().build()) {
-      String pk = keysDocument(siteId, documentId).get(PK).s();
-      QueryRequest query = DynamoDbQueryBuilder.builder().pk(pk).build(DOCUMENTS_TABLE);
+      var key = new DocumentRecordBuilder().documentId(documentId).buildKey(siteId);
+      QueryRequest query = DynamoDbQueryBuilder.builder().pk(key.pk()).build(DOCUMENTS_TABLE);
       QueryResponse response = db.query(query);
 
       final int expected = 3;

@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -43,7 +42,7 @@ public class DocumentsRestrictionsMaxDocuments implements DocumentsRestrictions 
 
   @Override
   public boolean isViolated(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final DocumentItem item) {
+      final String siteId, final Long contentLength) {
 
     boolean isViolated = false;
     String maxDocuments = config.maxDocuments();

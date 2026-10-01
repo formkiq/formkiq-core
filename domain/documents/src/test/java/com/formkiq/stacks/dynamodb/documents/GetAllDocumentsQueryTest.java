@@ -30,19 +30,20 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.base64.MapAttributeValueToString;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.documents.GetAllDocumentsQuery;
 import com.formkiq.aws.dynamodb.documents.GetDocumentDatesQuery;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
@@ -128,17 +129,18 @@ public class GetAllDocumentsQueryTest {
     List<String> documentIds = new ArrayList<>();
 
     for (String date : insertedDates) {
-      DocumentItem doc = createDocument(date);
-      documentIds.add(doc.getDocumentId());
-      service.saveDocument(siteId, doc, null);
+      DocumentRecord doc = createDocument(siteId, date);
+      documentIds.add(doc.documentId());
+      service.saveDocument(siteId, doc, new SaveDocumentOptions());
     }
     return documentIds;
   }
 
-  private DocumentItem createDocument(final String insertedDate) {
+  private DocumentRecord createDocument(final String siteId, final String insertedDate) {
     Date date = !isEmpty(insertedDate) ? DateUtil.toDateFromString(insertedDate, ZoneOffset.UTC)
         : new Date();
-    return new DocumentItemDynamoDb(ID.uuid(), date, "joe");
+    return new DocumentRecordBuilder().documentId(ID.uuid()).insertedDate(date).userId("joe")
+        .build(siteId);
   }
 
   /**

@@ -49,12 +49,47 @@ import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.GetDocumentContentResponse;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /documents/{documentId}/content. */
 public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientRequestTest {
+
+  /**
+   * Reject nonexistent versions when DynamoDB document versioning is enabled.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testGetContentWithInvalidVersionKey() throws ApiException {
+    // given
+    String originalPlugin = server.getEnvironmentMap().put("DOCUMENT_VERSIONS_PLUGIN",
+        DocumentVersionServiceDynamoDb.class.getName());
+
+    try {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        // given
+        setBearerToken(siteId);
+        var document = new AddDocumentRequestBuilder().path("test.txt").content("testcontent")
+            .contentType("text/plain").getDocument(this.client, siteId);
+        String versionKey = ID.uuid();
+
+        // when
+        ApiException exception = new GetDocumentContentRequestBuilder(document)
+            .versionKey(versionKey).submitError(this.client, siteId).exception();
+
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), exception.getCode());
+        assertEquals(
+            "{\"message\":\"content versionId not found in versionKey '" + versionKey + "'\"}",
+            exception.getResponseBody());
+      }
+    } finally {
+      server.getEnvironmentMap().put("DOCUMENT_VERSIONS_PLUGIN", originalPlugin);
+    }
+  }
 
   /**
    * /documents/{documentId}/content request, with S3 file missing.

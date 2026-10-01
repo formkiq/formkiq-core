@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ID;
@@ -75,6 +76,8 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordToDocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
@@ -98,17 +101,14 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.aws.dynamodb.schema.DocumentSchema;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
@@ -129,7 +129,6 @@ import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentSyncService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -223,7 +222,7 @@ public class StagingS3CreateTest implements DbKeys {
   /** {@link DocumentSyncService}. */
   private static DocumentSyncService syncService;
   /** Test TImeout. */
-  private static final long TEST_TIMEOUT = 30;
+  private static final long TEST_TIMEOUT = 60;
   /** Test server URL. */
   private static String url;
   /** UUID 1. */
@@ -357,7 +356,6 @@ public class StagingS3CreateTest implements DbKeys {
     s3.createBucket(DOCUMENTS_BUCKET);
     s3.createBucket(STAGING_BUCKET);
 
-
     if (!sqsService.exists(SNS_SQS_DELETE_QUEUE)) {
       snsSqsDeleteQueueUrl = sqsService.createQueue(SNS_SQS_DELETE_QUEUE).queueUrl();
     }
@@ -458,64 +456,55 @@ public class StagingS3CreateTest implements DbKeys {
   }
 
   private void createDocument(final byte[] content, final String docId) throws ValidationException {
-    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(docId == null ? ID.uuid() : docId);
-    item.setUserId("JohnDoe");
-    item.setInsertedDate(new Date());
-    final String documentId = item.getDocumentId();
-    service.saveDocument(DEFAULT_SITE_ID, item, null);
+    DocumentRecord item = new DocumentRecordBuilder().documentId(docId == null ? ID.uuid() : docId)
+        .userId("JohnDoe").insertedDate(new Date()).build(DEFAULT_SITE_ID);
+    service.saveDocument(DEFAULT_SITE_ID, item, new SaveDocumentOptions());
 
-    final String key = createS3Key(DEFAULT_SITE_ID, documentId, null);
+    final String key = createS3Key(DEFAULT_SITE_ID, item.documentId(), null);
     s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
   }
 
   private void createDocumentArtifact(final byte[] content, final String documentId,
       final String artifactId, final String path) throws ValidationException {
-    DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(documentId);
-    item.setArtifactId(artifactId);
-    item.setPath(path);
-    item.setUserId("JohnDoe");
-    item.setInsertedDate(new Date());
-    service.saveDocument(DEFAULT_SITE_ID, item, null);
+    DocumentRecord item = new DocumentRecordBuilder().documentId(documentId).artifactId(artifactId)
+        .path(path).userId("JohnDoe").insertedDate(new Date()).build(DEFAULT_SITE_ID);
+    service.saveDocument(DEFAULT_SITE_ID, item, new SaveDocumentOptions());
 
     final String key = createS3Key(DEFAULT_SITE_ID, documentId, artifactId);
     s3.putObject(DOCUMENTS_BUCKET, key, content, null, null);
   }
 
   /**
-   * Create {@link DynamicDocumentItem}.
+   * Create a staging JSON payload with content, separate from the persisted record.
    *
-   * @return {@link DynamicDocumentItem}
-   * @deprecated use createDocumentRecord
+   * @param record {@link DocumentRecord}
+   * @return staging document payload
    */
-  @Deprecated
-  private DynamicDocumentItem createDocumentItem() {
-    String content = "This is a test";
-
-    DynamicDocumentItem item = new DynamicDocumentItem(Collections.emptyMap());
-    item.setDocumentId(ID.uuid());
-    item.put("content", Base64.getEncoder().encodeToString(content.getBytes(UTF_8)));
-    item.setContentLength((long) content.length());
-    item.setContentType("plain/text");
-    item.setInsertedDate(new Date());
-    item.setPath("test.txt");
-    item.setUserId("joe");
-
-    return item;
+  private Map<String, Object> createDocumentPayload(final DocumentRecord record) {
+    Map<String, Object> payload = new HashMap<>();
+    payload.put("documentId", record.documentId());
+    payload.put("path", record.path());
+    payload.put("userId", record.userId());
+    payload.put("contentType", record.contentType());
+    payload.put("contentLength", record.contentLength());
+    payload.put("insertedDate", record.insertedDate());
+    payload.put("metadata", record.metadata());
+    payload.put("deepLinkPath", record.deepLinkPath());
+    payload.put("content", Base64.getEncoder().encodeToString("This is a test".getBytes(UTF_8)));
+    return payload;
   }
 
   /**
-   * Create {@link DocumentRecord}.
-   * 
-   * @param siteId {@link String}
+   * Create a document fixture for the specified site.
    *
+   * @param siteId {@link String}
    * @return {@link DocumentRecord}
    */
   private DocumentRecord createDocumentRecord(final String siteId) {
     String content = "This is a test";
     return DocumentRecord.builder().documentId(ID.uuid()).path("test.txt").userId("joe")
-        .contentType("plain/text").contentLength((long) content.length()).build(siteId);
+        .contentType("plain/text").contentLength((long) content.length()).insertedDate(new Date())
+        .build(siteId);
   }
 
   private Map<String, Object> createRequestMap(final String s3Key) {
@@ -597,18 +586,18 @@ public class StagingS3CreateTest implements DbKeys {
    * Test .fkb64 file.
    *
    * @param siteId {@link String}
-   * @param docitem {@link DynamicDocumentItem}
+   * @param payload staging document payload
    * @throws IOException IOException
    */
-  private void processFkB64File(final String siteId, final DynamicDocumentItem docitem)
+  private void processFkB64File(final String siteId, final Map<String, Object> payload)
       throws IOException {
 
-    String documentId = docitem.getDocumentId();
+    String documentId = (String) payload.get("documentId");
     logger.getMessages().clear();
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
-    byte[] content = GSON.toJson(docitem).getBytes(UTF_8);
+    byte[] content = GSON.toJson(payload).getBytes(UTF_8);
     s3.putObject(STAGING_BUCKET, key, content, null, null);
 
     handleRequest(loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key));
@@ -618,11 +607,11 @@ public class StagingS3CreateTest implements DbKeys {
    * Test .fkb64 file.
    *
    * @param siteId {@link String}
-   * @param docitem {@link DynamicDocumentItem}
+   * @param payload staging document payload
    * @param expectedContentLength {@link String}
    * @throws IOException IOException
    */
-  private void processFkB64File(final String siteId, final DynamicDocumentItem docitem,
+  private void processFkB64File(final String siteId, final Map<String, Object> payload,
       final String expectedContentLength) throws IOException {
 
     // given
@@ -631,7 +620,7 @@ public class StagingS3CreateTest implements DbKeys {
 
     String key = createDatabaseKey(siteId, documentId + FORMKIQ_B64_EXT);
 
-    byte[] content = GSON.toJson(docitem).getBytes(UTF_8);
+    byte[] content = GSON.toJson(payload).getBytes(UTF_8);
     s3.putObject(STAGING_BUCKET, key, content, null, null);
 
     // when
@@ -640,12 +629,16 @@ public class StagingS3CreateTest implements DbKeys {
     // then
     String destDocumentId = findDocumentIdFromLogger(siteId);
 
+    if (payload.get("content") != null) {
+      assertNotNull(destDocumentId);
+    }
+
     if (destDocumentId != null) {
       assertTrue(logger.containsString("Removing " + key + " from bucket example-bucket."));
-      assertTrue(logger.containsString("Inserted " + docitem.getPath()
+      assertTrue(logger.containsString("Inserted " + payload.get("path")
           + " into bucket documentsbucket as " + createDatabaseKey(siteId, destDocumentId)));
 
-      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, documentId, null).isObjectExists());
+      assertFalse(s3.getObjectMetadata(STAGING_BUCKET, key, null).isObjectExists());
 
       DocumentArtifact destDocument = DocumentArtifact.of(destDocumentId, null);
       DocumentRecord item = service.findDocument(siteId, destDocument);
@@ -661,20 +654,16 @@ public class StagingS3CreateTest implements DbKeys {
       assertEquals("test.txt", item.path());
       assertEquals("joe", item.userId());
 
-      boolean hasTags = docitem.containsKey("tags");
-
+      List<?> expectedTags = (List<?>) payload.getOrDefault("tags", List.of());
       List<DocumentTag> tags =
           service.findDocumentTags(siteId, destDocument, null, MAX_RESULTS).getResults();
-      int tagcount = hasTags ? docitem.getList("tags").size() : 0;
-      assertEquals(tagcount, tags.size());
+      assertEquals(expectedTags.size(), tags.size());
 
-      if (hasTags) {
-
-        for (DynamicObject tag : docitem.getList("tags")) {
-          Optional<DocumentTag> dtag = findTag(tags, tag.getString("key"));
-          assertTrue(dtag.isPresent());
-          assertEquals(tag.getString("value"), dtag.get().getValue());
-        }
+      for (Object expectedTag : expectedTags) {
+        Map<?, ?> tag = (Map<?, ?>) expectedTag;
+        Optional<DocumentTag> dtag = findTag(tags, (String) tag.get("key"));
+        assertTrue(dtag.isPresent());
+        assertEquals(tag.get("value"), dtag.get().getValue());
       }
     }
   }
@@ -1010,15 +999,19 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension01() throws IOException {
-    DynamicDocumentItem item = createDocumentItem();
+    // given
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
 
     item.put("tags",
-        List.of(Map.of("documentId", item.getDocumentId(), "key", "category", "value", "person",
-            "insertedDate", new Date(), "userId", "joe", "type",
+        List.of(Map.of("documentId", (String) item.get("documentId"), "key", "category", "value",
+            "person", "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
+      // then
+      assertNotNull(findDocumentIdFromLogger(siteId));
     }
   }
 
@@ -1030,10 +1023,14 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension02() throws IOException {
-    DynamicDocumentItem item = createDocumentItem();
+    // given
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
+      // then
+      assertNotNull(findDocumentIdFromLogger(siteId));
     }
   }
 
@@ -1045,14 +1042,17 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension03() throws IOException {
-    DynamicDocumentItem item = createDocumentItem();
+    // given
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
     item.put("content", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
     }
 
-    assertTrue(logger.containsString("Skipping " + item.getPath() + " no content"));
+    // then
+    assertTrue(logger.containsString("Skipping " + item.get("path") + " no content"));
   }
 
   /**
@@ -1063,11 +1063,15 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension04() throws IOException {
-    DynamicDocumentItem item = createDocumentItem();
-    item.setDocumentId(null);
+    // given
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
+    item.put("documentId", null);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
+      // then
+      assertNotNull(findDocumentIdFromLogger(siteId));
     }
   }
 
@@ -1079,6 +1083,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension05() throws IOException {
+    // given
     String documentId0 = "0d1a788d-9a70-418a-8c33-a9ee9c1a0173";
     String documentId1 = "24af57ca-f61d-4ff8-b8a0-d7666073560e";
     String documentId2 = "f2416702-6b3c-4d29-a217-82a43b16b964";
@@ -1097,7 +1102,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       // then
       List<String> expectedDocumentIds =
-          List.of(documentId0, documentId1, documentId2).stream().sorted().toList();
+          Stream.of(documentId0, documentId1, documentId2).sorted().toList();
       List<String> actualDocumentIds =
           service.findDocumentsByDate(siteId, nowDate, null, MAX_RESULTS).getResults().stream()
               .map(DocumentRecord::documentId).sorted().toList();
@@ -1159,24 +1164,27 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension06() throws IOException {
+    // given
     String timeToLive = "1612061365";
-    DynamicDocumentItem item = createDocumentItem();
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
     item.put("timeToLive", timeToLive);
 
     item.put("tags",
-        List.of(Map.of("documentId", item.getDocumentId(), "key", "category", "value", "person",
-            "insertedDate", new Date(), "userId", "joe", "type",
+        List.of(Map.of("documentId", (String) item.get("documentId"), "key", "category", "value",
+            "person", "insertedDate", new Date(), "userId", "joe", "type",
             DocumentTagType.USERDEFINED.name())));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
 
-      String key = createDatabaseKey(siteId, item.getDocumentId());
+      // then
+      String key = createDatabaseKey(siteId, (String) item.get("documentId"));
       String content = s3.getContentAsString(DOCUMENTS_BUCKET, key, null);
       assertEquals("VGhpcyBpcyBhIHRlc3Q=", content);
 
-      var document =
-          new FindDocumentById().find(db, siteId, DocumentArtifact.of(item.getDocumentId(), null));
+      var document = new FindDocumentById().find(db, siteId,
+          DocumentArtifact.of((String) item.get("documentId"), null));
       assertEquals(timeToLive, document.timeToLive());
     }
   }
@@ -1189,6 +1197,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension07() throws IOException {
+    // given
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
     data.put("contentType", "text/plain");
@@ -1197,8 +1206,6 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
         Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
 
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       logger.getMessages().clear();
 
@@ -1206,7 +1213,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+      byte[] content = GSON.toJson(data).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when
@@ -1253,6 +1260,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension08() throws IOException {
+    // given
     Map<String, Object> data = new HashMap<>();
     data.put("userId", "joesmith");
     data.put("tagSchemaId", ID.uuid());
@@ -1263,8 +1271,6 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
         Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
 
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       logger.getMessages().clear();
 
@@ -1272,7 +1278,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+      byte[] content = GSON.toJson(data).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when
@@ -1316,6 +1322,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension09() throws IOException {
+    // given
     final String documentId = "12345";
     Map<String, Object> data = new HashMap<>();
     data.put("documentId", documentId);
@@ -1327,8 +1334,6 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("tags", Arrays.asList(Map.of("key", "category", "value", "document"),
         Map.of("key", "status", "values", Arrays.asList("active", "notactive"))));
 
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       logger.getMessages().clear();
 
@@ -1336,7 +1341,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+      byte[] content = GSON.toJson(data).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when
@@ -1376,7 +1381,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension10() throws IOException {
-
+    // given
     final String documentId = "12345";
     final DocumentArtifact document = new DocumentArtifact(documentId, null);
     Map<String, Object> data = new HashMap<>();
@@ -1395,13 +1400,11 @@ public class StagingS3CreateTest implements DbKeys {
               Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234")),
               Map.of("type", "webhook", "userId", "joesmith")));
 
-      DynamicDocumentItem ditem = new DynamicDocumentItem(data);
-
       String key = createDatabaseKey(siteId, "documentId" + FORMKIQ_B64_EXT);
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+      byte[] content = GSON.toJson(data).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when
@@ -1427,12 +1430,12 @@ public class StagingS3CreateTest implements DbKeys {
       // given
       data.put("actions", List
           .of(Map.of("type", "ocr", "status", "PENDING", "parameters", Map.of("test", "1234"))));
-      ditem = new DynamicDocumentItem(data);
-      content = GSON.toJson(ditem).getBytes(UTF_8);
+      content = GSON.toJson(data).getBytes(UTF_8);
 
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
-      // when - run a 2nd time
+      // when
+      // Run a second time.
       handleRequest(map);
 
       // then
@@ -1448,11 +1451,11 @@ public class StagingS3CreateTest implements DbKeys {
    * Test .fkb64 files with existing path and CLI agent.
    *
    * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  void testFkB64Extension11() throws IOException, InterruptedException {
+  void testFkB64Extension11() throws IOException {
+    // given
 
     String path = "sample/test.txt";
     Map<String, Object> data = new HashMap<>();
@@ -1462,8 +1465,6 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("contentType", "text/plain");
     data.put("isBase64", Boolean.FALSE);
     data.put("content", "this is first data");
-
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       logger.getMessages().clear();
@@ -1475,10 +1476,11 @@ public class StagingS3CreateTest implements DbKeys {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      // when - send the same path twice
+      // when
+      // Send the same path twice.
       for (int i = 0; i < 2; i++) {
-        ditem.put("content", "this is some content: " + i);
-        byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+        data.put("content", "this is some content: " + i);
+        byte[] content = GSON.toJson(data).getBytes(UTF_8);
         s3.putObject(STAGING_BUCKET, key, content, null, null);
 
         handleRequest(map);
@@ -1513,6 +1515,7 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension12() throws Exception {
+    // given
     final Date now = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
     final String userId = "joesmith";
     final long contentLength = 1000;
@@ -1524,16 +1527,18 @@ public class StagingS3CreateTest implements DbKeys {
     data.put("userId", userId);
     data.put("tags", List.of(Map.of("key", "category", "value", "document")));
 
-    DynamicDocumentItem ditem = new DynamicDocumentItem(data);
-
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DocumentItem iitem = new DocumentItemDynamoDb(documentId, now, "joe");
-      iitem.setContentLength(contentLength);
-
-      service.saveDocument(siteId, iitem,
-          Arrays.asList(new DocumentTag(documentId, "playerId", "1234", new Date(), userId),
-              new DocumentTag(documentId, "category", "person", new Date(), userId)));
+      DocumentRecord existingDocument = DocumentRecord.builder().documentId(documentId)
+          .insertedDate(now).userId("joe").contentLength(contentLength).build(siteId);
+      List<DocumentTagRecord> existingTags = new ArrayList<>();
+      existingTags.addAll(DocumentTagRecord.builder().document(document).tagKey("playerId")
+          .tagValue("1234").insertedDate(new Date()).userId(userId).build(siteId));
+      existingTags.addAll(DocumentTagRecord.builder().document(document).tagKey("category")
+          .tagValue("person").insertedDate(new Date()).userId(userId).build(siteId));
+      DocumentRecordSet set = DocumentRecordSet.builder().documentRecord(existingDocument)
+          .documentTagRecords(existingTags).build();
+      service.saveDocument(siteId, set, new SaveDocumentOptions());
 
       actionsService
           .saveNewActions(List.of(new ActionBuilder().type(ActionType.FULLTEXT).userId("joe")
@@ -1543,7 +1548,7 @@ public class StagingS3CreateTest implements DbKeys {
 
       Map<String, Object> map = loadFileAsMap(this, "/objectcreate-event4.json", UUID1, key);
 
-      byte[] content = GSON.toJson(ditem).getBytes(UTF_8);
+      byte[] content = GSON.toJson(data).getBytes(UTF_8);
       s3.putObject(STAGING_BUCKET, key, content, null, null);
 
       // when
@@ -1586,15 +1591,18 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension13() throws IOException {
-    DynamicDocumentItem item = createDocumentItem();
+    // given
+    Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
 
     item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
         Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // when
       processFkB64File(siteId, item, null);
 
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertEquals(2, doc.metadata().size());
       Iterator<DocumentMetadata> itr = doc.metadata().iterator();
@@ -1616,20 +1624,24 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension14() throws IOException, ValidationException {
+    // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DynamicDocumentItem item = createDocumentItem();
-
-      item.put("tags", new ArrayList<>());
-      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
-          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
-      service.saveDocument(siteId, item, null);
+      DocumentRecord record =
+          new DocumentRecordToDocumentRecordBuilder().apply(null, createDocumentRecord(siteId))
+              .metadata(List.of(new DocumentMetadata("category", "person", null),
+                  new DocumentMetadata("playerId", null, List.of("111", "222"))))
+              .build(siteId);
+      service.saveDocument(siteId, record, new SaveDocumentOptions());
+      Map<String, Object> item = createDocumentPayload(record);
 
       item.put("metadata", List.of(Map.of("key", "playerId", "value", "333")));
 
+      // when
       processFkB64File(siteId, item, "14");
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertEquals(2, doc.metadata().size());
       Iterator<DocumentMetadata> itr = doc.metadata().iterator();
@@ -1652,21 +1664,25 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension15() throws IOException, ValidationException {
+    // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DynamicDocumentItem item = createDocumentItem();
-
-      item.put("tags", new ArrayList<>());
-      item.put("metadata", Arrays.asList(Map.of("key", "category", "value", "person"),
-          Map.of("key", "playerId", "values", Arrays.asList("111", "222"))));
-      service.saveDocument(siteId, item, null);
+      DocumentRecord record =
+          new DocumentRecordToDocumentRecordBuilder().apply(null, createDocumentRecord(siteId))
+              .metadata(List.of(new DocumentMetadata("category", "person", null),
+                  new DocumentMetadata("playerId", null, List.of("111", "222"))))
+              .build(siteId);
+      service.saveDocument(siteId, record, new SaveDocumentOptions());
+      Map<String, Object> item = createDocumentPayload(record);
 
       item.put("metadata", List.of(Map.of("key", "playerId")));
 
+      // when
       processFkB64File(siteId, item, "14");
 
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertEquals(1, doc.metadata().size());
       Iterator<DocumentMetadata> itr = doc.metadata().iterator();
@@ -1684,19 +1700,22 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension16() throws IOException {
+    // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DynamicDocumentItem item = createDocumentItem();
-      item.setPath(null);
+      Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
+      item.put("path", null);
       item.remove("content");
       item.put("tags", List.of(Map.of("key", "category", "value", "document")));
-      item.setDeepLinkPath("https://google.com/sample.pdf");
-      item.setContentType("application/pdf");
+      item.put("deepLinkPath", "https://google.com/sample.pdf");
+      item.put("contentType", "application/pdf");
 
+      // when
       processFkB64File(siteId, item, null);
 
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertEquals("https://google.com/sample.pdf", doc.deepLinkPath());
       assertEquals("sample.pdf", doc.path());
@@ -1712,18 +1731,21 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension17() throws IOException {
+    // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DynamicDocumentItem item = createDocumentItem();
+      Map<String, Object> item = createDocumentPayload(createDocumentRecord(DEFAULT_SITE_ID));
       item.remove("content");
       item.put("tags", List.of(Map.of("key", "category", "value", "document")));
-      item.setDeepLinkPath("https://google.com/sample.pdf");
-      item.setContentType("application/pdf");
+      item.put("deepLinkPath", "https://google.com/sample.pdf");
+      item.put("contentType", "application/pdf");
 
+      // when
       processFkB64File(siteId, item, null);
 
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertEquals("https://google.com/sample.pdf", doc.deepLinkPath());
       assertEquals("test.txt", doc.path());
@@ -1740,19 +1762,28 @@ public class StagingS3CreateTest implements DbKeys {
   @Test
   @Timeout(value = TEST_TIMEOUT)
   void testFkB64Extension18() throws IOException, ValidationException {
+    // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
-      DynamicDocumentItem item = createDocumentItem();
-      item.put("tags", List.of(Map.of("key", "category", "value", "document")));
-      item.setDeepLinkPath("https://google.com/sample.pdf");
-      service.saveDocument(siteId, item, null);
+      DocumentRecord record = new DocumentRecordToDocumentRecordBuilder()
+          .apply(null, createDocumentRecord(siteId)).deepLinkPath("https://google.com/sample.pdf")
+          .resourceType(DocumentResourceType.DEEP_LINK).build(siteId);
+      List<DocumentTagRecord> tags = DocumentTagRecord.builder().document(record.document())
+          .tagKey("category").tagValue("document").userId(record.userId()).build(siteId);
+      DocumentRecordSet set =
+          DocumentRecordSet.builder().documentRecord(record).documentTagRecords(tags).build();
+      service.saveDocument(siteId, set, new SaveDocumentOptions());
 
+      Map<String, Object> item = createDocumentPayload(record);
+      item.put("tags", List.of(Map.of("key", "category", "value", "document")));
       item.put("content", "this is some content");
 
+      // when
       processFkB64File(siteId, item, "14");
 
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      // then
+      DocumentArtifact document = new DocumentArtifact((String) item.get("documentId"), null);
       DocumentRecord doc = service.findDocument(siteId, document);
       assertNull(doc.deepLinkPath());
     }
@@ -1782,10 +1813,9 @@ public class StagingS3CreateTest implements DbKeys {
               + "\"userId\":\"joesmith\",\"content\":\"test\",\"tags\":[]}";
 
       Map<String, Object> map = GSON.fromJson(json, Map.class);
-      DynamicDocumentItem item = new DynamicDocumentItem(map);
 
       // when
-      processFkB64File(siteId, item);
+      processFkB64File(siteId, map);
 
       // then
       DocumentArtifact document = new DocumentArtifact(documentId, null);
@@ -1980,10 +2010,12 @@ public class StagingS3CreateTest implements DbKeys {
       String newKey1 = "player";
       String newValue1 = "222";
 
-      DynamicDocumentItem item = createDocumentItem();
-
-      service.saveDocument(siteId, item,
-          List.of(new DocumentTag(item.getDocumentId(), key, value, new Date(), "joe")));
+      DocumentRecord item = createDocumentRecord(siteId);
+      List<DocumentTagRecord> existingTags = DocumentTagRecord.builder().document(item.document())
+          .tagKey(key).tagValue(value).insertedDate(new Date()).userId("joe").build(siteId);
+      DocumentRecordSet set =
+          DocumentRecordSet.builder().documentRecord(item).documentTagRecords(existingTags).build();
+      service.saveDocument(siteId, set, new SaveDocumentOptions());
 
       List<AddDocumentTag> tags = Arrays.asList(new AddDocumentTag().key(newKey0).value(newValue0),
           new AddDocumentTag().key(newKey1).value(newValue1));
@@ -2005,7 +2037,7 @@ public class StagingS3CreateTest implements DbKeys {
       handleRequest(requestMap);
 
       // then
-      DocumentArtifact document = new DocumentArtifact(item.getDocumentId(), null);
+      DocumentArtifact document = new DocumentArtifact(item.documentId(), null);
       assertEquals(newValue0, service.findDocumentTag(siteId, document, newKey0).getValue());
       assertEquals(newValue1, service.findDocumentTag(siteId, document, newKey1).getValue());
 

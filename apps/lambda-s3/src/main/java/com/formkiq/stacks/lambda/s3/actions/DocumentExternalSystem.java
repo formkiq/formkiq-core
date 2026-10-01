@@ -24,7 +24,7 @@
 package com.formkiq.stacks.lambda.s3.actions;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 
 import java.util.Collection;
 import java.util.Map;
@@ -32,7 +32,7 @@ import java.util.Map;
 public interface DocumentExternalSystem {
 
   /**
-   * Convert {@link DocumentItem} to JSON.
+   * Convert {@link DocumentRecord} to JSON.
    *
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
@@ -41,7 +41,7 @@ public interface DocumentExternalSystem {
   String apply(String siteId, DocumentArtifact document);
 
   /**
-   * Convert {@link DocumentItem} to JSON.
+   * Convert {@link DocumentRecord} to JSON.
    *
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}

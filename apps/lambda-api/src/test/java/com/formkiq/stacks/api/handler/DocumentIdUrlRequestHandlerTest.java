@@ -63,6 +63,7 @@ import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUrlRequestBuilder;
 import com.formkiq.urls.UrlParser;
 import com.formkiq.urls.UrlParts;
+import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import org.junit.jupiter.api.Test;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
@@ -217,6 +218,39 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         () -> assertEquals(expectedDisposition,
             download.headers().firstValue("Content-Disposition").orElseThrow(),
             "The SVG response must be an attachment even when inline=true"));
+  }
+
+  /**
+   * Reject nonexistent versions when DynamoDB document versioning is enabled.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testGetUrlWithInvalidVersionKey() throws ApiException {
+    // given
+    String originalPlugin = server.getEnvironmentMap().put("DOCUMENT_VERSIONS_PLUGIN",
+        DocumentVersionServiceDynamoDb.class.getName());
+
+    try {
+      for (String siteId : Arrays.asList(null, ID.uuid())) {
+        // given
+        setBearerToken(siteId);
+        var document = new AddDocumentRequestBuilder().path("test.txt").content("testcontent")
+            .contentType("text/plain").getDocument(this.client, siteId);
+        String versionKey = ID.uuid();
+
+        // when
+        ApiException exception = new GetDocumentUrlRequestBuilder(document).versionKey(versionKey)
+            .submitError(this.client, siteId).exception();
+
+        // then
+        assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), exception.getCode());
+        assertEquals("{\"message\":\"invalid versionKey '" + versionKey + "'\"}",
+            exception.getResponseBody());
+      }
+    } finally {
+      server.getEnvironmentMap().put("DOCUMENT_VERSIONS_PLUGIN", originalPlugin);
+    }
   }
 
   /**

@@ -30,9 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.stacks.api.handler.documents.DocumentsRestrictionsMaxContentLength;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -85,10 +83,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     // given
     String siteId = ID.uuid();
     SiteConfiguration config = SiteConfiguration.builder().build(siteId);
-    DocumentItem item = new DocumentItemDynamoDb();
-
     // when
-    boolean result = SERVICE.isViolated(awsservice, config, siteId, item);
+    boolean result = SERVICE.isViolated(awsservice, config, siteId, null);
 
     // then
     assertFalse(result);
@@ -106,10 +102,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     SiteConfiguration config =
         SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
-    DocumentItem item = new DocumentItemDynamoDb();
-
     // when
-    boolean result = SERVICE.isViolated(awsservice, config, siteId, item);
+    boolean result = SERVICE.isViolated(awsservice, config, siteId, null);
 
     // then
     assertTrue(result);
@@ -124,15 +118,12 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     Long contentLength = Long.valueOf("10");
     String siteId = ID.uuid();
-    DocumentItem item = new DocumentItemDynamoDb();
-    item.setContentLength(contentLength);
-
     SiteConfiguration config =
         SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
 
     // when
-    boolean result = SERVICE.isViolated(awsservice, config, siteId, item);
+    boolean result = SERVICE.isViolated(awsservice, config, siteId, contentLength);
 
     // then
     assertFalse(result);
@@ -151,11 +142,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
     SiteConfiguration config =
         SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
-    DocumentItem item = new DocumentItemDynamoDb();
-    item.setContentLength(contentLength);
-
     // when
-    boolean result = SERVICE.isViolated(awsservice, config, siteId, item);
+    boolean result = SERVICE.isViolated(awsservice, config, siteId, contentLength);
 
     // then
     assertTrue(result);
@@ -175,11 +163,8 @@ public class DocumentsRestrictionsMaxContentLengthTest {
         SiteConfiguration.builder().maxContentLengthBytes("10").build(siteId);
     configService.save(siteId, config);
 
-    DocumentItem item = new DocumentItemDynamoDb();
-    item.setContentLength(contentLength);
-
     // when
-    boolean result = SERVICE.isViolated(awsservice, config, siteId, item);
+    boolean result = SERVICE.isViolated(awsservice, config, siteId, contentLength);
 
     // then
     assertTrue(result);

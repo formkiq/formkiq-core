@@ -28,7 +28,7 @@ import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchQueryBuilder;
@@ -38,10 +38,10 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.aws.dynamodb.actions.ActionBuilder;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
 import org.apache.commons.lang3.StringUtils;
@@ -98,8 +98,10 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      getDocumentService().saveDocument(siteId, item, null);
+      // DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+          .userId("joe").build(siteId);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, null);
       getS3().putObject(BUCKET_NAME, s3Key, "testdata".getBytes(StandardCharsets.UTF_8), null);
@@ -135,9 +137,11 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       // given
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      var item = new DocumentRecordBuilder().document(document).insertedDate(new Date())
+          .userId("joe").build(siteId);
+      // DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
 
-      getDocumentService().saveDocument(siteId, item, null);
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
       assertNotNull(getDocumentService().findDocument(siteId, document));
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-delete-documents-documentid02.json");
@@ -367,13 +371,13 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(contentLength);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).contentLength(contentLength).build(siteId);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       String response = handleRequest(event);
@@ -412,14 +416,16 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       String documentId = ID.uuid();
       final DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(contentLength);
+      // DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).contentLength(contentLength).build(siteId);
+      // item.setContentLength(contentLength);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
       addParameter(event, "actionStatus", "pending");
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
       actions.saveNewActions(List.of(new ActionBuilder().index("0").type(ActionType.OCR)
           .document(document).userId("joe").build(siteId)));
 
@@ -451,13 +457,6 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      Date date = new Date();
-      final long contentLength = 1000L;
-      String username = UUID.randomUUID() + "@formkiq.com";
-      String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(contentLength);
-
       ApiGatewayRequestEvent event = toRequestEvent("/request-get-documents.json");
       addParameter(event, "siteId", siteId);
       addParameter(event, "actionStatus", "nothing");
@@ -485,13 +484,15 @@ public class ApiDocumentsRequestTest extends AbstractRequestHandler {
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).build(siteId);
+      // DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-options-documents.json");
       addParameter(event, "siteId", siteId);
       setCognitoGroup(event, siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       String response = handleRequest(event);

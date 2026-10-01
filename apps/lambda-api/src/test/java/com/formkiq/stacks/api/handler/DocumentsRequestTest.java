@@ -32,7 +32,6 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.actions.Queue;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.client.model.AddAttributeSchemaOptional;
 import com.formkiq.aws.dynamodb.objects.Objects;
@@ -79,11 +78,11 @@ import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.client.model.UpdateConfigurationRequest;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.testutils.api.documents.GetDocumentAttributesRequestBuilder;
@@ -112,12 +111,14 @@ import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -168,8 +169,9 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
 
       nowLocalDate = nowLocalDate.plusMinutes(1);
       Date d = Date.from(nowLocalDate.atZone(ZoneOffset.UTC).toInstant());
-      getDocumentService().saveDocument(prefix, new DocumentItemDynamoDb("doc_" + i, d, userId),
-          new ArrayList<>());
+      var item = new DocumentRecordBuilder().documentId("doc_" + i).insertedDate(d).userId(userId)
+          .build(prefix);
+      getDocumentService().saveDocument(prefix, item, new SaveDocumentOptions());
     }
   }
 
@@ -336,13 +338,13 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(contentLength);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).contentLength(contentLength).build(siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
-      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+      var resp = new GetDocumentsRequestBuilder().submitOk(client, siteId).response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -435,13 +437,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       Date date = new Date();
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).build(siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
-          .submit(client, siteId).throwIfError().response();
+          .submitOk(client, siteId).response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -463,13 +466,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       Date date = DateUtil.toDateFromString("2019-08-15", "0500");
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).build(siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       var resp = new GetDocumentsRequestBuilder().date("2019-08-15").tz(" 0500")
-          .submit(client, siteId).throwIfError().response();
+          .submitOk(client, siteId).response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -491,17 +495,20 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DynamicDocumentItem item =
-          new DynamicDocumentItem(Map.of("documentId", documentId, "userId", username));
       var metadata = new com.formkiq.aws.dynamodb.documents.DocumentMetadata("asd", "123", null);
-      item.setMetadata(List.of(metadata));
-      item.setContentLength(contentLength);
-      item.put("streamTriggeredDate", "123");
+      var item = new DocumentRecordBuilder().documentId(documentId).userId(username)
+          .metadata(List.of(metadata)).contentLength(contentLength).build(siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
+      DynamoDbService db =
+          getAwsServices().register(DynamoDbService.class, new DynamoDbServiceExtension())
+              .getExtension(DynamoDbService.class);
+      db.updateItem(AttributeValue.fromS(item.key().pk()), AttributeValue.fromS(item.key().sk()),
+          Map.of("streamTriggeredDate", AttributeValueUpdate.builder()
+              .value(AttributeValue.fromS("123")).action(AttributeAction.PUT).build()));
 
       // when
-      var resp = new GetDocumentsRequestBuilder().submit(client, siteId).throwIfError().response();
+      var resp = new GetDocumentsRequestBuilder().submitOk(client, siteId).response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
@@ -531,14 +538,14 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
       final long contentLength = 1000L;
       String username = UUID.randomUUID() + "@formkiq.com";
       String documentId = ID.uuid();
-      DocumentItemDynamoDb item = new DocumentItemDynamoDb(documentId, date, username);
-      item.setContentLength(contentLength);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(date)
+          .userId(username).contentLength(contentLength).build(siteId);
 
-      getDocumentService().saveDocument(siteId, item, new ArrayList<>());
+      getDocumentService().saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       var resp = new GetDocumentsRequestBuilder().projection("DOCUMENT_ID_ONLY")
-          .submit(client, siteId).throwIfError().response();
+          .submitOk(client, siteId).response();
 
       // then
       List<Document> documents = notNull(resp.getDocuments());
