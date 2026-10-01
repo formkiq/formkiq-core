@@ -23,7 +23,6 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
@@ -42,15 +41,14 @@ public class DocumentsRestrictionsMaxContentLength implements DocumentsRestricti
 
   @Override
   public boolean isViolated(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final DocumentItem item) {
+      final String siteId, final Long contentLength) {
 
     boolean violated = false;
 
     if (!Strings.isEmpty(config.maxContentLengthBytes())) {
 
       long maxContentLength = Long.parseLong(config.maxContentLengthBytes());
-      if (item.getContentLength() == null || item.getContentLength() == 0
-          || item.getContentLength() > maxContentLength) {
+      if (contentLength == null || contentLength == 0 || contentLength > maxContentLength) {
         violated = true;
       }
     }

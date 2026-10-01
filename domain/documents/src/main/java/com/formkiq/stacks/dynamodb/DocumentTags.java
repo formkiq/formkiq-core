@@ -27,7 +27,7 @@ import java.util.List;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** {@link List} of {@link DocumentItemDynamoDb} tags. */
+/** {@link List} of document tags. */
 @Reflectable
 public class DocumentTags {
 

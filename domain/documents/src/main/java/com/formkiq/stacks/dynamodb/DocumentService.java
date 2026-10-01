@@ -34,7 +34,6 @@ import java.util.Set;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
@@ -175,16 +174,6 @@ public interface DocumentService {
    */
   @Deprecated
   void deleteDocumentFormat(String siteId, String documentId, String contentType);
-
-  /**
-   * Delete All Document Formats.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param documentId {@link String}
-   * @deprecated method to be deleted
-   */
-  @Deprecated
-  void deleteDocumentFormats(String siteId, String documentId);
 
   /**
    * Delete {@link DocumentTag} by TagKey.
@@ -329,32 +318,6 @@ public interface DocumentService {
    */
   Pagination<DocumentAttributeRecord> findDocumentAttributesByType(String siteId,
       DocumentArtifact document, DocumentAttributeValueType valueType, String nextToken, int limit);
-
-  /**
-   * Get Document Format.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param contentType {@link String}
-   * @return {@link Optional} {@link DocumentFormat}
-   * @deprecated method to be deleted
-   */
-  @Deprecated
-  Optional<DocumentFormat> findDocumentFormat(String siteId, String documentId, String contentType);
-
-  /**
-   * Get Document Formats.
-   * 
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param nextToken {@link String}
-   * @param maxresults int
-   * @return {@link Pagination} {@link DocumentFormat}
-   * @deprecated method to be deleted
-   */
-  @Deprecated
-  Pagination<DocumentFormat> findDocumentFormats(String siteId, String documentId, String nextToken,
-      int maxresults);
 
   /**
    * Find Document Tag Value.
@@ -565,36 +528,6 @@ public interface DocumentService {
    * @return boolean
    */
   boolean restoreSoftDeletedDocument(String siteId, DocumentArtifact document);
-
-  /**
-   * Save Document and Tags.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param document {@link DocumentItem}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @throws ValidationException ValidationException
-   * @deprecated method to be deleted
-   */
-  @Deprecated
-  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags)
-      throws ValidationException;
-
-  /**
-   * Save Document and Tags.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param document {@link DocumentItem}
-   * @param tags {@link Collection} {@link DocumentTag}
-   * @param documentAttributes {@link Collection} {@link DocumentAttributeRecord}
-   * @param options {@link SaveDocumentOptions}
-   * @throws ValidationException ValidationException
-   * @deprecated method to be deleted
-   */
-  @Deprecated
-  void saveDocument(String siteId, DocumentItem document, Collection<DocumentTag> tags,
-      Collection<DocumentAttributeRecord> documentAttributes, SaveDocumentOptions options)
-      throws ValidationException;
-
 
   /**
    * New Save Document method that should be used instead of the others.

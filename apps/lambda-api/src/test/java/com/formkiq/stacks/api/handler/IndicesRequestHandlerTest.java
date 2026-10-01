@@ -23,6 +23,11 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
+import com.formkiq.aws.dynamodb.model.DocumentTagRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 
@@ -35,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -65,13 +71,10 @@ import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DeleteIndicesResponse;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
@@ -125,9 +128,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("x/z/test.pdf");
-      documentService.saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().path("x/z/test.pdf").documentId(documentId)
+          .insertedDate(new Date()).userId("joe").build(siteId);
+
+      documentService.saveDocument(siteId, item, new SaveDocumentOptions());
       documentService.deleteDocument(siteId, document, false);
 
       SearchQuery q = new SearchQueryBuilder()
@@ -162,9 +166,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       setBearerToken(siteId);
 
       String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("x/z/test.pdf");
-      documentService.saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().path("x/z/test.pdf").documentId(documentId)
+          .insertedDate(new Date()).userId("joe").build(siteId);
+
+      documentService.saveDocument(siteId, item, new SaveDocumentOptions());
 
       SearchQuery q = new SearchQueryBuilder()
           .meta(new SearchMetaCriteria(null, "x", null, null, null)).build();
@@ -227,11 +232,16 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
       // given
       setBearerToken(siteId);
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
+      var item = new DocumentRecordBuilder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").build(siteId);
+
       String tagKey = "category";
       String tagValue = "person";
-      DocumentTag tag = new DocumentTag(item.getDocumentId(), tagKey, tagValue, new Date(), "joe");
-      documentService.saveDocument(siteId, item, List.of(tag));
+
+      Collection<DocumentTagRecord> tags = new DocumentTagRecordBuilder().tagKey(tagKey)
+          .document(item.document()).tagValue(tagValue).userId("joe").build(siteId);
+      var doc = new DocumentRecordSet(item, null, tags, null);
+      documentService.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       Pagination<DocumentSearchResult> results = dss.search(siteId, q, null, null, MAX_RESULTS);
       assertEquals(1, results.getResults().size());
@@ -288,9 +298,10 @@ public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("x/z/test.pdf");
-      documentService.saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().path("x/z/test.pdf").document(document)
+          .insertedDate(new Date()).userId("joe").build(siteId);
+
+      documentService.saveDocument(siteId, item, new SaveDocumentOptions());
       documentService.deleteDocument(siteId, document, false);
 
       SearchQuery q = new SearchQueryBuilder()

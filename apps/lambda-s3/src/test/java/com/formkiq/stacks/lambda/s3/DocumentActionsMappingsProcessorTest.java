@@ -36,7 +36,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.eventbridge.EventBridgeAwsServiceRegistry;
 import com.formkiq.aws.eventbridge.EventBridgeService;
@@ -59,12 +59,12 @@ import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
@@ -412,10 +412,9 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
 
   private void createDocument(final String siteId, final DocumentArtifact document,
       final String contentType) {
-    DocumentItem item = new DocumentItemDynamoDb(document.documentId(), new Date(), "joe");
-    item.setArtifactId(document.artifactId());
-    item.setContentType(contentType);
-    documentService.saveDocument(siteId, item, null);
+    DocumentRecord item = DocumentRecord.builder().document(document).insertedDate(new Date())
+        .userId("joe").contentType(contentType).build(siteId);
+    documentService.saveDocument(siteId, item, new SaveDocumentOptions());
   }
 
   private Mapping createMapping(final String attributeKey, final String labelText,

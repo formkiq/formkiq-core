@@ -42,10 +42,11 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class DocumentRecordSetToMap implements Function<DocumentRecordSet, Map<String, Object>> {
 
   /** Document fields exposed by the API. */
-  private static final Set<String> DOCUMENT_FIELDS = Set.of("artifactCategory", "artifactId",
-      "belongsToDocumentId", "checksum", "checksumType", "contentLength", "contentType",
-      "deepLinkPath", "documentId", "hasArtifacts", "height", "insertedDate", "lastModifiedDate",
-      "path", "promotedArtifactId", "resourceType", "TimeToLive", "userId", "width");
+  private static final Set<String> DOCUMENT_FIELDS =
+      Set.of("artifactCategory", "artifactId", "belongsToDocumentId", "checksum", "checksumType",
+          "contentLength", "contentType", "deepLinkPath", "deletedDate", "documentId",
+          "hasArtifacts", "height", "insertedDate", "lastModifiedDate", "path",
+          "promotedArtifactId", "resourceType", "TimeToLive", "userId", "width");
 
   /** Converts DynamoDB values to their API representations. */
   private final AttributeValueToMap toMap =

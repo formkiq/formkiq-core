@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Month;
@@ -48,7 +47,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +60,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
@@ -110,11 +107,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.dynamodb.DbKeys;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.model.DocumentTagType;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
@@ -231,21 +226,17 @@ public class DocumentServiceImplTest implements DbKeys {
   /**
    * Create Document.
    *
+   * @param siteId {@link String}
    * @param uuid {@link String}
    * @param date {@link ZonedDateTime}
-   * @return {@link DocumentItem}
+   * @return {@link DocumentRecord}
    */
-  private DocumentItem createDocument(final String uuid, final ZonedDateTime date) {
+  private DocumentRecord createDocument(final String siteId, final String uuid,
+      final ZonedDateTime date) {
 
-    String userId = "jsmith";
-
-    DocumentItem item = new DocumentItemDynamoDb(uuid, Date.from(date.toInstant()), userId);
-    item.setContentType("text/plain");
-    item.setPath("test.txt");
-    item.setUserId(ID.uuid());
-    item.setChecksum(ID.uuid());
-    item.setContentLength(2L);
-    return item;
+    return new DocumentRecordBuilder().documentId(uuid).contentType("text/plain").path("test.txt")
+        .userId(ID.uuid()).checksum(ID.uuid()).contentLength(2L)
+        .insertedDate(Date.from(date.toInstant())).build(siteId);
   }
 
   private DocumentAttributeRecord createDocumentAttribute(final DocumentArtifact document) {
@@ -254,49 +245,48 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Create {@link DynamicDocumentItem} with Child Documents.
+   * Create {@link DocumentRecordSet} with child documents.
    *
+   * @param siteId {@link String}
    * @param now {@link Date}
    * @return {@link DocumentRecordSet}
    */
-  private DocumentRecordSet createSubDocuments2(final Date now) {
+  private DocumentRecordSet createSubDocuments(final String siteId, final Date now) {
     String username = UUID.randomUUID() + "@formkiq.com";
 
     var doc = new DocumentRecordBuilder().documentId(ID.uuid()).userId(username).insertedDate(now)
-        .contentType("text/plain").build((String) null);
+        .contentType("text/plain").build(siteId);
 
     var docRecord1 =
         new DocumentRecordBuilder().belongsToDocumentId(doc.documentId()).documentId(ID.uuid())
-            .userId(username).insertedDate(now).contentType("text/html").build((String) null);
-    var docTag1 = new DocumentTagRecordBuilder().documentId(docRecord1.documentId())
-        .tagKey("category1").insertedDate(now).userId(username).type(DocumentTagType.USERDEFINED)
-        .build((String) null);
+            .userId(username).insertedDate(now).contentType("text/html").build(siteId);
+    var docTag1 = new DocumentTagRecordBuilder().document(docRecord1.document()).tagKey("category1")
+        .insertedDate(now).userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
 
     var doc1 = new DocumentRecordSet(docRecord1, null, docTag1, null);
 
-    var docRecord2 = new DocumentRecordBuilder().belongsToDocumentId(doc.documentId())
-        .documentId(ID.uuid()).userId(username).insertedDate(now).contentType("application/json")
-        .build((String) null);
+    var docRecord2 =
+        new DocumentRecordBuilder().belongsToDocumentId(doc.documentId()).documentId(ID.uuid())
+            .userId(username).insertedDate(now).contentType("application/json").build(siteId);
 
-    var docTag2 = new DocumentTagRecordBuilder().documentId(docRecord2.documentId())
-        .tagKey("category2").insertedDate(now).userId(username).type(DocumentTagType.USERDEFINED)
-        .build((String) null);
+    var docTag2 = new DocumentTagRecordBuilder().document(docRecord2.document()).tagKey("category2")
+        .insertedDate(now).userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
     var doc2 = new DocumentRecordSet(docRecord2, null, docTag2, null);
 
     return new DocumentRecordSet(doc, null, null, List.of(doc1, doc2));
   }
 
   /**
-   * Create Test {@link DocumentItem}.
+   * Create Test {@link DocumentRecord}.
    *
    * @param siteId DynamoDB PK Prefix
-   * @return {@link List} {@link DocumentItem}
+   * @return {@link List} {@link DocumentRecord}
    */
-  private List<DocumentItem> createTestData(final String siteId) {
+  private List<DocumentRecord> createTestData(final String siteId) {
     return createTestData(siteId, Integer.MAX_VALUE);
   }
 
-  private List<DocumentItem> createTestData(final String siteId, final int count) {
+  private List<DocumentRecord> createTestData(final String siteId, final int count) {
 
     List<String> dates = Arrays.asList("2020-01-30T00:00:00", "2020-01-30T01:20:00",
         "2020-01-30T02:20:00", "2020-01-30T05:20:00", "2020-01-30T11:45:00", "2020-01-30T13:22:00",
@@ -305,18 +295,20 @@ public class DocumentServiceImplTest implements DbKeys {
         "2020-01-31T08:00:00", "2020-01-31T09:00:00", "2020-01-31T10:00:00", "2020-01-31T11:00:00",
         "2020-01-31T23:00:00");
 
-    List<DocumentItem> items = new ArrayList<>();
+    List<DocumentRecord> items = new ArrayList<>();
 
     dates.stream().limit(count).forEach(date -> {
       ZonedDateTime zdate = DateUtil.toDateTimeFromString(date, null);
-      items.add(createDocument(ID.uuid(), zdate));
+      items.add(createDocument(siteId, ID.uuid(), zdate));
     });
 
     items.forEach(item -> {
-      Collection<DocumentTag> tags = List
-          .of(new DocumentTag(item.getDocumentId(), "status", "active", new Date(), "testuser"));
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(item.document()).tagKey("status").tagValue("active")
+              .insertedDate(new Date()).userId("testuser").build(siteId);
       try {
-        service.saveDocument(siteId, item, tags);
+        service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+            new SaveDocumentOptions());
       } catch (ValidationException e) {
         throw new RuntimeException(e);
       }
@@ -334,8 +326,8 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testAddTags01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId, 1).getFirst();
-      String documentId = document.getDocumentId();
+      DocumentRecord document = createTestData(siteId, 1).getFirst();
+      String documentId = document.documentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
       String tagKey = "tag" + TAG_DELIMINATOR;
       String tagValue = ID.uuid();
@@ -388,16 +380,18 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-      final String documentId = item.getDocumentId();
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+          .userId(userId).build(siteId);
+      final String documentId = item.documentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
-      DocumentTag ti = new DocumentTag(documentId, tagKey, null, now, userId);
-
-      List<DocumentTag> tags = List.of(ti);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(documentId, null)).tagKey(tagKey)
+              .tagValue(null).insertedDate(now).userId(userId).build(siteId);
 
       // when
-      service.saveDocument(siteId, item, tags);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       // then
       Pagination<DocumentTag> results =
@@ -433,13 +427,16 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
     String documentId = ID.uuid();
     DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
-    DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-    List<DocumentTag> tags = SYSTEM_DEFINED_TAGS.stream()
-        .map(tag -> new DocumentTag(documentId, tag, "A", new Date(), "joe"))
-        .collect(Collectors.toList());
+    DocumentRecord item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+        .userId("joe").build((String) null);
+    List<DocumentTagRecord> tags = SYSTEM_DEFINED_TAGS.stream()
+        .flatMap(tag -> DocumentTagRecord.builder().document(documentArtifact).tagKey(tag)
+            .tagValue("A").insertedDate(new Date()).userId("joe").build((String) null).stream())
+        .toList();
 
     // when
-    service.saveDocument(null, item, tags);
+    service.saveDocument(null, new DocumentRecordSet(item, null, tags, null),
+        new SaveDocumentOptions());
 
     // then
     assertEquals(0, getDocumentTags(null, documentArtifact, MAX_RESULTS).size());
@@ -455,8 +452,8 @@ public class DocumentServiceImplTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId, 1).getFirst();
-      String documentId = document.getDocumentId();
+      DocumentRecord document = createTestData(siteId, 1).getFirst();
+      String documentId = document.documentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
       String tagKey = "category";
       List<String> tagValues = Arrays.asList("ABC", "XYZ");
@@ -563,7 +560,8 @@ public class DocumentServiceImplTest implements DbKeys {
 
       List<DocumentTagRecord> tags1 = DocumentTagRecord.builder().document(documentArtifact)
           .tagKey("category").tagValue("person0").type(DocumentTagType.USERDEFINED).build(siteId);
-      service.saveDocument(siteId, new DocumentItemDynamoDb(documentId, new Date(), "joe"), null);
+      service.saveDocument(siteId, DocumentRecord.builder().documentId(documentId)
+          .insertedDate(new Date()).userId("joe").build(siteId), new SaveDocumentOptions());
 
       // when
       service.addTags(siteId, documentArtifact, tags0, null);
@@ -592,16 +590,17 @@ public class DocumentServiceImplTest implements DbKeys {
 
       for (boolean softDelete : Arrays.asList(Boolean.FALSE, Boolean.TRUE)) {
 
-        DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-        item.setPath("a/test.txt");
-        String documentId = item.getDocumentId();
+        DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+            .userId(userId).path("a/test.txt").build(siteId);
+        String documentId = item.documentId();
         final DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
-        DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
-        tag.setUserId(ID.uuid());
-        tag.setDocumentId(documentId);
+        List<DocumentTagRecord> tag = DocumentTagRecord.builder()
+            .document(DocumentArtifact.of(documentId, null)).tagKey("status").tagValue("active")
+            .insertedDate(now).userId(ID.uuid()).build(siteId);
 
-        service.saveDocument(siteId, item, List.of(tag));
+        service.saveDocument(siteId, new DocumentRecordSet(item, null, tag, null),
+            new SaveDocumentOptions());
 
         Pagination<DocumentTag> results =
             service.findDocumentTags(siteId, documentArtifact, null, MAX_RESULTS);
@@ -646,21 +645,22 @@ public class DocumentServiceImplTest implements DbKeys {
       String userId = "jsmith";
       createAttributeString(siteId, "myattr");
 
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-      item.setPath("a/test.txt");
-      DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), null);
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+          .userId(userId).path("a/test.txt").build(siteId);
+      DocumentArtifact document = DocumentArtifact.of(item.documentId(), null);
 
-      List<DocumentTag> tags = new ArrayList<>();
+      List<DocumentTagRecord> tags = new ArrayList<>();
 
       for (int i = 0; i < tagCount; i++) {
-        DocumentTag tag = new DocumentTag(null, "status_" + i, "active", now, userId);
-        tag.setUserId(ID.uuid());
-        tag.setDocumentId(document.documentId());
-        tags.add(tag);
+        List<DocumentTagRecord> tag = DocumentTagRecord.builder()
+            .document(DocumentArtifact.of(document.documentId(), null)).tagKey("status_" + i)
+            .tagValue("active").insertedDate(now).userId(ID.uuid()).build(siteId);
+        tags.addAll(tag);
       }
 
       Collection<DocumentAttributeRecord> attrs = List.of(createDocumentAttribute(document));
-      service.saveDocument(siteId, item, tags, attrs, new SaveDocumentOptions());
+      service.saveDocument(siteId, new DocumentRecordSet(item, attrs, tags, null),
+          new SaveDocumentOptions());
       assertNotNull(service.findDocument(siteId, document));
       assertNull(service.findDocument(siteId, document).deletedDate());
       assertFalse(getDocumentTags(siteId, document, tagCount).isEmpty());
@@ -669,9 +669,10 @@ public class DocumentServiceImplTest implements DbKeys {
       boolean softDelete = true;
 
       // when
-      assertTrue(service.deleteDocument(siteId, document, softDelete));
+      boolean deleted = service.deleteDocument(siteId, document, softDelete);
 
       // then
+      assertTrue(deleted);
       assertNull(service.findDocument(siteId, document));
       assertTrue(getDocumentTags(siteId, document, tagCount).isEmpty());
       assertTrue(getDocumentAttributes(siteId, document).isEmpty());
@@ -683,16 +684,17 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNotNull(results.getFirst().deletedDate());
 
       // when
-      assertTrue(service.restoreSoftDeletedDocument(siteId, document));
+      boolean restored = service.restoreSoftDeletedDocument(siteId, document);
 
       // then
+      assertTrue(restored);
       results = service.findSoftDeletedDocuments(siteId, null, tagCount).getResults();
       assertEquals(0, results.size());
 
       assertNotNull(service.findDocument(siteId, document));
       assertNull(service.findDocument(siteId, document).deletedDate());
 
-      Map<String, Object> map = folderIndexProcessor.getIndex(siteId, item.getPath());
+      Map<String, Object> map = folderIndexProcessor.getIndex(siteId, item.path());
       assertEquals("test.txt", map.get("path"));
 
       assertEquals(tagCount, getDocumentTags(siteId, document, tagCount).size());
@@ -715,24 +717,26 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-      item.setPath("a/test52.txt");
-      String documentId = item.getDocumentId();
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+          .userId(userId).path("a/test52.txt").build(siteId);
+      String documentId = item.documentId();
       final DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
-      DocumentTag tag = new DocumentTag(null, "status", "active", now, userId);
-      tag.setUserId(ID.uuid());
-      tag.setDocumentId(documentId);
+      List<DocumentTagRecord> tag = DocumentTagRecord.builder()
+          .document(DocumentArtifact.of(documentId, null)).tagKey("status").tagValue("active")
+          .insertedDate(now).userId(ID.uuid()).build(siteId);
 
-      service.saveDocument(siteId, item, List.of(tag));
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tag, null),
+          new SaveDocumentOptions());
 
       assertNotNull(service.findDocument(siteId, documentArtifact));
       assertEquals(1, getDocumentTags(siteId, documentArtifact, MAX_RESULTS).size());
 
       // when
-      assertTrue(service.deleteDocument(siteId, documentArtifact, true));
+      boolean softDeleted = service.deleteDocument(siteId, documentArtifact, true);
 
       // then
+      assertTrue(softDeleted);
       assertNull(service.findDocument(siteId, documentArtifact));
       assertEquals(0, getDocumentTags(siteId, documentArtifact, MAX_RESULTS).size());
 
@@ -743,9 +747,10 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
 
       // when
-      assertTrue(service.deleteDocument(siteId, documentArtifact, false));
+      boolean hardDeleted = service.deleteDocument(siteId, documentArtifact, false);
 
       // then
+      assertTrue(hardDeleted);
       results = service.findSoftDeletedDocuments(siteId, null, MAX_RESULTS).getResults();
       assertEquals(0, results.size());
 
@@ -766,14 +771,14 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-      item.setPath("a/test.txt");
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+          .userId(userId).path("a/test.txt").build(siteId);
 
       // when
-      service.saveDocument(siteId, item, null);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
-      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.getPath());
+      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.path());
 
       // then
       assertEquals(2, indexRecords.size());
@@ -784,8 +789,11 @@ public class DocumentServiceImplTest implements DbKeys {
 
       // when
       db.deleteItem(key);
-      assertTrue(
-          service.deleteDocument(siteId, DocumentArtifact.of(item.getDocumentId(), null), false));
+      boolean deleted =
+          service.deleteDocument(siteId, DocumentArtifact.of(item.documentId(), null), false);
+
+      // then
+      assertTrue(deleted);
     }
   }
 
@@ -797,21 +805,25 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-      item.setPath("a/mytest333.txt");
-      service.saveDocument(siteId, item, null);
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(new Date())
+          .userId("joe").path("a/mytest333.txt").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
-      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.getPath());
+      var indexRecords = new PathToFolderIndexRecords(db).apply(siteId, item.path());
 
       // then
       assertEquals(2, indexRecords.size());
-      DocumentArtifact documentArtifact = DocumentArtifact.of(item.getDocumentId(), null);
+      DocumentArtifact documentArtifact = DocumentArtifact.of(item.documentId(), null);
 
       // when
-      assertTrue(service.deleteDocument(siteId, documentArtifact, false));
+      boolean deleted = service.deleteDocument(siteId, documentArtifact, false);
 
-      // given - resave folder index
+      // then
+      assertTrue(deleted);
+
+      // given
+      // Resave the folder index.
       db.putItem(indexRecords.get(1).getAttributes(siteId));
       var get = new GetFolderFilesByNameQuery(false, "mytest");
 
@@ -822,9 +834,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.items().size());
 
       // when
-      assertTrue(service.deleteDocument(siteId, documentArtifact, false));
+      boolean deletedAgain = service.deleteDocument(siteId, documentArtifact, false);
 
       // then
+      assertTrue(deletedAgain);
       results = get.query(db, db.getTableName(), siteId, null, 2);
       assertEquals(0, results.items().size());
     }
@@ -841,10 +854,10 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String documentId0 = ID.uuid();
       String documentId1 = ID.uuid();
-      DocumentItem item0 = createDocument(documentId0, ZonedDateTime.now());
+      DocumentRecord item0 = createDocument(siteId, documentId0, ZonedDateTime.now());
 
       // when
-      service.saveDocument(siteId, item0, null);
+      service.saveDocument(siteId, item0, new SaveDocumentOptions());
 
       // then
       assertTrue(service.exists(siteId, DocumentArtifact.of(documentId0, null)));
@@ -857,8 +870,8 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testFindDocument01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentItem document = createTestData(siteId, 1).getFirst();
-      String documentId = document.getDocumentId();
+      DocumentRecord document = createTestData(siteId, 1).getFirst();
+      String documentId = document.documentId();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentId, null);
 
       // when
@@ -868,8 +881,8 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(documentId, item.documentId());
       assertNotNull(item.insertedDate());
       assertNotNull(item.lastModifiedDate());
-      assertEquals(document.getInsertedDate(), item.insertedDate());
-      assertEquals(document.getInsertedDate(), item.lastModifiedDate());
+      assertEquals(document.insertedDate(), item.insertedDate());
+      assertEquals(document.insertedDate(), item.lastModifiedDate());
       assertNotNull(item.path());
       assertEquals("text/plain", item.contentType());
       assertNotNull(item.checksum());
@@ -889,7 +902,7 @@ public class DocumentServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       final Collection<String> list = new HashSet<>();
-      DocumentRecordSet doc = createSubDocuments2(now);
+      DocumentRecordSet doc = createSubDocuments(siteId, now);
       DocumentArtifact documentArtifact =
           DocumentArtifact.of(doc.documentRecord().documentId(), null);
       service.saveDocument(siteId, doc, new SaveDocumentOptions());
@@ -958,8 +971,10 @@ public class DocumentServiceImplTest implements DbKeys {
       attributes.add(new DocumentAttributeRecord().setKey("wm2").setDocument(document)
           .setValueType(DocumentAttributeValueType.WATERMARK).setUserId("joe"));
 
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      service.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+      DocumentRecord item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId("joe").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, attributes, null, null),
+          new SaveDocumentOptions());
 
       // when
       List<DocumentAttributeRecord> docAttributes =
@@ -979,7 +994,7 @@ public class DocumentServiceImplTest implements DbKeys {
     createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1017,7 +1032,7 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String tagKey = "status";
       String tagValue = "active";
-      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1034,7 +1049,7 @@ public class DocumentServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String tagKey = "status";
-      String documentId = createTestData(siteId, 1).getFirst().getDocumentId();
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
@@ -1051,15 +1066,13 @@ public class DocumentServiceImplTest implements DbKeys {
     createTestData("finance", 1);
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      Iterator<DocumentItem> itr = createTestData(siteId, 3).iterator();
-      DocumentItem d0 = itr.next();
-      DocumentItem d1 = itr.next();
-      DocumentItem d2 = itr.next();
+      Iterator<DocumentRecord> itr = createTestData(siteId, 3).iterator();
+      DocumentRecord d0 = itr.next();
+      DocumentRecord d1 = itr.next();
+      DocumentRecord d2 = itr.next();
 
-      List<DocumentArtifact> documents =
-          Arrays.asList(DocumentArtifact.of(d0.getDocumentId(), null),
-              DocumentArtifact.of(d1.getDocumentId(), null),
-              DocumentArtifact.of(d2.getDocumentId(), null));
+      List<DocumentArtifact> documents = Arrays.asList(DocumentArtifact.of(d0.documentId(), null),
+          DocumentArtifact.of(d1.documentId(), null), DocumentArtifact.of(d2.documentId(), null));
 
       // when
       List<DocumentRecord> items = service.findDocuments(siteId, documents);
@@ -1067,20 +1080,20 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       int i = 0;
       assertEquals(items.size(), documents.size());
-      assertEquals(d0.getDocumentId(), items.get(i).documentId());
+      assertEquals(d0.documentId(), items.get(i).documentId());
       assertNotNull(items.get(i).insertedDate());
       assertNotNull(items.get(i).lastModifiedDate());
-      assertEquals(d0.getInsertedDate(), items.get(i++).insertedDate());
+      assertEquals(d0.insertedDate(), items.get(i++).insertedDate());
 
-      assertEquals(d1.getDocumentId(), items.get(i).documentId());
+      assertEquals(d1.documentId(), items.get(i).documentId());
       assertNotNull(items.get(i).insertedDate());
       assertNotNull(items.get(i).lastModifiedDate());
-      assertEquals(d1.getInsertedDate(), items.get(i++).insertedDate());
+      assertEquals(d1.insertedDate(), items.get(i++).insertedDate());
 
-      assertEquals(d2.getDocumentId(), items.get(i).documentId());
+      assertEquals(d2.documentId(), items.get(i).documentId());
       assertNotNull(items.get(i).insertedDate());
       assertNotNull(items.get(i).lastModifiedDate());
-      assertEquals(d2.getInsertedDate(), items.get(i).insertedDate());
+      assertEquals(d2.insertedDate(), items.get(i).insertedDate());
     }
   }
 
@@ -1091,7 +1104,7 @@ public class DocumentServiceImplTest implements DbKeys {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       List<DocumentArtifact> documents = createTestData(siteId).stream()
-          .map(d -> DocumentArtifact.of(d.getDocumentId(), d.getArtifactId())).toList();
+          .map(d -> DocumentArtifact.of(d.documentId(), d.artifactId())).toList();
 
       // when
       List<DocumentRecord> items = service.findDocuments(siteId, documents);
@@ -1161,7 +1174,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       List<String> resultDates = results.getResults().stream().map(
           r -> ZonedDateTime.ofInstant(r.insertedDate().toInstant(), ZoneId.of("UTC")).toString())
-          .collect(Collectors.toList());
+          .toList();
 
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
 
@@ -1176,7 +1189,8 @@ public class DocumentServiceImplTest implements DbKeys {
       final List<String> expected1 = Arrays.asList("2020-01-30T05:20Z[UTC]",
           "2020-01-30T11:45Z[UTC]", "2020-01-30T13:22Z[UTC]");
 
-      // when - get next page
+      // when
+      // Get the next page.
       results = service.findDocumentsByDate(siteId, date, results.getNextToken(), max);
 
       // then
@@ -1216,7 +1230,7 @@ public class DocumentServiceImplTest implements DbKeys {
 
       List<String> resultDates = results.getResults().stream().map(
           r -> ZonedDateTime.ofInstant(r.insertedDate().toInstant(), ZoneId.of("UTC")).toString())
-          .collect(Collectors.toList());
+          .toList();
       assertArrayEquals(expected0.toArray(new String[0]), resultDates.toArray(new String[0]));
 
       String documentId = results.getResults().getLast().documentId();
@@ -1285,9 +1299,7 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testFindDocumentsByDate05() {
     // given
     Date now = new Date();
-    // DynamicDocumentItem doc = createSubDocuments(now);
-    DocumentRecordSet documentRecordSet = createSubDocuments2(now);
-    // service.saveDocumentItemWithTag(null, doc);
+    DocumentRecordSet documentRecordSet = createSubDocuments(null, now);
     service.saveDocument(null, documentRecordSet, new SaveDocumentOptions());
     ZonedDateTime date = service.findMostDocumentDate();
     assertNotNull(date);
@@ -1317,16 +1329,20 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
       String documentId = ID.uuid();
-      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+      DocumentRecord document = DocumentRecord.builder().documentId(documentId).insertedDate(now)
+          .userId(userId).build(siteId);
       String tagKey0 = "category";
       String tagValue0 = "person";
       String tagKey1 = "playerId";
       List<String> tagValue1 = Arrays.asList("111", "222");
-      List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
-              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+      List<DocumentTagRecord> tags = new ArrayList<>();
+      tags.addAll(DocumentTagRecord.builder().document(document.document()).tagKey(tagKey0)
+          .tagValue(tagValue0).insertedDate(now).userId(userId).build(siteId));
+      tags.addAll(DocumentTagRecord.builder().document(document.document()).tagKey(tagKey1)
+          .tagValues(tagValue1).insertedDate(now).userId(userId).build(siteId));
 
-      service.saveDocument(siteId, document, tags);
+      service.saveDocument(siteId, new DocumentRecordSet(document, null, tags, null),
+          new SaveDocumentOptions());
 
       // when
       final Map<String, Collection<DocumentTag>> tagMap0 = service.findDocumentsTags(siteId,
@@ -1373,18 +1389,22 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
       String documentId = ID.uuid();
-      DocumentItem document = new DocumentItemDynamoDb(documentId, now, userId);
+      DocumentRecord document = DocumentRecord.builder().documentId(documentId).insertedDate(now)
+          .userId(userId).build(siteId);
 
       String tagKey0 = "category";
       String tagValue0 = "person";
       String tagKey1 = "playerId";
 
       List<String> tagValue1 = Arrays.asList("111", "222");
-      List<DocumentTag> tags = Arrays.asList(
-          new DocumentTag(documentId, tagKey0, tagValue0, now, userId), new DocumentTag(documentId,
-              tagKey1, tagValue1, now, userId, DocumentTagType.USERDEFINED));
+      List<DocumentTagRecord> tags = new ArrayList<>();
+      tags.addAll(DocumentTagRecord.builder().document(document.document()).tagKey(tagKey0)
+          .tagValue(tagValue0).insertedDate(now).userId(userId).build(siteId));
+      tags.addAll(DocumentTagRecord.builder().document(document.document()).tagKey(tagKey1)
+          .tagValues(tagValue1).insertedDate(now).userId(userId).build(siteId));
 
-      service.saveDocument(siteId, document, tags);
+      service.saveDocument(siteId, new DocumentRecordSet(document, null, tags, null),
+          new SaveDocumentOptions());
 
       List<String> documentIds = new ArrayList<>();
       documentIds.add(documentId);
@@ -1570,10 +1590,11 @@ public class DocumentServiceImplTest implements DbKeys {
       Date now = new Date();
       String userId = "jsmith";
 
-      DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), now, userId);
-      DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), null);
+      DocumentRecord item = DocumentRecord.builder().documentId(ID.uuid()).insertedDate(now)
+          .userId(userId).build(siteId);
+      DocumentArtifact document = DocumentArtifact.of(item.documentId(), null);
 
-      service.saveDocument(siteId, item, List.of());
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
       assertTrue(service.deleteDocument(siteId, document, true));
 
       var key = new DocumentRecordBuilder().document(document).buildSoftDeleteKey(siteId);
@@ -1601,7 +1622,8 @@ public class DocumentServiceImplTest implements DbKeys {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       String documentId = ID.uuid();
-      service.saveDocument(siteId, createDocument(documentId, ZonedDateTime.now()), null);
+      service.saveDocument(siteId, createDocument(siteId, documentId, ZonedDateTime.now()),
+          new SaveDocumentOptions());
 
       // when
       var result0 = new GetDocumentFind().find(db, DOCUMENTS_TABLE, siteId, documentId);
@@ -1610,96 +1632,6 @@ public class DocumentServiceImplTest implements DbKeys {
       // then
       assertNotNull(result0);
       assertNull(result1);
-    }
-  }
-
-  /**
-   * Test No extra formats.
-   * 
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testGetDocumentFormats01() throws ValidationException {
-    // given
-    String userId = "test";
-    Date now = new Date();
-    String contentType = "application/pdf";
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, now, userId);
-      item.setContentType(contentType);
-      service.saveDocument(siteId, item, null);
-
-      // when
-      Optional<DocumentFormat> format = service.findDocumentFormat(siteId, documentId, contentType);
-      Pagination<DocumentFormat> formats =
-          service.findDocumentFormats(siteId, documentId, null, MAX_RESULTS);
-
-      // then
-      assertFalse(format.isPresent());
-      assertEquals(0, formats.getResults().size());
-    }
-  }
-
-  /**
-   * Test extra formats.
-   * 
-   * @throws ValidationException ValidationException
-   */
-  @Test
-  public void testGetDocumentFormats02() throws ValidationException {
-    // given
-    String userId = "test";
-    Date now = new Date();
-    String contentType = "application/pdf";
-    List<String> contentTypes = Arrays.asList("text/plain", "text/html");
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, now, userId);
-      item.setContentType(contentType);
-      service.saveDocument(siteId, item, null);
-
-      for (String format : contentTypes) {
-        DocumentFormat f = new DocumentFormat();
-        f.setContentType(format);
-        f.setDocumentId(documentId);
-        f.setInsertedDate(now);
-        f.setUserId(userId);
-        service.saveDocumentFormat(siteId, f);
-      }
-
-      // when
-      Optional<DocumentFormat> format =
-          service.findDocumentFormat(siteId, documentId, contentTypes.getFirst());
-      Pagination<DocumentFormat> formats = service.findDocumentFormats(siteId, documentId, null, 1);
-
-      // then
-      assertTrue(format.isPresent());
-      assertEquals(1, formats.getResults().size());
-
-      assertEquals(contentTypes.getFirst(), format.get().getContentType());
-      assertEquals(documentId, format.get().getDocumentId());
-      assertEquals(this.df.format(now), this.df.format(format.get().getInsertedDate()));
-      assertEquals(userId, format.get().getUserId());
-
-      assertEquals(contentTypes.get(1), formats.getResults().getFirst().getContentType());
-      assertEquals(documentId, formats.getResults().getFirst().getDocumentId());
-      assertEquals(this.df.format(now),
-          this.df.format(formats.getResults().getFirst().getInsertedDate()));
-      assertEquals(userId, formats.getResults().getFirst().getUserId());
-
-      // when
-      formats = service.findDocumentFormats(siteId, documentId, formats.getNextToken(), 1);
-
-      // then
-      assertEquals(1, formats.getResults().size());
-      assertEquals(contentTypes.getFirst(), formats.getResults().getFirst().getContentType());
-      assertEquals(documentId, formats.getResults().getFirst().getDocumentId());
-      assertEquals(this.df.format(now),
-          this.df.format(formats.getResults().getFirst().getInsertedDate()));
-      assertEquals(userId, formats.getResults().getFirst().getUserId());
     }
   }
 
@@ -1718,14 +1650,14 @@ public class DocumentServiceImplTest implements DbKeys {
       String documentId = ID.uuid();
       String artifactId = ID.uuid();
 
-      DocumentItem documentItem = new DocumentItemDynamoDb(documentId, now, userId);
-      documentItem.setPath("a/test53.txt");
-      service.saveDocument(siteId, documentItem, List.of());
+      DocumentRecord documentItem = DocumentRecord.builder().documentId(documentId)
+          .insertedDate(now).userId(userId).path("a/test53.txt").build(siteId);
+      service.saveDocument(siteId, documentItem, new SaveDocumentOptions());
 
-      DocumentItem artifactItem = new DocumentItemDynamoDb(documentId, now, userId);
-      artifactItem.setArtifactId(artifactId);
-      artifactItem.setPath("a/test53-artifact.txt");
-      service.saveDocument(siteId, artifactItem, List.of());
+      DocumentRecord artifactItem =
+          DocumentRecord.builder().documentId(documentId).insertedDate(now).userId(userId)
+              .artifactId(artifactId).path("a/test53-artifact.txt").build(siteId);
+      service.saveDocument(siteId, artifactItem, new SaveDocumentOptions());
 
       DocumentArtifact artifact = DocumentArtifact.of(documentId, artifactId);
       assertTrue(service.deleteDocument(siteId, artifact, true));
@@ -1750,12 +1682,15 @@ public class DocumentServiceImplTest implements DbKeys {
       String tagKey = "category";
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
-      tag.setValues(Arrays.asList("abc", "xyz"));
-      Collection<DocumentTag> tags = List.of(tag);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey(tagKey)
+              .tagValues(Arrays.asList("abc", "xyz")).insertedDate(new Date()).userId("jsmith")
+              .build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
@@ -1763,9 +1698,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(results.getFirst().getValue());
 
       // when
-      assertTrue(service.removeTag(siteId, document, tagKey, "xyz"));
+      boolean removed = service.removeTag(siteId, document, tagKey, "xyz");
 
       // then
+      assertTrue(removed);
       results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
       assertNull(results.getFirst().getValues());
@@ -1785,12 +1721,15 @@ public class DocumentServiceImplTest implements DbKeys {
       String tagKey = "category";
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
-      tag.setValues(Arrays.asList("abc", "mno", "xyz"));
-      Collection<DocumentTag> tags = List.of(tag);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey(tagKey)
+              .tagValues(Arrays.asList("abc", "mno", "xyz")).insertedDate(new Date())
+              .userId("jsmith").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
@@ -1798,9 +1737,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(results.getFirst().getValue());
 
       // when
-      assertTrue(service.removeTag(siteId, document, tagKey, "xyz"));
+      boolean removed = service.removeTag(siteId, document, tagKey, "xyz");
 
       // then
+      assertTrue(removed);
       results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
       assertEquals("[abc, mno]", results.getFirst().getValues().toString());
@@ -1820,12 +1760,14 @@ public class DocumentServiceImplTest implements DbKeys {
       String tagKey = "category";
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag = new DocumentTag(docid, tagKey, null, new Date(), "jsmith");
-      tag.setValues(List.of("xyz"));
-      Collection<DocumentTag> tags = List.of(tag);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey(tagKey)
+              .tagValues(List.of("xyz")).insertedDate(new Date()).userId("jsmith").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
@@ -1833,9 +1775,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(results.getFirst().getValue());
 
       // when
-      assertTrue(service.removeTag(siteId, document, tagKey, "xyz"));
+      boolean removed = service.removeTag(siteId, document, tagKey, "xyz");
 
       // then
+      assertTrue(removed);
       results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(0, results.size());
     }
@@ -1854,11 +1797,14 @@ public class DocumentServiceImplTest implements DbKeys {
       String tagValue = "person";
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
-      Collection<DocumentTag> tags = List.of(tag);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey(tagKey)
+              .tagValue(tagValue).insertedDate(new Date()).userId("jsmith").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
@@ -1866,9 +1812,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(tagValue, results.getFirst().getValue());
 
       // when
-      assertTrue(service.removeTag(siteId, document, tagKey, tagValue));
+      boolean removed = service.removeTag(siteId, document, tagKey, tagValue);
 
       // then
+      assertTrue(removed);
       results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(0, results.size());
     }
@@ -1887,11 +1834,14 @@ public class DocumentServiceImplTest implements DbKeys {
       String tagValue = "person";
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag = new DocumentTag(docid, tagKey, tagValue, new Date(), "jsmith");
-      Collection<DocumentTag> tags = List.of(tag);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey(tagKey)
+              .tagValue(tagValue).insertedDate(new Date()).userId("jsmith").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
@@ -1899,9 +1849,10 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(tagValue, results.getFirst().getValue());
 
       // when
-      assertFalse(service.removeTag(siteId, document, tagKey, tagValue + "!"));
+      boolean removed = service.removeTag(siteId, document, tagKey, tagValue + "!");
 
       // then
+      assertFalse(removed);
       results = getDocumentTags(siteId, document, MAX_RESULTS);
       assertEquals(1, results.size());
     }
@@ -1918,15 +1869,17 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String docid = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      Collection<DocumentTag> tags =
-          List.of(new DocumentTag(docid, "untagged", "true", new Date(), "jsmith"));
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tags =
+          DocumentTagRecord.builder().document(document).tagKey("untagged").tagValue("true")
+              .insertedDate(new Date()).userId("jsmith").build(siteId);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       // when
-      service.removeTags(siteId, document,
-          Collections.singletonList(tags.iterator().next().getKey()));
+      service.removeTags(siteId, document, Collections.singletonList(tags.getFirst().tagKey()));
 
       // then
       assertEquals(0, getDocumentTags(siteId, document, MAX_RESULTS).size());
@@ -1944,20 +1897,26 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String docid = ID.uuid();
       final DocumentArtifact document = DocumentArtifact.of(docid, null);
-      DocumentItem item = new DocumentItemDynamoDb(docid, new Date(), "jsmith");
+      DocumentRecord item = DocumentRecord.builder().documentId(docid).insertedDate(new Date())
+          .userId("jsmith").build(siteId);
 
-      DocumentTag tag0 = new DocumentTag(docid, "category", null, new Date(), "jsmith");
-      tag0.setValues(Arrays.asList("abc", "xyz"));
-      DocumentTag tag1 = new DocumentTag(docid, "category2", null, new Date(), "jsmith");
-      tag1.setValues(Arrays.asList("abc2", "xyz2"));
-      Collection<DocumentTag> tags = Arrays.asList(tag0, tag1);
-      service.saveDocument(siteId, item, tags);
+      List<DocumentTagRecord> tag0 =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey("category")
+              .tagValues(Arrays.asList("abc", "xyz")).insertedDate(new Date()).userId("jsmith")
+              .build(siteId);
+      List<DocumentTagRecord> tag1 =
+          DocumentTagRecord.builder().document(DocumentArtifact.of(docid, null)).tagKey("category2")
+              .tagValues(Arrays.asList("abc2", "xyz2")).insertedDate(new Date()).userId("jsmith")
+              .build(siteId);
+      List<DocumentTagRecord> tags = new ArrayList<>(tag0);
+      tags.addAll(tag1);
+      service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+          new SaveDocumentOptions());
 
       assertEquals(2, getDocumentTags(siteId, document, MAX_RESULTS).size());
 
       // when
-      service.removeTags(siteId, document,
-          Collections.singletonList(tags.iterator().next().getKey()));
+      service.removeTags(siteId, document, Collections.singletonList(tags.getFirst().tagKey()));
 
       // then
       List<DocumentTag> results = getDocumentTags(siteId, document, MAX_RESULTS);
@@ -1968,7 +1927,7 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Test Save {@link DocumentItem} with {@link DocumentMetadata}.
+   * Test Save {@link DocumentRecord} with {@link DocumentMetadata}.
    * 
    * @throws ValidationException ValidationException
    */
@@ -1976,20 +1935,17 @@ public class DocumentServiceImplTest implements DbKeys {
   public void testSaveDocumentItemWithMetadata01() throws ValidationException {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      final String content = "This is a test";
       final String username = UUID.randomUUID() + "@formkiq.com";
 
       DocumentMetadata m0 = new DocumentMetadata("some", "thing", null);
       DocumentMetadata m1 = new DocumentMetadata("playerId", null, Arrays.asList("111", "222"));
       DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
 
-      DynamicDocumentItem doc = new DynamicDocumentItem(
-          Map.of("documentId", document.documentId(), "userId", username, "content",
-              Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
-      doc.setMetadata(Arrays.asList(m0, m1));
+      DocumentRecord doc = DocumentRecord.builder().document(document).userId(username)
+          .metadata(List.of(m0, m1)).build(siteId);
 
       // when
-      service.saveDocument(siteId, doc, null);
+      service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       // then
       DocumentRecord item = service.findDocument(siteId, document);
@@ -2005,7 +1961,7 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Test Save {@link DocumentItem} with {@link DocumentTag}.
+   * Test Save {@link DocumentRecord} with {@link DocumentTag}.
    * 
    * @throws ValidationException ValidationException
    */
@@ -2019,14 +1975,10 @@ public class DocumentServiceImplTest implements DbKeys {
 
       DocumentRecord documentRecord =
           new DocumentRecordBuilder().documentId(documentId).userId(username).build(siteId);
-      // DynamicDocumentItem doc = new DynamicDocumentItem(
-      // Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", new Date(), "content",
-      // Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       // when
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, null, null),
           new SaveDocumentOptions());
-      // DocumentItem ditem = service.saveDocumentItemWithTag(siteId, doc);
 
       // then
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
@@ -2044,7 +1996,7 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Test Save {@link DocumentItem} with {@link DocumentTag} with tags.
+   * Test Save {@link DocumentRecord} with {@link DocumentTag} with tags.
    * 
    * @throws ValidationException ValidationException
    */
@@ -2061,8 +2013,8 @@ public class DocumentServiceImplTest implements DbKeys {
       for (String tagValue : Arrays.asList("person", "thing")) {
 
         Collection<DocumentTagRecord> addTags = new DocumentTagRecordBuilder()
-            .documentId(documentId).tagKey("category").tagValue(tagValue).userId(username)
-            .type(DocumentTagType.USERDEFINED).build(siteId);
+            .document(DocumentArtifact.of(documentId, null)).tagKey("category").tagValue(tagValue)
+            .userId(username).type(DocumentTagType.USERDEFINED).build(siteId);
 
         // when
         service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, addTags, null),
@@ -2098,12 +2050,11 @@ public class DocumentServiceImplTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentRecordSet doc = createSubDocuments2(now);
+      DocumentRecordSet doc = createSubDocuments(siteId, now);
       String documentId = doc.documentRecord().documentId();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
 
       // when
-      // service.saveDocumentItemWithTag(siteId, doc);
       service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
       // then
@@ -2123,7 +2074,6 @@ public class DocumentServiceImplTest implements DbKeys {
 
       var childrens = drs.children().stream().map(DocumentRecordSet::documentRecord)
           .sorted(Comparator.comparing(DocumentRecord::contentType)).toList();
-      // ditem.getDocuments().sort(Comparator.comparing(DocumentItem::getContentType));
 
       assertEquals(documentId, childrens.get(0).belongsToDocumentId());
       assertEquals("application/json", childrens.get(0).contentType());
@@ -2169,14 +2119,15 @@ public class DocumentServiceImplTest implements DbKeys {
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
-      DocumentRecordSet doc = createSubDocuments2(now);
+      DocumentRecordSet doc = createSubDocuments(siteId, now);
       DocumentRecord documentRecord = doc.documentRecord();
       DocumentArtifact documentArtifact = DocumentArtifact.of(documentRecord.documentId(), null);
 
       Collection<DocumentTagRecord> addTags = DocumentTagRecord.builder().document(documentArtifact)
           .tagKey("category2").insertedDate(now).userId(documentRecord.userId())
           .type(DocumentTagType.USERDEFINED).build(siteId);
-      doc = new DocumentRecordSet(documentRecord, null, addTags, null);
+      doc = new DocumentRecordSet(documentRecord, doc.documentAttributeRecords(), addTags,
+          doc.children());
 
       // when
       service.saveDocument(siteId, doc, new SaveDocumentOptions());
@@ -2187,6 +2138,7 @@ public class DocumentServiceImplTest implements DbKeys {
       assertNull(result.getNextToken());
 
       DocumentRecordSet item = result.getResults().getFirst();
+      assertEquals(2, item.children().size());
 
       List<DocumentTag> tags =
           getDocumentTags(siteId, item.documentRecord().document(), MAX_RESULTS);
@@ -2213,15 +2165,10 @@ public class DocumentServiceImplTest implements DbKeys {
       DocumentRecord documentRecord =
           new DocumentRecordBuilder().documentId(documentId).userId(username).insertedDate(now)
               .belongsToDocumentId(belongsToDocumentId).contentType("text/plain").build(siteId);
-      // DynamicDocumentItem doc = new DynamicDocumentItem(
-      // Map.of("documentId", ID.uuid(), "userId", username, "insertedDate", now));
-      // doc.setBelongsToDocumentId(belongsToDocumentId);
-      // doc.setContentType("text/plain");
 
       // when
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, null, null),
           new SaveDocumentOptions());
-      // service.saveDocumentItemWithTag(siteId, doc);
 
       // then
       Pagination<DocumentRecordSet> result = service.findDocument(siteId,
@@ -2236,7 +2183,7 @@ public class DocumentServiceImplTest implements DbKeys {
   }
 
   /**
-   * Test Save {@link DocumentItem} with {@link DocumentTag} and TTL.
+   * Test Save {@link DocumentRecord} with {@link DocumentTag} and TTL.
    * 
    * @throws URISyntaxException URISyntaxException
    * @throws ValidationException ValidationException
@@ -2251,17 +2198,13 @@ public class DocumentServiceImplTest implements DbKeys {
       String documentId = ID.uuid();
       DocumentRecord documentRecord = new DocumentRecordBuilder().documentId(documentId)
           .userId(username).timeToLive(ttl).build(siteId);
-      // DynamicDocumentItem doc = new DynamicDocumentItem(Map.of("documentId", ID.uuid(),
-      // "TimeToLive", ttl, "userId", username, "insertedDate", new Date(), "content",
-      // Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))));
 
       // when
-      // DocumentItem item = service.saveDocumentItemWithTag(siteId, doc);
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, null, null),
           new SaveDocumentOptions());
 
       // then
-      GetItemRequest r = GetItemRequest.builder().key(keysDocument(siteId, documentId))
+      GetItemRequest r = GetItemRequest.builder().key(documentRecord.key().toMap())
           .tableName(DOCUMENTS_TABLE).build();
 
       try (DynamoDbClient dbClient = DynamoDbTestServices.getDynamoDbConnection().build()) {
@@ -2294,8 +2237,9 @@ public class DocumentServiceImplTest implements DbKeys {
       for (int j = 0; j < numberOfTags; j++) {
         for (int i = 0; i < 2; i++) { // add duplicate tags
 
-          addTags.addAll(new DocumentTagRecordBuilder().documentId(documentId)
-              .tagKey("category" + j).type(DocumentTagType.USERDEFINED).build(siteId));
+          addTags
+              .addAll(new DocumentTagRecordBuilder().document(DocumentArtifact.of(documentId, null))
+                  .tagKey("category" + j).type(DocumentTagType.USERDEFINED).build(siteId));
         }
       }
 
@@ -2336,11 +2280,13 @@ public class DocumentServiceImplTest implements DbKeys {
 
       Collection<DocumentTagRecord> addTags = new ArrayList<>();
 
-      addTags.addAll(new DocumentTagRecordBuilder().documentId(documentId).tagKey("path")
-          .tagValue("test.pdf").userId(username).type(DocumentTagType.USERDEFINED).build(siteId));
+      addTags.addAll(new DocumentTagRecordBuilder().document(DocumentArtifact.of(documentId, null))
+          .tagKey("path").tagValue("test.pdf").userId(username).type(DocumentTagType.USERDEFINED)
+          .build(siteId));
 
-      addTags.addAll(new DocumentTagRecordBuilder().documentId(documentId).tagKey("userId")
-          .tagValue("test").userId(username).type(DocumentTagType.USERDEFINED).build(siteId));
+      addTags.addAll(new DocumentTagRecordBuilder().document(DocumentArtifact.of(documentId, null))
+          .tagKey("userId").tagValue("test").userId(username).type(DocumentTagType.USERDEFINED)
+          .build(siteId));
 
       // when
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, addTags, null),
@@ -2384,8 +2330,9 @@ public class DocumentServiceImplTest implements DbKeys {
       Collection<DocumentTagRecord> addTags = new ArrayList<>();
 
       for (String tagKey : tagKeys) {
-        addTags.addAll(new DocumentTagRecordBuilder().documentId(documentId).tagKey(tagKey)
-            .tagValue("test").userId(username).type(DocumentTagType.USERDEFINED).build(siteId));
+        addTags.addAll(new DocumentTagRecordBuilder()
+            .document(DocumentArtifact.of(documentId, null)).tagKey(tagKey).tagValue("test")
+            .userId(username).type(DocumentTagType.USERDEFINED).build(siteId));
       }
 
       // when
@@ -2411,12 +2358,13 @@ public class DocumentServiceImplTest implements DbKeys {
         .required(List.of(new SchemaAttributesRequired().attributeKey(attributeKey))));
     assertEquals(0, schemaService.setSitesSchema(siteId, "requiredOnly", schema).size());
 
-    DocumentItem item = createDocument(ID.uuid(), ZonedDateTime.now());
-    DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), null);
+    DocumentRecord item = createDocument(siteId, ID.uuid(), ZonedDateTime.now());
+    DocumentArtifact document = DocumentArtifact.of(item.documentId(), null);
     Collection<DocumentAttributeRecord> attributes = List.of(createDocumentAttribute(document));
 
     // when
-    service.saveDocument(siteId, item, null, attributes, new SaveDocumentOptions());
+    service.saveDocument(siteId, new DocumentRecordSet(item, attributes, null, null),
+        new SaveDocumentOptions());
 
     // then
     assertNotNull(service.findDocument(siteId, document));
@@ -2434,9 +2382,9 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String userId0 = "joe";
       String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
-      item.setPath("a/b/test.txt");
-      service.saveDocument(siteId, item, null);
+      DocumentRecord item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId(userId0).path("a/b/test.txt").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       SearchQuery q =
@@ -2459,9 +2407,9 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String userId1 = "frank";
       documentId = ID.uuid();
-      item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
-      item.setPath("a/something.txt");
-      service.saveDocument(siteId, item, null);
+      item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId(userId1).path("a/something.txt").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
@@ -2489,12 +2437,12 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String userId0 = "joe";
       String documentId = ID.uuid();
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), userId0);
-      item.setPath("a/b/test.txt");
-      service.saveDocument(siteId, item, null);
+      DocumentRecord item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId(userId0).path("a/b/test.txt").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
-      service.addFolderIndex(siteId, item.getPath(), item.getUserId());
+      service.addFolderIndex(siteId, item.path(), item.userId());
       SearchQuery q =
           new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
 
@@ -2514,9 +2462,9 @@ public class DocumentServiceImplTest implements DbKeys {
       // given
       String userId1 = "frank";
       documentId = ID.uuid();
-      item = new DocumentItemDynamoDb(documentId, new Date(), userId1);
-      item.setPath("a/something.txt");
-      service.saveDocument(siteId, item, null);
+      item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId(userId1).path("a/something.txt").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
 
       // when
       q = new SearchQueryBuilder().meta(new SearchMetaCriteria(null, "", null, null, null)).build();
@@ -2545,9 +2493,9 @@ public class DocumentServiceImplTest implements DbKeys {
       String path = "a/b/test.txt";
       String userId0 = "joe";
       String documentId0 = ID.uuid();
-      DocumentItem item0 = new DocumentItemDynamoDb(documentId0, null, userId0);
-      item0.setPath(path);
-      service.saveDocument(siteId, item0, null);
+      DocumentRecord item0 = DocumentRecord.builder().documentId(documentId0).insertedDate(null)
+          .userId(userId0).path(path).build(siteId);
+      service.saveDocument(siteId, item0, new SaveDocumentOptions());
 
       SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
       SearchQuery q = new SearchQueryBuilder().meta(smc).build();
@@ -2557,11 +2505,11 @@ public class DocumentServiceImplTest implements DbKeys {
       final Date staleDate = makeFolderStale(siteId, "a/b/");
 
       String documentId1 = ID.uuid();
-      DocumentItem item1 = new DocumentItemDynamoDb(documentId1, null, userId0);
-      item1.setPath(path);
+      DocumentRecord item1 = DocumentRecord.builder().documentId(documentId1).insertedDate(null)
+          .userId(userId0).path(path).build(siteId);
 
       // when
-      service.saveDocument(siteId, item1, null);
+      service.saveDocument(siteId, item1, new SaveDocumentOptions());
 
       // then
       Pagination<DocumentSearchResult> items =
@@ -2601,12 +2549,12 @@ public class DocumentServiceImplTest implements DbKeys {
       String path = "a/test.txt";
       String userId0 = "joe";
       String documentId0 = ID.uuid();
-      DocumentItem item0 = new DocumentItemDynamoDb(documentId0, new Date(), userId0);
-      item0.setPath(path);
+      DocumentRecord item0 = DocumentRecord.builder().documentId(documentId0)
+          .insertedDate(new Date()).userId(userId0).path(path).build(siteId);
 
       // when
-      service.saveDocument(siteId, item0, null);
-      service.saveDocument(siteId, item0, null);
+      service.saveDocument(siteId, item0, new SaveDocumentOptions());
+      service.saveDocument(siteId, item0, new SaveDocumentOptions());
 
       // then
       SearchMetaCriteria smc = new SearchMetaCriteria(null, "", null, null, null);
@@ -2639,9 +2587,9 @@ public class DocumentServiceImplTest implements DbKeys {
 
       String documentId = ID.uuid();
       DocumentArtifact document = DocumentArtifact.of(documentId, null);
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      item.setPath("test.pdf");
-      service.saveDocument(siteId, item, null);
+      DocumentRecord item = DocumentRecord.builder().documentId(documentId).insertedDate(new Date())
+          .userId("joe").path("test.pdf").build(siteId);
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
       Map<String, AttributeValue> newAttributes =
           Map.of("path", AttributeValue.fromS("sample.pdf"));
 

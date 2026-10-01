@@ -23,8 +23,6 @@
  */
 package com.formkiq.lambda.apigateway.util;
 
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -36,8 +34,7 @@ public final class GsonUtil {
 
   /** {@link Gson}. */
   private static final Gson GSON =
-      new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).registerTypeAdapter(
-          DocumentItem.class, new InterfaceSerializer<>(DocumentItemDynamoDb.class)).create();
+      new GsonBuilder().disableHtmlEscaping().setDateFormat(DATE_FORMAT).create();
 
   /**
    * Get Instance of {@link Gson}.

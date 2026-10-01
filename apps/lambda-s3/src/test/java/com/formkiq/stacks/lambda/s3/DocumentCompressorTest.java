@@ -46,14 +46,15 @@ import java.util.zip.ZipInputStream;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.TestEnvironment;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -166,15 +167,12 @@ public class DocumentCompressorTest {
 
   private String createDocument(final String siteId, final String userId, final byte[] content)
       throws ValidationException {
-    final DynamicDocumentItem item = new DynamicDocumentItem(new HashMap<>());
-    item.setDocumentId(ID.uuid());
-    item.setUserId(userId);
-    item.setInsertedDate(new Date());
-    final String documentId = item.getDocumentId();
-    documentService.saveDocument(siteId, item, null);
-    final String key = createS3Key(siteId, documentId, null);
+    var item = new DocumentRecordBuilder().documentId(ID.uuid()).userId(userId)
+        .insertedDate(new Date()).build(siteId);
+    documentService.saveDocument(siteId, item, new SaveDocumentOptions());
+    final String key = createS3Key(siteId, item.document());
     s3.putObject(BUCKET_NAME, key, content, null, null);
-    return item.getDocumentId();
+    return item.documentId();
   }
 
   @Test

@@ -29,18 +29,19 @@ import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.documents.DocumentRecord;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.folders.GetAllFolderAndFilesQuery;
 import com.formkiq.aws.dynamodb.folders.GetFolderFilesByNameQuery;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceExtension;
 import com.formkiq.stacks.dynamodb.DocumentVersionService;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
@@ -106,10 +107,9 @@ public class GetAllFolderAndFilesQueryTest {
     assertEquals(type, getType(item));
   }
 
-  private DocumentItem createDoc(final String path) {
-    DocumentItem item = new DocumentItemDynamoDb(ID.uuid(), new Date(), "joe");
-    item.setPath(path);
-    return item;
+  private DocumentRecord createDoc(final String siteId, final String path) {
+    return new DocumentRecordBuilder().path(path).documentId(ID.uuid()).insertedDate(new Date())
+        .userId("joe").build(siteId);
   }
 
   /**
@@ -123,10 +123,11 @@ public class GetAllFolderAndFilesQueryTest {
 
       GetAllFolderAndFilesQuery q = new GetAllFolderAndFilesQuery();
 
-      service.saveDocument(siteId, createDoc("test1.txt"), null);
-      service.saveDocument(siteId, createDoc("test2.txt"), null);
-      service.saveDocument(siteId, createDoc("a/test3.txt"), null);
-      service.saveDocument(siteId, createDoc("b/test4.txt"), null);
+      SaveDocumentOptions options = new SaveDocumentOptions();
+      service.saveDocument(siteId, createDoc(siteId, "test1.txt"), options);
+      service.saveDocument(siteId, createDoc(siteId, "test2.txt"), options);
+      service.saveDocument(siteId, createDoc(siteId, "a/test3.txt"), options);
+      service.saveDocument(siteId, createDoc(siteId, "b/test4.txt"), options);
 
       // when
       QueryResult result = q.query(db, DOCUMENTS_TABLE, siteId, null, limit);

@@ -41,7 +41,6 @@ import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.dynamodb.model.DocumentRecordSet;
 import com.formkiq.aws.dynamodb.objects.Strings;
@@ -72,7 +71,6 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
-import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentItem;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequestToDocumentRecordSet;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
@@ -95,8 +93,8 @@ public class DocumentIdRequestHandler
 
   private List<Action> createActions(final String siteId,
       final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request,
-      final DocumentItem item) {
-    DocumentArtifact document = DocumentArtifact.of(item.getDocumentId(), item.getArtifactId());
+      final DocumentRecord item) {
+    DocumentArtifact document = DocumentArtifact.of(item.documentId(), item.artifactId());
     return notNull(request.getActions()).stream()
         .map(a -> new AddActionToActionFunction(document).apply(siteId, a)).toList();
   }
@@ -223,21 +221,17 @@ public class DocumentIdRequestHandler
       throw new DocumentNotFoundException(documentId);
     }
 
-    // TODO merge this wth documentRecordSet
-    DocumentItem item =
-        new AddDocumentRequestToDocumentItem(existingItem, authorization.getUsername(), null)
-            .apply(request);
+    var documentRecordSet = new AddDocumentRequestToDocumentRecordSet(awsservice, existingItem,
+        authorization.getUsername()).apply(siteId, request);
+    DocumentRecord item = documentRecordSet.documentRecord();
 
     SiteConfiguration config = awsservice.getExtension(ConfigService.class).get(siteId);
     validatePatch(awsservice, config, siteId, document, item, request);
 
     awsservice.getLogger()
-        .trace("setting userId: " + item.getUserId() + " contentType: " + item.getContentType());
+        .trace("setting userId: " + item.userId() + " contentType: " + item.contentType());
 
     this.documentEntityValidator.validate(awsservice, config, siteId, request);
-
-    var documentRecordSet = new AddDocumentRequestToDocumentRecordSet(awsservice, existingItem,
-        authorization.getUsername()).apply(siteId, request);
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
@@ -259,7 +253,7 @@ public class DocumentIdRequestHandler
     List<Action> actions = createActions(siteId, request, item);
     actionsService.saveNewActions(actions);
 
-    if (!Strings.isEmpty(item.getDeepLinkPath()) && !actions.isEmpty()) {
+    if (!Strings.isEmpty(item.deepLinkPath()) && !actions.isEmpty()) {
       ActionsNotificationService notificationService =
           awsservice.getExtension(ActionsNotificationService.class);
       notificationService.publishNextActionEvent(siteId, documentId, artifactId);
@@ -276,12 +270,12 @@ public class DocumentIdRequestHandler
    * @param config {@link SiteConfiguration}
    * @param siteId {@link String}
    * @param document {@link DocumentArtifact}
-   * @param doc {@link DocumentItem}
+   * @param doc {@link DocumentRecord}
    * @param request {@link com.formkiq.stacks.dynamodb.documents.AddDocumentRequest}
    * @throws Exception Exception
    */
   private void validatePatch(final AwsServiceCache awsservice, final SiteConfiguration config,
-      final String siteId, final DocumentArtifact document, final DocumentItem doc,
+      final String siteId, final DocumentArtifact document, final DocumentRecord doc,
       final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request) throws Exception {
 
     DocumentService docService = awsservice.getExtension(DocumentService.class);
@@ -290,8 +284,8 @@ public class DocumentIdRequestHandler
 
     Collection<DocumentMetadata> metadata =
         item.metadata() != null ? new ArrayList<>(item.metadata()) : new ArrayList<>();
-    if (doc.getMetadata() != null) {
-      metadata.addAll(doc.getMetadata());
+    if (doc.metadata() != null) {
+      metadata.addAll(doc.metadata());
     }
 
     Collection<ValidationError> errors = this.documentValidator.validate(metadata);
@@ -300,7 +294,7 @@ public class DocumentIdRequestHandler
 
     this.documentValidator.validateContentType(config, request.getContentType(), vb);
 
-    boolean emptyDeepLink = isEmpty(doc.getDeepLinkPath()) && isEmpty(item.deepLinkPath());
+    boolean emptyDeepLink = isEmpty(doc.deepLinkPath()) && isEmpty(item.deepLinkPath());
     boolean emptyContent = isEmpty(request.getContent());
 
     if (!emptyDeepLink && !emptyContent) {

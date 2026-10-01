@@ -30,18 +30,16 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.QueryConfig;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
-import com.formkiq.aws.dynamodb.model.DynamicDocumentItem;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -106,23 +104,19 @@ public class DocumentVersionServiceDynamoDb implements DocumentVersionService {
   }
 
   @Override
-  public DocumentItem getDocumentItem(final DocumentService documentService, final String siteId,
-      final DocumentArtifact document, final String versionKey,
+  public DocumentRecord getDocumentRecord(final DocumentService documentService,
+      final String siteId, final DocumentArtifact document, final String versionKey,
       final Map<String, AttributeValue> versionAttributes) {
 
-    DocumentItem item;
-
     if (!Strings.isEmpty(versionKey)) {
-      item = new DynamicDocumentItem(new AttributeValueToMap().apply(versionAttributes));
-      item.setDocumentId(document.documentId());
-      item.setArtifactId(document.artifactId());
-    } else {
-      DocumentRecord r = documentService.findDocument(siteId, document);
-      item = new DocumentRecordToDynamicDocumentItem().apply(r);
-
+      Map<String, AttributeValue> attributes = new HashMap<>(versionAttributes);
+      attributes.put("documentId", AttributeValue.fromS(document.documentId()));
+      if (document.artifactId() != null) {
+        attributes.put("artifactId", AttributeValue.fromS(document.artifactId()));
+      }
+      return DocumentRecord.fromAttributeMap(attributes);
     }
-
-    return item;
+    return documentService.findDocument(siteId, document);
   }
 
   @Override

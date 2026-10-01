@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
@@ -89,7 +91,6 @@ import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.stacks.dynamodb.config.SiteConfiguration;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.DocumentServiceImpl;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
@@ -429,8 +430,9 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
           documentIds.add(documentId);
           Date insertedDate =
               Date.from(dates.get(day).atTime(16 - index, 0).toInstant(ZoneOffset.UTC));
-          documentService.saveDocument(siteId,
-              new DocumentItemDynamoDb(documentId, insertedDate, "issue446"), new ArrayList<>());
+          var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(insertedDate)
+              .userId("issue446").build(siteId);
+          documentService.saveDocument(siteId, item, new SaveDocumentOptions());
         }
       }
 
@@ -609,7 +611,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
    */
   @Test
   @Timeout(value = TEST_TIMEOUT)
-  public void testPost02() {
+  public void testPost02() throws ApiException {
     // given
     final String siteId = "finance";
     ApiClient client = getApiClientForUser(READONLY_EMAIL, USER_PASSWORD);
@@ -619,21 +621,18 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
         new AddDocumentRequest().content("dummy data").contentType("application/pdf");
 
     // when
-    try {
-      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), null).response();
-    } catch (ApiException e) {
-      // then
-      assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
-          e.getResponseBody());
-    }
+    var resp = new AddDocumentRequestBuilder(req).submitError(api.getApiClient(), null);
+
+    // then
+    assertEquals("{\"message\":\"fkq access denied (groups: default (READ))\"}",
+        resp.exception().getResponseBody());
 
     // when
-    try {
-      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
-    } catch (ApiException e) {
-      // then
-      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
-    }
+    resp = new AddDocumentRequestBuilder(req).submitError(api.getApiClient(), siteId);
+
+    // then
+    assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}",
+        resp.exception().getResponseBody());
   }
 
   /**
@@ -660,13 +659,12 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
     assertNotNull(responseNoSiteId.getDocumentId());
 
     // when
-    try {
-      new AddDocumentRequestBuilder(req).submitOk(api.getApiClient(), siteId).response();
-    } catch (ApiException e) {
-      // then
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}", e.getResponseBody());
-    }
+    var resp = new AddDocumentRequestBuilder(req).submitError(api.getApiClient(), siteId);
+
+    // then
+    assertEquals(SC_UNAUTHORIZED.getStatusCode(), resp.exception().getCode());
+    assertEquals("{\"message\":\"fkq access denied to siteId (finance)\"}",
+        resp.exception().getResponseBody());
   }
 
   /**

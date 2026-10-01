@@ -687,8 +687,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         List<DocumentTagRecord> tags = getObjectTags(s3bucket, siteId, document, key);
         service.addTags(siteId, document, tags, null);
-
-        service.deleteDocumentFormats(siteId, documentId);
       }
 
       putObjectEvent(s3bucket, s3key, s3PresignedUrlAttributes, attributes, prevAttributes);

@@ -29,12 +29,12 @@ import java.util.Date;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
+import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.aws.dynamodb.model.DocumentItem;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
-import com.formkiq.stacks.dynamodb.DocumentItemDynamoDb;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LocalStackExtension;
@@ -54,8 +54,11 @@ public class ApiDocumentsOcrRequestTest extends AbstractRequestHandler {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
       // given
       String documentId = "1";
-      DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
-      getAwsServices().getExtension(DocumentService.class).saveDocument(siteId, item, null);
+      var item = new DocumentRecordBuilder().documentId(documentId).insertedDate(new Date())
+          .userId("joe").build(siteId);
+      // DocumentItem item = new DocumentItemDynamoDb(documentId, new Date(), "joe");
+      getAwsServices().getExtension(DocumentService.class).saveDocument(siteId, item,
+          new SaveDocumentOptions());
 
       ApiGatewayRequestEvent event = toRequestEvent("/request-post-documents-ocr01.json");
       event.setHttpMethod("DELETE");

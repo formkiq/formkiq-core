@@ -25,7 +25,7 @@ package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
-/** Searches for {@link DocumentItem} Meta Data. */
+/** Searches for document metadata. */
 @Reflectable
 public record SearchMetaCriteria(@Reflectable String eq,
     /*
