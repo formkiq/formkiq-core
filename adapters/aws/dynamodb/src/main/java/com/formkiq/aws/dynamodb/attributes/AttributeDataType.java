@@ -34,6 +34,8 @@ public enum AttributeDataType {
   BOOLEAN,
   /** Date. */
   DATE,
+  /** JSON object. */
+  JSON,
   /** Key Only. */
   KEY_ONLY,
   /** Number. */

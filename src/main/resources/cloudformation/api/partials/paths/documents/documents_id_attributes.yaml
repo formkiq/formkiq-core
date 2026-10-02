@@ -40,7 +40,7 @@ paths:
       description: |-
         Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
 
-        For an attribute defined with dataType JSON, supply one object or array in jsonValue.
+        For an attribute defined with dataType JSON, supply one object in jsonValue.
         Do not combine jsonValue with scalar, entity, classification, or relationship value fields.
       tags:
         - Document Attributes
@@ -82,7 +82,7 @@ paths:
 
         Note:
         - attributes in the request will overwrite existing attributes.
-        - jsonValue replaces the entire JSON object or array; nested fields are not merged.
+        - jsonValue replaces the entire JSON object; nested fields are not merged.
       tags:
         - Document Attributes
       parameters:
@@ -139,7 +139,7 @@ paths:
       summary: Set document's attributes value
       description: |-
         Set an attribute value on a document. For an attribute defined with dataType JSON,
-        supply jsonValue to replace the entire object or array. Nested fields are not merged.
+        supply jsonValue to replace the entire object. Nested fields are not merged.
       tags:
         - Document Attributes
       parameters:
@@ -174,7 +174,7 @@ paths:
       summary: Delete document attribute
       description: |-
         Delete a document attribute by using its key. For a JSON attribute, this deletes the
-        entire JSON object or array, subject to authorization and required-attribute validation.
+        entire JSON object, subject to authorization and required-attribute validation.
       tags:
         - Document Attributes
       parameters:
@@ -276,19 +276,19 @@ components:
     #@overlay/match missing_ok=True
     JsonAttributeValue:
       description: |-
-        One JSON object or array stored as a single attribute value. Scalar and null roots are
-        not accepted. Nested values may include objects, arrays, strings, numbers, booleans,
-        and null. Empty objects and arrays are accepted. Object property order and original
-        number formatting are not preserved.
+        One JSON object stored as a single attribute value. Arrays, scalars, and null are not
+        accepted at the top level. Nested values may include objects, arrays, strings, numbers,
+        booleans, and null. Empty objects and nested empty arrays are accepted. Object property
+        order and original number formatting are not preserved.
 
         The complete stored DynamoDB item, including metadata and attribute names, must fit
         within 400 KB. Stored document nesting must not exceed 32 levels, including the wrapper.
         Numbers must fit within DynamoDB's supported range and 38 digits of precision.
-      oneOf:
-        - type: object
-          additionalProperties: true
-        - type: array
-          items: {}
+      type: object
+      additionalProperties: true
+      nullable: true
+      not:
+        enum: [null]
       example:
         total: 1250.50
         approved: true
@@ -521,7 +521,7 @@ components:
       type: "object"
       description: |-
         Document attribute. An attribute defined with dataType JSON requires jsonValue and
-        cannot use other value forms. One object or array is stored per attribute key.
+        cannot use other value forms. One object is stored per attribute key.
       allOf:
         - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:

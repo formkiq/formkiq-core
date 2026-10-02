@@ -40,7 +40,7 @@ public class DocumentSearchResultToMap
 
   /** Fields exposed for a matched document attribute. */
   private static final Set<String> MATCHED_ATTRIBUTE_FIELDS =
-      Set.of("booleanValue", "dateValue", "key", "numberValue", "stringValue");
+      Set.of("booleanValue", "dateValue", "key", "numberValue", "stringValue", "jsonValue");
 
   /** Converts DynamoDB values to their API representations. */
   private final AttributeValueToMap attributeValueToMap = new AttributeValueToMap();
@@ -69,7 +69,11 @@ public class DocumentSearchResultToMap
     result.remove("TimeToLive");
 
     if (searchResult.matchedAttribute() != null) {
-      result.put("matchedAttribute", toMatchedAttribute(searchResult.matchedAttribute()));
+      Map<String, Object> matched = toMatchedAttribute(searchResult.matchedAttribute());
+      if (searchResult.jsonPath() != null) {
+        matched.put("jsonPath", searchResult.jsonPath());
+      }
+      result.put("matchedAttribute", matched);
     }
 
     if (searchResult.attributeFields() != null) {
@@ -98,6 +102,9 @@ public class DocumentSearchResultToMap
     Map<String, Object> result = new HashMap<>();
     MATCHED_ATTRIBUTE_FIELDS.stream().filter(attributes::containsKey)
         .forEach(key -> result.put(key, attributes.get(key)));
+    if (attribute.getJsonValue() != null) {
+      result.put("jsonValue", attribute.getJsonValue());
+    }
     return result;
   }
 

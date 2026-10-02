@@ -26,6 +26,7 @@ package com.formkiq.testutils.api.documents;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentTag;
 import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.GetDocumentUrlResponse;
@@ -33,6 +34,8 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for {@link AddDocumentUploadRequest}.
@@ -90,6 +93,19 @@ public class AddDocumentUploadRequestBuilder implements HttpRequestBuilder<GetDo
   public AddDocumentUploadRequestBuilder addAttribute(final AddDocumentAttribute attribute) {
     this.request.addAttributesItem(attribute);
     return this;
+  }
+
+  /**
+   * Add a JSON document attribute to the upload request.
+   *
+   * @param key attribute key
+   * @param value JSON object; nested values may include arrays
+   * @return this builder
+   */
+  public AddDocumentUploadRequestBuilder addJsonAttribute(final String key,
+      final Map<String, Object> value) {
+    return addAttribute(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).jsonValue(Objects.requireNonNull(value))));
   }
 
   /**

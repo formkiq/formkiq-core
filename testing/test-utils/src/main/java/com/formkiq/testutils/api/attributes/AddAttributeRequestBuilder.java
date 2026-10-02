@@ -86,6 +86,29 @@ public class AddAttributeRequestBuilder implements HttpRequestBuilder<AddRespons
   }
 
   /**
+   * Set a JSON attribute key.
+   *
+   * @param attributeKey attribute key
+   * @return this builder
+   */
+  public AddAttributeRequestBuilder keyAsJson(final String attributeKey) {
+    return keyAsJson(attributeKey, AttributeType.STANDARD);
+  }
+
+  /**
+   * Set a JSON attribute key with the specified attribute type.
+   *
+   * @param attributeKey attribute key
+   * @param type attribute type
+   * @return this builder
+   */
+  public AddAttributeRequestBuilder keyAsJson(final String attributeKey, final AttributeType type) {
+    this.request.setAttribute(
+        new AddAttribute().key(attributeKey).dataType(AttributeDataType.JSON).type(type));
+    return this;
+  }
+
+  /**
    * Set Number Attribute Key.
    *
    * @param attributeKey {@link String}

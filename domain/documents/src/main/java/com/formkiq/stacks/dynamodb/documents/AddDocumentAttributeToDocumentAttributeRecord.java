@@ -43,7 +43,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -91,6 +93,14 @@ public class AddDocumentAttributeToDocumentAttributeRecord
 
   private void addDocumentAttributeStandard(final AddDocumentAttributeStandard a,
       final Collection<DocumentAttributeRecord> c, final boolean isUsed) {
+    if (a.jsonValue() != null) {
+      validateJsonValueExclusive(a);
+      DocumentAttributeRecord record = new DocumentAttributeRecord().setDocument(fromDocument)
+          .setKey(a.key()).setJsonValue(a.jsonValue()).setValueType(DocumentAttributeValueType.JSON)
+          .setUserId(ApiAuthorization.getAuthorization().getUsername());
+      c.add(record);
+      return;
+    }
     boolean used = isUsed;
     String key = a.key();
     if (!isEmpty(a.stringValue())) {
@@ -133,6 +143,18 @@ public class AddDocumentAttributeToDocumentAttributeRecord
       addToList(c, DocumentAttributeValueType.KEY_ONLY, key, null, null, null, null);
     }
 
+  }
+
+  private void validateJsonValueExclusive(final AddDocumentAttributeStandard attribute) {
+    boolean hasScalarValue = Stream.of(attribute.stringValue(), attribute.numberValue(),
+        attribute.booleanValue(), attribute.dateValue()).anyMatch(Objects::nonNull);
+    boolean hasListValue =
+        !notNull(attribute.stringValues()).isEmpty() || !notNull(attribute.numberValues()).isEmpty()
+            || !notNull(attribute.dateValues()).isEmpty();
+    if (hasScalarValue || hasListValue) {
+      throw ValidationException.builder()
+          .error(attribute.key(), "jsonValue cannot be combined with other value fields").build();
+    }
   }
 
   private void addEntities(final AddDocumentAttributeEntities a,

@@ -602,6 +602,11 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
 
     var attributeDataType = getAttributeDataType(siteId, attributeKey);
 
+    if (AttributeDataType.JSON.equals(attributeDataType)) {
+      throw ValidationException.builder()
+          .error(attributeKey, "JSON attributes must be deleted by attribute key.").build();
+    }
+
     if (AttributeDataType.DATE.equals(attributeDataType)) {
       var dateValue = getAttributeValueAsDate(attributeKey, attributeValue);
       documentAttributeRecord.setDateValue(dateValue).setValueType(DocumentAttributeValueType.DATE);

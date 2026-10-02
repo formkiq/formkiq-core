@@ -33,6 +33,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
+import com.formkiq.aws.dynamodb.model.SearchAttributeCriteria;
 import com.formkiq.aws.dynamodb.model.SearchResponseFields;
 import com.formkiq.aws.dynamodb.model.SearchTagCriteria;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -134,6 +135,19 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     return new SearchCountResult(count, documentIds.size() > maxResults);
   }
 
+  private Map<String, Object> toAttributeFields(final Map<String, Object> attribute) {
+    Object valueType = attribute.get("valueType");
+    return switch (DocumentAttributeValueType.valueOf((String) valueType)) {
+      case JSON -> Map.of("valueType", valueType, "jsonValue", attribute.get("jsonValue"));
+      case BOOLEAN -> Map.of("valueType", valueType, "booleanValue", attribute.get("booleanValue"));
+      case NUMBER -> Map.of("valueType", valueType, "numberValues", attribute.get("numberValues"));
+      case DATE -> Map.of("valueType", valueType, "dateValues", attribute.get("dateValues"));
+      case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
+        Map.of("valueType", valueType, "stringValues", attribute.get("stringValues"));
+      default -> Map.of("valueType", valueType);
+    };
+  }
+
   @Override
   public SearchCountResult count(final String siteId, final SearchQuery query, final int maxResults)
       throws ValidationException {
@@ -152,7 +166,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
       documentSearchQuery = this.documentSearchFilenameQuery;
     } else if (query.folder() != null) {
       documentSearchQuery = this.documentSearchFolderQuery;
-    } else if (notNull(query.attributes()).size() > 1) {
+    } else if (notNull(query.attributes()).size() > 1 || hasJsonCriteria(query)) {
       documentSearchQuery = this.documentSearchMultiAttributeQuery;
     } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
       documentSearchQuery = this.documentSearchAttributeQuery;
@@ -161,6 +175,11 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     return documentSearchQuery;
+  }
+
+  private boolean hasJsonCriteria(final SearchQuery query) {
+    return query.attribute() != null && query.attribute().json() != null
+        || notNull(query.attributes()).stream().anyMatch(attribute -> attribute.json() != null);
   }
 
   /**
@@ -189,9 +208,8 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         DocumentAttributeRecord sr =
             new DocumentAttributeRecord().setDocument(item.documentRecord().document());
 
-        QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE)
-            .projectionExpression(
-                "#key,valueType,stringValue,numberValue,booleanValue,dateValue,documentId")
+        QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE).projectionExpression(
+            "#key,valueType,stringValue,numberValue,booleanValue,dateValue,jsonValue,documentId")
             .expressionAttributeNames(Map.of("#key", "key"));
 
         AttributeValue pk = sr.fromS(sr.pk(siteId));
@@ -220,24 +238,7 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
           }
         });
 
-        attributes.forEach(a -> {
-
-          DocumentAttributeValueType vt =
-              DocumentAttributeValueType.valueOf((String) a.get("valueType"));
-          switch (vt) {
-            case BOOLEAN -> attributeFields.put((String) a.get("key"),
-                Map.of("valueType", a.get("valueType"), "booleanValue", a.get("booleanValue")));
-            case NUMBER -> attributeFields.put((String) a.get("key"),
-                Map.of("valueType", a.get("valueType"), "numberValues", a.get("numberValues")));
-            case DATE -> attributeFields.put((String) a.get("key"),
-                Map.of("valueType", a.get("valueType"), "dateValues", a.get("dateValues")));
-            case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
-              attributeFields.put((String) a.get("key"),
-                  Map.of("stringValues", a.get("stringValues"), "valueType", a.get("valueType")));
-            default ->
-              attributeFields.put((String) a.get("key"), Map.of("valueType", a.get("valueType")));
-          }
-        });
+        attributes.forEach(a -> attributeFields.put((String) a.get("key"), toAttributeFields(a)));
 
         results.add(new DocumentSearchResult(item, attributeFields));
       }
@@ -273,8 +274,24 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
             : searchByDocumentIds(siteId, query.documentIds());
 
     var searchResultsWithFields =
-        addResponseFields(siteId, results.getResults(), searchResponseFields);
+        addResponseFields(siteId, results.getResults(), searchResponseFields).stream()
+            .map(result -> addJsonPath(query, result)).toList();
     return new Pagination<>(searchResultsWithFields, results.getNextToken(), results.isTruncated());
+  }
+
+  private DocumentSearchResult addJsonPath(final SearchQuery query,
+      final DocumentSearchResult result) {
+    DocumentAttributeRecord matched = result.matchedAttribute();
+    if (matched == null || matched.getJsonValue() == null) {
+      return result;
+    }
+    List<SearchAttributeCriteria> criteria =
+        !notNull(query.attributes()).isEmpty() ? query.attributes()
+            : query.attribute() != null ? List.of(query.attribute()) : List.of();
+    SearchAttributeCriteria driver = criteria.stream()
+        .filter(attribute -> matched.getKey().equals(attribute.key())).findFirst().orElse(null);
+    return driver != null && driver.json() != null ? result.withJsonPath(driver.json().path())
+        : result;
   }
 
   private Pagination<DocumentSearchResult> searchByDocumentIds(final String siteId,
