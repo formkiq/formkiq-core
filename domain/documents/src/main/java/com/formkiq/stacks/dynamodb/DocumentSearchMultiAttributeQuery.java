@@ -354,7 +354,7 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
       DocumentArtifact document = DocumentArtifact.of(id, null);
       Map<String, List<Map<String, AttributeValue>>> values = new HashMap<>();
       for (SearchAttributeCriteria search : attributes) {
-        values.put(search.key(), loadRequestedAttribute(siteId, document, search.key()));
+        values.computeIfAbsent(search.key(), key -> loadRequestedAttribute(siteId, document, key));
       }
       List<Map<String, AttributeValue>> matched = attributes.stream()
           .map(search -> values.get(search.key()).stream()
@@ -385,6 +385,9 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
 
   private boolean matchesAttribute(final SearchAttributeCriteria search,
       final DocumentArtifact document, final Map<String, AttributeValue> item) {
+    if (search.json() != null) {
+      return new JsonAttributeSearchPredicate(search).test(item);
+    }
     DocumentAttributeRecord record = new DocumentAttributeRecord().setDocument(document)
         .setKey(search.key()).setValueType(DocumentAttributeValueType.KEY_ONLY);
     String sk = item.get(SK).s();
@@ -435,6 +438,9 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
 
   private SearchAttributeCriteria resolveCompositeCriteria(final String siteId,
       final List<SearchAttributeCriteria> attributes) {
+    if (attributes.stream().anyMatch(attribute -> attribute.json() != null)) {
+      return null;
+    }
     SchemaCompositeKeyRecord composite = this.schemaService.getCompositeKeyExactMatch(siteId,
         attributes.stream().map(SearchAttributeCriteria::key).toList());
     if (composite == null) {
@@ -460,19 +466,26 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     if (attributes.size() <= 2) {
       return attributes;
     }
+    List<SearchAttributeCriteria> scalar =
+        attributes.stream().filter(attribute -> attribute.json() == null).toList();
+    if (scalar.size() < 2) {
+      return attributes;
+    }
     SchemaCompositeKeyRecord composite =
-        this.schemaService.getCompositeKeyBestMatch(siteId, attributes);
+        this.schemaService.getCompositeKeyBestMatch(siteId, scalar);
     if (composite == null) {
       return attributes;
     }
-    Map<String, SearchAttributeCriteria> byKey = attributes.stream()
-        .collect(Collectors.toMap(SearchAttributeCriteria::key, search -> search));
+    Map<String, SearchAttributeCriteria> byKey =
+        scalar.stream().collect(Collectors.toMap(SearchAttributeCriteria::key, search -> search));
     List<SearchAttributeCriteria> covered = composite.getKeys().stream().map(byKey::get).toList();
     SearchAttributeCriteria search = new SearchAttributesToCriteria(composite).apply(covered);
     validate(search);
 
     List<SearchAttributeCriteria> criteria = new ArrayList<>(List.of(search));
-    attributes.stream().filter(attribute -> !composite.getKeys().contains(attribute.key()))
+    attributes.stream()
+        .filter(
+            attribute -> attribute.json() != null || !composite.getKeys().contains(attribute.key()))
         .forEach(criteria::add);
     return criteria;
   }

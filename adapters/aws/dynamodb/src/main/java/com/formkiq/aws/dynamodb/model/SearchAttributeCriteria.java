@@ -30,5 +30,20 @@ import com.formkiq.graalvm.annotations.Reflectable;
 /** Searches for Search Attribute Criteria. */
 @Reflectable
 public record SearchAttributeCriteria(String key, String beginsWith, String eq,
-    Collection<String> eqOr, SearchTagCriteriaRange range) {
+    Collection<String> eqOr, SearchTagCriteriaRange range, JsonAttributeSearchFilter json) {
+
+  /**
+   * Construct a legacy scalar attribute criterion.
+   *
+   * @param attributeKey attribute key
+   * @param prefix string prefix
+   * @param equals string equality value
+   * @param equalsAny string equality alternatives
+   * @param attributeRange scalar range
+   */
+  public SearchAttributeCriteria(final String attributeKey, final String prefix,
+      final String equals, final Collection<String> equalsAny,
+      final SearchTagCriteriaRange attributeRange) {
+    this(attributeKey, prefix, equals, equalsAny, attributeRange, null);
+  }
 }

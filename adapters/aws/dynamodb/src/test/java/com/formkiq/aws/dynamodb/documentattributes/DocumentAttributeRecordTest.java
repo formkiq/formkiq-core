@@ -34,6 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -173,5 +175,37 @@ public class DocumentAttributeRecordTest {
     assertEquals(DocumentAttributeValueType.DATE, restored.getValueType());
     assertEquals(date, restored.getDateValue());
     assertEquals(value, restored.getDateValueAsString());
+  }
+
+  /** JSON objects retain native DynamoDB types, null fields, and stable attribute keys. */
+  @Test
+  void testJsonValueRoundTrip() {
+    // given
+    Map<String, Object> customer = new HashMap<>();
+    customer.put("name", "Acme");
+    customer.put("reference", null);
+    Map<String, Object> jsonValue =
+        Map.of("total", 1250.50, "approved", true, "customer", customer, "lineItems",
+            List.of(Map.of("quantity", 2.0)), "inserteddate", "unchanged", "fk#key", "unchanged");
+    DocumentAttributeRecord record = new DocumentAttributeRecord()
+        .setDocument(DocumentArtifact.of(ID.uuid(), null)).setKey("invoiceDetails")
+        .setUserId("joesmith").setJsonValue(jsonValue).updateValueType();
+
+    // when
+    Map<String, AttributeValue> attributes = record.getAttributes(null);
+    DocumentAttributeRecord restored =
+        new DocumentAttributeRecord().getFromAttributes(null, attributes);
+
+    // then
+    assertEquals(DocumentAttributeValueType.JSON, restored.getValueType());
+    assertEquals(jsonValue, restored.getJsonValue());
+    assertTrue(attributes.get("jsonValue").hasM());
+    assertEquals("1250.5", attributes.get("jsonValue").m().get("total").n());
+    assertEquals(Boolean.TRUE, attributes.get("jsonValue").m().get("approved").bool());
+    assertEquals(Boolean.TRUE,
+        attributes.get("jsonValue").m().get("customer").m().get("reference").nul());
+    assertEquals("attr#invoiceDetails#", record.sk());
+    assertEquals("#", record.skGsi1());
+    assertEquals(record.buildKey(null), restored.buildKey(null));
   }
 }

@@ -14,9 +14,11 @@ paths:
         
         If using Enteprise Composite Keys feature then multiple tag(s) can be searched for.
 
-        For attributes defined with dataType JSON, use jsonPath to compare a nested field.
-        Equality values retain their JSON string, number, or boolean type. Numeric bounds use
-        gt, gte, lt, and lte. Paths support object properties and explicit array positions;
+        For attributes defined with dataType JSON, use an attribute criterion's json filter
+        with a path to compare a nested field. Equality values inside json retain their JSON
+        string, number, or boolean type. Numeric bounds inside json use gt, gte, lt, and lte.
+        Existing attribute eq and eqOr operators continue to accept strings.
+        Paths support object properties and explicit array positions;
         wildcard, recursive, and array any-element matching are not supported.
         Multiple conditions on different paths under the same attribute key are supported.
         All conditions must match the same document or artifact.
@@ -90,21 +92,27 @@ paths:
                   query:
                     attribute:
                       key: invoiceDetails
-                      jsonPath: "$.customer.name"
-                      eq: Acme
+                      json:
+                        path: "$.customer.name"
+                        eq: Acme
               Search_By_JSON_Fields:
                 value:
                   query:
                     attributes:
+                      - key: status
+                        eq: approved
                       - key: invoiceDetails
-                        jsonPath: "$.customer.name"
-                        eq: Acme
+                        json:
+                          path: "$.customer.name"
+                          eq: Acme
                       - key: invoiceDetails
-                        jsonPath: "$.approved"
-                        eq: true
+                        json:
+                          path: "$.approved"
+                          eq: true
                       - key: invoiceDetails
-                        jsonPath: "$.total"
-                        gte: 1000
+                        json:
+                          path: "$.total"
+                          gte: 1000
                   responseFields:
                     attributes: [invoiceDetails]
               Search_By_JSON_Array_Position:
@@ -112,15 +120,17 @@ paths:
                   query:
                     attribute:
                       key: invoiceDetails
-                      jsonPath: "$.lineItems[0].sku"
-                      eq: HOSTING
+                      json:
+                        path: "$.lineItems[0].sku"
+                        eq: HOSTING
               Search_By_JSON_Quoted_Property:
                 value:
                   query:
                     attribute:
                       key: invoiceDetails
-                      jsonPath: "$['customer.name']"
-                      eq: Acme
+                      json:
+                        path: "$['customer.name']"
+                        eq: Acme
               Search_By_Tag_Key:
                 value:
                   query:
@@ -474,70 +484,75 @@ components:
       example: "$.customer.name"
 
     #@overlay/match missing_ok=True
+    JsonAttributeSearchFilter:
+      type: object
+      additionalProperties: false
+      required: [path]
+      minProperties: 2
+      description: |-
+        Compare a nested scalar field of an attribute defined with dataType JSON.
+        A path and at least one field comparison are required.
+        All supplied predicates are combined with AND; eqOr matches any supplied value.
+        beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
+        The legacy range operator is not supported inside a json filter.
+      properties:
+        path:
+          $ref: '#/components/schemas/JsonAttributeSearchPath'
+        eq:
+          $ref: '#/components/schemas/JsonAttributeSearchValue'
+        eqOr:
+          type: array
+          minItems: 1
+          description: Match the field against any provided string, number, or boolean without type coercion.
+          items:
+            $ref: '#/components/schemas/JsonAttributeSearchValue'
+        beginsWith:
+          type: string
+          description: JSON string field must begin with this value.
+        gt:
+          type: number
+          description: JSON numeric field must be greater than this value.
+        gte:
+          type: number
+          description: JSON numeric field must be greater than or equal to this value.
+        lt:
+          type: number
+          description: JSON numeric field must be less than this value.
+        lte:
+          type: number
+          description: JSON numeric field must be less than or equal to this value.
+
+    #@overlay/match missing_ok=True
     DocumentSearchAttribute:
       required:
         - "key"
       type: "object"
       description: |-
-        Attribute search criterion. Without jsonPath, existing scalar attribute operators
-        retain their string-valued contract. With jsonPath, key identifies an attribute
-        defined with dataType JSON and at least one field comparison is required.
-        All supplied predicates are combined with AND; eqOr matches any supplied value.
-        beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
-        The legacy range operator is not supported with jsonPath.
-      allOf:
-        - anyOf:
-            - not:
-                anyOf:
-                  - required: [jsonPath]
-                  - required: [gt]
-                  - required: [gte]
-                  - required: [lt]
-                  - required: [lte]
-              properties:
-                eq:
-                  type: string
-                eqOr:
-                  type: array
-                  items:
-                    type: string
-            - required: [jsonPath]
-              not:
-                required: [range]
-              anyOf:
-                - required: [eq]
-                - required: [eqOr]
-                - required: [beginsWith]
-                - required: [gt]
-                - required: [gte]
-                - required: [lt]
-                - required: [lte]
+        Attribute search criterion. Existing eq and eqOr operators accept strings.
+        To compare a nested field of a JSON attribute, supply a json filter containing
+        the path and comparisons. A json filter cannot be combined with the top-level
+        eq, eqOr, beginsWith, or range operators in the same criterion.
+        Use separate criteria in query.attributes to compare multiple JSON paths.
+      not:
+        allOf:
+          - required: [json]
+          - anyOf:
+              - required: [eq]
+              - required: [eqOr]
+              - required: [beginsWith]
+              - required: [range]
       properties:
         eq:
-          $ref: '#/components/schemas/JsonAttributeSearchValue'
+          type: "string"
+          description: "Searches for strings that eq"
         eqOr:
           type: array
           description: |
-            Searches for values equal to any provided value. JSON path values may be strings,
-            numbers, or booleans; other attribute searches require strings. Pagination is not supported when
+            Searches for strings equal to any provided value. Pagination is not supported when
             `eqOr` is used, so no `nextToken` is returned. The request limit is applied separately
             to each value.
           items:
-            $ref: '#/components/schemas/JsonAttributeSearchValue'
-        jsonPath:
-          $ref: '#/components/schemas/JsonAttributeSearchPath'
-        gt:
-          type: number
-          description: JSON numeric field must be greater than this value. Requires jsonPath.
-        gte:
-          type: number
-          description: JSON numeric field must be greater than or equal to this value. Requires jsonPath.
-        lt:
-          type: number
-          description: JSON numeric field must be less than this value. Requires jsonPath.
-        lte:
-          type: number
-          description: JSON numeric field must be less than or equal to this value. Requires jsonPath.
+            type: "string"
         beginsWith:
           type: "string"
           description: "Searches for strings that begin with"
@@ -546,6 +561,8 @@ components:
         key:
           type: "string"
           description: "Attribute key to search"
+        json:
+          $ref: '#/components/schemas/JsonAttributeSearchFilter'
 
     #@overlay/match missing_ok=True
     DocumentSearchRequest:
@@ -589,7 +606,7 @@ components:
             A short or empty document page can still include a next token; continue until next is absent.
             COUNT can return fewer than 10,000 matches with truncated=true when the record or time budget is reached.
             Existing composite-key ordering and operator restrictions still apply when a composite key is used.
-            JSON path criteria are identified by key and jsonPath, so the same key may occur
+            JSON path criteria are identified by key and json.path, so the same key may occur
             more than once with different paths. JSON path criteria do not implicitly participate
             in existing scalar composite keys.
           items:
@@ -787,7 +804,7 @@ components:
       type: "object"
       description: |-
         Attribute that supplied the match. For JSON attributes, jsonValue contains the entire
-        stored object or array, and jsonPath identifies the nested field used by the driving
+        stored object, and jsonPath identifies the nested field used by the driving
         criterion when a path was supplied.
       properties:
         key:

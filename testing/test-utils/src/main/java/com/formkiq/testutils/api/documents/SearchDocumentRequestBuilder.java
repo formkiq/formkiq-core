@@ -31,11 +31,14 @@ import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
+import com.formkiq.client.model.JsonAttributeSearchFilter;
+import com.formkiq.client.model.JsonAttributeSearchValue;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -61,6 +64,57 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
    */
   public SearchDocumentRequestBuilder() {
     this.request = new DocumentSearchRequest();
+  }
+
+  /**
+   * Add an attribute criterion combined with the existing criteria using AND.
+   *
+   * @param attribute attribute criterion
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder addAttribute(final DocumentSearchAttribute attribute) {
+    DocumentSearch query = this.request.getQuery();
+    if (query == null) {
+      query = new DocumentSearch();
+      this.request.setQuery(query);
+    }
+    if (query.getAttribute() != null) {
+      query.addAttributesItem(query.getAttribute());
+      query.setAttribute(null);
+    }
+    query.addAttributesItem(attribute);
+    return this;
+  }
+
+  /**
+   * Add a typed equality criterion for a JSON attribute field.
+   *
+   * @param key attribute key
+   * @param jsonPath path relative to the JSON attribute value
+   * @param value string, number, or boolean comparison value
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder addJsonAttributeEquals(final String key,
+      final String jsonPath, final Object value) {
+    Object comparison = value instanceof Number number ? new BigDecimal(number.toString()) : value;
+    return addAttribute(
+        new DocumentSearchAttribute().key(key).eqOr(null).json(new JsonAttributeSearchFilter()
+            .path(jsonPath).eqOr(null).eq(new JsonAttributeSearchValue(comparison))));
+  }
+
+  /**
+   * Add inclusive numeric bounds for a JSON attribute field.
+   *
+   * @param key attribute key
+   * @param jsonPath path relative to the JSON attribute value
+   * @param minimum inclusive lower bound, or null for no lower bound
+   * @param maximum inclusive upper bound, or null for no upper bound
+   * @return this builder
+   */
+  public SearchDocumentRequestBuilder addJsonAttributeRange(final String key, final String jsonPath,
+      final BigDecimal minimum, final BigDecimal maximum) {
+    return addAttribute(new DocumentSearchAttribute().key(key).eqOr(null)
+        .json(new JsonAttributeSearchFilter().path(jsonPath).eqOr(null).gte(minimum).lte(maximum)));
   }
 
   /**

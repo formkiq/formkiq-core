@@ -39,10 +39,8 @@ public class ObjectToAttributeValue implements Function<Object, AttributeValue> 
     AttributeValue o;
     if (obj == null) {
       o = AttributeValue.fromNul(true);
-    } else if (obj instanceof Double d) {
-      o = AttributeValue.fromN(String.valueOf(d));
-    } else if (obj instanceof Long l) {
-      o = AttributeValue.fromN(String.valueOf(l));
+    } else if (obj instanceof Number number) {
+      o = AttributeValue.fromN(number.toString());
     } else if (obj instanceof String s) {
       o = AttributeValue.fromS(s);
     } else if (obj instanceof Map m) {

@@ -926,6 +926,7 @@ public class SitesClassificationsRequestTest extends AbstractApiClientRequestTes
       AddDocumentAttribute a4 = createNumberAttribute("invoiceTotalAmount", new BigDecimal(1));
       AddDocumentAttribute a5 =
           createStringAttribute("invoiceVendorName", "Mascareene Beef Company");
+      // when
       addDocumentAttributes(siteId, documentId, List.of(a0, a1, a2, a3, a4, a5));
 
       // then

@@ -37,7 +37,7 @@ paths:
       description: |-
         Creates a new attribute
 
-        Use dataType JSON for one structured JSON object or array per document attribute key.
+        Use dataType JSON for one structured JSON object per document attribute key.
         Supply the value through jsonValue when adding the attribute to a document.
       summary: Add new attribute
       tags:
@@ -314,7 +314,7 @@ components:
     #@overlay/match missing_ok=True
     AttributeDataType:
       type: string
-      description: Data Type of Attribute. JSON accepts an object or array through jsonValue.
+      description: Data Type of Attribute. JSON accepts an object through jsonValue; arrays are allowed within the object.
       default: STRING
       enum:
         - STRING

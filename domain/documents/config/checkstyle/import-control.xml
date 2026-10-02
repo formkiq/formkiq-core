@@ -29,6 +29,7 @@
 		<allow pkg="com.formkiq.module.events" />
 		<allow pkg="com.formkiq.module.events.folder" />
 
+		<allow class="java.math.BigDecimal" />
 		<allow pkg="java.io" />
 		<allow pkg="java.lang.reflect" />
 		<allow pkg="java.net" />
