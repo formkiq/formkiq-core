@@ -273,7 +273,11 @@ paths:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
     post:
       operationId: AddAttribute
-      description: Creates a new attribute
+      description: |-
+        Creates a new attribute
+
+        Use dataType JSON for one structured JSON object or array per document attribute key.
+        Supply the value through jsonValue when adding the attribute to a document.
       summary: Add new attribute
       tags:
       - Attributes
@@ -285,6 +289,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddAttributeRequest'
+            examples:
+              JSON_Attribute:
+                value:
+                  attribute:
+                    key: invoiceDetails
+                    dataType: JSON
       responses:
         "201":
           description: 201 CREATED
@@ -1109,7 +1119,11 @@ paths:
     post:
       operationId: AddDocumentAttributes
       summary: Add attribute to document
-      description: Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+      description: |-
+        Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+
+        For an attribute defined with dataType JSON, supply one object or array in jsonValue.
+        Do not combine jsonValue with scalar, entity, classification, or relationship value fields.
       tags:
       - Document Attributes
       parameters:
@@ -1122,6 +1136,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddDocumentAttributesRequest'
+            examples:
+              JSON_Attribute:
+                value:
+                  attributes:
+                  - key: invoiceDetails
+                    jsonValue:
+                      total: 1250.5
+                      approved: true
+                      customer:
+                        name: Acme
+                      lineItems:
+                      - sku: HOSTING
+                        quantity: 2
       responses:
         "201":
           $ref: '#/components/responses/201CorsAddResponse'
@@ -1137,6 +1164,7 @@ paths:
 
         Note:
         - attributes in the request will overwrite existing attributes.
+        - jsonValue replaces the entire JSON object or array; nested fields are not merged.
       tags:
       - Document Attributes
       parameters:
@@ -1189,7 +1217,9 @@ paths:
     put:
       operationId: SetDocumentAttributeValue
       summary: Set document's attributes value
-      description: Set attributes value to a document
+      description: |-
+        Set an attribute value on a document. For an attribute defined with dataType JSON,
+        supply jsonValue to replace the entire object or array. Nested fields are not merged.
       tags:
       - Document Attributes
       parameters:
@@ -1203,6 +1233,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDocumentAttributeRequest'
+            examples:
+              Replace_JSON_Attribute:
+                value:
+                  attribute:
+                    jsonValue:
+                      total: 1250.5
+                      approved: true
+                      customer:
+                        name: Acme
       responses:
         "200":
           $ref: '#/components/responses/200CorsSetResponse'
@@ -1213,7 +1252,9 @@ paths:
     delete:
       operationId: DeleteDocumentAttribute
       summary: Delete document attribute
-      description: Delete a document attribute by using its key
+      description: |-
+        Delete a document attribute by using its key. For a JSON attribute, this deletes the
+        entire JSON object or array, subject to authorization and required-attribute validation.
       tags:
       - Document Attributes
       parameters:
@@ -1232,7 +1273,13 @@ paths:
     delete:
       operationId: DeleteDocumentAttributeAndValue
       summary: Delete document's attribute value
-      description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
+      description: |-
+        Delete a specific document attribute key/value combination; the request will be ignored
+        if there is no valid key/value combination found.
+
+        Attributes defined with dataType JSON are rejected with 400 Bad Request, regardless of
+        the supplied attributeValue. No data is changed. Delete the entire JSON attribute using
+        DELETE /documents/{documentId}/attributes/{attributeKey} instead.
       tags:
       - Document Attributes
       parameters:
@@ -1244,6 +1291,16 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/200CorsDeleteResponse'
+        "400":
+          description: JSON attributes must be deleted by attribute key, or attribute validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+              example:
+                errors:
+                - key: invoiceDetails
+                  error: JSON attributes must be deleted by attribute key.
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -5654,7 +5711,7 @@ paths:
     post:
       operationId: DocumentSearch
       summary: Document search
-      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
+      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nFor attributes defined with dataType JSON, use jsonPath to compare a nested field.\nEquality values retain their JSON string, number, or boolean type. Numeric bounds use\ngt, gte, lt, and lte. Paths support object properties and explicit array positions;\nwildcard, recursive, and array any-element matching are not supported.\nMultiple conditions on different paths under the same attribute key are supported.\nAll conditions must match the same document or artifact.\n\nJSON path filtering is applied after candidate records are read and does not reduce\nread capacity consumed for those candidates. A stored JSON value does not automatically\ncreate an index for its nested fields. Continue through empty filtered pages until the\nnext token is absent; candidate and time-budget limits still apply.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
       tags:
       - Document Search
       parameters:
@@ -5699,6 +5756,43 @@ paths:
                     attribute:
                       key: firstname
                       beginsWith: jo
+              Search_By_JSON_Field:
+                value:
+                  query:
+                    attribute:
+                      key: invoiceDetails
+                      jsonPath: $.customer.name
+                      eq: Acme
+              Search_By_JSON_Fields:
+                value:
+                  query:
+                    attributes:
+                    - key: invoiceDetails
+                      jsonPath: $.customer.name
+                      eq: Acme
+                    - key: invoiceDetails
+                      jsonPath: $.approved
+                      eq: true
+                    - key: invoiceDetails
+                      jsonPath: $.total
+                      gte: 1000
+                  responseFields:
+                    attributes:
+                    - invoiceDetails
+              Search_By_JSON_Array_Position:
+                value:
+                  query:
+                    attribute:
+                      key: invoiceDetails
+                      jsonPath: $.lineItems[0].sku
+                      eq: HOSTING
+              Search_By_JSON_Quoted_Property:
+                value:
+                  query:
+                    attribute:
+                      key: invoiceDetails
+                      jsonPath: $['customer.name']
+                      eq: Acme
               Search_By_Tag_Key:
                 value:
                   query:
@@ -5751,6 +5845,12 @@ paths:
                   value:
                     count: 10000
                     truncated: true
+        "400":
+          description: Invalid attribute search value, JSON path, or operator combination.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -9401,10 +9501,11 @@ components:
       - GOVERNANCE
     AttributeDataType:
       type: string
-      description: Data Type of Attribute
+      description: Data Type of Attribute. JSON accepts an object or array through jsonValue.
       default: STRING
       enum:
       - STRING
+      - JSON
       - NUMBER
       - BOOLEAN
       - DATE
@@ -10258,10 +10359,76 @@ components:
         artifactId:
           type: string
           description: Artifact Document Identifier. Omit to clear the promoted artifact.
+    JsonAttributeValue:
+      description: |-
+        One JSON object or array stored as a single attribute value. Scalar and null roots are
+        not accepted. Nested values may include objects, arrays, strings, numbers, booleans,
+        and null. Empty objects and arrays are accepted. Object property order and original
+        number formatting are not preserved.
+
+        The complete stored DynamoDB item, including metadata and attribute names, must fit
+        within 400 KB. Stored document nesting must not exceed 32 levels, including the wrapper.
+        Numbers must fit within DynamoDB's supported range and 38 digits of precision.
+      oneOf:
+      - type: object
+        additionalProperties: true
+      - type: array
+        items: {}
+      example:
+        total: 1250.5
+        approved: true
+        customer:
+          name: Acme
+        notes: null
+        lineItems:
+        - sku: HOSTING
+          quantity: 2
+    JsonAttributeValueExclusive:
+      type: object
+      description: A JSON value cannot be combined with other attribute value forms.
+      not:
+        allOf:
+        - required:
+          - jsonValue
+        - anyOf:
+          - required:
+            - stringValue
+          - required:
+            - stringValues
+          - required:
+            - numberValue
+          - required:
+            - numberValues
+          - required:
+            - booleanValue
+          - required:
+            - dateValue
+          - required:
+            - dateValues
+          - required:
+            - entityTypeId
+          - required:
+            - entityId
+          - required:
+            - entity
+          - required:
+            - entities
+          - required:
+            - classificationId
+          - required:
+            - relationship
+          - required:
+            - inverseRelationship
     AddDocumentAttributeValue:
       type: object
-      description: Document Attribute Value
+      description: |-
+        Document attribute value. JSON attributes require jsonValue and cannot use other value
+        forms. A missing jsonValue is invalid for an attribute defined with dataType JSON.
+      allOf:
+      - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: string
           description: Attribute with string value
@@ -10344,6 +10511,8 @@ components:
         key:
           type: string
           description: Attribute key
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: string
           description: Attribute with string value
@@ -10395,6 +10564,7 @@ components:
       - KEY_ONLY
       - NUMBER
       - STRING
+      - JSON
       - PUBLICATION
       - CLASSIFICATION
       - COMPOSITE_STRING
@@ -10411,6 +10581,8 @@ components:
           items:
             $ref: '#/components/schemas/AddDocumentAttribute'
     AddDocumentAttribute:
+      allOf:
+      - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       oneOf:
       - $ref: '#/components/schemas/AddDocumentAttributeStandard'
       - $ref: '#/components/schemas/AddDocumentAttributeClassification'
@@ -10421,11 +10593,17 @@ components:
       required:
       - key
       type: object
-      description: Document Attribute
+      description: |-
+        Document attribute. An attribute defined with dataType JSON requires jsonValue and
+        cannot use other value forms. One object or array is stored per attribute key.
+      allOf:
+      - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:
         key:
           type: string
           description: Attribute key
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: string
           description: Attribute with string value
@@ -14388,22 +14566,105 @@ components:
         key:
           type: string
           description: Tag key to search
+    JsonAttributeSearchValue:
+      description: |-
+        A scalar JSON field comparison value. Types are compared without coercion: true is
+        different from "true", and numbers are compared numerically. Objects, arrays, and
+        null are not accepted as comparison values. Missing fields or incompatible field
+        types do not match.
+      oneOf:
+      - type: string
+      - type: number
+      - type: boolean
+    JsonAttributeSearchPath:
+      type: string
+      description: |-
+        Path relative to jsonValue, beginning with $. Use dot notation for identifier-like
+        property names, quoted bracket notation for other property names, and zero-based
+        brackets for array positions. Examples: $.customer.name, $['customer.name'], and
+        $.lineItems[0].quantity. Quoted names may escape characters using a backslash.
+        At least one property or array position is required. Wildcards, recursive descent,
+        slices, and filter expressions are not supported.
+      pattern: ^\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[(?:0|[1-9][0-9]*)\]|\['(?:[^'\\]|\\.)+'\]|\["(?:[^"\\]|\\.)+"\])+$
+      example: $.customer.name
     DocumentSearchAttribute:
       required:
       - key
       type: object
+      description: |-
+        Attribute search criterion. Without jsonPath, existing scalar attribute operators
+        retain their string-valued contract. With jsonPath, key identifies an attribute
+        defined with dataType JSON and at least one field comparison is required.
+        All supplied predicates are combined with AND; eqOr matches any supplied value.
+        beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
+        The legacy range operator is not supported with jsonPath.
+      allOf:
+      - anyOf:
+        - not:
+            anyOf:
+            - required:
+              - jsonPath
+            - required:
+              - gt
+            - required:
+              - gte
+            - required:
+              - lt
+            - required:
+              - lte
+          properties:
+            eq:
+              type: string
+            eqOr:
+              type: array
+              items:
+                type: string
+        - required:
+          - jsonPath
+          not:
+            required:
+            - range
+          anyOf:
+          - required:
+            - eq
+          - required:
+            - eqOr
+          - required:
+            - beginsWith
+          - required:
+            - gt
+          - required:
+            - gte
+          - required:
+            - lt
+          - required:
+            - lte
       properties:
         eq:
-          type: string
-          description: Searches for strings that eq
+          $ref: '#/components/schemas/JsonAttributeSearchValue'
         eqOr:
           type: array
           description: |
-            Searches for strings equal to any provided value. Pagination is not supported when
+            Searches for values equal to any provided value. JSON path values may be strings,
+            numbers, or booleans; other attribute searches require strings. Pagination is not supported when
             `eqOr` is used, so no `nextToken` is returned. The request limit is applied separately
             to each value.
           items:
-            type: string
+            $ref: '#/components/schemas/JsonAttributeSearchValue'
+        jsonPath:
+          $ref: '#/components/schemas/JsonAttributeSearchPath'
+        gt:
+          type: number
+          description: JSON numeric field must be greater than this value. Requires jsonPath.
+        gte:
+          type: number
+          description: JSON numeric field must be greater than or equal to this value. Requires jsonPath.
+        lt:
+          type: number
+          description: JSON numeric field must be less than this value. Requires jsonPath.
+        lte:
+          type: number
+          description: JSON numeric field must be less than or equal to this value. Requires jsonPath.
         beginsWith:
           type: string
           description: Searches for strings that begin with
@@ -14451,6 +14712,9 @@ components:
             A short or empty document page can still include a next token; continue until next is absent.
             COUNT can return fewer than 10,000 matches with truncated=true when the record or time budget is reached.
             Existing composite-key ordering and operator restrictions still apply when a composite key is used.
+            JSON path criteria are identified by key and jsonPath, so the same key may occur
+            more than once with different paths. JSON path criteria do not implicitly participate
+            in existing scalar composite keys.
           items:
             $ref: '#/components/schemas/DocumentSearchAttribute'
         tag:
@@ -14596,6 +14860,8 @@ components:
             $ref: '#/components/schemas/DocumentMetadata'
     SearchResultDocumentAttribute:
       properties:
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValues:
           type: array
           description: Attribute with string values
@@ -14630,10 +14896,18 @@ components:
           description: Tag type
     DocumentSearchMatchAttribute:
       type: object
+      description: |-
+        Attribute that supplied the match. For JSON attributes, jsonValue contains the entire
+        stored object or array, and jsonPath identifies the nested field used by the driving
+        criterion when a path was supplied.
       properties:
         key:
           type: string
-          description: Tag key
+          description: Attribute key
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
+        jsonPath:
+          $ref: '#/components/schemas/JsonAttributeSearchPath'
         stringValue:
           type: string
           description: Attribute with string value

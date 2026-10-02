@@ -39,6 +39,9 @@ paths:
       summary: Add attribute to document
       description: |-
         Add multiple attributes to a document; this endpoint also accepts a different body parameter for adding a single attribute
+
+        For an attribute defined with dataType JSON, supply one object or array in jsonValue.
+        Do not combine jsonValue with scalar, entity, classification, or relationship value fields.
       tags:
         - Document Attributes
       parameters:
@@ -51,6 +54,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddDocumentAttributesRequest'
+            examples:
+              JSON_Attribute:
+                value:
+                  attributes:
+                    - key: invoiceDetails
+                      jsonValue:
+                        total: 1250.50
+                        approved: true
+                        customer:
+                          name: Acme
+                        lineItems:
+                          - sku: HOSTING
+                            quantity: 2
       responses:
         '201':
           $ref: '#/components/responses/201CorsAddResponse'
@@ -66,6 +82,7 @@ paths:
 
         Note:
         - attributes in the request will overwrite existing attributes.
+        - jsonValue replaces the entire JSON object or array; nested fields are not merged.
       tags:
         - Document Attributes
       parameters:
@@ -120,7 +137,9 @@ paths:
     put:
       operationId: SetDocumentAttributeValue
       summary: Set document's attributes value
-      description: Set attributes value to a document
+      description: |-
+        Set an attribute value on a document. For an attribute defined with dataType JSON,
+        supply jsonValue to replace the entire object or array. Nested fields are not merged.
       tags:
         - Document Attributes
       parameters:
@@ -134,6 +153,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDocumentAttributeRequest'
+            examples:
+              Replace_JSON_Attribute:
+                value:
+                  attribute:
+                    jsonValue:
+                      total: 1250.50
+                      approved: true
+                      customer:
+                        name: Acme
       responses:
         '200':
           $ref: '#/components/responses/200CorsSetResponse'
@@ -144,7 +172,9 @@ paths:
     delete:
       operationId: DeleteDocumentAttribute
       summary: Delete document attribute
-      description: Delete a document attribute by using its key
+      description: |-
+        Delete a document attribute by using its key. For a JSON attribute, this deletes the
+        entire JSON object or array, subject to authorization and required-attribute validation.
       tags:
         - Document Attributes
       parameters:
@@ -165,7 +195,13 @@ paths:
     delete:
       operationId: DeleteDocumentAttributeAndValue
       summary: Delete document's attribute value
-      description: Delete a specific document attribute key/value combination; the request will be ignored if there is no valid key/value combination found
+      description: |-
+        Delete a specific document attribute key/value combination; the request will be ignored
+        if there is no valid key/value combination found.
+
+        Attributes defined with dataType JSON are rejected with 400 Bad Request, regardless of
+        the supplied attributeValue. No data is changed. Delete the entire JSON attribute using
+        DELETE /documents/{documentId}/attributes/{attributeKey} instead.
       tags:
         - Document Attributes
       parameters:
@@ -177,6 +213,16 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
+        '400':
+          description: JSON attributes must be deleted by attribute key, or attribute validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+              example:
+                errors:
+                  - key: invoiceDetails
+                    error: JSON attributes must be deleted by attribute key.
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -228,10 +274,65 @@ paths:
 components:
   schemas:
     #@overlay/match missing_ok=True
+    JsonAttributeValue:
+      description: |-
+        One JSON object or array stored as a single attribute value. Scalar and null roots are
+        not accepted. Nested values may include objects, arrays, strings, numbers, booleans,
+        and null. Empty objects and arrays are accepted. Object property order and original
+        number formatting are not preserved.
+
+        The complete stored DynamoDB item, including metadata and attribute names, must fit
+        within 400 KB. Stored document nesting must not exceed 32 levels, including the wrapper.
+        Numbers must fit within DynamoDB's supported range and 38 digits of precision.
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
+      example:
+        total: 1250.50
+        approved: true
+        customer:
+          name: Acme
+        notes: null
+        lineItems:
+          - sku: HOSTING
+            quantity: 2
+
+    #@overlay/match missing_ok=True
+    JsonAttributeValueExclusive:
+      type: object
+      description: A JSON value cannot be combined with other attribute value forms.
+      not:
+        allOf:
+          - required: [jsonValue]
+          - anyOf:
+              - required: [stringValue]
+              - required: [stringValues]
+              - required: [numberValue]
+              - required: [numberValues]
+              - required: [booleanValue]
+              - required: [dateValue]
+              - required: [dateValues]
+              - required: [entityTypeId]
+              - required: [entityId]
+              - required: [entity]
+              - required: [entities]
+              - required: [classificationId]
+              - required: [relationship]
+              - required: [inverseRelationship]
+
+    #@overlay/match missing_ok=True
     AddDocumentAttributeValue:
       type: "object"
-      description: "Document Attribute Value"
+      description: |-
+        Document attribute value. JSON attributes require jsonValue and cannot use other value
+        forms. A missing jsonValue is invalid for an attribute defined with dataType JSON.
+      allOf:
+        - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: "string"
           description: "Attribute with string value"
@@ -328,6 +429,8 @@ components:
         key:
           type: "string"
           description: "Attribute key"
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: "string"
           description: "Attribute with string value"
@@ -381,6 +484,7 @@ components:
         - KEY_ONLY
         - NUMBER
         - STRING
+        - JSON
         - PUBLICATION
         - CLASSIFICATION
         - COMPOSITE_STRING
@@ -401,6 +505,8 @@ components:
 
     #@overlay/match missing_ok=True
     AddDocumentAttribute:
+      allOf:
+        - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       oneOf:
         - $ref: '#/components/schemas/AddDocumentAttributeStandard'
         - $ref: '#/components/schemas/AddDocumentAttributeClassification'
@@ -413,11 +519,17 @@ components:
       required:
         - "key"
       type: "object"
-      description: "Document Attribute"
+      description: |-
+        Document attribute. An attribute defined with dataType JSON requires jsonValue and
+        cannot use other value forms. One object or array is stored per attribute key.
+      allOf:
+        - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:
         key:
           type: "string"
           description: "Attribute key"
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         stringValue:
           type: "string"
           description: "Attribute with string value"

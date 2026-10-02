@@ -36,6 +36,9 @@ paths:
       operationId: AddAttribute
       description: |-
         Creates a new attribute
+
+        Use dataType JSON for one structured JSON object or array per document attribute key.
+        Supply the value through jsonValue when adding the attribute to a document.
       summary: Add new attribute
       tags:
         - Attributes
@@ -47,6 +50,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddAttributeRequest'
+            examples:
+              JSON_Attribute:
+                value:
+                  attribute:
+                    key: invoiceDetails
+                    dataType: JSON
       responses:
         '201':
           description: 201 CREATED
@@ -305,10 +314,11 @@ components:
     #@overlay/match missing_ok=True
     AttributeDataType:
       type: string
-      description: Data Type of Attribute
+      description: Data Type of Attribute. JSON accepts an object or array through jsonValue.
       default: STRING
       enum:
         - STRING
+        - JSON
         - NUMBER
         - BOOLEAN
         - DATE
