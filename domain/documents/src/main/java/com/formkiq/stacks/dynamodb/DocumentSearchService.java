@@ -52,18 +52,6 @@ public interface DocumentSearchService {
       throws ValidationException;
 
   /**
-   * Count Documents matching a search.
-   *
-   * @param siteId Optional Grouping siteId
-   * @param search {@link SearchQuery}
-   * @param maxResults maximum number of documents to count
-   * @return {@link SearchCountResult}
-   * @throws ValidationException ValidationException
-   */
-  SearchCountResult count(String siteId, SearchQuery search, int maxResults)
-      throws ValidationException;
-
-  /**
    * Search for Documents in Folder.
    * 
    * @param siteId {@link String}
