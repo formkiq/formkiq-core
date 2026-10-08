@@ -232,6 +232,9 @@ public class DocumentAttributeRecordToMap implements
       } else {
 
         lastValues = new DynamodbRecordToMap().apply(a);
+        if (a.getJsonValue() != null) {
+          lastValues.put("jsonValue", a.getJsonValue());
+        }
         lastValues.remove("documentId");
         lastValues.remove("artifactId");
 

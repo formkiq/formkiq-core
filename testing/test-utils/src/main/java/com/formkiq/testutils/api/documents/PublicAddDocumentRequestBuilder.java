@@ -25,10 +25,15 @@ package com.formkiq.testutils.api.documents;
 
 import com.formkiq.client.api.PublicApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.AddDocumentAttribute;
+import com.formkiq.client.model.AddDocumentAttributeStandard;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for the PublicAddDocument API operation.
@@ -36,7 +41,21 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 public class PublicAddDocumentRequestBuilder implements HttpRequestBuilder<AddDocumentResponse> {
 
   /** Request parameter. */
-  private AddDocumentRequest addDocumentRequest;
+  private AddDocumentRequest addDocumentRequest = new AddDocumentRequest();
+
+  /**
+   * Add a JSON document attribute to the public document request.
+   *
+   * @param key attribute key
+   * @param value JSON object; nested values may include arrays
+   * @return this builder
+   */
+  public PublicAddDocumentRequestBuilder addJsonAttribute(final String key,
+      final Map<String, Object> value) {
+    this.addDocumentRequest.addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).jsonValue(Objects.requireNonNull(value))));
+    return this;
+  }
 
   @Override
   public ApiHttpResponse<AddDocumentResponse> submit(final ApiClient apiClient,

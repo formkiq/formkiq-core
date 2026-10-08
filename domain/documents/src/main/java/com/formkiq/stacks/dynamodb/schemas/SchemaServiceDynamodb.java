@@ -797,8 +797,12 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       List<String> attributeKeys =
           Stream.concat(requiredAttributes.stream(), optionalAttributes.stream()).toList();
 
+      Stream<String> compositeAttributeKeys = notNull(schema.getAttributes().getCompositeKeys())
+          .stream().flatMap(composite -> notNull(composite.getAttributeKeys()).stream());
+      List<String> allAttributeKeys =
+          Stream.concat(attributeKeys.stream(), compositeAttributeKeys).distinct().toList();
       Map<String, AttributeRecord> attributeDataTypes =
-          this.attributeService.getAttributes(siteId, attributeKeys);
+          this.attributeService.getAttributes(siteId, allAttributeKeys);
 
       validateAttributesExist(attributeDataTypes, attributeKeys, errors);
 
@@ -807,6 +811,8 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       validateOverlap(requiredAttributes, optionalAttributes, errors);
 
       validateCompositeAttributes(schema, attributeKeys, errors);
+
+      validateCompositeAttributeDataTypes(schema, attributeDataTypes, errors);
     }
 
     return errors;
@@ -885,6 +891,20 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     }
 
     return errors;
+  }
+
+  private void validateCompositeAttributeDataTypes(final Schema schema,
+      final Map<String, AttributeRecord> attributes, final Collection<ValidationError> errors) {
+    notNull(schema.getAttributes().getCompositeKeys()).stream()
+        .flatMap(composite -> notNull(composite.getAttributeKeys()).stream()).distinct()
+        .forEach(key -> {
+          AttributeRecord attribute = attributes.get(key);
+          if (attribute != null && AttributeDataType.JSON.equals(attribute.getDataType())) {
+            String message =
+                "attribute '" + key + "' with dataType JSON cannot be part of a composite key";
+            errors.add(new ValidationErrorImpl().key(key).error(message));
+          }
+        });
   }
 
   private void validateCompositeAttributes(final Schema schema, final List<String> attributeKeys,

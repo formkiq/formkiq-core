@@ -92,6 +92,8 @@ import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -3623,6 +3625,53 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals("Sites Schema set", response.getMessage());
     }
+  }
+
+  /**
+   * JSON attributes are allowed in schemas but cannot be members of composite keys.
+   *
+   * @param membership whether the JSON attribute is required, optional, or additional
+   * @throws ApiException an error has occurred
+   */
+  @ParameterizedTest(name = "{displayName} [membership={0}]")
+  @ValueSource(strings = {"required", "optional", "additional"})
+  public void testSetSitesSchemaJsonCompositeKeyRejected(final String membership)
+      throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsString("status").submitOk(client, siteId);
+    SetSchemaAttributes attributes = new SetSchemaAttributes()
+        .allowAdditionalAttributes(Boolean.TRUE).addOptionalItem(createOptional("status"));
+    if ("required".equals(membership)) {
+      attributes.addRequiredItem(createRequired(key));
+    } else if ("optional".equals(membership)) {
+      attributes.addOptionalItem(createOptional(key));
+    }
+    SetSitesSchemaRequestBuilder schema =
+        new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(
+            new SetSitesSchemaRequest().name("json-schema").attributes(attributes));
+
+    // when
+    SetResponse response = schema.submitOk(client, siteId).response();
+
+    // then
+    assertEquals("Sites Schema set", response.getMessage());
+
+    // given
+    attributes.addCompositeKeysItem(createCompositeKey(key, "status"));
+
+    // when
+    var rejected = schema.submit(client, siteId);
+
+    // then
+    assertNotNull(rejected.exception(), "JSON attributes must be rejected in composite keys");
+    assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), rejected.exception().getCode());
+    assertEquals("{\"errors\":[{\"key\":\"invoiceDetails\","
+        + "\"error\":\"attribute 'invoiceDetails' with dataType JSON "
+        + "cannot be part of a composite key\"}]}", rejected.exception().getResponseBody());
   }
 
   /**

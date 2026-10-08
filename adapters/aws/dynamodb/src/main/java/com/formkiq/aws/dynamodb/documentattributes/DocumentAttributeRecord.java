@@ -29,6 +29,7 @@ import com.formkiq.aws.dynamodb.DynamodbRecord;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
+import com.formkiq.aws.dynamodb.builder.ObjectToAttributeValue;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -70,6 +71,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   private Double numberValue;
   /** String valueAttribute. */
   private String stringValue;
+  /** JSON object value. */
+  private Map<String, Object> jsonValue;
   /** Type of Attribute. */
   private DocumentAttributeValueType valueType;
   /** Inserted Date. */
@@ -167,6 +170,10 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       map.put("stringValue", fromS(this.stringValue));
     }
 
+    if (this.jsonValue != null) {
+      map.put("jsonValue", new ObjectToAttributeValue().apply(this.jsonValue));
+    }
+
     if (this.insertedDate != null) {
       SimpleDateFormat df = DateUtil.getIsoDateFormatter();
       map.put("inserteddate", fromS(df.format(this.insertedDate)));
@@ -206,6 +213,10 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
       if (attrs.containsKey("numberValue")) {
         record.setNumberValue(nn(attrs, "numberValue"));
+      }
+
+      if (attrs.containsKey("jsonValue")) {
+        record.setJsonValue((Map<String, Object>) DynamoDbTypes.toJson(attrs.get("jsonValue")));
       }
 
       if (attrs.containsKey("inserteddate")) {
@@ -271,7 +282,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       case DATE -> val += this.dateValue;
       case BOOLEAN -> val += this.booleanValue;
       case NUMBER -> val += formatDouble(this.numberValue);
-      case KEY_ONLY, PUBLICATION, WATERMARK -> {
+      case KEY_ONLY, PUBLICATION, WATERMARK, JSON -> {
       }
       default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
     }
@@ -287,7 +298,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       case DATE -> truncateSk(this.dateValue);
       case NUMBER -> formatDouble(this.numberValue);
       case BOOLEAN -> this.booleanValue.toString();
-      case KEY_ONLY, WATERMARK -> "#";
+      case KEY_ONLY, WATERMARK, JSON -> "#";
     };
 
   }
@@ -392,6 +403,26 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   }
 
   /**
+   * Get the JSON object value.
+   *
+   * @return JSON object, or null
+   */
+  public Map<String, Object> getJsonValue() {
+    return this.jsonValue;
+  }
+
+  /**
+   * Set the JSON object value.
+   *
+   * @param value JSON object
+   * @return this record
+   */
+  public DocumentAttributeRecord setJsonValue(final Map<String, Object> value) {
+    this.jsonValue = value;
+    return this;
+  }
+
+  /**
    * Get Boolean Value.
    *
    * @return {@link Boolean}
@@ -477,6 +508,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       this.valueType = DocumentAttributeValueType.NUMBER;
     } else if (this.booleanValue != null) {
       this.valueType = DocumentAttributeValueType.BOOLEAN;
+    } else if (this.jsonValue != null) {
+      this.valueType = DocumentAttributeValueType.JSON;
     }
 
     return this;

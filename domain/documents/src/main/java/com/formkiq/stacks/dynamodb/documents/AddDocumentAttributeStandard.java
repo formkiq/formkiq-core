@@ -26,6 +26,7 @@ package com.formkiq.stacks.dynamodb.documents;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Standard key/value attribute. Only one of the value forms is typically used by the server, but
@@ -34,5 +35,6 @@ import java.util.List;
 @Reflectable
 public record AddDocumentAttributeStandard(String key, String stringValue,
     List<String> stringValues, Double numberValue, List<Double> numberValues, Boolean booleanValue,
-    String dateValue, List<String> dateValues) implements AddDocumentAttribute {
+    String dateValue, List<String> dateValues,
+    Map<String, Object> jsonValue) implements AddDocumentAttribute {
 }

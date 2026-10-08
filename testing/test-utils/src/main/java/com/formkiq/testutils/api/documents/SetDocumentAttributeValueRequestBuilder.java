@@ -33,6 +33,8 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for {@link SetDocumentAttributeRequest}.
@@ -75,6 +77,18 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
    */
   public SetDocumentAttributeValueRequestBuilder dateValues(final List<String> dateValues) {
     this.request.setAttribute(new AddDocumentAttributeValue().dateValues(dateValues));
+    return this;
+  }
+
+  /**
+   * Set the complete JSON document attribute value.
+   *
+   * @param value JSON object; nested values may include arrays
+   * @return this builder
+   */
+  public SetDocumentAttributeValueRequestBuilder jsonValue(final Map<String, Object> value) {
+    this.request
+        .setAttribute(new AddDocumentAttributeValue().jsonValue(Objects.requireNonNull(value)));
     return this;
   }
 

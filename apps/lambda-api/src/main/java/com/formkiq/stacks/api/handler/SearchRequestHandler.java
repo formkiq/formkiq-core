@@ -86,6 +86,8 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
 
   /** Maximum number of Document Ids that can be sent. */
   private static final int MAX_DOCUMENT_IDS = 100;
+  /** Maximum number of Documents that can be counted. */
+  private static final int MAX_DOCUMENT_COUNT = 10_000;
 
   /**
    * constructor.
